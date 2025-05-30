@@ -1,0 +1,1 @@
+# Optional shared tool logic (e.g. schema, argument parsing)
