@@ -98,3 +98,4 @@ Thumbs.db
 
 # Log files
 *.log
+.vscode
