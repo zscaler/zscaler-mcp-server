@@ -1,4 +1,4 @@
-from zscaler_mcp.sdk.python.zscaler_client import get_zscaler_client
+from zscaler_mcp.sdk.zscaler_client import get_zscaler_client
 
 def segment_group_manager(
     action: str,

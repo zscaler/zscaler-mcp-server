@@ -1,6 +1,6 @@
-from zscaler_mcp.sdk.python.zscaler_client import get_zscaler_client
+from zscaler_mcp.sdk.zscaler_client import get_zscaler_client
 
-def forwarding_policy_manager(
+def timeout_policy_manager(
     action: str,
     cloud: str,
     client_id: str,
@@ -11,17 +11,20 @@ def forwarding_policy_manager(
     microtenant_id: str = None,
     name: str = None,
     description: str = None,
-    action_type: str = None,
+    custom_msg: str = None,
+    reauth_timeout: str = "172800",
+    reauth_idle_timeout: str = "600",
     conditions: list = None,
     query_params: dict = None,
 ) -> dict | list[dict] | str:
     """
-    CRUD handler for ZPA Client Forwarding Policy Rules via the Python SDK.
+    CRUD handler for ZPA Timeout Policy Rules via the Python SDK.
 
     Required fields:
-    - create: name, action_type
+    - create: name
     - update: rule_id, at least one mutable field
     - delete: rule_id
+    - list/get: policy_type is inferred as 'timeout'
     """
     client = get_zscaler_client(
         cloud=cloud,
@@ -31,23 +34,25 @@ def forwarding_policy_manager(
         vanity_domain=vanity_domain,
     )
 
-    policy_type = "client_forwarding"
+    policy_type = "timeout"
     api = client.zpa.policies
 
     if action == "create":
-        if not all([name, action_type]):
-            raise ValueError("'name' and 'action_type' are required for creating a client forwarding rule")
+        if not name:
+            raise ValueError("'name' is required for creating a timeout rule")
 
         payload = {
             "name": name,
             "description": description,
-            "action": action_type,
+            "custom_msg": custom_msg,
+            "reauth_timeout": reauth_timeout,
+            "reauth_idle_timeout": reauth_idle_timeout,
             "conditions": conditions or [],
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
 
-        created, _, err = api.add_client_forwarding_rule_v2(**payload)
+        created, _, err = api.add_timeout_rule_v2(**payload)
         if err:
             raise Exception(f"Create failed: {err}")
         return created.as_dict()
@@ -70,30 +75,32 @@ def forwarding_policy_manager(
 
     elif action == "update":
         if not rule_id:
-            raise ValueError("'rule_id' is required for updating a client forwarding rule")
+            raise ValueError("'rule_id' is required for updating a timeout rule")
 
         payload = {
             "name": name,
             "description": description,
-            "action": action_type,
+            "custom_msg": custom_msg,
+            "reauth_timeout": reauth_timeout,
+            "reauth_idle_timeout": reauth_idle_timeout,
             "conditions": conditions or [],
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
 
-        updated, _, err = api.update_client_forwarding_rule_v2(rule_id, **payload)
+        updated, _, err = api.update_timeout_rule_v2(rule_id, **payload)
         if err:
             raise Exception(f"Update failed: {err}")
         return updated.as_dict()
 
     elif action == "delete":
         if not rule_id:
-            raise ValueError("'rule_id' is required for deleting a client forwarding rule")
+            raise ValueError("'rule_id' is required for deleting a timeout rule")
 
         _, _, err = api.delete_rule(policy_type, rule_id, microtenant_id=microtenant_id)
         if err:
             raise Exception(f"Delete failed: {err}")
-        return f"Deleted client forwarding rule {rule_id}"
+        return f"Deleted timeout rule {rule_id}"
 
     else:
         raise ValueError(f"Unsupported action: {action}")

@@ -1,6 +1,6 @@
-from zscaler_mcp.sdk.python.zscaler_client import get_zscaler_client
+from zscaler_mcp.sdk.zscaler_client import get_zscaler_client
 
-def timeout_policy_manager(
+def isolation_policy_manager(
     action: str,
     cloud: str,
     client_id: str,
@@ -11,20 +11,20 @@ def timeout_policy_manager(
     microtenant_id: str = None,
     name: str = None,
     description: str = None,
-    custom_msg: str = None,
-    reauth_timeout: str = "172800",
-    reauth_idle_timeout: str = "600",
+    action_type: str = None,
+    zpn_isolation_profile_id: str = None,
     conditions: list = None,
+    rule_order: str = None,
     query_params: dict = None,
 ) -> dict | list[dict] | str:
     """
-    CRUD handler for ZPA Timeout Policy Rules via the Python SDK.
+    CRUD handler for ZPA Isolation Policy Rules via the Python SDK.
 
     Required fields:
-    - create: name
+    - create: name, action_type, zpn_isolation_profile_id (if action_type == 'isolate')
     - update: rule_id, at least one mutable field
     - delete: rule_id
-    - list/get: policy_type is inferred as 'timeout'
+    - list/get: policy_type is inferred as 'isolation'
     """
     client = get_zscaler_client(
         cloud=cloud,
@@ -34,25 +34,27 @@ def timeout_policy_manager(
         vanity_domain=vanity_domain,
     )
 
-    policy_type = "timeout"
+    policy_type = "isolation"
     api = client.zpa.policies
 
     if action == "create":
-        if not name:
-            raise ValueError("'name' is required for creating a timeout rule")
+        if not name or not action_type:
+            raise ValueError("'name' and 'action_type' are required for creating an isolation rule")
+        if action_type.lower() == "isolate" and not zpn_isolation_profile_id:
+            raise ValueError("'zpn_isolation_profile_id' is required when action_type is 'isolate'")
 
         payload = {
             "name": name,
+            "action": action_type,
+            "zpn_isolation_profile_id": zpn_isolation_profile_id,
             "description": description,
-            "custom_msg": custom_msg,
-            "reauth_timeout": reauth_timeout,
-            "reauth_idle_timeout": reauth_idle_timeout,
-            "conditions": conditions or [],
+            "rule_order": rule_order,
+            "conditions": conditions,
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
 
-        created, _, err = api.add_timeout_rule_v2(**payload)
+        created, _, err = api.add_isolation_rule_v2(**payload)
         if err:
             raise Exception(f"Create failed: {err}")
         return created.as_dict()
@@ -67,7 +69,6 @@ def timeout_policy_manager(
             query_params = query_params or {}
             if microtenant_id:
                 query_params["microtenant_id"] = microtenant_id
-
             rules, _, err = api.list_rules(policy_type, query_params=query_params)
             if err:
                 raise Exception(f"List failed: {err}")
@@ -75,32 +76,32 @@ def timeout_policy_manager(
 
     elif action == "update":
         if not rule_id:
-            raise ValueError("'rule_id' is required for updating a timeout rule")
+            raise ValueError("'rule_id' is required for updating an isolation rule")
 
         payload = {
             "name": name,
+            "action": action_type,
+            "zpn_isolation_profile_id": zpn_isolation_profile_id,
             "description": description,
-            "custom_msg": custom_msg,
-            "reauth_timeout": reauth_timeout,
-            "reauth_idle_timeout": reauth_idle_timeout,
-            "conditions": conditions or [],
+            "rule_order": rule_order,
+            "conditions": conditions,
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
 
-        updated, _, err = api.update_timeout_rule_v2(rule_id, **payload)
+        updated, _, err = api.update_isolation_rule_v2(rule_id, **payload)
         if err:
             raise Exception(f"Update failed: {err}")
         return updated.as_dict()
 
     elif action == "delete":
         if not rule_id:
-            raise ValueError("'rule_id' is required for deleting a timeout rule")
+            raise ValueError("'rule_id' is required for deleting an isolation rule")
 
         _, _, err = api.delete_rule(policy_type, rule_id, microtenant_id=microtenant_id)
         if err:
             raise Exception(f"Delete failed: {err}")
-        return f"Deleted timeout rule {rule_id}"
+        return f"Deleted isolation rule {rule_id}"
 
     else:
         raise ValueError(f"Unsupported action: {action}")
