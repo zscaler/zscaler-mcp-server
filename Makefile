@@ -79,7 +79,7 @@ sync-dev-deps:
 run-mcp-server:
 	@cd src && \
 	PYTHONPATH=.. PATH="$(HOME)/.local/bin:$$PATH" \
-	~/.local/bin/poetry run python -m zscaler_mcp.server_main
+	~/.local/bin/poetry run python -m main
 
 local-setup:
 ifeq ($(wildcard ~/.local/bin/poetry),)
