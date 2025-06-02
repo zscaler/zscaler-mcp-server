@@ -4,7 +4,10 @@ COLOR_ERROR=\x1b[31;01m
 COLOR_WARNING=\x1b[33;01m
 COLOR_ZSCALER=\x1B[34;01m
 
-VERSION=$(shell grep -E -o '(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?' ./zscaler/__init__.py)
+DOCKER        ?= docker
+BINARY_NAME   ?= zscaler-mcp-server
+VERSION       ?= latest
+
 
 help:
 	@echo "$(COLOR_ZSCALER)"
@@ -76,18 +79,18 @@ sync-deps:
 sync-dev-deps:
 	poetry export -f requirements.txt --without-hashes --with dev > requirements-dev.txt
 
-run-mcp-server:
-	@cd src && \
-	PYTHONPATH=.. PATH="$(HOME)/.local/bin:$$PATH" \
-	~/.local/bin/poetry run python -m main
+docker-clean:
+	# kill + rm any container based on the image
+	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q \
+	    | xargs -r $(DOCKER) rm -f
+	# remove the image tag (ignore “not found” errors)
+	-$(DOCKER) rmi -f $(BINARY_NAME):$(VERSION) 2>/dev/null || true
 
-local-setup:
-ifeq ($(wildcard ~/.local/bin/poetry),)
-	@echo "installing poetry"
-	curl -sSL https://install.python-poetry.org | python3 -
-else
-	@echo "poetry installation found"
-endif
-	~/.local/bin/poetry install
+docker-build:
+	$(DOCKER) build --pull --build-arg VERSION=$(VERSION) \
+		-t $(BINARY_NAME):$(VERSION) .
 
-.PHONY: clean-pyc clean-build docs clean
+## One-shot target: clean + build
+docker-rebuild: docker-clean docker-build
+
+.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild
