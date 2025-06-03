@@ -1,4 +1,5 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.utils.utils import convert_v2_to_sdk_format, convert_v1_to_v2_response
 
 def app_protection_policy_manager(
     action: str,
@@ -34,6 +35,11 @@ def app_protection_policy_manager(
         vanity_domain=vanity_domain,
     )
 
+    try:
+        processed_conditions = convert_v2_to_sdk_format(conditions)
+    except Exception as e:
+        raise ValueError(f"Invalid conditions format: {str(e)}")
+
     policy_type = "inspection"
     api = client.zpa.policies
 
@@ -49,7 +55,7 @@ def app_protection_policy_manager(
             "zpn_inspection_profile_id": zpn_inspection_profile_id,
             "description": description,
             "rule_order": rule_order,
-            "conditions": conditions,
+            "conditions": processed_conditions,
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
@@ -64,7 +70,11 @@ def app_protection_policy_manager(
             result, _, err = api.get_rule(policy_type, rule_id, query_params={"microtenantId": microtenant_id})
             if err:
                 raise Exception(f"Read failed: {err}")
-            return result.as_dict()
+            rule_data = result.as_dict()
+            # Convert response to standardized v2 format
+            if "conditions" in rule_data:
+                rule_data["conditions"] = convert_v1_to_v2_response(rule_data["conditions"])
+            return rule_data
         else:
             query_params = query_params or {}
             if microtenant_id:
@@ -84,7 +94,7 @@ def app_protection_policy_manager(
             "zpn_inspection_profile_id": zpn_inspection_profile_id,
             "description": description,
             "rule_order": rule_order,
-            "conditions": conditions,
+            "conditions": processed_conditions,
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
@@ -92,16 +102,19 @@ def app_protection_policy_manager(
         updated, _, err = api.update_app_protection_rule_v2(rule_id, **payload)
         if err:
             raise Exception(f"Update failed: {err}")
-        return updated.as_dict()
+        rule_data = updated.as_dict()
+        if "conditions" in rule_data:
+            rule_data["conditions"] = convert_v1_to_v2_response(rule_data["conditions"])
+        return rule_data
 
     elif action == "delete":
         if not rule_id:
-            raise ValueError("'rule_id' is required for deleting an inspection rule")
+            raise ValueError("'rule_id' is required")
 
         _, _, err = api.delete_rule(policy_type, rule_id, microtenant_id=microtenant_id)
         if err:
             raise Exception(f"Delete failed: {err}")
-        return f"Deleted inspection rule {rule_id}"
+        return f"Deleted access rule {rule_id}"
 
     else:
         raise ValueError(f"Unsupported action: {action}")

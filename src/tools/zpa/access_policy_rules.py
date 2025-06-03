@@ -1,5 +1,5 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union, List, Dict, Any, Tuple
+from typing import Union, List, Dict, Any
 from src.utils.utils import convert_v2_to_sdk_format, convert_v1_to_v2_response
 
 def access_policy_manager(
@@ -13,7 +13,7 @@ def access_policy_manager(
     microtenant_id: str = None,
     name: str = None,
     description: str = None,
-    action_type: str = None,  # ✅ Renamed from 'action'
+    action_type: str = None,
     app_connector_group_ids: List[str] = None,
     app_server_group_ids: List[str] = None,
     conditions: Any = None,
@@ -105,7 +105,7 @@ def access_policy_manager(
         payload = {
             "name": name,
             "description": description,
-            "action": action_type,  # ✅ policy action
+            "action": action_type,
             "conditions": processed_conditions,
             "app_connector_group_ids": app_connector_group_ids or [],
             "app_server_group_ids": app_server_group_ids or [],
@@ -145,7 +145,7 @@ def access_policy_manager(
         payload = {
             "name": name,
             "description": description,
-            "action": action_type,  # ✅ policy action
+            "action": action_type,
             "conditions": processed_conditions,
             "app_connector_group_ids": app_connector_group_ids or [],
             "app_server_group_ids": app_server_group_ids or [],
