@@ -99,4 +99,5 @@ Thumbs.db
 # Log files
 *.log
 .vscode
+.cursor
 /local_dev

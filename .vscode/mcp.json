@@ -2,13 +2,11 @@
     "servers": {
         "zscaler-mcp-server": {
             "type": "stdio",
-            "command": "docker",
+            "command": "/Users/wguilherme/.pyenv/shims/uv",
             "args": [
                 "run",
-                "-i",
-                "--rm",
-                "--pull=never",
-                "zscaler-mcp-server"
+                "python",
+                "/Users/wguilherme/go/src/github.com/zscaler/zscaler-mcp-server/main.py"
             ]
         }
     }
