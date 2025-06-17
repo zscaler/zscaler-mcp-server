@@ -12,6 +12,8 @@ def scim_group_manager(
     scim_group_id: str = None,
     idp_name: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> Union[dict, list[dict], str]:
     """
     Tool for retrieving ZPA SCIM groups under a given Identity Provider (IdP).
@@ -33,6 +35,8 @@ def scim_group_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     idp_api = client.zpa.idp

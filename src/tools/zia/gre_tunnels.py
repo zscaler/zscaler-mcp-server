@@ -8,6 +8,11 @@ def gre_tunnel_manager(
     client_secret: str,
     customer_id: str,
     vanity_domain: str,
+    username: str,
+    password: str,
+    api_key: str,
+    use_legacy: bool = False,
+    service: str = "zia",
     tunnel_id: int = None,
     static_ip_id: int = None,
     static_ip_address: str = None,
@@ -38,6 +43,11 @@ def gre_tunnel_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        username=username,
+        password=password,
+        api_key=api_key,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     gre_api = client.zia.gre_tunnel

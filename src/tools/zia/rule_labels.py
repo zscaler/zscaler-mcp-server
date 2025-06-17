@@ -7,10 +7,15 @@ def rule_label_manager(
     client_secret: str,
     customer_id: str,
     vanity_domain: str,
+    username: str,
+    password: str,
+    api_key: str,
     label_id: int = None,
     name: str = None,
     description: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zia",
 ) -> dict | list[dict] | str:
     """
     Tool for managing ZIA Rule Labels via the Python SDK.
@@ -37,6 +42,11 @@ def rule_label_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        username=username,
+        password=password,
+        api_key=api_key,
+        use_legacy=use_legacy,
+        service=service,
     )
     api = client.zia.rule_labels
 

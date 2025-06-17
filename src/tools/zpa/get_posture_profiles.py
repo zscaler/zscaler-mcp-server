@@ -12,6 +12,8 @@ def posture_profile_manager(
     profile_id: str = None,
     name: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> Union[dict, list[dict], str]:
     """
     Tool for retrieving ZPA Posture Profiles.
@@ -34,6 +36,8 @@ def posture_profile_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     api = client.zpa.posture_profiles

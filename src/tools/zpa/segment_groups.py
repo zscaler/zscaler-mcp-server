@@ -15,6 +15,8 @@ def segment_group_manager(
     search: str = None,
     page: str = None,
     page_size: str = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA Segment Groups using the Zscaler Python SDK.
@@ -25,6 +27,8 @@ def segment_group_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     sg = client.zpa.segment_groups

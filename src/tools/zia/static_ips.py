@@ -7,6 +7,9 @@ def static_ip_manager(
     client_secret: str,
     customer_id: str,
     vanity_domain: str,
+    username: str,
+    password: str,
+    api_key: str,
     static_ip_id: int = None,
     ip_address: str = None,
     comment: str = None,
@@ -15,6 +18,8 @@ def static_ip_manager(
     latitude: float = None,
     longitude: float = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zia",
 ) -> dict | list[dict] | str:
     """
     Tool for managing ZIA Static IP addresses.
@@ -38,6 +43,11 @@ def static_ip_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        username=username,
+        password=password,
+        api_key=api_key,
+        use_legacy=use_legacy,
+        service=service,
     )
     api = client.zia.traffic_static_ip
 

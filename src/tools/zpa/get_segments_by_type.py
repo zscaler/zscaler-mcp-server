@@ -10,6 +10,8 @@ def app_segments_by_type_manager(
     application_type: str,
     expand_all: bool = False,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> Union[list[dict], str]:
     """
     Tool to retrieve ZPA application segments by type.
@@ -31,6 +33,8 @@ def app_segments_by_type_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     api = client.zpa.app_segment_by_type

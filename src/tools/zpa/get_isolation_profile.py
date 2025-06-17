@@ -8,6 +8,8 @@ def isolation_profile_manager(
     customer_id: str,
     vanity_domain: str,
     name: str = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> list[dict] | dict | str:
     """
     Tool for retrieving ZPA Cloud Browser Isolation (CBI) profiles.
@@ -39,6 +41,8 @@ def isolation_profile_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     profiles, _, err = client.zpa.cbi_profile.list_cbi_profiles()

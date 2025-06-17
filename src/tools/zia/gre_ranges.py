@@ -7,6 +7,11 @@ def gre_range_discovery_manager(
     client_secret: str,
     customer_id: str,
     vanity_domain: str,
+    username: str,
+    password: str,
+    api_key: str,
+    use_legacy: bool = False,
+    service: str = "zia",
     internal_ip_range: str = None,
     static_ip: str = None,
     limit: int = None,
@@ -29,6 +34,11 @@ def gre_range_discovery_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        username=username,
+        password=password,
+        api_key=api_key,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     gre_api = client.zia.gre_tunnel

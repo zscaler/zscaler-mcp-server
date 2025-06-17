@@ -29,6 +29,8 @@ def service_edge_group_manager(
     grace_distance_value_unit: str = None,
     upgrade_day: str = None,
     upgrade_time_in_secs: str = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA Service Edge Groups via the Python SDK.
@@ -47,6 +49,8 @@ def service_edge_group_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     api = client.zpa.service_edge_group

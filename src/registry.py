@@ -2,6 +2,10 @@
 from .tools.zcc.list_devices import zcc_devices_manager as zcc_list_devices
 from .tools.zcc.download_devices import zcc_devices_csv_exporter as zcc_devices_csv_exporter
 
+# ZDX Tools
+from .tools.zdx.administration import zdx_admin_discovery_tool as administration
+from .tools.zdx.active_devices import zdx_device_discovery_tool as active_devices
+
 # ZPA Tools
 from .tools.zpa.app_segments import app_segment_manager as app_segments
 from .tools.zpa.get_segments_by_type import app_segments_by_type_manager as app_segments_by_type
@@ -36,10 +40,12 @@ from .tools.zia.cloud_firewall_rules import zia_firewall_rule_manager as cloud_f
 from .tools.zia.ip_source_groups import zia_ip_source_group_manager as ip_source_groups
 from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager as ip_destination_groups
 from .tools.zia.network_app_groups import zia_network_app_group_manager as network_app_group
+from .tools.zia.location_management import zia_locations_manager as location_management
 from .tools.zia.vpn_credentials import vpn_credential_manager as vpn_credentials
 from .tools.zia.static_ips import static_ip_manager as static_ip
 from .tools.zia.gre_tunnels import gre_tunnel_manager as gre_tunnel
 from .tools.zia.gre_ranges import gre_range_discovery_manager as gre_range_discovery
+from .tools.zia.geo_search import zia_geo_search_tool as geo_search
 from .tools.zia.get_sandbox_info import sandbox_manager as sandbox
 from .tools.zia.sandbox_file_submit import sandbox_file_submit as sandbox_file_submit
 
@@ -47,6 +53,10 @@ def register_all_tools(app):
     # ZCC Tools
     app.tool(name="zcc_list_devices")(zcc_list_devices)
     app.tool(name="zcc_devices_csv_exporter")(zcc_devices_csv_exporter)
+
+    # ZCC Tools
+    app.tool(name="zdx_administration")(administration)
+    app.tool(name="zdx_active_devices")(active_devices)
 
     # ZPA Tools
     app.tool(name="zpa_application_segments")(app_segments)
@@ -82,9 +92,11 @@ def register_all_tools(app):
     app.tool(name="zia_ip_source_group")(ip_source_groups)
     app.tool(name="zia_ip_destination_groups")(ip_destination_groups)
     app.tool(name="zia_network_app_group")(network_app_group)
+    app.tool(name="zia_location_management")(location_management)
     app.tool(name="zia_vpn_credentials")(vpn_credentials)
     app.tool(name="zia_static_ips")(static_ip)
     app.tool(name="zia_gre_tunnels")(gre_tunnel)
+    app.tool(name="zia_geo_search")(geo_search)
     app.tool(name="zia_gre_range_discovery")(gre_range_discovery)
     app.tool(name="zia_sandbox")(sandbox)
     app.tool(name="zia_sandbox_file_submit")(sandbox_file_submit)

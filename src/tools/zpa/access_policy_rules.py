@@ -18,6 +18,8 @@ def access_policy_manager(
     app_server_group_ids: List[str] = None,
     conditions: Any = None,
     query_params: Dict[str, Any] = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> Union[Dict[str, Any], List[Dict[str, Any]], str]:
     """
     CRUD handler for ZPA Access Policy Rules via the Python SDK.
@@ -29,15 +31,25 @@ def access_policy_manager(
     Conditions Format Rules:
     1. Basic conditions:
        ("object_type", ["value1", "value2"])
-       Example: ("app", ["72058304855116918"])
+       Example:
+            ("app", ["72058304855116918"])
+            ("app_group", ["72058304855116918"])
+            ("machine_group", ["72058304855021561", "72058304855021562"])
+            ("chrome_posture_profile", ["72058304855116487"])
+            ("client_type", ["zpn_client_type_exporter", "zpn_client_type_browser_isolation"])
 
     2. Conditions with operators:
        ("AND"/"OR", ("object_type", [("lhs", "rhs")]))
-       Example: ("OR", ("posture", [("cfab2ee9...", "true")]))
+       Example:
+            ("OR", ("posture", [("cfab2ee9-9bf4-4482-9dcc-dadf7311c49b", "true")]))
+            ("OR", ("trusted_network", [("30e749f1-57f5-4cbe-b5fa-5bab3c32c468", "true")]))
 
     3. Special cases:
        - Chrome: ("chrome_enterprise", "attribute", value)
-       - Multi-value: (("platform", [("windows", "true"), ("mac", "true")]))
+       - Multi-value:
+            (("platform", [("windows", "true"), ("mac", "true")]))
+            (("country_code", [("BR", "true"), ("CA", "true"), ("US", "true")]))
+            (("risk_factor", [("ZIA", "CRITICAL"), ("ZIA", "HIGH"), ("ZIA", "MEDIUM")]))
 
     Full Examples:
     [
@@ -63,7 +75,7 @@ def access_policy_manager(
             ("mac", "true")
         ])),
 
-        # SCIM/SAML conditions
+        # SCIM_GROUP/SCIM/SAML conditions
         ("AND", ("scim_group", [
             ("72058304855015574", "490880"),
             ("72058304855015574", "490877")
@@ -87,6 +99,8 @@ def access_policy_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     # Convert input conditions to SDK format

@@ -15,6 +15,8 @@ def forwarding_policy_manager(
     action_type: str = None,
     conditions: list = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA Client Forwarding Policy Rules via the Python SDK.
@@ -30,6 +32,8 @@ def forwarding_policy_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     # Convert input conditions to SDK format

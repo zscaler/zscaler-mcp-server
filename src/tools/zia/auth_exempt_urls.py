@@ -9,6 +9,11 @@ def zia_auth_exempt_urls_manager(
     client_secret: str,
     customer_id: str,
     vanity_domain: str,
+    username: str,
+    password: str,
+    api_key: str,
+    use_legacy: bool = False,
+    service: str = "zia",
     action: Annotated[
         Literal["get", "add", "delete"],
         "One of: get, add, delete. Defaults to get.",
@@ -62,6 +67,11 @@ def zia_auth_exempt_urls_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        username=username,
+        password=password,
+        api_key=api_key,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     if action == "get":

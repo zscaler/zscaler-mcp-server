@@ -12,6 +12,8 @@ def scim_attribute_manager(
     idp_name: str = None,
     attribute_id: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> Union[list[dict], dict, str]:
     """
     Tool for managing ZPA SCIM Attributes.
@@ -42,6 +44,8 @@ def scim_attribute_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     idp_api = client.zpa.idp

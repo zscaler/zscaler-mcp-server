@@ -11,6 +11,8 @@ def saml_attribute_manager(
     vanity_domain: str,
     idp_name: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> Union[list[dict], str]:
     """
     Tool for querying ZPA SAML Attributes.
@@ -35,6 +37,8 @@ def saml_attribute_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     saml_api = client.zpa.saml_attributes

@@ -17,6 +17,8 @@ def isolation_policy_manager(
     conditions: list = None,
     rule_order: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA Isolation Policy Rules via the Python SDK.
@@ -33,6 +35,8 @@ def isolation_policy_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     # Convert input conditions to SDK format

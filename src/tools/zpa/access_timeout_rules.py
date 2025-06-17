@@ -18,6 +18,8 @@ def timeout_policy_manager(
     reauth_idle_timeout: str = "600",
     conditions: list = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA Timeout Policy Rules via the Python SDK.
@@ -34,6 +36,8 @@ def timeout_policy_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     # Convert input conditions to SDK format

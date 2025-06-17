@@ -28,6 +28,8 @@ def connector_group_manager(
     search: str = None,
     page: str = None,
     page_size: str = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA App Connector Groups via the Python SDK.
@@ -38,6 +40,8 @@ def connector_group_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     api = client.zpa.app_connector_groups

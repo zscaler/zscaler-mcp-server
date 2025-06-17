@@ -10,6 +10,8 @@ def enrollment_certificate_manager(
     certificate_id: str = None,
     name: str = None,
     query_params: dict = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     Get-only tool for retrieving ZPA Enrollment Certificates.
@@ -35,6 +37,8 @@ def enrollment_certificate_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     api = client.zpa.enrollment_certificates

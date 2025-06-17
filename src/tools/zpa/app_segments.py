@@ -28,6 +28,8 @@ def app_segment_manager(
     search: str = None,
     page: str = None,
     page_size: str = None,
+    use_legacy: bool = False,
+    service: str = "zpa",
 ) -> dict | list[dict] | str:
     """
     CRUD handler for ZPA Application Segments via the Python SDK.
@@ -50,6 +52,8 @@ def app_segment_manager(
         client_secret=client_secret,
         customer_id=customer_id,
         vanity_domain=vanity_domain,
+        use_legacy=use_legacy,
+        service=service,
     )
 
     api = client.zpa.application_segment
