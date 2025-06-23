@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def app_protection_profile_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     name: str = None,
     use_legacy: bool = False,
     service: str = "zpa",
@@ -27,15 +22,7 @@ def app_protection_profile_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported")
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     query_params = {"search": name} if name else {}
 

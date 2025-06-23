@@ -1,5 +1,5 @@
 # ZCC Tools
-from .tools.zcc.list_devices import zcc_devices_manager as zcc_list_devices
+from .tools.zcc.list_devices import zcc_devices_v1_manager as zcc_devices_v1_manager
 from .tools.zcc.download_devices import zcc_devices_csv_exporter as zcc_devices_csv_exporter
 
 # ZDX Tools
@@ -9,9 +9,9 @@ from .tools.zdx.active_devices import zdx_device_discovery_tool as active_device
 # ZPA Tools
 from .tools.zpa.app_segments import app_segment_manager as app_segments
 from .tools.zpa.get_segments_by_type import app_segments_by_type_manager as app_segments_by_type
-from .tools.zpa.application_servers import application_server_manager as application_server
+from .tools.zpa.application_servers import application_server_v2_manager as application_server_v2_manager
 from .tools.zpa.ba_certificate import ba_certificate_manager as ba_certificates
-from .tools.zpa.segment_groups import segment_group_manager as segment_groups
+from .tools.zpa.segment_groups import segment_group_v6_manager as segment_group_v6_manager
 from .tools.zpa.server_groups import server_group_manager as server_groups
 from .tools.zpa.app_connector_groups import connector_group_manager as app_connector_groups
 from .tools.zpa.service_edge_groups import service_edge_group_manager as service_edge_groups
@@ -47,23 +47,22 @@ from .tools.zia.gre_tunnels import gre_tunnel_manager as gre_tunnel
 from .tools.zia.gre_ranges import gre_range_discovery_manager as gre_range_discovery
 from .tools.zia.geo_search import zia_geo_search_tool as geo_search
 from .tools.zia.get_sandbox_info import sandbox_manager as sandbox
-from .tools.zia.sandbox_file_submit import sandbox_file_submit as sandbox_file_submit
 
 def register_all_tools(app):
     # ZCC Tools
-    app.tool(name="zcc_list_devices")(zcc_list_devices)
+    app.tool(name="zcc_list_devices_v1")(zcc_devices_v1_manager)
     app.tool(name="zcc_devices_csv_exporter")(zcc_devices_csv_exporter)
 
-    # ZCC Tools
-    app.tool(name="zdx_administration")(administration)
-    app.tool(name="zdx_active_devices")(active_devices)
+    # ZDX Tools
+    app.tool(name="zdx_list_administration")(administration)
+    app.tool(name="zdx_list_active_devices")(active_devices)
 
     # ZPA Tools
     app.tool(name="zpa_application_segments")(app_segments)
     app.tool(name="zpa_app_segments_by_type")(app_segments_by_type)
-    app.tool(name="zpa_application_servers")(application_server)
+    app.tool(name="zpa_application_servers_v2")(application_server_v2_manager)
     app.tool(name="zpa_ba_certificates")(ba_certificates)
-    app.tool(name="zpa_segment_groups")(segment_groups)
+    app.tool(name="zpa_segment_groups_v6")(segment_group_v6_manager)
     app.tool(name="zpa_server_groups")(server_groups)
     app.tool(name="zpa_app_connector_groups")(app_connector_groups)
     app.tool(name="zpa_service_edge_groups")(service_edge_groups)
@@ -99,4 +98,3 @@ def register_all_tools(app):
     app.tool(name="zia_geo_search")(geo_search)
     app.tool(name="zia_gre_range_discovery")(gre_range_discovery)
     app.tool(name="zia_sandbox")(sandbox)
-    app.tool(name="zia_sandbox_file_submit")(sandbox_file_submit)

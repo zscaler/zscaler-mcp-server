@@ -4,11 +4,6 @@ from src.utils.utils import convert_v2_to_sdk_format, convert_v1_to_v2_response
 
 def access_policy_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     rule_id: str = None,
     microtenant_id: str = None,
     name: str = None,
@@ -93,15 +88,7 @@ def access_policy_manager(
     Responses will always be returned in a standardized v2 format that maintains
     the original operator grouping from the API.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     # Convert input conditions to SDK format
     try:

@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 from typing import Union
 
 def app_segments_by_type_manager(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     application_type: str,
     expand_all: bool = False,
     query_params: dict = None,
@@ -27,15 +22,7 @@ def app_segments_by_type_manager(
     if application_type not in ("BROWSER_ACCESS", "INSPECT", "SECURE_REMOTE_ACCESS"):
         raise ValueError("Invalid application_type. Must be one of 'BROWSER_ACCESS', 'INSPECT', or 'SECURE_REMOTE_ACCESS'.")
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.app_segment_by_type
     query_params = query_params or {}

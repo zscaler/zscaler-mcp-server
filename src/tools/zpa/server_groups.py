@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def server_group_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     group_id: str = None,
     microtenant_id: str = None,
     name: str = None,
@@ -14,7 +9,6 @@ def server_group_manager(
     enabled: bool = True,
     app_connector_group_ids: list[str] = None,
     server_ids: list[str] = None,
-    config_space: str = None,
     ip_anchored: bool = None,
     dynamic_discovery: bool = None,
     search: str = None,
@@ -37,15 +31,7 @@ def server_group_manager(
     - group_id (str): Required for 'read' (single), 'update', and 'delete'.
     - microtenant_id (str): Optional, passed through to API query or payload.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.server_groups
 
@@ -59,7 +45,6 @@ def server_group_manager(
             "enabled": enabled,
             "app_connector_group_ids": app_connector_group_ids or [],
             "server_ids": server_ids or [],
-            "config_space": config_space,
             "ip_anchored": ip_anchored,
             "dynamic_discovery": dynamic_discovery,
         }
@@ -101,7 +86,6 @@ def server_group_manager(
             "enabled": enabled,
             "app_connector_group_ids": app_connector_group_ids or [],
             "server_ids": server_ids or [],
-            "config_space": config_space,
             "ip_anchored": ip_anchored,
             "dynamic_discovery": dynamic_discovery,
         }

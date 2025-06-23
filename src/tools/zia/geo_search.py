@@ -3,14 +3,6 @@ from typing import Union, Literal, Annotated, Optional
 import json
 
 def zia_geo_search_tool(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     action: Annotated[
         Literal["geo_by_coordinates", "geo_by_ip", "city_prefix_search"],
         "Choose one of: geo_by_coordinates, geo_by_ip, city_prefix_search"
@@ -71,18 +63,7 @@ def zia_geo_search_tool(
         - If city_prefix_search returns a large number of results, ensure your prefix is specific to reduce latency.
         - The returned objects are flattened using `.as_dict()` for compatibility with JSON serialization.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     if action == "geo_by_coordinates":
         if latitude is None or longitude is None:

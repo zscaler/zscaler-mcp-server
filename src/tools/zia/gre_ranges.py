@@ -2,14 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 from typing import Union
 
 def gre_range_discovery_manager(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     use_legacy: bool = False,
     service: str = "zia",
     internal_ip_range: str = None,
@@ -28,18 +20,7 @@ def gre_range_discovery_manager(
 
     If no filters are provided, returns all available ranges from the upstream API.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     gre_api = client.zia.gre_tunnel
 

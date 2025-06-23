@@ -3,13 +3,6 @@ from typing import Union, List, Dict, Any
 
 
 def zdx_device_discovery_tool(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    key_id: str,
-    key_secret: str,
     action: str,
     device_id: str = None,
     emails: List[str] = None,
@@ -51,17 +44,7 @@ def zdx_device_discovery_tool(
         >>> zdx_device_discovery_tool(..., action="get_device", device_id="12345678")
         >>> zdx_device_discovery_tool(..., action="list_devices", emails=["jdoe@example.com"], since=24)
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        key_id=key_id,
-        key_secret=key_secret,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     query_params = {}
     if emails:

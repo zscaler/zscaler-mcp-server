@@ -4,11 +4,6 @@ from typing import Union
 
 def scim_attribute_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     idp_name: str = None,
     attribute_id: str = None,
     query_params: dict = None,
@@ -38,15 +33,7 @@ def scim_attribute_manager(
     if not idp_name:
         raise ValueError("idp_name is required for SCIM attribute discovery.")
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     idp_api = client.zpa.idp
     scim_api = client.zpa.scim_attributes

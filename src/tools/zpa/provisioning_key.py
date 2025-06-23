@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def provisioning_key_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     key_id: str = None,
     name: str = None,
     key_type: str = None,  # Must be 'connector' or 'service_edge'
@@ -49,15 +44,7 @@ def provisioning_key_manager(
     if key_type and key_type not in VALID_TYPES:
         raise ValueError(f"Invalid key_type '{key_type}'. Must be 'connector' or 'service_edge'.")
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.provisioning
 
     if action == "create":

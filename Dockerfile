@@ -34,4 +34,6 @@ RUN chmod +x main.py
 RUN python -c "import zscaler; print(f'Zscaler SDK version: {zscaler.__version__}')" || echo "Zscaler SDK check failed"
 
 # Entrypoint command
-ENTRYPOINT ["uv", "run", "python", "main.py"]
+# ENTRYPOINT ["uv", "run", "python", "main.py"]
+ENTRYPOINT ["python", "main.py"]
+

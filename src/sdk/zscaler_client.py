@@ -44,7 +44,6 @@
 #     return ZscalerClient(config)
 
 # src/sdk/zpa_client.py
-
 from zscaler import ZscalerClient
 from zscaler.oneapi_client import (
             LegacyZPAClient,
@@ -68,6 +67,41 @@ def get_zscaler_client(
     service: str = None,  # 'zpa' or 'zia'
     use_legacy: bool = False,
 ):
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    # ✅ Defensive fallback logic
+    client_id = client_id if client_id not in [None, ""] else os.getenv("ZSCALER_CLIENT_ID")
+    client_secret = client_secret if client_secret not in [None, ""] else os.getenv("ZSCALER_CLIENT_SECRET")
+    customer_id = customer_id if customer_id not in [None, ""] else os.getenv("ZSCALER_CUSTOMER_ID")
+    vanity_domain = vanity_domain if vanity_domain not in [None, ""] else os.getenv("ZSCALER_VANITY_DOMAIN")
+    cloud = cloud if cloud not in [None, ""] else os.getenv("ZSCALER_CLOUD")
+    private_key = private_key if private_key not in [None, ""] else os.getenv("ZSCALER_PRIVATE_KEY")
+
+    # ✅ Debug logging
+    print(f"[DEBUG] Final Auth Config:")
+    print(f"  client_id: {bool(client_id)}")
+    print(f"  client_secret: {bool(client_secret)}")
+    print(f"  customer_id: {bool(customer_id)}")
+    print(f"  vanity_domain: {bool(vanity_domain)}")
+    print(f"  cloud: {cloud}")
+
+    # ✅ Check for resolved values after fallback
+    auth_fields = {
+        "ZSCALER_CLIENT_ID": client_id,
+        "ZSCALER_CLIENT_SECRET": client_secret,
+        "ZSCALER_CUSTOMER_ID": customer_id,
+        "ZSCALER_VANITY_DOMAIN": vanity_domain,
+    }
+
+    missing = [key for key, value in auth_fields.items() if not (value and value.strip())]
+    if missing:
+        raise RuntimeError(
+            f"Zscaler SDK failed to initialize due to missing configuration values: {missing}. "
+            "Please ensure the MCP container has these values set in the environment or .env file."
+        )
+
     """
     Returns an authenticated Zscaler SDK client (OneAPI or Legacy).
 

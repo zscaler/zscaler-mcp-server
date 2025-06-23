@@ -79,18 +79,22 @@ sync-deps:
 sync-dev-deps:
 	poetry export -f requirements.txt --without-hashes --with dev > requirements-dev.txt
 
+install:
+	uv pip install .
+
 docker-clean:
-	# kill + rm any container based on the image
-	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q \
-	    | xargs -r $(DOCKER) rm -f
-	# remove the image tag (ignore “not found” errors)
+	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q | xargs -r $(DOCKER) rm -f
 	-$(DOCKER) rmi -f $(BINARY_NAME):$(VERSION) 2>/dev/null || true
+	-$(DOCKER) image prune -f
+	-$(DOCKER) builder prune -f
 
 docker-build:
 	$(DOCKER) build --pull --build-arg VERSION=$(VERSION) \
 		-t $(BINARY_NAME):$(VERSION) .
 
-## One-shot target: clean + build
 docker-rebuild: docker-clean docker-build
+
+docker-run:
+	$(DOCKER) run -i --rm --env-file .env $(BINARY_NAME):$(VERSION)
 
 .PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild

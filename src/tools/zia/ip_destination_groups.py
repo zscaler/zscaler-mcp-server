@@ -4,14 +4,6 @@ from sdk.zscaler_client import get_zscaler_client
 
 
 def zia_ip_destination_group_manager(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     use_legacy: bool = False,
     service: str = "zia",
     action: Annotated[
@@ -67,18 +59,7 @@ def zia_ip_destination_group_manager(
     countries = parse_list(countries)
     ip_categories = parse_list(ip_categories)
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     zia = client.zia.cloud_firewall
 

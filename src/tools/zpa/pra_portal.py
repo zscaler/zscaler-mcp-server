@@ -3,11 +3,6 @@ from typing import Union
 
 def pra_portal_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     portal_id: str = None,
     name: str = None,
     description: str = None,
@@ -35,15 +30,7 @@ def pra_portal_manager(
         certificate_id (str): Required when creating or updating a portal.
         domain (str): Required for creating or updating.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.pra_portal
 
     if action == "create":

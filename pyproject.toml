@@ -4,11 +4,11 @@ version = "0.0.1"
 description = "Official Zscaler MCP Server"
 authors = [{ name = "Zscaler, Inc.", email = "devrel@zscaler.com" }]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
 license = { text = "MIT" }
 
 dependencies = [
-  #"zscaler-sdk-python",
+  "zscaler-sdk-python",
   "mcp[cli]>=1.9.1",
   "fastmcp>=2.5.1",
   "python-dotenv",

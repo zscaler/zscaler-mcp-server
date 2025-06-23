@@ -4,14 +4,6 @@ from sdk.zscaler_client import get_zscaler_client
 
 
 def zia_atp_malicious_urls_manager(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     use_legacy: bool = False,
     service: str = "zia",
     action: Annotated[
@@ -61,18 +53,7 @@ def zia_atp_malicious_urls_manager(
         else:
             processed_urls = malicious_urls
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     if action == "get":
         url_list, _, err = client.zia.atp_policy.get_atp_malicious_urls()

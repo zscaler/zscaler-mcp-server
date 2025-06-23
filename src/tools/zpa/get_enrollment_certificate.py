@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def enrollment_certificate_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     certificate_id: str = None,
     name: str = None,
     query_params: dict = None,
@@ -31,15 +26,7 @@ def enrollment_certificate_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported.")
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.enrollment_certificates
 

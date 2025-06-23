@@ -4,11 +4,6 @@ from typing import Union
 
 def trusted_network_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     network_id: str = None,
     name: str = None,
     query_params: dict = None,
@@ -29,15 +24,7 @@ def trusted_network_manager(
     Returns:
         Union[dict, list[dict], str]: Trusted network(s) data.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.trusted_networks
 
     if action == "read":

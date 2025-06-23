@@ -1,20 +1,14 @@
 from src.sdk.zscaler_client import get_zscaler_client
 from typing import Union
 
-def application_server_manager(
+def application_server_v2_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     server_id: str = None,
     name: str = None,
     description: str = None,
     address: str = None,
     enabled: bool = True,
     app_server_group_ids: list[str] = None,
-    config_space: str = None,
     microtenant_id: str = None,
     query_params: dict = None,
     use_legacy: bool = False,
@@ -23,27 +17,32 @@ def application_server_manager(
     """
     Tool for managing ZPA Application Servers.
 
-    Supported actions:
-    - create: Requires name, address, app_server_group_ids.
-    - read: List all servers or one by server_id.
-    - update: Requires server_id.
-    - delete: Requires server_id.
+    Note: Authentication credentials are automatically loaded from environment variables.
+    Do NOT pass credentials as arguments.
+
+    Args:
+
+        action: Operation to perform ('create', 'read', 'update', 'delete')
+        name: Name of the segment group (required for create/update)
+        description: Description of the segment group
+        enabled: Whether the group is enabled
+        address: The domain or IP address of the server.
+        app_server_group_ids: (Optional) The ID of the server group if required
+        microtenant_id: Microtenant ID for scoping
+        use_legacy: Whether to use legacy API
+        service: Service type (defaults to 'zpa')
+        create: Requires name, address.
+        read: List all servers or one by server_id.
+        update: Requires server_id.
+        delete: Requires server_id.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.servers
 
     if action == "create":
-        if not all([name, address, app_server_group_ids]):
-            raise ValueError("name, address, and app_server_group_ids are required for creation")
+        if not all([name, address]):
+            raise ValueError("Both 'name' and 'address' are required for creation.")
 
         payload = {
             "name": name,
@@ -51,7 +50,6 @@ def application_server_manager(
             "address": address,
             "enabled": enabled,
             "app_server_group_ids": app_server_group_ids,
-            "config_space": config_space,
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id
@@ -86,7 +84,6 @@ def application_server_manager(
             "address": address,
             "enabled": enabled,
             "app_server_group_ids": app_server_group_ids,
-            "config_space": config_space,
         }
         if microtenant_id:
             payload["microtenant_id"] = microtenant_id

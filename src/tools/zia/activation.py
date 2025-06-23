@@ -2,14 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def zia_activation_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     use_legacy: bool = False,
     service: str = "zia",
 ) -> str:
@@ -25,18 +17,9 @@ def zia_activation_manager(
     - PENDING: Configuration changes are pending and activation will be triggered.
     - INPROGRESS: Another activation is already in progress.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+
     config_api = client.zia.activate
 
     if action == "status":

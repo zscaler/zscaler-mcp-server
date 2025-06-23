@@ -3,14 +3,6 @@ from sdk.zscaler_client import get_zscaler_client
 
 
 def zia_locations_manager(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     action: Annotated[
         Literal["list", "get", "create", "update", "delete"],
         "One of: list, get, create, update, delete."
@@ -86,18 +78,7 @@ def zia_locations_manager(
     """
     import json
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     zia = client.zia
     locations_api = zia.locations

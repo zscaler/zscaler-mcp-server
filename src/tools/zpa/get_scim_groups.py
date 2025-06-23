@@ -4,11 +4,6 @@ from typing import Union
 
 def scim_group_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     scim_group_id: str = None,
     idp_name: str = None,
     query_params: dict = None,
@@ -29,15 +24,7 @@ def scim_group_manager(
     Returns:
         Union[dict, list[dict], str]: SCIM group(s) data.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     idp_api = client.zpa.idp
     scim_api = client.zpa.scim_groups

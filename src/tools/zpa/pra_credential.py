@@ -4,11 +4,6 @@ from typing import Union
 
 def pra_credential_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     credential_id: str = None,
     name: str = None,
     description: str = None,
@@ -23,7 +18,7 @@ def pra_credential_manager(
     service: str = "zpa",
 ) -> Union[dict, list[dict], str]:
     """
-    Tool for managing ZPA PRA Credentials.
+    Tool for managing ZPA Privileged Remote Access (PRA) Credentials.
 
     Supported actions:
     - create: Requires name and credential_type, with additional fields depending on the type.
@@ -36,15 +31,7 @@ def pra_credential_manager(
     - If credential type update is requested, we must delete and re-create the credential.
     """
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.pra_credential
 

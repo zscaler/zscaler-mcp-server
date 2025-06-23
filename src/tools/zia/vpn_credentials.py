@@ -2,14 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def vpn_credential_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    username: str,
-    password: str,
-    api_key: str,
     credential_id: int = None,
     credential_type: str = None,  # "IP" or "UFQDN"
     pre_shared_key: str = None,
@@ -34,18 +26,8 @@ def vpn_credential_manager(
     Returns:
         dict | list[dict] | str
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        username=username,
-        password=password,
-        api_key=api_key,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+
     api = client.zia.traffic_vpn_credentials
 
     if action == "create":

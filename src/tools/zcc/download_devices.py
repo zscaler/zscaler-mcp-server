@@ -4,15 +4,12 @@ from datetime import datetime
 
 
 def zcc_devices_csv_exporter(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     dataset: str = "devices",
     os_type: Optional[str] = None,
     registration_type: Optional[str] = None,
     filename: Optional[str] = None,
+    use_legacy: bool = False,
+    service: str = "zcc",
 ) -> str:
     """
     Downloads ZCC device information or service status as a CSV file.
@@ -41,13 +38,7 @@ def zcc_devices_csv_exporter(
     Returns:
         str: Absolute path to the downloaded CSV file.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     query_params = {}
     if os_type:

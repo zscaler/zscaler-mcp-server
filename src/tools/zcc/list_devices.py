@@ -1,16 +1,13 @@
 from sdk.zscaler_client import get_zscaler_client
 from typing import Union
 
-def zcc_devices_manager(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
+def zcc_devices_v1_manager(
     username: str = None,
     os_type: str = None,
     page: int = None,
     page_size: int = None,
+    use_legacy: bool = False,
+    service: str = "zcc",
 ) -> Union[list[dict], str]:
     """
     Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal.
@@ -40,13 +37,7 @@ def zcc_devices_manager(
     Returns:
         list[dict]: List of ZCC device records.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     query_params = {}
     if username:

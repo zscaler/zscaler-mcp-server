@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def service_edge_group_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     group_id: str = None,
     microtenant_id: str = None,
     query_params: dict = None,
@@ -43,15 +38,7 @@ def service_edge_group_manager(
     The query_params argument may be used for filtering, searching, pagination, or microtenant scoping.
     """
 
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.service_edge_group
 

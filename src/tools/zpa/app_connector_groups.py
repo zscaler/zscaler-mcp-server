@@ -2,11 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 
 def connector_group_manager(
     action: str,
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
     group_id: str = None,
     microtenant_id: str = None,
     name: str = None,
@@ -34,15 +29,7 @@ def connector_group_manager(
     """
     CRUD handler for ZPA App Connector Groups via the Python SDK.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     api = client.zpa.app_connector_groups
 

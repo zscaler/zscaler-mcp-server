@@ -2,13 +2,6 @@ from src.sdk.zscaler_client import get_zscaler_client
 from typing import Union, List, Dict, Any
 
 def zdx_admin_discovery_tool(
-    cloud: str,
-    client_id: str,
-    client_secret: str,
-    customer_id: str,
-    vanity_domain: str,
-    key_id: str,
-    key_secret: str,
     query_type: str,
     search: str = None,
     since: int = None,
@@ -46,17 +39,7 @@ def zdx_admin_discovery_tool(
         - The results are paginated internally by the SDK.
         - Ensure `query_type` is accurately set to `"departments"` or `"locations"` for proper routing.
     """
-    client = get_zscaler_client(
-        cloud=cloud,
-        client_id=client_id,
-        client_secret=client_secret,
-        customer_id=customer_id,
-        vanity_domain=vanity_domain,
-        key_id=key_id,
-        key_secret=key_secret,
-        use_legacy=use_legacy,
-        service=service,
-    )
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     query_params = {}
     if search:
