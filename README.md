@@ -272,6 +272,30 @@ ZSCALER_CLOUD=beta
 
 ✅ The container now runs in stdio mode and automatically loads your credentials from `.env`.
 
+
+4. Open Claude then Settings > Developer and click in Edit Config
+5. Open the file `claude_desktop_config.json` in your text editor and add the following code:
+
+   ``` json
+    {
+    "mcpServers": {
+        "zscaler-mcp-server": {
+        "type": "stdio",
+        "command": "docker",
+        "args": [
+            "run",
+            "-i",
+            "--rm",
+            "--pull=never",
+            "zscaler-mcp-server"
+        ]
+        }
+    }
+    }
+   ```
+
+6. Save the file and restart Claude
+
 #### 🛠️ Installing from source (dev mode)
 
 This method is ideal for developers working on new tools or contributing to the MCP server.
