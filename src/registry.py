@@ -36,6 +36,7 @@ from .tools.zia.activation import zia_activation_manager as zia_activation
 from .tools.zia.atp_malicious_urls import zia_atp_malicious_urls_manager as atp_malicious_urls
 from .tools.zia.auth_exempt_urls import zia_auth_exempt_urls_manager as auth_exempt_urls
 from .tools.zia.rule_labels import rule_label_manager as rule_labels
+from .tools.zia.url_categories import url_category_manager as url_categories
 from .tools.zia.cloud_firewall_rules import zia_firewall_rule_manager as cloud_firewall_rule
 from .tools.zia.ip_source_groups import zia_ip_source_group_manager as ip_source_groups
 from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager as ip_destination_groups
@@ -87,6 +88,7 @@ def register_all_tools(app):
     app.tool(name="zia_atp_malicious_urls")(atp_malicious_urls)
     app.tool(name="zia_auth_exempt_urls")(auth_exempt_urls)
     app.tool(name="zia_rule_labels")(rule_labels)
+    app.tool(name="zia_url_categories_v4")(url_categories)
     app.tool(name="zia_cloud_firewall_rule")(cloud_firewall_rule)
     app.tool(name="zia_ip_source_group")(ip_source_groups)
     app.tool(name="zia_ip_destination_groups")(ip_destination_groups)
