@@ -6,7 +6,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zpa_segment_groups_v6",
+    name="zpa_segment_groups",
     description="Tool for managing Segment Groups.",
 )
 def segment_group_v6_manager(

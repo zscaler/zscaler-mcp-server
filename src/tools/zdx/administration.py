@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zdx_admin_discovery_tool",
+    name="zdx_administration",
     description="Tool for discovering ZDX departments or locations.",
 )
 def zdx_admin_discovery_tool(

@@ -1,12 +1,26 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "zscaler-mcp"
 version = "0.0.1"
 description = "Official Zscaler MCP Server"
-authors = [{ name = "Zscaler, Inc.", email = "devrel@zscaler.com" }]
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 license = { text = "MIT" }
-
+authors = [
+    { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
+  ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
   "zscaler-sdk-python",
   "mcp[cli]>=1.9.1",

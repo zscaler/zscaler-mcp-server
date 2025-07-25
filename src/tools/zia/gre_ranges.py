@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zia_gre_range_discovery",
+    name="zia_gre_range",
     description="Tool for discovering available GRE internal IP ranges in ZIA.",
 )
 def gre_range_discovery_manager(

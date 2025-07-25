@@ -6,7 +6,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zpa_application_servers_v2",
+    name="zpa_application_servers",
     description="Tool for managing ZPA Application Servers.",
 )
 def application_server_v2_manager(

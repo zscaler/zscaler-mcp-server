@@ -1,8 +1,19 @@
+<!-- ![Zscaler](https://raw.githubusercontent.com/zscaler/falconpy/main/docs/asset/zscaler-logo.png) -->
+
 # ⭐ MCP Server for the Zscaler API
 
-This project defines the **local** Zscaler MCP server, enabling you to perform a wide range of tasks directly from your code editor.
+[![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> 🚨 **Public Preview:** This project is in public preview. You can expect that the tools will change before general availability.
+**zscaler-mcp-server** is a Model Context Protocol (MCP) server that connects AI agents with the Zscaler Zero Trust Exchange platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, incidents, and behaviors—establishing the foundation for advanced security operations and automation.
+
+## Support Disclaimer
+
+-> **Disclaimer:** Please refer to our [General Support Statement](docs/guides/support.md) before proceeding with the use of this provider. You can also refer to our [troubleshooting guide](docs/guides/troubleshooting.md) for guidance on typical problems.
+
+> [!IMPORTANT]
+> **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/zscaler/zscaler-mcp-server/issues) to help shape the final release.
 
 ## 📄 Table of contents
 
@@ -88,7 +99,9 @@ Clone the repository, install dependencies, and add it to your MCP client config
 
 ## Zscaler OneAPI Login
 
-The Zscaler MCP Server supports Zscaler's OneAPI authentication as the default and preferred method.
+Before using the Zscaler MCP Server, you need to create API credentials in your Zidentity console. The Zscaler MCP Server supports Zscaler's OneAPI authentication via OAuth2.0 as the default and preferred method.
+
+- [OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi): If you are using the OneAPI entrypoint you must have a API Client created in the [Zidentity platform](https://help.zscaler.com/zidentity/about-api-clients)
 
 Create a `.env` file in your project root with the following:
 
@@ -367,3 +380,25 @@ After installation, select GitHub Copilot Agent Mode and refresh the tools list.
 ## 📝 Troubleshooting
 
 See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common issues and logging.
+
+## License
+
+Copyright (c) 2025 [Zscaler](https://github.com/zscaler)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zdx_device_discovery_tool",
+    name="zdx_active_devices",
     description="Tool for discovering ZDX devices using various filters.",
 )
 def zdx_device_discovery_tool(

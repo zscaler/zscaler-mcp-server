@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zia_url_categories_v4",
+    name="zia_url_categories",
     description="Tool for managing ZIA URL Categories via the Python SDK.",
 )
 def url_category_manager(

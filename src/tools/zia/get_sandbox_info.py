@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zia_sandbox",
+    name="zia_sandbox_info",
     description="Tool for retrieving ZIA Sandbox information.",
 )
 def sandbox_manager(

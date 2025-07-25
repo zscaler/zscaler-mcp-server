@@ -33,6 +33,7 @@ from .tools.zpa.get_posture_profiles import posture_profile_manager as posture_p
 
 # ZIA Tools
 from .tools.zia.activation import zia_activation_manager as zia_activation
+from .tools.zia.cloud_applications import cloud_applications_manager as cloud_applications
 from .tools.zia.atp_malicious_urls import zia_atp_malicious_urls_manager as atp_malicious_urls
 from .tools.zia.auth_exempt_urls import zia_auth_exempt_urls_manager as auth_exempt_urls
 from .tools.zia.rule_labels import rule_label_manager as rule_labels

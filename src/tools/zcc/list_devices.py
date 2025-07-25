@@ -5,7 +5,7 @@ from pydantic import Field
 
 
 @app.tool(
-    name="zcc_devices_v1_manager",
+    name="zcc_list_devices",
     description="Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal.",
 )
 def zcc_devices_v1_manager(
