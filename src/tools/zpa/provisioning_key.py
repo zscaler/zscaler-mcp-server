@@ -1,19 +1,63 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_provisioning_key",
+    description="Tool for managing ZPA Provisioning Keys.",
+)
 def provisioning_key_manager(
-    action: str,
-    key_id: str = None,
-    name: str = None,
-    key_type: str = None,  # Must be 'connector' or 'service_edge'
-    description: str = None,
-    max_usage: int = None,
-    enrollment_cert_id: str = None,
-    component_id: str = None,
-    microtenant_id: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    key_id: Annotated[
+        str,
+        Field(description="Provisioning key ID for read, update, or delete operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the provisioning key.")
+    ] = None,
+    key_type: Annotated[
+        str,
+        Field(description="Type of key: 'connector' or 'service_edge'.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the provisioning key.")
+    ] = None,
+    max_usage: Annotated[
+        int,
+        Field(description="Maximum usage count for the provisioning key.")
+    ] = None,
+    enrollment_cert_id: Annotated[
+        str,
+        Field(description="Enrollment certificate ID (required for 'connector' key_type).")
+    ] = None,
+    component_id: Annotated[
+        str,
+        Field(description="Component ID (App Connector Group or Service Edge Group).")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZPA Provisioning Keys.
 

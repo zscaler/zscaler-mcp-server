@@ -1,15 +1,39 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
 
+@app.tool(
+    name="zpa_scim_attributes",
+    description="Tool for managing ZPA SCIM Attributes.",
+)
 def scim_attribute_manager(
-    action: str,
-    idp_name: str = None,
-    attribute_id: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[list[dict], dict, str]:
+    action: Annotated[
+        str,
+        Field(description="Must be 'read'.")
+    ],
+    idp_name: Annotated[
+        str,
+        Field(description="Required to resolve the IdP and fetch SCIM attributes.")
+    ] = None,
+    attribute_id: Annotated[
+        str,
+        Field(description="ID of a specific SCIM attribute.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Pagination or search filters.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[List[dict], dict, str]:
     """
     Tool for managing ZPA SCIM Attributes.
 

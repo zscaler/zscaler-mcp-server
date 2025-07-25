@@ -1,11 +1,31 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_isolation_profile",
+    description="Tool for retrieving ZPA Cloud Browser Isolation (CBI) profiles.",
+)
 def isolation_profile_manager(
-    action: str,
-    name: str = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> list[dict] | dict | str:
+    action: Annotated[
+        str,
+        Field(description="Only 'read' is supported.")
+    ],
+    name: Annotated[
+        str,
+        Field(description="Full name of the isolation profile to search for.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[List[dict], dict, str]:
     """
     Tool for retrieving ZPA Cloud Browser Isolation (CBI) profiles.
 

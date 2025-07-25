@@ -1,15 +1,39 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
 
+@app.tool(
+    name="zpa_posture_profiles",
+    description="Tool for retrieving ZPA Posture Profiles.",
+)
 def posture_profile_manager(
-    action: str,
-    profile_id: str = None,
-    name: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Must be 'read'.")
+    ],
+    profile_id: Annotated[
+        str,
+        Field(description="Optional posture profile ID for direct lookup.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Optional posture profile name to search for.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional filters (e.g., search, pagination).")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for retrieving ZPA Posture Profiles.
 

@@ -1,13 +1,37 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_app_segments_by_type",
+    description="Tool to retrieve ZPA application segments by type.",
+)
 def app_segments_by_type_manager(
-    application_type: str,
-    expand_all: bool = False,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[list[dict], str]:
+    application_type: Annotated[
+        str,
+        Field(
+            description="Application type to filter by. Must be one of 'BROWSER_ACCESS', 'INSPECT', or 'SECURE_REMOTE_ACCESS'."
+        ),
+    ],
+    expand_all: Annotated[
+        bool, 
+        Field(description="Whether to expand all related data.")
+    ] = False,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional filters like 'search', 'page_size', or 'microtenant_id'.")
+    ] = None,
+    use_legacy: Annotated[
+        bool, 
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str, 
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[List[dict], str]:
     """
     Tool to retrieve ZPA application segments by type.
 
@@ -20,7 +44,9 @@ def app_segments_by_type_manager(
         list[dict]: List of matching application segments.
     """
     if application_type not in ("BROWSER_ACCESS", "INSPECT", "SECURE_REMOTE_ACCESS"):
-        raise ValueError("Invalid application_type. Must be one of 'BROWSER_ACCESS', 'INSPECT', or 'SECURE_REMOTE_ACCESS'.")
+        raise ValueError(
+            "Invalid application_type. Must be one of 'BROWSER_ACCESS', 'INSPECT', or 'SECURE_REMOTE_ACCESS'."
+        )
 
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 

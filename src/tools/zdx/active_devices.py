@@ -1,21 +1,66 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union, List, Dict, Any
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Dict, Any, Optional, Literal
+from pydantic import Field
 
 
+@app.tool(
+    name="zdx_device_discovery_tool",
+    description="Tool for discovering ZDX devices using various filters.",
+)
 def zdx_device_discovery_tool(
-    action: str,
-    device_id: str = None,
-    emails: List[str] = None,
-    user_ids: List[str] = None,
-    mac_address: str = None,
-    private_ipv4: str = None,
-    location_id: List[str] = None,
-    department_id: List[str] = None,
-    geo_id: List[str] = None,
-    since: int = None,
-    offset: str = None,
-    use_legacy: bool = False,
-    service: str = "zdx",
+    action: Annotated[
+        Literal["list_devices", "get_device"],
+        Field(description="Must be one of 'list_devices' or 'get_device'.")
+    ],
+    device_id: Annotated[
+        Optional[str],
+        Field(description="Required if action is 'get_device'.")
+    ] = None,
+    emails: Annotated[
+        Optional[List[str]],
+        Field(description="Filter by email addresses.")
+    ] = None,
+    user_ids: Annotated[
+        Optional[List[str]],
+        Field(description="Filter by user IDs.")
+    ] = None,
+    mac_address: Annotated[
+        Optional[str],
+        Field(description="Filter by MAC address.")
+    ] = None,
+    private_ipv4: Annotated[
+        Optional[str],
+        Field(description="Filter by private IPv4 address.")
+    ] = None,
+    location_id: Annotated[
+        Optional[List[str]],
+        Field(description="Filter by location ID(s).")
+    ] = None,
+    department_id: Annotated[
+        Optional[List[str]],
+        Field(description="Filter by department ID(s).")
+    ] = None,
+    geo_id: Annotated[
+        Optional[List[str]],
+        Field(description="Filter by geolocation ID(s).")
+    ] = None,
+    since: Annotated[
+        Optional[int],
+        Field(description="Number of hours to look back (default 2h).")
+    ] = None,
+    offset: Annotated[
+        Optional[str],
+        Field(description="Offset string for pagination (next_offset).")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zdx",
 ) -> Union[Dict[str, Any], List[Dict[str, Any]], str]:
     """
     Tool for discovering ZDX devices using various filters.
@@ -23,26 +68,6 @@ def zdx_device_discovery_tool(
     Supports both:
     - list_devices: Returns a list of active ZDX devices matching the query.
     - get_device: Returns a single device record by device_id.
-
-    Args:
-        action (str): Must be one of "list_devices" or "get_device".
-        device_id (str, optional): Required if action is "get_device".
-        emails (List[str], optional): Filter by email addresses.
-        user_ids (List[str], optional): Filter by user IDs.
-        mac_address (str, optional): Filter by MAC address.
-        private_ipv4 (str, optional): Filter by private IPv4.
-        location_id (List[str], optional): Filter by location ID(s).
-        department_id (List[str], optional): Filter by department ID(s).
-        geo_id (List[str], optional): Filter by geolocation ID(s).
-        since (int, optional): Number of hours to look back (default 2h).
-        offset (str, optional): Offset string for pagination (next_offset).
-
-    Returns:
-        Union[dict, list[dict], str]: Device record(s) from ZDX.
-
-    Examples:
-        >>> zdx_device_discovery_tool(..., action="get_device", device_id="12345678")
-        >>> zdx_device_discovery_tool(..., action="list_devices", emails=["jdoe@example.com"], since=24)
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 

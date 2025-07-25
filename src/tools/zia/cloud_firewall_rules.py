@@ -1,44 +1,56 @@
-from typing import Optional, Union, Literal, Annotated
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Optional, Literal
+from pydantic import Field
 import json
-from sdk.zscaler_client import get_zscaler_client
 
 
+@app.tool(
+    name="zia_cloud_firewall_rule",
+    description="Manages ZIA Cloud Firewall Rules.",
+)
 def zia_firewall_rule_manager(
-    use_legacy: bool = False,
-    service: str = "zia",
     action: Annotated[
         Literal["list", "get", "add", "update", "delete"],
-        "Firewall rule operation: list, get, add, update, or delete.",
+        Field(description="Firewall rule operation: list, get, add, update, or delete.")
     ] = "list",
     rule_id: Annotated[
         Optional[Union[int, str]],
-        "Required for get, update, and delete.",
+        Field(description="Required for get, update, and delete.")
     ] = None,
     name: Annotated[
         Optional[str],
-        "Rule name (required for add/update).",
+        Field(description="Rule name (required for add/update).")
     ] = None,
     description: Annotated[
         Optional[str],
-        "Optional rule description.",
+        Field(description="Optional rule description.")
     ] = None,
     action_type: Annotated[
         Optional[str],
-        "Action for rule (e.g., ALLOW, BLOCK).",
+        Field(description="Action for rule (e.g., ALLOW, BLOCK).")
     ] = None,
     enabled: Annotated[
         Optional[bool],
-        "True to enable rule, False to disable.",
+        Field(description="True to enable rule, False to disable.")
     ] = True,
     search: Annotated[
         Optional[str],
-        "Optional search filter for listing rules.",
+        Field(description="Optional search filter for listing rules.")
     ] = None,
     params: Annotated[
         Optional[Union[str, dict]],
-        "Additional JSON-encoded parameters for add/update.",
+        Field(description="Additional JSON-encoded parameters for add/update.")
     ] = None,
-) -> Union[dict, list[dict], str]:
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Manages ZIA Cloud Firewall Rules.
 

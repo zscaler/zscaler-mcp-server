@@ -1,31 +1,43 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union, Literal, Annotated, Optional
-import json
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Literal, Optional
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_geo_search",
+    description="Performs geographical lookup actions using the ZIA Locations API.",
+)
 def zia_geo_search_tool(
     action: Annotated[
         Literal["geo_by_coordinates", "geo_by_ip", "city_prefix_search"],
-        "Choose one of: geo_by_coordinates, geo_by_ip, city_prefix_search"
+        Field(description="Choose one of: geo_by_coordinates, geo_by_ip, city_prefix_search")
     ],
-    use_legacy: bool = False,
-    service: str = "zia",
     latitude: Annotated[
         Optional[float],
-        "Required if action is geo_by_coordinates"
+        Field(description="Required if action is geo_by_coordinates")
     ] = None,
     longitude: Annotated[
         Optional[float],
-        "Required if action is geo_by_coordinates"
+        Field(description="Required if action is geo_by_coordinates")
     ] = None,
     ip: Annotated[
         Optional[str],
-        "Required if action is geo_by_ip"
+        Field(description="Required if action is geo_by_ip")
     ] = None,
     prefix: Annotated[
         Optional[str],
-        "Required if action is city_prefix_search"
+        Field(description="Required if action is city_prefix_search")
     ] = None,
-) -> Union[dict, list[dict], str]:
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Performs geographical lookup actions using the ZIA Locations API.
 
@@ -35,11 +47,6 @@ def zia_geo_search_tool(
     - city_prefix_search: Search cities matching a given name prefix.
 
     Parameters:
-        cloud (str): ZIA cloud (e.g., 'beta', 'zscalerthree').
-        client_id (str): OAuth2 client ID.
-        client_secret (str): OAuth2 client secret.
-        customer_id (str): ZIA customer ID.
-        vanity_domain (str): Vanity domain (e.g., 'mycompany').
         action (str): One of 'geo_by_coordinates', 'geo_by_ip', 'city_prefix_search'.
         latitude (float, optional): Latitude for geo_by_coordinates.
         longitude (float, optional): Longitude for geo_by_coordinates.

@@ -1,14 +1,41 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
 from typing import Union
+from typing import Annotated
+from pydantic import Field
 
 
+@app.tool(
+    name="zpa_trusted_networks",
+    description="Tool for retrieving ZPA Trusted Networks.",
+)
 def trusted_network_manager(
-    action: str,
-    network_id: str = None,
-    name: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
+    action: Annotated[
+        str,
+        Field(
+            description="Action to perform. Must be 'read'."
+        ),
+    ],
+    network_id: Annotated[
+        str,
+        Field(description="If provided, retrieves trusted network by ID."),
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="If provided, will be used to search for the trusted network."),
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results."),
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API."),
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use."),
+    ] = "zpa",
 ) -> Union[dict, list[dict], str]:
     """
     Tool for retrieving ZPA Trusted Networks.
@@ -24,34 +51,33 @@ def trusted_network_manager(
     Returns:
         Union[dict, list[dict], str]: Trusted network(s) data.
     """
+    if action != "read":
+        raise ValueError("Only 'read' action is supported")
+
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.trusted_networks
+    query_params = query_params or {}
 
-    if action == "read":
-        query_params = query_params or {}
+    # Fetch by network ID
+    if network_id:
+        result, _, err = api.get_network(network_id)
+        if err:
+            raise Exception(f"Failed to fetch trusted network {network_id}: {err}")
+        return result.as_dict()
 
-        # Fetch by network ID
-        if network_id:
-            result, _, err = api.get_network(network_id)
-            if err:
-                raise Exception(f"Failed to fetch trusted network {network_id}: {err}")
-            return result.as_dict()
-
-        # Fetch by name if provided
-        if name:
-            query_params["search"] = name
-            networks, _, err = api.list_trusted_networks(query_params=query_params)
-            if err:
-                raise Exception(f"Failed to search trusted networks by name: {err}")
-            matched = next((n for n in networks if n.name == name), None)
-            if not matched:
-                raise Exception(f"No trusted network found with name '{name}'")
-            return matched.as_dict()
-
-        # List all trusted networks
+    # Fetch by name if provided
+    if name:
+        query_params["search"] = name
         networks, _, err = api.list_trusted_networks(query_params=query_params)
         if err:
-            raise Exception(f"Failed to list trusted networks: {err}")
-        return [n.as_dict() for n in networks]
+            raise Exception(f"Failed to search trusted networks by name: {err}")
+        matched = next((n for n in networks if n.name == name), None)
+        if not matched:
+            raise Exception(f"No trusted network found with name '{name}'")
+        return matched.as_dict()
 
-    raise ValueError(f"Unsupported action: {action}")
+    # List all trusted networks
+    networks, _, err = api.list_trusted_networks(query_params=query_params)
+    if err:
+        raise Exception(f"Failed to list trusted networks: {err}")
+    return [n.as_dict() for n in networks]

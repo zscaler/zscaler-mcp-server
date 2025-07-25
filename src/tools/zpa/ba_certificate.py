@@ -1,16 +1,48 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Union, List
+from typing import Annotated
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_ba_certificates",
+    description="Tool for managing ZPA Browser Access (BA) Certificates.",
+)
 def ba_certificate_manager(
-    action: str,
-    certificate_id: str = None,
-    name: str = None,
-    cert_blob: str = None,
-    microtenant_id: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', or 'delete'.")
+    ],
+    certificate_id: Annotated[
+        str,
+        Field(description="Certificate ID for read or delete operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the certificate.")
+    ] = None,
+    cert_blob: Annotated[
+        str,
+        Field(description="Required PEM string when creating a certificate.")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZPA Browser Access (BA) Certificates.
 

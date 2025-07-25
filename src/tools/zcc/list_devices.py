@@ -1,41 +1,41 @@
-from sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Optional
+from pydantic import Field
 
+
+@app.tool(
+    name="zcc_devices_v1_manager",
+    description="Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal.",
+)
 def zcc_devices_v1_manager(
-    username: str = None,
-    os_type: str = None,
-    page: int = None,
-    page_size: int = None,
-    use_legacy: bool = False,
-    service: str = "zcc",
-) -> Union[list[dict], str]:
+    username: Annotated[
+        Optional[str],
+        Field(description="Username to filter by (e.g., 'jdoe@acme.com').")
+    ] = None,
+    os_type: Annotated[
+        Optional[str],
+        Field(description="Device operating system type. Valid options: ios, android, windows, macos, linux.")
+    ] = None,
+    page: Annotated[
+        Optional[int],
+        Field(description="Page number for paginated results.")
+    ] = None,
+    page_size: Annotated[
+        Optional[int],
+        Field(description="Number of results per page. Default is 50. Max is 5000.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zcc",
+) -> Union[List[dict], str]:
     """
     Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal.
-
-    Filters:
-    - username (optional): Filter devices by enrolled username (e.g., 'jdoe@acme.com').
-    - os_type (optional): Device operating system type. Valid options:
-        - ios
-        - android
-        - windows
-        - macos
-        - linux
-    - page (optional): Page number for paginated results.
-    - page_size (optional): Number of results per page. Default is 50. Max is 5000.
-
-    Args:
-        cloud (str): Zscaler cloud environment (e.g., 'beta').
-        client_id (str): OAuth2 client ID.
-        client_secret (str): OAuth2 client secret.
-        customer_id (str): Zscaler tenant customer ID.
-        vanity_domain (str): Vanity domain associated with the tenant.
-        username (str, optional): Username to filter by.
-        os_type (str, optional): OS type to filter by.
-        page (int, optional): Page number.
-        page_size (int, optional): Number of entries per page.
-
-    Returns:
-        list[dict]: List of ZCC device records.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 

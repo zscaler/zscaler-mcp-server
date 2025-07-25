@@ -1,22 +1,75 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_url_categories_v4",
+    description="Tool for managing ZIA URL Categories via the Python SDK.",
+)
 def url_category_manager(
-    action: str,
-    category_id: str = None,
-    configured_name: str = None,
-    super_category: str = None,
-    urls: list = None,
-    description: str = None,
-    custom_category: bool = None,
-    keywords: list = None,
-    ip_ranges: list = None,
-    db_categorized_urls: list = None,
-    keywords_retaining_parent_category: list = None,
-    ip_ranges_retaining_parent_category: list = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zia",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', 'add', 'remove', or 'delete'.")
+    ],
+    category_id: Annotated[
+        str,
+        Field(description="Category ID for read (single), update, add, remove, and delete operations.")
+    ] = None,
+    configured_name: Annotated[
+        str,
+        Field(description="Name of the category (required for create, update, add, remove).")
+    ] = None,
+    super_category: Annotated[
+        str,
+        Field(description="Super category (required for creating custom categories).")
+    ] = None,
+    urls: Annotated[
+        List,
+        Field(description="List of URLs to create/update/add/remove.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Optional description for the category.")
+    ] = None,
+    custom_category: Annotated[
+        bool,
+        Field(description="Must be True for custom categories. Required for create.")
+    ] = None,
+    keywords: Annotated[
+        List,
+        Field(description="Custom keywords.")
+    ] = None,
+    ip_ranges: Annotated[
+        List,
+        Field(description="Optional list of IP ranges.")
+    ] = None,
+    db_categorized_urls: Annotated[
+        List,
+        Field(description="DB-categorized URLs.")
+    ] = None,
+    keywords_retaining_parent_category: Annotated[
+        List,
+        Field(description="Retained keywords from parent.")
+    ] = None,
+    ip_ranges_retaining_parent_category: Annotated[
+        List,
+        Field(description="Retained IP ranges from parent.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional filters for listing categories.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZIA URL Categories via the Python SDK.
 

@@ -1,36 +1,48 @@
-from typing import Optional, Union, Literal, Annotated
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Optional, Literal
+from pydantic import Field
 import json
-from sdk.zscaler_client import get_zscaler_client
 
 
+@app.tool(
+    name="zia_network_app_group",
+    description="Manages ZIA Network Application Groups.",
+)
 def zia_network_app_group_manager(
-    use_legacy: bool = False,
-    service: str = "zia",
     action: Annotated[
         Literal["list", "get", "add", "update", "delete"],
-        "Action to perform on the network application group.",
+        Field(description="Action to perform on the network application group.")
     ] = "list",
     group_id: Annotated[
         Optional[Union[int, str]],
-        "Required for get, update, and delete actions.",
+        Field(description="Required for get, update, and delete actions.")
     ] = None,
     name: Annotated[
         Optional[str],
-        "Group name (required for add and update).",
+        Field(description="Group name (required for add and update).")
     ] = None,
     description: Annotated[
         Optional[str],
-        "Group description (optional).",
+        Field(description="Group description (optional).")
     ] = None,
     network_applications: Annotated[
-        Optional[Union[list[str], str]],
-        "List of network application IDs (required for add and update).",
+        Optional[Union[List[str], str]],
+        Field(description="List of network application IDs (required for add and update).")
     ] = None,
     search: Annotated[
         Optional[str],
-        "Search string to filter list results.",
+        Field(description="Search string to filter list results.")
     ] = None,
-) -> Union[dict, list[dict], str]:
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Manages ZIA Network Application Groups.
 

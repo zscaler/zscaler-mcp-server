@@ -1,31 +1,112 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Union, List
+from typing import Annotated
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_app_connector_groups",
+    description="CRUD handler for ZPA App Connector Groups via the Python SDK.",
+)
 def connector_group_manager(
-    action: str,
-    group_id: str = None,
-    microtenant_id: str = None,
-    name: str = None,
-    description: str = None,
-    enabled: bool = True,
-    latitude: str = None,
-    longitude: str = None,
-    location: str = None,
-    city_country: str = None,
-    country_code: str = None,
-    dns_query_type: str = None,
-    override_version_profile: bool = None,
-    server_group_ids: list[str] = None,
-    connector_ids: list[str] = None,
-    lss_app_connector_group: bool = None,
-    upgrade_day: str = None,
-    upgrade_time_in_secs: str = None,
-    version_profile: str = None,
-    search: str = None,
-    page: str = None,
-    page_size: str = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    group_id: Annotated[
+        str,
+        Field(description="Group ID for read, update, or delete operations.")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the connector group.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the connector group.")
+    ] = None,
+    enabled: Annotated[
+        bool,
+        Field(description="Whether the group is enabled.")
+    ] = True,
+    latitude: Annotated[
+        str,
+        Field(description="Latitude coordinate.")
+    ] = None,
+    longitude: Annotated[
+        str,
+        Field(description="Longitude coordinate.")
+    ] = None,
+    location: Annotated[
+        str,
+        Field(description="Location name.")
+    ] = None,
+    city_country: Annotated[
+        str,
+        Field(description="City and country information.")
+    ] = None,
+    country_code: Annotated[
+        str,
+        Field(description="Country code.")
+    ] = None,
+    dns_query_type: Annotated[
+        str,
+        Field(description="DNS query type.")
+    ] = None,
+    override_version_profile: Annotated[
+        bool,
+        Field(description="Whether to override version profile.")
+    ] = None,
+    server_group_ids: Annotated[
+        List[str],
+        Field(description="List of server group IDs.")
+    ] = None,
+    connector_ids: Annotated[
+        List[str],
+        Field(description="List of connector IDs.")
+    ] = None,
+    lss_app_connector_group: Annotated[
+        bool,
+        Field(description="Whether this is an LSS app connector group.")
+    ] = None,
+    upgrade_day: Annotated[
+        str,
+        Field(description="Upgrade day.")
+    ] = None,
+    upgrade_time_in_secs: Annotated[
+        str,
+        Field(description="Upgrade time in seconds.")
+    ] = None,
+    version_profile: Annotated[
+        str,
+        Field(description="Version profile.")
+    ] = None,
+    search: Annotated[
+        str,
+        Field(description="Search term for filtering results.")
+    ] = None,
+    page: Annotated[
+        str,
+        Field(description="Page number for pagination.")
+    ] = None,
+    page_size: Annotated[
+        str,
+        Field(description="Number of items per page.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     CRUD handler for ZPA App Connector Groups via the Python SDK.
     """

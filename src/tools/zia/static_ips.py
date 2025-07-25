@@ -1,18 +1,59 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_static_ips",
+    description="Tool for managing ZIA Static IP addresses.",
+)
 def static_ip_manager(
-    action: str,
-    static_ip_id: int = None,
-    ip_address: str = None,
-    comment: str = None,
-    geo_override: bool = None,
-    routable_ip: bool = None,
-    latitude: float = None,
-    longitude: float = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zia",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    static_ip_id: Annotated[
+        int,
+        Field(description="Static IP ID for read, update, or delete operations.")
+    ] = None,
+    ip_address: Annotated[
+        str,
+        Field(description="IP address (required for create).")
+    ] = None,
+    comment: Annotated[
+        str,
+        Field(description="Optional comment for the static IP.")
+    ] = None,
+    geo_override: Annotated[
+        bool,
+        Field(description="Whether to override geolocation.")
+    ] = None,
+    routable_ip: Annotated[
+        bool,
+        Field(description="Whether the IP is routable.")
+    ] = None,
+    latitude: Annotated[
+        float,
+        Field(description="Latitude for geolocation override.")
+    ] = None,
+    longitude: Annotated[
+        float,
+        Field(description="Longitude for geolocation override.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZIA Static IP addresses.
 

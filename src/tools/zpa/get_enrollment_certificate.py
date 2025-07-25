@@ -1,13 +1,39 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_enrollment_certificates",
+    description="Get-only tool for retrieving ZPA Enrollment Certificates.",
+)
 def enrollment_certificate_manager(
-    action: str,
-    certificate_id: str = None,
-    name: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Must be 'read'.")
+    ],
+    certificate_id: Annotated[
+        str,
+        Field(description="Certificate ID to retrieve (fallback if name is not used).")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Certificate name to search for.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering via search key.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Get-only tool for retrieving ZPA Enrollment Certificates.
 

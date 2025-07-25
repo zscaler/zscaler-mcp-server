@@ -1,15 +1,39 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
 
+@app.tool(
+    name="zpa_scim_groups",
+    description="Tool for retrieving ZPA SCIM groups under a given Identity Provider (IdP).",
+)
 def scim_group_manager(
-    action: str,
-    scim_group_id: str = None,
-    idp_name: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Must be 'read'.")
+    ],
+    scim_group_id: Annotated[
+        str,
+        Field(description="If provided, fetch a specific SCIM group.")
+    ] = None,
+    idp_name: Annotated[
+        str,
+        Field(description="Required for listing SCIM groups.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional filters like search, page, page_size, etc.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for retrieving ZPA SCIM groups under a given Identity Provider (IdP).
 

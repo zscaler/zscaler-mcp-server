@@ -1,20 +1,38 @@
-from typing import Optional, Union, Dict, Any, List, Literal, Annotated
-from sdk.zscaler_client import get_zscaler_client
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, Dict, Any, List, Literal, Optional
+from pydantic import Field
 
 
+@app.tool(
+    name="zia_location_management",
+    description="FastMCP tool to manage ZIA Locations.",
+)
 def zia_locations_manager(
     action: Annotated[
         Literal["list", "get", "create", "update", "delete"],
-        "One of: list, get, create, update, delete."
+        Field(description="One of: list, get, create, update, delete.")
     ],
-    use_legacy: bool = False,
-    service: str = "zia",
-    location_id: Optional[int] = None,
+    location_id: Annotated[
+        Optional[int],
+        Field(description="Location ID for get, update, or delete operations.")
+    ] = None,
     location: Annotated[
         Optional[Union[Dict[str, Any], str]],
-        "Required for create/update. Dictionary or JSON string of the location configuration."
+        Field(description="Required for create/update. Dictionary or JSON string of the location configuration.")
     ] = None,
-    query_params: Optional[Dict[str, Any]] = None,
+    query_params: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
 ) -> Union[Dict[str, Any], List[Dict[str, Any]], str]:
     """
     FastMCP tool to manage ZIA Locations.

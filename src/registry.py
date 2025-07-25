@@ -50,53 +50,6 @@ from .tools.zia.geo_search import zia_geo_search_tool as geo_search
 from .tools.zia.get_sandbox_info import sandbox_manager as sandbox
 
 def register_all_tools(app):
-    # ZCC Tools
-    app.tool(name="zcc_list_devices_v1")(zcc_devices_v1_manager)
-    app.tool(name="zcc_devices_csv_exporter")(zcc_devices_csv_exporter)
-
-    # ZDX Tools
-    app.tool(name="zdx_list_administration")(administration)
-    app.tool(name="zdx_list_active_devices")(active_devices)
-
-    # ZPA Tools
-    app.tool(name="zpa_application_segments")(app_segments)
-    app.tool(name="zpa_app_segments_by_type")(app_segments_by_type)
-    app.tool(name="zpa_application_servers_v2")(application_server_v2_manager)
-    app.tool(name="zpa_ba_certificates")(ba_certificates)
-    app.tool(name="zpa_segment_groups_v6")(segment_group_v6_manager)
-    app.tool(name="zpa_server_groups")(server_groups)
-    app.tool(name="zpa_app_connector_groups")(app_connector_groups)
-    app.tool(name="zpa_service_edge_groups")(service_edge_groups)
-    app.tool(name="zpa_access_policy")(access_policy)
-    app.tool(name="zpa_forwarding_policy")(forwarding_policy)
-    app.tool(name="zpa_timeout_policy")(timeout_policy)
-    app.tool(name="zpa_isolation_policy")(isolation_policy)
-    app.tool(name="zpa_isolation_profile")(isolation_profile)
-    app.tool(name="zpa_app_protection_profiles")(app_protection_profile)
-    app.tool(name="zpa_enrollment_certificates")(enrollment_certificate)
-    app.tool(name="zpa_provisioning_key")(provisioning_key)
-    app.tool(name="zpa_pra_portals")(pra_portal)
-    app.tool(name="zpa_pra_credentials")(pra_credential)
-    app.tool(name="zpa_scim_groups")(scim_group)
-    app.tool(name="zpa_scim_attributes")(scim_attribute)
-    app.tool(name="zpa_saml_attributes")(saml_attribute)
-    app.tool(name="zpa_trusted_networks")(trusted_network)
-    app.tool(name="zpa_posture_profiles")(posture_profile)
-
-    # ZIA Tools
-    app.tool(name="zia_activation")(zia_activation)
-    app.tool(name="zia_atp_malicious_urls")(atp_malicious_urls)
-    app.tool(name="zia_auth_exempt_urls")(auth_exempt_urls)
-    app.tool(name="zia_rule_labels")(rule_labels)
-    app.tool(name="zia_url_categories_v4")(url_categories)
-    app.tool(name="zia_cloud_firewall_rule")(cloud_firewall_rule)
-    app.tool(name="zia_ip_source_group")(ip_source_groups)
-    app.tool(name="zia_ip_destination_groups")(ip_destination_groups)
-    app.tool(name="zia_network_app_group")(network_app_group)
-    app.tool(name="zia_location_management")(location_management)
-    app.tool(name="zia_vpn_credentials")(vpn_credentials)
-    app.tool(name="zia_static_ips")(static_ip)
-    app.tool(name="zia_gre_tunnels")(gre_tunnel)
-    app.tool(name="zia_geo_search")(geo_search)
-    app.tool(name="zia_gre_range_discovery")(gre_range_discovery)
-    app.tool(name="zia_sandbox")(sandbox)
+    # All tools are automatically registered via @app.tool decorators
+    # when their modules are imported above
+    pass

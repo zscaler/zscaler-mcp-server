@@ -1,19 +1,60 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Union, List
+from typing import Annotated
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_application_servers_v2",
+    description="Tool for managing ZPA Application Servers.",
+)
 def application_server_v2_manager(
-    action: str,
-    server_id: str = None,
-    name: str = None,
-    description: str = None,
-    address: str = None,
-    enabled: bool = True,
-    app_server_group_ids: list[str] = None,
-    microtenant_id: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Operation to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    server_id: Annotated[
+        str,
+        Field(description="Server ID for read, update, or delete operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the application server.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the application server.")
+    ] = None,
+    address: Annotated[
+        str,
+        Field(description="The domain or IP address of the server.")
+    ] = None,
+    enabled: Annotated[
+        bool,
+        Field(description="Whether the server is enabled.")
+    ] = True,
+    app_server_group_ids: Annotated[
+        List[str],
+        Field(description="List of server group IDs.")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZPA Application Servers.
 

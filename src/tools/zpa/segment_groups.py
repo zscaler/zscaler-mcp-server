@@ -1,18 +1,60 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Union, List
+from typing import Annotated
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_segment_groups_v6",
+    description="Tool for managing Segment Groups.",
+)
 def segment_group_v6_manager(
-    action: str,
-    group_id: str = None,
-    name: str = None,
-    description: str = None,
-    enabled: bool = True,
-    microtenant_id: str = None,
-    search: str = None,
-    page: str = None,
-    page_size: str = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Operation to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    group_id: Annotated[
+        str,
+        Field(description="ID of the segment group (required for read/update/delete).")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the segment group (required for create/update).")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the segment group.")
+    ] = None,
+    enabled: Annotated[
+        bool,
+        Field(description="Whether the group is enabled.")
+    ] = True,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    search: Annotated[
+        str,
+        Field(description="Search term for listing groups.")
+    ] = None,
+    page: Annotated[
+        str,
+        Field(description="Page number for pagination.")
+    ] = None,
+    page_size: Annotated[
+        str,
+        Field(description="Items per page for pagination.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing Segment Groups.
 

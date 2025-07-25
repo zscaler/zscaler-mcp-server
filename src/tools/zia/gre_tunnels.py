@@ -1,17 +1,51 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_gre_tunnels",
+    description="Tool for managing ZIA GRE Tunnels and associated static IPs.",
+)
 def gre_tunnel_manager(
-    action: str,
-    use_legacy: bool = False,
-    service: str = "zia",
-    tunnel_id: int = None,
-    static_ip_id: int = None,
-    static_ip_address: str = None,
-    internal_ip_range: str = None,
-    ip_unnumbered: bool = None,
-    comment: str = None,
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', or 'delete'.")
+    ],
+    tunnel_id: Annotated[
+        int,
+        Field(description="Tunnel ID for read or delete operations.")
+    ] = None,
+    static_ip_id: Annotated[
+        int,
+        Field(description="Static IP ID for delete operations.")
+    ] = None,
+    static_ip_address: Annotated[
+        str,
+        Field(description="Required to associate or create a static IP.")
+    ] = None,
+    internal_ip_range: Annotated[
+        str,
+        Field(description="Internal IP range for the GRE tunnel.")
+    ] = None,
+    ip_unnumbered: Annotated[
+        bool,
+        Field(description="If True, tunnel will be unnumbered; if False, a GRE IP range will be selected.")
+    ] = None,
+    comment: Annotated[
+        str,
+        Field(description="Comment for the GRE tunnel or static IP.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZIA GRE Tunnels and associated static IPs.
 

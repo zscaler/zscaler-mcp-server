@@ -1,21 +1,67 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_pra_portals",
+    description="Tool for managing ZPA Privileged Remote Access (PRA) Portals.",
+)
 def pra_portal_manager(
-    action: str,
-    portal_id: str = None,
-    name: str = None,
-    description: str = None,
-    enabled: bool = True,
-    domain: str = None,
-    certificate_id: str = None,
-    user_notification: str = None,
-    user_notification_enabled: bool = None,
-    microtenant_id: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    portal_id: Annotated[
+        str,
+        Field(description="Portal ID for read, update, or delete operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the PRA portal.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the PRA portal.")
+    ] = None,
+    enabled: Annotated[
+        bool,
+        Field(description="Whether the portal is enabled.")
+    ] = True,
+    domain: Annotated[
+        str,
+        Field(description="Domain for the portal (required for create/update).")
+    ] = None,
+    certificate_id: Annotated[
+        str,
+        Field(description="Certificate ID (required when creating or updating a portal).")
+    ] = None,
+    user_notification: Annotated[
+        str,
+        Field(description="User notification message for the portal.")
+    ] = None,
+    user_notification_enabled: Annotated[
+        bool,
+        Field(description="Whether user notifications are enabled.")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZPA Privileged Remote Access (PRA) Portals.
 

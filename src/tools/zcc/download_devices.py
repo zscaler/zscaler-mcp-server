@@ -1,42 +1,42 @@
-from sdk.zscaler_client import get_zscaler_client
-from typing import Optional
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Optional
+from pydantic import Field
 from datetime import datetime
 
 
+@app.tool(
+    name="zcc_devices_csv_exporter",
+    description="Downloads ZCC device information or service status as a CSV file.",
+)
 def zcc_devices_csv_exporter(
-    dataset: str = "devices",
-    os_type: Optional[str] = None,
-    registration_type: Optional[str] = None,
-    filename: Optional[str] = None,
-    use_legacy: bool = False,
-    service: str = "zcc",
+    dataset: Annotated[
+        str,
+        Field(description="Type of report to download. Valid values: 'devices', 'service_status'.")
+    ] = "devices",
+    os_type: Annotated[
+        Optional[str],
+        Field(description="Device operating system type. Valid values: ios, android, windows, macos, linux.")
+    ] = None,
+    registration_type: Annotated[
+        Optional[str],
+        Field(description="Registration status. Valid values: all, registered, unregistered, removal_pending, removed, quarantined.")
+    ] = None,
+    filename: Annotated[
+        Optional[str],
+        Field(description="Custom filename for the CSV. Defaults to timestamped file.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zcc",
 ) -> str:
     """
     Downloads ZCC device information or service status as a CSV file.
-
-    Filters:
-    - dataset (required): Type of report to download. Valid values:
-        - devices
-        - service_status
-    - os_type (optional): Filter by OS type. Valid values:
-        - ios, android, windows, macos, linux
-    - registration_type (optional): Filter by registration status. Valid values:
-        - all, registered, unregistered, removal_pending, removed, quarantined
-    - filename (optional): Custom filename for the CSV. Defaults to timestamped file.
-
-    Args:
-        cloud (str): Zscaler cloud environment (e.g., 'beta').
-        client_id (str): OAuth2 client ID.
-        client_secret (str): OAuth2 client secret.
-        customer_id (str): Zscaler tenant customer ID.
-        vanity_domain (str): Vanity domain associated with the tenant.
-        dataset (str, optional): One of 'devices' or 'service_status'.
-        os_type (str, optional): OS filter for report.
-        registration_type (str, optional): Registration filter.
-        filename (str, optional): Custom output filename.
-
-    Returns:
-        str: Absolute path to the downloaded CSV file.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 

@@ -1,17 +1,55 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_vpn_credentials",
+    description="Tool for managing ZIA VPN Credentials.",
+)
 def vpn_credential_manager(
-    action: str,
-    credential_id: int = None,
-    credential_type: str = None,  # "IP" or "UFQDN"
-    pre_shared_key: str = None,
-    ip_address: str = None,
-    fqdn: str = None,
-    comments: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zia",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    credential_id: Annotated[
+        int,
+        Field(description="Credential ID for read, update, or delete operations.")
+    ] = None,
+    credential_type: Annotated[
+        str,
+        Field(description="Type of credential: 'IP' or 'UFQDN'.")
+    ] = None,
+    pre_shared_key: Annotated[
+        str,
+        Field(description="Pre-shared key (required for create and update).")
+    ] = None,
+    ip_address: Annotated[
+        str,
+        Field(description="IP address (required for type 'IP').")
+    ] = None,
+    fqdn: Annotated[
+        str,
+        Field(description="FQDN (required for type 'UFQDN').")
+    ] = None,
+    comments: Annotated[
+        str,
+        Field(description="Optional comments for the credential.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZIA VPN Credentials.
 

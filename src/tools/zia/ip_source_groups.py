@@ -1,45 +1,52 @@
-from typing import Optional, Union, Literal, Annotated
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Optional, Literal
+from pydantic import Field
 import json
-from sdk.zscaler_client import get_zscaler_client
 
 
+@app.tool(
+    name="zia_ip_source_group",
+    description="Performs CRUD operations on ZIA IP Source Groups.",
+)
 def zia_ip_source_group_manager(
-    use_legacy: bool = False,
-    service: str = "zia",
     action: Annotated[
         Literal["get", "list", "add", "update", "delete"],
-        "Action to perform: list, get, add, update, or delete.",
+        Field(description="Action to perform: list, get, add, update, or delete.")
     ] = "list",
     group_id: Annotated[
         Optional[Union[int, str]],
-        "Required for get, update, and delete actions.",
+        Field(description="Required for get, update, and delete actions.")
     ] = None,
     name: Annotated[
         Optional[str],
-        "Group name (required for add/update).",
+        Field(description="Group name (required for add/update).")
     ] = None,
     description: Annotated[
         Optional[str],
-        "Group description (optional for add/update).",
+        Field(description="Group description (optional for add/update).")
     ] = None,
     ip_addresses: Annotated[
-        Optional[Union[list[str], str]],
-        "List of IP addresses (required for add/update). Accepts JSON string or list.",
+        Optional[Union[List[str], str]],
+        Field(description="List of IP addresses (required for add/update). Accepts JSON string or list.")
     ] = None,
     search: Annotated[
         Optional[str],
-        "Optional search string for filtering list results.",
+        Field(description="Optional search string for filtering list results.")
     ] = None,
-) -> Union[dict, list[dict], str]:
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Performs CRUD operations on ZIA IP Source Groups.
 
     Args:
-        cloud (str): Zscaler cloud environment.
-        client_id (str): OAuth2 client ID.
-        client_secret (str): OAuth2 client secret.
-        customer_id (str): Zscaler tenant customer ID.
-        vanity_domain (str): Tenant vanity domain.
         action (str): One of: list, get, add, update, delete.
         group_id (int/str, optional): Required for get/update/delete.
         name (str, optional): Required for add/update.

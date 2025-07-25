@@ -1,22 +1,67 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
 
+@app.tool(
+    name="zpa_pra_credentials",
+    description="Tool for managing ZPA Privileged Remote Access (PRA) Credentials.",
+)
 def pra_credential_manager(
-    action: str,
-    credential_id: str = None,
-    name: str = None,
-    description: str = None,
-    credential_type: str = None,
-    user_domain: str = None,
-    username: str = None,
-    password: str = None,
-    private_key: str = None,
-    microtenant_id: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[dict, list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    credential_id: Annotated[
+        str,
+        Field(description="Credential ID for read, update, or delete operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the PRA credential.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the PRA credential.")
+    ] = None,
+    credential_type: Annotated[
+        str,
+        Field(description="Type of credential: 'USERNAME_PASSWORD', 'PASSWORD', or 'SSH_KEY'.")
+    ] = None,
+    user_domain: Annotated[
+        str,
+        Field(description="User domain for the credential.")
+    ] = None,
+    username: Annotated[
+        str,
+        Field(description="Username for USERNAME_PASSWORD or SSH_KEY credentials.")
+    ] = None,
+    password: Annotated[
+        str,
+        Field(description="Password for USERNAME_PASSWORD or PASSWORD credentials.")
+    ] = None,
+    private_key: Annotated[
+        str,
+        Field(description="Private key for SSH_KEY credentials.")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZPA Privileged Remote Access (PRA) Credentials.
 

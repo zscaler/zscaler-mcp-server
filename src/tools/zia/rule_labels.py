@@ -1,14 +1,43 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_rule_labels",
+    description="Tool for managing ZIA Rule Labels via the Python SDK.",
+)
 def rule_label_manager(
-    action: str,
-    label_id: int = None,
-    name: str = None,
-    description: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zia",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    label_id: Annotated[
+        int,
+        Field(description="Label ID for read (by ID), update, and delete operations.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Label name.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Optional description.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering results in list.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Tool for managing ZIA Rule Labels via the Python SDK.
 

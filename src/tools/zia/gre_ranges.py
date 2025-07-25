@@ -1,13 +1,35 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_gre_range_discovery",
+    description="Tool for discovering available GRE internal IP ranges in ZIA.",
+)
 def gre_range_discovery_manager(
-    use_legacy: bool = False,
-    service: str = "zia",
-    internal_ip_range: str = None,
-    static_ip: str = None,
-    limit: int = None,
-) -> Union[list[dict], str]:
+    internal_ip_range: Annotated[
+        str,
+        Field(description="CIDR range (e.g., '172.17.47.247-172.17.47.240')")
+    ] = None,
+    static_ip: Annotated[
+        str,
+        Field(description="Filter by the associated static IP address")
+    ] = None,
+    limit: Annotated[
+        int,
+        Field(description="Max number of ranges to return")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[List[dict], str]:
     """
     Tool for discovering available GRE internal IP ranges in ZIA.
 

@@ -1,12 +1,27 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
 
+@app.tool(
+    name="zia_sandbox",
+    description="Tool for retrieving ZIA Sandbox information.",
+)
 def sandbox_manager(
-    action: str,
-    use_legacy: bool = False,
-    service: str = "zia",
-) -> Union[dict, list, str]:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'quota', 'behavioral_analysis', or 'file_hash_count'.")
+    ],
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List, str]:
     """
     Tool for retrieving ZIA Sandbox information.
 

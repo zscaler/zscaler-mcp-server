@@ -1,14 +1,35 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List
+from pydantic import Field
 
 
+@app.tool(
+    name="zpa_saml_attributes",
+    description="Tool for querying ZPA SAML Attributes.",
+)
 def saml_attribute_manager(
-    action: str,
-    idp_name: str = None,
-    query_params: dict = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> Union[list[dict], str]:
+    action: Annotated[
+        str,
+        Field(description="Must be 'read'.")
+    ],
+    idp_name: Annotated[
+        str,
+        Field(description="The name of the IdP to filter attributes by.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional filters like search, page, page_size.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[List[dict], str]:
     """
     Tool for querying ZPA SAML Attributes.
 

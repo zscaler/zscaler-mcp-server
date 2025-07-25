@@ -1,12 +1,34 @@
 from src.sdk.zscaler_client import get_zscaler_client
-from typing import Union, List, Dict, Any
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Dict, Any, Optional, Literal
+from pydantic import Field
 
+
+@app.tool(
+    name="zdx_admin_discovery_tool",
+    description="Tool for discovering ZDX departments or locations.",
+)
 def zdx_admin_discovery_tool(
-    query_type: str,
-    search: str = None,
-    since: int = None,
-    use_legacy: bool = False,
-    service: str = "zdx",
+    query_type: Annotated[
+        Literal["departments", "locations"],
+        Field(description="Must be either 'departments' or 'locations'.")
+    ],
+    search: Annotated[
+        Optional[str],
+        Field(description="Search term to filter results by name or ID.")
+    ] = None,
+    since: Annotated[
+        Optional[int],
+        Field(description="Number of hours to look back for devices (default 2 hours if not provided).")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zdx",
 ) -> Union[List[Dict[str, Any]], str]:
     """
     Tool for discovering ZDX departments or locations.
@@ -16,28 +38,6 @@ def zdx_admin_discovery_tool(
     - Locations (e.g., San Francisco, London)
 
     based on optional query parameters like `search` and `since`.
-
-    Args:
-        query_type (str): Must be either `"departments"` or `"locations"`.
-        search (str, optional): Search term to filter results by name or ID.
-        since (int, optional): Number of hours to look back for devices (default 2 hours if not provided).
-
-    Returns:
-        Union[List[Dict[str, Any]], str]: A list of department or location records, or an error message.
-
-    Examples:
-        Search departments by name:
-        >>> zdx_admin_discovery_tool(..., query_type="departments", search="Finance")
-
-        Search locations by name:
-        >>> zdx_admin_discovery_tool(..., query_type="locations", search="Vancouver")
-
-        Fetch all locations seen in the last 4 hours:
-        >>> zdx_admin_discovery_tool(..., query_type="locations", since=4)
-
-    Notes:
-        - The results are paginated internally by the SDK.
-        - Ensure `query_type` is accurately set to `"departments"` or `"locations"` for proper routing.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 

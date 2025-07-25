@@ -1,32 +1,116 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Union, List
+from typing import Annotated
+from pydantic import Field
 
+
+@app.tool(
+    name="zpa_service_edge_groups",
+    description="CRUD handler for ZPA Service Edge Groups via the Python SDK.",
+)
 def service_edge_group_manager(
-    action: str,
-    group_id: str = None,
-    microtenant_id: str = None,
-    query_params: dict = None,
-    name: str = None,
-    description: str = None,
-    enabled: bool = True,
-    latitude: str = None,
-    longitude: str = None,
-    location: str = None,
-    city_country: str = None,
-    country_code: str = None,
-    is_public: bool = None,
-    override_version_profile: bool = None,
-    version_profile_name: str = None,
-    version_profile_id: str = None,
-    service_edge_ids: list[str] = None,
-    trusted_network_ids: list[str] = None,
-    grace_distance_enabled: bool = None,
-    grace_distance_value: int = None,
-    grace_distance_value_unit: str = None,
-    upgrade_day: str = None,
-    upgrade_time_in_secs: str = None,
-    use_legacy: bool = False,
-    service: str = "zpa",
-) -> dict | list[dict] | str:
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'create', 'read', 'update', or 'delete'.")
+    ],
+    group_id: Annotated[
+        str,
+        Field(description="Group ID for read, update, or delete operations.")
+    ] = None,
+    microtenant_id: Annotated[
+        str,
+        Field(description="Microtenant ID for scoping operations.")
+    ] = None,
+    query_params: Annotated[
+        dict,
+        Field(description="Optional query parameters for filtering, searching, pagination, or microtenant scoping.")
+    ] = None,
+    name: Annotated[
+        str,
+        Field(description="Name of the service edge group.")
+    ] = None,
+    description: Annotated[
+        str,
+        Field(description="Description of the service edge group.")
+    ] = None,
+    enabled: Annotated[
+        bool,
+        Field(description="Whether the group is enabled.")
+    ] = True,
+    latitude: Annotated[
+        str,
+        Field(description="Latitude coordinate.")
+    ] = None,
+    longitude: Annotated[
+        str,
+        Field(description="Longitude coordinate.")
+    ] = None,
+    location: Annotated[
+        str,
+        Field(description="Location name.")
+    ] = None,
+    city_country: Annotated[
+        str,
+        Field(description="City and country information.")
+    ] = None,
+    country_code: Annotated[
+        str,
+        Field(description="Country code.")
+    ] = None,
+    is_public: Annotated[
+        bool,
+        Field(description="Whether the group is public.")
+    ] = None,
+    override_version_profile: Annotated[
+        bool,
+        Field(description="Whether to override version profile.")
+    ] = None,
+    version_profile_name: Annotated[
+        str,
+        Field(description="Version profile name.")
+    ] = None,
+    version_profile_id: Annotated[
+        str,
+        Field(description="Version profile ID.")
+    ] = None,
+    service_edge_ids: Annotated[
+        List[str],
+        Field(description="List of service edge IDs.")
+    ] = None,
+    trusted_network_ids: Annotated[
+        List[str],
+        Field(description="List of trusted network IDs.")
+    ] = None,
+    grace_distance_enabled: Annotated[
+        bool,
+        Field(description="Whether grace distance is enabled.")
+    ] = None,
+    grace_distance_value: Annotated[
+        int,
+        Field(description="Grace distance value.")
+    ] = None,
+    grace_distance_value_unit: Annotated[
+        str,
+        Field(description="Grace distance value unit.")
+    ] = None,
+    upgrade_day: Annotated[
+        str,
+        Field(description="Upgrade day.")
+    ] = None,
+    upgrade_time_in_secs: Annotated[
+        str,
+        Field(description="Upgrade time in seconds.")
+    ] = None,
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zpa",
+) -> Union[dict, List[dict], str]:
     """
     CRUD handler for ZPA Service Edge Groups via the Python SDK.
 

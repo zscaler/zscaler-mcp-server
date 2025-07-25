@@ -1,20 +1,32 @@
-from typing import Optional, Union, Literal, Annotated
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Optional, Literal
+from pydantic import Field
 import json
-from sdk.zscaler_client import get_zscaler_client
 
 
+@app.tool(
+    name="zia_atp_malicious_urls",
+    description="Manages the malicious URL denylist in the ZIA Advanced Threat Protection (ATP) policy.",
+)
 def zia_atp_malicious_urls_manager(
-    use_legacy: bool = False,
-    service: str = "zia",
     action: Annotated[
         Literal["get", "add", "delete"],
-        "One of: get, add, delete. Defaults to get.",
+        Field(description="One of: get, add, delete. Defaults to get.")
     ] = "get",
     malicious_urls: Annotated[
-        Optional[Union[list[str], str]],
-        "Required for 'add' or 'delete'. List of malicious URLs (as list or JSON string).",
+        Optional[Union[List[str], str]],
+        Field(description="Required for 'add' or 'delete'. List of malicious URLs (as list or JSON string).")
     ] = None,
-) -> Union[list[str], str]:
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[List[str], str]:
     """
     Manages the malicious URL denylist in the ZIA Advanced Threat Protection (ATP) policy.
 
@@ -24,11 +36,6 @@ def zia_atp_malicious_urls_manager(
     - "delete": Removes one or more URLs from the denylist.
 
     Args:
-        cloud (str): Zscaler cloud environment (e.g., 'beta').
-        client_id (str): OAuth2 client ID.
-        client_secret (str): OAuth2 client secret.
-        customer_id (str): Zscaler tenant customer ID.
-        vanity_domain (str): Vanity domain associated with the tenant.
         action (str, optional): One of "get", "add", or "delete". Defaults to "get".
         malicious_urls (list[str] or str, optional): Required for "add" and "delete" actions.
             Can be either a Python list or a JSON string representation of a list.

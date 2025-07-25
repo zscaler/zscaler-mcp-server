@@ -1,48 +1,60 @@
-from typing import Optional, Union, Literal, Annotated
+from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated, Union, List, Optional, Literal
+from pydantic import Field
 import json
-from sdk.zscaler_client import get_zscaler_client
 
 
+@app.tool(
+    name="zia_ip_destination_groups",
+    description="Manages ZIA IP Destination Groups.",
+)
 def zia_ip_destination_group_manager(
-    use_legacy: bool = False,
-    service: str = "zia",
     action: Annotated[
         Literal["list", "get", "add", "update", "delete"],
-        "Action to perform on IP destination groups.",
+        Field(description="Action to perform on IP destination groups.")
     ] = "list",
     group_id: Annotated[
         Optional[Union[int, str]],
-        "Required for get, update, and delete actions.",
+        Field(description="Required for get, update, and delete actions.")
     ] = None,
     name: Annotated[
         Optional[str],
-        "Name of the destination group (required for add/update).",
+        Field(description="Name of the destination group (required for add/update).")
     ] = None,
     description: Annotated[
         Optional[str],
-        "Description of the group (optional).",
+        Field(description="Description of the group (optional).")
     ] = None,
     type: Annotated[
         Optional[str],
-        "Group type (DSTN_IP, DSTN_FQDN, DSTN_DOMAIN, DSTN_OTHER). Required for add/update.",
+        Field(description="Group type (DSTN_IP, DSTN_FQDN, DSTN_DOMAIN, DSTN_OTHER). Required for add/update.")
     ] = None,
     addresses: Annotated[
-        Optional[Union[list[str], str]],
-        "List of IPs/FQDNs. Required for add/update if type is DSTN_IP or DSTN_FQDN.",
+        Optional[Union[List[str], str]],
+        Field(description="List of IPs/FQDNs. Required for add/update if type is DSTN_IP or DSTN_FQDN.")
     ] = None,
     countries: Annotated[
-        Optional[Union[list[str], str]],
-        "List of country codes (e.g., COUNTRY_CA). Optional for DSTN_OTHER.",
+        Optional[Union[List[str], str]],
+        Field(description="List of country codes (e.g., COUNTRY_CA). Optional for DSTN_OTHER.")
     ] = None,
     ip_categories: Annotated[
-        Optional[Union[list[str], str]],
-        "List of URL categories (e.g., CUSTOM_01). Optional for DSTN_OTHER.",
+        Optional[Union[List[str], str]],
+        Field(description="List of URL categories (e.g., CUSTOM_01). Optional for DSTN_OTHER.")
     ] = None,
     exclude_type: Annotated[
         Optional[str],
-        "Optional filter for list. Exclude groups of type DSTN_IP, DSTN_FQDN, etc.",
+        Field(description="Optional filter for list. Exclude groups of type DSTN_IP, DSTN_FQDN, etc.")
     ] = None,
-) -> Union[dict, list[dict], str]:
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
+) -> Union[dict, List[dict], str]:
     """
     Manages ZIA IP Destination Groups.
 

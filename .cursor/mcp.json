@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "zscaler-mcp-server": {
+            "type": "stdio",
+            "command": "docker",
+            "args": [
+                "run",
+                "-i",
+                "--rm",
+                "--pull=never",
+                "zscaler-mcp-server"
+            ]
+        }
+    }
+}

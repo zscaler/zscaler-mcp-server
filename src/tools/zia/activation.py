@@ -1,9 +1,26 @@
 from src.sdk.zscaler_client import get_zscaler_client
+from src.zscaler_mcp import app
+from typing import Annotated
+from pydantic import Field
 
+
+@app.tool(
+    name="zia_activation",
+    description="Tool to check or activate ZIA configuration changes.",
+)
 def zia_activation_manager(
-    action: str,
-    use_legacy: bool = False,
-    service: str = "zia",
+    action: Annotated[
+        str,
+        Field(description="Action to perform: 'status' or 'activate'.")
+    ],
+    use_legacy: Annotated[
+        bool,
+        Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[
+        str,
+        Field(description="The service to use.")
+    ] = "zia",
 ) -> str:
     """
     Tool to check or activate ZIA configuration changes.
