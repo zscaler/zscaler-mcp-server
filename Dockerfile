@@ -4,6 +4,12 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
+
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -28,7 +34,7 @@ RUN uv pip install --system --no-cache-dir zscaler-sdk-python
 COPY . .
 
 # Make your main.py executable
-RUN chmod +x main.py
+RUN chmod +x src/zscaler_mcp/main.py
 
 # Verify installations
 RUN python -c "import zscaler; print(f'Zscaler SDK version: {zscaler.__version__}')" || echo "Zscaler SDK check failed"

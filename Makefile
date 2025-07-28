@@ -82,6 +82,15 @@ sync-dev-deps:
 install:
 	uv pip install .
 
+install-dev:
+	uv pip install -e .
+
+install-uv:
+	uv tool install --local .
+
+install-pip:
+	pip install -e .
+
 docker-clean:
 	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q | xargs -r $(DOCKER) rm -f
 	-$(DOCKER) rmi -f $(BINARY_NAME):$(VERSION) 2>/dev/null || true

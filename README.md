@@ -89,7 +89,47 @@ The Zscaler MCP Server brings context to your agents. Try prompts like:
 
 ## 🔌 Installation & getting started
 
-Clone the repository, install dependencies, and add it to your MCP client configuration.
+### Installation Methods
+
+#### Install using uv tool install (recommended - when published to PyPI)
+
+```bash
+uv tool install zscaler-mcp
+```
+
+> **Note**: This method requires the package to be published to PyPI. Currently, this package is in development and not yet published. Use one of the source installation methods below.
+
+#### Install from source using uv (development)
+
+```bash
+uv pip install -e .
+```
+
+#### Install from source using pip
+
+```bash
+pip install -e .
+```
+
+#### Install using make (convenience)
+
+```bash
+make install-dev
+```
+
+#### Quick install script
+
+```bash
+./install.sh
+```
+
+After installation, you can run the MCP server using:
+
+```bash
+zscaler-mcp
+```
+
+Or add it to your MCP client configuration. See the configuration examples below for both local and Docker installations.
 
 ### Supported Agents
 
@@ -289,6 +329,19 @@ ZSCALER_CLOUD=beta
 4. Open Claude then Settings > Developer and click in Edit Config
 5. Open the file `claude_desktop_config.json` in your text editor and add the following code:
 
+   **For local installation:**
+   ``` json
+    {
+    "mcpServers": {
+        "zscaler-mcp-server": {
+        "type": "stdio",
+        "command": "zscaler-mcp"
+        }
+    }
+    }
+   ```
+
+   **For Docker installation:**
    ``` json
     {
     "mcpServers": {
@@ -314,23 +367,55 @@ ZSCALER_CLOUD=beta
 This method is ideal for developers working on new tools or contributing to the MCP server.
 
 1. Clone the repository.
-2. Install dependencies:
+2. Install dependencies using one of the following methods:
 
+**Using uv (recommended):**
 ```sh
 uv pip install -e .
 ```
 
+**Using uv tool install (similar to falcon-mcp):**
+```sh
+uv tool install --local .
+```
+
+**Using pip:**
+```sh
+pip install -e .
+```
+
+**Using make (convenience):**
+```sh
+make install-dev
+```
+
 3. Edit or add `.vscode/mcp.json`:
 
+   **For local installation:**
    ``` json
     {
     "servers": {
         "zscaler-mcp-server": {
         "type": "stdio",
-        "command": "python",
+        "command": "zscaler-mcp"
+        }
+    }
+    }
+    ```
+
+   **For Docker installation:**
+   ``` json
+    {
+    "servers": {
+        "zscaler-mcp-server": {
+        "type": "stdio",
+        "command": "docker",
         "args": [
-            "-m",
-            "zscaler_mcp_server"
+            "run",
+            "-i",
+            "--rm",
+            "--pull=never",
+            "zscaler-mcp-server"
         ]
         }
     }
