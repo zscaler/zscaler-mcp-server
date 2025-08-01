@@ -1,5 +1,0 @@
-{
-    "entrypoint": "main.py",
-    "description": "Zscaler MCP Server",
-    "language": "python"
-}

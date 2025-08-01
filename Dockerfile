@@ -33,13 +33,11 @@ RUN uv pip install --system --no-cache-dir zscaler-sdk-python
 # Copy the rest of the application
 COPY . .
 
-# Make your main.py executable
-RUN chmod +x src/zscaler_mcp/main.py
+# Make sure the zscaler_mcp directory is properly set up
+RUN chmod +x zscaler_mcp/main.py
 
 # Verify installations
 RUN python -c "import zscaler; print(f'Zscaler SDK version: {zscaler.__version__}')" || echo "Zscaler SDK check failed"
 
 # Entrypoint command
-# ENTRYPOINT ["uv", "run", "python", "main.py"]
-ENTRYPOINT ["python", "main.py"]
-
+ENTRYPOINT ["python", "-m", "zscaler_mcp.main"]
