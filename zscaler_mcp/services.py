@@ -17,7 +17,7 @@ class BaseService(ABC):
         """Initialize the service with a Zscaler client.
 
         Args:
-            zscaler_client: The Zscaler client instance
+            zscaler_client: The Zscaler client instance (can be None in legacy mode)
         """
         self.zscaler_client = zscaler_client
         self.tools = []
@@ -457,6 +457,53 @@ class ZIAService(BaseService):
                     continue
                 server.add_tool(tool)
 
+class ZIdentityService(BaseService):
+    """Zscaler ZIdentity service."""
+
+    def __init__(self, zscaler_client):
+        super().__init__(zscaler_client)
+        # Import tools here to avoid circular imports
+        from .tools.zidentity.groups import groups_manager
+        from .tools.zidentity.users import users_manager
+
+        self.tools = [
+            groups_manager,
+            users_manager,
+        ]
+
+    def register_tools(self, server, enabled_tools=None):
+        """Register ZIdentity tools with the server."""
+        # Define tool metadata for registration
+        tool_metadata = {
+            "groups_manager": {
+                "name": "zidentity_groups",
+                "description": "Retrieves Zidentity group information",
+            },
+            "users_manager": {
+                "name": "zidentity_users",
+                "description": "Retrieves Zidentity user information",
+            },
+        }
+
+        for tool in self.tools:
+            # Get the function name to look up metadata
+            tool_name = tool.__name__
+
+            if tool_name in tool_metadata:
+                metadata = tool_metadata[tool_name]
+                # Skip if tool is not in enabled_tools (if enabled_tools is specified)
+                if enabled_tools and metadata["name"] not in enabled_tools:
+                    continue
+                server.add_tool(
+                    tool, name=metadata["name"], description=metadata["description"]
+                )
+            else:
+                # Fallback: use function name and docstring
+                # Skip if tool is not in enabled_tools (if enabled_tools is specified)
+                if enabled_tools and tool_name not in enabled_tools:
+                    continue
+                server.add_tool(tool)
+
 
 # Service registry
 _AVAILABLE_SERVICES = {
@@ -464,6 +511,7 @@ _AVAILABLE_SERVICES = {
     "zdx": ZDXService,
     "zpa": ZPAService,
     "zia": ZIAService,
+    "zidentity": ZIdentityService,
 }
 
 

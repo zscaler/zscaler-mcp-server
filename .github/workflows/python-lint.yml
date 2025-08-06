@@ -24,4 +24,4 @@ jobs:
 
     - name: Lint with pylint
       run: |
-        pylint falcon_mcp/ tests/
+        pylint zscaler_mcp/ tests/

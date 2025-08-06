@@ -1,14 +1,16 @@
 {
     "servers": {
-        "zscaler-mcp-server": {
+        "zscaler-mcp": {
             "type": "stdio",
             "command": "docker",
             "args": [
                 "run",
                 "-i",
                 "--rm",
+                "--env-file",
+                "/Users/wguilherme/go/src/github.com/zscaler/zscaler-mcp-server/.env",
                 "--pull=never",
-                "zscaler-mcp-server"
+                "zscaler-mcp"
             ]
         }
     }

@@ -1,7 +1,7 @@
-# Use official Python image
-FROM python:3.11-slim
+# Use a Python image with uv pre-installed
+FROM ghcr.io/astral-sh/uv:python3.11-alpine AS uv
 
-# Set working directory
+# Install the project into `/app`
 WORKDIR /app
 
 # Enable bytecode compilation
@@ -10,34 +10,40 @@ ENV UV_COMPILE_BYTECODE=1
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Generate proper TOML lockfile first
+RUN --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=README.md,target=README.md \
+    uv lock
 
-# Install pip and uv
-RUN python -m pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir uv
+# Install the project's dependencies using the lockfile
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    uv sync --frozen --no-install-project --no-dev --no-editable
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Then, add the rest of the project source code and install it
+ADD . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    uv sync --frozen --no-dev --no-editable
 
-# Install Python dependencies using uv with --system flag
-RUN uv pip install --system --no-cache-dir -r requirements.txt
+# Remove unnecessary files from the virtual environment before copying
+RUN find /app/.venv -name '__pycache__' -type d -exec rm -rf {} + && \
+    find /app/.venv -name '*.pyc' -delete && \
+    find /app/.venv -name '*.pyo' -delete && \
+    echo "Cleaned up .venv"
 
-# Explicitly install zscaler-sdk-python with any additional dependencies
-RUN uv pip install --system --no-cache-dir zscaler-sdk-python
+# Final stage
+FROM python:3.11-alpine
 
-# Copy the rest of the application
-COPY . .
+# Create a non-root user 'app'
+RUN adduser -D -h /home/app -s /bin/sh app
+WORKDIR /app
+USER app
 
-# Make sure the zscaler_mcp directory is properly set up
-RUN chmod +x zscaler_mcp/main.py
+COPY --from=uv --chown=app:app /app/.venv /app/.venv
 
-# Verify installations
-RUN python -c "import zscaler; print(f'Zscaler SDK version: {zscaler.__version__}')" || echo "Zscaler SDK check failed"
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Entrypoint command
-ENTRYPOINT ["python", "-m", "zscaler_mcp.main"]
+ENTRYPOINT ["zscaler-mcp"]

@@ -37,7 +37,6 @@ help:
 	@echo "$(COLOR_OK)  format                        Reformat code with black$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  lint                          Check style with flake8 for all packages$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  lint:zcc                      Check style with flake8 for zcc packages$(COLOR_NONE)"
-	@echo "$(COLOR_OK)  lint:zcon                     Check style with flake8 for zcon packages$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  lint:zdx                      Check style with flake8 for zdx packages$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  lint:zpa                      Check style with flake8 for zpa packages$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  lint:zia                      Check style with flake8 for zia packages$(COLOR_NONE)"
@@ -45,7 +44,6 @@ help:
 	@echo "$(COLOR_WARNING)test$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  test:all                      Run all tests$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  test:integration:zcc          Run only zcc integration tests$(COLOR_NONE)"
-	@echo "$(COLOR_OK)  test:integration:zcon         Run only zcon integration tests$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  test:integration:zdx          Run only zdx integration tests$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  test:integration:zia          Run only zia integration tests$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  test:integration:zpa          Run only zpa integration tests$(COLOR_NONE)"
@@ -88,8 +86,17 @@ install-dev:
 install-uv:
 	uv tool install --local .
 
+clean-uv-cache:
+	rm -rf uv.lock
+	uv cache clean
+	uv lock
+
 install-pip:
 	pip install -e .
+
+.PHONY: reqs
+reqs:       ## Recreate the requirements.txt file
+	poetry export -f requirements.txt --output requirements.txt --only=main --without-hashes
 
 docker-clean:
 	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q | xargs -r $(DOCKER) rm -f

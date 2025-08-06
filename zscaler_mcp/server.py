@@ -66,19 +66,15 @@ class ZscalerMCPServer:
         logger = get_logger(__name__)
         logger.info("Initializing Zscaler MCP Server")
 
-        # Initialize the Zscaler client
-        self.zscaler_client = get_zscaler_client(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            customer_id=self.customer_id,
-            vanity_domain=self.vanity_domain,
-            cloud=self.cloud,
-        )
+        # Don't initialize the Zscaler client during server startup to avoid pickle issues
+        # Clients will be created on-demand when tools are called
+        self.zscaler_client = None
+        logger.info("Client initialization deferred to tool execution")
 
         # Initialize the MCP server
         self.server = FastMCP(
             name="Zscaler MCP Server",
-            instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, and ZCC services.",
+            instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
             debug=self.debug,
             log_level="DEBUG" if self.debug else "INFO",
         )
@@ -89,7 +85,8 @@ class ZscalerMCPServer:
         for service_name in self.enabled_services:
             if service_name in available_services:
                 service_class = available_services[service_name]
-                self.services[service_name] = service_class(self.zscaler_client)
+                # Pass None as client - tools will create their own clients on-demand
+                self.services[service_name] = service_class(None)
                 logger.debug("Initialized service: %s", service_name)
 
         # Register tools and resources from services

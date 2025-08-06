@@ -209,7 +209,7 @@ aws bedrock-agentcore-control create-agent-runtime \
   --description "Zscaler MCP Server Agent" \
   --agent-runtime-artifact '{
     "containerConfiguration": {
-      "containerUri": "709825985650.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp:0.1.1"
+      "containerUri": "202719523534.dkr.ecr.us-west-2.amazonaws.com/zscaler/zscaler-mcp:0.1.0"
     }
   }' \
   --role-arn "arn:aws:iam::example:role/bedrock-core-zscaler-role" \

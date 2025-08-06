@@ -43,6 +43,11 @@ The Zscaler MCP Server brings context to your agents. Try prompts like:
 - **zdx_list_administration**: Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal
 - **zdx_list_active_devices**: Downloads ZCC device information or service status as a CSV file.
 
+### ZIdentity Features
+
+- **zidentity_groups**: Retrieves Zidentity group information
+- **zidentity_users**: Retrieves Zidentity user information
+
 ### ZIA Features
 
 - **zia_activation**: Activate ZIA configuration changes
@@ -160,9 +165,47 @@ You can provide credentials via the `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`
 | Argument     | Description | Environment variable |
 |--------------|-------------|-------------------|
 | `clientId`       | _(String)_ Zscaler API Client ID, used with `clientSecret` or `PrivateKey` OAuth auth mode.| `ZSCALER_CLIENT_ID` |
-| `clientSecret`       | _(String)_ A string that contains the password for the API admin.|
+| `clientSecret`       | _(String)_ A string that contains the password for the API admin.| `ZSCALER_CLIENT_SECRET` |
 | `vanityDomain`       | _(String)_ Refers to the domain name used by your organization i.e `acme` | `ZSCALER_VANITY_DOMAIN` |
 | `cloud`       | _(String)_ The Zidentity cloud to authenticate to i.e `beta`| `ZSCALER_CLOUD` |
+| `use_legacy`       | _(Boolean)_ Whether to use legacy API clients instead of OneAPI. Can be set to `true` or `false`.| `ZSCALER_USE_LEGACY` |
+
+### Using Legacy Mode with Environment Variable
+
+To enable legacy API mode for all tools, set the `ZSCALER_USE_LEGACY` environment variable:
+
+```env
+# Enable legacy mode for all tools
+ZSCALER_USE_LEGACY=true
+
+# Legacy ZPA credentials
+ZPA_CLIENT_ID=your_zpa_client_id
+ZPA_CLIENT_SECRET=your_zpa_client_secret
+ZPA_CUSTOMER_ID=your_zpa_customer_id
+ZPA_CLOUD=BETA
+
+# Legacy ZIA credentials
+ZIA_USERNAME=your_zia_username
+ZIA_PASSWORD=your_zia_password
+ZIA_API_KEY=your_zia_api_key
+ZIA_CLOUD=beta
+
+# Legacy ZCC credentials
+ZCC_CLIENT_ID=your_zcc_client_id
+ZCC_CLIENT_SECRET=your_zcc_client_secret
+ZCC_CLOUD=beta
+
+# Legacy ZDX credentials
+ZDX_CLIENT_ID=your_zdx_client_id
+ZDX_CLIENT_SECRET=your_zdx_client_secret
+ZDX_CLOUD=beta
+```
+
+When `ZSCALER_USE_LEGACY=true` is set, all tools will use legacy API clients by default. You can still override this per tool call by explicitly setting `use_legacy: false` in the tool parameters.
+
+**Note**: When using legacy mode, the MCP server will initialize without creating a client during startup. Clients are created on-demand when individual tools are called, which allows the server to work with different legacy services (ZPA, ZIA, ZDX) without requiring a specific service to be specified during initialization.
+
+**Important**: Legacy credentials are only loaded when `ZSCALER_USE_LEGACY=true` is set. In OneAPI mode, legacy credentials are ignored to prevent conflicts.
 
 ## Zscaler Legacy API Login
 
@@ -284,6 +327,7 @@ ZSCALER_CLIENT_SECRET=your_client_secret
 ZSCALER_CUSTOMER_ID=your_customer_id
 ZSCALER_VANITY_DOMAIN=your_vanity_domain
 ZSCALER_CLOUD=beta
+ZSCALER_USE_LEGACY=false
 ```
 
 ⚠️ Do not commit this file. Add .env to your .gitignore.

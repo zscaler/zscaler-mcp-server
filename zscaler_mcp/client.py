@@ -1,5 +1,5 @@
 from zscaler import ZscalerClient
-from zscaler.oneapi_client import LegacyZPAClient, LegacyZIAClient, LegacyZDXClient
+from zscaler.oneapi_client import LegacyZCCClient, LegacyZPAClient, LegacyZIAClient, LegacyZDXClient
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,6 +16,7 @@ def get_zscaler_client(
     api_key: str = None,
     key_id: str = None,
     key_secret: str = None,
+    secret_key: str = None,
     cloud: str = None,
     service: str = None,  # 'zpa' or 'zia'
     use_legacy: bool = False,
@@ -51,6 +52,48 @@ def get_zscaler_client(
         else os.getenv("ZSCALER_PRIVATE_KEY")
     )
 
+    # ✅ Environment variable fallback for use_legacy
+    # Check environment variable if use_legacy is not explicitly set to True
+    if use_legacy is None or use_legacy is False:
+        env_use_legacy = os.getenv("ZSCALER_USE_LEGACY", "false").lower() == "true"
+        if env_use_legacy:
+            use_legacy = True
+
+    # ✅ Environment variable fallback for legacy credentials (only if in legacy mode)
+    if use_legacy:
+        # ZPA legacy credentials
+        client_id = client_id if client_id not in [None, ""] else os.getenv("ZPA_CLIENT_ID")
+        client_secret = client_secret if client_secret not in [None, ""] else os.getenv("ZPA_CLIENT_SECRET")
+        customer_id = customer_id if customer_id not in [None, ""] else os.getenv("ZPA_CUSTOMER_ID")
+
+        # ZIA legacy credentials
+        username = username if username not in [None, ""] else os.getenv("ZIA_USERNAME")
+        password = password if password not in [None, ""] else os.getenv("ZIA_PASSWORD")
+        api_key = api_key if api_key not in [None, ""] else os.getenv("ZIA_API_KEY")
+
+        # ZCC legacy credentials
+        api_key = api_key if api_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
+        secret_key = secret_key if secret_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
+
+        # ZDX legacy credentials
+        key_id = key_id if key_id not in [None, ""] else os.getenv("ZDX_CLIENT_ID")
+        key_secret = key_secret if key_secret not in [None, ""] else os.getenv("ZDX_CLIENT_SECRET")
+
+        # Cloud environment (service-specific)
+        if not cloud:
+            if service == "zpa":
+                cloud = os.getenv("ZPA_CLOUD")
+            elif service == "zia":
+                cloud = os.getenv("ZIA_CLOUD")
+            elif service == "zdx":
+                cloud = os.getenv("ZDX_CLOUD")
+            elif service == "zcc":
+                cloud = os.getenv("ZCC_CLOUD")
+
+    # Debug logging (only in debug mode)
+    logger.debug(f"[DEBUG] use_legacy parameter: {use_legacy}")
+    logger.debug(f"[DEBUG] ZSCALER_USE_LEGACY env var: {os.getenv('ZSCALER_USE_LEGACY')}")
+
     # ✅ Debug logging
     logger.debug("[DEBUG] Final Auth Config:")
     logger.debug(f"  client_id: {bool(client_id)}")
@@ -58,23 +101,13 @@ def get_zscaler_client(
     logger.debug(f"  customer_id: {bool(customer_id)}")
     logger.debug(f"  vanity_domain: {bool(vanity_domain)}")
     logger.debug(f"  cloud: {cloud}")
-
-    # ✅ Check for resolved values after fallback
-    auth_fields = {
-        "ZSCALER_CLIENT_ID": client_id,
-        "ZSCALER_CLIENT_SECRET": client_secret,
-        "ZSCALER_CUSTOMER_ID": customer_id,
-        "ZSCALER_VANITY_DOMAIN": vanity_domain,
-    }
-
-    missing = [
-        key for key, value in auth_fields.items() if not (value and value.strip())
-    ]
-    if missing:
-        raise RuntimeError(
-            f"Zscaler SDK failed to initialize due to missing configuration values: {missing}. "
-            "Please ensure the MCP container has these values set in the environment or .env file."
-        )
+    logger.debug(f"  use_legacy: {use_legacy}")
+    logger.debug(f"  username: {bool(username)}")
+    logger.debug(f"  password: {bool(password)}")
+    logger.debug(f"  api_key: {bool(api_key)}")
+    logger.debug(f"  key_id: {bool(key_id)}")
+    logger.debug(f"  key_secret: {bool(key_secret)}")
+    logger.debug(f"  secret_key: {bool(secret_key)}")
 
     """
     Returns an authenticated Zscaler SDK client (OneAPI or Legacy).
@@ -87,10 +120,15 @@ def get_zscaler_client(
         private_key (str): OAuth private key for OneAPI JWT-based auth.
         username (str): Legacy ZIA username (used only by LegacyZIAClient).
         password (str): Legacy ZIA password (used only by LegacyZIAClient).
-        api_key (str): Legacy ZIA API key (used only by LegacyZIAClient).
+        api_key (str): Legacy ZCC AND ZIA API key (used only by LegacyZIAClient and LegacyZCCClient).
+        secret_key (str): Legacy ZCC Secret key (used only by LegacyZCCClient).
+        key_id (str): Legacy ZDX Key ID (used only by LegacyZDXClient).
+        key_secret (str): Legacy ZDX Secret Key (used only by LegacyZDXClient).
         cloud (str): Zscaler cloud environment (e.g., 'BETA', 'zscalertwo').
         service (str): Required if use_legacy=True. Must be either 'zpa' or 'zia'.
-        use_legacy (bool): If True, selects the appropriate legacy client (LegacyZPAClient or LegacyZIAClient).
+        use_legacy (bool): If True, selects the appropriate legacy client (
+                          LegacyZCCClient, LegacyZDXClient, LegacyZPAClient, LegacyZIAClient).
+                          Can also be set via ZSCALER_USE_LEGACY environment variable.
 
     Returns:
         Union[ZscalerClient, LegacyZPAClient, LegacyZIAClient]: An authenticated client instance.
@@ -98,6 +136,8 @@ def get_zscaler_client(
     Notes:
         - If `use_legacy=True`, do **not** set or expect `vanity_domain`. It is required only for OneAPI.
         - Each legacy service requires different credential parameters:
+            • LegacyZCCClient: key_id, secret_key, cloud
+            • LegacyZDXClient: api_key, key_secret, cloud
             • LegacyZPAClient: client_id, client_secret, customer_id, cloud
             • LegacyZIAClient: username, password, api_key, cloud
             • LegacyZDXClient: key_id, key_secret, cloud
@@ -120,6 +160,16 @@ def get_zscaler_client(
             }
             return LegacyZPAClient(config)
 
+        elif service == "zcc":
+            if not all([api_key, secret_key, cloud]):
+                raise ValueError("Missing required credentials for LegacyZCCClient.")
+            config = {
+                "api_key": api_key,
+                "secret_key": secret_key,
+                "cloud": cloud,
+            }
+            return LegacyZIAClient(config)
+
         elif service == "zia":
             if not all([username, password, api_key, cloud]):
                 raise ValueError("Missing required credentials for LegacyZIAClient.")
@@ -132,12 +182,12 @@ def get_zscaler_client(
             return LegacyZIAClient(config)
 
         elif service == "zdx":
-            if not all([key_id, key_secret]):
+            if not all([key_id, key_secret, cloud]):
                 raise ValueError("Missing required credentials for LegacyZDXClient.")
             config = {
                 "key_id": key_id,
                 "key_secret": key_secret,
-                # "cloud": cloud,
+                "cloud": cloud,
             }
             return LegacyZDXClient(config)
 
@@ -145,6 +195,23 @@ def get_zscaler_client(
             raise ValueError(f"Unsupported legacy service: {service}")
 
     # Default: OneAPI client
+    # ✅ Check for required OneAPI credentials
+    auth_fields = {
+        "ZSCALER_CLIENT_ID": client_id,
+        "ZSCALER_CLIENT_SECRET": client_secret,
+        "ZSCALER_CUSTOMER_ID": customer_id,
+        "ZSCALER_VANITY_DOMAIN": vanity_domain,
+    }
+
+    missing = [
+        key for key, value in auth_fields.items() if not (value and value.strip())
+    ]
+    if missing:
+        raise RuntimeError(
+            f"Zscaler SDK failed to initialize due to missing configuration values: {missing}. "
+            "Please ensure the MCP container has these values set in the environment or .env file."
+        )
+
     if not client_secret and not private_key:
         raise ValueError(
             "You must provide either client_secret or private_key for OneAPI client."
