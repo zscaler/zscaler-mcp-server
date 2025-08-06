@@ -1,5 +1,3 @@
-<!-- ![Zscaler](https://raw.githubusercontent.com/zscaler/falconpy/main/docs/asset/zscaler-logo.png) -->
-
 # ⭐ MCP Server for the Zscaler API
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
@@ -418,7 +416,7 @@ This method is ideal for developers working on new tools or contributing to the 
 uv pip install -e .
 ```
 
-**Using uv tool install (similar to falcon-mcp):**
+**Using uv tool install (similar to zscaler-mcp):**
 ```sh
 uv tool install --local .
 ```

@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-zscaler-mcp = "zscaler_mcp.server:server"
+zscaler-mcp = "zscaler_mcp.server:main"
 
 [project.optional-dependencies]
 dev = [
