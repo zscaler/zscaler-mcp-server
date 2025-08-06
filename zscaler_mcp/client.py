@@ -168,7 +168,7 @@ def get_zscaler_client(
                 "secret_key": secret_key,
                 "cloud": cloud,
             }
-            return LegacyZIAClient(config)
+            return LegacyZCCClient(config)
 
         elif service == "zia":
             if not all([username, password, api_key, cloud]):
