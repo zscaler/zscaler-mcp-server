@@ -1,6 +1,8 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Annotated, Union, List, Dict, Any, Optional, Literal
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+
 from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 
 def zdx_device_discovery_tool(
@@ -80,13 +82,28 @@ def zdx_device_discovery_tool(
         )
         if err:
             raise Exception(f"Device lookup failed: {err}")
-        return [d.as_dict() for d in result]
+        
+        # The ZDX SDK returns a list containing a single DeviceDetail object
+        if result and len(result) > 0:
+            device_obj = result[0]  # Get the first (and only) DeviceDetail object
+            return device_obj.as_dict()
+        else:
+            return {}
 
     elif action == "list_devices":
         results, _, err = client.zdx.devices.list_devices(query_params=query_params)
         if err:
             raise Exception(f"Device listing failed: {err}")
-        return [r.as_dict() for r in results]
+        
+        # The ZDX SDK returns a list containing a single Devices object
+        # The Devices object contains a list of DeviceDetail objects in its devices property
+        if results and len(results) > 0:
+            devices_obj = results[0]  # Get the first (and only) Devices object
+            # Access the devices property which contains a list of DeviceDetail objects
+            device_list = devices_obj.devices if hasattr(devices_obj, 'devices') else []
+            return [d.as_dict() for d in device_list]
+        else:
+            return []
 
     else:
         raise ValueError("Invalid action. Must be one of: 'list_devices', 'get_device'")

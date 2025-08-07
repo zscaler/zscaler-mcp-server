@@ -1,7 +1,8 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Union
-from typing import Annotated
+from typing import Annotated, Union
+
 from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 
 def trusted_network_manager(

@@ -1,7 +1,8 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Union, List
-from typing import Annotated
+from typing import Annotated, List, Union
+
 from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 
 def connector_group_manager(

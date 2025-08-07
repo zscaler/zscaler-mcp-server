@@ -1,6 +1,8 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Annotated, Union, List, Dict, Any, Optional, Literal
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+
 from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 
 def zdx_admin_discovery_tool(
@@ -51,7 +53,7 @@ def zdx_admin_discovery_tool(
         locations, _, err = client.zdx.admin.list_locations(query_params=query_params)
         if err:
             raise Exception(f"Error retrieving locations: {err}")
-        return [l.as_dict() for l in locations]
+        return [location.as_dict() for location in locations]
 
     else:
         raise ValueError(

@@ -1,6 +1,6 @@
-from typing import Union, List, Dict, Any, Tuple
-from collections import defaultdict
 import json
+from collections import defaultdict
+from typing import Any, Dict, List, Tuple, Union
 
 
 def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:

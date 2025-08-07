@@ -1,6 +1,12 @@
-from zscaler import ZscalerClient
-from zscaler.oneapi_client import LegacyZCCClient, LegacyZPAClient, LegacyZIAClient, LegacyZDXClient
 import logging
+
+from zscaler import ZscalerClient
+from zscaler.oneapi_client import (
+    LegacyZCCClient,
+    LegacyZDXClient,
+    LegacyZIAClient,
+    LegacyZPAClient,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +28,7 @@ def get_zscaler_client(
     use_legacy: bool = False,
 ):
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv()

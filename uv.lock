@@ -581,7 +581,7 @@ wheels = [
 
 [[package]]
 name = "fastmcp"
-version = "2.11.1"
+version = "2.11.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -596,9 +596,9 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/89/d100073d15cdfa5fa029107b44ef55916b04ed6010ff2b0f7bed92a35ed9/fastmcp-2.11.1.tar.gz", hash = "sha256:2b5af21b093d4926fef17a9a162d5729a2fcb46f3b195699762fa01f61ac3c60", size = 2672724, upload-time = "2025-08-04T15:39:29.623Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/44/9957bf4373be797fa596a8a08c0e0c2ea255c0a02002aff06c29216484b6/fastmcp-2.11.2.tar.gz", hash = "sha256:bb958010faf987ff158a75ee9950bb6ea4e7b01940dd9ec0e9f0f6a419c4f6b8", size = 2675200, upload-time = "2025-08-06T17:19:39.744Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/9f/f3703867a8be93f2a139f6664fa7ff46c5c844e28998ce288f7b919ed197/fastmcp-2.11.1-py3-none-any.whl", hash = "sha256:9f0b6a3f61dcf6f688a0a24b8b507be24bfae051a00b7d590c01395d63da8c00", size = 256573, upload-time = "2025-08-04T15:39:27.594Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/78/bf9ea9311e5bb0e64d2d480136ec29b22d43620eafcec756e9fa78a7ddd1/fastmcp-2.11.2-py3-none-any.whl", hash = "sha256:3e358f65e41f5f85b8fb0303131cc1c8b122f43a7aff9b47b74157e615fe5484", size = 257133, upload-time = "2025-08-06T17:19:38.228Z" },
 ]
 
 [[package]]
@@ -1117,7 +1117,7 @@ wheels = [
 
 [[package]]
 name = "langsmith"
-version = "0.4.12"
+version = "0.4.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1128,9 +1128,9 @@ dependencies = [
     { name = "requests-toolbelt" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/9f/c6d24c90fded8bb0a5f62f4eb5c84b5f3997c7ef13fd021d7a9ea8b80954/langsmith-0.4.12.tar.gz", hash = "sha256:95cb05772da0325e5e4ed48b5df859ebcac801804e25702fc0543589be7bbfb1", size = 920606, upload-time = "2025-08-06T05:10:39.762Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/7a/a4265a1ae549cb2480dae97867dd6841edaf2b419755d307ef998fa87854/langsmith-0.4.13.tar.gz", hash = "sha256:1ae7dbb5d8150647406f49885a2dd16ab12bd990254b5dc23718838b3d086fde", size = 920911, upload-time = "2025-08-06T20:09:53.041Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/5c/429409109c95c511b04981c35a235eac810e12fc0e79e53d5126d64348d4/langsmith-0.4.12-py3-none-any.whl", hash = "sha256:adbd9bc9062ecda93117f124bc7ce4f09bf72b116c3297aef47cbbb7df1f0582", size = 372305, upload-time = "2025-08-06T05:10:37.29Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/04/171205d95baa3e5e8867416ffeb90510c3f17036a96e6aa9948ba4920db0/langsmith-0.4.13-py3-none-any.whl", hash = "sha256:dab7b16ee16986995007bf5a777f45c18f8bf7453f67ae2ebcb46ce43c214297", size = 372682, upload-time = "2025-08-06T20:09:51.026Z" },
 ]
 
 [[package]]
@@ -1954,7 +1954,7 @@ wheels = [
 
 [[package]]
 name = "posthog"
-version = "6.4.0"
+version = "6.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -1964,9 +1964,9 @@ dependencies = [
     { name = "six" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/64/a2/02c9dbaf335d39d1de783299c80f49660f17d99a4d7420622d432d3f489e/posthog-6.4.0.tar.gz", hash = "sha256:2ed2b2f1c1aec4e486281a250d723d49725f3d09c97e1211ea4bd2bcdae8f5c2", size = 99374, upload-time = "2025-08-05T19:33:36.922Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/56/d0f77d6b20d2c5a349fd4eae55389ab8769c95c99c9881c523f9809bdba6/posthog-6.4.1.tar.gz", hash = "sha256:751afaca4007855b3d848b69020c8c8f83a8d5f03a98b464e6a3b74c5a21bd22", size = 99422, upload-time = "2025-08-06T21:18:05.096Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/38/77a394674219eb72116471328227aaeb30e5ab4b43d4fa5669bc53c8e201/posthog-6.4.0-py3-none-any.whl", hash = "sha256:30979b2d0c9a61dbeef641d02b4404778f3492e64f3de3ffafa2fe3e05029fe6", size = 116574, upload-time = "2025-08-05T19:33:35.643Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/9f/cbeffe61002faf2c4fd935a283401c35b82505c012ba69240f0d09d095f0/posthog-6.4.1-py3-none-any.whl", hash = "sha256:d3b077f8747ce68a0176b4033a8f5a9333d43f7f18079c70deac977f78b23b9d", size = 116586, upload-time = "2025-08-06T21:18:03.366Z" },
 ]
 
 [[package]]
@@ -3188,15 +3188,13 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "ipython" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-e2e = [
     { name = "langchain-openai" },
     { name = "mcp-use", extra = ["search"] },
+    { name = "mypy" },
+    { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -3205,23 +3203,23 @@ requires-dist = [
     { name = "click" },
     { name = "fastmcp", specifier = ">=2.5.1" },
     { name = "ipython", marker = "extra == 'dev'" },
-    { name = "langchain-openai", marker = "extra == 'e2e'", specifier = ">=0.3.28" },
+    { name = "langchain-openai", marker = "extra == 'dev'", specifier = ">=0.3.28" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.9.1" },
-    { name = "mcp-use", extras = ["search"], marker = "extra == 'e2e'", specifier = ">=1.3.7" },
+    { name = "mcp-use", extras = ["search"], marker = "extra == 'dev'", specifier = ">=1.3.7" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-asyncio", marker = "extra == 'e2e'", specifier = ">=0.21.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "python-dotenv" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "uvicorn" },
-    { name = "zscaler-sdk-python", specifier = ">=1.7.0" },
+    { name = "zscaler-sdk-python", specifier = ">=1.7.3" },
 ]
-provides-extras = ["dev", "e2e"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "zscaler-sdk-python"
-version = "1.7.2"
+version = "1.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
@@ -3236,9 +3234,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/b2/1cbb6ff79cd3f8dccd03a0cd656e46516b9d3366f8834627d0ad7c40ce23/zscaler_sdk_python-1.7.2.tar.gz", hash = "sha256:d7d3330860a8f4fd3667e6d830b33837d06fc9bb6879f2f24693f6b2048000ed", size = 501917, upload-time = "2025-08-06T04:11:40.473Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/00/d3b4308a3462fe651b016d1a3849ef543c29b403cb61fc3869ba9e3203ce/zscaler_sdk_python-1.7.3.tar.gz", hash = "sha256:1aefec5380531dbb9cb7a65c68107a58286a6852b44114a89d2bb5730a03e52c", size = 504937, upload-time = "2025-08-07T07:21:25.734Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/57/bf36286649c2c12eff0872896c969435902ed6036f509312099ae9871dca/zscaler_sdk_python-1.7.2-py3-none-any.whl", hash = "sha256:156519f7f269bb1eb6f283bca0dd69a4b2d7187ef1f2e4b42311a9f43539e60a", size = 950520, upload-time = "2025-08-06T04:11:39.138Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/40/a5b13a6fd5d007aae8a8a749112c9d55b7f214ba10e87b25f4d808063a5d/zscaler_sdk_python-1.7.3-py3-none-any.whl", hash = "sha256:e00f27632a2e8d4a69908de9b45d63cea4dbe5f1e6de7a50a7cda6efcaa4b2b1", size = 954302, upload-time = "2025-08-07T07:21:24.205Z" },
 ]
 
 [[package]]

@@ -4,8 +4,8 @@ Zscaler MCP Server Services
 This module provides the service classes for the Zscaler MCP server.
 """
 
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,8 @@ class ZCCService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import tools here to avoid circular imports
-        from .tools.zcc.list_devices import zcc_devices_v1_manager
         from .tools.zcc.download_devices import zcc_devices_csv_exporter
+        from .tools.zcc.list_devices import zcc_devices_v1_manager
 
         self.tools = [
             zcc_devices_v1_manager,
@@ -97,12 +97,26 @@ class ZDXService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import tools here to avoid circular imports
-        from .tools.zdx.administration import zdx_admin_discovery_tool
         from .tools.zdx.active_devices import zdx_device_discovery_tool
+        from .tools.zdx.administration import zdx_admin_discovery_tool
+        from .tools.zdx.list_applications import zdx_list_applications
+        from .tools.zdx.get_application_score import zdx_get_application_score
+        from .tools.zdx.get_application_metric import zdx_get_application_metric
+        from .tools.zdx.get_application_user import zdx_get_application_user
+        from .tools.zdx.list_software_inventory import zdx_list_software_inventory
+        from .tools.zdx.list_alerts import zdx_list_alerts
+        from .tools.zdx.list_historical_alerts import zdx_list_historical_alerts
 
         self.tools = [
             zdx_admin_discovery_tool,
             zdx_device_discovery_tool,
+            zdx_list_applications,
+            zdx_get_application_score,
+            zdx_get_application_metric,
+            zdx_get_application_user,
+            zdx_list_software_inventory,
+            zdx_list_alerts,
+            zdx_list_historical_alerts,
         ]
 
     def register_tools(self, server, enabled_tools=None):
@@ -116,6 +130,34 @@ class ZDXService(BaseService):
             "zdx_device_discovery_tool": {
                 "name": "zdx_active_devices",
                 "description": "Tool for discovering ZDX devices using various filters.",
+            },
+            "zdx_list_applications": {
+                "name": "zdx_list_applications",
+                "description": "Tool for listing ZDX applications and getting application details.",
+            },
+            "zdx_get_application_score": {
+                "name": "zdx_get_application_score",
+                "description": "Tool for retrieving ZDX application scores and trends.",
+            },
+            "zdx_get_application_metric": {
+                "name": "zdx_get_application_metric",
+                "description": "Tool for retrieving ZDX metrics for a specified application",
+            },
+            "zdx_get_application_user": {
+                "name": "zdx_get_application_user",
+                "description": "Tool for retrieving ZDX application user information and device details",
+            },
+            "zdx_list_software_inventory": {
+                "name": "zdx_list_software_inventory",
+                "description": "Tool for retrieving ZDX software inventory information.",
+            },
+            "zdx_list_alerts": {
+                "name": "zdx_list_alerts",
+                "description": "Tool for listing ZDX alerts and retrieving alert details.",
+            },
+            "zdx_list_historical_alerts": {
+                "name": "zdx_list_historical_alerts",
+                "description": "Tool for retrieving ZDX historical alert information.",
             },
         }
 
@@ -145,30 +187,30 @@ class ZPAService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import tools here to avoid circular imports
+        from .tools.zpa.access_app_protection_rules import app_protection_policy_manager
+        from .tools.zpa.access_forwarding_rules import forwarding_policy_manager
+        from .tools.zpa.access_isolation_rules import isolation_policy_manager
+        from .tools.zpa.access_policy_rules import access_policy_manager
+        from .tools.zpa.access_timeout_rules import timeout_policy_manager
+        from .tools.zpa.app_connector_groups import connector_group_manager
         from .tools.zpa.app_segments import app_segment_manager
-        from .tools.zpa.get_segments_by_type import app_segments_by_type_manager
         from .tools.zpa.application_servers import application_server_v2_manager
         from .tools.zpa.ba_certificate import ba_certificate_manager
+        from .tools.zpa.get_app_protection_profile import app_protection_profile_manager
+        from .tools.zpa.get_enrollment_certificate import enrollment_certificate_manager
+        from .tools.zpa.get_isolation_profile import isolation_profile_manager
+        from .tools.zpa.get_posture_profiles import posture_profile_manager
+        from .tools.zpa.get_saml_attributes import saml_attribute_manager
+        from .tools.zpa.get_scim_attributes import scim_attribute_manager
+        from .tools.zpa.get_scim_groups import scim_group_manager
+        from .tools.zpa.get_segments_by_type import app_segments_by_type_manager
+        from .tools.zpa.get_trusted_networks import trusted_network_manager
+        from .tools.zpa.pra_credential import pra_credential_manager
+        from .tools.zpa.pra_portal import pra_portal_manager
+        from .tools.zpa.provisioning_key import provisioning_key_manager
         from .tools.zpa.segment_groups import segment_group_v6_manager
         from .tools.zpa.server_groups import server_group_manager
-        from .tools.zpa.app_connector_groups import connector_group_manager
         from .tools.zpa.service_edge_groups import service_edge_group_manager
-        from .tools.zpa.access_policy_rules import access_policy_manager
-        from .tools.zpa.access_forwarding_rules import forwarding_policy_manager
-        from .tools.zpa.access_timeout_rules import timeout_policy_manager
-        from .tools.zpa.access_isolation_rules import isolation_policy_manager
-        from .tools.zpa.get_isolation_profile import isolation_profile_manager
-        from .tools.zpa.get_app_protection_profile import app_protection_profile_manager
-        from .tools.zpa.access_app_protection_rules import app_protection_policy_manager
-        from .tools.zpa.get_enrollment_certificate import enrollment_certificate_manager
-        from .tools.zpa.provisioning_key import provisioning_key_manager
-        from .tools.zpa.pra_portal import pra_portal_manager
-        from .tools.zpa.pra_credential import pra_credential_manager
-        from .tools.zpa.get_scim_groups import scim_group_manager
-        from .tools.zpa.get_scim_attributes import scim_attribute_manager
-        from .tools.zpa.get_saml_attributes import saml_attribute_manager
-        from .tools.zpa.get_trusted_networks import trusted_network_manager
-        from .tools.zpa.get_posture_profiles import posture_profile_manager
 
         self.tools = [
             app_segment_manager,
@@ -327,22 +369,22 @@ class ZIAService(BaseService):
         super().__init__(zscaler_client)
         # Import tools here to avoid circular imports
         from .tools.zia.activation import zia_activation_manager
-        from .tools.zia.cloud_applications import cloud_applications_manager
         from .tools.zia.atp_malicious_urls import zia_atp_malicious_urls_manager
         from .tools.zia.auth_exempt_urls import zia_auth_exempt_urls_manager
-        from .tools.zia.rule_labels import rule_label_manager
-        from .tools.zia.url_categories import url_category_manager
+        from .tools.zia.cloud_applications import cloud_applications_manager
         from .tools.zia.cloud_firewall_rules import zia_firewall_rule_manager
-        from .tools.zia.ip_source_groups import zia_ip_source_group_manager
-        from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager
-        from .tools.zia.network_app_groups import zia_network_app_group_manager
-        from .tools.zia.location_management import zia_locations_manager
-        from .tools.zia.vpn_credentials import vpn_credential_manager
-        from .tools.zia.static_ips import static_ip_manager
-        from .tools.zia.gre_tunnels import gre_tunnel_manager
-        from .tools.zia.gre_ranges import gre_range_discovery_manager
         from .tools.zia.geo_search import zia_geo_search_tool
         from .tools.zia.get_sandbox_info import sandbox_manager
+        from .tools.zia.gre_ranges import gre_range_discovery_manager
+        from .tools.zia.gre_tunnels import gre_tunnel_manager
+        from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager
+        from .tools.zia.ip_source_groups import zia_ip_source_group_manager
+        from .tools.zia.location_management import zia_locations_manager
+        from .tools.zia.network_app_groups import zia_network_app_group_manager
+        from .tools.zia.rule_labels import rule_label_manager
+        from .tools.zia.static_ips import static_ip_manager
+        from .tools.zia.url_categories import url_category_manager
+        from .tools.zia.vpn_credentials import vpn_credential_manager
 
         self.tools = [
             zia_activation_manager,

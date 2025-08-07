@@ -7,6 +7,7 @@ via environment variable instead of specifying use_legacy in every tool call.
 """
 
 import os
+
 from zscaler_mcp.client import get_zscaler_client
 
 

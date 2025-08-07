@@ -4,7 +4,9 @@ Test for ZSCALER_USE_LEGACY environment variable functionality.
 
 import os
 from unittest.mock import patch
+
 import pytest
+
 from zscaler_mcp.client import get_zscaler_client
 
 

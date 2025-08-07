@@ -1,6 +1,8 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Annotated, Union, List, Optional
+from typing import Annotated, List, Optional, Union
+
 from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 
 def zcc_devices_v1_manager(

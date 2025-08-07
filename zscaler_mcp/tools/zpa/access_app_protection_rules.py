@@ -1,8 +1,9 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Union, List
-from typing import Annotated
+from typing import Annotated, List, Union
+
 from pydantic import Field
-from zscaler_mcp.utils.utils import convert_v2_to_sdk_format, convert_v1_to_v2_response
+
+from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.utils.utils import convert_v1_to_v2_response, convert_v2_to_sdk_format
 
 
 def app_protection_policy_manager(

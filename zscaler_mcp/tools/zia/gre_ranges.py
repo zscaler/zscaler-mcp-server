@@ -1,6 +1,8 @@
-from zscaler_mcp.client import get_zscaler_client
-from typing import Annotated, Union, List
+from typing import Annotated, List, Union
+
 from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 
 def gre_range_discovery_manager(

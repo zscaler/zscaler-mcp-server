@@ -5,15 +5,16 @@ This module provides the main server class for the Zscaler MCP server
 and serves as the entry point for the application.
 """
 
-import uvicorn
 import argparse
 import os
 import sys
 from typing import Dict, List, Optional, Set
+
+import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+
 from zscaler_mcp import services
-from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.logging import configure_logging, get_logger
 
 # Add the project root to Python path for imports
