@@ -181,6 +181,7 @@ cython_debug/
 .vscode/
 .clinerules/
 memory-bank/
+.DS_Store
 
 # Ruff stuff:
 .ruff_cache/
