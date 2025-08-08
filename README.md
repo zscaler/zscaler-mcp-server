@@ -1,4 +1,4 @@
-# ⭐ MCP Server for the Zscaler API
+# ⭐ Zscaler MCP Server
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
