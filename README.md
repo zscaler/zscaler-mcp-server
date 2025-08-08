@@ -95,6 +95,7 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 | `zdx_list_software_inventory` | List software inventory or users/devices for a software key |
 | `zdx_list_alerts` | List ongoing alerts, get alert details, or list affected devices |
 | `zdx_list_historical_alerts` | List historical alert rules (ended alerts) |
+| `zdx_list_deep_traces` | Retrieve deep trace information for troubleshooting device connectivity issues |
 
 ### ZIdentity Features
 

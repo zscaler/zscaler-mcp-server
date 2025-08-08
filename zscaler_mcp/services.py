@@ -99,13 +99,14 @@ class ZDXService(BaseService):
         # Import tools here to avoid circular imports
         from .tools.zdx.active_devices import zdx_device_discovery_tool
         from .tools.zdx.administration import zdx_admin_discovery_tool
-        from .tools.zdx.list_applications import zdx_list_applications
-        from .tools.zdx.get_application_score import zdx_get_application_score
         from .tools.zdx.get_application_metric import zdx_get_application_metric
+        from .tools.zdx.get_application_score import zdx_get_application_score
         from .tools.zdx.get_application_user import zdx_get_application_user
-        from .tools.zdx.list_software_inventory import zdx_list_software_inventory
         from .tools.zdx.list_alerts import zdx_list_alerts
+        from .tools.zdx.list_applications import zdx_list_applications
+        from .tools.zdx.list_deep_traces import zdx_list_deep_traces
         from .tools.zdx.list_historical_alerts import zdx_list_historical_alerts
+        from .tools.zdx.list_software_inventory import zdx_list_software_inventory
 
         self.tools = [
             zdx_admin_discovery_tool,
@@ -117,6 +118,7 @@ class ZDXService(BaseService):
             zdx_list_software_inventory,
             zdx_list_alerts,
             zdx_list_historical_alerts,
+            zdx_list_deep_traces,
         ]
 
     def register_tools(self, server, enabled_tools=None):
@@ -158,6 +160,10 @@ class ZDXService(BaseService):
             "zdx_list_historical_alerts": {
                 "name": "zdx_list_historical_alerts",
                 "description": "Tool for retrieving ZDX historical alert information.",
+            },
+            "zdx_list_deep_traces": {
+                "name": "zdx_list_deep_traces",
+                "description": "Tool for retrieving ZDX deep trace information for troubleshooting device connectivity issues.",
             },
         }
 

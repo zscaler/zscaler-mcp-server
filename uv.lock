@@ -3213,7 +3213,7 @@ requires-dist = [
     { name = "python-dotenv" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "uvicorn" },
-    { name = "zscaler-sdk-python", specifier = ">=1.7.3" },
+    { name = "zscaler-sdk-python" },
 ]
 provides-extras = ["dev"]
 
