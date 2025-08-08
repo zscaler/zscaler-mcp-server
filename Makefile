@@ -53,7 +53,7 @@ help:
 	@echo "$(COLOR_OK)  publish:test                  Publish distribution to testpypi (Will ask for credentials)$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  publish:prod                  Publish distribution to pypi (Will ask for credentials)$(COLOR_NONE)"
 
-clean: clean-build clean-pyc clean-test clean-docsrc
+clean: clean-build clean-pyc clean-test
 
 clean-build:
 	rm -fr build/
@@ -68,6 +68,12 @@ clean-pyc:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
+
+clean-test:
+	rm -fr .tox/
+	rm -f .coverage
+	rm -fr htmlcov/
+	rm -fr .pytest_cache
 
 # Runtime-only dependencies
 sync-deps:
