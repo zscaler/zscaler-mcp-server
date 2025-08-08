@@ -86,8 +86,15 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 
 | Tool Name | Description |
 |-----------|-------------|
-| `zdx_administration` | Tool for discovering ZDX departments or locations |
-| `zdx_active_devices` | Tool for discovering ZDX devices using various filters |
+| `zdx_administration` | Discover ZDX departments or locations |
+| `zdx_active_devices` | Discover ZDX devices using various filters |
+| `zdx_list_applications` | List all active applications configured in ZDX |
+| `zdx_list_application_score` | Get an application's ZDX score or score trend |
+| `zdx_get_application_metric` | Retrieve ZDX metrics for an application (PFT, DNS, availability) |
+| `zdx_get_application_user` | List users/devices for an app or details for a specific user |
+| `zdx_list_software_inventory` | List software inventory or users/devices for a software key |
+| `zdx_list_alerts` | List ongoing alerts, get alert details, or list affected devices |
+| `zdx_list_historical_alerts` | List historical alert rules (ended alerts) |
 
 ### ZIdentity Features
 
