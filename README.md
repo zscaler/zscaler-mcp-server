@@ -118,6 +118,9 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 | `zia_gre_tunnels` | Tool for managing ZIA GRE Tunnels and associated static IPs |
 | `zia_ip_destination_groups` | Manages ZIA IP Destination Groups |
 | `zia_ip_source_group` | Performs CRUD operations on ZIA IP Source Groups |
+| `zia_user_groups` | Lists and retrieves ZIA User Groups with pagination, filtering and sorting |
+| `zia_user_departments` | Lists and retrieves ZIA User Departments with pagination, filtering and sorting |
+| `zia_users` | Lists and retrieves ZIA Users with filtering and pagination |
 | `zia_location_management` | FastMCP tool to manage ZIA Locations |
 | `zia_network_app_group` | Manages ZIA Network Application Groups |
 | `zia_rule_labels` | Tool for managing ZIA Rule Labels |

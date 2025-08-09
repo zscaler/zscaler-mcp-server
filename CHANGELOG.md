@@ -17,9 +17,17 @@
 - Comprehensive end-to-end testing framework with 44+ tests
 - Test runner script with multi-model testing support
 - Mock API strategy for realistic testing scenarios
+ - ZIA tools for user management via the Python SDK:
+   - `zia_user_groups`: Lists and retrieves ZIA User Groups with pagination, filtering, and sorting
+   - `zia_user_departments`: Lists and retrieves ZIA User Departments with pagination, filtering, and sorting
+   - `zia_users`: Lists and retrieves ZIA Users with filtering and pagination
 
 ### Changed
 
 - Fixed import sorting and linting issues
 - Simplified project structure by removing unnecessary nesting
 - Updated test organization for better maintainability
+
+### Documentation
+
+- Updated README ZIA Features to include the new tools (`zia_user_groups`, `zia_user_departments`, `zia_users`).

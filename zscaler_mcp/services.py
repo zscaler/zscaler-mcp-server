@@ -385,7 +385,10 @@ class ZIAService(BaseService):
         from .tools.zia.gre_tunnels import gre_tunnel_manager
         from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager
         from .tools.zia.ip_source_groups import zia_ip_source_group_manager
+        from .tools.zia.list_user_groups import zia_user_group_manager
         from .tools.zia.location_management import zia_locations_manager
+        from .tools.zia.list_user_departments import zia_user_department_manager
+        from .tools.zia.list_users import zia_users_manager
         from .tools.zia.network_app_groups import zia_network_app_group_manager
         from .tools.zia.rule_labels import rule_label_manager
         from .tools.zia.static_ips import static_ip_manager
@@ -402,6 +405,9 @@ class ZIAService(BaseService):
             zia_firewall_rule_manager,
             zia_ip_source_group_manager,
             zia_ip_destination_group_manager,
+            zia_user_group_manager,
+            zia_user_department_manager,
+            zia_users_manager,
             zia_network_app_group_manager,
             zia_locations_manager,
             vpn_credential_manager,
@@ -451,6 +457,18 @@ class ZIAService(BaseService):
             "zia_ip_destination_group_manager": {
                 "name": "zia_ip_destination_groups",
                 "description": "Manages ZIA IP Destination Groups.",
+            },
+            "zia_user_group_manager": {
+                "name": "zia_user_groups",
+                "description": "Lists and retrieves ZIA User Groups with pagination, filtering and sorting via the Python SDK.",
+            },
+            "zia_user_department_manager": {
+                "name": "zia_user_departments",
+                "description": "Lists and retrieves ZIA User Departments with pagination, filtering and sorting via the Python SDK.",
+            },
+            "zia_users_manager": {
+                "name": "zia_users",
+                "description": "Lists and retrieves ZIA Users with filtering and pagination via the Python SDK.",
             },
             "zia_network_app_group_manager": {
                 "name": "zia_network_app_group",
