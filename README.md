@@ -1,4 +1,3 @@
-![Zscaler](https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/docs/media/zscaler_logo.png)
 # ⭐ Zscaler MCP Server
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp-server.svg)](https://badge.fury.io/py/zscaler-mcp-server)
