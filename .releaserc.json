@@ -6,8 +6,8 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "poetry run .github/set-version.sh ${nextRelease.version}",
-        "publishCmd": "poetry publish --build"
+        "prepareCmd": ".github/set-version.sh ${nextRelease.version}",
+        "publishCmd": "uv pip install build twine && python -m build && python -m twine upload dist/* --username __token__ --password $PYPI_API_TOKEN"
       }
     ],
     [
