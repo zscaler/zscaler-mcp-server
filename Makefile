@@ -77,11 +77,11 @@ clean-test:
 
 # Runtime-only dependencies
 sync-deps:
-	poetry export -f requirements.txt --without-hashes > requirements.txt
+	uv pip compile pyproject.toml --output-file requirements.txt
 
 # Dev dependencies for contributors/CI
 sync-dev-deps:
-	poetry export -f requirements.txt --without-hashes --with dev > requirements-dev.txt
+	uv pip compile pyproject.toml --extra dev --output-file requirements-dev.txt
 
 install:
 	uv pip install .
