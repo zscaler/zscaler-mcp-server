@@ -46,7 +46,7 @@ name = "zscaler-mcp"
 version = "0.1.0"
 description = "Official Zscaler MCP Server"
 readme = "README.md"
-requires-python = ">=3.11"
+python = "^3.11"
 license = "MIT"
 authors = ["Zscaler, Inc. <devrel@zscaler.com>"]
 classifiers = [
