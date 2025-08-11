@@ -14,50 +14,10 @@ permissions:
 
 
 jobs:
-  format:
-    name: Check Code Format
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v9
-        with:
-          poetry-version: 1.8.3
-
-      - name: Get poetry cache directory
-        id: poetry-cache
-        run: echo "dir=$(poetry config cache-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.poetry-cache.outputs.dir }}
-          key: ${{ runner.os }}-poetry-'3.11'-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-'3.11'-
-
-      - name: Install dependencies
-        run: poetry install
-
-      - name: Format Code with black
-        run: poetry run make format
-
-      - name: Check formatting with black
-        run: poetry run make check-format
 
   release:
     name: Release
     if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
-    needs: [format]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
