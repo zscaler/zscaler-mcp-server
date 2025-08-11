@@ -1,52 +1,8 @@
-[project]
-name = "zscaler-mcp"
-version = "0.1.0"
-description = "Official Zscaler MCP Server"
-readme = "README.md"
-requires-python = ">=3.11"
-license = "MIT"
-authors = [
-  { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
-]
-classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-]
-dependencies = [
-  "zscaler-sdk-python",
-  "mcp[cli]>=1.9.1",
-  "fastmcp>=2.5.1",
-  "python-dotenv",
-  "click",
-  "uvicorn"
-]
-
-[project.scripts]
-zscaler-mcp = "zscaler_mcp.server:main"
-
-[project.optional-dependencies]
-dev = [
-  "pytest",
-  "pytest-cov",
-  "black",
-  "mypy",
-  "ipython",
-  "ruff",
-  "pytest-asyncio>=0.21.0",
-  "langchain-openai>=0.3.28",
-  "mcp-use[search]>=1.3.7"
-]
-
 [tool.poetry]
 name = "zscaler-mcp"
 version = "0.1.0"
 description = "Official Zscaler MCP Server"
 readme = "README.md"
-python = "^3.11"
 license = "MIT"
 authors = ["Zscaler, Inc. <devrel@zscaler.com>"]
 classifiers = [
