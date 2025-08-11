@@ -48,9 +48,7 @@ description = "Official Zscaler MCP Server"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-authors = [
-  { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
-]
+authors = ["Zscaler, Inc. <devrel@zscaler.com>"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
