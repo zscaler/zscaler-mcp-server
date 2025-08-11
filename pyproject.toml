@@ -1,4 +1,4 @@
-[project]
+[tool.poetry]
 name = "zscaler-mcp"
 version = "0.1.0"
 description = "Official Zscaler MCP Server"
@@ -63,6 +63,7 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
 filterwarnings = [
     "ignore::DeprecationWarning:websockets.*:",
     "ignore::DeprecationWarning:uvicorn.protocols.websockets.*:",

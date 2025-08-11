@@ -42,11 +42,11 @@ jobs:
             .
 
           # Test basic functionality - should show help without errors
-          echo "Testing zscaler-mcp-server --help..."
+          echo "Testing zscaler-mcp --help..."
           docker run --rm zscaler-mcp-server:test-local --help
 
           # Test version command | TBD: Add version check
-          #echo "Testing zscaler-mcp-server --version..."
+          #echo "Testing zscaler-mcp --version..."
           #docker run --rm zscaler-mcp-server:test-local --version || true
 
           echo "✅ Docker image smoke tests passed!"
