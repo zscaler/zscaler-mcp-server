@@ -1,17 +1,17 @@
 # ⭐ Zscaler MCP Server
 
-[![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
+[![PyPI version](https://badge.fury.io/py/zscaler-mcp-server.svg)](https://badge.fury.io/py/zscaler-mcp-server)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp-server)](https://pypi.org/project/zscaler-mcp-server/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**zscaler-mcp** is a Model Context Protocol (MCP) server that connects AI agents with the Zscaler Zero Trust Exchange platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, incidents, and behaviors—establishing the foundation for advanced security operations and automation.
+**zscaler-mcp-server** is a Model Context Protocol (MCP) server that connects AI agents with the Zscaler Zero Trust Exchange platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, incidents, and behaviors—establishing the foundation for advanced security operations and automation.
 
 ## Support Disclaimer
 
 -> **Disclaimer:** Please refer to our [General Support Statement](docs/guides/support.md) before proceeding with the use of this provider. You can also refer to our [troubleshooting guide](docs/guides/troubleshooting.md) for guidance on typical problems.
 
 > [!IMPORTANT]
-> **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/zscaler/zscaler-mcp/issues) to help shape the final release.
+> **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/zscaler/zscaler-mcp-server/issues) to help shape the final release.
 
 ## 📄 Table of contents
 
@@ -202,7 +202,7 @@ Then edit `.env` with your Zscaler API credentials:
 #### Install using uv (recommended)
 
 ```bash
-uv tool install zscaler-mcp
+uv tool install zscaler-mcp-server
 ```
 
 > **Note**: This method requires the package to be published to PyPI. Currently, this package is in development and not yet published. Use one of the source installation methods below.
@@ -226,7 +226,7 @@ make install-dev
 ```
 
 > [!TIP]
-> If `zscaler-mcp` isn't found, update your shell PATH.
+> If `zscaler-mcp-server` isn't found, update your shell PATH.
 
 For installation via code editors/assistants, see the [Using the MCP Server with Agents](#-using-the-mcp-server-with-agents) section below.
 
@@ -237,25 +237,25 @@ For installation via code editors/assistants, see the [Using the MCP Server with
 Run the server with default settings (stdio transport):
 
 ```bash
-zscaler-mcp
+zscaler-mcp-server
 ```
 
 Run with SSE transport:
 
 ```bash
-zscaler-mcp --transport sse
+zscaler-mcp-server --transport sse
 ```
 
 Run with streamable-http transport:
 
 ```bash
-zscaler-mcp --transport streamable-http
+zscaler-mcp-server --transport streamable-http
 ```
 
 Run with streamable-http transport on custom port:
 
 ```bash
-zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8080
+zscaler-mcp-server --transport streamable-http --host 0.0.0.0 --port 8080
 ```
 
 ### Service Configuration
@@ -268,10 +268,10 @@ Specify services using comma-separated lists:
 
 ```bash
 # Enable specific services
-zscaler-mcp --services zia,zpa,zdx
+zscaler-mcp-server --services zia,zpa,zdx
 
 # Enable only one service
-zscaler-mcp --services zia
+zscaler-mcp-server --services zia
 ```
 
 #### 2. Environment Variable (fallback)
@@ -281,10 +281,10 @@ Set the `ZSCALER_MCP_SERVICES` environment variable:
 ```bash
 # Export environment variable
 export ZSCALER_MCP_SERVICES=zia,zpa,zdx
-zscaler-mcp
+zscaler-mcp-server
 
 # Or set inline
-ZSCALER_MCP_SERVICES=zia,zpa,zdx zscaler-mcp
+ZSCALER_MCP_SERVICES=zia,zpa,zdx zscaler-mcp-server
 ```
 
 #### 3. Default Behavior (all services)
@@ -302,7 +302,7 @@ If no services are specified via command line or environment variable, all avail
 For all available options:
 
 ```bash
-zscaler-mcp --help
+zscaler-mcp-server --help
 ```
 
 ### Supported Agents
@@ -616,35 +616,35 @@ The Zscaler MCP Server is available as a pre-built container image for easy depl
 
 ```bash
 # Pull the latest pre-built image
-docker pull quay.io/zscaler/zscaler-mcp:latest
+docker pull quay.io/zscaler/zscaler-mcp-server:latest
 
 # Run with .env file (recommended)
-docker run --rm --env-file /path/to/.env quay.io/zscaler/zscaler-mcp:latest
+docker run --rm --env-file /path/to/.env quay.io/zscaler/zscaler-mcp-server:latest
 
 # Run with .env file and SSE transport
 docker run --rm -p 8000:8000 --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp:latest --transport sse --host 0.0.0.0
+  quay.io/zscaler/zscaler-mcp-server:latest --transport sse --host 0.0.0.0
 
 # Run with .env file and streamable-http transport
 docker run --rm -p 8000:8000 --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp:latest --transport streamable-http --host 0.0.0.0
+  quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
 
 # Run with .env file and custom port
 docker run --rm -p 8080:8080 --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp:latest --transport streamable-http --host 0.0.0.0 --port 8080
+  quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8080
 
 # Run with .env file and specific services
 docker run --rm --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp:latest --services zia,zpa,zdx
+  quay.io/zscaler/zscaler-mcp-server:latest --services zia,zpa,zdx
 
 # Use a specific version instead of latest
 docker run --rm --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp:1.2.3
+  quay.io/zscaler/zscaler-mcp-server:1.2.3
 
 # Alternative: Individual environment variables
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
   -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain \
-  quay.io/zscaler/zscaler-mcp:latest
+  quay.io/zscaler/zscaler-mcp-server:latest
 ```
 
 ### Building Locally (Development)
@@ -653,11 +653,11 @@ For development or customization purposes, you can build the image locally:
 
 ```bash
 # Build the Docker image
-docker build -t zscaler-mcp .
+docker build -t zscaler-mcp-server .
 
 # Run the locally built image
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
-  -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain zscaler-mcp
+  -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain zscaler-mcp-server
 ```
 
 **Note**: When using HTTP transports in Docker, always set `--host 0.0.0.0` to allow external connections to the container.
@@ -671,9 +671,9 @@ You can integrate the Zscaler MCP server with your editor or AI assistant. Here 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp": {
+    "zscaler-mcp-server": {
       "command": "uvx",
-      "args": ["--env-file", "/path/to/.env", "zscaler-mcp"]
+      "args": ["--env-file", "/path/to/.env", "zscaler-mcp-server"]
     }
   }
 }
@@ -684,11 +684,11 @@ You can integrate the Zscaler MCP server with your editor or AI assistant. Here 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp": {
+    "zscaler-mcp-server": {
       "command": "uvx",
       "args": [
         "--env-file", "/path/to/.env",
-        "zscaler-mcp",
+        "zscaler-mcp-server",
         "--services", "zia,zpa,zdx"
       ]
     }
@@ -701,9 +701,9 @@ You can integrate the Zscaler MCP server with your editor or AI assistant. Here 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp": {
+    "zscaler-mcp-server": {
       "command": "uvx",
-      "args": ["zscaler-mcp"],
+      "args": ["zscaler-mcp-server"],
       "env": {
         "ZSCALER_CLIENT_ID": "your-client-id",
         "ZSCALER_CLIENT_SECRET": "your-client-secret",
@@ -720,12 +720,12 @@ You can integrate the Zscaler MCP server with your editor or AI assistant. Here 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp-docker": {
+    "zscaler-mcp-server-docker": {
       "command": "docker",
       "args": [
         "run", "-i", "--rm",
         "--env-file", "/full/path/to/.env",
-        "quay.io/zscaler/zscaler-mcp:latest"
+        "quay.io/zscaler/zscaler-mcp-server:latest"
       ]
     }
   }
@@ -746,7 +746,7 @@ Once your server is running (via Docker or source), you can access its tools thr
 
 1. Open Claude
 2. In Chat, select the "Search & Tools"
-3. The server appears in the tools list `zscaler-mcp`
+3. The server appears in the tools list `zscaler-mcp-server`
 4. Try prompts like "List ZPA Segment Groups" or "List ZIA Rule Labels"
 5. Select the tool and click "Submit"
 
@@ -754,7 +754,7 @@ Once your server is running (via Docker or source), you can access its tools thr
 
 1. Open Cursor, then settings
 2. In Curos Settings, select "Tools & Integrations"
-3. In the MCP Tools section, turn on `zscaler-mcp`
+3. In the MCP Tools section, turn on `zscaler-mcp-server`
 4. Select `View` and `Command Palette` and `Chat: Open Chat Agent`
 5. In chat, switch to [Agent Mode](https://docs.cursor.com/chat/agent).
 6. Try prompts like "List ZPA Segment Groups" or "List ZIA Rule Labels"
@@ -785,8 +785,8 @@ See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/zscaler/zscaler-mcp.git
-   cd zscaler-mcp
+   git clone https://github.com/zscaler/zscaler-mcp-server.git
+   cd zscaler-mcp-server
    ```
 
 2. Install in development mode:

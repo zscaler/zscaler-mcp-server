@@ -1,0 +1,11 @@
+.github
+.vscode
+script
+.dockerignore
+.gitignore
+**/*.yml
+**/*.yaml
+**/*.md
+**/*_test.go
+LICENSE
+local_dev/

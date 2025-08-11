@@ -1,41 +1,112 @@
-name: release-please
+---
+name: Release
+
 on:
   push:
-    branches: [main]
+    branches:
+      - master
+      - develop
+  pull_request:
 
 permissions:
   contents: write
   pull-requests: write
 
+
 jobs:
-  release-please:
+  format:
+    name: Check Code Format
     runs-on: ubuntu-latest
     steps:
-      - uses: google-github-actions/release-please-action@v3
-        id: release-please
-        with:
-          release-type: python
-          package-name: zscaler-mcp
-          pull-request-header: ':rocket: New Release Incoming! :rocket:'
-          changelog-types: '[{"type":"feat","section":"Features","hidden":false},{"type":"fix","section":"Bug Fixes","hidden":false},{"type":"refactor","section":"Refactoring","hidden":false},{"type":"chore","section":"Miscellaneous","hidden":true}]'
-          # Add any extra files that contain version references
-          # extra-files: |
-          #   README.md
-
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-        if: ${{ steps.release-please.outputs.release_created }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-        if: ${{ steps.release-please.outputs.release_created }}
 
-      - name: Build and publish to PyPI
-        run: |
-          pip install uv
-          uv pip install build twine
-          python -m build
-          python -m twine upload dist/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
-        if: ${{ steps.release-please.outputs.release_created }}
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v9
+        with:
+          poetry-version: 1.8.3
+
+      - name: Get poetry cache directory
+        id: poetry-cache
+        run: echo "dir=$(poetry config cache-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.poetry-cache.outputs.dir }}
+          key: ${{ runner.os }}-poetry-'3.11'-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-'3.11'-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Format Code with black
+        run: poetry run make format
+
+      - name: Check formatting with black
+        run: poetry run make check-format
+
+  release:
+    name: Release
+    if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
+    needs: [format]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v9
+        with:
+          poetry-version: 1.8.3
+
+      - name: Get poetry cache directory
+        id: poetry-cache
+        run: echo "dir=$(poetry config cache-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.poetry-cache.outputs.dir }}
+          key: ${{ runner.os }}-poetry-'3.11'-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-'3.11'-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+
+      - name: Create release and publish
+        id: release
+        uses: cycjimmy/semantic-release-action@v2
+        with:
+          semantic_version: 17.1.1
+          extra_plugins: |
+            conventional-changelog-conventionalcommits@^4.4.0
+            @semantic-release/git@^9.0.0
+            @semantic-release/exec@^5.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}

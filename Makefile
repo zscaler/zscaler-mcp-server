@@ -5,7 +5,7 @@ COLOR_WARNING=\x1b[33;01m
 COLOR_ZSCALER=\x1B[34;01m
 
 DOCKER        ?= docker
-BINARY_NAME   ?= zscaler-mcp
+BINARY_NAME   ?= zscaler-mcp-server
 VERSION       ?= latest
 
 
