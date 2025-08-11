@@ -3,7 +3,7 @@ name = "zscaler-mcp"
 version = "0.1.0"
 description = "Official Zscaler MCP Server"
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.11"
 license = "MIT"
 authors = [
   { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
@@ -11,6 +11,7 @@ authors = [
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
