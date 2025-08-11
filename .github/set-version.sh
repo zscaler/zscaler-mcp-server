@@ -42,4 +42,4 @@ sed -i.bak -E "s/^__version__ = \".+\"$/__version__ = \"$NEW_VERSION\"/" "$ROOT/
 
 # Generate requirements.txt from pyproject.toml
 echo "Updating requirements.txt"
-make sync-deps
+uv pip compile pyproject.toml --output-file requirements.txt
