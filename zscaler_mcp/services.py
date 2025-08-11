@@ -385,10 +385,10 @@ class ZIAService(BaseService):
         from .tools.zia.gre_tunnels import gre_tunnel_manager
         from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager
         from .tools.zia.ip_source_groups import zia_ip_source_group_manager
-        from .tools.zia.list_user_groups import zia_user_group_manager
-        from .tools.zia.location_management import zia_locations_manager
         from .tools.zia.list_user_departments import zia_user_department_manager
+        from .tools.zia.list_user_groups import zia_user_group_manager
         from .tools.zia.list_users import zia_users_manager
+        from .tools.zia.location_management import zia_locations_manager
         from .tools.zia.network_app_groups import zia_network_app_group_manager
         from .tools.zia.rule_labels import rule_label_manager
         from .tools.zia.static_ips import static_ip_manager
