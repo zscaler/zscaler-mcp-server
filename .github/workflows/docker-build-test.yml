@@ -1,0 +1,52 @@
+name: Docker Build Test
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'zscaler_mcp/**'
+      - '.github/workflows/docker-build-test.yml'
+
+jobs:
+  docker-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build multi-platform Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            zscaler-mcp-server:test
+            zscaler-mcp-server:pr-${{ github.event.pull_request.number }}
+
+      - name: Test Docker image (amd64)
+        run: |
+          # Build for local testing (amd64 only for running tests)
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --tag zscaler-mcp-server:test-local \
+            .
+
+          # Test basic functionality - should show help without errors
+          echo "Testing zscaler-mcp --help..."
+          docker run --rm zscaler-mcp-server:test-local --help
+
+          # Test version command | TBD: Add version check
+          #echo "Testing zscaler-mcp --version..."
+          #docker run --rm zscaler-mcp-server:test-local --version || true
+
+          echo "✅ Docker image smoke tests passed!"

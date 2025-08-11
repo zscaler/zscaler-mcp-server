@@ -1,0 +1,35 @@
+name: Python Lint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          activate-environment: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+
+      - name: Lint imports
+        run: |
+          ruff check . --select I
+
+      - name: Lint with Ruff
+        run: |
+          ruff check .
