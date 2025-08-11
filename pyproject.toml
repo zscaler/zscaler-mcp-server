@@ -41,8 +41,6 @@ dev = [
   "mcp-use[search]>=1.3.7"
 ]
 
-
-
 [tool.black]
 line-length = 100
 target-version = ["py311"]
@@ -62,10 +60,6 @@ line-length = 100
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-include = ["zscaler_mcp*"]
-exclude = ["notes*", "local_dev*", "tests*"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
@@ -74,3 +68,7 @@ filterwarnings = [
     "ignore::DeprecationWarning:uvicorn.protocols.websockets.*:",
     "ignore::pydantic.PydanticDeprecatedSince20:langchain_core.*:"
 ]
+
+[tool.setuptools.packages.find]
+include = ["zscaler_mcp*"]
+exclude = ["notes*", "local_dev*", "tests*"]
