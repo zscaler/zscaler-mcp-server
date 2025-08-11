@@ -1,10 +1,11 @@
+![Zscaler](https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/docs/media/zscaler_logo.png)
 # ⭐ Zscaler MCP Server
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp-server.svg)](https://badge.fury.io/py/zscaler-mcp-server)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp-server)](https://pypi.org/project/zscaler-mcp-server/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**zscaler-mcp-server** is a Model Context Protocol (MCP) server that connects AI agents with the Zscaler Zero Trust Exchange platform, powering intelligent security analysis in your agentic workflows. It delivers programmatic access to essential security capabilities—including detections, incidents, and behaviors—establishing the foundation for advanced security operations and automation.
+**zscaler-mcp-server** is a Model Context Protocol (MCP) server that connects AI agents with the Zscaler Zero Trust Exchange platform, powering intelligent security analysis in your agentic workflows.
 
 ## Support Disclaimer
 
