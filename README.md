@@ -1,8 +1,9 @@
 # ⭐ Zscaler MCP Server
 
-[![PyPI version](https://badge.fury.io/py/zscaler-mcp-server.svg)](https://badge.fury.io/py/zscaler-mcp-server)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp-server)](https://pypi.org/project/zscaler-mcp-server/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp-server)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
+[![License](https://img.shields.io/github/license/zscaler/zscaler-mcp-server.svg)](https://github.com/zscaler/zscaler-mcp-server)
+[![Zscaler Community](https://img.shields.io/badge/zscaler-community-blue)](https://community.zscaler.com/)
 
 **zscaler-mcp-server** is a Model Context Protocol (MCP) server that connects AI agents with the Zscaler Zero Trust Exchange platform, powering intelligent security analysis in your agentic workflows.
 
@@ -720,7 +721,7 @@ You can integrate the Zscaler MCP server with your editor or AI assistant. Here 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp-server-docker": {
+    "zscaler-mcp-server": {
       "command": "docker",
       "args": [
         "run", "-i", "--rm",

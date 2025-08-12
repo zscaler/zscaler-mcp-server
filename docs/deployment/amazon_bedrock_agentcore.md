@@ -55,7 +55,7 @@ Create an IAM role with the following policy that grants the necessary permissio
         "ecr:GetDownloadUrlForLayer"
       ],
       "Resource": [
-        "arn:aws:ecr:us-east-1:709825985650:repository/zscaler/zscaler-mcp"
+        "arn:aws:ecr:us-east-1:202719523534:repository/zscaler/zscaler-mcp-server"
       ]
     },
     {
@@ -209,7 +209,7 @@ aws bedrock-agentcore-control create-agent-runtime \
   --description "Zscaler MCP Server Agent" \
   --agent-runtime-artifact '{
     "containerConfiguration": {
-      "containerUri": "202719523534.dkr.ecr.us-west-2.amazonaws.com/zscaler/zscaler-mcp:0.1.0"
+      "containerUri": "202719523534.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest"
     }
   }' \
   --role-arn "arn:aws:iam::example:role/bedrock-core-zscaler-role" \
