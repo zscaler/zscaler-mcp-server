@@ -3,6 +3,7 @@ from typing import Annotated, List, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.utils.utils import validate_and_convert_country_code_iso
 
 
 def connector_group_manager(
@@ -29,7 +30,7 @@ def connector_group_manager(
     city_country: Annotated[
         str, Field(description="City and country information.")
     ] = None,
-    country_code: Annotated[str, Field(description="Country code.")] = None,
+    country_code: Annotated[str, Field(description="Country code (e.g., 'Canada', 'US', 'CA', 'GB'). Will be converted to ISO alpha-2 format.")] = None,
     dns_query_type: Annotated[str, Field(description="DNS query type.")] = None,
     override_version_profile: Annotated[
         bool, Field(description="Whether to override version profile.")
@@ -62,6 +63,13 @@ def connector_group_manager(
     CRUD handler for ZPA App Connector Groups via the Python SDK.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
+
+    # Validate and convert country code if provided
+    if country_code:
+        try:
+            country_code = validate_and_convert_country_code_iso(country_code)
+        except ValueError as e:
+            raise ValueError(f"Invalid country code: {e}")
 
     api = client.zpa.app_connector_groups
 

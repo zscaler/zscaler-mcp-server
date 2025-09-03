@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
+import pycountry
 
 
 def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
@@ -197,3 +198,220 @@ def convert_v1_to_v2_response(conditions: List[Dict]) -> List[Dict]:
         )
 
     return v2_conditions
+
+
+def validate_and_convert_country_code(country_input: str) -> str:
+    """
+    Validates and converts country input to Zscaler's COUNTRY_XX format.
+
+    Args:
+        country_input (str): Country name, ISO code, or existing COUNTRY_XX format
+
+    Returns:
+        str: Validated country code in COUNTRY_XX format (e.g., COUNTRY_CA, COUNTRY_US)
+
+    Raises:
+        ValueError: If country cannot be found or is invalid
+
+    Examples:
+        >>> validate_and_convert_country_code("Canada")
+        'COUNTRY_CA'
+        >>> validate_and_convert_country_code("CA")
+        'COUNTRY_CA'
+        >>> validate_and_convert_country_code("COUNTRY_CA")
+        'COUNTRY_CA'
+        >>> validate_and_convert_country_code("United States")
+        'COUNTRY_US'
+    """
+    if not country_input or not isinstance(country_input, str):
+        raise ValueError("Country input must be a non-empty string")
+
+    country_input = country_input.strip().upper()
+
+    # If already in COUNTRY_XX format, validate the country code
+    if country_input.startswith("COUNTRY_"):
+        country_code = country_input[8:]  # Remove "COUNTRY_" prefix
+        try:
+            country = pycountry.countries.get(alpha_2=country_code)
+            if country:
+                return country_input
+            else:
+                raise ValueError(f"Invalid country code: {country_code}")
+        except Exception:
+            raise ValueError(f"Invalid country code: {country_code}")
+
+    # Try to find by ISO alpha-2 code
+    try:
+        country = pycountry.countries.get(alpha_2=country_input)
+        if country:
+            return f"COUNTRY_{country.alpha_2}"
+    except Exception:
+        pass
+
+    # Try to find by ISO alpha-3 code
+    try:
+        country = pycountry.countries.get(alpha_3=country_input)
+        if country:
+            return f"COUNTRY_{country.alpha_2}"
+    except Exception:
+        pass
+
+    # Try to find by country name
+    try:
+        country = pycountry.countries.get(name=country_input)
+        if country:
+            return f"COUNTRY_{country.alpha_2}"
+    except Exception:
+        pass
+
+    # Try to find by common name
+    try:
+        country = pycountry.countries.get(common_name=country_input)
+        if country:
+            return f"COUNTRY_{country.alpha_2}"
+    except Exception:
+        pass
+
+    # Try to find by official name
+    try:
+        country = pycountry.countries.get(official_name=country_input)
+        if country:
+            return f"COUNTRY_{country.alpha_2}"
+    except Exception:
+        pass
+
+    # Try fuzzy search for country names
+    try:
+        countries = pycountry.countries.search_fuzzy(country_input)
+        if countries:
+            return f"COUNTRY_{countries[0].alpha_2}"
+    except Exception:
+        pass
+
+    raise ValueError(f"Could not find country: {country_input}")
+
+
+def validate_and_convert_country_codes(country_inputs: Union[List[str], str]) -> List[str]:
+    """
+    Validates and converts multiple country inputs to Zscaler's COUNTRY_XX format.
+
+    Args:
+        country_inputs: List of country names/codes or JSON string of countries
+
+    Returns:
+        List[str]: List of validated country codes in COUNTRY_XX format
+
+    Raises:
+        ValueError: If any country cannot be found or is invalid
+
+    Examples:
+        >>> validate_and_convert_country_codes(["Canada", "US", "COUNTRY_GB"])
+        ['COUNTRY_CA', 'COUNTRY_US', 'COUNTRY_GB']
+        >>> validate_and_convert_country_codes('["Canada", "US"]')
+        ['COUNTRY_CA', 'COUNTRY_US']
+    """
+    if isinstance(country_inputs, str):
+        try:
+            country_inputs = json.loads(country_inputs)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON string for countries: {e}")
+
+    if not isinstance(country_inputs, list):
+        raise ValueError("Country inputs must be a list or JSON string of countries")
+
+    converted_countries = []
+    for country_input in country_inputs:
+        converted_country = validate_and_convert_country_code(country_input)
+        converted_countries.append(converted_country)
+
+    return converted_countries
+
+
+def validate_and_convert_country_code_iso(country_input: str) -> str:
+    """
+    Validates and converts country input to standard ISO 3166-1 alpha-2 format.
+
+    Args:
+        country_input (str): Country name, ISO code, or existing ISO format
+
+    Returns:
+        str: Validated country code in ISO alpha-2 format (e.g., CA, US, GB)
+
+    Raises:
+        ValueError: If country cannot be found or is invalid
+
+    Examples:
+        >>> validate_and_convert_country_code_iso("Canada")
+        'CA'
+        >>> validate_and_convert_country_code_iso("US")
+        'US'
+        >>> validate_and_convert_country_code_iso("CA")
+        'CA'
+        >>> validate_and_convert_country_code_iso("United States")
+        'US'
+    """
+    if not country_input or not isinstance(country_input, str):
+        raise ValueError("Country input must be a non-empty string")
+
+    country_input = country_input.strip()
+
+    # If already in ISO alpha-2 format, validate it
+    if len(country_input) == 2 and country_input.isalpha():
+        try:
+            country = pycountry.countries.get(alpha_2=country_input.upper())
+            if country:
+                return country.alpha_2
+            else:
+                raise ValueError(f"Invalid country code: {country_input}")
+        except Exception:
+            raise ValueError(f"Invalid country code: {country_input}")
+
+    # Try to find by ISO alpha-2 code (case insensitive)
+    try:
+        country = pycountry.countries.get(alpha_2=country_input.upper())
+        if country:
+            return country.alpha_2
+    except Exception:
+        pass
+
+    # Try to find by ISO alpha-3 code
+    try:
+        country = pycountry.countries.get(alpha_3=country_input.upper())
+        if country:
+            return country.alpha_2
+    except Exception:
+        pass
+
+    # Try to find by country name
+    try:
+        country = pycountry.countries.get(name=country_input)
+        if country:
+            return country.alpha_2
+    except Exception:
+        pass
+
+    # Try to find by common name
+    try:
+        country = pycountry.countries.get(common_name=country_input)
+        if country:
+            return country.alpha_2
+    except Exception:
+        pass
+
+    # Try to find by official name
+    try:
+        country = pycountry.countries.get(official_name=country_input)
+        if country:
+            return country.alpha_2
+    except Exception:
+        pass
+
+    # Try fuzzy search for country names
+    try:
+        countries = pycountry.countries.search_fuzzy(country_input)
+        if countries:
+            return countries[0].alpha_2
+    except Exception:
+        pass
+
+    raise ValueError(f"Could not find country: {country_input}")

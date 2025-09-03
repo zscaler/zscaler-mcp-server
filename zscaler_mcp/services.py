@@ -523,6 +523,67 @@ class ZIAService(BaseService):
                     continue
                 server.add_tool(tool)
 
+
+class ZTWService(BaseService):
+    """Zscaler Cloud & Branch Connector (ZTW) service."""
+
+    def __init__(self, zscaler_client):
+        super().__init__(zscaler_client)
+        # Import tools here to avoid circular imports
+        from .tools.ztw.ip_destination_groups import ztw_ip_destination_group_manager
+        from .tools.ztw.ip_groups import ztw_ip_group_manager
+        from .tools.ztw.ip_source_groups import ztw_ip_source_group_manager
+        from .tools.ztw.network_service_groups import ztw_network_service_group_manager
+
+        self.tools = [
+            ztw_ip_destination_group_manager,
+            ztw_ip_group_manager,
+            ztw_ip_source_group_manager,
+            ztw_network_service_group_manager
+        ]
+
+    def register_tools(self, server, enabled_tools=None):
+        """Register ZTW tools with the server."""
+        # Define tool metadata for registration
+        tool_metadata = {
+            "ztw_ip_destination_group_manager": {
+                "name": "ztw_ip_destination_groups",
+                "description": "Manages ZTW IP Destination Groups",
+            },
+            "ztw_ip_group_manager": {
+                "name": "ztw_ip_group",
+                "description": "Manages ZTW IP Groups",
+            },
+            "ztw_ip_source_group_manager": {
+                "name": "ztw_ip_source_groups",
+                "description": "Manages ZTW IP Source Groups",
+            },
+            "ztw_network_service_group_manager": {
+                "name": "ztw_network_service_groups",
+                "description": "Manages ZTW Network Service Groups",
+            },
+        }
+
+        for tool in self.tools:
+            # Get the function name to look up metadata
+            tool_name = tool.__name__
+
+            if tool_name in tool_metadata:
+                metadata = tool_metadata[tool_name]
+                # Skip if tool is not in enabled_tools (if enabled_tools is specified)
+                if enabled_tools and metadata["name"] not in enabled_tools:
+                    continue
+                server.add_tool(
+                    tool, name=metadata["name"], description=metadata["description"]
+                )
+            else:
+                # Fallback: use function name and docstring
+                # Skip if tool is not in enabled_tools (if enabled_tools is specified)
+                if enabled_tools and tool_name not in enabled_tools:
+                    continue
+                server.add_tool(tool)
+
+
 class ZIdentityService(BaseService):
     """Zscaler ZIdentity service."""
 
@@ -577,6 +638,7 @@ _AVAILABLE_SERVICES = {
     "zdx": ZDXService,
     "zpa": ZPAService,
     "zia": ZIAService,
+    "ztw": ZTWService,
     "zidentity": ZIdentityService,
 }
 

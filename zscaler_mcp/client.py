@@ -6,6 +6,7 @@ from zscaler.oneapi_client import (
     LegacyZDXClient,
     LegacyZIAClient,
     LegacyZPAClient,
+    LegacyZTWClient,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,11 @@ def get_zscaler_client(
         password = password if password not in [None, ""] else os.getenv("ZIA_PASSWORD")
         api_key = api_key if api_key not in [None, ""] else os.getenv("ZIA_API_KEY")
 
+        # ZTW legacy credentials
+        username = username if username not in [None, ""] else os.getenv("ZTW_USERNAME")
+        password = password if password not in [None, ""] else os.getenv("ZTW_PASSWORD")
+        api_key = api_key if api_key not in [None, ""] else os.getenv("ZTW_API_KEY")
+
         # ZCC legacy credentials
         api_key = api_key if api_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
         secret_key = secret_key if secret_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
@@ -92,6 +98,8 @@ def get_zscaler_client(
                 cloud = os.getenv("ZPA_CLOUD")
             elif service == "zia":
                 cloud = os.getenv("ZIA_CLOUD")
+            elif service == "ztw":
+                cloud = os.getenv("ZTW_CLOUD")
             elif service == "zdx":
                 cloud = os.getenv("ZDX_CLOUD")
             elif service == "zcc":
@@ -127,14 +135,14 @@ def get_zscaler_client(
         private_key (str): OAuth private key for OneAPI JWT-based auth.
         username (str): Legacy ZIA username (used only by LegacyZIAClient).
         password (str): Legacy ZIA password (used only by LegacyZIAClient).
-        api_key (str): Legacy ZCC AND ZIA API key (used only by LegacyZIAClient and LegacyZCCClient).
+        api_key (str): Legacy ZCC AND ZIA API key (used only by LegacyZIAClient, LegacyZCCClient and LegacyZTWClient).
         secret_key (str): Legacy ZCC Secret key (used only by LegacyZCCClient).
         key_id (str): Legacy ZDX Key ID (used only by LegacyZDXClient).
         key_secret (str): Legacy ZDX Secret Key (used only by LegacyZDXClient).
         cloud (str): Zscaler cloud environment (e.g., 'BETA', 'zscalertwo').
         service (str): Required if use_legacy=True. Must be either 'zpa' or 'zia'.
         use_legacy (bool): If True, selects the appropriate legacy client (
-                          LegacyZCCClient, LegacyZDXClient, LegacyZPAClient, LegacyZIAClient).
+                          LegacyZCCClient, LegacyZDXClient, LegacyZPAClient, LegacyZIAClient, LegacyZTWClient).
                           Can also be set via ZSCALER_USE_LEGACY environment variable.
 
     Returns:
@@ -147,13 +155,14 @@ def get_zscaler_client(
             • LegacyZDXClient: api_key, key_secret, cloud
             • LegacyZPAClient: client_id, client_secret, customer_id, cloud
             • LegacyZIAClient: username, password, api_key, cloud
+            • LegacyZTWClient: username, password, api_key, cloud
             • LegacyZDXClient: key_id, key_secret, cloud
     """
 
     if use_legacy:
         if not service:
             raise ValueError(
-                "You must specify the 'service' (e.g., zdx, 'zpa', 'zia') when using legacy mode."
+                "You must specify the 'service' (e.g., zdx, 'zpa', 'zia', ztw) when using legacy mode."
             )
 
         if service == "zpa":
@@ -187,6 +196,17 @@ def get_zscaler_client(
                 "cloud": cloud,
             }
             return LegacyZIAClient(config)
+
+        elif service == "ztw":
+            if not all([username, password, api_key, cloud]):
+                raise ValueError("Missing required credentials for LegacyZTWClient.")
+            config = {
+                "username": username,
+                "password": password,
+                "api_key": api_key,
+                "cloud": cloud,
+            }
+            return LegacyZTWClient(config)
 
         elif service == "zdx":
             if not all([key_id, key_secret, cloud]):
