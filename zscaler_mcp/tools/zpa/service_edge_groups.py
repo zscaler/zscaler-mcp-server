@@ -3,6 +3,7 @@ from typing import Annotated, List, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.utils.utils import validate_and_convert_country_code_iso
 
 
 def service_edge_group_manager(
@@ -35,7 +36,7 @@ def service_edge_group_manager(
     city_country: Annotated[
         str, Field(description="City and country information.")
     ] = None,
-    country_code: Annotated[str, Field(description="Country code.")] = None,
+    country_code: Annotated[str, Field(description="Country code (e.g., 'Canada', 'US', 'CA', 'GB'). Will be converted to ISO alpha-2 format.")] = None,
     is_public: Annotated[
         bool, Field(description="Whether the group is public.")
     ] = None,
@@ -82,6 +83,13 @@ def service_edge_group_manager(
     """
 
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
+
+    # Validate and convert country code if provided
+    if country_code:
+        try:
+            country_code = validate_and_convert_country_code_iso(country_code)
+        except ValueError as e:
+            raise ValueError(f"Invalid country code: {e}")
 
     api = client.zpa.service_edge_group
 
