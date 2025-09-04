@@ -51,10 +51,14 @@ class ZCCService(BaseService):
         # Import tools here to avoid circular imports
         from .tools.zcc.download_devices import zcc_devices_csv_exporter
         from .tools.zcc.list_devices import zcc_devices_v1_manager
+        from .tools.zcc.list_trusted_networks import zcc_list_trusted_networks
+        from .tools.zcc.list_forwarding_profiles import zcc_list_forwarding_profiles
 
         self.tools = [
             zcc_devices_v1_manager,
             zcc_devices_csv_exporter,
+            zcc_list_trusted_networks,
+            zcc_list_forwarding_profiles,
         ]
 
     def register_tools(self, server, enabled_tools=None):
@@ -68,6 +72,14 @@ class ZCCService(BaseService):
             "zcc_devices_csv_exporter": {
                 "name": "zcc_devices_csv_exporter",
                 "description": "Downloads ZCC device information or service status as a CSV file.",
+            },
+            "zcc_list_trusted_networks": {
+                "name": "zcc_list_trusted_networks",
+                "description": "Returns the list of Trusted Networks By Company ID in the Client Connector Portal.",
+            },
+            "zcc_list_forwarding_profiles": {
+                "name": "zcc_list_forwarding_profiles",
+                "description": "Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal.",
             },
         }
 
@@ -394,6 +406,8 @@ class ZIAService(BaseService):
         from .tools.zia.static_ips import static_ip_manager
         from .tools.zia.url_categories import url_category_manager
         from .tools.zia.vpn_credentials import vpn_credential_manager
+        from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
+        from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
 
         self.tools = [
             zia_activation_manager,
@@ -416,6 +430,8 @@ class ZIAService(BaseService):
             gre_range_discovery_manager,
             zia_geo_search_tool,
             sandbox_manager,
+            zia_dlp_dictionary_manager,
+            zia_dlp_engine_manager,
         ]
 
     def register_tools(self, server, enabled_tools=None):
@@ -502,6 +518,14 @@ class ZIAService(BaseService):
                 "name": "zia_sandbox_info",
                 "description": "Tool for retrieving ZIA Sandbox information.",
             },
+            "zia_dlp_dictionary_manager": {
+                "name": "zia_dlp_dictionaries",
+                "description": "Tool for managing ZIA DLP Dictionaries.",
+            },
+            "zia_dlp_engine_manager": {
+                "name": "zia_dlp_engines",
+                "description": "Tool for managing ZIA DLP Engines.",
+            },
         }
 
         for tool in self.tools:
@@ -534,12 +558,16 @@ class ZTWService(BaseService):
         from .tools.ztw.ip_groups import ztw_ip_group_manager
         from .tools.ztw.ip_source_groups import ztw_ip_source_group_manager
         from .tools.ztw.network_service_groups import ztw_network_service_group_manager
+        from .tools.ztw.list_roles import ztw_list_roles
+        from .tools.ztw.list_admins import ztw_list_admins
 
         self.tools = [
             ztw_ip_destination_group_manager,
             ztw_ip_group_manager,
             ztw_ip_source_group_manager,
-            ztw_network_service_group_manager
+            ztw_network_service_group_manager,
+            ztw_list_roles,
+            ztw_list_admins,
         ]
 
     def register_tools(self, server, enabled_tools=None):
@@ -561,6 +589,14 @@ class ZTWService(BaseService):
             "ztw_network_service_group_manager": {
                 "name": "ztw_network_service_groups",
                 "description": "Manages ZTW Network Service Groups",
+            },
+            "ztw_list_roles": {
+                "name": "ztw_list_roles",
+                "description": "List all existing admin roles in Zscaler Cloud & Branch Connector (ZTW).",
+            },
+            "ztw_list_admins": {
+                "name": "ztw_list_admins",
+                "description": "List all existing admin users or get details for a specific admin user in Zscaler Cloud & Branch Connector (ZTW).",
             },
         }
 

@@ -8,6 +8,7 @@ from zscaler.oneapi_client import (
     LegacyZPAClient,
     LegacyZTWClient,
 )
+from .utils.utils import get_combined_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +160,10 @@ def get_zscaler_client(
             • LegacyZDXClient: key_id, key_secret, cloud
     """
 
+    # Generate custom user-agent for all requests
+    custom_user_agent = get_combined_user_agent()
+    logger.debug(f"[DEBUG] Using custom user-agent: {custom_user_agent}")
+
     if use_legacy:
         if not service:
             raise ValueError(
@@ -173,6 +178,7 @@ def get_zscaler_client(
                 "clientSecret": client_secret,
                 "customerId": customer_id,
                 "cloud": cloud,
+                "userAgent": custom_user_agent,
             }
             return LegacyZPAClient(config)
 
@@ -183,6 +189,7 @@ def get_zscaler_client(
                 "api_key": api_key,
                 "secret_key": secret_key,
                 "cloud": cloud,
+                "userAgent": custom_user_agent,
             }
             return LegacyZCCClient(config)
 
@@ -194,6 +201,7 @@ def get_zscaler_client(
                 "password": password,
                 "api_key": api_key,
                 "cloud": cloud,
+                "userAgent": custom_user_agent,
             }
             return LegacyZIAClient(config)
 
@@ -205,6 +213,7 @@ def get_zscaler_client(
                 "password": password,
                 "api_key": api_key,
                 "cloud": cloud,
+                "userAgent": custom_user_agent,
             }
             return LegacyZTWClient(config)
 
@@ -215,6 +224,7 @@ def get_zscaler_client(
                 "key_id": key_id,
                 "key_secret": key_secret,
                 "cloud": cloud,
+                "userAgent": custom_user_agent,
             }
             return LegacyZDXClient(config)
 
@@ -248,6 +258,7 @@ def get_zscaler_client(
         "clientId": client_id,
         "customerId": customer_id,
         "vanityDomain": vanity_domain,
+        "userAgent": custom_user_agent,
     }
 
     if cloud:

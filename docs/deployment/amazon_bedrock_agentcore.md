@@ -17,6 +17,7 @@ You'll need to create API credentials in the Zscaler platform with the appropria
    - `ZSCALER_CLIENT_SECRET` - Your Zscaler Zidentity/OneAPI  client secret
    - `ZSCALER_VANITY_DOMAIN` - Your Zscaler Zidentity/OneAPI  vanity domain i.e acme
    - `ZSCALER_CUSTOMER_ID` - Your ZPA Customer ID if interacting with ZPA platform
+   - `ZSCALER_CLOUD` - (Optional) Zscaler cloud environment (e.g., `beta`) - Required when interacting with Beta Tenant ONLY.
 
 ### AWS VPC Requirements
 
@@ -193,7 +194,7 @@ To host this agent in Amazon Bedrock AgentCore, the following variables will nee
 | `ZSCALER_CLIENT_SECRET` | Zscaler API Client secret for obtaining the API token. |
 | `ZSCALER_CUSTOMER_ID` | Zscaler Private Access Customer ID |
 | `ZSCALER_VANITY_DOMAIN` | This refers to the domain name used by your organization |
-| `ZSCALER_CLOUD` | This refers to Zscaler cloud name where API calls will be directed to. Only `beta` is supported |
+| `ZSCALER_CLOUD` | (Optional) This refers to Zscaler cloud name where API calls will be directed to. Only `beta` is supported |
 | `AGENT_NAME` | The name of the agent (_ex: zscalermcp_) |
 | `AGENT_DESCRIPTION` | A description of the agent |
 | `AGENT_ROLE_ARN` | The ARN of the IAM execution role created in Step 1 |
@@ -205,14 +206,14 @@ With your IAM configuration complete and variables prepared, you can now return 
 ```bash
 aws bedrock-agentcore-control create-agent-runtime \
   --region us-east-1 \
-  --agent-runtime-name "zscalermcp" \
-  --description "Zscaler MCP Server Agent" \
+  --agent-runtime-name "<AGENT_NAME>" \
+  --description "<AGENT_DESCRIPTION>" \
   --agent-runtime-artifact '{
     "containerConfiguration": {
       "containerUri": "arn:aws:ecr:us-east-1:123456789012:repository/zscaler/zscaler-mcp-server"
     }
   }' \
-  --role-arn "arn:aws:iam::202719523534:role/bedrock-core-zscaler-role" \
+  --role-arn "<AGENT_ROLE_ARN>" \
   --network-configuration '{
     "networkMode": "PUBLIC"
   }' \
@@ -226,4 +227,26 @@ aws bedrock-agentcore-control create-agent-runtime \
     "ZSCALER_VANITY_DOMAIN": "ZSCALER_VANITY_DOMAIN_VALUE",
     "ZSCALER_CLOUD": "ZSCALER_CLOUD_VALUE",
   }'
+```
+
+#### Verify the AgentCore Status
+
+```sh
+aws bedrock-agentcore-control get-agent-runtime \
+  --region us-east-1 \
+  --agent-runtime-id zscalermcp-9FnJsx7oO4 \
+  --endpoint-name <ENDPOINT_NAME>
+```
+
+#### Invoke agent runtime
+
+```sh
+export PAYLOAD='{ "jsonrpc": "2.0", "id": 1, "method": "tools/list",
+  "params": { "_meta": { "progressToken": 1}}}'
+
+aws bedrock-agentcore invoke-agent-runtime \
+  --agent-runtime-arn "<AGENT_RUNTIME_ARN>" \
+  --content-type "application/json" \
+  --accept "application/json, text/event-stream" \
+  --payload "$(echo -n "$PAYLOAD" | base64)" output.json
 ```
