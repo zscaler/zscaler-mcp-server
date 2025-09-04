@@ -1,9 +1,9 @@
 [project]
 name = "zscaler-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Official Zscaler MCP Server"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 license = "MIT"
 authors = [
   { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
@@ -22,7 +22,9 @@ dependencies = [
   "fastmcp>=2.5.1",
   "python-dotenv",
   "click",
-  "uvicorn"
+  "uvicorn",
+  "fastapi",
+  "pycountry"
 ]
 
 [project.scripts]
@@ -36,6 +38,7 @@ dev = [
   "mypy",
   "ipython",
   "ruff",
+  "pycountry",
   "pytest-asyncio>=0.21.0",
   "langchain-openai>=0.3.28",
   "mcp-use[search]>=1.3.7"

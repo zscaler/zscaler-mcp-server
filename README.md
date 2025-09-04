@@ -82,6 +82,8 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 |-----------|-------------|
 | `zcc_list_devices` | Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal |
 | `zcc_devices_csv_exporter` | Downloads ZCC device information or service status as a CSV file |
+| `zcc_list_trusted_networks` | Returns the list of Trusted Networks By Company ID in the Client Connector Portal |
+| `zcc_list_forwarding_profiles` | Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal |
 
 ### ZDX Features
 
@@ -186,7 +188,7 @@ Then edit `.env` with your Zscaler API credentials:
 
 **Optional Configuration:**
 
-- `ZSCALER_CLOUD`: Zscaler cloud environment (e.g., `beta`, `zscalertwo`)
+- `ZSCALER_CLOUD`: (Optional) Zscaler cloud environment (e.g., `beta`) - Required when interacting with Beta Tenant ONLY.
 - `ZSCALER_USE_LEGACY`: Enable legacy API mode (`true`/`false`, default: `false`)
 - `ZSCALER_MCP_SERVICES`: Comma-separated list of services to enable (default: all services)
 - `ZSCALER_MCP_TRANSPORT`: Transport method - `stdio`, `sse`, or `streamable-http` (default: `stdio`)

@@ -189,12 +189,26 @@ memory-bank/
 # PyPI configuration file
 .pypirc
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
+# AI Assistants
+#  Various AI coding assistants create local cache, settings, and conversation history
+#  These contain user-specific data and should not be committed to version control
 .cursorignore
 .cursorindexingignore
+.claude/
+.anthropic/
+.openai/
+.codeium/
+.tabnine/
+.github-copilot/
+.roo/
+.aider/
+.aider*
+.clinerules/
+memory-bank/
+
+# E2E artifacts
+static_test_report.html
+test_results.json
 
 # E2E artifacts
 static_test_report.html

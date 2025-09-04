@@ -1,4 +1,6 @@
 import json
+import platform
+import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union, Optional
 import pycountry
@@ -415,3 +417,71 @@ def validate_and_convert_country_code_iso(country_input: str) -> str:
         pass
 
     raise ValueError(f"Could not find country: {country_input}")
+
+
+def get_mcp_user_agent() -> str:
+    """
+    Generate a formatted user-agent string for the Zscaler MCP Server.
+    
+    Returns:
+        str: Formatted user-agent string in the format:
+             zscaler-mcp-server/<version>/<OS_Architecture>
+    
+    Examples:
+        >>> get_mcp_user_agent()
+        'zscaler-mcp-server/0.2.0/Darwin-24.6.0-x86_64'
+    """
+    import importlib.metadata
+    
+    try:
+        # Get the version from the package metadata
+        version = importlib.metadata.version("zscaler-mcp")
+    except importlib.metadata.PackageNotFoundError:
+        # Fallback to reading from pyproject.toml if package not installed
+        version = "0.2.0"  # Default version
+    
+    # Get system information
+    system = platform.system()
+    release = platform.release()
+    machine = platform.machine()
+    
+    # Format: OS-Release-Architecture
+    os_arch = f"{system}-{release}-{machine}"
+    
+    return f"zscaler-mcp-server/{version}/{os_arch}"
+
+
+def get_combined_user_agent() -> str:
+    """
+    Generate a combined user-agent string that includes both the MCP server
+    and the underlying SDK user-agent information.
+    
+    Returns:
+        str: Combined user-agent string in the format:
+             zscaler-mcp-server/<version>/<OS_Architecture> zscaler-sdk-python/<sdk_version> python/<python_version> <OS>/<release>
+    
+    Examples:
+        >>> get_combined_user_agent()
+        'zscaler-mcp-server/0.2.0/Darwin-24.6.0-x86_64 zscaler-sdk-python/1.7.9 python/3.11.8 Darwin/24.6.0'
+    """
+    import importlib.metadata
+    
+    mcp_ua = get_mcp_user_agent()
+    
+    # Get SDK version
+    try:
+        sdk_version = importlib.metadata.version("zscaler-sdk-python")
+    except importlib.metadata.PackageNotFoundError:
+        sdk_version = "unknown"
+    
+    # Get Python version
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    
+    # Get OS information
+    system = platform.system()
+    release = platform.release()
+    
+    # Combine all user-agent components
+    sdk_ua = f"zscaler-sdk-python/{sdk_version} python/{python_version} {system}/{release}"
+    
+    return f"{mcp_ua} {sdk_ua}"
