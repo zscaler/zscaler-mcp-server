@@ -7,17 +7,17 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_user_department_manager(
     action: Annotated[
-        Literal["list", "get", "get_lite"],
+        Literal["list", "read", "read_lite"],
         Field(
             description=(
                 "Operation to perform. Use 'list' to paginate/filter departments, "
-                "'get' to fetch a department by ID, or 'get_lite' for the lite version."
+                "'read' to fetch a department by ID, or 'read_lite' for the lite version."
             )
         ),
     ] = "list",
     department_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Department ID. Required for 'get' and 'get_lite' actions."),
+        Field(description="Department ID. Required for 'read' and 'read_lite' actions."),
     ] = None,
     limit_search: Annotated[
         Optional[bool],
@@ -120,17 +120,17 @@ def zia_user_department_manager(
             raise Exception(f"Error listing departments: {err}")
         return [d.as_dict() for d in departments]
 
-    if action == "get":
+    if action == "read":
         if not department_id:
-            raise ValueError("department_id is required for action 'get'")
+            raise ValueError("department_id is required for action 'read'")
         department, _, err = zia.get_department(department_id)
         if err:
             raise Exception(f"Error retrieving department {department_id}: {err}")
         return department.as_dict()
 
-    if action == "get_lite":
+    if action == "read_lite":
         if not department_id:
-            raise ValueError("department_id is required for action 'get_lite'")
+            raise ValueError("department_id is required for action 'read_lite'")
         department, _, err = zia.get_department_lite(department_id)
         if err:
             raise Exception(f"Error retrieving department (lite) {department_id}: {err}")

@@ -8,14 +8,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_firewall_rule_manager(
     action: Annotated[
-        Literal["list", "get", "add", "update", "delete"],
+        Literal["list", "read", "add", "update", "delete"],
         Field(
-            description="Cloud firewall rule operation: list, get, add, update, or delete."
+            description="Cloud firewall rule operation: list, read, add, update, or delete."
         ),
     ] = "list",
     rule_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Required for get, update, and delete operations."),
+        Field(description="Required for read, update, and delete operations."),
     ] = None,
     name: Annotated[
         Optional[str], Field(description="Rule name (required for add/update).")
@@ -312,9 +312,9 @@ def zia_firewall_rule_manager(
             raise Exception(f"Failed to list cloud firewall rules: {err}")
         return [r.as_dict() for r in rules]
 
-    elif action == "get":
+    elif action == "read":
         if not rule_id:
-            raise ValueError("rule_id is required for get.")
+            raise ValueError("rule_id is required for read.")
         rule, _, err = fw.get_rule(rule_id)
         if err:
             raise Exception(f"Failed to retrieve rule {rule_id}: {err}")

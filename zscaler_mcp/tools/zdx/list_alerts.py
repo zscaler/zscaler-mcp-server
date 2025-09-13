@@ -7,11 +7,11 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_list_alerts(
     action: Annotated[
-        Literal["list_ongoing", "get_alert", "list_affected_devices"],
-        Field(description="Must be one of 'list_ongoing', 'get_alert', or 'list_affected_devices'."),
+        Literal["list_ongoing", "read_alert", "list_affected_devices"],
+        Field(description="Must be one of 'list_ongoing', 'read_alert', or 'list_affected_devices'."),
     ],
     alert_id: Annotated[
-        Optional[str], Field(description="Required if action is 'get_alert' or 'list_affected_devices'. The unique ID for the alert.")
+        Optional[str], Field(description="Required if action is 'read_alert' or 'list_affected_devices'. The unique ID for the alert.")
     ] = None,
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
@@ -44,17 +44,17 @@ def zdx_list_alerts(
     
     Supports three actions:
     - list_ongoing: Returns a list of all ongoing alert rules across an organization (USE THIS FOR GENERAL ALERT OVERVIEW).
-    - get_alert: Returns details of a single alert including impacted department, locations, and alert trigger (USE FOR SPECIFIC ALERT DETAILS).
+    - read_alert: Returns details of a single alert including impacted department, locations, and alert trigger (USE FOR SPECIFIC ALERT DETAILS).
     - list_affected_devices: Returns a list of all affected devices associated with an alert rule (USE FOR ALERT IMPACT ANALYSIS).
     
     USAGE GUIDELINES:
     - Use action='list_ongoing' by default to get an overview of all ongoing alerts in the organization
-    - Use action='get_alert' when you need detailed information about a specific alert
+    - Use action='read_alert' when you need detailed information about a specific alert
     - Use action='list_affected_devices' when you need to analyze the impact of a specific alert on devices
     
     Args:
-        action: The type of alert information to retrieve ('list_ongoing', 'get_alert', or 'list_affected_devices').
-        alert_id: Required if action is 'get_alert' or 'list_affected_devices'. The unique ID for the alert.
+        action: The type of alert information to retrieve ('list_ongoing', 'read_alert', or 'list_affected_devices').
+        alert_id: Required if action is 'read_alert' or 'list_affected_devices'. The unique ID for the alert.
         location_id: Optional list of location IDs to filter by specific locations.
         department_id: Optional list of department IDs to filter by specific departments.
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
@@ -67,7 +67,7 @@ def zdx_list_alerts(
         
     Returns:
         For 'list_ongoing': List of dictionaries containing ongoing alert information.
-        For 'get_alert': Dictionary containing detailed alert information.
+        For 'read_alert': Dictionary containing detailed alert information.
         For 'list_affected_devices': List of dictionaries containing affected device information.
         
     Raises:
@@ -98,7 +98,7 @@ def zdx_list_alerts(
         
         SPECIFIC ALERT QUERY - Get detailed information for a specific alert:
         >>> alert_details = zdx_list_alerts(
-        ...     action="get_alert", 
+        ...     action="read_alert", 
         ...     alert_id="7473160764821179371"
         ... )
         
@@ -148,13 +148,13 @@ def zdx_list_alerts(
     if location_groups and action == "list_affected_devices":
         query_params["location_groups"] = location_groups
 
-    if action == "get_alert":
+    if action == "read_alert":
         """
         Returns details of a single alert including the impacted department,
         Zscaler locations, geolocation, and alert trigger.
         """
         if not alert_id:
-            raise ValueError("alert_id is required for action=get_alert")
+            raise ValueError("alert_id is required for action=read_alert")
         result, _, err = client.zdx.alerts.get_alert(alert_id)
         if err:
             raise Exception(f"Alert lookup failed: {err}")
@@ -204,4 +204,4 @@ def zdx_list_alerts(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_ongoing', 'get_alert', 'list_affected_devices'")
+        raise ValueError("Invalid action. Must be one of: 'list_ongoing', 'read_alert', 'list_affected_devices'")

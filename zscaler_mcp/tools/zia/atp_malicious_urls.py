@@ -8,9 +8,9 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_atp_malicious_urls_manager(
     action: Annotated[
-        Literal["get", "add", "delete"],
-        Field(description="One of: get, add, delete. Defaults to get."),
-    ] = "get",
+        Literal["read", "add", "delete"],
+        Field(description="One of: read, add, delete. Defaults to read."),
+    ] = "read",
     malicious_urls: Annotated[
         Optional[Union[List[str], str]],
         Field(
@@ -26,12 +26,12 @@ def zia_atp_malicious_urls_manager(
     Manages the malicious URL denylist in the ZIA Advanced Threat Protection (ATP) policy.
 
     Supported actions:
-    - "get":    Retrieves the current malicious URLs denylist.
+    - "read":   Retrieves the current malicious URLs denylist.
     - "add":    Adds one or more URLs to the denylist.
     - "delete": Removes one or more URLs from the denylist.
 
     Args:
-        action (str, optional): One of "get", "add", or "delete". Defaults to "get".
+        action (str, optional): One of "read", "add", or "delete". Defaults to "read".
         malicious_urls (list[str] or str, optional): Required for "add" and "delete" actions.
             Can be either a Python list or a JSON string representation of a list.
 
@@ -59,7 +59,7 @@ def zia_atp_malicious_urls_manager(
 
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
-    if action == "get":
+    if action == "read":
         url_list, _, err = client.zia.atp_policy.get_atp_malicious_urls()
     elif action == "add":
         if not processed_urls:
@@ -72,7 +72,7 @@ def zia_atp_malicious_urls_manager(
             processed_urls
         )
     else:
-        raise ValueError("Invalid action. Must be one of: 'get', 'add', 'delete'.")
+        raise ValueError("Invalid action. Must be one of: 'read', 'add', 'delete'.")
 
     if err:
         raise Exception(f"ATP URL list operation failed: {err}")

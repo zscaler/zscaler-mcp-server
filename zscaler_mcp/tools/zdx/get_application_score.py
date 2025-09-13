@@ -7,8 +7,8 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_get_application_score(
     action: Annotated[
-        Literal["get_app", "get_app_score"],
-        Field(description="Must be one of 'get_app' or 'get_app_score'."),
+        Literal["read_app", "read_app_score"],
+        Field(description="Must be one of 'read_app' or 'read_app_score'."),
     ],
     app_id: Annotated[
         str, Field(description="The unique ID for the ZDX application.")
@@ -34,13 +34,13 @@ def zdx_get_application_score(
     Tool for retrieving ZDX application scores and score trends.
 
     Supports two actions:
-    - get_app: Returns information on the application's ZDX Score (for the previous 2 hours),
+    - read_app: Returns information on the application's ZDX Score (for the previous 2 hours),
       including most impacted locations and the total number of users impacted.
-    - get_app_score: Returns the ZDX score trend for the specified application configured
+    - read_app_score: Returns the ZDX score trend for the specified application configured
       within the ZDX tenant.
 
     Args:
-        action: The type of score information to retrieve ('get_app' or 'get_app_score').
+        action: The type of score information to retrieve ('read_app' or 'read_app_score').
         app_id: The unique ID for the ZDX application.
         location_id: Optional list of location IDs to filter by specific locations.
         department_id: Optional list of department IDs to filter by specific departments.
@@ -50,29 +50,29 @@ def zdx_get_application_score(
         service: The Zscaler service to use (default "zdx").
 
     Returns:
-        For 'get_app': Dictionary containing application score information.
-        For 'get_app_score': List of dictionaries containing application score trend data.
+        For 'read_app': Dictionary containing application score information.
+        For 'read_app_score': List of dictionaries containing application score trend data.
 
     Raises:
         Exception: If the application score retrieval fails due to API errors.
 
     Examples:
         Get application score for a specific application:
-        >>> score_info = zdx_list_application_score(action="get_app", app_id="999999999")
+        >>> score_info = zdx_list_application_score(action="read_app", app_id="999999999")
 
         Get application score trend for a specific application:
-        >>> score_trend = zdx_list_application_score(action="get_app_score", app_id="999999999")
+        >>> score_trend = zdx_list_application_score(action="read_app_score", app_id="999999999")
 
         Get application score with location filter:
         >>> score_info = zdx_list_application_score(
-        ...     action="get_app",
+        ...     action="read_app",
         ...     app_id="999999999",
         ...     location_id=["125584"]
         ... )
 
         Get application score trend for the past 10 hours:
         >>> score_trend = zdx_list_application_score(
-        ...     action="get_app_score",
+        ...     action="read_app_score",
         ...     app_id="999999999",
         ...     since=10
         ... )
@@ -89,7 +89,7 @@ def zdx_get_application_score(
     if since:
         query_params["since"] = since
 
-    if action == "get_app":
+    if action == "read_app":
         """
         Returns information on the application's ZDX Score (for the previous 2 hours).
         Including most impacted locations, and the total number of users impacted.
@@ -107,7 +107,7 @@ def zdx_get_application_score(
         else:
             return {}
 
-    elif action == "get_app_score":
+    elif action == "read_app_score":
         """
         Returns the ZDX score trend for the specified application configured within the ZDX tenant.
         """
@@ -125,4 +125,4 @@ def zdx_get_application_score(
             return {}
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'get_app', 'get_app_score'")
+        raise ValueError("Invalid action. Must be one of: 'read_app', 'read_app_score'")

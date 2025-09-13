@@ -100,7 +100,7 @@ clean-uv-cache:
 install-pip:
 	pip install -e .
 
-.PHONY: reqs
+.PHONY: req
 reqs:       ## Recreate the requirements.txt file
 	poetry export -f requirements.txt --output requirements.txt --only=main --without-hashes
 
