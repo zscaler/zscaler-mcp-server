@@ -1,6 +1,6 @@
-# ⭐ Zscaler MCP Server
+![Zscaler MCP](https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/refs/heads/zmcp-%238-feat-new-tools/docs/media/zscaler.svg)
 
-[![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp-server)
+[![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
 [![License](https://img.shields.io/github/license/zscaler/zscaler-mcp-server.svg)](https://github.com/zscaler/zscaler-mcp-server)
 [![Zscaler Community](https://img.shields.io/badge/zscaler-community-blue)](https://community.zscaler.com/)
@@ -23,6 +23,7 @@
   - [ZIdentity Features](#zidentity-features)
   - [ZIA Features](#zia-features)
   - [ZPA Features](#zpa-features)
+  - [ZTW Features](#ztw-features)
 - [Installation & Setup](#installation--setup)
   - [Prerequisites](#prerequisites)
   - [Environment Configuration](#environment-configuration)
