@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/zscaler-zscaler-mcp-server-badge.png)](https://mseep.ai/app/zscaler-zscaler-mcp-server)
+
 # ⭐ Zscaler MCP Server
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp-server.svg)](https://badge.fury.io/py/zscaler-mcp-server)
