@@ -7,11 +7,11 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_device_discovery_tool(
     action: Annotated[
-        Literal["list_devices", "get_device"],
-        Field(description="Must be one of 'list_devices' or 'get_device'."),
+        Literal["list_devices", "read_device"],
+        Field(description="Must be one of 'list_devices' or 'read_device'."),
     ],
     device_id: Annotated[
-        Optional[str], Field(description="Required if action is 'get_device'.")
+        Optional[str], Field(description="Required if action is 'read_device'.")
     ] = None,
     emails: Annotated[
         Optional[List[str]], Field(description="Filter by email addresses.")
@@ -50,7 +50,7 @@ def zdx_device_discovery_tool(
 
     Supports both:
     - list_devices: Returns a list of active ZDX devices matching the query.
-    - get_device: Returns a single device record by device_id.
+    - read_device: Returns a single device record by device_id.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
@@ -74,9 +74,9 @@ def zdx_device_discovery_tool(
     if offset:
         query_params["offset"] = offset
 
-    if action == "get_device":
+    if action == "read_device":
         if not device_id:
-            raise ValueError("device_id is required for action=get_device")
+            raise ValueError("device_id is required for action=read_device")
         result, _, err = client.zdx.devices.get_device(
             device_id, query_params=query_params
         )
@@ -106,4 +106,4 @@ def zdx_device_discovery_tool(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_devices', 'get_device'")
+        raise ValueError("Invalid action. Must be one of: 'list_devices', 'read_device'")

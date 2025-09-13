@@ -7,12 +7,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_users_manager(
     action: Annotated[
-        Literal["list", "get"],
-        Field(description="Operation to perform. Use 'list' to paginate/filter users or 'get' to fetch a single user by ID."),
+        Literal["list", "read"],
+        Field(description="Operation to perform. Use 'list' to paginate/filter users or 'read' to fetch a single user by ID."),
     ] = "list",
     user_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="User ID. Required for 'get' action."),
+        Field(description="User ID. Required for 'read' action."),
     ] = None,
     dept: Annotated[
         Optional[str],
@@ -108,9 +108,9 @@ def zia_users_manager(
             raise Exception(f"Error listing users: {err}")
         return [u.as_dict() for u in users]
 
-    if action == "get":
+    if action == "read":
         if not user_id:
-            raise ValueError("user_id is required for action 'get'")
+            raise ValueError("user_id is required for action 'read'")
         user, _, err = zia.get_user(user_id)
         if err:
             raise Exception(f"Error retrieving user {user_id}: {err}")

@@ -1,3 +1,21 @@
+---
+layout: "zscaler"
+page_title: "Release Notes"
+description: |-
+  Zscaler MCP Server Release Notes
+---
+
+# Zscaler MCP Server: Release Notes
+
+## USAGE
+
+Track all Zscaler MCP Server's releases. New tools, features, and bug fixes will be tracked here.
+
+---
+``Last updated: v0.2.0``
+
+---
+
 # Zscaler MCP Server Changelog
 
 ## 0.2.0 (September 15, 2025)

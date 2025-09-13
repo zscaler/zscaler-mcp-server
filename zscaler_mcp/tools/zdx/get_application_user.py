@@ -7,14 +7,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_get_application_user(
     action: Annotated[
-        Literal["list_app_users", "get_app_user"],
-        Field(description="Must be one of 'list_app_users' or 'get_app_user'."),
+        Literal["list_app_users", "read_app_user"],
+        Field(description="Must be one of 'list_app_users' or 'read_app_user'."),
     ],
     app_id: Annotated[
         str, Field(description="The unique ID for the ZDX application.")
     ],
     user_id: Annotated[
-        Optional[str], Field(description="Required if action is 'get_app_user'. The unique ID for the ZDX user.")
+        Optional[str], Field(description="Required if action is 'read_app_user'. The unique ID for the ZDX user.")
     ] = None,
     score_bucket: Annotated[
         Optional[Literal["poor", "okay", "good"]], 
@@ -42,12 +42,12 @@ def zdx_get_application_user(
     
     Supports two actions:
     - list_app_users: Returns a list of users and devices that were used to access the specified application.
-    - get_app_user: Returns detailed information on a specific user and device that accessed the application.
+    - read_app_user: Returns detailed information on a specific user and device that accessed the application.
     
     Args:
-        action: The type of user information to retrieve ('list_app_users' or 'get_app_user').
+        action: The type of user information to retrieve ('list_app_users' or 'read_app_user').
         app_id: The unique ID for the ZDX application.
-        user_id: Required if action is 'get_app_user'. The unique ID for the ZDX user.
+        user_id: Required if action is 'read_app_user'. The unique ID for the ZDX user.
         score_bucket: Optional ZDX score bucket filter. Available values:
             - 'poor': Score range 0-33
             - 'okay': Score range 34-65
@@ -61,7 +61,7 @@ def zdx_get_application_user(
         
     Returns:
         For 'list_app_users': List of dictionaries containing user and device information.
-        For 'get_app_user': Dictionary containing detailed user and device information.
+        For 'read_app_user': Dictionary containing detailed user and device information.
         
     Raises:
         Exception: If the application user information retrieval fails due to API errors.
@@ -72,7 +72,7 @@ def zdx_get_application_user(
         
         Get detailed information for a specific user:
         >>> user_details = zdx_get_application_user(
-        ...     action="get_app_user", 
+        ...     action="read_app_user", 
         ...     app_id="888888888", 
         ...     user_id="24328827"
         ... )
@@ -93,7 +93,7 @@ def zdx_get_application_user(
         
         Get user details for the past 2 hours:
         >>> user_details = zdx_get_application_user(
-        ...     action="get_app_user", 
+        ...     action="read_app_user", 
         ...     app_id="888888888", 
         ...     user_id="24328827", 
         ...     since=2
@@ -123,12 +123,12 @@ def zdx_get_application_user(
     if since:
         query_params["since"] = since
 
-    if action == "get_app_user":
+    if action == "read_app_user":
         """
         Returns information on the specified user and device that was used to access the specified application.
         """
         if not user_id:
-            raise ValueError("user_id is required for action=get_app_user")
+            raise ValueError("user_id is required for action=read_app_user")
         result, _, err = client.zdx.apps.get_app_user(
             app_id, user_id, query_params=query_params
         )
@@ -162,4 +162,4 @@ def zdx_get_application_user(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_app_users', 'get_app_user'")
+        raise ValueError("Invalid action. Must be one of: 'list_app_users', 'read_app_user'")

@@ -49,14 +49,14 @@ def _convert_timestamps(data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Un
 
 def zdx_list_deep_traces(
     action: Annotated[
-        Literal["list_deeptraces", "get_deeptrace"],
-        Field(description="Must be one of 'list_deeptraces' or 'get_deeptrace'."),
+        Literal["list_deeptraces", "read_deeptrace"],
+        Field(description="Must be one of 'list_deeptraces' or 'read_deeptrace'."),
     ],
     device_id: Annotated[
         str, Field(description="The unique ID for the ZDX device.")
     ],
     trace_id: Annotated[
-        Optional[str], Field(description="Required if action is 'get_deeptrace'. The unique ID for the deeptrace.")
+        Optional[str], Field(description="Required if action is 'read_deeptrace'. The unique ID for the deeptrace.")
     ] = None,
     use_legacy: Annotated[
         bool, Field(description="Whether to use the legacy API.")
@@ -68,29 +68,29 @@ def zdx_list_deep_traces(
     
     Supports two actions:
     - list_deeptraces: Returns a list of all deep traces for a specific device (USE THIS FOR GENERAL TROUBLESHOOTING OVERVIEW).
-    - get_deeptrace: Returns detailed information on a single deeptrace for a specific device (USE FOR SPECIFIC TRACE ANALYSIS).
+    - read_deeptrace: Returns detailed information on a single deeptrace for a specific device (USE FOR SPECIFIC TRACE ANALYSIS).
     
     USAGE GUIDELINES:
     - Use action='list_deeptraces' by default to get an overview of all deep traces for a device
-    - Use action='get_deeptrace' when you need detailed information about a specific trace
+    - Use action='read_deeptrace' when you need detailed information about a specific trace
     - Deep traces are used for troubleshooting device connectivity and performance issues
     
     TIMESTAMP CONVERSION INSTRUCTIONS:
     - CONVERT all Unix epoch timestamps (created, started, ended, timestamp, time fields) to ISO 8601 format
     - PRESERVE original epoch timestamps with "_epoch" suffix for reference
     - ALWAYS convert: "created": 1754537141 → "created": "2025-01-07T10:32:21", "created_epoch": 1754537141
-    - APPLY conversion to both list_deeptraces and get_deeptrace actions
+    - APPLY conversion to both list_deeptraces and read_deeptrace actions
     
     Args:
-        action: The type of deep trace information to retrieve ('list_deeptraces' or 'get_deeptrace').
+        action: The type of deep trace information to retrieve ('list_deeptraces' or 'read_deeptrace').
         device_id: The unique ID for the ZDX device.
-        trace_id: Required if action is 'get_deeptrace'. The unique ID for the deeptrace.
+        trace_id: Required if action is 'read_deeptrace'. The unique ID for the deeptrace.
         use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
         
     Returns:
         For 'list_deeptraces': List of dictionaries containing deep trace information with CONVERTED timestamps to ISO format.
-        For 'get_deeptrace': Dictionary containing detailed deep trace information with CONVERTED timestamps to ISO format.
+        For 'read_deeptrace': Dictionary containing detailed deep trace information with CONVERTED timestamps to ISO format.
         
     Raises:
         Exception: If the deep trace information retrieval fails due to API errors.
@@ -104,7 +104,7 @@ def zdx_list_deep_traces(
         
         SPECIFIC TRACE QUERY - Get detailed information for a specific trace:
         >>> trace_details = zdx_list_deep_traces(
-        ...     action="get_deeptrace", 
+        ...     action="read_deeptrace", 
         ...     device_id="132559212", 
         ...     trace_id="342941739947287"
         ... )
@@ -118,7 +118,7 @@ def zdx_list_deep_traces(
         
         2. Then, get detailed information for a specific trace that shows issues:
         >>> trace_details = zdx_list_deep_traces(
-        ...     action="get_deeptrace", 
+        ...     action="read_deeptrace", 
         ...     device_id="132559212", 
         ...     trace_id="342941739947287"
         ... )
@@ -135,12 +135,12 @@ def zdx_list_deep_traces(
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
-    if action == "get_deeptrace":
+    if action == "read_deeptrace":
         """
         Returns information on a single deeptrace for a specific device.
         """
         if not trace_id:
-            raise ValueError("trace_id is required for action=get_deeptrace")
+            raise ValueError("trace_id is required for action=read_deeptrace")
         
         result, _, err = client.zdx.troubleshooting.get_deeptrace(device_id, trace_id)
         if err:
@@ -169,4 +169,4 @@ def zdx_list_deep_traces(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_deeptraces', 'get_deeptrace'")
+        raise ValueError("Invalid action. Must be one of: 'list_deeptraces', 'read_deeptrace'")

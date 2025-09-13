@@ -8,9 +8,9 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_auth_exempt_urls_manager(
     action: Annotated[
-        Literal["get", "add", "delete"],
-        Field(description="One of: get, add, delete. Defaults to get."),
-    ] = "get",
+        Literal["read", "add", "delete"],
+        Field(description="One of: read, add, delete. Defaults to read."),
+    ] = "read",
     exempt_urls: Annotated[
         Optional[Union[List[str], str]],
         Field(
@@ -26,12 +26,12 @@ def zia_auth_exempt_urls_manager(
     Manages the list of cookie authentication exempt URLs in ZIA.
 
     Supported actions:
-    - "get":    Retrieves the current exemption list.
+    - "read":   Retrieves the current exemption list.
     - "add":    Adds one or more URLs to the exempt list.
     - "delete": Removes one or more URLs from the exempt list.
 
     Args:
-        action (str, optional): One of "get", "add", or "delete". Defaults to "get".
+        action (str, optional): One of "read", "add", or "delete". Defaults to "read".
         exempt_urls (list[str] or str, optional): Required for "add" and "delete" actions.
             Can be either a Python list or a JSON string representation of a list.
 
@@ -57,7 +57,7 @@ def zia_auth_exempt_urls_manager(
 
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
-    if action == "get":
+    if action == "read":
         url_list, _, err = client.zia.authentication_settings.get_exempted_urls()
         if err:
             raise Exception(f"Exempt URL list retrieval failed: {err}")
@@ -79,7 +79,7 @@ def zia_auth_exempt_urls_manager(
             )
         )
     else:
-        raise ValueError("Invalid action. Must be one of: 'get', 'add', 'delete'.")
+        raise ValueError("Invalid action. Must be one of: 'read', 'add', 'delete'.")
 
     if err:
         raise Exception(f"Exempt URL list operation failed: {err}")

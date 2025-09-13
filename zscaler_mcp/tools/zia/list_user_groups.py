@@ -7,12 +7,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_user_group_manager(
     action: Annotated[
-        Literal["list", "get"],
-        Field(description="Which operation to perform. Use 'list' to paginate/filter groups or 'get' to fetch a single group by ID."),
+        Literal["list", "read"],
+        Field(description="Which operation to perform. Use 'list' to paginate/filter groups or 'read' to fetch a single group by ID."),
     ] = "list",
     group_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="ID of the user group. Required when action is 'get'."),
+        Field(description="ID of the user group. Required when action is 'read'."),
     ] = None,
     search: Annotated[
         Optional[str],
@@ -110,9 +110,9 @@ def zia_user_group_manager(
             raise Exception(f"Error listing user groups: {err}")
         return [g.as_dict() for g in groups]
 
-    if action == "get":
+    if action == "read":
         if not group_id:
-            raise ValueError("group_id is required for action 'get'")
+            raise ValueError("group_id is required for action 'read'")
         group, _, err = zia.get_group(group_id)
         if err:
             raise Exception(f"Error retrieving user group {group_id}: {err}")

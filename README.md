@@ -124,7 +124,7 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 | `zia_user_groups` | Lists and retrieves ZIA User Groups with pagination, filtering and sorting |
 | `zia_user_departments` | Lists and retrieves ZIA User Departments with pagination, filtering and sorting |
 | `zia_users` | Lists and retrieves ZIA Users with filtering and pagination |
-| `zia_location_management` | FastMCP tool to manage ZIA Locations |
+| `zia_location_management` | Tool for managing ZIA Locations |
 | `zia_network_app_group` | Manages ZIA Network Application Groups |
 | `zia_rule_labels` | Tool for managing ZIA Rule Labels |
 | `zia_sandbox_info` | Tool for retrieving ZIA Sandbox information |
@@ -160,6 +160,17 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 | `zpa_service_edge_groups` | CRUD handler for ZPA Service Edge Groups |
 | `zpa_timeout_policy` | CRUD handler for ZPA Timeout Policy Rules |
 | `zpa_trusted_networks` | Tool for retrieving ZPA Trusted Networks |
+
+### ZTW Features
+
+| Tool Name | Description |
+|-----------|-------------|
+| `ztw_ip_destination_groups` | Manages ZTW IP Destination Groups |
+| `ztw_ip_group` | Manages ZTW IP Groups |
+| `ztw_ip_source_groups` | Manages ZTW IP Source Groups |
+| `ztw_network_service_groups` | Manages ZTW Network Service Groups |
+| `ztw_list_roles` | List all existing admin roles in Zscaler Cloud & Branch Connector (ZTW) |
+| `ztw_list_admins` | List all existing admin users or get details for a specific admin user in Zscaler Cloud & Branch Connector (ZTW) |
 
 ## Installation & Setup
 
@@ -240,25 +251,25 @@ For installation via code editors/assistants, see the [Using the MCP Server with
 Run the server with default settings (stdio transport):
 
 ```bash
-zscaler-mcp-server
+zscaler-mcp
 ```
 
 Run with SSE transport:
 
 ```bash
-zscaler-mcp-server --transport sse
+zscaler-mcp --transport sse
 ```
 
 Run with streamable-http transport:
 
 ```bash
-zscaler-mcp-server --transport streamable-http
+zscaler-mcp --transport streamable-http
 ```
 
 Run with streamable-http transport on custom port:
 
 ```bash
-zscaler-mcp-server --transport streamable-http --host 0.0.0.0 --port 8080
+zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8080
 ```
 
 ### Service Configuration
@@ -271,10 +282,10 @@ Specify services using comma-separated lists:
 
 ```bash
 # Enable specific services
-zscaler-mcp-server --services zia,zpa,zdx
+zscaler-mcp --services zia,zpa,zdx
 
 # Enable only one service
-zscaler-mcp-server --services zia
+zscaler-mcp --services zia
 ```
 
 #### 2. Environment Variable (fallback)
@@ -284,10 +295,10 @@ Set the `ZSCALER_MCP_SERVICES` environment variable:
 ```bash
 # Export environment variable
 export ZSCALER_MCP_SERVICES=zia,zpa,zdx
-zscaler-mcp-server
+zscaler-mcp
 
 # Or set inline
-ZSCALER_MCP_SERVICES=zia,zpa,zdx zscaler-mcp-server
+ZSCALER_MCP_SERVICES=zia,zpa,zdx zscaler-mcp
 ```
 
 #### 3. Default Behavior (all services)
@@ -305,7 +316,7 @@ If no services are specified via command line or environment variable, all avail
 For all available options:
 
 ```bash
-zscaler-mcp-server --help
+zscaler-mcp --help
 ```
 
 ### Supported Agents

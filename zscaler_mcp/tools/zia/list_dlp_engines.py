@@ -7,14 +7,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_dlp_engine_manager(
     action: Annotated[
-        Literal["list", "list_lite", "get"],
+        Literal["list", "list_lite", "read"],
         Field(
-            description="DLP engine operation: list, list_lite, or get."
+            description="DLP engine operation: list, list_lite, or read."
         ),
     ] = "list",
     engine_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Required for get operation."),
+        Field(description="Required for read operation."),
     ] = None,
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing engines by name or description."),
@@ -86,9 +86,9 @@ def zia_dlp_engine_manager(
             raise Exception(f"Failed to list DLP engines (lite): {err}")
         return [e.as_dict() for e in engines]
 
-    elif action == "get":
+    elif action == "read":
         if not engine_id:
-            raise ValueError("engine_id is required for get operation.")
+            raise ValueError("engine_id is required for read operation.")
         engine, _, err = dlp_engine.get_dlp_engines(engine_id)
         if err:
             raise Exception(f"Failed to retrieve engine {engine_id}: {err}")

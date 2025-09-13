@@ -7,14 +7,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_dlp_dictionary_manager(
     action: Annotated[
-        Literal["list", "list_lite", "get"],
+        Literal["list", "list_lite", "read"],
         Field(
-            description="DLP dictionary operation: list, list_lite, or get."
+            description="DLP dictionary operation: list, list_lite, or read."
         ),
     ] = "list",
     dict_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Required for get operation."),
+        Field(description="Required for read operation."),
     ] = None,
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing dictionaries by name or description."),
@@ -84,9 +84,9 @@ def zia_dlp_dictionary_manager(
             raise Exception(f"Failed to list DLP dictionaries (lite): {err}")
         return [d.as_dict() for d in dictionaries]
 
-    elif action == "get":
+    elif action == "read":
         if not dict_id:
-            raise ValueError("dict_id is required for get operation.")
+            raise ValueError("dict_id is required for read operation.")
         dictionary, _, err = dlp_dict.get_dict(dict_id)
         if err:
             raise Exception(f"Failed to retrieve dictionary {dict_id}: {err}")

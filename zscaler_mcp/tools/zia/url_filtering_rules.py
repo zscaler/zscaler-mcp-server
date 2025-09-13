@@ -8,14 +8,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_url_filtering_rule_manager(
     action: Annotated[
-        Literal["list", "get", "add", "update", "delete"],
+        Literal["list", "read", "add", "update", "delete"],
         Field(
-            description="URL filtering rule operation: list, get, add, update, or delete."
+            description="URL filtering rule operation: list, read, add, update, or delete."
         ),
     ] = "list",
     rule_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Required for get, update, and delete operations."),
+        Field(description="Required for read, update, and delete operations."),
     ] = None,
     name: Annotated[
         Optional[str], Field(description="Rule name (required for add/update).")
@@ -142,8 +142,8 @@ def zia_url_filtering_rule_manager(
     or apply caution actions to matching traffic.
 
     Args:
-        action (str): Operation to perform: list, get, add, update, or delete.
-        rule_id (int/str, optional): Required for get, update, and delete operations.
+        action (str): Operation to perform: list, read, add, update, or delete.
+        rule_id (int/str, optional): Required for read, update, and delete operations.
         name (str, optional): Rule name (required for add/update).
         description (str, optional): Optional rule description.
         action (str, optional): Action taken when traffic matches rule criteria.
@@ -303,9 +303,9 @@ def zia_url_filtering_rule_manager(
             raise Exception(f"Failed to list URL filtering rules: {err}")
         return [r.as_dict() for r in rules]
 
-    elif action == "get":
+    elif action == "read":
         if not rule_id:
-            raise ValueError("rule_id is required for get.")
+            raise ValueError("rule_id is required for read.")
         rule, _, err = url.get_rule(rule_id)
         if err:
             raise Exception(f"Failed to retrieve rule {rule_id}: {err}")
