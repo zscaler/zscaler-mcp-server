@@ -51,8 +51,8 @@ class ZCCService(BaseService):
         # Import tools here to avoid circular imports
         from .tools.zcc.download_devices import zcc_devices_csv_exporter
         from .tools.zcc.list_devices import zcc_devices_v1_manager
-        from .tools.zcc.list_trusted_networks import zcc_list_trusted_networks
         from .tools.zcc.list_forwarding_profiles import zcc_list_forwarding_profiles
+        from .tools.zcc.list_trusted_networks import zcc_list_trusted_networks
 
         self.tools = [
             zcc_devices_v1_manager,
@@ -397,6 +397,8 @@ class ZIAService(BaseService):
         from .tools.zia.gre_tunnels import gre_tunnel_manager
         from .tools.zia.ip_destination_groups import zia_ip_destination_group_manager
         from .tools.zia.ip_source_groups import zia_ip_source_group_manager
+        from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
+        from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
         from .tools.zia.list_user_departments import zia_user_department_manager
         from .tools.zia.list_user_groups import zia_user_group_manager
         from .tools.zia.list_users import zia_users_manager
@@ -406,8 +408,6 @@ class ZIAService(BaseService):
         from .tools.zia.static_ips import static_ip_manager
         from .tools.zia.url_categories import url_category_manager
         from .tools.zia.vpn_credentials import vpn_credential_manager
-        from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
-        from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
 
         self.tools = [
             zia_activation_manager,
@@ -557,9 +557,9 @@ class ZTWService(BaseService):
         from .tools.ztw.ip_destination_groups import ztw_ip_destination_group_manager
         from .tools.ztw.ip_groups import ztw_ip_group_manager
         from .tools.ztw.ip_source_groups import ztw_ip_source_group_manager
-        from .tools.ztw.network_service_groups import ztw_network_service_group_manager
-        from .tools.ztw.list_roles import ztw_list_roles
         from .tools.ztw.list_admins import ztw_list_admins
+        from .tools.ztw.list_roles import ztw_list_roles
+        from .tools.ztw.network_service_groups import ztw_network_service_group_manager
 
         self.tools = [
             ztw_ip_destination_group_manager,

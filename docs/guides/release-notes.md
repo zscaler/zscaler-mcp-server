@@ -16,7 +16,7 @@ Track all Zscaler MCP Server's releases. New tools, features, and bug fixes will
 
 ---
 
-# Zscaler MCP Server Changelog
+## Changelog
 
 ## 0.2.0 (September 15, 2025)
 
@@ -27,18 +27,20 @@ Track all Zscaler MCP Server's releases. New tools, features, and bug fixes will
 #### NEW ZCC MCP Tools
 
 [PR #8](https://github.com/zscaler/zscaler-mcp-server/pull/8) Added the following new tools:
-  - Added `zcc_list_trusted_networks` - List existing trusted networks
-  - Added `zcc_list_forwarding_profiles` - List existing forwarding profiles
+
+- Added `zcc_list_trusted_networks` - List existing trusted networks
+- Added `zcc_list_forwarding_profiles` - List existing forwarding profiles
 
 #### NEW ZTW MCP Tools
 
 [PR #8](https://github.com/zscaler/zscaler-mcp-server/pull/8) Added the following new tools:
-  - Added `ztw_ip_destination_groups` - Manages IP Destination Groups
-  - Added `ztw_ip_group` - Manages IP Pool Groups
-  - Added `ztw_ip_source_groups` - Manages IP Source Groups
-  - Added `ztw_network_service_groups` - Manages Network Service Groups
-  - Added `ztw_list_roles` - List all existing admin roles in Zscaler Cloud & Branch Connector
-  - Added `ztw_list_admins` - List all existing admin users or get details for a specific admin user
+
+- Added `ztw_ip_destination_groups` - Manages IP Destination Groups
+- Added `ztw_ip_group` - Manages IP Pool Groups
+- Added `ztw_ip_source_groups` - Manages IP Source Groups
+- Added `ztw_network_service_groups` - Manages Network Service Groups
+- Added `ztw_list_roles` - List all existing admin roles in Zscaler Cloud & Branch Connector
+- Added `ztw_list_admins` - List all existing admin users or get details for a specific admin user
 
 ## 0.1.0 (August xx, 2025) - Initial Release
 
@@ -57,10 +59,10 @@ Track all Zscaler MCP Server's releases. New tools, features, and bug fixes will
 - Comprehensive end-to-end testing framework with 44+ tests
 - Test runner script with multi-model testing support
 - Mock API strategy for realistic testing scenarios
- - ZIA tools for user management via the Python SDK:
-   - `zia_user_groups`: Lists and retrieves ZIA User Groups with pagination, filtering, and sorting
-   - `zia_user_departments`: Lists and retrieves ZIA User Departments with pagination, filtering, and sorting
-   - `zia_users`: Lists and retrieves ZIA Users with filtering and pagination
+- ZIA tools for user management via the Python SDK:
+  - `zia_user_groups`: Lists and retrieves ZIA User Groups with pagination, filtering, and sorting
+  - `zia_user_departments`: Lists and retrieves ZIA User Departments with pagination, filtering, and sorting
+  - `zia_users`: Lists and retrieves ZIA Users with filtering and pagination
 
 ### Changed
 

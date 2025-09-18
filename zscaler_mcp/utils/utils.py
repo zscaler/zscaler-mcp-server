@@ -2,7 +2,8 @@ import json
 import platform
 import sys
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union, Optional
+from typing import Any, Dict, List, Tuple, Union
+
 import pycountry
 
 
