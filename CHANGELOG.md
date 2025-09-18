@@ -8,7 +8,7 @@
 
 #### NEW ZCC MCP Tools
 
-[PR #8](https://github.com/zscaler/zscaler-mcp-server/pull/8) Added the following new tools:
+[PR #9](https://github.com/zscaler/zscaler-mcp-server/pull/9) Added the following new tools:
 
 - Added `zcc_list_trusted_networks` - List existing trusted networks
 - Added `zcc_list_forwarding_profiles` - List existing forwarding profiles
@@ -26,7 +26,7 @@
 
 #### Documentation Portal
 
-[PR #8](https://github.com/zscaler/zscaler-mcp-server/pull/8) - New documentation portal available in [ReadTheDocs](https://zscaler-mcp-server.readthedocs.io/)
+[PR #9](https://github.com/zscaler/zscaler-mcp-server/pull/9) - New documentation portal available in [ReadTheDocs](https://zscaler-mcp-server.readthedocs.io/)
 
 ## 0.1.0 (August 15, 2025) - Initial Release
 
