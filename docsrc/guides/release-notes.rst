@@ -6,7 +6,7 @@ Release Notes
 Zscaler MCP Server Changelog
 ------------------------------
 
-0.2.0 (September 15, 2025)
+0.2.0 (September 18, 2025)
 ---------------------------
 
 Notes
@@ -17,7 +17,7 @@ Notes
 NEW ZCC MCP Tools
 ~~~~~~~~~~~~~~~~~
 
-`PR #8 <https://github.com/zscaler/zscaler-mcp-server/pull/8>`_ Added the following new tools:
+`PR #9 <https://github.com/zscaler/zscaler-mcp-server/pull/9>`_ Added the following new tools:
 
 - Added ``zcc_list_trusted_networks`` - List existing trusted networks
 - Added ``zcc_list_forwarding_profiles`` - List existing forwarding profiles
@@ -25,7 +25,7 @@ NEW ZCC MCP Tools
 NEW ZTW MCP Tools
 ~~~~~~~~~~~~~~~~~
 
-`PR #8 <https://github.com/zscaler/zscaler-mcp-server/pull/8>`_ Added the following new tools:
+`PR #9 <https://github.com/zscaler/zscaler-mcp-server/pull/9>`_ Added the following new tools:
 
 - Added ``ztw_ip_destination_groups`` - Manages IP Destination Groups
 - Added ``ztw_ip_group`` - Manages IP Pool Groups
@@ -33,6 +33,8 @@ NEW ZTW MCP Tools
 - Added ``ztw_network_service_groups`` - Manages Network Service Groups
 - Added ``ztw_list_roles`` - List all existing admin roles in Zscaler Cloud & Branch Connector
 - Added ``ztw_list_admins`` - List all existing admin users or get details for a specific admin user
+
+`PR #9 <https://github.com/zscaler/zscaler-mcp-server/pull/9>`_ - New documentation portal available in `ReadTheDocs <https://zscaler-mcp-server.readthedocs.io/>`
 
 0.1.0 (August 15, 2025) - Initial Release
 ------------------------------------------
