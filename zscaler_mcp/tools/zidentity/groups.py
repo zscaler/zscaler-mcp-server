@@ -8,8 +8,8 @@ from zscaler_mcp.client import get_zscaler_client
 def groups_manager(
     action: Annotated[
         str,
-        Field(description="Action to perform: 'list' (get all groups), 'get' (get specific group by ID), 'get_users' (get users in a group by ID), 'get_users_by_name' (get users in a group by name), or 'search' (search groups by name).")
-    ],
+        Field(description="Action to perform: 'read' (list groups or get specific group by ID), 'get_users' (get users in a group by ID), 'get_users_by_name' (get users in a group by name), or 'search' (search groups by name).")
+    ] = "read",
     group_id: Annotated[
         str,
         Field(description="Group ID for direct lookup or to get users in the group.")
@@ -31,8 +31,7 @@ def groups_manager(
     Tool for managing Zidentity groups.
 
     Supported actions:
-    - list: Fetch all groups with optional pagination and filtering
-    - get: Fetch a specific group by ID
+    - read: Fetch all groups with optional pagination and filtering, or a specific group by ID
     - get_users: Get users in a specific group by group ID
     - get_users_by_name: Get users in a specific group by group name (searches for group first)
     - search: Search groups by name using case-insensitive partial match
@@ -42,7 +41,7 @@ def groups_manager(
     - For get_users: offset, limit, login_name, login_name[like], display_name[like], primary_email[like], domain_name, idp_name
 
     Args:
-        action (str): Action to perform ('list', 'get', 'get_users', 'get_users_by_name', 'search')
+        action (str): Action to perform ('read', 'get_users', 'get_users_by_name', 'search')
         group_id (str): Group ID for direct lookup or to get users in the group
         name (str): Group name to search for (for 'search' or 'get_users_by_name' action)
         query_params (dict): Optional filters for pagination and filtering
@@ -54,26 +53,23 @@ def groups_manager(
     client = get_zscaler_client(service=service)
     api = client.zidentity.groups
 
-    if action == "list":
-        # List all groups with optional query parameters
-        query_params = query_params or {}
-        groups_response, _, err = api.list_groups(query_params=query_params)
-        if err:
-            raise Exception(f"Failed to list groups: {err}")
+    if action == "read":
+        # If group_id is provided, get a specific group by ID
+        if group_id:
+            group, _, err = api.get_group(group_id)
+            if err:
+                raise Exception(f"Failed to fetch group {group_id}: {err}")
+            return group.as_dict()
+        else:
+            # Otherwise, list all groups with optional query parameters
+            query_params = query_params or {}
+            groups_response, _, err = api.list_groups(query_params=query_params)
+            if err:
+                raise Exception(f"Failed to list groups: {err}")
 
-        # Access the records field from the response object
-        groups = groups_response.records if hasattr(groups_response, 'records') else []
-        return [group.as_dict() for group in groups]
-
-    elif action == "get":
-        # Get a specific group by ID
-        if not group_id:
-            raise ValueError("group_id is required for 'get' action")
-
-        group, _, err = api.get_group(group_id)
-        if err:
-            raise Exception(f"Failed to fetch group {group_id}: {err}")
-        return group.as_dict()
+            # Access the records field from the response object
+            groups = groups_response.records if hasattr(groups_response, 'records') else []
+            return [group.as_dict() for group in groups]
 
     elif action == "get_users":
         # Get users in a specific group by ID
@@ -139,4 +135,4 @@ def groups_manager(
         return [group.as_dict() for group in groups]
 
     else:
-        raise ValueError(f"Unsupported action: {action}. Supported actions are: 'list', 'get', 'get_users', 'get_users_by_name', 'search'")
+        raise ValueError(f"Unsupported action: {action}. Supported actions are: 'read', 'get_users', 'get_users_by_name', 'search'")

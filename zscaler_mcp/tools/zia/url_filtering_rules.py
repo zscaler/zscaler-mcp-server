@@ -8,11 +8,11 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_url_filtering_rule_manager(
     action: Annotated[
-        Literal["list", "read", "add", "update", "delete"],
+        Literal["read", "create", "update", "delete"],
         Field(
             description="URL filtering rule operation: list, read, add, update, or delete."
         ),
-    ] = "list",
+    ] = "read",
     rule_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Required for read, update, and delete operations."),
@@ -185,17 +185,17 @@ def zia_url_filtering_rule_manager(
 
     Examples:
         List all URL filtering rules:
-        >>> rules = zia_url_filtering_rule_manager(action="list")
+        >>> rules = zia_url_filtering_rule_manager(action="read")
 
         Search for rules containing "block":
-        >>> rules = zia_url_filtering_rule_manager(action="list", search="block")
+        >>> rules = zia_url_filtering_rule_manager(action="read", search="block")
 
         Get a specific rule:
-        >>> rule = zia_url_filtering_rule_manager(action="get", rule_id="12345")
+        >>> rule = zia_url_filtering_rule_manager(action="read", rule_id="12345")
 
         Add a new rule:
         >>> rule = zia_url_filtering_rule_manager(
-        ...     action="add",
+        ...     action="create",
         ...     name="Block Adult Content",
         ...     action="BLOCK",
         ...     url_categories=["OTHER_ADULT_MATERIAL"],
@@ -296,7 +296,7 @@ def zia_url_filtering_rule_manager(
 
     url = client.zia.url_filtering
 
-    if action == "list":
+    if action == "read":
         query = {"search": search} if search else {}
         rules, _, err = url.list_rules(query_params=query)
         if err:
@@ -311,7 +311,7 @@ def zia_url_filtering_rule_manager(
             raise Exception(f"Failed to retrieve rule {rule_id}: {err}")
         return rule.as_dict()
 
-    elif action == "add":
+    elif action == "create":
         if not name or not rule_action:
             raise ValueError("name and action are required for add.")
         rule, _, err = url.add_rule(**payload)

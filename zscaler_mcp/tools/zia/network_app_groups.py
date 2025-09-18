@@ -8,12 +8,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_network_app_group_manager(
     action: Annotated[
-        Literal["list", "get", "add", "update", "delete"],
+        Literal["read", "create", "update", "delete"],
         Field(description="Action to perform on the network application group."),
-    ] = "list",
+    ] = "read",
     group_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Required for get, update, and delete actions."),
+        Field(description="Required for read, update, and delete actions."),
     ] = None,
     name: Annotated[
         Optional[str], Field(description="Group name (required for add and update).")
@@ -51,22 +51,22 @@ def zia_network_app_group_manager(
 
     zia = client.zia.cloud_firewall
 
-    if action == "list":
-        query_params = {"search": search} if search else {}
-        groups, _, err = zia.list_network_app_groups(query_params=query_params)
-        if err:
-            raise Exception(f"Failed to list network app groups: {err}")
-        return [g.as_dict() for g in groups]
+    if action == "read":
+        if group_id:
+            # Get specific group by ID
+            group, _, err = zia.get_network_app_group(group_id)
+            if err:
+                raise Exception(f"Failed to retrieve group {group_id}: {err}")
+            return group.as_dict()
+        else:
+            # List all groups
+            query_params = {"search": search} if search else {}
+            groups, _, err = zia.list_network_app_groups(query_params=query_params)
+            if err:
+                raise Exception(f"Failed to list network app groups: {err}")
+            return [g.as_dict() for g in groups]
 
-    if action == "get":
-        if not group_id:
-            raise ValueError("group_id is required for get.")
-        group, _, err = zia.get_network_app_group(group_id)
-        if err:
-            raise Exception(f"Failed to retrieve group {group_id}: {err}")
-        return group.as_dict()
-
-    if action == "add":
+    if action == "create":
         if not name or not network_applications:
             raise ValueError("name and network_applications are required for add.")
         group, _, err = zia.add_network_app_group(

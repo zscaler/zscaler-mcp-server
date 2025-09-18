@@ -68,11 +68,12 @@ def url_category_manager(
     - Deleting custom URL categories
 
     **AI Agent Requirements:**
+    
     - For CREATE: Always verify that `configured_name` and `super_category` are provided
     - For CREATE: Ensure `custom_category=True` is set when creating custom categories
     - For FULL UPDATE: Use `action="update"` and supply the full replacement payload (e.g., `urls`, `description`, etc.)
     - For INCREMENTAL UPDATES:
-        - Use `action="add"` to append URLs to the existing list
+        - Use `action="create"` to append URLs to the existing list
         - Use `action="remove"` to delete specific URLs from the list
         - Only `category_id`, `configured_name`, and `urls` are required for these operations
     - For DELETE: Only custom categories can be deleted
@@ -138,7 +139,7 @@ def url_category_manager(
 
         Incremental update (add URLs to existing list):
         >>> result = url_category_manager(
-        ...     action="add",
+        ...     action="create",
         ...     category_id="CUSTOM_01",
         ...     configured_name="Custom Social Media",
         ...     urls=["new-addition1.com", "new-addition2.com"]
@@ -155,7 +156,7 @@ def url_category_manager(
         Delete a custom URL category:
         >>> result = url_category_manager(action="delete", category_id="CUSTOM_01")
     """
-    if action not in ["create", "read", "update", "add", "remove", "delete"]:
+    if action not in ["create", "read", "update", "create", "remove", "delete"]:
         raise ValueError(
             f"Unsupported action: {action}. Must be one of 'create', 'read', 'update', 'add', 'remove', 'delete'."
         )
@@ -212,7 +213,7 @@ def url_category_manager(
                 raise Exception(f"List failed: {err}")
             return [r.as_dict() for r in results]
 
-    elif action == "add":
+    elif action == "create":
         if not category_id or not configured_name or not urls:
             raise ValueError(
                 "category_id, configured_name, and urls are required for adding URLs."

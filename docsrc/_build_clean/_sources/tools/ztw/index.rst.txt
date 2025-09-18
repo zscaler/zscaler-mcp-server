@@ -1,0 +1,231 @@
+Zscaler Cloud & Branch Connector (ZTW) Tools
+==============================================
+
+The Zscaler Cloud & Branch Connector (ZTW) tools provide functionality for managing network resources, IP groups, and administrative functions.
+
+Available Tools
+---------------
+
+.. list-table:: ZTW Tools
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Tool Name
+     - Description
+   * - ``ztw_ip_destination_groups``
+     - Manages ZTW IP Destination Groups (create, read, update, delete)
+   * - ``ztw_ip_group``
+     - Manages ZTW IP Pool Groups (create, read, update, delete)
+   * - ``ztw_ip_source_groups``
+     - Manages ZTW IP Source Groups (create, read, update, delete)
+   * - ``ztw_network_service_groups``
+     - Manages ZTW Network Service Groups (create, read, update, delete)
+   * - ``ztw_list_roles``
+     - List all existing admin roles in Zscaler Cloud & Branch Connector
+   * - ``ztw_list_admins``
+     - List all existing admin users or get details for a specific admin user
+
+Tool Details
+------------
+
+ztw_ip_destination_groups
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Manages ZTW IP Destination Groups with full CRUD operations.
+
+**Parameters:**
+- ``action`` (str): Action to perform ("create", "read", "update", "delete", "list")
+- ``group_id`` (Optional[str]): Group ID for read, update, delete operations
+- ``name`` (Optional[str]): Group name for create/update operations
+- ``description`` (Optional[str]): Group description for create/update operations
+- ``ip_addresses`` (Optional[List[str]]): List of IP addresses for create/update operations
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "ztw")
+
+**Returns:**
+- Dictionary with group information or list of groups
+
+**Example:**
+
+.. code-block:: python
+
+   # Create a new IP destination group
+   group = ztw_ip_destination_groups(
+       action="create",
+       name="Office Network",
+       description="Office IP addresses",
+       ip_addresses=["192.168.1.0/24", "10.0.0.0/8"]
+   )
+
+ztw_ip_group
+~~~~~~~~~~~~
+
+Manages ZTW IP Pool Groups with full CRUD operations.
+
+**Parameters:**
+- ``action`` (str): Action to perform ("create", "read", "update", "delete", "list")
+- ``group_id`` (Optional[str]): Group ID for read, update, delete operations
+- ``name`` (Optional[str]): Group name for create/update operations
+- ``description`` (Optional[str]): Group description for create/update operations
+- ``ip_addresses`` (Optional[List[str]]): List of IP addresses for create/update operations
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "ztw")
+
+**Returns:**
+- Dictionary with group information or list of groups
+
+**Example:**
+
+.. code-block:: python
+
+   # List all IP groups
+   groups = ztw_ip_group(action="list")
+
+ztw_ip_source_groups
+~~~~~~~~~~~~~~~~~~~~
+
+Manages ZTW IP Source Groups with full CRUD operations.
+
+**Parameters:**
+- ``action`` (str): Action to perform ("create", "read", "update", "delete", "list")
+- ``group_id`` (Optional[str]): Group ID for read, update, delete operations
+- ``name`` (Optional[str]): Group name for create/update operations
+- ``description`` (Optional[str]): Group description for create/update operations
+- ``ip_addresses`` (Optional[List[str]]): List of IP addresses for create/update operations
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "ztw")
+
+**Returns:**
+- Dictionary with group information or list of groups
+
+**Example:**
+
+.. code-block:: python
+
+   # Update an existing IP source group
+   group = ztw_ip_source_groups(
+       action="update",
+       group_id="12345",
+       name="Updated Source Group",
+       description="Updated description"
+   )
+
+ztw_network_service_groups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Manages ZTW Network Service Groups with full CRUD operations.
+
+**Parameters:**
+- ``action`` (str): Action to perform ("create", "read", "update", "delete", "list")
+- ``group_id`` (Optional[str]): Group ID for read, update, delete operations
+- ``name`` (Optional[str]): Group name for create/update operations
+- ``description`` (Optional[str]): Group description for create/update operations
+- ``services`` (Optional[List[dict]]): List of network services for create/update operations
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "ztw")
+
+**Returns:**
+- Dictionary with group information or list of groups
+
+**Example:**
+
+.. code-block:: python
+
+   # Create a network service group
+   group = ztw_network_service_groups(
+       action="create",
+       name="Web Services",
+       description="Common web services",
+       services=[
+           {"port": 80, "protocol": "TCP"},
+           {"port": 443, "protocol": "TCP"}
+       ]
+   )
+
+ztw_list_roles
+~~~~~~~~~~~~~~~
+
+List all existing admin roles in Zscaler Cloud & Branch Connector (ZTW).
+
+**Parameters:**
+- ``include_auditor_role`` (Optional[bool]): Include or exclude auditor user information
+- ``include_partner_role`` (Optional[bool]): Include or exclude admin user information
+- ``include_api_roles`` (Optional[bool]): Include or exclude API role information
+- ``role_ids`` (Optional[List[str]]): Include or exclude role ID information
+- ``search`` (Optional[str]): Search string to filter roles by name
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "ztw")
+
+**Returns:**
+- List of role dictionaries
+
+**Example:**
+
+.. code-block:: python
+
+   # List all roles with search filter
+   roles = ztw_list_roles(search="admin", include_api_roles=True)
+
+ztw_list_admins
+~~~~~~~~~~~~~~~~
+
+List all existing admin users or get details for a specific admin user in Zscaler Cloud & Branch Connector (ZTW).
+
+**Parameters:**
+- ``action`` (str): Action to perform ("list_admins" or "get_admin")
+- ``admin_id`` (Optional[str]): Admin ID for get_admin action
+- ``include_auditor_users`` (Optional[bool]): Include/exclude auditor users
+- ``include_admin_users`` (Optional[bool]): Include/exclude admin users
+- ``include_api_roles`` (Optional[bool]): Include/exclude API roles
+- ``search`` (Optional[str]): Search string to filter by
+- ``page`` (Optional[int]): Page offset to return
+- ``page_size`` (Optional[int]): Number of records per page
+- ``version`` (Optional[int]): Specifies admins from a backup version
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "ztw")
+
+**Returns:**
+- List of admin dictionaries or single admin dictionary
+
+**Example:**
+
+.. code-block:: python
+
+   # List all admins
+   admins = ztw_list_admins(action="list_admins", page_size=50)
+   
+   # Get specific admin
+   admin = ztw_list_admins(action="get_admin", admin_id="12345")
+
+Authentication
+--------------
+
+ZTW tools support both OneAPI and Legacy authentication methods:
+
+**OneAPI Authentication:**
+- Uses OAuth2 client credentials
+- Requires ``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECRET``, and ``ZSCALER_VANITY_DOMAIN``
+
+**Legacy Authentication:**
+- Uses username, password, and API key
+- Requires ``ZTW_USERNAME``, ``ZTW_PASSWORD``, ``ZTW_API_KEY``, and ``ZTW_CLOUD``
+
+Common Use Cases
+----------------
+
+1. **Network Management**: Create and manage IP groups for network segmentation
+2. **Service Configuration**: Define network service groups for traffic management
+3. **Administrative Control**: Manage admin roles and user permissions
+4. **Resource Organization**: Organize network resources for better management
+
+Error Handling
+--------------
+
+All ZTW tools include comprehensive error handling:
+
+- **Authentication errors**: Invalid credentials or expired tokens
+- **Permission errors**: Insufficient privileges for the requested operation
+- **Validation errors**: Invalid parameters or malformed requests
+- **Rate limiting**: Automatic retry with exponential backoff
+
+For detailed error information, check the tool response for error messages and status codes.

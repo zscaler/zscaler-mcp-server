@@ -56,53 +56,18 @@ def app_protection_policy_manager(
     - Follow the precise structure shown in examples below
 
     Conditions Format Rules:
+
     1. Basic conditions:
        ("object_type", ["value1", "value2"])
-       Example: ("app", ["72058304855116918"])
 
     2. Conditions with operators:
        ("AND"/"OR", ("object_type", [("lhs", "rhs")]))
-       Example: ("OR", ("posture", [("cfab2ee9...", "true")]))
 
     3. Special cases:
-       - Multi-value:
-            (("platform", [("windows", "true"), ("mac", "true")]))
-
-    Full Examples:
-    [
-        # Simple app condition
-        ("app", ["72058304855116918"]),
-
-        # App group condition
-        ("app_group", ["72058304855114308"]),
-
-        # Operator group (OR)
-        ("OR", ("posture", [
-            ("cfab2ee9-9bf4-4482-9dcc-dadf7311c49b", "true"),
-            ("72ddbe89-fa08-4071-94bd-964ce264db10", "true")
-        ])),
-
-        # Multi-value condition
-        (("platform", [
-            ("windows", "true"),
-            ("mac", "true")
-        ])),
-
-        # SCIM_GROUP/SCIM/SAML conditions
-        ("AND", ("scim_group", [
-            ("72058304855015574", "490880"),
-            ("72058304855015574", "490877")
-        ]))
-    ]
+       - Multi-value: (("platform", [("windows", "true"), ("mac", "true")]))
 
     Note: When sending via JSON, use lists [] instead of tuples ().
-    Example JSON-compatible format:
-    {
-        "conditions": [
-            ["app", ["72058304855116918"]],
-            ["AND", ["posture", [["cfab2ee9...", "true"]]]]
-        ]
-    }
+
     Responses will always be returned in a standardized v2 format that maintains
     the original operator grouping from the API.
     """

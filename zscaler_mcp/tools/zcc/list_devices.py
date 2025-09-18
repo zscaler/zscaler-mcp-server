@@ -10,22 +10,27 @@ def zcc_devices_v1_manager(
         Optional[str],
         Field(description="Username to filter by (e.g., 'jdoe@acme.com')."),
     ] = None,
+
     os_type: Annotated[
         Optional[str],
         Field(
             description="Device operating system type. Valid options: ios, android, windows, macos, linux."
         ),
     ] = None,
+    
     page: Annotated[
         Optional[int], Field(description="Page number for paginated results.")
     ] = None,
+
     page_size: Annotated[
         Optional[int],
         Field(description="Number of results per page. Default is 50. Max is 5000."),
     ] = None,
+
     use_legacy: Annotated[
         bool, Field(description="Whether to use the legacy API.")
     ] = False,
+
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> Union[List[dict], str]:
     """

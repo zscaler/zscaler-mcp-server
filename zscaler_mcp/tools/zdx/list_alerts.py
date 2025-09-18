@@ -7,11 +7,11 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_list_alerts(
     action: Annotated[
-        Literal["list_ongoing", "read_alert", "list_affected_devices"],
-        Field(description="Must be one of 'list_ongoing', 'read_alert', or 'list_affected_devices'."),
+        Literal["read", "read_alert", "read_affected_devices"],
+        Field(description="Must be one of 'read', 'read_alert', or 'read_affected_devices'."),
     ],
     alert_id: Annotated[
-        Optional[str], Field(description="Required if action is 'read_alert' or 'list_affected_devices'. The unique ID for the alert.")
+        Optional[str], Field(description="Required if action is 'read_alert' or 'read_affected_devices'. The unique ID for the alert.")
     ] = None,
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
@@ -23,7 +23,7 @@ def zdx_list_alerts(
         Optional[List[str]], Field(description="Filter by geolocation ID(s).")
     ] = None,
     location_groups: Annotated[
-        Optional[List[int]], Field(description="Filter by location group ID(s). Only available for list_affected_devices action.")
+        Optional[List[int]], Field(description="Filter by location group ID(s). Only available for read_affected_devices action.")
     ] = None,
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h). Cannot exceed 14 days.")
@@ -43,22 +43,22 @@ def zdx_list_alerts(
     Tool for retrieving ZDX alert information and managing alert-related data.
     
     Supports three actions:
-    - list_ongoing: Returns a list of all ongoing alert rules across an organization (USE THIS FOR GENERAL ALERT OVERVIEW).
+    - read: Returns a list of all ongoing alert rules across an organization (USE THIS FOR GENERAL ALERT OVERVIEW).
     - read_alert: Returns details of a single alert including impacted department, locations, and alert trigger (USE FOR SPECIFIC ALERT DETAILS).
-    - list_affected_devices: Returns a list of all affected devices associated with an alert rule (USE FOR ALERT IMPACT ANALYSIS).
+    - read_affected_devices: Returns a list of all affected devices associated with an alert rule (USE FOR ALERT IMPACT ANALYSIS).
     
     USAGE GUIDELINES:
-    - Use action='list_ongoing' by default to get an overview of all ongoing alerts in the organization
+    - Use action='read' by default to get an overview of all ongoing alerts in the organization
     - Use action='read_alert' when you need detailed information about a specific alert
-    - Use action='list_affected_devices' when you need to analyze the impact of a specific alert on devices
+    - Use action='read_affected_devices' when you need to analyze the impact of a specific alert on devices
     
     Args:
-        action: The type of alert information to retrieve ('list_ongoing', 'read_alert', or 'list_affected_devices').
-        alert_id: Required if action is 'read_alert' or 'list_affected_devices'. The unique ID for the alert.
+        action: The type of alert information to retrieve ('read', 'read_alert', or 'read_affected_devices').
+        alert_id: Required if action is 'read_alert' or 'read_affected_devices'. The unique ID for the alert.
         location_id: Optional list of location IDs to filter by specific locations.
         department_id: Optional list of department IDs to filter by specific departments.
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
-        location_groups: Optional list of location group IDs (only available for list_affected_devices action).
+        location_groups: Optional list of location group IDs (only available for read_affected_devices action).
         since: Optional number of hours to look back (default 2 hours, max 14 days).
         offset: Optional pagination offset for getting next batch of results.
         limit: Optional number of items to return per request (minimum 1).
@@ -66,32 +66,32 @@ def zdx_list_alerts(
         service: The Zscaler service to use (default "zdx").
         
     Returns:
-        For 'list_ongoing': List of dictionaries containing ongoing alert information.
+        For 'read': List of dictionaries containing ongoing alert information.
         For 'read_alert': Dictionary containing detailed alert information.
-        For 'list_affected_devices': List of dictionaries containing affected device information.
+        For 'read_affected_devices': List of dictionaries containing affected device information.
         
     Raises:
         Exception: If the alert information retrieval fails due to API errors.
         
     Examples:
         DEFAULT USAGE - Get overview of all ongoing alerts in the organization:
-        >>> alerts = zdx_list_alerts(action="list_ongoing")
+        >>> alerts = zdx_list_alerts(action="read")
         
         Get ongoing alerts for the past 24 hours:
         >>> alerts = zdx_list_alerts(
-        ...     action="list_ongoing", 
+        ...     action="read", 
         ...     since=24
         ... )
         
         Get ongoing alerts for specific locations:
         >>> alerts = zdx_list_alerts(
-        ...     action="list_ongoing", 
+        ...     action="read", 
         ...     location_id=["58755", "58756"]
         ... )
         
         Get ongoing alerts with pagination:
         >>> alerts = zdx_list_alerts(
-        ...     action="list_ongoing", 
+        ...     action="read", 
         ...     limit=50, 
         ...     offset="next_offset_value"
         ... )
@@ -104,20 +104,20 @@ def zdx_list_alerts(
         
         ALERT IMPACT ANALYSIS - Get affected devices for a specific alert:
         >>> affected_devices = zdx_list_alerts(
-        ...     action="list_affected_devices", 
+        ...     action="read_affected_devices", 
         ...     alert_id="7473160764821179371"
         ... )
         
         Get affected devices for the past 24 hours:
         >>> affected_devices = zdx_list_alerts(
-        ...     action="list_affected_devices", 
+        ...     action="read_affected_devices", 
         ...     alert_id="7473160764821179371", 
         ...     since=24
         ... )
         
         Get affected devices with location filtering:
         >>> affected_devices = zdx_list_alerts(
-        ...     action="list_affected_devices", 
+        ...     action="read_affected_devices", 
         ...     alert_id="7473160764821179371", 
         ...     location_id=["58755"], 
         ...     department_id=["123456"]
@@ -125,7 +125,7 @@ def zdx_list_alerts(
         
         Get affected devices with location groups:
         >>> affected_devices = zdx_list_alerts(
-        ...     action="list_affected_devices", 
+        ...     action="read_affected_devices", 
         ...     alert_id="7473160764821179371", 
         ...     location_groups=[1, 2]
         ... )
@@ -145,7 +145,7 @@ def zdx_list_alerts(
         query_params["offset"] = offset
     if limit:
         query_params["limit"] = limit
-    if location_groups and action == "list_affected_devices":
+    if location_groups and action == "read_affected_devices":
         query_params["location_groups"] = location_groups
 
     if action == "read_alert":
@@ -165,13 +165,13 @@ def zdx_list_alerts(
         else:
             return {}
 
-    elif action == "list_affected_devices":
+    elif action == "read_affected_devices":
         """
         Returns a list of all affected devices associated with an alert rule.
         """
         if not alert_id:
-            raise ValueError("alert_id is required for action=list_affected_devices")
-        result, _, err = client.zdx.alerts.list_affected_devices(
+            raise ValueError("alert_id is required for action=read_affected_devices")
+        result, _, err = client.zdx.alerts.read_affected_devices(
             alert_id, query_params=query_params
         )
         if err:
@@ -186,11 +186,11 @@ def zdx_list_alerts(
         else:
             return []
 
-    elif action == "list_ongoing":
+    elif action == "read":
         """
         Returns a list of all ongoing alert rules across an organization in ZDX.
         """
-        result, _, err = client.zdx.alerts.list_ongoing(query_params=query_params)
+        result, _, err = client.zdx.alerts.read(query_params=query_params)
         if err:
             raise Exception(f"Ongoing alerts listing failed: {err}")
         
@@ -204,4 +204,4 @@ def zdx_list_alerts(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_ongoing', 'read_alert', 'list_affected_devices'")
+        raise ValueError("Invalid action. Must be one of: 'read', 'read_alert', 'read_affected_devices'")

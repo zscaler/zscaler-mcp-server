@@ -56,7 +56,7 @@ Create an IAM role with the following policy that grants the necessary permissio
         "ecr:GetDownloadUrlForLayer"
       ],
       "Resource": [
-        "arn:aws:ecr:us-east-1:123456789012:repository/zscaler/zscaler-mcp-server"
+        "arn:aws:ecr:us-east-1:709825985650:repository/zscaler/zscaler-mcp-server"
       ]
     },
     {
@@ -210,7 +210,7 @@ aws bedrock-agentcore-control create-agent-runtime \
   --description "<AGENT_DESCRIPTION>" \
   --agent-runtime-artifact '{
     "containerConfiguration": {
-      "containerUri": "arn:aws:ecr:us-east-1:123456789012:repository/zscaler/zscaler-mcp-server"
+      "containerUri": "arn:aws:ecr:us-east-1:709825985650:repository/zscaler/zscaler-mcp-server"
     }
   }' \
   --role-arn "<AGENT_ROLE_ARN>" \
@@ -229,7 +229,7 @@ aws bedrock-agentcore-control create-agent-runtime \
   }'
 ```
 
-#### Verify the AgentCore Status
+#### Verify the AgentCore Status - Example
 
 ```sh
 aws bedrock-agentcore-control get-agent-runtime \
@@ -238,7 +238,7 @@ aws bedrock-agentcore-control get-agent-runtime \
   --endpoint-name <ENDPOINT_NAME>
 ```
 
-#### Invoke agent runtime
+#### Invoke agent runtime - Example
 
 ```sh
 export PAYLOAD='{ "jsonrpc": "2.0", "id": 1, "method": "tools/list",

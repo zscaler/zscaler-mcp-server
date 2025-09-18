@@ -8,14 +8,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_web_dlp_rule_manager(
     action: Annotated[
-        Literal["list", "list_lite", "get", "add", "update", "delete"],
+        Literal["read", "read_lite", "create", "update", "delete"],
         Field(
-            description="Web DLP rule operation: list, list_lite, get, add, update, or delete."
+            description="Web DLP rule operation: read, read_lite, create, update, or delete."
         ),
-    ] = "list",
+    ] = "read",
     rule_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="Required for get, update, and delete operations."),
+        Field(description="Required for read, update, and delete operations."),
     ] = None,
     name: Annotated[
         Optional[str], Field(description="Rule name (required for add/update).")
@@ -134,8 +134,8 @@ def zia_web_dlp_rule_manager(
     block, or inspect traffic for potential data loss prevention violations.
 
     Args:
-        action (str): Operation to perform: list, list_lite, get, add, update, or delete.
-        rule_id (int/str, optional): Required for get, update, and delete operations.
+        action (str): Operation to perform: read, read_lite, create, update, or delete.
+        rule_id (int/str, optional): Required for read, update, and delete operations.
         name (str, optional): Rule name (required for add/update).
         description (str, optional): Optional rule description.
         action (str, optional): Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT.
@@ -174,20 +174,20 @@ def zia_web_dlp_rule_manager(
 
     Examples:
         List all web DLP rules:
-        >>> rules = zia_web_dlp_rule_manager(action="list")
+        >>> rules = zia_web_dlp_rule_manager(action="read")
 
         List rules with name and ID only:
-        >>> rules = zia_web_dlp_rule_manager(action="list_lite")
+        >>> rules = zia_web_dlp_rule_manager(action="read_lite")
 
         Search for rules containing "block":
-        >>> rules = zia_web_dlp_rule_manager(action="list", search="block")
+        >>> rules = zia_web_dlp_rule_manager(action="read", search="block")
 
         Get a specific rule:
-        >>> rule = zia_web_dlp_rule_manager(action="get", rule_id="12345")
+        >>> rule = zia_web_dlp_rule_manager(action="read", rule_id="12345")
 
         Add a new rule to block image files:
         >>> rule = zia_web_dlp_rule_manager(
-        ...     action="add",
+        ...     action="create",
         ...     name="Block Image Files",
         ...     action="BLOCK",
         ...     file_types=["BITMAP", "JPEG", "PNG"],
@@ -197,7 +197,7 @@ def zia_web_dlp_rule_manager(
 
         Add a rule to allow specific file types for Finance group:
         >>> rule = zia_web_dlp_rule_manager(
-        ...     action="add",
+        ...     action="create",
         ...     name="Allow Finance Documents",
         ...     action="ALLOW",
         ...     file_types=["PDF", "DOC", "DOCX", "XLS", "XLSX"],
@@ -301,29 +301,29 @@ def zia_web_dlp_rule_manager(
 
     dlp = client.zia.dlp_web_rules
 
-    if action == "list":
-        query = {"search": search} if search else {}
-        rules, _, err = dlp.list_rules(query_params=query)
-        if err:
-            raise Exception(f"Failed to list web DLP rules: {err}")
-        return [r.as_dict() for r in rules]
+    if action == "read":
+        if rule_id:
+            # Get specific rule by ID
+            rule, _, err = dlp.get_rule(rule_id)
+            if err:
+                raise Exception(f"Failed to retrieve rule {rule_id}: {err}")
+            return rule.as_dict()
+        else:
+            # List all rules
+            query = {"search": search} if search else {}
+            rules, _, err = dlp.list_rules(query_params=query)
+            if err:
+                raise Exception(f"Failed to list web DLP rules: {err}")
+            return [r.as_dict() for r in rules]
 
-    elif action == "list_lite":
+    elif action == "read_lite":
         query = {"search": search} if search else {}
         rules, _, err = dlp.list_rules_lite(query_params=query)
         if err:
             raise Exception(f"Failed to list web DLP rules (lite): {err}")
         return [r.as_dict() for r in rules]
 
-    elif action == "get":
-        if not rule_id:
-            raise ValueError("rule_id is required for get.")
-        rule, _, err = dlp.get_rule(rule_id)
-        if err:
-            raise Exception(f"Failed to retrieve rule {rule_id}: {err}")
-        return rule.as_dict()
-
-    elif action == "add":
+    elif action == "create":
         if not name or not rule_action:
             raise ValueError("name and action are required for add.")
         rule, _, err = dlp.add_rule(**payload)

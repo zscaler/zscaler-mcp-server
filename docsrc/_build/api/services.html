@@ -1,0 +1,908 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Tools API" href="tools.html" /><link rel="prev" title="Client API" href="client.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Services API</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=eaa1d806" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/contributing.html">Contributing Guide</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html">Client API</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/services.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="services-api">
+<h1>Services API<a class="headerlink" href="#services-api" title="Link to this heading">¶</a></h1>
+<p>Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, Zidentity).</p>
+<p id="module-zscaler_mcp.services">Zscaler MCP Server Services</p>
+<p>This module provides the service classes for the Zscaler MCP server.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.BaseService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BaseService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#BaseService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.BaseService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Base class for all Zscaler services.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.BaseService.register_resources">
+<span class="sig-name descname"><span class="pre">register_resources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#BaseService.register_resources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.BaseService.register_resources" title="Link to this definition">¶</a></dt>
+<dd><p>Register resources with the MCP server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>server</strong> – The MCP server instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.BaseService.register_tools">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#BaseService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.BaseService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register tools with the MCP server.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>server</strong> – The MCP server instance</p></li>
+<li><p><strong>enabled_tools</strong> – Set of enabled tool names (if None, all tools are enabled)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZCCService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZCCService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZCCService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZCCService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Client Connector (ZCC) service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZCCService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZCCService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZCCService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZCC tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZDXService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZDXService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZDXService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZDXService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Digital Experience (ZDX) service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZDXService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZDXService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZDXService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZDX tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZIAService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZIAService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIAService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIAService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Internet Access (ZIA) service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZIAService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIAService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIAService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZIA tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZIdentityService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZIdentityService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIdentityService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIdentityService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler ZIdentity service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZIdentityService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIdentityService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIdentityService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZIdentity tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZPAService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZPAService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZPAService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZPAService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Private Access (ZPA) service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZPAService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZPAService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZPAService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZPA tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZTWService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZTWService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZTWService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZTWService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Cloud &amp; Branch Connector (ZTW) service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZTWService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZTWService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZTWService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZTW tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.services.get_available_services">
+<span class="sig-name descname"><span class="pre">get_available_services</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#get_available_services"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.get_available_services" title="Link to this definition">¶</a></dt>
+<dd><p>Get all available services.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary mapping service names to service classes</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, Type]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.services.get_service_names">
+<span class="sig-name descname"><span class="pre">get_service_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#get_service_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.get_service_names" title="Link to this definition">¶</a></dt>
+<dd><p>Get the names of all available services.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of available service names</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="service-overview">
+<h2>Service Overview<a class="headerlink" href="#service-overview" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server provides service classes for each Zscaler product:</p>
+<section id="zcc-service">
+<h3>ZCC Service<a class="headerlink" href="#zcc-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Client Connector service for device management.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id1">
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">ZCC Service Methods</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_devices</span></code></p></td>
+<td><p>List ZCC devices</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">devices_csv_exporter</span></code></p></td>
+<td><p>Export device data to CSV</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_trusted_networks</span></code></p></td>
+<td><p>List trusted networks</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_forwarding_profiles</span></code></p></td>
+<td><p>List forwarding profiles</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="zia-service">
+<h3>ZIA Service<a class="headerlink" href="#zia-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Internet Access service for web security and policy management.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id2">
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">ZIA Service Methods</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">activation</span></code></p></td>
+<td><p>Check or activate configuration changes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">atp_malicious_urls</span></code></p></td>
+<td><p>Manage malicious URL denylist</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">auth_exempt_urls</span></code></p></td>
+<td><p>Manage authentication exempt URLs</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code></p></td>
+<td><p>Manage Shadow IT cloud applications</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cloud_firewall_rule</span></code></p></td>
+<td><p>Manage cloud firewall rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">geo_search</span></code></p></td>
+<td><p>Perform geographical lookups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gre_range</span></code></p></td>
+<td><p>Discover GRE internal IP ranges</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gre_tunnels</span></code></p></td>
+<td><p>Manage GRE tunnels</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ip_destination_groups</span></code></p></td>
+<td><p>Manage IP destination groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ip_source_group</span></code></p></td>
+<td><p>Manage IP source groups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">user_groups</span></code></p></td>
+<td><p>List and retrieve user groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">user_departments</span></code></p></td>
+<td><p>List and retrieve user departments</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">users</span></code></p></td>
+<td><p>List and retrieve users</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">location_management</span></code></p></td>
+<td><p>Manage locations</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">network_app_group</span></code></p></td>
+<td><p>Manage network application groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rule_labels</span></code></p></td>
+<td><p>Manage rule labels</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sandbox_info</span></code></p></td>
+<td><p>Retrieve sandbox information</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">static_ips</span></code></p></td>
+<td><p>Manage static IP addresses</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">url_categories</span></code></p></td>
+<td><p>Manage URL categories</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vpn_credentials</span></code></p></td>
+<td><p>Manage VPN credentials</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="zpa-service">
+<h3>ZPA Service<a class="headerlink" href="#zpa-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Private Access service for zero trust network access.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id3">
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">ZPA Service Methods</span><a class="headerlink" href="#id3" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">access_policy</span></code></p></td>
+<td><p>Manage access policy rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">app_connector_groups</span></code></p></td>
+<td><p>Manage app connector groups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">app_protection_policy</span></code></p></td>
+<td><p>Manage inspection policy rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">app_protection_profiles</span></code></p></td>
+<td><p>List and search app protection profiles</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">app_segments_by_type</span></code></p></td>
+<td><p>Retrieve application segments by type</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">application_segments</span></code></p></td>
+<td><p>Manage application segments</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">application_servers</span></code></p></td>
+<td><p>Manage application servers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ba_certificates</span></code></p></td>
+<td><p>Manage browser access certificates</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">enrollment_certificates</span></code></p></td>
+<td><p>Retrieve enrollment certificates</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">forwarding_policy</span></code></p></td>
+<td><p>Manage client forwarding policy rules</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">isolation_policy</span></code></p></td>
+<td><p>Manage isolation policy rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">isolation_profile</span></code></p></td>
+<td><p>Retrieve cloud browser isolation profiles</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">posture_profiles</span></code></p></td>
+<td><p>Retrieve posture profiles</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pra_credentials</span></code></p></td>
+<td><p>Manage privileged remote access credentials</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pra_portals</span></code></p></td>
+<td><p>Manage privileged remote access portals</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">provisioning_key</span></code></p></td>
+<td><p>Manage provisioning keys</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">saml_attributes</span></code></p></td>
+<td><p>Query SAML attributes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scim_attributes</span></code></p></td>
+<td><p>Manage SCIM attributes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scim_groups</span></code></p></td>
+<td><p>Retrieve SCIM groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">segment_groups</span></code></p></td>
+<td><p>Manage segment groups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">server_groups</span></code></p></td>
+<td><p>Manage server groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">service_edge_groups</span></code></p></td>
+<td><p>Manage service edge groups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">timeout_policy</span></code></p></td>
+<td><p>Manage timeout policy rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trusted_networks</span></code></p></td>
+<td><p>Retrieve trusted networks</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="zdx-service">
+<h3>ZDX Service<a class="headerlink" href="#zdx-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Digital Experience service for application performance monitoring.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id4">
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">ZDX Service Methods</span><a class="headerlink" href="#id4" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">administration</span></code></p></td>
+<td><p>Discover departments or locations</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">active_devices</span></code></p></td>
+<td><p>Discover devices using filters</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_applications</span></code></p></td>
+<td><p>List active applications</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_application_score</span></code></p></td>
+<td><p>Get application scores or trends</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_application_metric</span></code></p></td>
+<td><p>Retrieve application metrics</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_application_user</span></code></p></td>
+<td><p>List users/devices for applications</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_software_inventory</span></code></p></td>
+<td><p>List software inventory</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_alerts</span></code></p></td>
+<td><p>List ongoing alerts</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_historical_alerts</span></code></p></td>
+<td><p>List historical alert rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_deep_traces</span></code></p></td>
+<td><p>Retrieve deep trace information</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="ztw-service">
+<h3>ZTW Service<a class="headerlink" href="#ztw-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Cloud &amp; Branch Connector service for branch connectivity.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id5">
+<table class="docutils align-default" id="id5">
+<caption><span class="caption-text">ZTW Service Methods</span><a class="headerlink" href="#id5" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ip_destination_groups</span></code></p></td>
+<td><p>Manage IP destination groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ip_group</span></code></p></td>
+<td><p>Manage IP groups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ip_source_groups</span></code></p></td>
+<td><p>Manage IP source groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">network_service_groups</span></code></p></td>
+<td><p>Manage network service groups</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_roles</span></code></p></td>
+<td><p>List admin roles</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_admins</span></code></p></td>
+<td><p>List admin users</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="zidentity-service">
+<h3>ZIdentity Service<a class="headerlink" href="#zidentity-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Identity service for user and group management.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id6">
+<table class="docutils align-default" id="id6">
+<caption><span class="caption-text">ZIdentity Service Methods</span><a class="headerlink" href="#id6" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">groups</span></code></p></td>
+<td><p>Retrieve group information</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">users</span></code></p></td>
+<td><p>Retrieve user information</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="usage-examples">
+<h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading">¶</a></h2>
+<section id="accessing-services">
+<h3>Accessing Services<a class="headerlink" href="#accessing-services" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">()</span>
+
+<span class="c1"># Access ZIA service</span>
+<span class="n">zia_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span>
+
+<span class="c1"># Access ZPA service</span>
+<span class="n">zpa_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span>
+
+<span class="c1"># Access ZDX service</span>
+<span class="n">zdx_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span>
+
+<span class="c1"># Access ZCC service</span>
+<span class="n">zcc_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zcc</span>
+
+<span class="c1"># Access ZTW service</span>
+<span class="n">ztw_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">ztw</span>
+
+<span class="c1"># Access ZIdentity service</span>
+<span class="n">zidentity_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span>
+</pre></div>
+</div>
+</section>
+<section id="service-methods">
+<h3>Service Methods<a class="headerlink" href="#service-methods" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ZIA example</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">()</span>
+
+<span class="c1"># List users</span>
+<span class="n">users</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">list_users</span><span class="p">()</span>
+
+<span class="c1"># List URL categories</span>
+<span class="n">categories</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span><span class="o">.</span><span class="n">list_categories</span><span class="p">()</span>
+
+<span class="c1"># ZPA example</span>
+<span class="c1"># List application segments</span>
+<span class="n">segments</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">application_segments</span><span class="o">.</span><span class="n">list_segments</span><span class="p">()</span>
+
+<span class="c1"># List segment groups</span>
+<span class="n">groups</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">segment_groups</span><span class="o">.</span><span class="n">list_groups</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="tools.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Tools API</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="client.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Client API</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Services API</a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.BaseService"><code class="docutils literal notranslate"><span class="pre">BaseService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.BaseService.register_resources"><code class="docutils literal notranslate"><span class="pre">BaseService.register_resources()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.services.BaseService.register_tools"><code class="docutils literal notranslate"><span class="pre">BaseService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZCCService"><code class="docutils literal notranslate"><span class="pre">ZCCService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZCCService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZCCService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZDXService"><code class="docutils literal notranslate"><span class="pre">ZDXService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZDXService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZDXService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZIAService"><code class="docutils literal notranslate"><span class="pre">ZIAService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZIAService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIAService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZIdentityService"><code class="docutils literal notranslate"><span class="pre">ZIdentityService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZIdentityService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIdentityService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZPAService"><code class="docutils literal notranslate"><span class="pre">ZPAService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZPAService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZPAService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZTWService"><code class="docutils literal notranslate"><span class="pre">ZTWService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZTWService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZTWService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.get_available_services"><code class="docutils literal notranslate"><span class="pre">get_available_services()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.services.get_service_names"><code class="docutils literal notranslate"><span class="pre">get_service_names()</span></code></a></li>
+<li><a class="reference internal" href="#service-overview">Service Overview</a><ul>
+<li><a class="reference internal" href="#zcc-service">ZCC Service</a></li>
+<li><a class="reference internal" href="#zia-service">ZIA Service</a></li>
+<li><a class="reference internal" href="#zpa-service">ZPA Service</a></li>
+<li><a class="reference internal" href="#zdx-service">ZDX Service</a></li>
+<li><a class="reference internal" href="#ztw-service">ZTW Service</a></li>
+<li><a class="reference internal" href="#zidentity-service">ZIdentity Service</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage-examples">Usage Examples</a><ul>
+<li><a class="reference internal" href="#accessing-services">Accessing Services</a></li>
+<li><a class="reference internal" href="#service-methods">Service Methods</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

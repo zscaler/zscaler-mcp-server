@@ -1,0 +1,687 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Troubleshooting Guide" href="troubleshooting.html" /><link rel="prev" title="Configuration Guide" href="configuration.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Examples</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=eaa1d806" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-notes.html">Release Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html">Contributing Guide</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/guides/examples.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="examples">
+<span id="id1"></span><h1>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h1>
+<p>This section provides comprehensive example prompts for all Zscaler products and services available through the MCP Server. These examples demonstrate the various capabilities and use cases for each service.</p>
+<section id="zscaler-client-connector-zcc-examples">
+<h2>Zscaler Client Connector (ZCC) Examples<a class="headerlink" href="#zscaler-client-connector-zcc-examples" title="Link to this heading">¶</a></h2>
+<p><strong>Device Management:</strong></p>
+<ul class="simple">
+<li><p>“List all ZCC devices in my organization”</p></li>
+<li><p>“Show me ZCC devices for user <a class="reference external" href="mailto:john&#46;doe&#37;&#52;&#48;company&#46;com">john<span>&#46;</span>doe<span>&#64;</span>company<span>&#46;</span>com</a>”</p></li>
+<li><p>“Get ZCC device information for iOS devices only”</p></li>
+<li><p>“Export ZCC device data to CSV for audit purposes”</p></li>
+<li><p>“List all trusted networks configured in ZCC”</p></li>
+<li><p>“Show me the forwarding profiles available in ZCC”</p></li>
+</ul>
+<p><strong>Device Monitoring:</strong></p>
+<ul class="simple">
+<li><p>“What is the enrollment status of ZCC devices?”</p></li>
+<li><p>“Show me devices that haven’t been active in the last 30 days”</p></li>
+<li><p>“List all ZCC devices with their current service status”</p></li>
+</ul>
+</section>
+<section id="zscaler-digital-experience-zdx-examples">
+<h2>Zscaler Digital Experience (ZDX) Examples<a class="headerlink" href="#zscaler-digital-experience-zdx-examples" title="Link to this heading">¶</a></h2>
+<p><strong>Application Monitoring:</strong></p>
+<ul class="simple">
+<li><p>“List all applications configured in ZDX”</p></li>
+<li><p>“Show me the ZDX score for application ID 12345”</p></li>
+<li><p>“Get performance metrics for our main web application”</p></li>
+<li><p>“What users are accessing the Salesforce application?”</p></li>
+<li><p>“Show me application performance trends for the last week”</p></li>
+</ul>
+<p><strong>Device Discovery:</strong></p>
+<ul class="simple">
+<li><p>“Discover all active ZDX devices in our organization”</p></li>
+<li><p>“Find devices used by users in the IT department”</p></li>
+<li><p>“Show me devices with poor ZDX scores”</p></li>
+<li><p>“List devices that haven’t been seen in the last 7 days”</p></li>
+</ul>
+<p><strong>Alert Management:</strong></p>
+<ul class="simple">
+<li><p>“Show me all ongoing ZDX alerts”</p></li>
+<li><p>“Get details for alert ID 67890”</p></li>
+<li><p>“List all devices affected by the current network performance alert”</p></li>
+<li><p>“Show me historical alerts from the last month”</p></li>
+</ul>
+<p><strong>Software Inventory:</strong></p>
+<ul class="simple">
+<li><p>“List all software installed across our organization”</p></li>
+<li><p>“Show me devices running outdated versions of Chrome”</p></li>
+<li><p>“Find all devices with specific software installed”</p></li>
+<li><p>“Get software inventory for the Engineering department”</p></li>
+</ul>
+<p><strong>Deep Trace Analysis:</strong></p>
+<ul class="simple">
+<li><p>“Run a deep trace for device ID 11111”</p></li>
+<li><p>“Show me deep trace results for troubleshooting connectivity issues”</p></li>
+<li><p>“Get detailed network path information for a specific device”</p></li>
+</ul>
+</section>
+<section id="zscaler-internet-access-zia-examples">
+<h2>Zscaler Internet Access (ZIA) Examples<a class="headerlink" href="#zscaler-internet-access-zia-examples" title="Link to this heading">¶</a></h2>
+<p><strong>User and Group Management:</strong></p>
+<ul class="simple">
+<li><p>“List all user groups in ZIA”</p></li>
+<li><p>“Show me users in the Marketing department”</p></li>
+<li><p>“Create a new user group for contractors”</p></li>
+<li><p>“Update the IT department user group settings”</p></li>
+</ul>
+<p><strong>URL and Content Filtering:</strong></p>
+<ul class="simple">
+<li><p>“List all URL categories in ZIA”</p></li>
+<li><p>“Create a custom URL category for social media”</p></li>
+<li><p>“Show me blocked URL categories”</p></li>
+<li><p>“Update the URL category for streaming services”</p></li>
+</ul>
+<p><strong>Firewall Rules:</strong></p>
+<ul class="simple">
+<li><p>“List all cloud firewall rules”</p></li>
+<li><p>“Create a firewall rule to block access to specific IP ranges”</p></li>
+<li><p>“Show me firewall rules for the Finance department”</p></li>
+<li><p>“Update the existing firewall rule for remote workers”</p></li>
+</ul>
+<p><strong>Location Management:</strong></p>
+<ul class="simple">
+<li><p>“List all ZIA locations”</p></li>
+<li><p>“Create a new location for our branch office”</p></li>
+<li><p>“Show me location details for our main office”</p></li>
+<li><p>“Update the location settings for remote users”</p></li>
+</ul>
+<p><strong>DLP and Security:</strong></p>
+<ul class="simple">
+<li><p>“List all DLP engines configured in ZIA”</p></li>
+<li><p>“Show me DLP dictionaries for data classification”</p></li>
+<li><p>“Create a new DLP rule for sensitive data”</p></li>
+<li><p>“List web DLP rules for the HR department”</p></li>
+</ul>
+<p><strong>Network Applications:</strong></p>
+<ul class="simple">
+<li><p>“List all network application groups”</p></li>
+<li><p>“Create a network application group for cloud services”</p></li>
+<li><p>“Show me network applications used by the Sales team”</p></li>
+<li><p>“Update network application settings for better performance”</p></li>
+</ul>
+<p><strong>IP Management:</strong></p>
+<ul class="simple">
+<li><p>“List all IP source groups”</p></li>
+<li><p>“Create an IP destination group for our data center”</p></li>
+<li><p>“Show me static IP addresses assigned to locations”</p></li>
+<li><p>“Update IP group settings for remote offices”</p></li>
+</ul>
+<p><strong>VPN and Tunneling:</strong></p>
+<ul class="simple">
+<li><p>“List all GRE tunnels configured in ZIA”</p></li>
+<li><p>“Show me available GRE IP ranges”</p></li>
+<li><p>“Create a new GRE tunnel for branch connectivity”</p></li>
+<li><p>“List VPN credentials for remote access”</p></li>
+</ul>
+<p><strong>Sandbox and Threat Protection:</strong></p>
+<ul class="simple">
+<li><p>“Show me sandbox analysis results”</p></li>
+<li><p>“List malicious URLs in the ATP policy”</p></li>
+<li><p>“Get threat protection statistics”</p></li>
+<li><p>“Show me quarantine information”</p></li>
+</ul>
+<p><strong>System Administration:</strong></p>
+<ul class="simple">
+<li><p>“Check ZIA configuration activation status”</p></li>
+<li><p>“Activate pending ZIA configuration changes”</p></li>
+<li><p>“Show me system health and status”</p></li>
+<li><p>“List all rule labels in ZIA”</p></li>
+</ul>
+</section>
+<section id="zscaler-private-access-zpa-examples">
+<h2>Zscaler Private Access (ZPA) Examples<a class="headerlink" href="#zscaler-private-access-zpa-examples" title="Link to this heading">¶</a></h2>
+<p><strong>Application Segments:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA application segments”</p></li>
+<li><p>“Create a new application segment for our internal tools”</p></li>
+<li><p>“Show me application segments by type (web, tcp, udp)”</p></li>
+<li><p>“Update the application segment for our development environment”</p></li>
+</ul>
+<p><strong>Server Groups:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA server groups”</p></li>
+<li><p>“Create a server group for our database servers”</p></li>
+<li><p>“Show me server group details for production”</p></li>
+<li><p>“Update server group settings for better load balancing”</p></li>
+</ul>
+<p><strong>Access Policies:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA access policy rules”</p></li>
+<li><p>“Create an access policy for contractor access”</p></li>
+<li><p>“Show me access policies for the Finance department”</p></li>
+<li><p>“Update access policy to include new user groups”</p></li>
+</ul>
+<p><strong>Provisioning Keys:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA provisioning keys”</p></li>
+<li><p>“Create a new provisioning key for branch offices”</p></li>
+<li><p>“Show me provisioning key details and usage”</p></li>
+<li><p>“Update provisioning key settings for better security”</p></li>
+</ul>
+<p><strong>App Connectors:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA app connector groups”</p></li>
+<li><p>“Show me app connector health status”</p></li>
+<li><p>“Create a new app connector group for cloud resources”</p></li>
+<li><p>“Update app connector settings for better performance”</p></li>
+</ul>
+<p><strong>Service Edges:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA service edge groups”</p></li>
+<li><p>“Show me service edge performance metrics”</p></li>
+<li><p>“Create a service edge group for specific regions”</p></li>
+<li><p>“Update service edge settings for optimal routing”</p></li>
+</ul>
+<p><strong>Trusted Networks:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA trusted networks”</p></li>
+<li><p>“Create a trusted network for our office locations”</p></li>
+<li><p>“Show me trusted network details and coverage”</p></li>
+<li><p>“Update trusted network settings for new locations”</p></li>
+</ul>
+<p><strong>Inspection and Protection:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA app protection policies”</p></li>
+<li><p>“Show me app protection profiles for data security”</p></li>
+<li><p>“Create an inspection policy for sensitive applications”</p></li>
+<li><p>“Update app protection settings for compliance”</p></li>
+</ul>
+<p><strong>Identity and Access:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA SAML attributes”</p></li>
+<li><p>“Show me SCIM attributes for user provisioning”</p></li>
+<li><p>“Create SCIM groups for automated user management”</p></li>
+<li><p>“Update identity provider settings”</p></li>
+</ul>
+<p><strong>Certificates and Security:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA browser access certificates”</p></li>
+<li><p>“Show me enrollment certificates for device management”</p></li>
+<li><p>“Create a new certificate for secure access”</p></li>
+<li><p>“Update certificate settings for better security”</p></li>
+</ul>
+<p><strong>Posture and Compliance:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA posture profiles”</p></li>
+<li><p>“Show me posture requirements for device compliance”</p></li>
+<li><p>“Create a posture profile for mobile devices”</p></li>
+<li><p>“Update posture settings for security compliance”</p></li>
+</ul>
+<p><strong>Privileged Access:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA PRA portals”</p></li>
+<li><p>“Show me PRA credentials for privileged access”</p></li>
+<li><p>“Create a PRA portal for administrative access”</p></li>
+<li><p>“Update PRA settings for better security”</p></li>
+</ul>
+<p><strong>Timeouts and Policies:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA timeout policies”</p></li>
+<li><p>“Show me timeout settings for different applications”</p></li>
+<li><p>“Create a timeout policy for long-running sessions”</p></li>
+<li><p>“Update timeout settings for better user experience”</p></li>
+</ul>
+<p><strong>Isolation and Security:</strong></p>
+<ul class="simple">
+<li><p>“List all ZPA isolation policies”</p></li>
+<li><p>“Show me cloud browser isolation profiles”</p></li>
+<li><p>“Create an isolation policy for untrusted content”</p></li>
+<li><p>“Update isolation settings for better security”</p></li>
+</ul>
+</section>
+<section id="zscaler-cloud-branch-connector-ztw-examples">
+<h2>Zscaler Cloud &amp; Branch Connector (ZTW) Examples<a class="headerlink" href="#zscaler-cloud-branch-connector-ztw-examples" title="Link to this heading">¶</a></h2>
+<p><strong>IP Group Management:</strong></p>
+<ul class="simple">
+<li><p>“List all ZTW IP destination groups”</p></li>
+<li><p>“Create an IP destination group for our data center”</p></li>
+<li><p>“Show me IP source groups for branch offices”</p></li>
+<li><p>“Update IP group settings for better routing”</p></li>
+</ul>
+<p><strong>Network Service Groups:</strong></p>
+<ul class="simple">
+<li><p>“List all ZTW network service groups”</p></li>
+<li><p>“Create a network service group for web services”</p></li>
+<li><p>“Show me network service groups for database access”</p></li>
+<li><p>“Update network service settings for better performance”</p></li>
+</ul>
+<p><strong>Administration:</strong></p>
+<ul class="simple">
+<li><p>“List all ZTW admin roles”</p></li>
+<li><p>“Show me admin users in the organization”</p></li>
+<li><p>“Create a new admin role for branch management”</p></li>
+<li><p>“Update admin user permissions for better security”</p></li>
+</ul>
+<p><strong>User Management:</strong></p>
+<ul class="simple">
+<li><p>“List all ZTW admin users”</p></li>
+<li><p>“Show me admin users with specific roles”</p></li>
+<li><p>“Get details for admin user <a class="reference external" href="mailto:john&#46;doe&#37;&#52;&#48;company&#46;com">john<span>&#46;</span>doe<span>&#64;</span>company<span>&#46;</span>com</a>”</p></li>
+<li><p>“Update admin user settings and permissions”</p></li>
+</ul>
+</section>
+<section id="zscaler-identity-zidentity-examples">
+<h2>Zscaler Identity (ZIdentity) Examples<a class="headerlink" href="#zscaler-identity-zidentity-examples" title="Link to this heading">¶</a></h2>
+<p><strong>User Management:</strong></p>
+<ul class="simple">
+<li><p>“List all users in ZIdentity”</p></li>
+<li><p>“Show me users in the Engineering department”</p></li>
+<li><p>“Search for users with specific attributes”</p></li>
+<li><p>“Get user details for <a class="reference external" href="mailto:john&#46;doe&#37;&#52;&#48;company&#46;com">john<span>&#46;</span>doe<span>&#64;</span>company<span>&#46;</span>com</a>”</p></li>
+</ul>
+<p><strong>Group Management:</strong></p>
+<ul class="simple">
+<li><p>“List all groups in ZIdentity”</p></li>
+<li><p>“Show me groups for the Finance department”</p></li>
+<li><p>“Search for groups with specific permissions”</p></li>
+<li><p>“Get group details and member information”</p></li>
+</ul>
+</section>
+<section id="cross-product-examples">
+<h2>Cross-Product Examples<a class="headerlink" href="#cross-product-examples" title="Link to this heading">¶</a></h2>
+<p><strong>Security Analysis:</strong></p>
+<ul class="simple">
+<li><p>“Show me all blocked traffic across ZIA and ZPA”</p></li>
+<li><p>“List all security alerts from ZDX and ZIA”</p></li>
+<li><p>“Get a comprehensive security overview for our organization”</p></li>
+<li><p>“Show me all users with elevated privileges across all services”</p></li>
+</ul>
+<p><strong>Compliance and Auditing:</strong></p>
+<ul class="simple">
+<li><p>“Generate a compliance report for all Zscaler services”</p></li>
+<li><p>“Show me all configuration changes made in the last 30 days”</p></li>
+<li><p>“List all admin activities across ZIA, ZPA, and ZTW”</p></li>
+<li><p>“Get audit logs for all services for compliance review”</p></li>
+</ul>
+<p><strong>Performance Monitoring:</strong></p>
+<ul class="simple">
+<li><p>“Show me performance metrics across all applications”</p></li>
+<li><p>“List all devices with performance issues”</p></li>
+<li><p>“Get network performance statistics for all locations”</p></li>
+<li><p>“Show me application response times across all services”</p></li>
+</ul>
+<p><strong>User Experience:</strong></p>
+<ul class="simple">
+<li><p>“Show me user experience scores across all applications”</p></li>
+<li><p>“List all users experiencing connectivity issues”</p></li>
+<li><p>“Get user activity reports across all services”</p></li>
+<li><p>“Show me application usage patterns for different departments”</p></li>
+</ul>
+<p><strong>Troubleshooting:</strong></p>
+<ul class="simple">
+<li><p>“Help me troubleshoot connectivity issues for user john.doe”</p></li>
+<li><p>“Show me all alerts and issues across all services”</p></li>
+<li><p>“Get detailed logs for troubleshooting network problems”</p></li>
+<li><p>“Show me device status and health across all platforms”</p></li>
+</ul>
+<p><strong>Configuration Management:</strong></p>
+<ul class="simple">
+<li><p>“Show me all pending configuration changes across services”</p></li>
+<li><p>“List all policies that need to be updated”</p></li>
+<li><p>“Get configuration status for all Zscaler services”</p></li>
+<li><p>“Show me all rules and policies for review”</p></li>
+</ul>
+<p><strong>Reporting and Analytics:</strong></p>
+<ul class="simple">
+<li><p>“Generate a monthly security report for all services”</p></li>
+<li><p>“Show me usage statistics across all applications”</p></li>
+<li><p>“Get performance analytics for all network services”</p></li>
+<li><p>“Create a comprehensive dashboard of all Zscaler metrics”</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="troubleshooting.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Troubleshooting Guide</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="configuration.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Configuration Guide</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Examples</a><ul>
+<li><a class="reference internal" href="#zscaler-client-connector-zcc-examples">Zscaler Client Connector (ZCC) Examples</a></li>
+<li><a class="reference internal" href="#zscaler-digital-experience-zdx-examples">Zscaler Digital Experience (ZDX) Examples</a></li>
+<li><a class="reference internal" href="#zscaler-internet-access-zia-examples">Zscaler Internet Access (ZIA) Examples</a></li>
+<li><a class="reference internal" href="#zscaler-private-access-zpa-examples">Zscaler Private Access (ZPA) Examples</a></li>
+<li><a class="reference internal" href="#zscaler-cloud-branch-connector-ztw-examples">Zscaler Cloud &amp; Branch Connector (ZTW) Examples</a></li>
+<li><a class="reference internal" href="#zscaler-identity-zidentity-examples">Zscaler Identity (ZIdentity) Examples</a></li>
+<li><a class="reference internal" href="#cross-product-examples">Cross-Product Examples</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

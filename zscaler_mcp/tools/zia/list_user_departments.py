@@ -7,14 +7,14 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_user_department_manager(
     action: Annotated[
-        Literal["list", "read", "read_lite"],
+        Literal["read", "read_lite"],
         Field(
             description=(
-                "Operation to perform. Use 'list' to paginate/filter departments, "
+                "Operation to perform. Use 'read' to paginate/filter departments, "
                 "'read' to fetch a department by ID, or 'read_lite' for the lite version."
             )
         ),
-    ] = "list",
+    ] = "read",
     department_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Department ID. Required for 'read' and 'read_lite' actions."),
@@ -54,9 +54,9 @@ def zia_user_department_manager(
     This tool uses the SDK methods `list_departments(query_params)`,
     `get_department(department_id)`, and `get_department_lite(department_id)`.
 
-    Supported actions
-    - "list": Retrieves a paginated list of departments with optional filters and sorting.
-    - "get": Retrieves a single department by its unique identifier.
+    Supported actions:
+    - "read": Retrieves a paginated list of departments with optional filters and sorting.
+    - "read": Retrieves a single department by its unique identifier.
     - "get_lite": Retrieves a single department by ID using the lite endpoint.
 
     Parameters
@@ -71,14 +71,15 @@ def zia_user_department_manager(
     - use_legacy: Whether to use the legacy client implementation.
     - service: Zscaler service. Use "zia".
 
-    Returns
-    - For action "list": List[dict] — each element represents a department as a dictionary.
+    Returns:
+    - For action "read": List[dict] — each element represents a department as a dictionary.
     - For action "get" and "get_lite": dict — the department represented as a dictionary.
 
-    Examples
+    Examples:
+    
     - List departments with search and sorting
       >>> zia_user_department_manager(
-      ...     action="list",
+      ...     action="read",
       ...     search="Finance",
       ...     limit_search=True,
       ...     page=1,
@@ -88,7 +89,7 @@ def zia_user_department_manager(
       ... )
 
     - Get a department by ID
-      >>> zia_user_department_manager(action="get", department_id="99999")
+      >>> zia_user_department_manager(action="read", department_id="99999")
 
     - Get a department by ID using the lite endpoint
       >>> zia_user_department_manager(action="get_lite", department_id="99999")
@@ -96,7 +97,15 @@ def zia_user_department_manager(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     zia = client.zia.user_management
 
-    if action == "list":
+    if action == "read":
+        # If department_id is provided, get a single department
+        if department_id is not None:
+            department, _, err = zia.get_department(department_id)
+            if err:
+                raise Exception(f"Error retrieving department {department_id}: {err}")
+            return department.as_dict()
+        
+        # Otherwise, list departments with optional filters
         query_params = {}
         if limit_search is not None:
             query_params["limit_search"] = limit_search
@@ -119,14 +128,6 @@ def zia_user_department_manager(
         if err:
             raise Exception(f"Error listing departments: {err}")
         return [d.as_dict() for d in departments]
-
-    if action == "read":
-        if not department_id:
-            raise ValueError("department_id is required for action 'read'")
-        department, _, err = zia.get_department(department_id)
-        if err:
-            raise Exception(f"Error retrieving department {department_id}: {err}")
-        return department.as_dict()
 
     if action == "read_lite":
         if not department_id:

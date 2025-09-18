@@ -9,9 +9,9 @@ from zscaler_mcp.utils.utils import validate_and_convert_country_codes
 
 def ztw_ip_destination_group_manager(
     action: Annotated[
-        Literal["list", "list_lite", "add", "delete"],
+        Literal["read", "read_lite", "create", "delete"],
         Field(description="Action to perform on IP destination groups."),
-    ] = "list",
+    ] = "read",
     group_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Required for delete action."),
@@ -82,21 +82,21 @@ def ztw_ip_destination_group_manager(
 
     ztw = client.ztw.ip_destination_groups
 
-    if action == "list":
+    if action == "read":
         query_params = {"exclude_type": exclude_type} if exclude_type else {}
         groups, _, err = ztw.list_ip_destination_groups(query_params=query_params)
         if err:
             raise Exception(f"Failed to list destination groups: {err}")
         return [g.as_dict() for g in groups]
 
-    elif action == "list_lite":
+    elif action == "read_lite":
         query_params = {"exclude_type": exclude_type} if exclude_type else {}
         groups, _, err = ztw.list_ip_destination_groups_lite(query_params=query_params)
         if err:
             raise Exception(f"Failed to list destination groups (lite): {err}")
         return [g.as_dict() for g in groups]
 
-    elif action == "add":
+    elif action == "create":
         if not name or not type:
             raise ValueError("name and type are required for add.")
         group, _, err = ztw.add_ip_destination_group(

@@ -1,0 +1,227 @@
+Zscaler Private Access (ZPA) Tools
+===================================
+
+The Zscaler Private Access (ZPA) tools provide comprehensive functionality for managing private access policies, applications, and user access controls.
+
+Available Tools
+---------------
+
+.. list-table:: ZPA Tools
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Tool Name
+     - Description
+   * - ``zpa_access_policy``
+     - CRUD handler for ZPA Access Policy Rules
+   * - ``zpa_app_connector_groups``
+     - CRUD handler for ZPA App Connector Groups
+   * - ``zpa_app_protection_policy``
+     - CRUD handler for ZPA Inspection Policy Rules
+   * - ``zpa_app_protection_profiles``
+     - Tool for listing and searching ZPA App Protection Profiles (Inspection Profiles)
+   * - ``zpa_app_segments_by_type``
+     - Tool to retrieve ZPA application segments by type
+   * - ``zpa_application_segments``
+     - CRUD handler for ZPA Application Segments
+   * - ``zpa_application_servers``
+     - Tool for managing ZPA Application Servers
+   * - ``zpa_ba_certificates``
+     - Tool for managing ZPA Browser Access (BA) Certificates
+   * - ``zpa_enrollment_certificates``
+     - Get-only tool for retrieving ZPA Enrollment Certificates
+   * - ``zpa_forwarding_policy``
+     - CRUD handler for ZPA Client Forwarding Policy Rules
+   * - ``zpa_isolation_policy``
+     - CRUD handler for ZPA Isolation Policy Rules
+   * - ``zpa_isolation_profile``
+     - Tool for retrieving ZPA Cloud Browser Isolation (CBI) profiles
+   * - ``zpa_posture_profiles``
+     - Tool for retrieving ZPA Posture Profiles
+   * - ``zpa_pra_credentials``
+     - Tool for managing ZPA Privileged Remote Access (PRA) Credentials
+   * - ``zpa_pra_portals``
+     - Tool for managing ZPA Privileged Remote Access (PRA) Portals
+   * - ``zpa_provisioning_key``
+     - Tool for managing ZPA Provisioning Keys
+   * - ``zpa_saml_attributes``
+     - Tool for querying ZPA SAML Attributes
+   * - ``zpa_scim_attributes``
+     - Tool for managing ZPA SCIM Attributes
+   * - ``zpa_scim_groups``
+     - Tool for retrieving ZPA SCIM groups under a given Identity Provider (IdP)
+   * - ``zpa_segment_groups``
+     - Tool for managing Segment Groups
+   * - ``zpa_server_groups``
+     - CRUD handler for ZPA Server Groups
+   * - ``zpa_service_edge_groups``
+     - CRUD handler for ZPA Service Edge Groups
+   * - ``zpa_timeout_policy``
+     - CRUD handler for ZPA Timeout Policy Rules
+   * - ``zpa_trusted_networks``
+     - Tool for retrieving ZPA Trusted Networks
+
+Tool Categories
+~~~~~~~~~~~~~~~
+
+.. list-table:: ZPA Tool Categories
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Category
+     - Tools
+   * - Application Management
+     - Application segments, server groups, app connector groups
+   * - User Management
+     - User groups, identity providers, SAML attributes
+   * - Access Control
+     - Access policies, isolation profiles, provisioning keys
+   * - Network Configuration
+     - Service edge groups, machine groups, segment groups
+   * - Security Features
+     - Certificate management, SCIM integration
+
+Tool Details
+------------
+
+zpa_application_segments
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+CRUD handler for ZPA Application Segments.
+
+**Parameters:**
+
+:param action: The action to perform (e.g., "read", "create", "update", "delete")
+:type action: str
+:param segment_id: The ID of the segment for "read", "update", "delete" actions
+:type segment_id: str, optional
+:param use_legacy: Whether to use the legacy API (default: False)
+:type use_legacy: bool
+:param service: The service to use (default: "zpa")
+:type service: str
+
+**Returns:**
+- Dictionary with segment information or list of segments
+
+**Example:**
+.. code-block:: python
+
+   segments = zpa_application_segments(action="list")
+
+zpa_server_groups
+~~~~~~~~~~~~~~~~~
+
+CRUD handler for ZPA Server Groups.
+
+**Parameters:**
+
+:param action: The action to perform (e.g., "read", "create", "update", "delete")
+:type action: str
+:param group_id: The ID of the group for "read", "update", "delete" actions
+:type group_id: str, optional
+:param use_legacy: Whether to use the legacy API (default: False)
+:type use_legacy: bool
+:param service: The service to use (default: "zpa")
+:type service: str
+
+**Returns:**
+- Dictionary with group information or list of groups
+
+**Example:**
+.. code-block:: python
+
+   groups = zpa_server_groups(action="list")
+
+zpa_access_policy
+~~~~~~~~~~~~~~~~~
+
+CRUD handler for ZPA Access Policy Rules.
+
+**Parameters:**
+
+:param action: The action to perform (e.g., "read", "create", "update", "delete")
+:type action: str
+:param policy_id: The ID of the policy for "read", "update", "delete" actions
+:type policy_id: str, optional
+:param use_legacy: Whether to use the legacy API (default: False)
+:type use_legacy: bool
+:param service: The service to use (default: "zpa")
+:type service: str
+
+**Returns:**
+- Dictionary with policy information or list of policies
+
+**Example:**
+.. code-block:: python
+
+   policies = zpa_access_policy(action="list")
+
+zpa_provisioning_key
+~~~~~~~~~~~~~~~~~~~~
+
+Tool for managing ZPA Provisioning Keys.
+
+**Parameters:**
+
+:param action: The action to perform (e.g., "read", "create", "update", "delete")
+:type action: str
+:param key_id: The ID of the key for "read", "update", "delete" actions
+:type key_id: str, optional
+:param use_legacy: Whether to use the legacy API (default: False)
+:type use_legacy: bool
+:param service: The service to use (default: "zpa")
+:type service: str
+
+**Returns:**
+- Dictionary with key information or list of keys
+
+**Example:**
+.. code-block:: python
+
+   keys = zpa_provisioning_key(action="list")
+
+For complete documentation of all ZPA tools, see the individual tool pages.
+
+Authentication
+--------------
+
+ZPA tools support both OneAPI and Legacy authentication methods:
+
+**OneAPI Authentication:**
+- Uses OAuth2 client credentials
+- Requires the following environment variables:
+
+  * ``ZSCALER_CLIENT_ID``
+  * ``ZSCALER_CLIENT_SECRET``
+  * ``ZSCALER_VANITY_DOMAIN``
+  * ``ZSCALER_CLOUD``
+  * ``ZPA_CUSTOMER_ID``
+
+**Legacy Authentication:**
+- Uses username, password, and API key
+- Requires the following environment variables:
+
+  * ``ZPA_CLIENT_ID``
+  * ``ZPA_CLIENT_SECRET``
+  * ``ZPA_CUSTOMER_ID``
+  * ``ZPA_CLOUD``
+
+Common Use Cases
+----------------
+
+1. **Application Access**: Configure private access to applications
+2. **User Management**: Manage user groups and identity providers
+3. **Network Security**: Configure app connectors and service edges
+4. **Access Policies**: Define who can access which applications
+
+Error Handling
+--------------
+
+All ZPA tools include comprehensive error handling:
+
+- **Authentication errors**: Invalid credentials or expired tokens
+- **Permission errors**: Insufficient privileges for the requested operation
+- **Validation errors**: Invalid parameters or malformed requests
+- **Rate limiting**: Automatic retry with exponential backoff
+
+For detailed error information, check the tool response for error messages and status codes.

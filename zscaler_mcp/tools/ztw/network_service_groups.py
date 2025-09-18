@@ -7,9 +7,9 @@ from zscaler_mcp.client import get_zscaler_client
 
 def ztw_network_service_group_manager(
     action: Annotated[
-        Literal["list"],
+        Literal["read"],
         Field(description="Action to perform: list network service groups."),
-    ] = "list",
+    ] = "read",
     search: Annotated[
         Optional[str],
         Field(description="Optional search string for filtering results by group name or description."),
@@ -38,13 +38,13 @@ def ztw_network_service_group_manager(
     
     Examples:
         List all network service groups:
-        >>> groups = ztw_network_service_group_manager(action="list")
+        >>> groups = ztw_network_service_group_manager(action="read")
         
         Search for groups containing "web":
-        >>> groups = ztw_network_service_group_manager(action="list", search="web")
+        >>> groups = ztw_network_service_group_manager(action="read", search="web")
         
         Search for groups containing "database":
-        >>> groups = ztw_network_service_group_manager(action="list", search="database")
+        >>> groups = ztw_network_service_group_manager(action="read", search="database")
     
     Note:
         - This is a read-only operation. Network service groups cannot be created,
@@ -57,7 +57,7 @@ def ztw_network_service_group_manager(
 
     ztw = client.ztw.nw_service_groups
 
-    if action == "list":
+    if action == "read":
         query_params = {"search": search} if search else {}
         groups, _, err = ztw.list_network_svc_groups(query_params=query_params)
         if err:

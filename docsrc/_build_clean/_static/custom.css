@@ -1,0 +1,23 @@
+/* Custom CSS for Zscaler MCP Server Documentation */
+
+/* Ensure all tables are left-aligned */
+table {
+    margin-left: 0 !important;
+    text-align: left !important;
+}
+
+/* Specifically target list tables */
+.list-table table {
+    margin-left: 0 !important;
+    text-align: left !important;
+}
+
+/* Ensure table cells are left-aligned */
+th, td {
+    text-align: left !important;
+}
+
+/* Target the ZIdentity table specifically if needed */
+.list-table:has(.row-odd:first-child) {
+    margin-left: 0 !important;
+}

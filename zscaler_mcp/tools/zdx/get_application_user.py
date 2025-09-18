@@ -7,8 +7,8 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_get_application_user(
     action: Annotated[
-        Literal["list_app_users", "read_app_user"],
-        Field(description="Must be one of 'list_app_users' or 'read_app_user'."),
+        Literal["read", "read_app_user"],
+        Field(description="Must be one of 'read' or 'read_app_user'."),
     ],
     app_id: Annotated[
         str, Field(description="The unique ID for the ZDX application.")
@@ -41,11 +41,11 @@ def zdx_get_application_user(
     Tool for retrieving ZDX application user information and device details.
     
     Supports two actions:
-    - list_app_users: Returns a list of users and devices that were used to access the specified application.
+    - read: Returns a list of users and devices that were used to access the specified application.
     - read_app_user: Returns detailed information on a specific user and device that accessed the application.
     
     Args:
-        action: The type of user information to retrieve ('list_app_users' or 'read_app_user').
+        action: The type of user information to retrieve ('read' or 'read_app_user').
         app_id: The unique ID for the ZDX application.
         user_id: Required if action is 'read_app_user'. The unique ID for the ZDX user.
         score_bucket: Optional ZDX score bucket filter. Available values:
@@ -60,7 +60,7 @@ def zdx_get_application_user(
         service: The Zscaler service to use (default "zdx").
         
     Returns:
-        For 'list_app_users': List of dictionaries containing user and device information.
+        For 'read': List of dictionaries containing user and device information.
         For 'read_app_user': Dictionary containing detailed user and device information.
         
     Raises:
@@ -68,7 +68,7 @@ def zdx_get_application_user(
         
     Examples:
         List all users and devices that accessed a specific application:
-        >>> users = zdx_get_application_user(action="list_app_users", app_id="999999999")
+        >>> users = zdx_get_application_user(action="read", app_id="999999999")
         
         Get detailed information for a specific user:
         >>> user_details = zdx_get_application_user(
@@ -79,14 +79,14 @@ def zdx_get_application_user(
         
         List users with poor performance scores:
         >>> poor_users = zdx_get_application_user(
-        ...     action="list_app_users", 
+        ...     action="read", 
         ...     app_id="999999999", 
         ...     score_bucket="poor"
         ... )
         
         List users from a specific location:
         >>> location_users = zdx_get_application_user(
-        ...     action="list_app_users", 
+        ...     action="read", 
         ...     app_id="999999999", 
         ...     location_id=["545845"]
         ... )
@@ -101,7 +101,7 @@ def zdx_get_application_user(
         
         List users with multiple filters:
         >>> filtered_users = zdx_get_application_user(
-        ...     action="list_app_users", 
+        ...     action="read", 
         ...     app_id="999999999", 
         ...     score_bucket="good", 
         ...     location_id=["545845"], 
@@ -142,7 +142,7 @@ def zdx_get_application_user(
         else:
             return {}
 
-    elif action == "list_app_users":
+    elif action == "read":
         """
         Returns a list of users and devices that were used to access the specified application.
         """
@@ -162,4 +162,4 @@ def zdx_get_application_user(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_app_users', 'read_app_user'")
+        raise ValueError("Invalid action. Must be one of: 'read', 'read_app_user'")

@@ -1,0 +1,89 @@
+Zscaler Identity (Zidentity) Tools
+====================================
+
+The Zscaler Identity (Zidentity) tools provide functionality for managing identity and access management features.
+
+Available Tools
+---------------
+
+.. list-table:: ZIdentity Tools
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Tool Name
+     - Description
+   * - ``zidentity_groups``
+     - Retrieves Zidentity group information
+   * - ``zidentity_users``
+     - Retrieves Zidentity user information
+
+Tool Details
+------------
+
+zidentity_users
+~~~~~~~~~~~~~~~
+
+Retrieves Zidentity user information.
+
+**Parameters:**
+- ``page`` (Optional[int]): Page number for pagination
+- ``page_size`` (Optional[int]): Number of results per page
+- ``search`` (Optional[str]): Search string for filtering users
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "zidentity")
+
+**Returns:**
+- List of user dictionaries
+
+**Example:**
+.. code-block:: python
+
+   users = zidentity_users(page=1, page_size=50, search="admin")
+
+zidentity_groups
+~~~~~~~~~~~~~~~~
+
+Retrieves Zidentity group information.
+
+**Parameters:**
+- ``page`` (Optional[int]): Page number for pagination
+- ``page_size`` (Optional[int]): Number of results per page
+- ``search`` (Optional[str]): Search string for filtering groups
+- ``use_legacy`` (bool): Whether to use the legacy API (default: False)
+- ``service`` (str): The service to use (default: "zidentity")
+
+**Returns:**
+- List of group dictionaries
+
+**Example:**
+.. code-block:: python
+
+   groups = zidentity_groups(page=1, page_size=50, search="security")
+
+Authentication
+--------------
+
+Zidentity tools support OneAPI authentication:
+
+**OneAPI Authentication:**
+- Uses OAuth2 client credentials
+- Requires ``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECRET``, and ``ZSCALER_VANITY_DOMAIN``
+
+Common Use Cases
+----------------
+
+1. **User Management**: List and manage users in the identity system
+2. **Group Management**: List and manage groups for access control
+3. **Identity Administration**: Administrative tasks for identity management
+
+Error Handling
+--------------
+
+All Zidentity tools include comprehensive error handling:
+
+- **Authentication errors**: Invalid credentials or expired tokens
+- **Permission errors**: Insufficient privileges for the requested operation
+- **Validation errors**: Invalid parameters or malformed requests
+- **Rate limiting**: Automatic retry with exponential backoff
+
+For detailed error information, check the tool response for error messages and status codes.

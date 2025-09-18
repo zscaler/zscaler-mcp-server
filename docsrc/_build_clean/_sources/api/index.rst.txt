@@ -1,0 +1,26 @@
+API Reference
+==============
+
+This section contains the complete API reference for the Zscaler MCP Server.
+
+# API documentation will be added in future releases
+
+Server API
+----------
+
+The main MCP server implementation and configuration.
+
+Client API
+----------
+
+The Zscaler client wrapper and authentication handling.
+
+Services API
+------------
+
+Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, Zidentity).
+
+Tools API
+---------
+
+Individual tool implementations and their parameters.

@@ -1,0 +1,165 @@
+/* Custom CSS for Zscaler MCP Server Documentation */
+
+/* Ensure all tables are left-aligned */
+table {
+    margin-left: 0 !important;
+    text-align: left !important;
+}
+
+/* Specifically target list tables */
+.list-table table {
+    margin-left: 0 !important;
+    text-align: left !important;
+}
+
+/* Ensure table cells are left-aligned */
+th, td {
+    text-align: left !important;
+}
+
+/* Target the ZIdentity table specifically if needed */
+.list-table:has(.row-odd:first-child) {
+    margin-left: 0 !important;
+}
+
+/* Ensure proper formatting of parameter lists - Furo theme specific */
+.field-list {
+    display: block !important;
+}
+
+.field-list dt {
+    display: block !important;
+    margin-bottom: 0.5em !important;
+    font-weight: bold !important;
+    float: none !important;
+    width: auto !important;
+    clear: both !important;
+}
+
+.field-list dd {
+    display: block !important;
+    margin-left: 1em !important;
+    margin-bottom: 1em !important;
+    float: none !important;
+    width: auto !important;
+    clear: both !important;
+}
+
+/* Ensure parameter names are properly formatted */
+.field-list dt .field-name {
+    font-weight: bold !important;
+    background-color: rgba(175, 184, 193, 0.2) !important;
+    padding: 0.2em 0.4em !important;
+    border-radius: 3px !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace !important;
+    display: inline-block !important;
+}
+
+/* Ensure proper line breaks in parameter descriptions */
+.field-list dd p {
+    margin: 0.5em 0 !important;
+    line-height: 1.4 !important;
+    display: block !important;
+}
+
+/* Force block display for all field list items */
+.field-list dt,
+.field-list dd {
+    display: block !important;
+    float: none !important;
+    clear: both !important;
+    width: 100% !important;
+}
+
+/* Additional Furo-specific overrides */
+.field-list dt:after {
+    content: "" !important;
+    display: block !important;
+    clear: both !important;
+}
+
+.field-list dd:after {
+    content: "" !important;
+    display: block !important;
+    clear: both !important;
+}
+
+/* Furo theme specific parameter formatting */
+.field-list {
+    display: block !important;
+    width: 100% !important;
+}
+
+.field-list dt {
+    display: block !important;
+    float: none !important;
+    width: 100% !important;
+    margin-bottom: 0.5em !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+
+.field-list dd {
+    display: block !important;
+    float: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-bottom: 1em !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+
+/* Ensure parameter names are on their own line */
+.field-list dt .field-name {
+    display: block !important;
+    margin-bottom: 0.25em !important;
+}
+
+/* Ensure parameter descriptions are properly formatted */
+.field-list dd p {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Force line breaks between parameters */
+.field-list dt {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    margin-bottom: 1em !important;
+    padding-bottom: 0.5em !important;
+    border-bottom: 1px solid rgba(175, 184, 193, 0.2) !important;
+}
+
+.field-list dd {
+    margin-bottom: 1.5em !important;
+    padding-bottom: 0.5em !important;
+}
+
+/* Ensure each parameter is completely separate */
+.field-list dt + dd {
+    margin-top: 0.5em !important;
+}
+
+/* Force block display and prevent inline behavior */
+.field-list dt,
+.field-list dd {
+    display: block !important;
+    float: none !important;
+    clear: both !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Additional spacing for parameter names */
+.field-list dt .field-name {
+    display: block !important;
+    margin-bottom: 0.5em !important;
+    font-weight: bold !important;
+    background-color: rgba(175, 184, 193, 0.2) !important;
+    padding: 0.3em 0.5em !important;
+    border-radius: 4px !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace !important;
+}

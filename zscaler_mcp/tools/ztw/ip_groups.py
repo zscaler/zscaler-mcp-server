@@ -8,9 +8,9 @@ from zscaler_mcp.client import get_zscaler_client
 
 def ztw_ip_group_manager(
     action: Annotated[
-        Literal["list", "list_lite", "add", "delete"],
+        Literal["read", "read_lite", "create", "delete"],
         Field(description="Action to perform: list, list_lite, add, or delete."),
-    ] = "list",
+    ] = "read",
     group_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Required for delete action."),
@@ -61,21 +61,21 @@ def ztw_ip_group_manager(
 
     ztw = client.ztw.ip_groups
 
-    if action == "list":
+    if action == "read":
         query_params = {"search": search} if search else {}
         groups, _, err = ztw.list_ip_groups(query_params=query_params)
         if err:
             raise Exception(f"Error listing IP Groups: {err}")
         return [g.as_dict() for g in groups]
 
-    elif action == "list_lite":
+    elif action == "read_lite":
         query_params = {"search": search} if search else {}
         groups, _, err = ztw.list_ip_groups_lite(query_params=query_params)
         if err:
             raise Exception(f"Error listing IP Groups (lite): {err}")
         return [g.as_dict() for g in groups]
 
-    elif action == "add":
+    elif action == "create":
         if not name or not ip_addresses:
             raise ValueError("Both name and ip_addresses are required for add.")
         group, _, err = ztw.add_ip_group(
