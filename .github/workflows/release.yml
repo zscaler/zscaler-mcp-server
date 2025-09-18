@@ -40,6 +40,20 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
+      - name: Lint imports with Ruff
+        run: ruff check . --select I
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@992badcdf24e3b8eb7e87ff9287fe931bcb00c6e
+        with:
+          config: '.markdownlint.json'
+          globs: |
+            README.md
+            docs/**/*.md
+
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6

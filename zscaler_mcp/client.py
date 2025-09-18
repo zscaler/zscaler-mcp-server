@@ -2,10 +2,6 @@ import logging
 import warnings
 
 from zscaler import ZscalerClient
-
-# Suppress SyntaxWarnings from the zscaler SDK DLP modules
-warnings.filterwarnings("ignore", category=SyntaxWarning, module="zscaler.zia.dlp_dictionary")
-warnings.filterwarnings("ignore", category=SyntaxWarning, module="zscaler.zia.dlp_engine")
 from zscaler.oneapi_client import (
     LegacyZCCClient,
     LegacyZDXClient,
@@ -13,7 +9,12 @@ from zscaler.oneapi_client import (
     LegacyZPAClient,
     LegacyZTWClient,
 )
+
 from .utils.utils import get_combined_user_agent
+
+# Suppress SyntaxWarnings from the zscaler SDK DLP modules
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="zscaler.zia.dlp_dictionary")
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="zscaler.zia.dlp_engine")
 
 logger = logging.getLogger(__name__)
 
