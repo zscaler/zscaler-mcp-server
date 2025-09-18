@@ -8,9 +8,9 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_ip_destination_group_manager(
     action: Annotated[
-        Literal["list", "get", "add", "update", "delete"],
+        Literal["read", "create", "update", "delete"],
         Field(description="Action to perform on IP destination groups."),
-    ] = "list",
+    ] = "read",
     group_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Required for get, update, and delete actions."),
@@ -78,14 +78,14 @@ def zia_ip_destination_group_manager(
 
     zia = client.zia.cloud_firewall
 
-    if action == "list":
+    if action == "read":
         query_params = {"exclude_type": exclude_type} if exclude_type else {}
         groups, _, err = zia.list_ip_destination_groups(query_params=query_params)
         if err:
             raise Exception(f"Failed to list destination groups: {err}")
         return [g.as_dict() for g in groups]
 
-    if action == "get":
+    if action == "read":
         if not group_id:
             raise ValueError("group_id is required for get.")
         group, _, err = zia.get_ip_destination_group(group_id)
@@ -93,7 +93,7 @@ def zia_ip_destination_group_manager(
             raise Exception(f"Failed to retrieve group {group_id}: {err}")
         return group.as_dict()
 
-    if action == "add":
+    if action == "create":
         if not name or not type:
             raise ValueError("name and type are required for add.")
         group, _, err = zia.add_ip_destination_group(

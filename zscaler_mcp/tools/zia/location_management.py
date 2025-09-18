@@ -7,12 +7,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_locations_manager(
     action: Annotated[
-        Literal["list", "get", "create", "update", "delete"],
-        Field(description="One of: list, get, create, update, delete."),
+        Literal["read", "create", "update", "delete"],
+        Field(description="One of: read, create, update, delete."),
     ],
     location_id: Annotated[
         Optional[int],
-        Field(description="Location ID for get, update, or delete operations."),
+        Field(description="Location ID for read, update, or delete operations."),
     ] = None,
     location: Annotated[
         Optional[Union[Dict[str, Any], str]],
@@ -40,11 +40,12 @@ def zia_locations_manager(
     - **delete**: Remove a location by ID.
 
     Location Creation Modes:
-    1. 🛰️ Static IP-based:
+    
+    1. Static IP-based:
        - Set `ipAddresses` in the payload.
        - If no IP is provided, prompt user to create one using the `zia_static_ips` tool.
 
-    2. 🛡️ VPN Credential-based:
+    2. VPN Credential-based:
        - Requires both `ipAddresses` and `vpnCredentials` fields.
        - VPN credential objects can be created via the `zia_vpn_credentials` tool.
 
@@ -96,13 +97,13 @@ def zia_locations_manager(
     zia = client.zia
     locations_api = zia.locations
 
-    if action == "list":
+    if action == "read":
         result, _, err = locations_api.list_locations(query_params=query_params or {})
         if err:
             raise Exception(f"Failed to list locations: {err}")
         return [loc.as_dict() for loc in result or []]
 
-    elif action == "get":
+    elif action == "read":
         if not location_id:
             raise ValueError("You must provide `location_id` to retrieve a location.")
         result, _, err = locations_api.get_location(location_id)

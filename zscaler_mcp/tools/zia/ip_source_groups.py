@@ -8,9 +8,9 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_ip_source_group_manager(
     action: Annotated[
-        Literal["get", "list", "add", "update", "delete"],
+        Literal["read", "create", "update", "delete"],
         Field(description="Action to perform: list, get, add, update, or delete."),
-    ] = "list",
+    ] = "read",
     group_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Required for get, update, and delete actions."),
@@ -61,14 +61,14 @@ def zia_ip_source_group_manager(
 
     zia = client.zia.cloud_firewall
 
-    if action == "list":
+    if action == "read":
         query_params = {"search": search} if search else {}
         groups, _, err = zia.list_ip_source_groups(query_params=query_params)
         if err:
             raise Exception(f"Error listing IP Source Groups: {err}")
         return [g.as_dict() for g in groups]
 
-    elif action == "get":
+    elif action == "read":
         if not group_id:
             raise ValueError("group_id is required for get action.")
         group, _, err = zia.get_ip_source_group(group_id)
@@ -76,7 +76,7 @@ def zia_ip_source_group_manager(
             raise Exception(f"Error retrieving IP Source Group {group_id}: {err}")
         return group.as_dict()
 
-    elif action == "add":
+    elif action == "create":
         if not name or not ip_addresses:
             raise ValueError("Both name and ip_addresses are required for add.")
         group, _, err = zia.add_ip_source_group(

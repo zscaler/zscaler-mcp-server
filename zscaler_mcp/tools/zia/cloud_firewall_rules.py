@@ -8,11 +8,11 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_firewall_rule_manager(
     action: Annotated[
-        Literal["list", "read", "add", "update", "delete"],
+        Literal["read", "create", "update", "delete"],
         Field(
             description="Cloud firewall rule operation: list, read, add, update, or delete."
         ),
-    ] = "list",
+    ] = "read",
     rule_id: Annotated[
         Optional[Union[int, str]],
         Field(description="Required for read, update, and delete operations."),
@@ -188,17 +188,17 @@ def zia_firewall_rule_manager(
 
     Examples:
         List all cloud firewall rules:
-        >>> rules = zia_firewall_rule_manager(action="list")
+        >>> rules = zia_firewall_rule_manager(action="read")
 
         Search for rules containing "block":
-        >>> rules = zia_firewall_rule_manager(action="list", search="block")
+        >>> rules = zia_firewall_rule_manager(action="read", search="block")
 
         Get a specific rule:
-        >>> rule = zia_firewall_rule_manager(action="get", rule_id="12345")
+        >>> rule = zia_firewall_rule_manager(action="read", rule_id="12345")
 
         Add a new rule to allow traffic to Google DNS:
         >>> rule = zia_firewall_rule_manager(
-        ...     action="add",
+        ...     action="create",
         ...     name="Allow Google DNS",
         ...     action="ALLOW",
         ...     src_ips=["192.168.100.0/24", "192.168.200.1"],
@@ -209,7 +209,7 @@ def zia_firewall_rule_manager(
 
         Add a rule to block malicious destinations:
         >>> rule = zia_firewall_rule_manager(
-        ...     action="add",
+        ...     action="create",
         ...     name="Block Malicious IPs",
         ...     action="BLOCK",
         ...     dest_ip_categories=["BOTNET", "MALWARE_SITE", "PHISHING"],
@@ -305,7 +305,7 @@ def zia_firewall_rule_manager(
 
     fw = client.zia.cloud_firewall_rules
 
-    if action == "list":
+    if action == "read":
         query = {"search": search} if search else {}
         rules, _, err = fw.list_rules(query_params=query)
         if err:
@@ -320,7 +320,7 @@ def zia_firewall_rule_manager(
             raise Exception(f"Failed to retrieve rule {rule_id}: {err}")
         return rule.as_dict()
 
-    elif action == "add":
+    elif action == "create":
         if not name or not action:
             raise ValueError("name and action are required for add.")
         rule, _, err = fw.add_rule(**payload)

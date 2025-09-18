@@ -84,4 +84,4 @@ ehthumbs.db
 .env.local
 .env.production
 secrets/
-local_dev/
+local_dev/*

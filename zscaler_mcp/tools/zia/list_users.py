@@ -7,12 +7,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_users_manager(
     action: Annotated[
-        Literal["list", "read"],
-        Field(description="Operation to perform. Use 'list' to paginate/filter users or 'read' to fetch a single user by ID."),
-    ] = "list",
+        Literal["read"],
+        Field(description="Operation to perform. Use 'read' to paginate/filter users or fetch a single user by ID."),
+    ] = "read",
     user_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="User ID. Required for 'read' action."),
+        Field(description="User ID. When provided, returns a single user; otherwise returns a list of users."),
     ] = None,
     dept: Annotated[
         Optional[str],
@@ -48,13 +48,12 @@ def zia_users_manager(
     - list_users(query_params)
     - get_user(user_id)
 
-    Supported actions
-    - "list": Retrieves a paginated list of users with optional filters.
-    - "get": Retrieves a single user by their unique identifier.
+    Supported actions:
+    - "read": Retrieves a paginated list of users with optional filters, or a single user if user_id is provided.
 
-    Parameters
-    - action: One of ["list", "get"]. Defaults to "list".
-    - user_id: Required when action is "get". Unique user ID (int or str).
+    Parameters:
+    - action: Always "read" (default).
+    - user_id: Optional. When provided, returns a single user; otherwise returns a list of users.
     - dept: Optional department name filter (starts with match).
     - group: Optional group name filter (starts with match).
     - name: Optional user name filter (starts with match).
@@ -63,14 +62,14 @@ def zia_users_manager(
     - use_legacy: Whether to use the legacy client implementation.
     - service: Zscaler service. Use "zia".
 
-    Returns
-    - For action "list": List[dict] — each element represents a user as a dictionary.
-    - For action "get": dict — the user represented as a dictionary.
+    Returns:
+    - List[dict] when user_id is not provided — each element represents a user as a dictionary.
+    - dict when user_id is provided — the user represented as a dictionary.
 
-    Examples
+    Examples:
+    
     - List users filtered by department and group with pagination
       >>> zia_users_manager(
-      ...     action="list",
       ...     dept="Finance",
       ...     group="Corp-Users",
       ...     page=1,
@@ -78,15 +77,23 @@ def zia_users_manager(
       ... )
 
     - List users with a name prefix and a strict page size
-      >>> zia_users_manager(action="list", name="john", page_size=10)
+      >>> zia_users_manager(name="john", page_size=10)
 
     - Get a user by ID
-      >>> zia_users_manager(action="get", user_id=123456)
+      >>> zia_users_manager(user_id=123456)
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     zia = client.zia.user_management
 
-    if action == "list":
+    if action == "read":
+        # If user_id is provided, get a single user
+        if user_id is not None:
+            user, _, err = zia.get_user(user_id)
+            if err:
+                raise Exception(f"Error retrieving user {user_id}: {err}")
+            return user.as_dict()
+        
+        # Otherwise, list users with optional filters
         query_params = {}
         if dept is not None:
             query_params["dept"] = dept
@@ -107,13 +114,5 @@ def zia_users_manager(
         if err:
             raise Exception(f"Error listing users: {err}")
         return [u.as_dict() for u in users]
-
-    if action == "read":
-        if not user_id:
-            raise ValueError("user_id is required for action 'read'")
-        user, _, err = zia.get_user(user_id)
-        if err:
-            raise Exception(f"Error retrieving user {user_id}: {err}")
-        return user.as_dict()
 
     raise ValueError(f"Unsupported action: {action}")

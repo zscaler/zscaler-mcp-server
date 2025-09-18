@@ -7,8 +7,8 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_device_discovery_tool(
     action: Annotated[
-        Literal["list_devices", "read_device"],
-        Field(description="Must be one of 'list_devices' or 'read_device'."),
+        Literal["read", "read_device"],
+        Field(description="Must be one of 'read' or 'read_device'."),
     ],
     device_id: Annotated[
         Optional[str], Field(description="Required if action is 'read_device'.")
@@ -49,7 +49,7 @@ def zdx_device_discovery_tool(
     Tool for discovering ZDX devices using various filters.
 
     Supports both:
-    - list_devices: Returns a list of active ZDX devices matching the query.
+    - read: Returns a list of active ZDX devices matching the query.
     - read_device: Returns a single device record by device_id.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
@@ -90,7 +90,7 @@ def zdx_device_discovery_tool(
         else:
             return {}
 
-    elif action == "list_devices":
+    elif action == "read":
         results, _, err = client.zdx.devices.list_devices(query_params=query_params)
         if err:
             raise Exception(f"Device listing failed: {err}")
@@ -106,4 +106,4 @@ def zdx_device_discovery_tool(
             return []
 
     else:
-        raise ValueError("Invalid action. Must be one of: 'list_devices', 'read_device'")
+        raise ValueError("Invalid action. Must be one of: 'read', 'read_device'")

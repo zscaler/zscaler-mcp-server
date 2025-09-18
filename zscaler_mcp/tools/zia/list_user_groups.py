@@ -7,12 +7,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_user_group_manager(
     action: Annotated[
-        Literal["list", "read"],
-        Field(description="Which operation to perform. Use 'list' to paginate/filter groups or 'read' to fetch a single group by ID."),
-    ] = "list",
+        Literal["read"],
+        Field(description="Operation to perform. Use 'read' to paginate/filter groups or fetch a single group by ID."),
+    ] = "read",
     group_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="ID of the user group. Required when action is 'read'."),
+        Field(description="ID of the user group. When provided, returns a single group; otherwise returns a list of groups."),
     ] = None,
     search: Annotated[
         Optional[str],
@@ -49,11 +49,11 @@ def zia_user_group_manager(
     This tool exposes read operations for ZIA User Groups via the SDK methods
     `list_groups(query_params)` and `get_group(group_id)`.
 
-    Supported actions
-    - "list": Retrieves a paginated list of user groups with optional filters and sorting.
-    - "get": Retrieves a single user group by its unique identifier.
+    Supported actions:
+    - "read": Retrieves a paginated list of user groups with optional filters and sorting.
+    - "read": Retrieves a single user group by its unique identifier.
 
-    Parameters
+    Parameters:
     - action: One of ["list", "get"]. Defaults to "list".
     - group_id: Required when action is "get". The unique user group ID (int or str).
     - search: Optional search string to match against a group's name or other applicable attributes.
@@ -65,14 +65,15 @@ def zia_user_group_manager(
     - use_legacy: Whether to use the legacy client implementation.
     - service: Zscaler service. Use "zia".
 
-    Returns
-    - For action "list": List[dict] — each element represents a user group as a dictionary.
-    - For action "get": dict — the user group represented as a dictionary.
+    Returns:
+    - For action "read": List[dict] — each element represents a user group as a dictionary.
+    - For action "read": dict — the user group represented as a dictionary.
 
-    Examples
+    Examples:
+    
     - List groups with larger page size and by name search
       >>> zia_user_group_manager(
-      ...     action="list",
+      ...     action="read",
       ...     search="Engineering",
       ...     page=1,
       ...     page_size=500,
@@ -81,12 +82,20 @@ def zia_user_group_manager(
       ... )
 
     - Get a single group by ID
-      >>> zia_user_group_manager(action="get", group_id="545225")
+      >>> zia_user_group_manager(action="read", group_id="545225")
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     zia = client.zia.user_management
 
-    if action == "list":
+    if action == "read":
+        # If group_id is provided, get a single group
+        if group_id is not None:
+            group, _, err = zia.get_group(group_id)
+            if err:
+                raise Exception(f"Error retrieving user group {group_id}: {err}")
+            return group.as_dict()
+        
+        # Otherwise, list groups with optional filters
         query_params = {}
         if search is not None:
             query_params["search"] = search
@@ -109,13 +118,5 @@ def zia_user_group_manager(
         if err:
             raise Exception(f"Error listing user groups: {err}")
         return [g.as_dict() for g in groups]
-
-    if action == "read":
-        if not group_id:
-            raise ValueError("group_id is required for action 'read'")
-        group, _, err = zia.get_group(group_id)
-        if err:
-            raise Exception(f"Error retrieving user group {group_id}: {err}")
-        return group.as_dict()
 
     raise ValueError(f"Unsupported action: {action}")

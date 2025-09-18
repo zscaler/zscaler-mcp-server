@@ -8,8 +8,8 @@ from zscaler_mcp.client import get_zscaler_client
 def users_manager(
     action: Annotated[
         str,
-        Field(description="Action to perform: 'list' (get all users), 'get' (get specific user by ID), 'get_groups' (get groups for a user by ID), 'get_groups_by_name' (get groups for a user by name), or 'search' (search users by name/email).")
-    ],
+        Field(description="Action to perform: 'read' (list users or get specific user by ID), 'get_groups' (get groups for a user by ID), 'get_groups_by_name' (get groups for a user by name), or 'search' (search users by name/email).")
+    ] = "read",
     user_id: Annotated[
         str,
         Field(description="User ID for direct lookup or to get groups for the user.")
@@ -31,8 +31,7 @@ def users_manager(
     Tool for managing Zidentity users.
 
     Supported actions:
-    - list: Fetch all users with optional pagination and filtering
-    - get: Fetch a specific user by ID
+    - read: Fetch all users with optional pagination and filtering, or a specific user by ID
     - get_groups: Get groups for a specific user by user ID
     - get_groups_by_name: Get groups for a specific user by user name/email (searches for user first)
     - search: Search users by name, login name, or email using case-insensitive partial match
@@ -42,7 +41,7 @@ def users_manager(
     - For get_groups: offset, limit
 
     Args:
-        action (str): Action to perform ('list', 'get', 'get_groups', 'get_groups_by_name', 'search')
+        action (str): Action to perform ('read', 'get_groups', 'get_groups_by_name', 'search')
         user_id (str): User ID for direct lookup or to get groups for the user
         name (str): User name, login name, or email to search for (for 'search' or 'get_groups_by_name' action)
         query_params (dict): Optional filters for pagination and filtering
@@ -54,26 +53,23 @@ def users_manager(
     client = get_zscaler_client(service=service)
     api = client.zidentity.users
 
-    if action == "list":
-        # List all users with optional query parameters
-        query_params = query_params or {}
-        users_response, _, err = api.list_users(query_params=query_params)
-        if err:
-            raise Exception(f"Failed to list users: {err}")
+    if action == "read":
+        # If user_id is provided, get a specific user by ID
+        if user_id:
+            user, _, err = api.get_user(user_id)
+            if err:
+                raise Exception(f"Failed to fetch user {user_id}: {err}")
+            return user.as_dict()
+        else:
+            # Otherwise, list all users with optional query parameters
+            query_params = query_params or {}
+            users_response, _, err = api.list_users(query_params=query_params)
+            if err:
+                raise Exception(f"Failed to list users: {err}")
 
-        # Access the records field from the response object
-        users = users_response.records if hasattr(users_response, 'records') else []
-        return [user.as_dict() for user in users]
-
-    elif action == "get":
-        # Get a specific user by ID
-        if not user_id:
-            raise ValueError("user_id is required for 'get' action")
-
-        user, _, err = api.get_user(user_id)
-        if err:
-            raise Exception(f"Failed to fetch user {user_id}: {err}")
-        return user.as_dict()
+            # Access the records field from the response object
+            users = users_response.records if hasattr(users_response, 'records') else []
+            return [user.as_dict() for user in users]
 
     elif action == "get_groups":
         # Get groups for a specific user by ID
@@ -176,4 +172,4 @@ def users_manager(
         return [user.as_dict() for user in users]
 
     else:
-        raise ValueError(f"Unsupported action: {action}. Supported actions are: 'list', 'get', 'get_groups', 'get_groups_by_name', 'search'")
+        raise ValueError(f"Unsupported action: {action}. Supported actions are: 'read', 'get_groups', 'get_groups_by_name', 'search'")

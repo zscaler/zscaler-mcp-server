@@ -8,7 +8,7 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_auth_exempt_urls_manager(
     action: Annotated[
-        Literal["read", "add", "delete"],
+        Literal["read", "create", "delete"],
         Field(description="One of: read, add, delete. Defaults to read."),
     ] = "read",
     exempt_urls: Annotated[
@@ -27,19 +27,19 @@ def zia_auth_exempt_urls_manager(
 
     Supported actions:
     - "read":   Retrieves the current exemption list.
-    - "add":    Adds one or more URLs to the exempt list.
+    - "create":    Adds one or more URLs to the exempt list.
     - "delete": Removes one or more URLs from the exempt list.
 
     Args:
-        action (str, optional): One of "read", "add", or "delete". Defaults to "read".
-        exempt_urls (list[str] or str, optional): Required for "add" and "delete" actions.
+        action (str, optional): One of "read", "create", or "delete". Defaults to "read".
+        exempt_urls (list[str] or str, optional): Required for "create" and "delete" actions.
             Can be either a Python list or a JSON string representation of a list.
 
     Returns:
         list[str]: Updated list of exempted URLs.
 
     Raises:
-        ValueError: If action is "add" or "delete" and no exempt_urls are provided,
+        ValueError: If action is "create" or "delete" and no exempt_urls are provided,
                    or if the input cannot be parsed as a list of URLs.
     """
     # Convert string input to list if necessary
@@ -64,7 +64,7 @@ def zia_auth_exempt_urls_manager(
         # 🟢 Ensure we always return a plain list
         return url_list or []
 
-    elif action == "add":
+    elif action == "create":
         if not processed_urls:
             raise ValueError("You must provide a list of exempt URLs to add.")
         url_list, _, err = client.zia.authentication_settings.add_urls_to_exempt_list(
