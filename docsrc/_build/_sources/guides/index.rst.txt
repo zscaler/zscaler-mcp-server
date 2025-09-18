@@ -8,6 +8,7 @@ This section contains comprehensive guides for using the Zscaler MCP Server.
 
    configuration
    examples
+   amazon-bedrock-agentcore
    troubleshooting
    support
    release-notes
@@ -22,6 +23,11 @@ Examples
 --------
 
 See practical examples of using the MCP server with various Zscaler services.
+
+Amazon Bedrock AgentCore Deployment
+-----------------------------------
+
+Learn how to deploy the Zscaler MCP Server to Amazon Bedrock AgentCore with proper IAM configuration and environment setup.
 
 Troubleshooting
 ---------------
