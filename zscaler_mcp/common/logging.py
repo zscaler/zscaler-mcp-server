@@ -1,7 +1,7 @@
 """
-Logging configuration for Zscaler MCP Server
+Logging configuration for Zscaler Integrations MCP Server
 
-This module provides logging utilities for the Zscaler MCP server.
+This module provides logging utilities for the Zscaler Integrations MCP Server.
 """
 
 import logging
@@ -12,7 +12,7 @@ from typing import Optional
 def configure_logging(
     debug: bool = False, name: str = "zscaler_mcp", use_stderr: bool = False
 ) -> logging.Logger:
-    """Configure logging for the Zscaler MCP server.
+    """Configure logging for the Zscaler Integrations MCP Server.
 
     Args:
         debug: Enable debug logging

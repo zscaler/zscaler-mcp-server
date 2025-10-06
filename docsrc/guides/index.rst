@@ -1,7 +1,7 @@
 Guides
 ======
 
-This section contains comprehensive guides for using the Zscaler MCP Server.
+This section contains comprehensive guides for using the Zscaler Integrations MCP Server.
 
 .. toctree::
    :maxdepth: 1
@@ -17,7 +17,7 @@ This section contains comprehensive guides for using the Zscaler MCP Server.
 Configuration Guide
 -------------------
 
-Learn how to configure the Zscaler MCP Server for your environment.
+Learn how to configure the Zscaler Integrations MCP Server for your environment.
 
 Examples
 --------
@@ -27,7 +27,7 @@ See practical examples of using the MCP server with various Zscaler services.
 Amazon Bedrock AgentCore Deployment
 -----------------------------------
 
-Learn how to deploy the Zscaler MCP Server to Amazon Bedrock AgentCore with proper IAM configuration and environment setup.
+Learn how to deploy the Zscaler Integrations MCP Server to Amazon Bedrock AgentCore with proper IAM configuration and environment setup.
 
 Troubleshooting
 ---------------
@@ -47,4 +47,4 @@ Information about releases and changes.
 Contributing
 ------------
 
-How to contribute to the Zscaler MCP Server project.
+How to contribute to the Zscaler Integrations MCP Server project.

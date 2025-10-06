@@ -1,7 +1,7 @@
 """
-Zscaler MCP Server Services
+Zscaler Integrations MCP Server Services
 
-This module provides the service classes for the Zscaler MCP server.
+This module provides the service classes for the Zscaler Integrations MCP Server.
 """
 
 import logging

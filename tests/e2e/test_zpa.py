@@ -12,7 +12,7 @@ from tests.e2e.utils.base_e2e_test import BaseE2ETest
 @pytest.mark.e2e
 class TestZPAModuleE2E(BaseE2ETest):
     """
-    End-to-end test suite for the Zscaler MCP Server ZPA Module.
+    End-to-end test suite for the Zscaler Integrations MCP Server ZPA Module.
     """
 
     def test_get_app_segments(self):
@@ -71,9 +71,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about application segments
             result_lower = result.lower()
             self.assertTrue(
@@ -140,9 +140,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about server groups
             result_lower = result.lower()
             self.assertTrue(
@@ -209,9 +209,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about connector groups
             result_lower = result.lower()
             self.assertTrue(
@@ -281,9 +281,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about application servers
             result_lower = result.lower()
             self.assertTrue(
@@ -350,9 +350,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about segment groups
             result_lower = result.lower()
             self.assertTrue(
@@ -419,9 +419,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about service edge groups
             result_lower = result.lower()
             self.assertTrue(
@@ -491,9 +491,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about access policy rules
             result_lower = result.lower()
             self.assertTrue(
@@ -560,9 +560,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about timeout rules
             result_lower = result.lower()
             self.assertTrue(
@@ -629,9 +629,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about forwarding rules
             result_lower = result.lower()
             self.assertTrue(
@@ -698,9 +698,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about isolation rules
             result_lower = result.lower()
             self.assertTrue(
@@ -767,9 +767,9 @@ class TestZPAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about app protection rules
             result_lower = result.lower()
             self.assertTrue(
@@ -804,4 +804,4 @@ class TestZPAModuleE2E(BaseE2ETest):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

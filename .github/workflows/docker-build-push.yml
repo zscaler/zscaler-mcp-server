@@ -38,7 +38,7 @@ jobs:
           flavor: |
             latest=${{ github.event_name == 'push' }}
           labels: |
-            org.opencontainers.image.title=Zscaler MCP Server
+            org.opencontainers.image.title=Zscaler Integrations MCP Server
             org.opencontainers.image.description=Model Context Protocol server for Zscaler API
             org.opencontainers.image.vendor=Zscaler
             org.opencontainers.image.licenses=MIT

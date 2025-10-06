@@ -22,7 +22,7 @@ on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 # -- Project information -----------------------------------------------------
 
-project = "Zscaler MCP Server"
+project = "Zscaler Integrations MCP Server"
 copyright = "2025, Zscaler Inc."
 author = "Zscaler Technology Alliances"
 html_title = ""
@@ -138,7 +138,7 @@ latex_documents = [
     (
         master_doc,
         "ZscalerMCP.tex",
-        "Zscaler MCP Server Documentation",
+        "Zscaler Integrations MCP Server Documentation",
         "Zscaler Technology Alliances",
         "manual",
     ),
@@ -148,7 +148,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "zscalermcp", "Zscaler MCP Server Documentation", [author], 1)]
+man_pages = [(master_doc, "zscalermcp", "Zscaler Integrations MCP Server Documentation", [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -159,7 +159,7 @@ texinfo_documents = [
     (
         master_doc,
         "ZscalerMCP",
-        "Zscaler MCP Server Documentation",
+        "Zscaler Integrations MCP Server Documentation",
         author,
         "ZscalerMCP",
         "Official MCP Server for Zscaler Products",

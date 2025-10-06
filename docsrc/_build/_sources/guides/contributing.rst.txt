@@ -6,7 +6,7 @@ Contributing Guide
 Getting Started for Contributors
 --------------------------------
 
-We welcome contributions to the Zscaler MCP Server! This guide will help you get started with contributing to the project.
+We welcome contributions to the Zscaler Integrations MCP Server! This guide will help you get started with contributing to the project.
 
 Prerequisites
 -------------
@@ -131,4 +131,4 @@ If you have questions about contributing, please:
 2. Create a new issue with the "question" label
 3. Join our community discussions
 
-Thank you for contributing to the Zscaler MCP Server!
+Thank you for contributing to the Zscaler Integrations MCP Server!

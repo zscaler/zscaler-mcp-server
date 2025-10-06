@@ -12,7 +12,7 @@ from tests.e2e.utils.base_e2e_test import BaseE2ETest
 @pytest.mark.e2e
 class TestZIdentityModuleE2E(BaseE2ETest):
     """
-    End-to-end test suite for the Zscaler MCP Server ZIdentity Module.
+    End-to-end test suite for the Zscaler Integrations MCP Server ZIdentity Module.
     """
 
     def test_get_users(self):
@@ -74,9 +74,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about users
             result_lower = result.lower()
             self.assertTrue(
@@ -146,9 +146,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about groups
             result_lower = result.lower()
             self.assertTrue(
@@ -207,9 +207,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about user details
             result_lower = result.lower()
             self.assertTrue(
@@ -268,9 +268,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about group details
             result_lower = result.lower()
             self.assertTrue(
@@ -340,9 +340,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about engineering users
             result_lower = result.lower()
             self.assertTrue(
@@ -409,9 +409,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about group members
             result_lower = result.lower()
             self.assertTrue(
@@ -472,9 +472,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about statistics
             result_lower = result.lower()
             self.assertTrue(
@@ -532,9 +532,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about group statistics
             result_lower = result.lower()
             self.assertTrue(
@@ -569,4 +569,4 @@ class TestZIdentityModuleE2E(BaseE2ETest):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

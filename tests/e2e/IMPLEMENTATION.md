@@ -1,6 +1,6 @@
 # E2E Test Implementation Guide
 
-This document explains how the E2E tests were implemented for the Zscaler MCP Server, based on the Zscaler MCP pattern.
+This document explains how the E2E tests were implemented for the Zscaler Integrations MCP Server, based on the Zscaler MCP pattern.
 
 ## Architecture Overview
 
@@ -73,10 +73,10 @@ def test_functionality(self):
         # 1. Set up mock responses
         mock_response = {"data": "test_data"}
         self._mock_api_instance.method.return_value = mock_response
-        
+
         # 2. Define prompt
         prompt = "Your test prompt here"
-        
+
         # 3. Run agent
         return await self._run_agent_stream(prompt)
 
@@ -188,7 +188,7 @@ def test_get_cloud_applications(self):
             ]
         }
         self._mock_api_instance.cloud_applications.return_value = mock_response
-        
+
         prompt = "List the top 3 cloud applications and their risk levels"
         return await self._run_agent_stream(prompt)
 
@@ -213,7 +213,7 @@ def test_get_app_segments(self):
             ]
         }
         self._mock_api_instance.app_segments.return_value = mock_response
-        
+
         prompt = "List all application segments and their types"
         return await self._run_agent_stream(prompt)
 
@@ -253,11 +253,11 @@ Check both tool usage and result content:
 def assertions(tools, result):
     # Check tool usage
     self.assertGreaterEqual(len(tools), 1)
-    
+
     # Check result content
     result_lower = result.lower()
     self.assertTrue("expected_content" in result_lower)
-    
+
     # Check specific tool names if needed
     tool_names = [tool["input"]["tool_name"] for tool in tools]
     self.assertIn("expected_tool_name", tool_names)
@@ -333,4 +333,4 @@ pytest tests/e2e/modules/test_zia.py::TestZIAModuleE2E::test_get_cloud_applicati
 2. **Enhanced Mocking**: More sophisticated API response mocking
 3. **Performance Testing**: Measure response times and throughput
 4. **Integration Testing**: Test with real Zscaler environments
-5. **CI/CD Integration**: Add E2E tests to automated pipelines 
+5. **CI/CD Integration**: Add E2E tests to automated pipelines
