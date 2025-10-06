@@ -1,7 +1,7 @@
-Getting Started with Zscaler MCP Server
+Getting Started with Zscaler Integrations MCP Server
 ========================================
 
-This guide will help you get up and running with the Zscaler MCP Server quickly.
+This guide will help you get up and running with the Zscaler Integrations MCP Server quickly.
 
 Prerequisites
 -------------
@@ -15,7 +15,7 @@ Before you begin, ensure you have:
 Installation
 ------------
 
-Install the Zscaler MCP Server using pip:
+Install the Zscaler Integrations MCP Server using pip:
 
 .. code-block:: bash
 

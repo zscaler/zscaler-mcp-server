@@ -11,7 +11,7 @@ Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, Zidentity).
 Service Overview
 ----------------
 
-The Zscaler MCP Server provides service classes for each Zscaler product:
+The Zscaler Integrations MCP Server provides service classes for each Zscaler product:
 
 ZCC Service
 ~~~~~~~~~~~
@@ -256,16 +256,16 @@ Service Methods
    from zscaler_mcp.client import get_zscaler_client
 
    client = get_zscaler_client()
-   
+
    # List users
    users = client.zia.users.list_users()
-   
+
    # List URL categories
    categories = client.zia.url_categories.list_categories()
 
    # ZPA example
    # List application segments
    segments = client.zpa.application_segments.list_segments()
-   
+
    # List segment groups
    groups = client.zpa.segment_groups.list_groups()

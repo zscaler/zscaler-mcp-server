@@ -1,7 +1,7 @@
 Guides
 ======
 
-This section contains comprehensive guides for using the Zscaler MCP Server.
+This section contains comprehensive guides for using the Zscaler Integrations MCP Server.
 
 .. toctree::
    :maxdepth: 1
@@ -16,7 +16,7 @@ This section contains comprehensive guides for using the Zscaler MCP Server.
 Configuration Guide
 -------------------
 
-Learn how to configure the Zscaler MCP Server for your environment.
+Learn how to configure the Zscaler Integrations MCP Server for your environment.
 
 Examples
 --------
@@ -41,4 +41,4 @@ Information about releases and changes.
 Contributing
 ------------
 
-How to contribute to the Zscaler MCP Server project.
+How to contribute to the Zscaler Integrations MCP Server project.

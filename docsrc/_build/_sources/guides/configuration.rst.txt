@@ -6,7 +6,7 @@ Configuration Guide
 Environment Variables
 ---------------------
 
-The Zscaler MCP Server requires several environment variables to be configured for proper operation.
+The Zscaler Integrations MCP Server requires several environment variables to be configured for proper operation.
 
 Required Variables
 ~~~~~~~~~~~~~~~~~~

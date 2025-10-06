@@ -12,7 +12,7 @@ from tests.e2e.utils.base_e2e_test import BaseE2ETest
 @pytest.mark.e2e
 class TestZIAModuleE2E(BaseE2ETest):
     """
-    End-to-end test suite for the Zscaler MCP Server ZIA Module.
+    End-to-end test suite for the Zscaler Integrations MCP Server ZIA Module.
     """
 
     def test_get_cloud_applications(self):
@@ -36,7 +36,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "usage_count": 150
                                 },
                                 {
-                                    "id": "app-002", 
+                                    "id": "app-002",
                                     "name": "Slack",
                                     "category": "Communication",
                                     "risk_level": "Medium",
@@ -71,9 +71,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about cloud applications
             result_lower = result.lower()
             self.assertTrue(
@@ -140,9 +140,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about URL categories
             result_lower = result.lower()
             self.assertTrue(
@@ -209,9 +209,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about static IPs
             result_lower = result.lower()
             self.assertTrue(
@@ -271,9 +271,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about VPN credentials
             result_lower = result.lower()
             self.assertTrue(
@@ -343,9 +343,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about locations
             result_lower = result.lower()
             self.assertTrue(
@@ -412,9 +412,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about app groups
             result_lower = result.lower()
             self.assertTrue(
@@ -481,9 +481,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about destination groups
             result_lower = result.lower()
             self.assertTrue(
@@ -550,9 +550,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about source groups
             result_lower = result.lower()
             self.assertTrue(
@@ -622,9 +622,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about firewall rules
             result_lower = result.lower()
             self.assertTrue(
@@ -691,9 +691,9 @@ class TestZIAModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about exempt URLs
             result_lower = result.lower()
             self.assertTrue(
@@ -728,4 +728,4 @@ class TestZIAModuleE2E(BaseE2ETest):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()
