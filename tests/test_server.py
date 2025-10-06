@@ -1,5 +1,5 @@
 """
-Tests for the Zscaler MCP server.
+Tests for the Zscaler Integrations MCP Server.
 """
 
 import unittest
@@ -10,7 +10,7 @@ from zscaler_mcp.server import ZscalerMCPServer
 
 
 class TestZscalerMCPServer(unittest.TestCase):
-    """Test cases for the Zscaler MCP server."""
+    """Test cases for the Zscaler Integrations MCP Server."""
 
     def setUp(self):
         """Set up test fixtures before each test method."""
@@ -49,7 +49,7 @@ class TestZscalerMCPServer(unittest.TestCase):
 
         # Verify server initialization
         mock_fastmcp.assert_called_once_with(
-            name="Zscaler MCP Server",
+            name="Zscaler Integrations MCP Server",
             instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
             debug=True,
             log_level="DEBUG",

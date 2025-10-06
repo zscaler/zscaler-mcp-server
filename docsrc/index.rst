@@ -30,7 +30,7 @@ Table of Contents
 Overview
 --------
 
-The Zscaler MCP Server brings context to your agents. Try prompts like:
+The Zscaler Integrations MCP Server brings context to your agents. Try prompts like:
 
 - "List my ZPA Application segments"
 - "List my ZPA Segment Groups"
@@ -39,7 +39,7 @@ The Zscaler MCP Server brings context to your agents. Try prompts like:
 Supported Tools
 ---------------
 
-The Zscaler MCP Server provides tools for all major Zscaler services. Each service offers specific functionality for managing and querying Zscaler resources.
+The Zscaler Integrations MCP Server provides tools for all major Zscaler services. Each service offers specific functionality for managing and querying Zscaler resources.
 
 ZCC Features
 ~~~~~~~~~~~~
@@ -348,7 +348,7 @@ Run with streamable-http transport on custom port:
 Service Configuration
 ~~~~~~~~~~~~~~~~~~~~~
 
-The Zscaler MCP Server supports multiple ways to specify which services to enable:
+The Zscaler Integrations MCP Server supports multiple ways to specify which services to enable:
 
 1. Command Line Arguments (highest priority)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -407,12 +407,12 @@ Supported Agents
 Zscaler API Credentials & Authentication
 ----------------------------------------
 
-The Zscaler MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.
+The Zscaler Integrations MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.
 
 Zscaler OneAPI Authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before using the Zscaler MCP Server, you need to create API credentials in your Zidentity console. The Zscaler MCP Server supports Zscaler's OneAPI authentication via OAuth2.0 as the default and preferred method.
+Before using the Zscaler Integrations MCP Server, you need to create API credentials in your Zidentity console. The Zscaler Integrations MCP Server supports Zscaler's OneAPI authentication via OAuth2.0 as the default and preferred method.
 
 - `OneAPI <https://help.zscaler.com/oneapi/understanding-oneapi>`__: If you are using the OneAPI entrypoint you must have a API Client created in the `Zidentity platform <https://help.zscaler.com/zidentity/about-api-clients>`__
 
@@ -457,7 +457,7 @@ You can provide credentials via the ``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECR
 Container Usage
 ---------------
 
-The Zscaler MCP Server is available as a pre-built container image for easy deployment:
+The Zscaler Integrations MCP Server is available as a pre-built container image for easy deployment:
 
 Using Pre-built Image (Recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -515,7 +515,7 @@ For development or customization purposes, you can build the image locally:
 Editor/Assistant Integration
 ----------------------------
 
-You can integrate the Zscaler MCP server with your editor or AI assistant. Here are configuration examples for popular MCP clients:
+You can integrate the Zscaler Integrations MCP Server with your editor or AI assistant. Here are configuration examples for popular MCP clients:
 
 Using `uvx` (recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~

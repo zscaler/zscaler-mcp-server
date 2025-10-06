@@ -12,7 +12,7 @@ from tests.e2e.utils.base_e2e_test import BaseE2ETest
 @pytest.mark.e2e
 class TestZCCModuleE2E(BaseE2ETest):
     """
-    End-to-end test suite for the Zscaler MCP Server ZCC Module.
+    End-to-end test suite for the Zscaler Integrations MCP Server ZCC Module.
     """
 
     def test_get_devices(self):
@@ -74,9 +74,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about devices
             result_lower = result.lower()
             self.assertTrue(
@@ -134,9 +134,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about device details
             result_lower = result.lower()
             self.assertTrue(
@@ -185,9 +185,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about download
             result_lower = result.lower()
             self.assertTrue(
@@ -249,9 +249,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about active devices
             result_lower = result.lower()
             self.assertTrue(
@@ -315,9 +315,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about user devices
             result_lower = result.lower()
             self.assertTrue(
@@ -378,9 +378,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                 self.assertIsInstance(result, str)
                 self.assertGreater(len(result), 0, "Expected non-empty result")
                 return
-            
+
             self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-            
+
             # Check that the result contains information about statistics
             result_lower = result.lower()
             self.assertTrue(
@@ -415,4 +415,4 @@ class TestZCCModuleE2E(BaseE2ETest):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

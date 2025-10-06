@@ -1,6 +1,6 @@
 # Deploying to Amazon Bedrock AgentCore
 
-This guide walks you through deploying the Zscaler MCP Server to Amazon Bedrock AgentCore. You'll configure the necessary AWS resources, set up IAM permissions, and prepare your environment.
+This guide walks you through deploying the Zscaler Integrations MCP Server to Amazon Bedrock AgentCore. You'll configure the necessary AWS resources, set up IAM permissions, and prepare your environment.
 
 ## Prerequisites
 
@@ -199,7 +199,7 @@ To host this agent in Amazon Bedrock AgentCore, the following variables will nee
 | `AGENT_DESCRIPTION` | A description of the agent |
 | `AGENT_ROLE_ARN` | The ARN of the IAM execution role created in Step 1 |
 
-With your IAM configuration complete and variables prepared, you can now return to the **AWS Marketplace listing** to complete the deployment of your Zscaler MCP Server agent in Amazon Bedrock AgentCore.
+With your IAM configuration complete and variables prepared, you can now return to the **AWS Marketplace listing** to complete the deployment of your Zscaler Integrations MCP Server agent in Amazon Bedrock AgentCore.
 
 #### Example Deployment
 

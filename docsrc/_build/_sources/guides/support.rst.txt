@@ -6,13 +6,13 @@ Support Guide
 General Support Statement
 -------------------------
 
-The Zscaler MCP Server is supported and maintained by the Zscaler Technology Alliances in partnership with Zscaler Engineering teams, and we welcome questions on how to use the provider.
+The Zscaler Integrations MCP Server is supported and maintained by the Zscaler Technology Alliances in partnership with Zscaler Engineering teams, and we welcome questions on how to use the provider.
 Please, refer to our `troubleshooting guide <troubleshooting.rst>`_  for guidance on typical problems.
 
 Support Ticket Severity
 -----------------------
 
-Support tickets related to the Zscaler MCP Server can be opened with `Zscaler Support <https://help.zscaler.com/login-tickets>`_, however since the server is just a client of the underlying product API, we will **NOT** be able to treat server related support requests as a Severity-1 (Immediate time frame).
+Support tickets related to the Zscaler Integrations MCP Server can be opened with `Zscaler Support <https://help.zscaler.com/login-tickets>`_, however since the server is just a client of the underlying product API, we will **NOT** be able to treat server related support requests as a Severity-1 (Immediate time frame).
 When reporting bugs, please provide the Terraform script that demonstrates the bug and the command output. Stack traces will also be helpful.
 
 Notice that we will **NOT**, however, fix bugs upon customer demand, as we have to prioritize all pending bugs and features, as part of the product's backlog and release cycles.
