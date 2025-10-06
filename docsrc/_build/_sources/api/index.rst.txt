@@ -1,7 +1,7 @@
 API Reference
 ==============
 
-This section contains the complete API reference for the Zscaler MCP Server.
+This section contains the complete API reference for the Zscaler Integrations MCP Server.
 
 .. toctree::
    :maxdepth: 1

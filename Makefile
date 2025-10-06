@@ -20,7 +20,7 @@ help:
 	@echo "                                  "
 	@echo "                                  "
 	@echo "$(COLOR_NONE)"
-	@echo "$(COLOR_OK)Zscaler MCP Server$(COLOR_NONE) version $(COLOR_WARNING)$(VERSION)$(COLOR_NONE)"
+	@echo "$(COLOR_OK)Zscaler Integrations MCP Server$(COLOR_NONE) version $(COLOR_WARNING)$(VERSION)$(COLOR_NONE)"
 	@echo ""
 	@echo "$(COLOR_WARNING)Usage:$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  make [command]$(COLOR_NONE)"

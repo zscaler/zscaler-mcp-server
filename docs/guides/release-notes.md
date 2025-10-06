@@ -2,21 +2,41 @@
 layout: "zscaler"
 page_title: "Release Notes"
 description: |-
-  Zscaler MCP Server Release Notes
+  Zscaler Integrations MCP Server Release Notes
 ---
 
-# Zscaler MCP Server: Release Notes
+# Zscaler Integrations MCP Server: Release Notes
 
 ## USAGE
 
-Track all Zscaler MCP Server's releases. New tools, features, and bug fixes will be tracked here.
+Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
 ---
-``Last updated: v0.2.0``
+``Last updated: v0.2.2``
 
 ---
 
 ## Changelog
+
+## 0.2.2 (October 6, 2025)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+[PR #11](https://github.com/zscaler/zscaler-mcp-server/pull/11) Fixed README and other documents to change the name title from "Zscaler MCP Server" to "Zscaler Integrations MCP Server"
+
+## 0.2.1 (September 18, 2025)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+[PR #10](https://github.com/zscaler/zscaler-mcp-server/pull/10) Fixed import sorting and markdown linting issues:
+
+- Fixed Ruff import sorting errors in `client.py`, `services.py`, and `utils.py`
+- Fixed markdownlint formatting issues in `docs/guides/release-notes.md`
+- Updated GitHub workflows to include linter checks in release process
 
 ## 0.2.0 (September 15, 2025)
 

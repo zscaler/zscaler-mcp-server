@@ -6,7 +6,7 @@ Individual tool implementations and their parameters.
 Tool Structure
 --------------
 
-Each tool in the Zscaler MCP Server follows a consistent structure:
+Each tool in the Zscaler Integrations MCP Server follows a consistent structure:
 
 .. code-block:: python
 

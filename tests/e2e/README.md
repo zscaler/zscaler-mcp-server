@@ -1,6 +1,6 @@
-# End-to-End Tests for Zscaler MCP Server
+# End-to-End Tests for Zscaler Integrations MCP Server
 
-This directory contains comprehensive end-to-end (E2E) tests for the Zscaler MCP Server. These tests verify that the MCP server can properly handle requests from AI agents and return appropriate responses for various Zscaler services.
+This directory contains comprehensive end-to-end (E2E) tests for the Zscaler Integrations MCP Server. These tests verify that the MCP server can properly handle requests from AI agents and return appropriate responses for various Zscaler services.
 
 ## Overview
 
@@ -215,15 +215,15 @@ def test_functionality(self):
                 },
             },
         ]
-        
+
         # 2. Set up mock API
         self._mock_api_instance.service.method.side_effect = (
             self._create_mock_api_side_effect(fixtures)
         )
-        
+
         # 3. Define prompt
         prompt = "Your test prompt here"
-        
+
         # 4. Run agent
         return await self._run_agent_stream(prompt)
 
@@ -333,11 +333,11 @@ def test_new_functionality(self):
                 },
             },
         ]
-        
+
         self._mock_api_instance.service.new_method.side_effect = (
             self._create_mock_api_side_effect(fixtures)
         )
-        
+
         prompt = "Test the new functionality"
         return await self._run_agent_stream(prompt)
 
@@ -378,4 +378,4 @@ For issues with E2E tests:
 2. Review test logs for specific error messages
 3. Verify environment setup and dependencies
 4. Check OpenAI API key and rate limits
-5. Review mock data setup in failing tests 
+5. Review mock data setup in failing tests

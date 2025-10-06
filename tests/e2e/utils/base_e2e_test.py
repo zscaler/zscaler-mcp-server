@@ -104,35 +104,35 @@ class SharedTestServer:
 
         # Create a mock client instance with proper structure
         self.patchers["mock_api_instance"] = MagicMock()
-        
+
         # Set up the mock to return a properly structured client
         mock_client_class.return_value = self.patchers["mock_api_instance"]
-        
+
         # Ensure the mock has the expected structure for Zscaler SDK
         self.patchers["mock_api_instance"].zia = MagicMock()
         self.patchers["mock_api_instance"].zpa = MagicMock()
         self.patchers["mock_api_instance"].zdx = MagicMock()
         self.patchers["mock_api_instance"].zcc = MagicMock()
         self.patchers["mock_api_instance"].zidentity = MagicMock()
-        
+
         # Set up nested structure for ZIA
         self.patchers["mock_api_instance"].zia.cloud_applications = MagicMock()
         self.patchers["mock_api_instance"].zia.url_categories = MagicMock()
         self.patchers["mock_api_instance"].zia.static_ips = MagicMock()
-        
+
         # Set up nested structure for ZPA
         self.patchers["mock_api_instance"].zpa.application_segments = MagicMock()
         self.patchers["mock_api_instance"].zpa.server_groups = MagicMock()
         self.patchers["mock_api_instance"].zpa.app_connector_groups = MagicMock()
-        
+
         # Set up nested structure for ZCC
         self.patchers["mock_api_instance"].zcc.devices = MagicMock()
-        
+
         # Set up nested structure for ZDX
         self.patchers["mock_api_instance"].zdx.apps = MagicMock()
         self.patchers["mock_api_instance"].zdx.devices = MagicMock()
         self.patchers["mock_api_instance"].zdx.alerts = MagicMock()
-        
+
         # Set up nested structure for ZIdentity
         self.patchers["mock_api_instance"].zidentity.users = MagicMock()
         self.patchers["mock_api_instance"].zidentity.groups = MagicMock()
@@ -164,7 +164,7 @@ class SharedTestServer:
             return
 
         print("Cleaning up shared ZscalerMCP server...")
-        
+
         try:
             # Write test results to file
             with open("test_results.json", "w", encoding="utf-8") as f:
@@ -220,7 +220,7 @@ def ensure_dict(data: Any) -> dict:
 
 class BaseE2ETest(unittest.TestCase):
     """
-    Base class for end-to-end tests for the Zscaler MCP Server.
+    Base class for end-to-end tests for the Zscaler Integrations MCP Server.
 
     This class sets up a live server in a separate thread, mocks the Zscaler API,
     and provides helper methods for running tests with an MCP client and agent.
@@ -268,18 +268,18 @@ class BaseE2ETest(unittest.TestCase):
         try:
             # Create a minimal server without the MCP client
             from zscaler_mcp.server import ZscalerMCPServer
-            
+
             # Create server with minimal configuration
             server = ZscalerMCPServer(
                 debug=False,
                 enabled_services={"zpa"},  # Only enable one service
                 enabled_tools=set()  # No tools
             )
-            
+
             # Test that the server can be created without pickle issues
             self.assertIsNotNone(server)
             self.assertIsNotNone(server.server)
-            
+
             print("✅ Minimal server test passed")
         except Exception as e:
             self.fail(f"Minimal server test failed: {e}")
@@ -290,10 +290,10 @@ class BaseE2ETest(unittest.TestCase):
         try:
             # Test that the server thread is running
             self.assertTrue(self._server_thread.is_alive(), "Server thread is not alive")
-            
+
             # Test that we can create a client connection
             self.assertIsNotNone(self.client)
-            
+
             print("✅ Direct server connection test passed")
         except Exception as e:
             self.fail(f"Direct server connection test failed: {e}")
@@ -302,7 +302,7 @@ class BaseE2ETest(unittest.TestCase):
         """Test that the server is running and accessible."""
         # This is a simple test that doesn't require the agent
         self.assertTrue(self._server_thread.is_alive(), "Server thread is not alive")
-        
+
         # Test that we can connect to the server
         try:
             # Simple connectivity test
@@ -350,10 +350,10 @@ class BaseE2ETest(unittest.TestCase):
         try:
             # Initialize the agent
             await self.agent.initialize()
-            
+
             # Use a simpler approach - just get the response
             response = await self.agent.run(prompt)
-            
+
             # Return empty tools list and the response
             return [], response
         except Exception as e:
@@ -399,7 +399,7 @@ class BaseE2ETest(unittest.TestCase):
 
         # Set agent verbosity based on pytest verbosity
         verbose_mode = self.verbosity_level > 0
-        
+
         # Create agent with client
         self.agent = MCPAgent(
             llm=self.llm,
@@ -420,17 +420,17 @@ class BaseE2ETest(unittest.TestCase):
     ) -> int:
         """Run tests for a specific model and return success count."""
         print(f"Running test {test_name} with model {model_name}")
-        
+
         try:
             # Reset mock for clean slate
             self._mock_api_instance.reset_mock()
-            
+
             # Run the test logic
             tools, result = self.loop.run_until_complete(test_logic_coro())
-            
+
             # Run assertions
             assertion_logic(tools, result)
-            
+
             print(f"✅ Test passed with model {model_name}")
             return 1
         except Exception as e:
@@ -468,11 +468,11 @@ class BaseE2ETest(unittest.TestCase):
 
         def mock_api_side_effect(*args, **kwargs: dict) -> tuple:
             print(f"Mock API called with: args={args}, kwargs={kwargs}")
-            
+
             # For Zscaler SDK, we need to return (results, response, error) tuple
             # The first argument is usually the operation name or method being called
             operation = args[0] if args else "unknown"
-            
+
             for fixture in fixtures:
                 if fixture["operation"] == operation and fixture["validator"](kwargs):
                     print(
@@ -481,9 +481,9 @@ class BaseE2ETest(unittest.TestCase):
                     # Return (results, response, error) format for Zscaler SDK
                     mock_results = fixture["response"]["body"].get("resources", [])
                     return (mock_results, None, None)  # (results, response, error)
-            
+
             print(f"No matching fixture found for {operation}")
             # Return empty results for Zscaler SDK format
             return ([], None, None)  # (results, response, error)
 
-        return mock_api_side_effect 
+        return mock_api_side_effect

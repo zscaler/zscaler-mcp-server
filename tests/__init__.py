@@ -1,3 +1,3 @@
 """
-Common tests package for Zscaler MCP Server
+Common tests package for Zscaler Integrations MCP Server
 """

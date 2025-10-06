@@ -1,3 +1,3 @@
 """
-Common utilities package for Zscaler MCP Server
+Common utilities package for Zscaler Integrations MCP Server
 """

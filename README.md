@@ -68,7 +68,7 @@
 
 ## 📺 Overview
 
-The Zscaler MCP Server brings context to your agents. Try prompts like:
+The Zscaler Integrations MCP Server brings context to your agents. Try prompts like:
 
 - "List my ZPA Application segments"
 - "List my ZPA Segment Groups"
@@ -76,7 +76,7 @@ The Zscaler MCP Server brings context to your agents. Try prompts like:
 
 ## ⚙️ Supported Tools
 
-The Zscaler MCP Server provides tools for all major Zscaler services. Each service offers specific functionality for managing and querying Zscaler resources.
+The Zscaler Integrations MCP Server provides tools for all major Zscaler services. Each service offers specific functionality for managing and querying Zscaler resources.
 
 ### ZCC Features
 
@@ -92,7 +92,7 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 | Tool Name | Description |
 |-----------|-------------|
 | `zdx_administration` | Discover ZDX departments or locations |
-| `zdx_active_devices` | Discover ZDX devices using various filters |
+| `zdx_active_devices` | List ZDX devices using various filters |
 | `zdx_list_applications` | List all active applications configured in ZDX |
 | `zdx_list_application_score` | Get an application's ZDX score or score trend |
 | `zdx_get_application_metric` | Retrieve ZDX metrics for an application (PFT, DNS, availability) |
@@ -125,7 +125,7 @@ The Zscaler MCP Server provides tools for all major Zscaler services. Each servi
 | `zia_ip_source_group` | Performs CRUD operations on ZIA IP Source Groups |
 | `zia_user_groups` | Lists and retrieves ZIA User Groups with pagination, filtering and sorting |
 | `zia_user_departments` | Lists and retrieves ZIA User Departments with pagination, filtering and sorting |
-| `zia_users` | Lists and retrieves ZIA Users with filtering and pagination |
+| `zia_users` | Lists ZIA Users with filtering and pagination |
 | `zia_location_management` | Tool for managing ZIA Locations |
 | `zia_network_app_group` | Manages ZIA Network Application Groups |
 | `zia_rule_labels` | Tool for managing ZIA Rule Labels |
@@ -276,7 +276,7 @@ zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8080
 
 ### Service Configuration
 
-The Zscaler MCP Server supports multiple ways to specify which services to enable:
+The Zscaler Integrations MCP Server supports multiple ways to specify which services to enable:
 
 #### 1. Command Line Arguments (highest priority)
 
@@ -329,11 +329,11 @@ zscaler-mcp --help
 
 ## Zscaler API Credentials & Authentication
 
-The Zscaler MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.
+The Zscaler Integrations MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.
 
 ### Zscaler OneAPI Authentication
 
-Before using the Zscaler MCP Server, you need to create API credentials in your Zidentity console. The Zscaler MCP Server supports Zscaler's OneAPI authentication via OAuth2.0 as the default and preferred method.
+Before using the Zscaler Integrations MCP Server, you need to create API credentials in your Zidentity console. The Zscaler Integrations MCP Server supports Zscaler's OneAPI authentication via OAuth2.0 as the default and preferred method.
 
 - [OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi): If you are using the OneAPI entrypoint you must have a API Client created in the [Zidentity platform](https://help.zscaler.com/zidentity/about-api-clients)
 
@@ -503,7 +503,7 @@ ZDX_CLOUD=cloud
 
 ### Internal Environment Variables
 
-The Zscaler MCP Server uses the following internal environment variables for configuration:
+The Zscaler Integrations MCP Server uses the following internal environment variables for configuration:
 
 #### MCP Server Configuration
 
@@ -567,7 +567,7 @@ The Zscaler MCP Server uses the following internal environment variables for con
 
 ### As a Library
 
-You can use the Zscaler MCP Server as a Python library in your own applications:
+You can use the Zscaler Integrations MCP Server as a Python library in your own applications:
 
 ```python
 from zscaler_mcp.server import ZscalerMCPServer
@@ -626,7 +626,7 @@ python examples/streamable_http_usage.py
 
 ## Container Usage
 
-The Zscaler MCP Server is available as a pre-built container image for easy deployment:
+The Zscaler Integrations MCP Server is available as a pre-built container image for easy deployment:
 
 ### Using Pre-built Image (Recommended)
 
@@ -680,7 +680,7 @@ docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=you
 
 ## Editor/Assistant Integration
 
-You can integrate the Zscaler MCP server with your editor or AI assistant. Here are configuration examples for popular MCP clients:
+You can integrate the Zscaler Integrations MCP server with your editor or AI assistant. Here are configuration examples for popular MCP clients:
 
 ### Using `uvx` (recommended)
 

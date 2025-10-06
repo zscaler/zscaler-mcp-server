@@ -3,7 +3,7 @@
 Release Notes
 =============
 
-Zscaler MCP Server Changelog
+Zscaler Integrations MCP Server Changelog
 ------------------------------
 
 0.2.1 (September 18, 2025)

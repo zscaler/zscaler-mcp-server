@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Streamable HTTP transport example for Zscaler MCP Server.
+Streamable HTTP transport example for Zscaler Integrations MCP Server.
 
-This script demonstrates how to initialize and run the Zscaler MCP Server
+This script demonstrates how to initialize and run the Zscaler Integrations MCP Server
 with streamable-http transport for custom integrations and web-based deployments.
 """
 
@@ -14,7 +14,7 @@ from zscaler_mcp.server import ZscalerMCPServer
 
 
 def main():
-    """Run the Zscaler MCP Server with streamable-http transport."""
+    """Run the Zscaler Integrations MCP Server with streamable-http transport."""
     # Load environment variables from .env file
     load_dotenv()
 
@@ -22,7 +22,7 @@ def main():
     server = ZscalerMCPServer(
         # Optional: Override credentials from environment variables
         # client_id="your_client_id",
-        # client_secret="your_client_secret", 
+        # client_secret="your_client_secret",
         # customer_id="your_customer_id",
         # vanity_domain="your_vanity_domain",
         # cloud="beta",

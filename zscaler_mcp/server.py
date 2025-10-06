@@ -1,7 +1,7 @@
 """
-Zscaler MCP Server - Main entry point
+Zscaler Integrations MCP Server - Main entry point
 
-This module provides the main server class for the Zscaler MCP server
+This module provides the main server class for the Zscaler Integrations MCP Server
 and serves as the entry point for the application.
 """
 
@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 
 
 class ZscalerMCPServer:
-    """Main server class for the Zscaler MCP server."""
+    """Main server class for the Zscaler Integrations MCP Server."""
 
     def __init__(
         self,
@@ -38,7 +38,7 @@ class ZscalerMCPServer:
         enabled_tools: Optional[Set[str]] = None,
         user_agent_comment: Optional[str] = None,
     ):
-        """Initialize the Zscaler MCP server.
+        """Initialize the Zscaler Integrations MCP Server.
 
         Args:
             client_id: Zscaler OAuth client ID
@@ -65,7 +65,7 @@ class ZscalerMCPServer:
         # Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol
         configure_logging(debug=self.debug, use_stderr=True)
         logger = get_logger(__name__)
-        logger.info("Initializing Zscaler MCP Server")
+        logger.info("Initializing Zscaler Integrations MCP Server")
 
         # Don't initialize the Zscaler client during server startup to avoid pickle issues
         # Clients will be created on-demand when tools are called
@@ -74,7 +74,7 @@ class ZscalerMCPServer:
 
         # Initialize the MCP server
         self.server = FastMCP(
-            name="Zscaler MCP Server",
+            name="Zscaler Integrations MCP Server",
             instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
             debug=self.debug,
             log_level="DEBUG" if self.debug else "INFO",
@@ -376,7 +376,7 @@ def parse_tools_list(tools_string):
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Zscaler MCP Server")
+    parser = argparse.ArgumentParser(description="Zscaler Integrations MCP Server")
 
     # Transport options
     parser.add_argument(
@@ -480,7 +480,7 @@ def parse_args():
 
 
 def main():
-    """Main entry point for the Zscaler MCP server."""
+    """Main entry point for the Zscaler Integrations MCP Server."""
     # Load environment variables
     load_dotenv()
 
