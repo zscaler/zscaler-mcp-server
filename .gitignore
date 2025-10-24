@@ -200,6 +200,7 @@ memory-bank/
 .codeium/
 .tabnine/
 .github-copilot/
+.gemini/
 .roo/
 .aider/
 .aider*

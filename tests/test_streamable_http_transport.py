@@ -12,7 +12,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
     """Test cases for streamable-http transport."""
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_streamable_http_transport_initialization(
         self,
@@ -45,7 +45,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         mock_server_instance.streamable_http_app.assert_called_once()
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_streamable_http_default_parameters(
         self,
@@ -78,7 +78,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         )
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     def test_non_streamable_http_transport_unchanged(
         self,
         mock_get_client,
@@ -105,7 +105,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         mock_server_instance.streamable_http_app.assert_not_called()
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_streamable_http_custom_parameters(
         self,
@@ -138,7 +138,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         )
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_streamable_http_logging_levels(
         self,
@@ -184,7 +184,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         )
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_sse_transport_initialization(
         self,
@@ -217,7 +217,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         mock_server_instance.sse_app.assert_called_once()
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_sse_transport_default_parameters(
         self,
@@ -250,7 +250,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         )
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_sse_transport_custom_parameters(
         self,
@@ -283,7 +283,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         )
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     def test_stdio_transport_uses_original_method(
         self,
         mock_get_client,
@@ -311,7 +311,7 @@ class TestStreamableHttpTransport(unittest.TestCase):
         mock_server_instance.sse_app.assert_not_called()
 
     @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.server.get_zscaler_client")
+    @patch("zscaler_mcp.client.get_zscaler_client")
     @patch("zscaler_mcp.server.uvicorn")
     def test_transport_methods_dont_interfere(
         self,

@@ -28,9 +28,9 @@ class TestRegistry(unittest.TestCase):
         service_names = services.get_service_names()
 
         # Verify that the returned list contains all the expected service names
-        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity"}
+        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity", "ztw"}
         self.assertEqual(set(service_names), expected_services)
-        self.assertEqual(len(service_names), 5)
+        self.assertEqual(len(service_names), 6)
 
     def test_get_available_services(self):
         """Test that get_available_services returns the correct dictionary of services."""
@@ -38,7 +38,7 @@ class TestRegistry(unittest.TestCase):
         available_services = services.get_available_services()
 
         # Verify that all expected services are present
-        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity"}
+        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity", "ztw"}
         self.assertEqual(set(available_services.keys()), expected_services)
 
         # Verify that all services are subclasses of BaseService
@@ -98,9 +98,12 @@ class TestRegistry(unittest.TestCase):
                 # Create an instance of the service
                 service_instance = service_class(mock_client)
 
-                # Verify that the service has tools
-                self.assertIsInstance(service_instance.tools, list)
-                self.assertGreater(len(service_instance.tools), 0)
+                # Verify that the service has tools (read or write)
+                self.assertIsInstance(service_instance.tools, list)  # Deprecated but kept for compatibility
+                self.assertIsInstance(service_instance.read_tools, list)
+                self.assertIsInstance(service_instance.write_tools, list)
+                # Services should have at least read tools
+                self.assertGreater(len(service_instance.read_tools) + len(service_instance.write_tools), 0)
 
                 # Verify that register_tools method exists and can be called
                 self.assertTrue(hasattr(service_instance, 'register_tools'))
@@ -130,7 +133,7 @@ class TestRegistry(unittest.TestCase):
 
         # Verify that the original registry was not modified
         self.assertNotIn("test_service", available_services_2)
-        self.assertEqual(len(available_services_2), 5)  # Should still have 5 services
+        self.assertEqual(len(available_services_2), 6)  # Should still have 6 services
 
 
 if __name__ == "__main__":
