@@ -1,93 +1,98 @@
-from typing import Annotated, List, Union
-
+from typing import Annotated, List, Optional, Dict
 from pydantic import Field
-
 from zscaler_mcp.client import get_zscaler_client
 
 
-def ba_certificate_manager(
-    action: Annotated[
-        str, Field(description="Action to perform: 'create', 'read', or 'delete'.")
-    ],
-    certificate_id: Annotated[
-        str, Field(description="Certificate ID for read or delete operations.")
-    ] = None,
-    name: Annotated[str, Field(description="Name of the certificate.")] = None,
-    cert_blob: Annotated[
-        str, Field(description="Required PEM string when creating a certificate.")
-    ] = None,
-    microtenant_id: Annotated[
-        str, Field(description="Microtenant ID for scoping operations.")
-    ] = None,
-    query_params: Annotated[
-        dict, Field(description="Optional query parameters for filtering results.")
-    ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+# =============================================================================
+# READ-ONLY OPERATIONS
+# =============================================================================
+
+def zpa_list_ba_certificates(
+    microtenant_id: Annotated[Optional[str], Field(description="Microtenant ID for scoping.")] = None,
+    query_params: Annotated[Optional[Dict], Field(description="Optional query parameters for filtering.")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
-) -> Union[dict, List[dict], str]:
-    """
-    Tool for managing ZPA Browser Access (BA) Certificates.
-
-    Supported actions:
-    - create: Requires cert_blob and name.
-    - read: If certificate_id is provided, fetch by ID. Otherwise, list all or filter via query_params.search.
-    - delete: Requires certificate_id.
-
-    Args:
-        cert_blob (str): Required PEM string when creating a certificate.
-    """
+) -> List[Dict]:
+    """List ZPA Browser Access (BA) certificates."""
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
-
     api = client.zpa.certificates
+    
+    qp = query_params or {}
+    if microtenant_id:
+        qp["microtenant_id"] = microtenant_id
+    
+    certs, _, err = api.list_issued_certificates(query_params=qp)
+    if err:
+        raise Exception(f"Failed to list BA certificates: {err}")
+    return [c.as_dict() for c in certs]
 
-    if action == "create":
-        if not name or not cert_blob:
-            raise ValueError(
-                "Both name and cert_blob are required for certificate creation"
-            )
 
-        body = {
-            "name": name,
-            "cert_blob": cert_blob,
-        }
-        if microtenant_id:
-            body["microtenant_id"] = microtenant_id
+def zpa_get_ba_certificate(
+    certificate_id: Annotated[str, Field(description="Certificate ID for the BA certificate.")],
+    microtenant_id: Annotated[Optional[str], Field(description="Microtenant ID for scoping.")] = None,
+    query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    service: Annotated[str, Field(description="The service to use.")] = "zpa",
+) -> Dict:
+    """Get a specific ZPA Browser Access certificate by ID."""
+    if not certificate_id:
+        raise ValueError("certificate_id is required")
+    
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    api = client.zpa.certificates
+    
+    qp = query_params or {}
+    if microtenant_id:
+        qp["microtenant_id"] = microtenant_id
+    
+    cert, _, err = api.get_certificate(certificate_id, query_params=qp)
+    if err:
+        raise Exception(f"Failed to get BA certificate {certificate_id}: {err}")
+    return cert.as_dict()
 
-        created, _, err = api.add_certificate(**body)
-        if err:
-            raise Exception(f"Create failed: {err}")
-        return created.as_dict()
 
-    elif action == "read":
-        query_params = query_params or {}
-        if microtenant_id:
-            query_params["microtenant_id"] = microtenant_id
+# =============================================================================
+# WRITE OPERATIONS
+# =============================================================================
 
-        if certificate_id:
-            cert, _, err = api.get_certificate(
-                certificate_id, query_params=query_params
-            )
-            if err:
-                raise Exception(f"Read failed: {err}")
-            return cert.as_dict()
-        else:
-            certs, _, err = api.list_issued_certificates(query_params=query_params)
-            if err:
-                raise Exception(f"List failed: {err}")
-            return [c.as_dict() for c in certs]
+def zpa_create_ba_certificate(
+    name: Annotated[str, Field(description="Name of the certificate.")],
+    cert_blob: Annotated[str, Field(description="Required PEM string for the certificate.")],
+    microtenant_id: Annotated[Optional[str], Field(description="Microtenant ID for scoping.")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    service: Annotated[str, Field(description="The service to use.")] = "zpa",
+) -> Dict:
+    """Create a new ZPA Browser Access certificate."""
+    if not name or not cert_blob:
+        raise ValueError("Both name and cert_blob are required for certificate creation")
+    
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    api = client.zpa.certificates
+    
+    body = {"name": name, "cert_blob": cert_blob}
+    if microtenant_id:
+        body["microtenant_id"] = microtenant_id
+    
+    created, _, err = api.add_certificate(**body)
+    if err:
+        raise Exception(f"Failed to create BA certificate: {err}")
+    return created.as_dict()
 
-    elif action == "delete":
-        if not certificate_id:
-            raise ValueError("certificate_id is required for deletion")
 
-        _, _, err = api.delete_certificate(
-            certificate_id, microtenant_id=microtenant_id
-        )
-        if err:
-            raise Exception(f"Delete failed: {err}")
-        return f"Deleted certificate {certificate_id}"
-
-    else:
-        raise ValueError(f"Unsupported action: {action}")
+def zpa_delete_ba_certificate(
+    certificate_id: Annotated[str, Field(description="Certificate ID for the BA certificate.")],
+    microtenant_id: Annotated[Optional[str], Field(description="Microtenant ID for scoping.")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    service: Annotated[str, Field(description="The service to use.")] = "zpa",
+) -> str:
+    """Delete a ZPA Browser Access certificate."""
+    if not certificate_id:
+        raise ValueError("certificate_id is required for deletion")
+    
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    api = client.zpa.certificates
+    
+    _, _, err = api.delete_certificate(certificate_id, microtenant_id=microtenant_id)
+    if err:
+        raise Exception(f"Failed to delete BA certificate {certificate_id}: {err}")
+    return f"Successfully deleted BA certificate {certificate_id}"
