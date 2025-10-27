@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -265,192 +265,191 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zidentity.users</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
-
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
-<div class="viewcode-block" id="users_manager">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zidentity.users.users_manager">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">users_manager</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">str</span><span class="p">,</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action to perform: &#39;read&#39; (list users or get specific user by ID), &#39;get_groups&#39; (get groups for a user by ID), &#39;get_groups_by_name&#39; (get groups for a user by name), or &#39;search&#39; (search users by name/email).&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span>
-    <span class="n">user_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">str</span><span class="p">,</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User ID for direct lookup or to get groups for the user.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">str</span><span class="p">,</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User name, login name, or email to search for (case-insensitive partial match).&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">query_params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">dict</span><span class="p">,</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filters for pagination and filtering. For list_users: offset, limit, login_name, login_name[like], display_name[like], primary_email[like], domain_name, idp_name. For get_groups: offset, limit.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">str</span><span class="p">,</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;zidentity&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tool for managing Zidentity users.</span>
+<span class="c1"># =============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># =============================================================================</span>
 
-<span class="sd">    Supported actions:</span>
-<span class="sd">    - read: Fetch all users with optional pagination and filtering, or a specific user by ID</span>
-<span class="sd">    - get_groups: Get groups for a specific user by user ID</span>
-<span class="sd">    - get_groups_by_name: Get groups for a specific user by user name/email (searches for user first)</span>
-<span class="sd">    - search: Search users by name, login name, or email using case-insensitive partial match</span>
-
-<span class="sd">    Available filtering parameters:</span>
-<span class="sd">    - For list_users: offset, limit, login_name, login_name[like], display_name[like], primary_email[like], domain_name, idp_name</span>
-<span class="sd">    - For get_groups: offset, limit</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        action (str): Action to perform (&#39;read&#39;, &#39;get_groups&#39;, &#39;get_groups_by_name&#39;, &#39;search&#39;)</span>
-<span class="sd">        user_id (str): User ID for direct lookup or to get groups for the user</span>
-<span class="sd">        name (str): User name, login name, or email to search for (for &#39;search&#39; or &#39;get_groups_by_name&#39; action)</span>
-<span class="sd">        query_params (dict): Optional filters for pagination and filtering</span>
-<span class="sd">        service (str): The service to use (default: &quot;zidentity&quot;)</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        dict | list[dict] | str: User data or list of users/groups</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="zidentity_list_users">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_list_users">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zidentity_list_users</span><span class="p">(</span>
+    <span class="n">query_params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filters: offset, limit, login_name, login_name[like], display_name[like], primary_email[like], domain_name, idp_name.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zidentity&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List Zidentity users with optional filtering and pagination.&quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span><span class="o">.</span><span class="n">users</span>
+    
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list users: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">]</span></div>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-        <span class="c1"># If user_id is provided, get a specific user by ID</span>
-        <span class="k">if</span> <span class="n">user_id</span><span class="p">:</span>
-            <span class="n">user</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch user </span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Otherwise, list all users with optional query parameters</span>
-            <span class="n">query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
-            <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list users: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="c1"># Access the records field from the response object</span>
-            <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">]</span>
 
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;get_groups&quot;</span><span class="p">:</span>
-        <span class="c1"># Get groups for a specific user by ID</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">user_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;user_id is required for &#39;get_groups&#39; action&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="zidentity_get_user">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_get_user">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zidentity_get_user</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User ID.&quot;</span><span class="p">)],</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zidentity&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a specific Zidentity user by ID.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;user_id is required&quot;</span><span class="p">)</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span><span class="o">.</span><span class="n">users</span>
+    
+    <span class="n">user</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch user </span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
-        <span class="n">query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="n">groups_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_user_group_details</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch groups for user </span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Note: list_user_group_details returns a list directly, not a response object</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups_response</span><span class="p">]</span>
 
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;get_groups_by_name&quot;</span><span class="p">:</span>
-        <span class="c1"># Get groups for a specific user by name/email (searches for user first)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name is required for &#39;get_groups_by_name&#39; action&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Search for the user by name using multiple possible filters</span>
-        <span class="n">search_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
-
-        <span class="c1"># Try different search strategies based on the input</span>
-        <span class="k">if</span> <span class="s1">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
-            <span class="c1"># If it contains @, treat as email</span>
-            <span class="n">search_params</span><span class="p">[</span><span class="s2">&quot;primary_email[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Try login name first, then display name</span>
-            <span class="n">search_params</span><span class="p">[</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-
-        <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">search_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search for user &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">users</span><span class="p">:</span>
-            <span class="c1"># If no results with login_name, try display_name</span>
-            <span class="n">search_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="n">search_params</span><span class="p">[</span><span class="s2">&quot;display_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-
-            <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">search_params</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search for user &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-            <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">users</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Use the first matching user&#39;s ID</span>
-        <span class="n">user_id</span> <span class="o">=</span> <span class="n">users</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span>
-
-        <span class="c1"># Now get groups using the found user ID</span>
-        <span class="n">group_query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="c1"># Remove search parameters as they&#39;re not valid for group queries</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">,</span> <span class="s2">&quot;display_name[like]&quot;</span><span class="p">,</span> <span class="s2">&quot;primary_email[like]&quot;</span><span class="p">]:</span>
-            <span class="n">group_query_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-
-        <span class="n">groups_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_user_group_details</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">group_query_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch groups for user &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (ID: </span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Note: list_user_group_details returns a list directly, not a response object</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups_response</span><span class="p">]</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;search&quot;</span><span class="p">:</span>
-        <span class="c1"># Search users by name, login name, or email using case-insensitive partial match</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name is required for &#39;search&#39; action&quot;</span><span class="p">)</span>
-
-        <span class="n">query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
-
-        <span class="c1"># Try different search strategies based on the input</span>
-        <span class="k">if</span> <span class="s1">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
-            <span class="c1"># If it contains @, treat as email</span>
-            <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;primary_email[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Try login name first</span>
-            <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-
+<div class="viewcode-block" id="zidentity_search_users">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_search_users">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zidentity_search_users</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User name, login name, or email to search for (case-insensitive partial match).&quot;</span><span class="p">)],</span>
+    <span class="n">query_params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filters for pagination.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zidentity&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search Zidentity users by name, login name, or email using case-insensitive partial match.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name is required for search&quot;</span><span class="p">)</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span><span class="o">.</span><span class="n">users</span>
+    
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
+    
+    <span class="c1"># Try different search strategies based on the input</span>
+    <span class="k">if</span> <span class="s1">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="c1"># If it contains @, treat as email</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;primary_email[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Try login name first</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+    
+    <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search users: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+    
+    <span class="c1"># If no results with login_name and input doesn&#39;t contain @, try display_name</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">users</span> <span class="ow">and</span> <span class="s1">&#39;@&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;display_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        
         <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search users: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Access the records field from the response object</span>
+        
         <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+    
+    <span class="k">return</span> <span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">]</span></div>
 
-        <span class="c1"># If no results with login_name and input doesn&#39;t contain @, try display_name</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">users</span> <span class="ow">and</span> <span class="s1">&#39;@&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
-            <span class="n">query_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;display_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
 
-            <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search users: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+<div class="viewcode-block" id="zidentity_get_user_groups">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_get_user_groups">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zidentity_get_user_groups</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User ID.&quot;</span><span class="p">)],</span>
+    <span class="n">query_params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filters: offset, limit.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zidentity&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get groups for a specific Zidentity user by user ID.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;user_id is required&quot;</span><span class="p">)</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span><span class="o">.</span><span class="n">users</span>
+    
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">groups_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_user_group_details</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch groups for user </span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups_response</span><span class="p">]</span></div>
 
-        <span class="k">return</span> <span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">]</span>
 
+
+<div class="viewcode-block" id="zidentity_get_user_groups_by_name">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_get_user_groups_by_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zidentity_get_user_groups_by_name</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User name, login name, or email to search for.&quot;</span><span class="p">)],</span>
+    <span class="n">query_params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filters for pagination.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zidentity&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get groups for a specific Zidentity user by name/email (searches for user first).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name is required&quot;</span><span class="p">)</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span><span class="o">.</span><span class="n">users</span>
+    
+    <span class="c1"># Search for the user by name using multiple possible filters</span>
+    <span class="n">search_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
+    
+    <span class="c1"># Try different search strategies based on the input</span>
+    <span class="k">if</span> <span class="s1">&#39;@&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="c1"># If it contains @, treat as email</span>
+        <span class="n">search_params</span><span class="p">[</span><span class="s2">&quot;primary_email[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported action: </span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">. Supported actions are: &#39;read&#39;, &#39;get_groups&#39;, &#39;get_groups_by_name&#39;, &#39;search&#39;&quot;</span><span class="p">)</span></div>
+        <span class="c1"># Try login name first, then display name</span>
+        <span class="n">search_params</span><span class="p">[</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+    
+    <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">search_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search for user &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">users</span><span class="p">:</span>
+        <span class="c1"># If no results with login_name, try display_name</span>
+        <span class="n">search_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">search_params</span><span class="p">[</span><span class="s2">&quot;display_name[like]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        
+        <span class="n">users_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">search_params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to search for user &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="n">users</span> <span class="o">=</span> <span class="n">users_response</span><span class="o">.</span><span class="n">records</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_response</span><span class="p">,</span> <span class="s1">&#39;records&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">users</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Use the first matching user&#39;s ID</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">users</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">id</span>
+    
+    <span class="c1"># Now get groups using the found user ID</span>
+    <span class="n">group_query_params</span> <span class="o">=</span> <span class="n">query_params</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="c1"># Remove search parameters as they&#39;re not valid for group queries</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;login_name[like]&quot;</span><span class="p">,</span> <span class="s2">&quot;display_name[like]&quot;</span><span class="p">,</span> <span class="s2">&quot;primary_email[like]&quot;</span><span class="p">]:</span>
+        <span class="n">group_query_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    
+    <span class="n">groups_response</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_user_group_details</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">group_query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch groups for user &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (ID: </span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups_response</span><span class="p">]</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -458,21 +457,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>

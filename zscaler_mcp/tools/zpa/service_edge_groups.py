@@ -199,8 +199,23 @@ def zpa_delete_service_edge_group(
     microtenant_id: Annotated[Optional[str], Field(description="Microtenant ID for scoping.")] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
+    kwargs: str = "{}"
 ) -> str:
     """Delete a ZPA service edge group."""
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zpa_delete_service_edge_group",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     if not group_id:
         raise ValueError("group_id is required for delete")
     

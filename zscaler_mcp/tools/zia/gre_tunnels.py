@@ -102,12 +102,27 @@ def zia_delete_gre_tunnel(
     static_ip_id: Annotated[int, Field(description="Static IP ID to delete after tunnel removal (required).")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
+    kwargs: str = "{}"
 ) -> str:
     """
     Delete a ZIA GRE tunnel and its associated static IP.
     
     Note: GRE tunnel must be deleted before the static IP.
     """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_gre_tunnel",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     if not tunnel_id or not static_ip_id:
         raise ValueError("Both tunnel_id and static_ip_id are required for delete")
     

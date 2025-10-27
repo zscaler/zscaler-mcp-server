@@ -99,8 +99,26 @@ def zia_delete_rule_label(
     label_id: Annotated[int, Field(description="Label ID (required).")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
+    kwargs: str = "{}"
 ) -> str:
-    """Delete a ZIA rule label."""
+    """Delete a ZIA rule label.
+    
+    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
+    This action cannot be undone.
+    """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_rule_label",
+        confirmed,
+        {"label_id": label_id}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
     if not label_id:
         raise ValueError("label_id is required for deletion")
     

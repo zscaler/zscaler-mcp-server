@@ -26,13 +26,14 @@ class BaseService(ABC):
         self.resources = []
 
     @abstractmethod
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register tools with the MCP server.
 
         Args:
             server: The MCP server instance
             enabled_tools: Set of enabled tool names (if None, all tools are enabled)
             enable_write_tools: Whether to enable write tools (default: False)
+            write_tools: Explicit allowlist of write tools (supports wildcards). Requires enable_write_tools=True.
         """
         pass
 
@@ -67,13 +68,13 @@ class ZCCService(BaseService):
 
         self.write_tools = []  # ZCC has no write operations
 
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZCC tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
         
         # Register verb-based tools with proper annotations (all read-only)
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
-        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
         
         logger.info(f"ZCC Service: Registered {read_count} read tools, {write_count} write tools")
 
@@ -119,13 +120,13 @@ class ZDXService(BaseService):
 
         self.write_tools = []  # ZDX has no write operations
 
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZDX tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
         
         # Register verb-based tools with proper annotations (all read-only)
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
-        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
         
         logger.info(f"ZDX Service: Registered {read_count} read tools, {write_count} write tools")
 
@@ -323,13 +324,13 @@ class ZPAService(BaseService):
             {"func": zpa_delete_pra_credential, "name": "zpa_delete_pra_credential", "description": "Delete a ZPA PRA credential (destructive operation)"},
         ]
 
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZPA tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
         
         # Register verb-based tools with proper annotations
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
-        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
         
         logger.info(f"ZPA Service: Registered {read_count} read tools, {write_count} write tools")
 
@@ -515,13 +516,13 @@ class ZIAService(BaseService):
             {"func": zia_bulk_update_cloud_applications, "name": "zia_bulk_update_cloud_applications", "description": "Bulk update ZIA cloud applications (write operation)"},
         ]
 
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZIA tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
         
         # Register verb-based tools with proper annotations
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
-        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
         
         logger.info(f"ZIA Service: Registered {read_count} read tools, {write_count} write tools")
 
@@ -571,13 +572,13 @@ class ZTWService(BaseService):
             {"func": ztw_delete_ip_source_group, "name": "ztw_delete_ip_source_group", "description": "Delete a ZTW IP source group (destructive operation)"},
         ]
 
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZTW tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
         
         # Register verb-based tools with proper annotations
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
-        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
         
         logger.info(f"ZTW Service: Registered {read_count} read tools, {write_count} write tools")
 
@@ -613,13 +614,13 @@ class ZIdentityService(BaseService):
 
         self.write_tools = []  # ZIdentity has no write operations
 
-    def register_tools(self, server, enabled_tools=None, enable_write_tools=False):
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZIdentity tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
         
         # Register verb-based tools with proper annotations (all read-only)
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
-        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
         
         logger.info(f"ZIdentity Service: Registered {read_count} read tools, {write_count} write tools")
 

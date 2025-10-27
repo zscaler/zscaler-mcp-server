@@ -568,10 +568,13 @@ def zia_delete_url_filtering_rule(
         bool, Field(description="Whether to use the legacy API.")
     ] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
+    kwargs: str = "{}"
 ) -> str:
     """
     Deletes a ZIA URL Filtering Rule by ID.
-    This is a destructive write operation that requires the --enable-write-tools flag.
+    
+    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
+    This action cannot be undone.
 
     Args:
         rule_id (int/str): The ID of the URL filtering rule to delete.
@@ -585,6 +588,19 @@ def zia_delete_url_filtering_rule(
         Delete a rule:
         >>> result = zia_delete_url_filtering_rule(rule_id="12345")
     """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_url_filtering_rule",
+        confirmed,
+        {"rule_id": str(rule_id)}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     url = client.zia.url_filtering
 

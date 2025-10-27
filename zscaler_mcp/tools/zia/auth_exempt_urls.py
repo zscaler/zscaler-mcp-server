@@ -56,8 +56,27 @@ def zia_delete_auth_exempt_urls(
     exempt_urls: Annotated[Union[List[str], str], Field(description="List of exempt URLs to remove. Accepts list or JSON string.")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-) -> List[str]:
-    """Remove URLs from the cookie authentication exempt list in ZIA."""
+    kwargs: str = "{}"
+) -> Union[str, List[str]]:
+    """Remove URLs from the cookie authentication exempt list in ZIA.
+    
+    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
+    This action cannot be undone.
+    """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_auth_exempt_urls",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     # Convert string input to list if necessary
     processed_urls = exempt_urls
     if isinstance(exempt_urls, str):

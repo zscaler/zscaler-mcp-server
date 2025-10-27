@@ -83,13 +83,15 @@ The Zscaler Integrations MCP Server brings context to your agents. Try prompts l
 
 The Zscaler MCP Server implements a **security-first design** with granular permission controls and safe defaults:
 
-### Read-Only Mode (Default)
+### Read-Only Mode (Default - Always Available)
 
 By default, the server operates in **read-only mode**, exposing only tools that list or retrieve information:
+- ✅ **ALWAYS AVAILABLE** - Read-only tools are registered by the server
 - ✅ Safe to use with AI agents autonomously
 - ✅ No risk of accidental resource modification or deletion
-- ✅ All `list_*` and `get_*` operations are available
-- ❌ All `create_*`, `update_*`, and `delete_*` operations are disabled
+- ✅ All `list_*` and `get_*` operations are available (110+ read-only tools)
+- ❌ All `create_*`, `update_*`, and `delete_*` operations are disabled by default
+- 💡 Note: You may need to enable read-only tools in your AI agent's UI settings
 
 ```bash
 # Read-only mode (default - safe)
@@ -100,29 +102,77 @@ When the server starts in read-only mode, you'll see:
 ```
 🔒 Server running in READ-ONLY mode (safe default)
    Only list and get operations are available
-   To enable write operations, use --enable-write-tools flag
+   To enable write operations, use --enable-write-tools AND --write-tools flags
 ```
 
-### Write Mode (Explicit Opt-In)
+> **💡 Read-only tools are ALWAYS registered** by the server regardless of any flags. You never need to enable them server-side. Note: Your AI agent UI (like Claude Desktop) may require you to enable individual tools before use.
 
-To enable tools that can create, modify, or delete Zscaler resources, you must **explicitly enable write tools**:
+### Write Mode (Explicit Opt-In - Allowlist REQUIRED)
+
+To enable tools that can create, modify, or delete Zscaler resources, you must provide **BOTH** flags:
+
+1. ✅ `--enable-write-tools` - Global unlock for write operations
+2. ✅ `--write-tools "pattern"` - **MANDATORY** explicit allowlist
+
+> **🔐 SECURITY: Allowlist is MANDATORY** - If you set `--enable-write-tools` without `--write-tools`, **0 write tools will be registered**. This ensures you consciously choose which write operations to enable.
 
 ```bash
-# Enable write tools (requires explicit opt-in)
+# ❌ WRONG: This will NOT enable any write tools (allowlist missing)
 zscaler-mcp --enable-write-tools
+
+# ✅ CORRECT: Explicit allowlist required
+zscaler-mcp --enable-write-tools --write-tools "zpa_create_*,zpa_delete_*"
+```
+
+When you try to enable write mode without an allowlist:
+```
+⚠️  WRITE TOOLS MODE ENABLED
+⚠️  NO allowlist provided - 0 write tools will be registered
+⚠️  Read-only tools will still be available
+⚠️  To enable write operations, add: --write-tools 'pattern'
+```
+
+#### Write Tools Allowlist (MANDATORY)
+
+The allowlist provides **two-tier security**:
+
+1. ✅ **First Gate**: `--enable-write-tools` must be set (global unlock)
+2. ✅ **Second Gate**: Explicit allowlist determines which write tools are registered (MANDATORY)
+
+**Allowlist Examples:**
+
+```bash
+# Enable ONLY specific write tools with wildcards
+zscaler-mcp --enable-write-tools --write-tools "zpa_create_*,zpa_delete_*"
+
+# Enable specific tools without wildcards
+zscaler-mcp --enable-write-tools --write-tools "zpa_create_application_segment,zia_create_rule_label"
+
+# Enable all ZPA write operations (but no ZIA/ZDX/ZTW)
+zscaler-mcp --enable-write-tools --write-tools "zpa_*"
 ```
 
 Or via environment variable:
 ```bash
 export ZSCALER_MCP_WRITE_ENABLED=true
+export ZSCALER_MCP_WRITE_TOOLS="zpa_create_*,zpa_delete_*"
 zscaler-mcp
 ```
 
-When write tools are enabled, you'll see a warning:
+**Wildcard patterns supported:**
+- `zpa_create_*` - Allow all ZPA creation tools
+- `zpa_delete_*` - Allow all ZPA deletion tools
+- `zpa_*` - Allow all ZPA write tools
+- `*_application_segment` - Allow all operations on application segments
+- `zpa_create_application_segment` - Exact match (no wildcard)
+
+When using a valid allowlist, you'll see:
 ```
-⚠️  WRITE TOOLS ENABLED
+⚠️  WRITE TOOLS MODE ENABLED
+⚠️  Explicit allowlist provided - only listed write tools will be registered
+⚠️  Allowed patterns: zpa_create_*, zpa_delete_*
 ⚠️  Server can CREATE, MODIFY, and DELETE Zscaler resources
-⚠️  Ensure this is intentional and appropriate for your use case
+🔒 Security: 85 write tools blocked by allowlist, 8 allowed
 ```
 
 ### Tool Design Philosophy
@@ -145,20 +195,35 @@ This design allows AI assistants (Claude, Cursor, GitHub Copilot) to:
 
 ### Security Layers
 
-The server implements multiple layers of security:
+The server implements multiple layers of security (defense-in-depth):
 
-1. **Default Read-Only Mode**: Write tools are disabled unless explicitly enabled
-2. **Verb-Based Tool Naming**: Each tool clearly indicates its purpose (`list`, `get`, `create`, `update`, `delete`)
-3. **Tool Metadata**: All tools are annotated with `readOnlyHint` or `destructiveHint` for AI agent frameworks
-4. **Environment Variable Control**: `ZSCALER_MCP_WRITE_ENABLED` can be managed centrally
-5. **Audit Logging**: All operations are logged for tracking and compliance
+1. **Read-Only Tools Always Enabled**: Safe `list_*` and `get_*` operations are always available (110+ tools)
+2. **Default Write Mode Disabled**: Write tools are disabled unless explicitly enabled via `--enable-write-tools`
+3. **Mandatory Allowlist**: Write operations require explicit `--write-tools` allowlist (wildcard support)
+4. **Verb-Based Tool Naming**: Each tool clearly indicates its purpose (`list`, `get`, `create`, `update`, `delete`)
+5. **Tool Metadata Annotations**: All tools are annotated with `readOnlyHint` or `destructiveHint` for AI agent frameworks
+6. **AI Agent Confirmation**: All write tools marked with `destructiveHint=True` trigger permission dialogs in AI assistants
+7. **Double Confirmation for DELETE**: Delete operations require both permission dialog AND server-side confirmation (extra protection for irreversible actions)
+8. **Environment Variable Control**: `ZSCALER_MCP_WRITE_ENABLED` and `ZSCALER_MCP_WRITE_TOOLS` can be managed centrally
+9. **Audit Logging**: All operations are logged for tracking and compliance
+
+This multi-layered approach ensures that even if one security control is bypassed, others remain in place to prevent unauthorized operations.
+
+**Key Security Principles**:
+- No "enable all write tools" backdoor exists - allowlist is **mandatory**
+- AI agents must request permission before executing any write operation (`destructiveHint`)
+- Every destructive action requires explicit user approval through the AI agent's permission framework
 
 ### Best Practices
 
-- **Development/Testing**: Enable write tools only when needed for testing
-- **Production/Agents**: Use read-only mode for AI agents performing autonomous operations
-- **CI/CD**: Set `ZSCALER_MCP_WRITE_ENABLED=false` in pipelines unless specifically needed
-- **Allow-Listing**: In AI assistants, allow-list only read-only tools (`list_*`, `get_*`) for autonomous use
+- **Read-Only by Default**: No configuration needed for safe operations - read-only tools are always available
+- **Mandatory Allowlist**: Always provide explicit `--write-tools` allowlist when enabling write mode
+- **Development/Testing**: Use narrow allowlists (e.g., `--write-tools "zpa_create_application_segment"`)
+- **Production/Agents**: Keep server in read-only mode (default) for AI agents performing autonomous operations
+- **CI/CD**: Never set `ZSCALER_MCP_WRITE_ENABLED=true` without a corresponding `ZSCALER_MCP_WRITE_TOOLS` allowlist
+- **Least Privilege**: Use narrowest possible allowlist patterns for your use case
+- **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
+- **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
 
 ## ⚙️ Supported Tools
 
@@ -974,7 +1039,8 @@ The Zscaler Integrations MCP Server uses the following internal environment vari
 | `ZSCALER_MCP_TRANSPORT` | `stdio` | Transport protocol to use (`stdio`, `sse`, or `streamable-http`) |
 | `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
-| `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to enable create/update/delete operations. |
+| `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
+| `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_create_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
 | `ZSCALER_MCP_DEBUG` | `false` | Enable debug logging (`true`/`false`) |
 | `ZSCALER_MCP_HOST` | `127.0.0.1` | Host to bind to for HTTP transports |
 | `ZSCALER_MCP_PORT` | `8000` | Port to listen on for HTTP transports |

@@ -75,8 +75,27 @@ def ztw_delete_ip_group(
     group_id: Annotated[Union[int, str], Field(description="Group ID (required).")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
+    kwargs: str = "{}"
 ) -> str:
-    """Delete a ZTW IP group."""
+    """Delete a ZTW IP group.
+    
+    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
+    This action cannot be undone.
+    """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "ztw_delete_ip_group",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     if not group_id:
         raise ValueError("group_id is required for delete")
     

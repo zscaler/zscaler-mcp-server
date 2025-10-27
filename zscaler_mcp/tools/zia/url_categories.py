@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional, Dict
+from typing import Union, Annotated, List, Optional, Dict
 from pydantic import Field
 from zscaler_mcp.client import get_zscaler_client
 
@@ -160,8 +160,27 @@ def zia_remove_urls_from_category(
     urls: Annotated[List[str], Field(description="List of URLs to remove (required).")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-) -> Dict:
-    """Incrementally remove URLs from an existing ZIA URL category."""
+    kwargs: str = "{}"
+) -> Union[str, Dict]:
+    """Incrementally remove URLs from an existing ZIA URL category.
+    
+    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
+    This action cannot be undone.
+    """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_remove_urls_from_category",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     if not category_id or not configured_name or not urls:
         raise ValueError("category_id, configured_name, and urls are required for removing URLs")
     
@@ -179,8 +198,23 @@ def zia_delete_url_category(
     category_id: Annotated[str, Field(description="Category ID (required).")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
+    kwargs: str = "{}"
 ) -> str:
     """Delete a custom ZIA URL category."""
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_url_category",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     if not category_id:
         raise ValueError("category_id is required for deletion")
     

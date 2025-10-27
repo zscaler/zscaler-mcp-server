@@ -11,38 +11,38 @@
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -188,13 +188,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -237,7 +237,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -273,70 +273,301 @@
         <article role="main" id="furo-main-content">
           <section id="configuration-guide">
 <span id="id1"></span><h1>Configuration Guide<a class="headerlink" href="#configuration-guide" title="Link to this heading">¶</a></h1>
-<section id="environment-variables">
-<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">¶</a></h2>
-<p>The Zscaler Integrations MCP Server requires several environment variables to be configured for proper operation.</p>
-<section id="required-variables">
-<h3>Required Variables<a class="headerlink" href="#required-variables" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span>your_client_id
-<span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span>your_client_secret
-<span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span>your_customer_id
-<span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span>your_vanity_domain
-</pre></div>
-</div>
-</section>
-<section id="optional-variables">
-<h3>Optional Variables<a class="headerlink" href="#optional-variables" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_CLOUD</span><span class="o">=</span>zscloud.net
-<span class="nv">ZSCALER_DEBUG</span><span class="o">=</span><span class="nb">false</span>
-<span class="nv">ZSCALER_LOG_LEVEL</span><span class="o">=</span>INFO
-</pre></div>
-</div>
-</section>
-</section>
+<p>This guide explains all supported authentication methods and configuration options for the Zscaler Integrations MCP Server.</p>
 <section id="authentication-methods">
 <h2>Authentication Methods<a class="headerlink" href="#authentication-methods" title="Link to this heading">¶</a></h2>
-<section id="oneapi-authentication">
-<h3>OneAPI Authentication<a class="headerlink" href="#oneapi-authentication" title="Link to this heading">¶</a></h3>
-<p>For modern OAuth2-based authentication using the OneAPI endpoint.</p>
+<p>The server supports two authentication frameworks:</p>
+<ol class="arabic simple">
+<li><p><strong>OneAPI Authentication</strong> (Recommended) - Modern OAuth2-based unified authentication</p></li>
+<li><p><strong>Legacy Authentication</strong> - Service-specific API key authentication (per service)</p></li>
+</ol>
+<section id="oneapi-authentication-recommended">
+<h3>OneAPI Authentication (Recommended)<a class="headerlink" href="#oneapi-authentication-recommended" title="Link to this heading">¶</a></h3>
+<p>OneAPI provides unified authentication across all Zscaler services using a single set of OAuth2 credentials.</p>
+<p><strong>Required Environment Variables:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># OneAPI OAuth2 Credentials</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span><span class="w">           </span><span class="c1"># OAuth client ID</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span><span class="w">   </span><span class="c1"># OAuth client secret</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span><span class="w">       </span><span class="c1"># Customer/tenant ID</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span><span class="w">   </span><span class="c1"># Your vanity domain</span>
+</pre></div>
+</div>
+<p><strong>Optional Environment Variables:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="w">        </span><span class="c1"># Cloud environment (production, beta, zscalerone.net, etc.)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_PRIVATE_KEY</span><span class="o">=</span><span class="s2">&quot;path/to/key&quot;</span><span class="w"> </span><span class="c1"># Path to private key for JWT authentication</span>
+</pre></div>
+</div>
+<p><strong>When to Use OneAPI:</strong></p>
+<ul class="simple">
+<li><p>✅ Modern deployments (recommended)</p></li>
+<li><p>✅ Unified authentication across all services</p></li>
+<li><p>✅ OAuth2-based security</p></li>
+<li><p>✅ Works with ZPA, ZIA, ZDX, ZCC, ZIdentity</p></li>
+</ul>
 </section>
-<section id="legacy-authentication">
-<h3>Legacy Authentication<a class="headerlink" href="#legacy-authentication" title="Link to this heading">¶</a></h3>
-<p>For service-specific API key authentication with individual Zscaler services.</p>
+<section id="legacy-authentication-per-service">
+<h3>Legacy Authentication (Per-Service)<a class="headerlink" href="#legacy-authentication-per-service" title="Link to this heading">¶</a></h3>
+<p>Legacy authentication uses service-specific API keys and credentials.</p>
+<p><strong>Enable Legacy Mode:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+</pre></div>
+</div>
+<p><strong>ZPA Legacy Authentication:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_zpa_client_id&quot;</span><span class="w">       </span><span class="c1"># ZPA API client ID</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_zpa_secret&quot;</span><span class="w">      </span><span class="c1"># ZPA API client secret</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span><span class="w">       </span><span class="c1"># ZPA customer ID</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="w">                   </span><span class="c1"># ZPA cloud (production, beta, etc.)</span>
+</pre></div>
+</div>
+<p><strong>ZIA Legacy Authentication:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;admin@company.com&quot;</span><span class="w">         </span><span class="c1"># ZIA admin email</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span><span class="w">             </span><span class="c1"># ZIA admin password</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span><span class="w">               </span><span class="c1"># ZIA obfuscated API key</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo.net&quot;</span><span class="w">               </span><span class="c1"># ZIA cloud</span>
+</pre></div>
+</div>
+<p><strong>ZCC Legacy Authentication:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZCC_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span><span class="w">             </span><span class="c1"># ZCC API key</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZCC_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_secret_key&quot;</span><span class="w">      </span><span class="c1"># ZCC secret key</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZCC_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo.net&quot;</span><span class="w">               </span><span class="c1"># ZCC cloud</span>
+</pre></div>
+</div>
+<p><strong>ZDX Legacy Authentication:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZDX_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_key_id&quot;</span><span class="w">              </span><span class="c1"># ZDX key ID</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZDX_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_secret_key&quot;</span><span class="w">      </span><span class="c1"># ZDX secret key</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZDX_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="w">                   </span><span class="c1"># ZDX cloud</span>
+</pre></div>
+</div>
+<p><strong>When to Use Legacy:</strong></p>
+<ul class="simple">
+<li><p>Legacy deployments with existing service-specific credentials</p></li>
+<li><p>Services not yet migrated to OneAPI</p></li>
+<li><p>Gradual migration scenarios</p></li>
+</ul>
 </section>
 </section>
-<section id="configuration-examples">
-<h2>Configuration Examples<a class="headerlink" href="#configuration-examples" title="Link to this heading">¶</a></h2>
-<section id="basic-configuration">
-<h3>Basic Configuration<a class="headerlink" href="#basic-configuration" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Basic OneAPI configuration</span>
+<section id="server-configuration">
+<h2>Server Configuration<a class="headerlink" href="#server-configuration" title="Link to this heading">¶</a></h2>
+<section id="general-server-settings">
+<h3>General Server Settings<a class="headerlink" href="#general-server-settings" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Transport Protocol</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_TRANSPORT</span><span class="o">=</span><span class="s2">&quot;stdio&quot;</span><span class="w">            </span><span class="c1"># stdio, sse, or streamable-http</span>
+
+<span class="c1"># Service Selection</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_SERVICES</span><span class="o">=</span><span class="s2">&quot;zpa,zia,zdx&quot;</span><span class="w">       </span><span class="c1"># Comma-separated (empty = all services)</span>
+
+<span class="c1"># Tool Selection</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_TOOLS</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w">                     </span><span class="c1"># Comma-separated tool names (empty = all tools)</span>
+
+<span class="c1"># Logging</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DEBUG</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="w">                </span><span class="c1"># Enable debug logging (true/false)</span>
+
+<span class="c1"># HTTP Transport Settings (when using sse or streamable-http)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_HOST</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="w">             </span><span class="c1"># Host to bind to</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_PORT</span><span class="o">=</span><span class="s2">&quot;8000&quot;</span><span class="w">                  </span><span class="c1"># Port to listen on</span>
+
+<span class="c1"># User Agent</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_USER_AGENT_COMMENT</span><span class="o">=</span><span class="s2">&quot;My App&quot;</span><span class="w">  </span><span class="c1"># Additional User-Agent info</span>
+</pre></div>
+</div>
+</section>
+<section id="write-operations-configuration-security">
+<h3>Write Operations Configuration (Security)<a class="headerlink" href="#write-operations-configuration-security" title="Link to this heading">¶</a></h3>
+<p>By default, the server operates in <strong>read-only mode</strong> for safety. To enable write operations:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Step 1: Enable write tools globally</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+
+<span class="c1"># Step 2: MANDATORY - Specify allowlist (no backdoor to &quot;enable all&quot;)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_*,zpa_delete_*,zia_update_*&quot;</span>
+</pre></div>
+</div>
+<p><strong>Security Note:</strong></p>
+<ul class="simple">
+<li><p>⚠️ <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code> is <strong>MANDATORY</strong> when <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED=true</span></code></p></li>
+<li><p>If empty, <strong>0 write tools will be registered</strong> (by design for security)</p></li>
+<li><p>Supports wildcards: <code class="docutils literal notranslate"><span class="pre">zpa_create_*</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_delete_*</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_*</span></code></p></li>
+<li><p>No backdoor exists to bypass the allowlist</p></li>
+</ul>
+<p><strong>Wildcard Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Allow all ZPA create operations</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_*&quot;</span>
+
+<span class="c1"># Allow ZPA create and delete</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_*,zpa_delete_*&quot;</span>
+
+<span class="c1"># Allow all ZPA write tools</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_*&quot;</span>
+
+<span class="c1"># Allow specific tool (no wildcard)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_application_segment&quot;</span>
+
+<span class="c1"># Allow multiple services</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_*,zia_*,ztw_*&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="complete-configuration-examples">
+<h2>Complete Configuration Examples<a class="headerlink" href="#complete-configuration-examples" title="Link to this heading">¶</a></h2>
+<section id="read-only-mode-default-recommended">
+<h3>Read-Only Mode (Default - Recommended)<a class="headerlink" href="#read-only-mode-default-recommended" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># OneAPI Authentication - Read-Only</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
+
+<span class="c1"># No write flags needed - read-only by default</span>
+<span class="c1"># Only list_* and get_* operations available</span>
 </pre></div>
 </div>
 </section>
-<section id="advanced-configuration">
-<h3>Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Advanced configuration with custom settings</span>
+<section id="write-mode-with-allowlist-advanced">
+<h3>Write Mode with Allowlist (Advanced)<a class="headerlink" href="#write-mode-with-allowlist-advanced" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># OneAPI Authentication + Write Operations</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscloud.net&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_DEBUG</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_LOG_LEVEL</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
+
+<span class="c1"># Enable write mode</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+
+<span class="c1"># MANDATORY: Specify allowlist</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_*,zpa_update_*,zia_create_rule_label&quot;</span>
 </pre></div>
 </div>
 </section>
+<section id="legacy-mode-configuration">
+<h3>Legacy Mode Configuration<a class="headerlink" href="#legacy-mode-configuration" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable Legacy Mode</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+
+<span class="c1"># ZPA Legacy Credentials</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_zpa_client_id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_zpa_secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
+
+<span class="c1"># ZIA Legacy Credentials</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;admin@company.com&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo.net&quot;</span>
+
+<span class="c1"># Optional: Enable write mode with allowlist</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_*,zia_*&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="security-best-practices">
+<h2>Security Best Practices<a class="headerlink" href="#security-best-practices" title="Link to this heading">¶</a></h2>
+<p><strong>For Production:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ✅ DO: Use read-only mode by default</span>
+<span class="c1"># (No ZSCALER_MCP_WRITE_ENABLED needed)</span>
+
+<span class="c1"># ✅ DO: Use specific allowlists when write mode needed</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_application_segment,zpa_update_application_segment&quot;</span>
+
+<span class="c1"># ❌ DON&#39;T: Enable write mode without allowlist</span>
+<span class="c1"># This will register 0 write tools (blocked by design)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="w">  </span><span class="c1"># ← Without allowlist = 0 tools</span>
+</pre></div>
+</div>
+<p><strong>For Development:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Safe: Read-only mode for exploration</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DEBUG</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+
+<span class="c1"># When testing write operations:</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_*,zpa_delete_*&quot;</span><span class="w">  </span><span class="c1"># Specific patterns</span>
+</pre></div>
+</div>
+<p><strong>For CI/CD:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Minimal permissions for automation</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_application_segment&quot;</span><span class="w">  </span><span class="c1"># Only what&#39;s needed</span>
+
+<span class="c1"># Use service accounts with limited permissions</span>
+<span class="c1"># Store credentials in secure secrets management</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-variables-reference">
+<h2>Environment Variables Reference<a class="headerlink" href="#environment-variables-reference" title="Link to this heading">¶</a></h2>
+<section id="complete-list-of-all-supported-variables">
+<h3>Complete List of All Supported Variables<a class="headerlink" href="#complete-list-of-all-supported-variables" title="Link to this heading">¶</a></h3>
+<p><strong>Server Configuration:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TRANSPORT</span></code> - Transport protocol (stdio, sse, streamable-http)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code> - Comma-separated service list (empty = all)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLS</span></code> - Comma-separated tool list (empty = all)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DEBUG</span></code> - Enable debug logging (true/false)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_HOST</span></code> - HTTP bind host (default: 127.0.0.1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_PORT</span></code> - HTTP port (default: 8000)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_USER_AGENT_COMMENT</span></code> - Additional User-Agent info</p></li>
+</ul>
+<p><strong>Write Operations (Security):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED</span></code> - Enable write mode (default: false)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code> - <strong>MANDATORY</strong> allowlist when write enabled</p></li>
+</ul>
+<p><strong>OneAPI Authentication:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code> - OAuth client ID (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code> - OAuth client secret (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> - Customer/tenant ID (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code> - Vanity domain (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code> - Cloud environment (optional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code> - Private key path for JWT (optional)</p></li>
+</ul>
+<p><strong>Legacy Authentication:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY</span></code> - Enable legacy mode (default: false)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CUSTOMER_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CLOUD</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZIA_USERNAME</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_PASSWORD</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_API_KEY</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_CLOUD</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZCC_CLOUD</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZDX_CLOUD</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
+<p><strong>Issue: Write tools not appearing</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p>Is <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED=true</span></code> set?</p></li>
+<li><p>Is <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code> provided with patterns?</p></li>
+<li><p>Do patterns match tool names? (use <code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span> <span class="pre">--list-tools</span></code> to see all tools)</p></li>
+</ol>
+<p><strong>Issue: Authentication fails</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p>For OneAPI: All 4 required variables set (CLIENT_ID, CLIENT_SECRET, CUSTOMER_ID, VANITY_DOMAIN)</p></li>
+<li><p>For Legacy: <code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY=true</span></code> + service-specific credentials</p></li>
+<li><p>Credentials are valid and not expired</p></li>
+</ol>
+<p><strong>Issue: Service not available</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p>Service name is correct: <code class="docutils literal notranslate"><span class="pre">zpa</span></code>, <code class="docutils literal notranslate"><span class="pre">zia</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx</span></code>, <code class="docutils literal notranslate"><span class="pre">zcc</span></code>, <code class="docutils literal notranslate"><span class="pre">zidentity</span></code></p></li>
+<li><p>If using <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code>, service is included in the list</p></li>
+</ol>
 </section>
 </section>
 
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
           <a class="next-page" href="examples.html">
               <div class="page-info">
@@ -353,9 +584,9 @@
                 <div class="context">
                   <span>Previous</span>
                 </div>
-
+                
                 <div class="title">Guides</div>
-
+                
               </div>
             </a>
         </div>
@@ -365,20 +596,20 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer">
-
-
+      
+      
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
@@ -389,21 +620,28 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Configuration Guide</a><ul>
-<li><a class="reference internal" href="#environment-variables">Environment Variables</a><ul>
-<li><a class="reference internal" href="#required-variables">Required Variables</a></li>
-<li><a class="reference internal" href="#optional-variables">Optional Variables</a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#authentication-methods">Authentication Methods</a><ul>
-<li><a class="reference internal" href="#oneapi-authentication">OneAPI Authentication</a></li>
-<li><a class="reference internal" href="#legacy-authentication">Legacy Authentication</a></li>
+<li><a class="reference internal" href="#oneapi-authentication-recommended">OneAPI Authentication (Recommended)</a></li>
+<li><a class="reference internal" href="#legacy-authentication-per-service">Legacy Authentication (Per-Service)</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#configuration-examples">Configuration Examples</a><ul>
-<li><a class="reference internal" href="#basic-configuration">Basic Configuration</a></li>
-<li><a class="reference internal" href="#advanced-configuration">Advanced Configuration</a></li>
+<li><a class="reference internal" href="#server-configuration">Server Configuration</a><ul>
+<li><a class="reference internal" href="#general-server-settings">General Server Settings</a></li>
+<li><a class="reference internal" href="#write-operations-configuration-security">Write Operations Configuration (Security)</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#complete-configuration-examples">Complete Configuration Examples</a><ul>
+<li><a class="reference internal" href="#read-only-mode-default-recommended">Read-Only Mode (Default - Recommended)</a></li>
+<li><a class="reference internal" href="#write-mode-with-allowlist-advanced">Write Mode with Allowlist (Advanced)</a></li>
+<li><a class="reference internal" href="#legacy-mode-configuration">Legacy Mode Configuration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#security-best-practices">Security Best Practices</a></li>
+<li><a class="reference internal" href="#environment-variables-reference">Environment Variables Reference</a><ul>
+<li><a class="reference internal" href="#complete-list-of-all-supported-variables">Complete List of All Supported Variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
 </ul>
@@ -411,8 +649,8 @@
           </div>
         </div>
       </div>
-
-
+      
+      
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=938c9ccc"></script>

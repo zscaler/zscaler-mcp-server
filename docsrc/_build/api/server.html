@@ -11,38 +11,38 @@
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -188,13 +188,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -237,7 +237,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -280,7 +280,7 @@ and serves as the entry point for the application.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZscalerMCPServer</span></span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Main server class for the Zscaler Integrations MCP Server.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.get_available_services">
@@ -291,7 +291,7 @@ and serves as the entry point for the application.</p>
 <dd class="field-odd"><p>Available services</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]]</p>
+<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -320,7 +320,7 @@ and serves as the entry point for the application.</p>
 <dd class="field-odd"><p>Connectivity status</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a>]</p>
+<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -357,7 +357,7 @@ and serves as the entry point for the application.</p>
 <dd class="field-even"><p>List of validated service names (returns all available services if empty string)</p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentTypeError" title="(in Python v3.13)"><strong>argparse.ArgumentTypeError</strong></a> – If any service names are invalid</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentTypeError" title="(in Python v3.14)"><strong>argparse.ArgumentTypeError</strong></a> – If any service names are invalid</p>
 </dd>
 </dl>
 </dd></dl>
@@ -374,7 +374,7 @@ and serves as the entry point for the application.</p>
 <dd class="field-even"><p>List of validated tool names (returns empty list if empty string)</p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentTypeError" title="(in Python v3.13)"><strong>argparse.ArgumentTypeError</strong></a> – If any tool names are invalid</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentTypeError" title="(in Python v3.14)"><strong>argparse.ArgumentTypeError</strong></a> – If any tool names are invalid</p>
 </dd>
 </dl>
 </dd></dl>
@@ -498,7 +498,7 @@ and serves as the entry point for the application.</p>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
           <a class="next-page" href="client.html">
               <div class="page-info">
@@ -515,9 +515,9 @@ and serves as the entry point for the application.</p>
                 <div class="context">
                   <span>Previous</span>
                 </div>
-
+                
                 <div class="title">API Reference</div>
-
+                
               </div>
             </a>
         </div>
@@ -527,20 +527,20 @@ and serves as the entry point for the application.</p>
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer">
-
-
+      
+      
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
@@ -580,8 +580,8 @@ and serves as the entry point for the application.</p>
           </div>
         </div>
       </div>
-
-
+      
+      
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=938c9ccc"></script>

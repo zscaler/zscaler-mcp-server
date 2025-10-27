@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -265,28 +265,25 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zdx.get_application_user</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
-<div class="viewcode-block" id="zdx_get_application_user">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.get_application_user.zdx_get_application_user">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_application_user</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;read_app_user&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Must be one of &#39;read&#39; or &#39;read_app_user&#39;.&quot;</span><span class="p">),</span>
-    <span class="p">],</span>
+<span class="c1"># ============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="zdx_list_application_users">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.get_application_user.zdx_list_application_users">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_application_users</span><span class="p">(</span>
     <span class="n">app_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX application.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">user_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required if action is &#39;read_app_user&#39;. The unique ID for the ZDX user.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">score_bucket</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;poor&quot;</span><span class="p">,</span> <span class="s2">&quot;okay&quot;</span><span class="p">,</span> <span class="s2">&quot;good&quot;</span><span class="p">]],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;poor&quot;</span><span class="p">,</span> <span class="s2">&quot;okay&quot;</span><span class="p">,</span> <span class="s2">&quot;good&quot;</span><span class="p">]],</span> 
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ZDX score bucket to filter by. Available values: &#39;poor&#39; (0-33), &#39;okay&#39; (34-65), &#39;good&#39; (66-100).&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
@@ -305,77 +302,38 @@
         <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tool for retrieving ZDX application user information and device details.</span>
-<span class="sd">    </span>
-<span class="sd">    Supports two actions:</span>
-<span class="sd">    - read: Returns a list of users and devices that were used to access the specified application.</span>
-<span class="sd">    - read_app_user: Returns detailed information on a specific user and device that accessed the application.</span>
-<span class="sd">    </span>
+<span class="sd">    Lists users and devices that accessed a specific ZDX application.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns a list of users and devices that were used to access the specified application.</span>
+<span class="sd">    Supports filtering by performance score bucket, location, department, and time range.</span>
+
 <span class="sd">    Args:</span>
-<span class="sd">        action: The type of user information to retrieve (&#39;read&#39; or &#39;read_app_user&#39;).</span>
-<span class="sd">        app_id: The unique ID for the ZDX application.</span>
-<span class="sd">        user_id: Required if action is &#39;read_app_user&#39;. The unique ID for the ZDX user.</span>
-<span class="sd">        score_bucket: Optional ZDX score bucket filter. Available values:</span>
-<span class="sd">            - &#39;poor&#39;: Score range 0-33</span>
-<span class="sd">            - &#39;okay&#39;: Score range 34-65</span>
-<span class="sd">            - &#39;good&#39;: Score range 66-100</span>
+<span class="sd">        app_id: The unique ID for the ZDX application (required).</span>
+<span class="sd">        score_bucket: Optional ZDX score bucket filter (&#39;poor&#39;: 0-33, &#39;okay&#39;: 34-65, &#39;good&#39;: 66-100).</span>
 <span class="sd">        location_id: Optional list of location IDs to filter by specific locations.</span>
 <span class="sd">        department_id: Optional list of department IDs to filter by specific departments.</span>
 <span class="sd">        geo_id: Optional list of geolocation IDs to filter by geographic regions.</span>
 <span class="sd">        since: Optional number of hours to look back for user data (default 2 hours).</span>
 <span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
 <span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        For &#39;read&#39;: List of dictionaries containing user and device information.</span>
-<span class="sd">        For &#39;read_app_user&#39;: Dictionary containing detailed user and device information.</span>
-<span class="sd">        </span>
+<span class="sd">        List of dictionaries containing user and device information.</span>
+
 <span class="sd">    Raises:</span>
-<span class="sd">        Exception: If the application user information retrieval fails due to API errors.</span>
-<span class="sd">        </span>
+<span class="sd">        Exception: If the application user retrieval fails due to API errors.</span>
+
 <span class="sd">    Examples:</span>
-<span class="sd">        List all users and devices that accessed a specific application:</span>
-<span class="sd">        &gt;&gt;&gt; users = zdx_get_application_user(action=&quot;read&quot;, app_id=&quot;999999999&quot;)</span>
-<span class="sd">        </span>
-<span class="sd">        Get detailed information for a specific user:</span>
-<span class="sd">        &gt;&gt;&gt; user_details = zdx_get_application_user(</span>
-<span class="sd">        ...     action=&quot;read_app_user&quot;, </span>
-<span class="sd">        ...     app_id=&quot;888888888&quot;, </span>
-<span class="sd">        ...     user_id=&quot;24328827&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        List users with poor performance scores:</span>
-<span class="sd">        &gt;&gt;&gt; poor_users = zdx_get_application_user(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     app_id=&quot;999999999&quot;, </span>
+<span class="sd">        List all users for an application:</span>
+<span class="sd">        &gt;&gt;&gt; users = zdx_list_application_users(app_id=&quot;999999999&quot;)</span>
+
+<span class="sd">        List users with poor performance:</span>
+<span class="sd">        &gt;&gt;&gt; poor_users = zdx_list_application_users(</span>
+<span class="sd">        ...     app_id=&quot;999999999&quot;,</span>
 <span class="sd">        ...     score_bucket=&quot;poor&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        List users from a specific location:</span>
-<span class="sd">        &gt;&gt;&gt; location_users = zdx_get_application_user(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     app_id=&quot;999999999&quot;, </span>
-<span class="sd">        ...     location_id=[&quot;545845&quot;]</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        Get user details for the past 2 hours:</span>
-<span class="sd">        &gt;&gt;&gt; user_details = zdx_get_application_user(</span>
-<span class="sd">        ...     action=&quot;read_app_user&quot;, </span>
-<span class="sd">        ...     app_id=&quot;888888888&quot;, </span>
-<span class="sd">        ...     user_id=&quot;24328827&quot;, </span>
-<span class="sd">        ...     since=2</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        List users with multiple filters:</span>
-<span class="sd">        &gt;&gt;&gt; filtered_users = zdx_get_application_user(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     app_id=&quot;999999999&quot;, </span>
-<span class="sd">        ...     score_bucket=&quot;good&quot;, </span>
-<span class="sd">        ...     location_id=[&quot;545845&quot;], </span>
-<span class="sd">        ...     department_id=[&quot;123456&quot;], </span>
-<span class="sd">        ...     since=24</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
@@ -392,55 +350,86 @@
     <span class="k">if</span> <span class="n">since</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;since&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">since</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_app_user&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns information on the specified user and device that was used to access the specified application.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">user_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;user_id is required for action=read_app_user&quot;</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">apps</span><span class="o">.</span><span class="n">get_app_user</span><span class="p">(</span>
-            <span class="n">app_id</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Application user lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">apps</span><span class="o">.</span><span class="n">list_users</span><span class="p">(</span><span class="n">app_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Application user listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># The ZDX SDK returns a list containing a single ApplicationUserDetails object</span>
-        <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">user_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) ApplicationUserDetails object</span>
-            <span class="k">return</span> <span class="n">user_obj</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{}</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a list of users and devices that were used to access the specified application.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">apps</span><span class="o">.</span><span class="n">list_app_users</span><span class="p">(</span>
-            <span class="n">app_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Application users listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK returns a list containing a single ApplicationActiveUsers object</span>
-        <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">users_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) ApplicationActiveUsers object</span>
-            <span class="c1"># Access the users property which contains a list of user objects</span>
-            <span class="n">users_list</span> <span class="o">=</span> <span class="n">users_obj</span><span class="o">.</span><span class="n">users</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_obj</span><span class="p">,</span> <span class="s1">&#39;users&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users_list</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">users_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">users_list</span> <span class="o">=</span> <span class="n">users_obj</span><span class="o">.</span><span class="n">users</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">users_obj</span><span class="p">,</span> <span class="s1">&#39;users&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users_list</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid action. Must be one of: &#39;read&#39;, &#39;read_app_user&#39;&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="zdx_get_application_user">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.get_application_user.zdx_get_application_user">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_application_user</span><span class="p">(</span>
+    <span class="n">app_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX application.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX user.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">since</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of hours to look back (default 2h).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets detailed information for a specific user accessing an application.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns detailed information on a specific user and device that accessed the application,</span>
+<span class="sd">    including performance metrics and device details.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        app_id: The unique ID for the ZDX application (required).</span>
+<span class="sd">        user_id: The unique ID for the ZDX user (required).</span>
+<span class="sd">        since: Optional number of hours to look back for user data (default 2 hours).</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary containing detailed user and device information.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the user lookup fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get specific user details:</span>
+<span class="sd">        &gt;&gt;&gt; user = zdx_get_application_user(</span>
+<span class="sd">        ...     app_id=&quot;888888888&quot;,</span>
+<span class="sd">        ...     user_id=&quot;24328827&quot;</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+
+    <span class="n">query_params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">since</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;since&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">since</span>
+
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">apps</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="n">app_id</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Application user lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -448,21 +437,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
