@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -266,103 +266,120 @@
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zia.auth_exempt_urls</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
-<div class="viewcode-block" id="zia_auth_exempt_urls_manager">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.auth_exempt_urls.zia_auth_exempt_urls_manager">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zia_auth_exempt_urls_manager</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;create&quot;</span><span class="p">,</span> <span class="s2">&quot;delete&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;One of: read, add, delete. Defaults to read.&quot;</span><span class="p">),</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span>
-    <span class="n">exempt_urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required for &#39;add&#39; or &#39;delete&#39;. List of exempt URLs (as list or JSON string).&quot;</span>
-        <span class="p">),</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="c1"># =============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># =============================================================================</span>
+
+<div class="viewcode-block" id="zia_list_auth_exempt_urls">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.auth_exempt_urls.zia_list_auth_exempt_urls">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_auth_exempt_urls</span><span class="p">(</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Manages the list of cookie authentication exempt URLs in ZIA.</span>
-
-<span class="sd">    Supported actions:</span>
-<span class="sd">    - &quot;read&quot;:   Retrieves the current exemption list.</span>
-<span class="sd">    - &quot;create&quot;:    Adds one or more URLs to the exempt list.</span>
-<span class="sd">    - &quot;delete&quot;: Removes one or more URLs from the exempt list.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        action (str, optional): One of &quot;read&quot;, &quot;create&quot;, or &quot;delete&quot;. Defaults to &quot;read&quot;.</span>
-<span class="sd">        exempt_urls (list[str] or str, optional): Required for &quot;create&quot; and &quot;delete&quot; actions.</span>
-<span class="sd">            Can be either a Python list or a JSON string representation of a list.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        list[str]: Updated list of exempted URLs.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError: If action is &quot;create&quot; or &quot;delete&quot; and no exempt_urls are provided,</span>
-<span class="sd">                   or if the input cannot be parsed as a list of URLs.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Convert string input to list if necessary</span>
-    <span class="n">processed_urls</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">exempt_urls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exempt_urls</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">processed_urls</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">exempt_urls</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processed_urls</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exempt_urls must be a list or JSON array string&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string for exempt_urls: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">processed_urls</span> <span class="o">=</span> <span class="n">exempt_urls</span>
-
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the current list of cookie authentication exempt URLs in ZIA.&quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-        <span class="n">url_list</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">authentication_settings</span><span class="o">.</span><span class="n">get_exempted_urls</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exempt URL list retrieval failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="c1"># 🟢 Ensure we always return a plain list</span>
-        <span class="k">return</span> <span class="n">url_list</span> <span class="ow">or</span> <span class="p">[]</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;create&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">processed_urls</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide a list of exempt URLs to add.&quot;</span><span class="p">)</span>
-        <span class="n">url_list</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">authentication_settings</span><span class="o">.</span><span class="n">add_urls_to_exempt_list</span><span class="p">(</span>
-            <span class="n">processed_urls</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;delete&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">processed_urls</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide a list of exempt URLs to delete.&quot;</span><span class="p">)</span>
-        <span class="n">url_list</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">authentication_settings</span><span class="o">.</span><span class="n">delete_urls_from_exempt_list</span><span class="p">(</span>
-                <span class="n">processed_urls</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid action. Must be one of: &#39;read&#39;, &#39;add&#39;, &#39;delete&#39;.&quot;</span><span class="p">)</span>
-
+    
+    <span class="n">url_list</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">authentication_settings</span><span class="o">.</span><span class="n">get_exempted_urls</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exempt URL list operation failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exempt URL list retrieval failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">url_list</span> <span class="ow">or</span> <span class="p">[]</span></div>
 
-    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">url_list</span><span class="p">,</span> <span class="s2">&quot;urls&quot;</span><span class="p">,</span> <span class="n">url_list</span> <span class="ow">or</span> <span class="p">[])</span></div>
+
+
+<span class="c1"># =============================================================================</span>
+<span class="c1"># WRITE OPERATIONS</span>
+<span class="c1"># =============================================================================</span>
+
+<div class="viewcode-block" id="zia_add_auth_exempt_urls">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.auth_exempt_urls.zia_add_auth_exempt_urls">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_add_auth_exempt_urls</span><span class="p">(</span>
+    <span class="n">exempt_urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of exempt URLs to add. Accepts list or JSON string.&quot;</span><span class="p">)],</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add URLs to the cookie authentication exempt list in ZIA.&quot;&quot;&quot;</span>
+    <span class="c1"># Convert string input to list if necessary</span>
+    <span class="n">processed_urls</span> <span class="o">=</span> <span class="n">exempt_urls</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exempt_urls</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">processed_urls</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">exempt_urls</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processed_urls</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exempt_urls must be a list or JSON array string&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string for exempt_urls: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">processed_urls</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide a list of exempt URLs to add&quot;</span><span class="p">)</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    
+    <span class="n">url_list</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">authentication_settings</span><span class="o">.</span><span class="n">add_urls_to_exempt_list</span><span class="p">(</span><span class="n">processed_urls</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to add exempt URLs: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">url_list</span> <span class="ow">or</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="zia_delete_auth_exempt_urls">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.auth_exempt_urls.zia_delete_auth_exempt_urls">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_delete_auth_exempt_urls</span><span class="p">(</span>
+    <span class="n">exempt_urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of exempt URLs to remove. Accepts list or JSON string.&quot;</span><span class="p">)],</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove URLs from the cookie authentication exempt list in ZIA.</span>
+<span class="sd">    </span>
+<span class="sd">    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.</span>
+<span class="sd">    This action cannot be undone.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.elicitation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_confirmation</span><span class="p">,</span> <span class="n">extract_confirmed_from_kwargs</span>
+    
+    <span class="c1"># Extract confirmation from kwargs (hidden from tool schema)</span>
+    <span class="n">confirmed</span> <span class="o">=</span> <span class="n">extract_confirmed_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    
+    <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span>
+        <span class="s2">&quot;zia_delete_auth_exempt_urls&quot;</span><span class="p">,</span>
+        <span class="n">confirmed</span><span class="p">,</span>
+        <span class="p">{}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">confirmation_check</span>
+    
+
+    <span class="c1"># Convert string input to list if necessary</span>
+    <span class="n">processed_urls</span> <span class="o">=</span> <span class="n">exempt_urls</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exempt_urls</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">processed_urls</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">exempt_urls</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">processed_urls</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;exempt_urls must be a list or JSON array string&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string for exempt_urls: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">processed_urls</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide a list of exempt URLs to delete&quot;</span><span class="p">)</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    
+    <span class="n">url_list</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">authentication_settings</span><span class="o">.</span><span class="n">delete_urls_from_exempt_list</span><span class="p">(</span><span class="n">processed_urls</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to delete exempt URLs: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">url_list</span> <span class="ow">or</span> <span class="p">[]</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -370,21 +387,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>

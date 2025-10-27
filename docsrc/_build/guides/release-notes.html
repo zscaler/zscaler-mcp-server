@@ -11,38 +11,38 @@
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -188,13 +188,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -237,7 +237,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -273,20 +273,35 @@
         <article role="main" id="furo-main-content">
           <section id="release-notes">
 <span id="id1"></span><h1>Release Notes<a class="headerlink" href="#release-notes" title="Link to this heading">¶</a></h1>
-<section id="zscaler-mcp-server-changelog">
-<h2>Zscaler Integrations MCP Server Changelog<a class="headerlink" href="#zscaler-mcp-server-changelog" title="Link to this heading">¶</a></h2>
+<section id="zscaler-integrations-mcp-server-changelog">
+<h2>Zscaler Integrations MCP Server Changelog<a class="headerlink" href="#zscaler-integrations-mcp-server-changelog" title="Link to this heading">¶</a></h2>
 </section>
-<section id="september-15-2025">
-<h2>0.2.0 (September 15, 2025)<a class="headerlink" href="#september-15-2025" title="Link to this heading">¶</a></h2>
+<section id="september-18-2025">
+<h2>0.2.1 (September 18, 2025)<a class="headerlink" href="#september-18-2025" title="Link to this heading">¶</a></h2>
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/10">PR #10</a> Fixed import sorting and markdown linting issues:</p>
+<ul class="simple">
+<li><p>Fixed Ruff import sorting errors in <code class="docutils literal notranslate"><span class="pre">client.py</span></code>, <code class="docutils literal notranslate"><span class="pre">services.py</span></code>, and <code class="docutils literal notranslate"><span class="pre">utils.py</span></code></p></li>
+<li><p>Fixed markdownlint formatting issues in <code class="docutils literal notranslate"><span class="pre">docs/guides/release-notes.md</span></code></p></li>
+<li><p>Updated GitHub workflows to include linter checks in release process</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>0.2.0 (September 18, 2025)<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+</section>
+<section id="id3">
+<h2>Notes<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
 <section id="new-zcc-mcp-tools">
 <h3>NEW ZCC MCP Tools<a class="headerlink" href="#new-zcc-mcp-tools" title="Link to this heading">¶</a></h3>
-<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/8">PR #8</a> Added the following new tools:</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/9">PR #9</a> Added the following new tools:</p>
 <ul class="simple">
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">zcc_list_trusted_networks</span></code> - List existing trusted networks</p></li>
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">zcc_list_forwarding_profiles</span></code> - List existing forwarding profiles</p></li>
@@ -294,7 +309,7 @@
 </section>
 <section id="new-ztw-mcp-tools">
 <h3>NEW ZTW MCP Tools<a class="headerlink" href="#new-ztw-mcp-tools" title="Link to this heading">¶</a></h3>
-<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/8">PR #8</a> Added the following new tools:</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/9">PR #9</a> Added the following new tools:</p>
 <ul class="simple">
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">ztw_ip_destination_groups</span></code> - Manages IP Destination Groups</p></li>
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">ztw_ip_group</span></code> - Manages IP Pool Groups</p></li>
@@ -303,13 +318,14 @@
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">ztw_list_roles</span></code> - List all existing admin roles in Zscaler Cloud &amp; Branch Connector</p></li>
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">ztw_list_admins</span></code> - List all existing admin users or get details for a specific admin user</p></li>
 </ul>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/9">PR #9</a> - New documentation portal available in <cite>ReadTheDocs &lt;https://zscaler-mcp-server.readthedocs.io/&gt;</cite></p>
 </section>
 </section>
 <section id="august-15-2025-initial-release">
 <h2>0.1.0 (August 15, 2025) - Initial Release<a class="headerlink" href="#august-15-2025-initial-release" title="Link to this heading">¶</a></h2>
 </section>
-<section id="id3">
-<h2>Notes<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<section id="id6">
+<h2>Notes<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
@@ -354,7 +370,7 @@
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
           <a class="next-page" href="contributing.html">
               <div class="page-info">
@@ -371,9 +387,9 @@
                 <div class="context">
                   <span>Previous</span>
                 </div>
-
+                
                 <div class="title">Support Guide</div>
-
+                
               </div>
             </a>
         </div>
@@ -383,20 +399,20 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer">
-
-
+      
+      
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
@@ -407,15 +423,17 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Release Notes</a><ul>
-<li><a class="reference internal" href="#zscaler-mcp-server-changelog">Zscaler Integrations MCP Server Changelog</a></li>
-<li><a class="reference internal" href="#september-15-2025">0.2.0 (September 15, 2025)</a></li>
-<li><a class="reference internal" href="#notes">Notes</a><ul>
+<li><a class="reference internal" href="#zscaler-integrations-mcp-server-changelog">Zscaler Integrations MCP Server Changelog</a></li>
+<li><a class="reference internal" href="#september-18-2025">0.2.1 (September 18, 2025)</a></li>
+<li><a class="reference internal" href="#notes">Notes</a></li>
+<li><a class="reference internal" href="#id2">0.2.0 (September 18, 2025)</a></li>
+<li><a class="reference internal" href="#id3">Notes</a><ul>
 <li><a class="reference internal" href="#new-zcc-mcp-tools">NEW ZCC MCP Tools</a></li>
 <li><a class="reference internal" href="#new-ztw-mcp-tools">NEW ZTW MCP Tools</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#august-15-2025-initial-release">0.1.0 (August 15, 2025) - Initial Release</a></li>
-<li><a class="reference internal" href="#id3">Notes</a><ul>
+<li><a class="reference internal" href="#id6">Notes</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a></li>
@@ -428,8 +446,8 @@
           </div>
         </div>
       </div>
-
-
+      
+      
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=938c9ccc"></script>

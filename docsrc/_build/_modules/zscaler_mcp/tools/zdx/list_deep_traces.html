@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -266,12 +266,16 @@
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zdx.list_deep_traces</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
+
+<span class="c1"># ============================================================================</span>
+<span class="c1"># Helper Functions</span>
+<span class="c1"># ============================================================================</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_convert_timestamps</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -307,153 +311,128 @@
                     <span class="n">converted_item</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">return</span> <span class="n">converted_item</span>
         <span class="k">return</span> <span class="n">item</span>
-
+    
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">convert_single_item</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">convert_single_item</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="zdx_list_deep_traces">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_deep_traces.zdx_list_deep_traces">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_deep_traces</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;read_deeptrace&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Must be one of &#39;read&#39; or &#39;read_deeptrace&#39;.&quot;</span><span class="p">),</span>
-    <span class="p">],</span>
+<span class="c1"># ============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="zdx_list_device_deep_traces">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_deep_traces.zdx_list_device_deep_traces">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_device_deep_traces</span><span class="p">(</span>
     <span class="n">device_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX device.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">trace_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required if action is &#39;read_deeptrace&#39;. The unique ID for the deeptrace.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tool for retrieving ZDX deep trace information for troubleshooting device connectivity issues.</span>
-<span class="sd">    </span>
-<span class="sd">    Supports two actions:</span>
-<span class="sd">    - read: Returns a list of all deep traces for a specific device (USE THIS FOR GENERAL TROUBLESHOOTING OVERVIEW).</span>
-<span class="sd">    - read_deeptrace: Returns detailed information on a single deeptrace for a specific device (USE FOR SPECIFIC TRACE ANALYSIS).</span>
-<span class="sd">    </span>
-<span class="sd">    USAGE GUIDELINES:</span>
-<span class="sd">    </span>
-<span class="sd">    - Use action=&#39;read&#39; by default to get an overview of all deep traces for a device</span>
-<span class="sd">    - Use action=&#39;read_deeptrace&#39; when you need detailed information about a specific trace</span>
-<span class="sd">    - Deep traces are used for troubleshooting device connectivity and performance issues</span>
-<span class="sd">    </span>
-<span class="sd">    TIMESTAMP CONVERSION INSTRUCTIONS:</span>
-<span class="sd">    </span>
-<span class="sd">    - CONVERT all Unix epoch timestamps (created, started, ended, timestamp, time fields) to ISO 8601 format</span>
-<span class="sd">    - PRESERVE original epoch timestamps with &quot;_epoch&quot; suffix for reference</span>
-<span class="sd">    - ALWAYS convert: &quot;created&quot;: 1754537141 → &quot;created&quot;: &quot;2025-01-07T10:32:21&quot;, &quot;created_epoch&quot;: 1754537141</span>
-<span class="sd">    - APPLY conversion to both read and read_deeptrace actions</span>
-<span class="sd">    </span>
+<span class="sd">    Lists all deep traces for a specific ZDX device.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns a list of all deep traces for the specified device. Deep traces are used</span>
+<span class="sd">    for troubleshooting device connectivity and performance issues. Timestamps are</span>
+<span class="sd">    automatically converted from Unix epoch to ISO format for easier reading.</span>
+
 <span class="sd">    Args:</span>
-<span class="sd">        action: The type of deep trace information to retrieve (&#39;read&#39; or &#39;read_deeptrace&#39;).</span>
-<span class="sd">        device_id: The unique ID for the ZDX device.</span>
-<span class="sd">        trace_id: Required if action is &#39;read_deeptrace&#39;. The unique ID for the deeptrace.</span>
+<span class="sd">        device_id: The unique ID for the ZDX device (required).</span>
 <span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
 <span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
-<span class="sd">        </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        For &#39;read&#39;: List of dictionaries containing deep trace information with CONVERTED timestamps to ISO format.</span>
-<span class="sd">        For &#39;read_deeptrace&#39;: Dictionary containing detailed deep trace information with CONVERTED timestamps to ISO format.</span>
-<span class="sd">        </span>
-<span class="sd">    Raises:</span>
-<span class="sd">        Exception: If the deep trace information retrieval fails due to API errors.</span>
-<span class="sd">        </span>
-<span class="sd">    Examples:</span>
-<span class="sd">        DEFAULT USAGE - Get overview of all deep traces for a device:</span>
-<span class="sd">        &gt;&gt;&gt; traces = zdx_list_deep_traces(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     device_id=&quot;132559212&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        SPECIFIC TRACE QUERY - Get detailed information for a specific trace:</span>
-<span class="sd">        &gt;&gt;&gt; trace_details = zdx_list_deep_traces(</span>
-<span class="sd">        ...     action=&quot;read_deeptrace&quot;, </span>
-<span class="sd">        ...     device_id=&quot;132559212&quot;, </span>
-<span class="sd">        ...     trace_id=&quot;342941739947287&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        TROUBLESHOOTING WORKFLOW:</span>
-<span class="sd">        1. First, list all deep traces for a device to identify problematic traces:</span>
-<span class="sd">        &gt;&gt;&gt; traces = zdx_list_deep_traces(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     device_id=&quot;132559212&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        2. Then, get detailed information for a specific trace that shows issues:</span>
-<span class="sd">        &gt;&gt;&gt; trace_details = zdx_list_deep_traces(</span>
-<span class="sd">        ...     action=&quot;read_deeptrace&quot;, </span>
-<span class="sd">        ...     device_id=&quot;132559212&quot;, </span>
-<span class="sd">        ...     trace_id=&quot;342941739947287&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        REQUIRED TIMESTAMP OUTPUT FORMAT:</span>
-<span class="sd">        </span>
-<span class="sd">        ::</span>
-<span class="sd">        </span>
-<span class="sd">            {</span>
-<span class="sd">                &quot;created&quot;: &quot;2025-01-07T10:32:21&quot;,</span>
-<span class="sd">                &quot;created_epoch&quot;: 1754537141,</span>
-<span class="sd">                &quot;started&quot;: &quot;2025-01-07T10:32:31&quot;, </span>
-<span class="sd">                &quot;started_epoch&quot;: 1754537151,</span>
-<span class="sd">                &quot;ended&quot;: &quot;2025-01-07T10:39:41&quot;,</span>
-<span class="sd">                &quot;ended_epoch&quot;: 1754537581</span>
-<span class="sd">            }</span>
 
+<span class="sd">    Returns:</span>
+<span class="sd">        List of dictionaries containing deep trace information with converted timestamps.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the deep trace listing fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get all deep traces for a device:</span>
+<span class="sd">        &gt;&gt;&gt; traces = zdx_list_device_deep_traces(device_id=&quot;device123&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_deeptrace&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns information on a single deeptrace for a specific device.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">trace_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;trace_id is required for action=read_deeptrace&quot;</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">troubleshooting</span><span class="o">.</span><span class="n">list_deeptraces</span><span class="p">(</span><span class="n">device_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deep trace listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">troubleshooting</span><span class="o">.</span><span class="n">get_deeptrace</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span> <span class="n">trace_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deep trace lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK returns a list of DeviceDeepTraces objects</span>
-        <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">trace_data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-            <span class="k">return</span> <span class="n">_convert_timestamps</span><span class="p">(</span><span class="n">trace_data</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{}</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a list of all deep traces for a specific device.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">troubleshooting</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">device_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deep traces listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK returns a list of DeviceDeepTraces objects</span>
-        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">traces_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">result</span><span class="p">]</span>
-            <span class="k">return</span> <span class="n">_convert_timestamps</span><span class="p">(</span><span class="n">traces_data</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">traces_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">traces_list</span> <span class="o">=</span> <span class="n">traces_obj</span><span class="o">.</span><span class="n">traces</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">traces_obj</span><span class="p">,</span> <span class="s1">&#39;traces&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">traces_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces_list</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_convert_timestamps</span><span class="p">(</span><span class="n">traces_data</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid action. Must be one of: &#39;read&#39;, &#39;read_deeptrace&#39;&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="zdx_get_device_deep_trace">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_deep_traces.zdx_get_device_deep_trace">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_device_deep_trace</span><span class="p">(</span>
+    <span class="n">device_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX device.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">trace_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the deeptrace.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets detailed information for a specific deep trace.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns detailed information on a single deeptrace for a specific device, including</span>
+<span class="sd">    hop-by-hop network path analysis. Use this for in-depth analysis of connectivity</span>
+<span class="sd">    issues. Timestamps are automatically converted from Unix epoch to ISO format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        device_id: The unique ID for the ZDX device (required).</span>
+<span class="sd">        trace_id: The unique ID for the deeptrace (required).</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary containing detailed deeptrace information with converted timestamps.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the deeptrace lookup fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get specific deep trace details:</span>
+<span class="sd">        &gt;&gt;&gt; trace = zdx_get_device_deep_trace(</span>
+<span class="sd">        ...     device_id=&quot;device123&quot;,</span>
+<span class="sd">        ...     trace_id=&quot;trace456&quot;</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">troubleshooting</span><span class="o">.</span><span class="n">get_deeptrace</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span> <span class="n">trace_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deeptrace lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="n">trace_data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">_convert_timestamps</span><span class="p">(</span><span class="n">trace_data</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -461,21 +440,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>

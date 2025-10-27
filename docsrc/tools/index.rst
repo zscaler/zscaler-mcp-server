@@ -1,5 +1,5 @@
 Zscaler Integrations MCP Server Tools
-=========================
+======================================
 
 The Zscaler Integrations MCP Server provides a comprehensive set of tools for interacting with Zscaler's security platform. These tools are organized by service and provide both read-only and management capabilities.
 

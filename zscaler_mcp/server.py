@@ -13,9 +13,23 @@ from typing import Dict, List, Optional, Set
 import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from zscaler_mcp import services
 from zscaler_mcp.common.logging import configure_logging, get_logger
+
+# Import version from package metadata
+try:
+    from importlib.metadata import version
+    __version__ = version("zscaler-mcp")
+except ImportError:
+    # Fallback for Python < 3.8
+    try:
+        from importlib_metadata import version
+        __version__ = version("zscaler-mcp")
+    except ImportError:
+        # Final fallback - read from pyproject.toml or use a default
+        __version__ = "0.2.2"
 
 # Add the project root to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,6 +51,8 @@ class ZscalerMCPServer:
         enabled_services: Optional[Set[str]] = None,
         enabled_tools: Optional[Set[str]] = None,
         user_agent_comment: Optional[str] = None,
+        enable_write_tools: bool = False,
+        write_tools: Optional[Set[str]] = None,
     ):
         """Initialize the Zscaler Integrations MCP Server.
 
@@ -48,7 +64,10 @@ class ZscalerMCPServer:
             cloud: Zscaler cloud environment (e.g., 'beta', 'zscalertwo')
             debug: Enable debug logging
             enabled_services: Set of service names to enable (defaults to all services)
+            enabled_tools: Set of tool names to enable (defaults to all tools)
             user_agent_comment: Additional information to include in the User-Agent comment section
+            enable_write_tools: Enable write operations (create, update, delete). Default: False for safety.
+            write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.
         """
         # Store configuration
         self.client_id = client_id
@@ -61,11 +80,34 @@ class ZscalerMCPServer:
 
         self.enabled_services = enabled_services or set(services.get_service_names())
         self.enabled_tools = enabled_tools or set()
+        self.enable_write_tools = enable_write_tools
+        self.write_tools = write_tools  # Explicit allowlist for write tools
 
         # Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol
         configure_logging(debug=self.debug, use_stderr=True)
         logger = get_logger(__name__)
+        
+        # Log security posture
         logger.info("Initializing Zscaler Integrations MCP Server")
+        if self.enable_write_tools:
+            logger.warning("=" * 80)
+            logger.warning("⚠️  WRITE TOOLS MODE ENABLED")
+            if self.write_tools:
+                logger.warning("⚠️  Explicit allowlist provided - only listed write tools will be registered")
+                logger.warning(f"⚠️  Allowed patterns: {', '.join(sorted(self.write_tools))}")
+                logger.warning("⚠️  Server can CREATE, MODIFY, and DELETE Zscaler resources")
+                logger.warning("⚠️  Ensure this is intentional and appropriate for your use case")
+            else:
+                logger.warning("⚠️  NO allowlist provided - 0 write tools will be registered")
+                logger.warning("⚠️  Read-only tools will still be available")
+                logger.warning("⚠️  To enable write operations, add: --write-tools 'pattern'")
+            logger.warning("=" * 80)
+        else:
+            logger.info("=" * 80)
+            logger.info("🔒 Server running in READ-ONLY mode (safe default)")
+            logger.info("   Only list and get operations are available")
+            logger.info("   To enable write operations, use --enable-write-tools AND --write-tools flags")
+            logger.info("=" * 80)
 
         # Don't initialize the Zscaler client during server startup to avoid pickle issues
         # Clients will be created on-demand when tools are called
@@ -122,12 +164,14 @@ class ZscalerMCPServer:
             self.zscaler_check_connectivity,
             name="zscaler_check_connectivity",
             description="Check connectivity to the Zscaler API.",
+            annotations=ToolAnnotations(readOnlyHint=True)  # Read-only diagnostic tool
         )
 
         self.server.add_tool(
             self.get_available_services,
             name="zscaler_get_available_services",
             description="Get information about available services.",
+            annotations=ToolAnnotations(readOnlyHint=True)  # Read-only informational tool
         )
 
         tool_count = 2  # the tools added above
@@ -135,30 +179,37 @@ class ZscalerMCPServer:
         # Register tools from services
         for service in self.services.values():
             try:
-                # If specific tools are enabled, filter them
+                # Register tools with write mode flag and allowlist
                 if self.enabled_tools:
                     service.register_tools(
-                        self.server, enabled_tools=self.enabled_tools
+                        self.server,
+                        enabled_tools=self.enabled_tools,
+                        enable_write_tools=self.enable_write_tools,
+                        write_tools=self.write_tools
                     )
-                    # Count only the enabled tools
-                    if hasattr(service, "tools"):
-                        enabled_tools_in_service = [
-                            tool
-                            for tool in service.tools
-                            if getattr(tool, "__name__", str(tool))
-                            in self.enabled_tools
-                        ]
-                        tool_count += len(enabled_tools_in_service)
                 else:
-                    # Register all tools from the service
-                    service.register_tools(self.server)
-                    # Count all tools from services
-                    if hasattr(service, "tools"):
-                        tool_count += len(service.tools)
+                    service.register_tools(
+                        self.server,
+                        enable_write_tools=self.enable_write_tools,
+                        write_tools=self.write_tools
+                    )
+                
+                # Count tools (read + write)
+                if hasattr(service, "read_tools"):
+                    tool_count += len(service.read_tools)
+                if hasattr(service, "write_tools") and self.enable_write_tools:
+                    tool_count += len(service.write_tools)
+                elif hasattr(service, "tools"):
+                    # Fallback for services not yet migrated
+                    tool_count += len(service.tools)
             except Exception as e:
                 logger.warning(f"Failed to register tools for service: {e}")
                 # Still count the tools even if registration fails
-                if hasattr(service, "tools"):
+                if hasattr(service, "read_tools"):
+                    tool_count += len(service.read_tools)
+                if hasattr(service, "write_tools"):
+                    tool_count += len(service.write_tools)
+                elif hasattr(service, "tools"):
                     tool_count += len(service.tools)
 
         return tool_count
@@ -266,12 +317,13 @@ def list_available_tools(selected_services=None, enabled_tools=None):
                 def __init__(self):
                     self.tools = []
 
-                def add_tool(self, tool, name=None, description=None):
+                def add_tool(self, tool, name=None, description=None, annotations=None):
                     self.tools.append(
                         {
                             "tool": tool,
                             "name": name or tool.__name__,
                             "description": description or (tool.__doc__ or ""),
+                            "annotations": annotations,
                         }
                     )
 
@@ -348,12 +400,13 @@ def parse_tools_list(tools_string):
             def __init__(self):
                 self.tools = []
 
-            def add_tool(self, tool, name=None, description=None):
+            def add_tool(self, tool, name=None, description=None, annotations=None):
                 self.tools.append(
                     {
                         "tool": tool,
                         "name": name or tool.__name__,
                         "description": description or (tool.__doc__ or ""),
+                        "annotations": annotations,
                     }
                 )
 
@@ -418,6 +471,25 @@ def parse_args():
         help="Enable debug logging (env: ZSCALER_MCP_DEBUG)",
     )
 
+    # Write tools enablement (NEW)
+    parser.add_argument(
+        "--enable-write-tools",
+        action="store_true",
+        default=os.environ.get("ZSCALER_MCP_WRITE_ENABLED", "").lower() == "true",
+        help="Enable write operations (create, update, delete). "
+             "By default, only read-only operations are available for safety. "
+             "(env: ZSCALER_MCP_WRITE_ENABLED)",
+    )
+
+    parser.add_argument(
+        "--write-tools",
+        default=os.environ.get("ZSCALER_MCP_WRITE_TOOLS"),
+        help="Comma-separated list of write tools to explicitly allow. "
+             "Supports wildcards (e.g., 'zpa_create_*,zpa_delete_*'). "
+             "Requires --enable-write-tools to be set. "
+             "(env: ZSCALER_MCP_WRITE_TOOLS)",
+    )
+
     # Zscaler API configuration
     parser.add_argument(
         "--client-id",
@@ -476,6 +548,14 @@ def parse_args():
         help="List all available tool names and descriptions, then exit.",
     )
 
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="version",
+        version=f"Zscaler MCP Server version {__version__}",
+        help="Show version information and exit.",
+    )
+
     return parser.parse_args()
 
 
@@ -495,6 +575,11 @@ def main():
         sys.exit(0)
 
     try:
+        # Parse write_tools into a set
+        write_tools = None
+        if args.write_tools:
+            write_tools = set(t.strip() for t in args.write_tools.split(","))
+        
         # Create and run the server
         server = ZscalerMCPServer(
             client_id=args.client_id,
@@ -506,6 +591,8 @@ def main():
             enabled_services=set(args.services),
             enabled_tools=set(args.tools),
             user_agent_comment=args.user_agent_comment,
+            enable_write_tools=args.enable_write_tools,
+            write_tools=write_tools,
         )
         logger.info("Starting server with %s transport", args.transport)
         server.run(args.transport, host=args.host, port=args.port)

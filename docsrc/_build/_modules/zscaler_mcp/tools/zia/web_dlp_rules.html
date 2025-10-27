@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -266,50 +266,273 @@
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zia.web_dlp_rules</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
-<div class="viewcode-block" id="zia_web_dlp_rule_manager">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_web_dlp_rule_manager">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zia_web_dlp_rule_manager</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;read_lite&quot;</span><span class="p">,</span> <span class="s2">&quot;create&quot;</span><span class="p">,</span> <span class="s2">&quot;update&quot;</span><span class="p">,</span> <span class="s2">&quot;delete&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Web DLP rule operation: read, read_lite, create, update, or delete.&quot;</span>
-        <span class="p">),</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span>
+<span class="c1"># ============================================================================</span>
+<span class="c1"># Helper Functions</span>
+<span class="c1"># ============================================================================</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_list</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to parse list parameters that can be JSON strings or lists.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">val</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_web_dlp_rule_payload</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rule_action</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rank</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">file_types</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">match_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dlp_engines</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dlp_content_locations_scopes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dlp_download_scan_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">without_content_inspection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ocr_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">external_auditor_email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zcc_notifications_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">auditor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cloud_applications</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">departments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">excluded_groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">excluded_departments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">excluded_users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">icap_server</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">locations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">location_groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">notification_template</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">time_windows</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">url_categories</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build payload for web DLP rule operations.&quot;&quot;&quot;</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Core parameters</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="k">if</span> <span class="n">description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">description</span>
+    <span class="k">if</span> <span class="n">rule_action</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rule_action</span>
+    <span class="k">if</span> <span class="n">enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">enabled</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;rank&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order</span>
+
+    <span class="c1"># File and content parameters</span>
+    <span class="k">if</span> <span class="n">file_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;file_types&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_parse_list</span><span class="p">(</span><span class="n">file_types</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">min_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;min_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_size</span>
+    <span class="k">if</span> <span class="n">match_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;match_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_only</span>
+
+    <span class="c1"># DLP-specific parameters</span>
+    <span class="k">if</span> <span class="n">dlp_content_locations_scopes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;dlp_content_locations_scopes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_parse_list</span><span class="p">(</span><span class="n">dlp_content_locations_scopes</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dlp_download_scan_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;dlp_download_scan_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dlp_download_scan_enabled</span>
+    <span class="k">if</span> <span class="n">without_content_inspection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;without_content_inspection&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">without_content_inspection</span>
+    <span class="k">if</span> <span class="n">ocr_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;ocr_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ocr_enabled</span>
+
+    <span class="c1"># Notification parameters</span>
+    <span class="k">if</span> <span class="n">external_auditor_email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;external_auditor_email&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">external_auditor_email</span>
+    <span class="k">if</span> <span class="n">zcc_notifications_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;zcc_notifications_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zcc_notifications_enabled</span>
+
+    <span class="c1"># List parameters that need parsing</span>
+    <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;dlp_engines&quot;</span><span class="p">,</span> <span class="n">dlp_engines</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;auditor&quot;</span><span class="p">,</span> <span class="n">auditor</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;cloud_applications&quot;</span><span class="p">,</span> <span class="n">cloud_applications</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;departments&quot;</span><span class="p">,</span> <span class="n">departments</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;excluded_groups&quot;</span><span class="p">,</span> <span class="n">excluded_groups</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;excluded_departments&quot;</span><span class="p">,</span> <span class="n">excluded_departments</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;excluded_users&quot;</span><span class="p">,</span> <span class="n">excluded_users</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;groups&quot;</span><span class="p">,</span> <span class="n">groups</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;icap_server&quot;</span><span class="p">,</span> <span class="n">icap_server</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;labels&quot;</span><span class="p">,</span> <span class="n">labels</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;locations&quot;</span><span class="p">,</span> <span class="n">locations</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;location_groups&quot;</span><span class="p">,</span> <span class="n">location_groups</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;notification_template&quot;</span><span class="p">,</span> <span class="n">notification_template</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;time_windows&quot;</span><span class="p">,</span> <span class="n">time_windows</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">users</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;url_categories&quot;</span><span class="p">,</span> <span class="n">url_categories</span><span class="p">),</span>
+    <span class="p">]:</span>
+        <span class="k">if</span> <span class="n">param_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_parse_list</span><span class="p">(</span><span class="n">param_value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">payload</span>
+
+
+<span class="c1"># ============================================================================</span>
+<span class="c1"># READ OPERATIONS (Read-Only)</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="zia_list_web_dlp_rules">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_list_web_dlp_rules">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_web_dlp_rules</span><span class="p">(</span>
+    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional search filter for listing rules by name.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lists all ZIA Web DLP Rules with optional search filtering.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Web DLP Rules control and monitor data transmission based on file types,</span>
+<span class="sd">    content patterns, DLP engines, and other criteria.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        search (str, optional): Search string for filtering rules by name.</span>
+<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
+<span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[dict]: List of web DLP rule objects.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        List all rules:</span>
+<span class="sd">        &gt;&gt;&gt; rules = zia_list_web_dlp_rules()</span>
+
+<span class="sd">        Search for rules containing &quot;block&quot;:</span>
+<span class="sd">        &gt;&gt;&gt; rules = zia_list_web_dlp_rules(search=&quot;block&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="n">rules</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">list_rules</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list web DLP rules: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="zia_list_web_dlp_rules_lite">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_list_web_dlp_rules_lite">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_web_dlp_rules_lite</span><span class="p">(</span>
+    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional search filter for listing rules by name.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lists all ZIA Web DLP Rules with only name and ID (lite version for faster retrieval).</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        search (str, optional): Search string for filtering rules by name.</span>
+<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
+<span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list[dict]: List of web DLP rule objects (name and ID only).</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        List rules with name and ID only:</span>
+<span class="sd">        &gt;&gt;&gt; rules = zia_list_web_dlp_rules_lite()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="n">rules</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">list_rules_lite</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list web DLP rules (lite): </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="zia_get_web_dlp_rule">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_get_web_dlp_rule">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_get_web_dlp_rule</span><span class="p">(</span>
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required for read, update, and delete operations.&quot;</span><span class="p">),</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule name (required for add/update).&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the web DLP rule to retrieve.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets a specific ZIA Web DLP Rule by ID.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rule_id (int/str): The ID of the web DLP rule to retrieve.</span>
+<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
+<span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: The web DLP rule object.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        Get a specific rule:</span>
+<span class="sd">        &gt;&gt;&gt; rule = zia_get_web_dlp_rule(rule_id=&quot;12345&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
+
+    <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">get_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to retrieve rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rule</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
+
+
+
+<span class="c1"># ============================================================================</span>
+<span class="c1"># WRITE OPERATIONS (Require --enable-write-tools flag)</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="zia_create_web_dlp_rule">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_create_web_dlp_rule">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_create_web_dlp_rule</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule name (required).&quot;</span><span class="p">)],</span>
+    <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional search filter for listing rules by name.&quot;</span><span class="p">),</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># Core rule parameters</span>
     <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Admin rank of the rule.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule order, defaults to the bottom.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># File and content parameters</span>
     <span class="n">file_types</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of file types the DLP policy rule applies to. Accepts JSON string or list.&quot;</span><span class="p">)</span>
@@ -320,7 +543,6 @@
     <span class="n">match_only</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;If true, matches file size for DLP policy rule evaluation.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># DLP-specific parameters</span>
     <span class="n">dlp_engines</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for DLP engines this rule applies to.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -337,14 +559,12 @@
     <span class="n">ocr_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True allows OCR scanning of image files.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># Notification parameters</span>
     <span class="n">external_auditor_email</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Email of an external auditor for DLP notifications.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">zcc_notifications_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True enables Zscaler Client Connector notification.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># ID-based parameters (can be passed as JSON string or list)</span>
     <span class="n">auditor</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for the auditors this rule applies to.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -394,239 +614,301 @@
         <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Manages ZIA Web DLP Rules for controlling data loss prevention policies on web traffic.</span>
-
-<span class="sd">    Web DLP Rules allow you to control and monitor data transmission based on file types,</span>
-<span class="sd">    content patterns, DLP engines, and other criteria. Rules can be configured to allow,</span>
-<span class="sd">    block, or inspect traffic for potential data loss prevention violations.</span>
+<span class="sd">    Creates a new ZIA Web DLP Rule.</span>
+<span class="sd">    This is a write operation that requires the --enable-write-tools flag.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        action (str): Operation to perform: read, read_lite, create, update, or delete.</span>
-<span class="sd">        rule_id (int/str, optional): Required for read, update, and delete operations.</span>
-<span class="sd">        name (str, optional): Rule name (required for add/update).</span>
-<span class="sd">        description (str, optional): Optional rule description.</span>
-<span class="sd">        action (str, optional): Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT.</span>
-<span class="sd">        enabled (bool, optional): True to enable rule, False to disable (default: True).</span>
-<span class="sd">        search (str, optional): Search string for filtering rules by name.</span>
-<span class="sd">        rank (int, optional): Admin rank of the rule.</span>
-<span class="sd">        order (int, optional): Rule order, defaults to the bottom.</span>
-<span class="sd">        file_types (list/str, optional): List of file types the DLP policy rule applies to.</span>
-<span class="sd">        min_size (str, optional): Minimum file size (in KB) for DLP policy rule evaluation.</span>
-<span class="sd">        match_only (bool, optional): If true, matches file size for DLP policy rule evaluation.</span>
-<span class="sd">        dlp_engines (list/str, optional): IDs for DLP engines this rule applies to.</span>
-<span class="sd">        dlp_content_locations_scopes (list/str, optional): Specifies one or more content locations.</span>
-<span class="sd">        dlp_download_scan_enabled (bool, optional): True enables DLP scan for file downloads.</span>
-<span class="sd">        without_content_inspection (bool, optional): True indicates a DLP rule without content inspection.</span>
-<span class="sd">        ocr_enabled (bool, optional): True allows OCR scanning of image files.</span>
-<span class="sd">        external_auditor_email (str, optional): Email of an external auditor for DLP notifications.</span>
-<span class="sd">        zcc_notifications_enabled (bool, optional): True enables Zscaler Client Connector notification.</span>
-<span class="sd">        auditor (list/str, optional): IDs for the auditors this rule applies to.</span>
-<span class="sd">        cloud_applications (list/str, optional): IDs for cloud applications this rule applies to.</span>
-<span class="sd">        departments (list/str, optional): Department IDs the rule applies to.</span>
-<span class="sd">        excluded_groups (list/str, optional): Excluded group IDs.</span>
-<span class="sd">        excluded_departments (list/str, optional): Excluded department IDs.</span>
-<span class="sd">        excluded_users (list/str, optional): Excluded user IDs.</span>
-<span class="sd">        groups (list/str, optional): Group IDs the rule applies to.</span>
-<span class="sd">        icap_server (list/str, optional): ICAP server IDs the rule applies to.</span>
-<span class="sd">        labels (list/str, optional): Label IDs the rule applies to.</span>
-<span class="sd">        locations (list/str, optional): Location IDs the rule applies to.</span>
-<span class="sd">        location_groups (list/str, optional): Location group IDs the rule applies to.</span>
-<span class="sd">        notification_template (list/str, optional): Notification template IDs.</span>
-<span class="sd">        time_windows (list/str, optional): Time window IDs the rule applies to.</span>
-<span class="sd">        users (list/str, optional): User IDs the rule applies to.</span>
-<span class="sd">        url_categories (list/str, optional): URL category IDs the rule applies to.</span>
+<span class="sd">        name (str): Rule name (required).</span>
+<span class="sd">        rule_action (str): Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT.</span>
+<span class="sd">        [... additional parameters as documented in function signature ...]</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        dict | list[dict] | str: Rule object(s) or status message.</span>
+<span class="sd">        dict: The created web DLP rule object.</span>
 
-<span class="sd">    Examples:</span>
-<span class="sd">        List all web DLP rules:</span>
-<span class="sd">        &gt;&gt;&gt; rules = zia_web_dlp_rule_manager(action=&quot;read&quot;)</span>
-
-<span class="sd">        List rules with name and ID only:</span>
-<span class="sd">        &gt;&gt;&gt; rules = zia_web_dlp_rule_manager(action=&quot;read_lite&quot;)</span>
-
-<span class="sd">        Search for rules containing &quot;block&quot;:</span>
-<span class="sd">        &gt;&gt;&gt; rules = zia_web_dlp_rule_manager(action=&quot;read&quot;, search=&quot;block&quot;)</span>
-
-<span class="sd">        Get a specific rule:</span>
-<span class="sd">        &gt;&gt;&gt; rule = zia_web_dlp_rule_manager(action=&quot;read&quot;, rule_id=&quot;12345&quot;)</span>
-
-<span class="sd">        Add a new rule to block image files:</span>
-<span class="sd">        &gt;&gt;&gt; rule = zia_web_dlp_rule_manager(</span>
-<span class="sd">        ...     action=&quot;create&quot;,</span>
+<span class="sd">    Example:</span>
+<span class="sd">        Create a rule to block image files:</span>
+<span class="sd">        &gt;&gt;&gt; rule = zia_create_web_dlp_rule(</span>
 <span class="sd">        ...     name=&quot;Block Image Files&quot;,</span>
-<span class="sd">        ...     action=&quot;BLOCK&quot;,</span>
+<span class="sd">        ...     rule_action=&quot;BLOCK&quot;,</span>
 <span class="sd">        ...     file_types=[&quot;BITMAP&quot;, &quot;JPEG&quot;, &quot;PNG&quot;],</span>
-<span class="sd">        ...     dlp_download_scan_enabled=True,</span>
-<span class="sd">        ...     min_size=&quot;100&quot;</span>
+<span class="sd">        ...     dlp_download_scan_enabled=True</span>
 <span class="sd">        ... )</span>
-
-<span class="sd">        Add a rule to allow specific file types for Finance group:</span>
-<span class="sd">        &gt;&gt;&gt; rule = zia_web_dlp_rule_manager(</span>
-<span class="sd">        ...     action=&quot;create&quot;,</span>
-<span class="sd">        ...     name=&quot;Allow Finance Documents&quot;,</span>
-<span class="sd">        ...     action=&quot;ALLOW&quot;,</span>
-<span class="sd">        ...     file_types=[&quot;PDF&quot;, &quot;DOC&quot;, &quot;DOCX&quot;, &quot;XLS&quot;, &quot;XLSX&quot;],</span>
-<span class="sd">        ...     groups=[&quot;95016183&quot;],</span>
-<span class="sd">        ...     description=&quot;Allow finance documents for finance group&quot;</span>
-<span class="sd">        ... )</span>
-
-<span class="sd">        Update an existing rule:</span>
-<span class="sd">        &gt;&gt;&gt; rule = zia_web_dlp_rule_manager(</span>
-<span class="sd">        ...     action=&quot;update&quot;,</span>
-<span class="sd">        ...     rule_id=&quot;12345&quot;,</span>
-<span class="sd">        ...     name=&quot;Updated Rule Name&quot;,</span>
-<span class="sd">        ...     action=&quot;BLOCK&quot;</span>
-<span class="sd">        ... )</span>
-
-<span class="sd">        Delete a rule:</span>
-<span class="sd">        &gt;&gt;&gt; result = zia_web_dlp_rule_manager(action=&quot;delete&quot;, rule_id=&quot;12345&quot;)</span>
-
-<span class="sd">    Note:</span>
-<span class="sd">        - For list parameters, you can pass either a Python list or a JSON string.</span>
-<span class="sd">        - The &#39;enabled&#39; parameter is converted to &#39;state&#39; (ENABLED/DISABLED) for the API.</span>
-<span class="sd">        - File types should be specified as strings (e.g., &quot;PDF&quot;, &quot;DOC&quot;, &quot;JPEG&quot;).</span>
-<span class="sd">        - DLP engines, groups, and other ID-based parameters support both integer lists and JSON strings.</span>
-<span class="sd">        - The list_lite action returns only name and ID information for faster retrieval.</span>
-<span class="sd">        - OCR scanning is only applicable to image file types.</span>
-<span class="sd">        - External auditor email is used for DLP violation notifications.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Helper function to parse list parameters</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">parse_list</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">val</span>
-
-    <span class="c1"># Build payload from parameters</span>
-    <span class="n">payload</span> <span class="o">=</span> <span class="p">{}</span>
-
-    <span class="c1"># Core parameters</span>
-    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-    <span class="k">if</span> <span class="n">description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">description</span>
-    <span class="k">if</span> <span class="n">rule_action</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rule_action</span>
-    <span class="k">if</span> <span class="n">enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">enabled</span>
-    <span class="k">if</span> <span class="n">rank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;rank&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span>
-    <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">order</span>
-
-    <span class="c1"># File and content parameters</span>
-    <span class="k">if</span> <span class="n">file_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;file_types&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">file_types</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">min_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;min_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_size</span>
-    <span class="k">if</span> <span class="n">match_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;match_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_only</span>
-
-    <span class="c1"># DLP-specific parameters</span>
-    <span class="k">if</span> <span class="n">dlp_content_locations_scopes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;dlp_content_locations_scopes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">dlp_content_locations_scopes</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">dlp_download_scan_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;dlp_download_scan_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dlp_download_scan_enabled</span>
-    <span class="k">if</span> <span class="n">without_content_inspection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;without_content_inspection&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">without_content_inspection</span>
-    <span class="k">if</span> <span class="n">ocr_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;ocr_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ocr_enabled</span>
-
-    <span class="c1"># Notification parameters</span>
-    <span class="k">if</span> <span class="n">external_auditor_email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;external_auditor_email&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">external_auditor_email</span>
-    <span class="k">if</span> <span class="n">zcc_notifications_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;zcc_notifications_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zcc_notifications_enabled</span>
-
-    <span class="c1"># List parameters that need parsing</span>
-    <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span> <span class="ow">in</span> <span class="p">[</span>
-        <span class="p">(</span><span class="s2">&quot;dlp_engines&quot;</span><span class="p">,</span> <span class="n">dlp_engines</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;auditor&quot;</span><span class="p">,</span> <span class="n">auditor</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;cloud_applications&quot;</span><span class="p">,</span> <span class="n">cloud_applications</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;departments&quot;</span><span class="p">,</span> <span class="n">departments</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;excluded_groups&quot;</span><span class="p">,</span> <span class="n">excluded_groups</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;excluded_departments&quot;</span><span class="p">,</span> <span class="n">excluded_departments</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;excluded_users&quot;</span><span class="p">,</span> <span class="n">excluded_users</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;groups&quot;</span><span class="p">,</span> <span class="n">groups</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;icap_server&quot;</span><span class="p">,</span> <span class="n">icap_server</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;labels&quot;</span><span class="p">,</span> <span class="n">labels</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;locations&quot;</span><span class="p">,</span> <span class="n">locations</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;location_groups&quot;</span><span class="p">,</span> <span class="n">location_groups</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;notification_template&quot;</span><span class="p">,</span> <span class="n">notification_template</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;time_windows&quot;</span><span class="p">,</span> <span class="n">time_windows</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">users</span><span class="p">),</span>
-        <span class="p">(</span><span class="s2">&quot;url_categories&quot;</span><span class="p">,</span> <span class="n">url_categories</span><span class="p">),</span>
-    <span class="p">]:</span>
-        <span class="k">if</span> <span class="n">param_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">payload</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">param_value</span><span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_build_web_dlp_rule_payload</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+        <span class="n">rule_action</span><span class="o">=</span><span class="n">rule_action</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span>
+        <span class="n">file_types</span><span class="o">=</span><span class="n">file_types</span><span class="p">,</span>
+        <span class="n">min_size</span><span class="o">=</span><span class="n">min_size</span><span class="p">,</span>
+        <span class="n">match_only</span><span class="o">=</span><span class="n">match_only</span><span class="p">,</span>
+        <span class="n">dlp_engines</span><span class="o">=</span><span class="n">dlp_engines</span><span class="p">,</span>
+        <span class="n">dlp_content_locations_scopes</span><span class="o">=</span><span class="n">dlp_content_locations_scopes</span><span class="p">,</span>
+        <span class="n">dlp_download_scan_enabled</span><span class="o">=</span><span class="n">dlp_download_scan_enabled</span><span class="p">,</span>
+        <span class="n">without_content_inspection</span><span class="o">=</span><span class="n">without_content_inspection</span><span class="p">,</span>
+        <span class="n">ocr_enabled</span><span class="o">=</span><span class="n">ocr_enabled</span><span class="p">,</span>
+        <span class="n">external_auditor_email</span><span class="o">=</span><span class="n">external_auditor_email</span><span class="p">,</span>
+        <span class="n">zcc_notifications_enabled</span><span class="o">=</span><span class="n">zcc_notifications_enabled</span><span class="p">,</span>
+        <span class="n">auditor</span><span class="o">=</span><span class="n">auditor</span><span class="p">,</span>
+        <span class="n">cloud_applications</span><span class="o">=</span><span class="n">cloud_applications</span><span class="p">,</span>
+        <span class="n">departments</span><span class="o">=</span><span class="n">departments</span><span class="p">,</span>
+        <span class="n">excluded_groups</span><span class="o">=</span><span class="n">excluded_groups</span><span class="p">,</span>
+        <span class="n">excluded_departments</span><span class="o">=</span><span class="n">excluded_departments</span><span class="p">,</span>
+        <span class="n">excluded_users</span><span class="o">=</span><span class="n">excluded_users</span><span class="p">,</span>
+        <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span>
+        <span class="n">icap_server</span><span class="o">=</span><span class="n">icap_server</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+        <span class="n">locations</span><span class="o">=</span><span class="n">locations</span><span class="p">,</span>
+        <span class="n">location_groups</span><span class="o">=</span><span class="n">location_groups</span><span class="p">,</span>
+        <span class="n">notification_template</span><span class="o">=</span><span class="n">notification_template</span><span class="p">,</span>
+        <span class="n">time_windows</span><span class="o">=</span><span class="n">time_windows</span><span class="p">,</span>
+        <span class="n">users</span><span class="o">=</span><span class="n">users</span><span class="p">,</span>
+        <span class="n">url_categories</span><span class="o">=</span><span class="n">url_categories</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">rule_id</span><span class="p">:</span>
-            <span class="c1"># Get specific rule by ID</span>
-            <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">get_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to retrieve rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">rule</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># List all rules</span>
-            <span class="n">query</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
-            <span class="n">rules</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">list_rules</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list web DLP rules: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">]</span>
+    <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">add_rule</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to add web DLP rule: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rule</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_lite&quot;</span><span class="p">:</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
-        <span class="n">rules</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">list_rules_lite</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list web DLP rules (lite): </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">]</span>
 
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;create&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">rule_action</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name and action are required for add.&quot;</span><span class="p">)</span>
-        <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">add_rule</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to add web DLP rule: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">rule</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
 
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;update&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">rule_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;rule_id is required for update.&quot;</span><span class="p">)</span>
-        <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">update_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span> <span class="o">**</span><span class="n">payload</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to update rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">rule</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+<div class="viewcode-block" id="zia_update_web_dlp_rule">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_update_web_dlp_rule">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_update_web_dlp_rule</span><span class="p">(</span>
+    <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the web DLP rule to update.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule name.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Admin rank of the rule.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule order, defaults to the bottom.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">file_types</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of file types the DLP policy rule applies to. Accepts JSON string or list.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_size</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Minimum file size (in KB) for DLP policy rule evaluation.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">match_only</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;If true, matches file size for DLP policy rule evaluation.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dlp_engines</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for DLP engines this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dlp_content_locations_scopes</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Specifies one or more content locations. Accepts JSON string or list.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dlp_download_scan_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True enables DLP scan for file downloads.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">without_content_inspection</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True indicates a DLP rule without content inspection.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ocr_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True allows OCR scanning of image files.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">external_auditor_email</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Email of an external auditor for DLP notifications.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zcc_notifications_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True enables Zscaler Client Connector notification.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">auditor</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for the auditors this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cloud_applications</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for cloud applications this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">departments</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for departments this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">excluded_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for excluded groups.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">excluded_departments</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for excluded departments.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">excluded_users</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for excluded users.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for groups this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">icap_server</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for the ICAP server this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for labels this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">locations</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for locations this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">location_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for location groups this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">notification_template</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for the notification template.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">time_windows</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for time windows this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">users</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for users this rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">url_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for URL categories the rule applies to.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Updates an existing ZIA Web DLP Rule.</span>
+<span class="sd">    This is a write operation that requires the --enable-write-tools flag.</span>
 
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;delete&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">rule_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;rule_id is required for delete.&quot;</span><span class="p">)</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">delete_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to delete rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Web DLP rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2"> deleted successfully.&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        rule_id (int/str): The ID of the web DLP rule to update (required).</span>
+<span class="sd">        [... additional parameters as documented in function signature ...]</span>
 
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported action: </span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: The updated web DLP rule object.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        Update a rule&#39;s action:</span>
+<span class="sd">        &gt;&gt;&gt; rule = zia_update_web_dlp_rule(</span>
+<span class="sd">        ...     rule_id=&quot;12345&quot;,</span>
+<span class="sd">        ...     rule_action=&quot;ALLOW&quot;,</span>
+<span class="sd">        ...     enabled=True</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">_build_web_dlp_rule_payload</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+        <span class="n">rule_action</span><span class="o">=</span><span class="n">rule_action</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span>
+        <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+        <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span>
+        <span class="n">file_types</span><span class="o">=</span><span class="n">file_types</span><span class="p">,</span>
+        <span class="n">min_size</span><span class="o">=</span><span class="n">min_size</span><span class="p">,</span>
+        <span class="n">match_only</span><span class="o">=</span><span class="n">match_only</span><span class="p">,</span>
+        <span class="n">dlp_engines</span><span class="o">=</span><span class="n">dlp_engines</span><span class="p">,</span>
+        <span class="n">dlp_content_locations_scopes</span><span class="o">=</span><span class="n">dlp_content_locations_scopes</span><span class="p">,</span>
+        <span class="n">dlp_download_scan_enabled</span><span class="o">=</span><span class="n">dlp_download_scan_enabled</span><span class="p">,</span>
+        <span class="n">without_content_inspection</span><span class="o">=</span><span class="n">without_content_inspection</span><span class="p">,</span>
+        <span class="n">ocr_enabled</span><span class="o">=</span><span class="n">ocr_enabled</span><span class="p">,</span>
+        <span class="n">external_auditor_email</span><span class="o">=</span><span class="n">external_auditor_email</span><span class="p">,</span>
+        <span class="n">zcc_notifications_enabled</span><span class="o">=</span><span class="n">zcc_notifications_enabled</span><span class="p">,</span>
+        <span class="n">auditor</span><span class="o">=</span><span class="n">auditor</span><span class="p">,</span>
+        <span class="n">cloud_applications</span><span class="o">=</span><span class="n">cloud_applications</span><span class="p">,</span>
+        <span class="n">departments</span><span class="o">=</span><span class="n">departments</span><span class="p">,</span>
+        <span class="n">excluded_groups</span><span class="o">=</span><span class="n">excluded_groups</span><span class="p">,</span>
+        <span class="n">excluded_departments</span><span class="o">=</span><span class="n">excluded_departments</span><span class="p">,</span>
+        <span class="n">excluded_users</span><span class="o">=</span><span class="n">excluded_users</span><span class="p">,</span>
+        <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span>
+        <span class="n">icap_server</span><span class="o">=</span><span class="n">icap_server</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+        <span class="n">locations</span><span class="o">=</span><span class="n">locations</span><span class="p">,</span>
+        <span class="n">location_groups</span><span class="o">=</span><span class="n">location_groups</span><span class="p">,</span>
+        <span class="n">notification_template</span><span class="o">=</span><span class="n">notification_template</span><span class="p">,</span>
+        <span class="n">time_windows</span><span class="o">=</span><span class="n">time_windows</span><span class="p">,</span>
+        <span class="n">users</span><span class="o">=</span><span class="n">users</span><span class="p">,</span>
+        <span class="n">url_categories</span><span class="o">=</span><span class="n">url_categories</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
+
+    <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">update_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span> <span class="o">**</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to update rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rule</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="zia_delete_web_dlp_rule">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_delete_web_dlp_rule">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_delete_web_dlp_rule</span><span class="p">(</span>
+    <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the web DLP rule to delete.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deletes a ZIA Web DLP Rule by ID.</span>
+<span class="sd">    </span>
+<span class="sd">    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.</span>
+<span class="sd">    This action cannot be undone.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rule_id (int/str): The ID of the web DLP rule to delete.</span>
+<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
+<span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: Success message confirming deletion.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        Delete a rule:</span>
+<span class="sd">        &gt;&gt;&gt; result = zia_delete_web_dlp_rule(rule_id=&quot;12345&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.elicitation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_confirmation</span><span class="p">,</span> <span class="n">extract_confirmed_from_kwargs</span>
+    
+    <span class="c1"># Extract confirmation from kwargs (hidden from tool schema)</span>
+    <span class="n">confirmed</span> <span class="o">=</span> <span class="n">extract_confirmed_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    
+    <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span>
+        <span class="s2">&quot;zia_delete_web_dlp_rule&quot;</span><span class="p">,</span>
+        <span class="n">confirmed</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;rule_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">confirmation_check</span>
+    
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">delete_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to delete rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Web DLP rule </span><span class="si">{</span><span class="n">rule_id</span><span class="si">}</span><span class="s2"> deleted successfully.&quot;</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -634,21 +916,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>

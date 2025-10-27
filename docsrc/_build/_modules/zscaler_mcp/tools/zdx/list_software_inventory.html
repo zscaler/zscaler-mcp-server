@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -265,23 +265,20 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zdx.list_software_inventory</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
-<div class="viewcode-block" id="zdx_list_software_inventory">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_software_inventory.zdx_list_software_inventory">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_software_inventory</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;read_software_key&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Must be one of &#39;read&#39; or &#39;read_software_key&#39;.&quot;</span><span class="p">),</span>
-    <span class="p">],</span>
-    <span class="n">software_key</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required if action is &#39;read_software_key&#39;. The software name and version key.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="c1"># ============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="zdx_list_software">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_software_inventory.zdx_list_software">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_software</span><span class="p">(</span>
     <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location ID(s).&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -301,22 +298,17 @@
         <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tool for retrieving ZDX software inventory information.</span>
+<span class="sd">    Lists all software in the ZDX inventory with optional filtering.</span>
+<span class="sd">    This is a read-only operation.</span>
 
-<span class="sd">    Supports two actions:</span>
-<span class="sd">    - read: Returns a list of all software in ZDX with optional filtering (USE THIS FOR GENERAL OVERVIEW).</span>
-<span class="sd">    - read_software_key: Returns a list of all users and devices for a given software name and version (USE ONLY FOR SPECIFIC SOFTWARE QUERIES).</span>
-
-<span class="sd">    USAGE GUIDELINES:</span>
-<span class="sd">    - Use action=&#39;read&#39; by default to get an overview of all software in the organization</span>
-<span class="sd">    - Use action=&#39;read_software_key&#39; only when the user specifically asks for details about a particular software key</span>
-<span class="sd">    - The read action provides software keys that can be used with read_software_key for detailed analysis</span>
+<span class="sd">    Returns a list of all software in ZDX with optional filtering by location,</span>
+<span class="sd">    department, geolocation, users, or devices. Use this for getting an overview</span>
+<span class="sd">    of all software in the organization. The response provides software keys that</span>
+<span class="sd">    can be used to get detailed information about specific software.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        action: The type of software inventory information to retrieve (&#39;read&#39; or &#39;read_software_key&#39;).</span>
-<span class="sd">        software_key: Required if action is &#39;read_software_key&#39;. The software name and version key.</span>
 <span class="sd">        location_id: Optional list of location IDs to filter by specific locations.</span>
 <span class="sd">        department_id: Optional list of department IDs to filter by specific departments.</span>
 <span class="sd">        geo_id: Optional list of geolocation IDs to filter by geographic regions.</span>
@@ -326,46 +318,106 @@
 <span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        For &#39;read&#39;: List of dictionaries containing software inventory information.</span>
-<span class="sd">        For &#39;read_software_key&#39;: List of dictionaries containing users and devices for the specified software.</span>
+<span class="sd">        List of dictionaries containing software inventory information.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        Exception: If the software inventory retrieval fails due to API errors.</span>
 
 <span class="sd">    Examples:</span>
-<span class="sd">        DEFAULT USAGE - Get overview of all software in the organization:</span>
-<span class="sd">        &gt;&gt;&gt; software_list = zdx_list_software_inventory(action=&quot;read&quot;)</span>
+<span class="sd">        Get overview of all software:</span>
+<span class="sd">        &gt;&gt;&gt; software = zdx_list_software()</span>
 
-<span class="sd">        Get software overview for specific users:</span>
-<span class="sd">        &gt;&gt;&gt; user_software = zdx_list_software_inventory(</span>
-<span class="sd">        ...     action=&quot;read&quot;,</span>
-<span class="sd">        ...     user_ids=[&quot;12345&quot;, &quot;67890&quot;]</span>
-<span class="sd">        ... )</span>
+<span class="sd">        Get software for specific users:</span>
+<span class="sd">        &gt;&gt;&gt; user_software = zdx_list_software(user_ids=[&quot;12345&quot;, &quot;67890&quot;])</span>
 
-<span class="sd">        Get software overview for specific devices:</span>
-<span class="sd">        &gt;&gt;&gt; device_software = zdx_list_software_inventory(</span>
-<span class="sd">        ...     action=&quot;read&quot;,</span>
-<span class="sd">        ...     device_ids=[&quot;device1&quot;, &quot;device2&quot;]</span>
-<span class="sd">        ... )</span>
+<span class="sd">        Get software for specific devices:</span>
+<span class="sd">        &gt;&gt;&gt; device_software = zdx_list_software(device_ids=[&quot;device1&quot;, &quot;device2&quot;])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
 
-<span class="sd">        Get software overview for a specific location:</span>
-<span class="sd">        &gt;&gt;&gt; location_software = zdx_list_software_inventory(</span>
-<span class="sd">        ...     action=&quot;read&quot;,</span>
-<span class="sd">        ...     location_id=[&quot;545845&quot;]</span>
-<span class="sd">        ... )</span>
+    <span class="n">query_params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">location_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;location_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">location_id</span>
+    <span class="k">if</span> <span class="n">department_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;department_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">department_id</span>
+    <span class="k">if</span> <span class="n">geo_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;geo_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">geo_id</span>
+    <span class="k">if</span> <span class="n">user_ids</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;user_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">user_ids</span>
+    <span class="k">if</span> <span class="n">device_ids</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;device_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">device_ids</span>
 
-<span class="sd">        SPECIFIC SOFTWARE QUERY - Get detailed information for a specific software (only when user asks for specific software):</span>
-<span class="sd">        &gt;&gt;&gt; software_users = zdx_list_software_inventory(</span>
-<span class="sd">        ...     action=&quot;read_software_key&quot;,</span>
-<span class="sd">        ...     software_key=&quot;screencaptureui2&quot;</span>
-<span class="sd">        ... )</span>
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">list_software</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Software inventory listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="sd">        Get specific software details with department filter:</span>
-<span class="sd">        &gt;&gt;&gt; software_users = zdx_list_software_inventory(</span>
-<span class="sd">        ...     action=&quot;read_software_key&quot;,</span>
-<span class="sd">        ...     software_key=&quot;screencaptureui2&quot;,</span>
-<span class="sd">        ...     department_id=[&quot;123456&quot;],</span>
-<span class="sd">        ...     geo_id=[&quot;US&quot;]</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">inventory_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">software_list</span> <span class="o">=</span> <span class="n">inventory_obj</span><span class="o">.</span><span class="n">software</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">inventory_obj</span><span class="p">,</span> <span class="s1">&#39;software&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">software</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">software</span> <span class="ow">in</span> <span class="n">software_list</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="zdx_get_software_details">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_software_inventory.zdx_get_software_details">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_software_details</span><span class="p">(</span>
+    <span class="n">software_key</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The software name and version key.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">department_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by department ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">geo_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by geolocation ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">user_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by user ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">device_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by device ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets detailed information about a specific software including all users and devices.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns a list of all users and devices for a given software name and version.</span>
+<span class="sd">    Use this only when you need detailed information about a particular software key.</span>
+<span class="sd">    The software keys are obtained from the zdx_list_software operation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        software_key: The software name and version key (required).</span>
+<span class="sd">        location_id: Optional list of location IDs to filter by specific locations.</span>
+<span class="sd">        department_id: Optional list of department IDs to filter by specific departments.</span>
+<span class="sd">        geo_id: Optional list of geolocation IDs to filter by geographic regions.</span>
+<span class="sd">        user_ids: Optional list of user IDs to filter by specific users.</span>
+<span class="sd">        device_ids: Optional list of device IDs to filter by specific devices.</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of dictionaries containing users and devices for the specified software.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the software details retrieval fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get details for specific software:</span>
+<span class="sd">        &gt;&gt;&gt; details = zdx_get_software_details(software_key=&quot;Chrome_120.0.6099.109&quot;)</span>
+
+<span class="sd">        Get details with location filter:</span>
+<span class="sd">        &gt;&gt;&gt; details = zdx_get_software_details(</span>
+<span class="sd">        ...     software_key=&quot;Chrome_120.0.6099.109&quot;,</span>
+<span class="sd">        ...     location_id=[&quot;58755&quot;]</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
@@ -382,71 +434,25 @@
     <span class="k">if</span> <span class="n">device_ids</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;device_ids&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">device_ids</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_software_key&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">software_key</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;software_key is required for action=read_software_key&quot;</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">read_software_keys</span><span class="p">(</span>
-            <span class="n">software_key</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">get_software</span><span class="p">(</span><span class="n">software_key</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Software details lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># The ZDX SDK returns a SoftwareList object</span>
-        <span class="c1"># The SoftwareList object has a &#39;software&#39; property containing DeviceSoftwareInventory objects</span>
-        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">software_list</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="c1"># Access the software property which contains DeviceSoftwareInventory objects</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s1">&#39;software&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">software</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">software_item</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">software</span><span class="p">:</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="c1"># Convert each DeviceSoftwareInventory object to dictionary</span>
-                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">software_item</span><span class="p">,</span> <span class="s1">&#39;as_dict&#39;</span><span class="p">):</span>
-                            <span class="n">software_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">software_item</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="c1"># Fallback to dict conversion</span>
-                            <span class="n">software_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">software_item</span><span class="p">))</span>
-                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                        <span class="c1"># If conversion fails, return string representation</span>
-                        <span class="n">software_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">software_item</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">software_list</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-        <span class="n">results</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">inventory</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Software listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK now returns a list of DeviceSoftwareInventory objects directly</span>
-        <span class="c1"># (the software property from SoftwareList)</span>
-        <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
-            <span class="n">software_list</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">software_item</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="c1"># Convert each DeviceSoftwareInventory object to dictionary</span>
-                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">software_item</span><span class="p">,</span> <span class="s1">&#39;as_dict&#39;</span><span class="p">):</span>
-                        <span class="n">software_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">software_item</span><span class="o">.</span><span class="n">as_dict</span><span class="p">())</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="c1"># Fallback to dict conversion</span>
-                        <span class="n">software_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">software_item</span><span class="p">))</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="c1"># If conversion fails, return string representation</span>
-                    <span class="n">software_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">software_item</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">software_list</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">software_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">devices_list</span> <span class="o">=</span> <span class="n">software_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">software_obj</span><span class="p">,</span> <span class="s1">&#39;devices&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">device</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices_list</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid action. Must be one of: &#39;read&#39;, &#39;read_software_key&#39;&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">[]</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -454,21 +460,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>

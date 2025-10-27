@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -265,23 +265,20 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zdx.active_devices</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
-<div class="viewcode-block" id="zdx_device_discovery_tool">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.active_devices.zdx_device_discovery_tool">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zdx_device_discovery_tool</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;read_device&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Must be one of &#39;read&#39; or &#39;read_device&#39;.&quot;</span><span class="p">),</span>
-    <span class="p">],</span>
-    <span class="n">device_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required if action is &#39;read_device&#39;.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="c1"># ============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># ============================================================================</span>
+
+<div class="viewcode-block" id="zdx_list_devices">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.active_devices.zdx_list_devices">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_devices</span><span class="p">(</span>
     <span class="n">emails</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by email addresses.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -313,13 +310,43 @@
         <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tool for discovering ZDX devices using various filters.</span>
+<span class="sd">    Lists active ZDX devices using various filters.</span>
+<span class="sd">    This is a read-only operation.</span>
 
-<span class="sd">    Supports both:</span>
-<span class="sd">    - read: Returns a list of active ZDX devices matching the query.</span>
-<span class="sd">    - read_device: Returns a single device record by device_id.</span>
+<span class="sd">    Returns a list of active ZDX devices matching the specified query filters.</span>
+<span class="sd">    Supports filtering by email, user ID, MAC address, IP address, location,</span>
+<span class="sd">    department, geolocation, and time range.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        emails: Optional list of email addresses to filter devices by.</span>
+<span class="sd">        user_ids: Optional list of user IDs to filter devices by.</span>
+<span class="sd">        mac_address: Optional MAC address to filter devices by.</span>
+<span class="sd">        private_ipv4: Optional private IPv4 address to filter devices by.</span>
+<span class="sd">        location_id: Optional list of location IDs to filter devices by.</span>
+<span class="sd">        department_id: Optional list of department IDs to filter devices by.</span>
+<span class="sd">        geo_id: Optional list of geolocation IDs to filter devices by.</span>
+<span class="sd">        since: Optional number of hours to look back for device data (default 2 hours).</span>
+<span class="sd">        offset: Optional pagination offset for getting next batch of results.</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of device dictionaries containing device information.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the device listing fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        List all active devices:</span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_devices()</span>
+
+<span class="sd">        List devices for a specific user:</span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_devices(emails=[&quot;user@example.com&quot;])</span>
+
+<span class="sd">        List devices by location:</span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_devices(location_id=[&quot;loc123&quot;])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
 
@@ -343,48 +370,106 @@
     <span class="k">if</span> <span class="n">offset</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_device&quot;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">device_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;device_id is required for action=read_device&quot;</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span>
-            <span class="n">device_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">list_devices</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># The ZDX SDK returns a list containing a single DeviceDetail object</span>
-        <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">device_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) DeviceDetail object</span>
-            <span class="k">return</span> <span class="n">device_obj</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{}</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-        <span class="n">results</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">list_devices</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK returns a list containing a single Devices object</span>
-        <span class="c1"># The Devices object contains a list of DeviceDetail objects in its devices property</span>
-        <span class="k">if</span> <span class="n">results</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">devices_obj</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) Devices object</span>
-            <span class="c1"># Access the devices property which contains a list of DeviceDetail objects</span>
-            <span class="n">device_list</span> <span class="o">=</span> <span class="n">devices_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">devices_obj</span><span class="p">,</span> <span class="s1">&#39;devices&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">device_list</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
+    <span class="c1"># The ZDX SDK returns a list containing a single Devices object</span>
+    <span class="c1"># The Devices object contains a list of DeviceDetail objects in its devices property</span>
+    <span class="k">if</span> <span class="n">results</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">devices_obj</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) Devices object</span>
+        <span class="c1"># Access the devices property which contains a list of DeviceDetail objects</span>
+        <span class="n">device_list</span> <span class="o">=</span> <span class="n">devices_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">devices_obj</span><span class="p">,</span> <span class="s1">&#39;devices&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">device_list</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid action. Must be one of: &#39;read&#39;, &#39;read_device&#39;&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="zdx_get_device">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.active_devices.zdx_get_device">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_device</span><span class="p">(</span>
+    <span class="n">device_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX device.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">department_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by department ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">geo_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by geolocation ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">since</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of hours to look back (default 2h).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets a specific ZDX device by its device ID.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns detailed information about a single ZDX device identified by the device_id.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        device_id: The unique ID for the ZDX device (required).</span>
+<span class="sd">        location_id: Optional list of location IDs to filter by.</span>
+<span class="sd">        department_id: Optional list of department IDs to filter by.</span>
+<span class="sd">        geo_id: Optional list of geolocation IDs to filter by.</span>
+<span class="sd">        since: Optional number of hours to look back for device data (default 2 hours).</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary containing detailed device information.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the device lookup fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get a specific device:</span>
+<span class="sd">        &gt;&gt;&gt; device = zdx_get_device(device_id=&quot;device123&quot;)</span>
+
+<span class="sd">        Get device with location filter:</span>
+<span class="sd">        &gt;&gt;&gt; device = zdx_get_device(device_id=&quot;device123&quot;, location_id=[&quot;loc456&quot;])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+
+    <span class="n">query_params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">location_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;location_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">location_id</span>
+    <span class="k">if</span> <span class="n">department_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;department_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">department_id</span>
+    <span class="k">if</span> <span class="n">geo_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;geo_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">geo_id</span>
+    <span class="k">if</span> <span class="n">since</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;since&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">since</span>
+
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span>
+        <span class="n">device_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># The ZDX SDK returns a list containing a single DeviceDetail object</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">device_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) DeviceDetail object</span>
+        <span class="k">return</span> <span class="n">device_obj</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -392,21 +477,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
