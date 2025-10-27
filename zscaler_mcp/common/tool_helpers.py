@@ -1,7 +1,7 @@
 """Helper functions for tool registration."""
 
 import fnmatch
-from typing import Callable, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 from mcp.types import ToolAnnotations
 from zscaler_mcp.common.logging import get_logger
 
@@ -104,8 +104,8 @@ def register_write_tools(
     # Allowlist is MANDATORY when write tools are enabled
     if not write_tools or len(write_tools) == 0:
         logger.warning("⚠️  SECURITY: --enable-write-tools flag is set")
-        logger.warning(f"⚠️  However, NO write tools allowlist specified (--write-tools)")
-        logger.warning(f"⚠️  For security, 0 write tools will be registered")
+        logger.warning("⚠️  However, NO write tools allowlist specified (--write-tools)")
+        logger.warning("⚠️  For security, 0 write tools will be registered")
         logger.info(f"🔒 Blocked {len(tools)} write tools (allowlist required)")
         logger.info("   To enable specific write tools, use: --write-tools 'pattern1,pattern2'")
         logger.info("   Example: --write-tools 'zpa_create_*,zia_delete_*'")
