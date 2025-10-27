@@ -8,9 +8,10 @@ to all write tools. The AI agent must explicitly pass confirmed=True after
 getting user approval.
 """
 
-import os
 import json
+import os
 from typing import Any, Dict
+
 from zscaler_mcp.common.logging import get_logger
 
 logger = get_logger(__name__)

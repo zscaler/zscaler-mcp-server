@@ -16,30 +16,31 @@ Write operations (6):
 - ztw_create_ip_source_group, ztw_delete_ip_source_group
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from zscaler_mcp.tools.ztw.ip_destination_groups import (
-    ztw_list_ip_destination_groups,
-    ztw_list_ip_destination_groups_lite,
     ztw_create_ip_destination_group,
     ztw_delete_ip_destination_group,
+    ztw_list_ip_destination_groups,
+    ztw_list_ip_destination_groups_lite,
 )
 from zscaler_mcp.tools.ztw.ip_groups import (
-    ztw_list_ip_groups,
-    ztw_list_ip_groups_lite,
     ztw_create_ip_group,
     ztw_delete_ip_group,
+    ztw_list_ip_groups,
+    ztw_list_ip_groups_lite,
 )
 from zscaler_mcp.tools.ztw.ip_source_groups import (
-    ztw_list_ip_source_groups,
-    ztw_list_ip_source_groups_lite,
     ztw_create_ip_source_group,
     ztw_delete_ip_source_group,
+    ztw_list_ip_source_groups,
+    ztw_list_ip_source_groups_lite,
 )
 from zscaler_mcp.tools.ztw.list_admins import ztw_list_admins
 from zscaler_mcp.tools.ztw.list_roles import ztw_list_roles
 from zscaler_mcp.tools.ztw.network_service_groups import ztw_list_network_service_groups
-
 
 # =============================================================================
 # Fixtures

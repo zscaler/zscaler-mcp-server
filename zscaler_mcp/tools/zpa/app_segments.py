@@ -5,10 +5,11 @@ This module provides verb-based tools for managing ZPA application segments.
 All related operations are grouped in this single file for maintainability.
 """
 
-from typing import Annotated, List, Optional, Dict
-from pydantic import Field
-from zscaler_mcp.client import get_zscaler_client
+from typing import Annotated, Dict, List, Optional
 
+from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 # =============================================================================
 # READ-ONLY OPERATIONS

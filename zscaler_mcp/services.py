@@ -85,16 +85,29 @@ class ZDXService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import verb-based ZDX tools (all read-only)
-        from .tools.zdx.active_devices import zdx_list_devices, zdx_get_device
+        from .tools.zdx.active_devices import zdx_get_device, zdx_list_devices
         from .tools.zdx.administration import zdx_list_departments, zdx_list_locations
         from .tools.zdx.get_application_metric import zdx_get_application_metric
-        from .tools.zdx.get_application_score import zdx_get_application, zdx_get_application_score_trend
-        from .tools.zdx.get_application_user import zdx_list_application_users, zdx_get_application_user
-        from .tools.zdx.list_alerts import zdx_list_alerts, zdx_get_alert, zdx_list_alert_affected_devices
+        from .tools.zdx.get_application_score import (
+            zdx_get_application,
+            zdx_get_application_score_trend,
+        )
+        from .tools.zdx.get_application_user import (
+            zdx_get_application_user,
+            zdx_list_application_users,
+        )
+        from .tools.zdx.list_alerts import (
+            zdx_get_alert,
+            zdx_list_alert_affected_devices,
+            zdx_list_alerts,
+        )
         from .tools.zdx.list_applications import zdx_list_applications
-        from .tools.zdx.list_deep_traces import zdx_list_device_deep_traces, zdx_get_device_deep_trace
+        from .tools.zdx.list_deep_traces import (
+            zdx_get_device_deep_trace,
+            zdx_list_device_deep_traces,
+        )
         from .tools.zdx.list_historical_alerts import zdx_list_historical_alerts
-        from .tools.zdx.list_software_inventory import zdx_list_software, zdx_get_software_details
+        from .tools.zdx.list_software_inventory import zdx_get_software_details, zdx_list_software
 
         # All ZDX tools are read-only
         self.read_tools = [
@@ -137,109 +150,109 @@ class ZPAService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import all verb-based ZPA tools
-        from .tools.zpa.app_segments import (
-            zpa_list_application_segments,
-            zpa_get_application_segment,
-            zpa_create_application_segment,
-            zpa_update_application_segment,
-            zpa_delete_application_segment,
-        )
-        from .tools.zpa.app_connector_groups import (
-            zpa_list_app_connector_groups,
-            zpa_get_app_connector_group,
-            zpa_create_app_connector_group,
-            zpa_update_app_connector_group,
-            zpa_delete_app_connector_group,
-        )
-        from .tools.zpa.server_groups import (
-            zpa_list_server_groups,
-            zpa_get_server_group,
-            zpa_create_server_group,
-            zpa_update_server_group,
-            zpa_delete_server_group,
-        )
-        from .tools.zpa.segment_groups import (
-            zpa_list_segment_groups,
-            zpa_get_segment_group,
-            zpa_create_segment_group,
-            zpa_update_segment_group,
-            zpa_delete_segment_group,
-        )
-        from .tools.zpa.application_servers import (
-            zpa_list_application_servers,
-            zpa_get_application_server,
-            zpa_create_application_server,
-            zpa_update_application_server,
-            zpa_delete_application_server,
-        )
-        from .tools.zpa.service_edge_groups import (
-            zpa_list_service_edge_groups,
-            zpa_get_service_edge_group,
-            zpa_create_service_edge_group,
-            zpa_update_service_edge_group,
-            zpa_delete_service_edge_group,
-        )
-        from .tools.zpa.ba_certificate import (
-            zpa_list_ba_certificates,
-            zpa_get_ba_certificate,
-            zpa_create_ba_certificate,
-            zpa_delete_ba_certificate,
-        )
-        from .tools.zpa.access_policy_rules import (
-            zpa_list_access_policy_rules,
-            zpa_get_access_policy_rule,
-            zpa_create_access_policy_rule,
-            zpa_update_access_policy_rule,
-            zpa_delete_access_policy_rule,
+        from .tools.zpa.access_app_protection_rules import (
+            zpa_create_app_protection_rule,
+            zpa_delete_app_protection_rule,
+            zpa_get_app_protection_rule,
+            zpa_list_app_protection_rules,
+            zpa_update_app_protection_rule,
         )
         from .tools.zpa.access_forwarding_rules import (
-            zpa_list_forwarding_policy_rules,
-            zpa_get_forwarding_policy_rule,
             zpa_create_forwarding_policy_rule,
-            zpa_update_forwarding_policy_rule,
             zpa_delete_forwarding_policy_rule,
-        )
-        from .tools.zpa.access_timeout_rules import (
-            zpa_list_timeout_policy_rules,
-            zpa_get_timeout_policy_rule,
-            zpa_create_timeout_policy_rule,
-            zpa_update_timeout_policy_rule,
-            zpa_delete_timeout_policy_rule,
+            zpa_get_forwarding_policy_rule,
+            zpa_list_forwarding_policy_rules,
+            zpa_update_forwarding_policy_rule,
         )
         from .tools.zpa.access_isolation_rules import (
-            zpa_list_isolation_policy_rules,
-            zpa_get_isolation_policy_rule,
             zpa_create_isolation_policy_rule,
-            zpa_update_isolation_policy_rule,
             zpa_delete_isolation_policy_rule,
+            zpa_get_isolation_policy_rule,
+            zpa_list_isolation_policy_rules,
+            zpa_update_isolation_policy_rule,
         )
-        from .tools.zpa.access_app_protection_rules import (
-            zpa_list_app_protection_rules,
-            zpa_get_app_protection_rule,
-            zpa_create_app_protection_rule,
-            zpa_update_app_protection_rule,
-            zpa_delete_app_protection_rule,
+        from .tools.zpa.access_policy_rules import (
+            zpa_create_access_policy_rule,
+            zpa_delete_access_policy_rule,
+            zpa_get_access_policy_rule,
+            zpa_list_access_policy_rules,
+            zpa_update_access_policy_rule,
         )
-        from .tools.zpa.provisioning_key import (
-            zpa_list_provisioning_keys,
-            zpa_get_provisioning_key,
-            zpa_create_provisioning_key,
-            zpa_update_provisioning_key,
-            zpa_delete_provisioning_key,
+        from .tools.zpa.access_timeout_rules import (
+            zpa_create_timeout_policy_rule,
+            zpa_delete_timeout_policy_rule,
+            zpa_get_timeout_policy_rule,
+            zpa_list_timeout_policy_rules,
+            zpa_update_timeout_policy_rule,
         )
-        from .tools.zpa.pra_portal import (
-            zpa_list_pra_portals,
-            zpa_get_pra_portal,
-            zpa_create_pra_portal,
-            zpa_update_pra_portal,
-            zpa_delete_pra_portal,
+        from .tools.zpa.app_connector_groups import (
+            zpa_create_app_connector_group,
+            zpa_delete_app_connector_group,
+            zpa_get_app_connector_group,
+            zpa_list_app_connector_groups,
+            zpa_update_app_connector_group,
+        )
+        from .tools.zpa.app_segments import (
+            zpa_create_application_segment,
+            zpa_delete_application_segment,
+            zpa_get_application_segment,
+            zpa_list_application_segments,
+            zpa_update_application_segment,
+        )
+        from .tools.zpa.application_servers import (
+            zpa_create_application_server,
+            zpa_delete_application_server,
+            zpa_get_application_server,
+            zpa_list_application_servers,
+            zpa_update_application_server,
+        )
+        from .tools.zpa.ba_certificate import (
+            zpa_create_ba_certificate,
+            zpa_delete_ba_certificate,
+            zpa_get_ba_certificate,
+            zpa_list_ba_certificates,
         )
         from .tools.zpa.pra_credential import (
-            zpa_list_pra_credentials,
-            zpa_get_pra_credential,
             zpa_create_pra_credential,
-            zpa_update_pra_credential,
             zpa_delete_pra_credential,
+            zpa_get_pra_credential,
+            zpa_list_pra_credentials,
+            zpa_update_pra_credential,
+        )
+        from .tools.zpa.pra_portal import (
+            zpa_create_pra_portal,
+            zpa_delete_pra_portal,
+            zpa_get_pra_portal,
+            zpa_list_pra_portals,
+            zpa_update_pra_portal,
+        )
+        from .tools.zpa.provisioning_key import (
+            zpa_create_provisioning_key,
+            zpa_delete_provisioning_key,
+            zpa_get_provisioning_key,
+            zpa_list_provisioning_keys,
+            zpa_update_provisioning_key,
+        )
+        from .tools.zpa.segment_groups import (
+            zpa_create_segment_group,
+            zpa_delete_segment_group,
+            zpa_get_segment_group,
+            zpa_list_segment_groups,
+            zpa_update_segment_group,
+        )
+        from .tools.zpa.server_groups import (
+            zpa_create_server_group,
+            zpa_delete_server_group,
+            zpa_get_server_group,
+            zpa_list_server_groups,
+            zpa_update_server_group,
+        )
+        from .tools.zpa.service_edge_groups import (
+            zpa_create_service_edge_group,
+            zpa_delete_service_edge_group,
+            zpa_get_service_edge_group,
+            zpa_list_service_edge_groups,
+            zpa_update_service_edge_group,
         )
 
         # Define read-only tools
@@ -341,65 +354,108 @@ class ZIAService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import all verb-based ZIA tools
-        from .tools.zia.cloud_firewall_rules import (
-            zia_list_cloud_firewall_rules, zia_get_cloud_firewall_rule,
-            zia_create_cloud_firewall_rule, zia_update_cloud_firewall_rule, zia_delete_cloud_firewall_rule
-        )
-        from .tools.zia.url_filtering_rules import (
-            zia_list_url_filtering_rules, zia_get_url_filtering_rule,
-            zia_create_url_filtering_rule, zia_update_url_filtering_rule, zia_delete_url_filtering_rule
-        )
-        from .tools.zia.web_dlp_rules import (
-            zia_list_web_dlp_rules, zia_list_web_dlp_rules_lite, zia_get_web_dlp_rule,
-            zia_create_web_dlp_rule, zia_update_web_dlp_rule, zia_delete_web_dlp_rule
-        )
-        from .tools.zia.ip_source_groups import (
-            zia_list_ip_source_groups, zia_get_ip_source_group,
-            zia_create_ip_source_group, zia_update_ip_source_group, zia_delete_ip_source_group
-        )
-        from .tools.zia.ip_destination_groups import (
-            zia_list_ip_destination_groups, zia_get_ip_destination_group,
-            zia_create_ip_destination_group, zia_update_ip_destination_group, zia_delete_ip_destination_group
-        )
-        from .tools.zia.network_app_groups import (
-            zia_list_network_app_groups, zia_get_network_app_group,
-            zia_create_network_app_group, zia_update_network_app_group, zia_delete_network_app_group
-        )
-        from .tools.zia.url_categories import (
-            zia_list_url_categories, zia_get_url_category,
-            zia_create_url_category, zia_update_url_category, zia_delete_url_category,
-            zia_add_urls_to_category, zia_remove_urls_from_category
-        )
-        from .tools.zia.rule_labels import (
-            zia_list_rule_labels, zia_get_rule_label,
-            zia_create_rule_label, zia_update_rule_label, zia_delete_rule_label
-        )
-        from .tools.zia.location_management import (
-            zia_list_locations, zia_get_location,
-            zia_create_location, zia_update_location, zia_delete_location
-        )
-        from .tools.zia.vpn_credentials import (
-            zia_list_vpn_credentials, zia_get_vpn_credential,
-            zia_create_vpn_credential, zia_update_vpn_credential, zia_delete_vpn_credential
-        )
-        from .tools.zia.static_ips import (
-            zia_list_static_ips, zia_get_static_ip,
-            zia_create_static_ip, zia_update_static_ip, zia_delete_static_ip
-        )
-        from .tools.zia.gre_tunnels import (
-            zia_list_gre_tunnels, zia_get_gre_tunnel,
-            zia_create_gre_tunnel, zia_delete_gre_tunnel
-        )
-        from .tools.zia.gre_ranges import zia_list_gre_ranges
-        from .tools.zia.activation import zia_get_activation_status, zia_activate_configuration
+        from .tools.zia.activation import zia_activate_configuration, zia_get_activation_status
         from .tools.zia.atp_malicious_urls import (
-            zia_list_atp_malicious_urls, zia_add_atp_malicious_urls, zia_delete_atp_malicious_urls
+            zia_add_atp_malicious_urls,
+            zia_delete_atp_malicious_urls,
+            zia_list_atp_malicious_urls,
         )
         from .tools.zia.auth_exempt_urls import (
-            zia_list_auth_exempt_urls, zia_add_auth_exempt_urls, zia_delete_auth_exempt_urls
+            zia_add_auth_exempt_urls,
+            zia_delete_auth_exempt_urls,
+            zia_list_auth_exempt_urls,
         )
         from .tools.zia.cloud_applications import (
-            zia_list_cloud_applications, zia_list_cloud_application_custom_tags, zia_bulk_update_cloud_applications
+            zia_bulk_update_cloud_applications,
+            zia_list_cloud_application_custom_tags,
+            zia_list_cloud_applications,
+        )
+        from .tools.zia.cloud_firewall_rules import (
+            zia_create_cloud_firewall_rule,
+            zia_delete_cloud_firewall_rule,
+            zia_get_cloud_firewall_rule,
+            zia_list_cloud_firewall_rules,
+            zia_update_cloud_firewall_rule,
+        )
+        from .tools.zia.gre_ranges import zia_list_gre_ranges
+        from .tools.zia.gre_tunnels import (
+            zia_create_gre_tunnel,
+            zia_delete_gre_tunnel,
+            zia_get_gre_tunnel,
+            zia_list_gre_tunnels,
+        )
+        from .tools.zia.ip_destination_groups import (
+            zia_create_ip_destination_group,
+            zia_delete_ip_destination_group,
+            zia_get_ip_destination_group,
+            zia_list_ip_destination_groups,
+            zia_update_ip_destination_group,
+        )
+        from .tools.zia.ip_source_groups import (
+            zia_create_ip_source_group,
+            zia_delete_ip_source_group,
+            zia_get_ip_source_group,
+            zia_list_ip_source_groups,
+            zia_update_ip_source_group,
+        )
+        from .tools.zia.location_management import (
+            zia_create_location,
+            zia_delete_location,
+            zia_get_location,
+            zia_list_locations,
+            zia_update_location,
+        )
+        from .tools.zia.network_app_groups import (
+            zia_create_network_app_group,
+            zia_delete_network_app_group,
+            zia_get_network_app_group,
+            zia_list_network_app_groups,
+            zia_update_network_app_group,
+        )
+        from .tools.zia.rule_labels import (
+            zia_create_rule_label,
+            zia_delete_rule_label,
+            zia_get_rule_label,
+            zia_list_rule_labels,
+            zia_update_rule_label,
+        )
+        from .tools.zia.static_ips import (
+            zia_create_static_ip,
+            zia_delete_static_ip,
+            zia_get_static_ip,
+            zia_list_static_ips,
+            zia_update_static_ip,
+        )
+        from .tools.zia.url_categories import (
+            zia_add_urls_to_category,
+            zia_create_url_category,
+            zia_delete_url_category,
+            zia_get_url_category,
+            zia_list_url_categories,
+            zia_remove_urls_from_category,
+            zia_update_url_category,
+        )
+        from .tools.zia.url_filtering_rules import (
+            zia_create_url_filtering_rule,
+            zia_delete_url_filtering_rule,
+            zia_get_url_filtering_rule,
+            zia_list_url_filtering_rules,
+            zia_update_url_filtering_rule,
+        )
+        from .tools.zia.vpn_credentials import (
+            zia_create_vpn_credential,
+            zia_delete_vpn_credential,
+            zia_get_vpn_credential,
+            zia_list_vpn_credentials,
+            zia_update_vpn_credential,
+        )
+        from .tools.zia.web_dlp_rules import (
+            zia_create_web_dlp_rule,
+            zia_delete_web_dlp_rule,
+            zia_get_web_dlp_rule,
+            zia_list_web_dlp_rules,
+            zia_list_web_dlp_rules_lite,
+            zia_update_web_dlp_rule,
         )
 
         # Read-only tools
@@ -534,20 +590,26 @@ class ZTWService(BaseService):
         super().__init__(zscaler_client)
         # Import verb-based ZTW tools
         from .tools.ztw.ip_destination_groups import (
-            ztw_list_ip_destination_groups, ztw_list_ip_destination_groups_lite,
-            ztw_create_ip_destination_group, ztw_delete_ip_destination_group
+            ztw_create_ip_destination_group,
+            ztw_delete_ip_destination_group,
+            ztw_list_ip_destination_groups,
+            ztw_list_ip_destination_groups_lite,
         )
         from .tools.ztw.ip_groups import (
-            ztw_list_ip_groups, ztw_list_ip_groups_lite,
-            ztw_create_ip_group, ztw_delete_ip_group
+            ztw_create_ip_group,
+            ztw_delete_ip_group,
+            ztw_list_ip_groups,
+            ztw_list_ip_groups_lite,
         )
         from .tools.ztw.ip_source_groups import (
-            ztw_list_ip_source_groups, ztw_list_ip_source_groups_lite,
-            ztw_create_ip_source_group, ztw_delete_ip_source_group
+            ztw_create_ip_source_group,
+            ztw_delete_ip_source_group,
+            ztw_list_ip_source_groups,
+            ztw_list_ip_source_groups_lite,
         )
-        from .tools.ztw.network_service_groups import ztw_list_network_service_groups
         from .tools.ztw.list_admins import ztw_list_admins
         from .tools.ztw.list_roles import ztw_list_roles
+        from .tools.ztw.network_service_groups import ztw_list_network_service_groups
 
         # Read-only tools
         self.read_tools = [
@@ -590,12 +652,18 @@ class ZIdentityService(BaseService):
         super().__init__(zscaler_client)
         # Import verb-based ZIdentity tools
         from .tools.zidentity.groups import (
-            zidentity_list_groups, zidentity_get_group, zidentity_search_groups,
-            zidentity_get_group_users, zidentity_get_group_users_by_name
+            zidentity_get_group,
+            zidentity_get_group_users,
+            zidentity_get_group_users_by_name,
+            zidentity_list_groups,
+            zidentity_search_groups,
         )
         from .tools.zidentity.users import (
-            zidentity_list_users, zidentity_get_user, zidentity_search_users,
-            zidentity_get_user_groups, zidentity_get_user_groups_by_name
+            zidentity_get_user,
+            zidentity_get_user_groups,
+            zidentity_get_user_groups_by_name,
+            zidentity_list_users,
+            zidentity_search_users,
         )
 
         # All ZIdentity tools are read-only

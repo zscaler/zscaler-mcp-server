@@ -2,7 +2,9 @@
 
 import fnmatch
 from typing import Dict, List, Optional, Set
+
 from mcp.types import ToolAnnotations
+
 from zscaler_mcp.common.logging import get_logger
 
 logger = get_logger(__name__)

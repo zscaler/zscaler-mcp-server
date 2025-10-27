@@ -9,6 +9,7 @@
 ### 🔐 Security Enhancements
 
 **Multi-Layer Security Model**:
+
 - Default read-only mode (110+ safe tools always available)
 - Global `--enable-write-tools` flag required for write operations
 - **Mandatory allowlist** via `--write-tools` (supports wildcards: `zpa_create_*`, `zia_delete_*`)
@@ -16,11 +17,13 @@
 - **Double-confirmation for DELETE operations**: Permission dialog + server-side confirmation block (33 delete tools)
 
 **Write Tools Allowlist** (Mandatory):
+
 - No write tools registered unless explicit allowlist provided
 - Prevents accidental "allow all" scenarios
 - Granular control with wildcard patterns
 
 **DELETE Operation Protection**:
+
 - All 33 delete operations require **double confirmation**
 - First: AI agent permission dialog (`destructiveHint`)
 - Second: Server-side confirmation via hidden `kwargs` parameter
