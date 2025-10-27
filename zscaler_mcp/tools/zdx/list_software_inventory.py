@@ -1,18 +1,14 @@
-from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Optional
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 
+# ============================================================================
+# READ-ONLY OPERATIONS
+# ============================================================================
 
-def zdx_list_software_inventory(
-    action: Annotated[
-        Literal["read", "read_software_key"],
-        Field(description="Must be one of 'read' or 'read_software_key'."),
-    ],
-    software_key: Annotated[
-        Optional[str], Field(description="Required if action is 'read_software_key'. The software name and version key.")
-    ] = None,
+def zdx_list_software(
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
     ] = None,
@@ -32,22 +28,17 @@ def zdx_list_software_inventory(
         bool, Field(description="Whether to use the legacy API.")
     ] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
-) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+) -> List[Dict[str, Any]]:
     """
-    Tool for retrieving ZDX software inventory information.
+    Lists all software in the ZDX inventory with optional filtering.
+    This is a read-only operation.
 
-    Supports two actions:
-    - read: Returns a list of all software in ZDX with optional filtering (USE THIS FOR GENERAL OVERVIEW).
-    - read_software_key: Returns a list of all users and devices for a given software name and version (USE ONLY FOR SPECIFIC SOFTWARE QUERIES).
-
-    USAGE GUIDELINES:
-    - Use action='read' by default to get an overview of all software in the organization
-    - Use action='read_software_key' only when the user specifically asks for details about a particular software key
-    - The read action provides software keys that can be used with read_software_key for detailed analysis
+    Returns a list of all software in ZDX with optional filtering by location,
+    department, geolocation, users, or devices. Use this for getting an overview
+    of all software in the organization. The response provides software keys that
+    can be used to get detailed information about specific software.
 
     Args:
-        action: The type of software inventory information to retrieve ('read' or 'read_software_key').
-        software_key: Required if action is 'read_software_key'. The software name and version key.
         location_id: Optional list of location IDs to filter by specific locations.
         department_id: Optional list of department IDs to filter by specific departments.
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
@@ -57,46 +48,103 @@ def zdx_list_software_inventory(
         service: The Zscaler service to use (default "zdx").
 
     Returns:
-        For 'read': List of dictionaries containing software inventory information.
-        For 'read_software_key': List of dictionaries containing users and devices for the specified software.
+        List of dictionaries containing software inventory information.
 
     Raises:
         Exception: If the software inventory retrieval fails due to API errors.
 
     Examples:
-        DEFAULT USAGE - Get overview of all software in the organization:
-        >>> software_list = zdx_list_software_inventory(action="read")
+        Get overview of all software:
+        >>> software = zdx_list_software()
 
-        Get software overview for specific users:
-        >>> user_software = zdx_list_software_inventory(
-        ...     action="read",
-        ...     user_ids=["12345", "67890"]
-        ... )
+        Get software for specific users:
+        >>> user_software = zdx_list_software(user_ids=["12345", "67890"])
 
-        Get software overview for specific devices:
-        >>> device_software = zdx_list_software_inventory(
-        ...     action="read",
-        ...     device_ids=["device1", "device2"]
-        ... )
+        Get software for specific devices:
+        >>> device_software = zdx_list_software(device_ids=["device1", "device2"])
+    """
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
-        Get software overview for a specific location:
-        >>> location_software = zdx_list_software_inventory(
-        ...     action="read",
-        ...     location_id=["545845"]
-        ... )
+    query_params = {}
+    if location_id:
+        query_params["location_id"] = location_id
+    if department_id:
+        query_params["department_id"] = department_id
+    if geo_id:
+        query_params["geo_id"] = geo_id
+    if user_ids:
+        query_params["user_ids"] = user_ids
+    if device_ids:
+        query_params["device_ids"] = device_ids
 
-        SPECIFIC SOFTWARE QUERY - Get detailed information for a specific software (only when user asks for specific software):
-        >>> software_users = zdx_list_software_inventory(
-        ...     action="read_software_key",
-        ...     software_key="screencaptureui2"
-        ... )
+    result, _, err = client.zdx.inventory.list_software(query_params=query_params)
+    if err:
+        raise Exception(f"Software inventory listing failed: {err}")
 
-        Get specific software details with department filter:
-        >>> software_users = zdx_list_software_inventory(
-        ...     action="read_software_key",
-        ...     software_key="screencaptureui2",
-        ...     department_id=["123456"],
-        ...     geo_id=["US"]
+    if result and len(result) > 0:
+        inventory_obj = result[0]
+        software_list = inventory_obj.software if hasattr(inventory_obj, 'software') else []
+        return [software.as_dict() for software in software_list]
+    else:
+        return []
+
+
+def zdx_get_software_details(
+    software_key: Annotated[
+        str, Field(description="The software name and version key.")
+    ],
+    location_id: Annotated[
+        Optional[List[str]], Field(description="Filter by location ID(s).")
+    ] = None,
+    department_id: Annotated[
+        Optional[List[str]], Field(description="Filter by department ID(s).")
+    ] = None,
+    geo_id: Annotated[
+        Optional[List[str]], Field(description="Filter by geolocation ID(s).")
+    ] = None,
+    user_ids: Annotated[
+        Optional[List[str]], Field(description="Filter by user ID(s).")
+    ] = None,
+    device_ids: Annotated[
+        Optional[List[str]], Field(description="Filter by device ID(s).")
+    ] = None,
+    use_legacy: Annotated[
+        bool, Field(description="Whether to use the legacy API.")
+    ] = False,
+    service: Annotated[str, Field(description="The service to use.")] = "zdx",
+) -> List[Dict[str, Any]]:
+    """
+    Gets detailed information about a specific software including all users and devices.
+    This is a read-only operation.
+
+    Returns a list of all users and devices for a given software name and version.
+    Use this only when you need detailed information about a particular software key.
+    The software keys are obtained from the zdx_list_software operation.
+
+    Args:
+        software_key: The software name and version key (required).
+        location_id: Optional list of location IDs to filter by specific locations.
+        department_id: Optional list of department IDs to filter by specific departments.
+        geo_id: Optional list of geolocation IDs to filter by geographic regions.
+        user_ids: Optional list of user IDs to filter by specific users.
+        device_ids: Optional list of device IDs to filter by specific devices.
+        use_legacy: Whether to use the legacy API (default False).
+        service: The Zscaler service to use (default "zdx").
+
+    Returns:
+        List of dictionaries containing users and devices for the specified software.
+
+    Raises:
+        Exception: If the software details retrieval fails due to API errors.
+
+    Examples:
+        Get details for specific software:
+        >>> details = zdx_get_software_details(software_key="Chrome_120.0.6099.109")
+
+        Get details with location filter:
+        >>> details = zdx_get_software_details(
+        ...     software_key="Chrome_120.0.6099.109",
+        ...     location_id=["58755"]
         ... )
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
@@ -113,59 +161,13 @@ def zdx_list_software_inventory(
     if device_ids:
         query_params["device_ids"] = device_ids
 
-    if action == "read_software_key":
-        if not software_key:
-            raise ValueError("software_key is required for action=read_software_key")
-        result, _, err = client.zdx.inventory.read_software_keys(
-            software_key, query_params=query_params
-        )
-        if err:
-            raise Exception(f"Device lookup failed: {err}")
+    result, _, err = client.zdx.inventory.get_software(software_key, query_params=query_params)
+    if err:
+        raise Exception(f"Software details lookup failed: {err}")
 
-        # The ZDX SDK returns a SoftwareList object
-        # The SoftwareList object has a 'software' property containing DeviceSoftwareInventory objects
-        if result:
-            software_list = []
-            # Access the software property which contains DeviceSoftwareInventory objects
-            if hasattr(result, 'software') and result.software:
-                for software_item in result.software:
-                    try:
-                        # Convert each DeviceSoftwareInventory object to dictionary
-                        if hasattr(software_item, 'as_dict'):
-                            software_list.append(software_item.as_dict())
-                        else:
-                            # Fallback to dict conversion
-                            software_list.append(dict(software_item))
-                    except Exception:
-                        # If conversion fails, return string representation
-                        software_list.append(str(software_item))
-            return software_list
-        else:
-            return []
-
-    elif action == "read":
-        results, _, err = client.zdx.inventory.read(query_params=query_params)
-        if err:
-            raise Exception(f"Software listing failed: {err}")
-
-        # The ZDX SDK now returns a list of DeviceSoftwareInventory objects directly
-        # (the software property from SoftwareList)
-        if results:
-            software_list = []
-            for software_item in results:
-                try:
-                    # Convert each DeviceSoftwareInventory object to dictionary
-                    if hasattr(software_item, 'as_dict'):
-                        software_list.append(software_item.as_dict())
-                    else:
-                        # Fallback to dict conversion
-                        software_list.append(dict(software_item))
-                except Exception:
-                    # If conversion fails, return string representation
-                    software_list.append(str(software_item))
-            return software_list
-        else:
-            return []
-
+    if result and len(result) > 0:
+        software_obj = result[0]
+        devices_list = software_obj.devices if hasattr(software_obj, 'devices') else []
+        return [device.as_dict() for device in devices_list]
     else:
-        raise ValueError("Invalid action. Must be one of: 'read', 'read_software_key'")
+        return []

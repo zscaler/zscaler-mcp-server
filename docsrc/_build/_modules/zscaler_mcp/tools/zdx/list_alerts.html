@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -265,23 +265,20 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zdx.list_alerts</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
 
+<span class="c1"># ============================================================================</span>
+<span class="c1"># READ-ONLY OPERATIONS</span>
+<span class="c1"># ============================================================================</span>
+
 <div class="viewcode-block" id="zdx_list_alerts">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_alerts.zdx_list_alerts">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_alerts</span><span class="p">(</span>
-    <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;read_alert&quot;</span><span class="p">,</span> <span class="s2">&quot;read_affected_devices&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Must be one of &#39;read&#39;, &#39;read_alert&#39;, or &#39;read_affected_devices&#39;.&quot;</span><span class="p">),</span>
-    <span class="p">],</span>
-    <span class="n">alert_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Required if action is &#39;read_alert&#39; or &#39;read_affected_devices&#39;. The unique ID for the alert.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location ID(s).&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -290,9 +287,6 @@
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">geo_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by geolocation ID(s).&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">location_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location group ID(s). Only available for read_affected_devices action.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">since</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of hours to look back (default 2h). Cannot exceed 14 days.&quot;</span><span class="p">)</span>
@@ -307,95 +301,201 @@
         <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Tool for retrieving ZDX alert information and managing alert-related data.</span>
-<span class="sd">    </span>
-<span class="sd">    Supports three actions:</span>
-<span class="sd">    - read: Returns a list of all ongoing alert rules across an organization (USE THIS FOR GENERAL ALERT OVERVIEW).</span>
-<span class="sd">    - read_alert: Returns details of a single alert including impacted department, locations, and alert trigger (USE FOR SPECIFIC ALERT DETAILS).</span>
-<span class="sd">    - read_affected_devices: Returns a list of all affected devices associated with an alert rule (USE FOR ALERT IMPACT ANALYSIS).</span>
-<span class="sd">    </span>
-<span class="sd">    USAGE GUIDELINES:</span>
-<span class="sd">    - Use action=&#39;read&#39; by default to get an overview of all ongoing alerts in the organization</span>
-<span class="sd">    - Use action=&#39;read_alert&#39; when you need detailed information about a specific alert</span>
-<span class="sd">    - Use action=&#39;read_affected_devices&#39; when you need to analyze the impact of a specific alert on devices</span>
-<span class="sd">    </span>
+<span class="sd">    Lists all ongoing ZDX alert rules across an organization.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns a list of all ongoing alert rules. This is the default operation for getting</span>
+<span class="sd">    an overview of all alerts in the organization. Supports filtering by location, department,</span>
+<span class="sd">    geolocation, and time range.</span>
+
 <span class="sd">    Args:</span>
-<span class="sd">        action: The type of alert information to retrieve (&#39;read&#39;, &#39;read_alert&#39;, or &#39;read_affected_devices&#39;).</span>
-<span class="sd">        alert_id: Required if action is &#39;read_alert&#39; or &#39;read_affected_devices&#39;. The unique ID for the alert.</span>
 <span class="sd">        location_id: Optional list of location IDs to filter by specific locations.</span>
 <span class="sd">        department_id: Optional list of department IDs to filter by specific departments.</span>
 <span class="sd">        geo_id: Optional list of geolocation IDs to filter by geographic regions.</span>
-<span class="sd">        location_groups: Optional list of location group IDs (only available for read_affected_devices action).</span>
 <span class="sd">        since: Optional number of hours to look back (default 2 hours, max 14 days).</span>
 <span class="sd">        offset: Optional pagination offset for getting next batch of results.</span>
 <span class="sd">        limit: Optional number of items to return per request (minimum 1).</span>
 <span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
 <span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        For &#39;read&#39;: List of dictionaries containing ongoing alert information.</span>
-<span class="sd">        For &#39;read_alert&#39;: Dictionary containing detailed alert information.</span>
-<span class="sd">        For &#39;read_affected_devices&#39;: List of dictionaries containing affected device information.</span>
-<span class="sd">        </span>
+<span class="sd">        List of dictionaries containing ongoing alert information.</span>
+
 <span class="sd">    Raises:</span>
-<span class="sd">        Exception: If the alert information retrieval fails due to API errors.</span>
-<span class="sd">        </span>
+<span class="sd">        Exception: If the alert listing fails due to API errors.</span>
+
 <span class="sd">    Examples:</span>
-<span class="sd">        DEFAULT USAGE - Get overview of all ongoing alerts in the organization:</span>
-<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(action=&quot;read&quot;)</span>
-<span class="sd">        </span>
-<span class="sd">        Get ongoing alerts for the past 24 hours:</span>
-<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     since=24</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        Get ongoing alerts for specific locations:</span>
-<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     location_id=[&quot;58755&quot;, &quot;58756&quot;]</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        Get ongoing alerts with pagination:</span>
-<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read&quot;, </span>
-<span class="sd">        ...     limit=50, </span>
-<span class="sd">        ...     offset=&quot;next_offset_value&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        SPECIFIC ALERT QUERY - Get detailed information for a specific alert:</span>
-<span class="sd">        &gt;&gt;&gt; alert_details = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read_alert&quot;, </span>
-<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
-<span class="sd">        ALERT IMPACT ANALYSIS - Get affected devices for a specific alert:</span>
-<span class="sd">        &gt;&gt;&gt; affected_devices = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read_affected_devices&quot;, </span>
-<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;</span>
-<span class="sd">        ... )</span>
-<span class="sd">        </span>
+<span class="sd">        Get overview of all ongoing alerts:</span>
+<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts()</span>
+
+<span class="sd">        Get alerts for the past 24 hours:</span>
+<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(since=24)</span>
+
+<span class="sd">        Get alerts for specific locations:</span>
+<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(location_id=[&quot;58755&quot;, &quot;58756&quot;])</span>
+
+<span class="sd">        Get alerts with pagination:</span>
+<span class="sd">        &gt;&gt;&gt; alerts = zdx_list_alerts(limit=50, offset=&quot;next_offset_value&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+
+    <span class="n">query_params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">location_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;location_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">location_id</span>
+    <span class="k">if</span> <span class="n">department_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;department_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">department_id</span>
+    <span class="k">if</span> <span class="n">geo_id</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;geo_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">geo_id</span>
+    <span class="k">if</span> <span class="n">since</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;since&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">since</span>
+    <span class="k">if</span> <span class="n">offset</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
+    <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">limit</span>
+
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">alerts</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ongoing alerts listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># The ZDX SDK returns a list containing a single Alerts object</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">alerts_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) Alerts object</span>
+        <span class="c1"># Access the alerts property which contains a list of alert objects</span>
+        <span class="n">alerts_list</span> <span class="o">=</span> <span class="n">alerts_obj</span><span class="o">.</span><span class="n">alerts</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">alerts_obj</span><span class="p">,</span> <span class="s1">&#39;alerts&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">alert</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">alert</span> <span class="ow">in</span> <span class="n">alerts_list</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="zdx_get_alert">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_alerts.zdx_get_alert">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_alert</span><span class="p">(</span>
+    <span class="n">alert_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the alert.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Gets detailed information for a specific ZDX alert.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns details of a single alert including the impacted department,</span>
+<span class="sd">    Zscaler locations, geolocation, and alert trigger. Use this when you need</span>
+<span class="sd">    detailed information about a specific alert.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        alert_id: The unique ID for the alert (required).</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary containing detailed alert information.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the alert lookup fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get detailed information for a specific alert:</span>
+<span class="sd">        &gt;&gt;&gt; alert = zdx_get_alert(alert_id=&quot;7473160764821179371&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">alerts</span><span class="o">.</span><span class="n">get_alert</span><span class="p">(</span><span class="n">alert_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Alert lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># The ZDX SDK returns a single AlertDetails object</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+
+
+<div class="viewcode-block" id="zdx_list_alert_affected_devices">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.list_alerts.zdx_list_alert_affected_devices">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_alert_affected_devices</span><span class="p">(</span>
+    <span class="n">alert_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the alert.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">department_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by department ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">geo_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by geolocation ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">location_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location group ID(s).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">since</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of hours to look back (default 2h). Cannot exceed 14 days.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The next_offset value from the last request for pagination.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of items to return per request (minimum 1).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lists all devices affected by a specific ZDX alert.</span>
+<span class="sd">    This is a read-only operation.</span>
+
+<span class="sd">    Returns a list of all affected devices associated with an alert rule.</span>
+<span class="sd">    Use this when you need to analyze the impact of a specific alert on devices.</span>
+<span class="sd">    Supports filtering by location, department, geolocation, and location groups.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        alert_id: The unique ID for the alert (required).</span>
+<span class="sd">        location_id: Optional list of location IDs to filter by specific locations.</span>
+<span class="sd">        department_id: Optional list of department IDs to filter by specific departments.</span>
+<span class="sd">        geo_id: Optional list of geolocation IDs to filter by geographic regions.</span>
+<span class="sd">        location_groups: Optional list of location group IDs.</span>
+<span class="sd">        since: Optional number of hours to look back (default 2 hours, max 14 days).</span>
+<span class="sd">        offset: Optional pagination offset for getting next batch of results.</span>
+<span class="sd">        limit: Optional number of items to return per request (minimum 1).</span>
+<span class="sd">        use_legacy: Whether to use the legacy API (default False).</span>
+<span class="sd">        service: The Zscaler service to use (default &quot;zdx&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of dictionaries containing affected device information.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: If the affected devices lookup fails due to API errors.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Get affected devices for an alert:</span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_alert_affected_devices(alert_id=&quot;7473160764821179371&quot;)</span>
+
 <span class="sd">        Get affected devices for the past 24 hours:</span>
-<span class="sd">        &gt;&gt;&gt; affected_devices = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read_affected_devices&quot;, </span>
-<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;, </span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_alert_affected_devices(</span>
+<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;,</span>
 <span class="sd">        ...     since=24</span>
 <span class="sd">        ... )</span>
-<span class="sd">        </span>
+
 <span class="sd">        Get affected devices with location filtering:</span>
-<span class="sd">        &gt;&gt;&gt; affected_devices = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read_affected_devices&quot;, </span>
-<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;, </span>
-<span class="sd">        ...     location_id=[&quot;58755&quot;], </span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_alert_affected_devices(</span>
+<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;,</span>
+<span class="sd">        ...     location_id=[&quot;58755&quot;],</span>
 <span class="sd">        ...     department_id=[&quot;123456&quot;]</span>
 <span class="sd">        ... )</span>
-<span class="sd">        </span>
+
 <span class="sd">        Get affected devices with location groups:</span>
-<span class="sd">        &gt;&gt;&gt; affected_devices = zdx_list_alerts(</span>
-<span class="sd">        ...     action=&quot;read_affected_devices&quot;, </span>
-<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;, </span>
+<span class="sd">        &gt;&gt;&gt; devices = zdx_list_alert_affected_devices(</span>
+<span class="sd">        ...     alert_id=&quot;7473160764821179371&quot;,</span>
 <span class="sd">        ...     location_groups=[1, 2]</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -414,75 +514,32 @@
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
     <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">limit</span>
-    <span class="k">if</span> <span class="n">location_groups</span> <span class="ow">and</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_affected_devices&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">location_groups</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;location_groups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">location_groups</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_alert&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns details of a single alert including the impacted department,</span>
-<span class="sd">        Zscaler locations, geolocation, and alert trigger.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">alert_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;alert_id is required for action=read_alert&quot;</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">alerts</span><span class="o">.</span><span class="n">get_alert</span><span class="p">(</span><span class="n">alert_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Alert lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">alerts</span><span class="o">.</span><span class="n">read_affected_devices</span><span class="p">(</span>
+        <span class="n">alert_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Affected devices lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># The ZDX SDK returns a single AlertDetails object</span>
-        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{}</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read_affected_devices&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a list of all affected devices associated with an alert rule.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">alert_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;alert_id is required for action=read_affected_devices&quot;</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">alerts</span><span class="o">.</span><span class="n">read_affected_devices</span><span class="p">(</span>
-            <span class="n">alert_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Affected devices lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK returns a list containing a single AffectedDevices object</span>
-        <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">affected_devices_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) AffectedDevices object</span>
-            <span class="c1"># Access the devices property which contains a list of device objects</span>
-            <span class="n">devices_list</span> <span class="o">=</span> <span class="n">affected_devices_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">affected_devices_obj</span><span class="p">,</span> <span class="s1">&#39;devices&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">device</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices_list</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
-    <span class="k">elif</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a list of all ongoing alert rules across an organization in ZDX.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">alerts</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ongoing alerts listing failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># The ZDX SDK returns a list containing a single Alerts object</span>
-        <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">alerts_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) Alerts object</span>
-            <span class="c1"># Access the alerts property which contains a list of alert objects</span>
-            <span class="n">alerts_list</span> <span class="o">=</span> <span class="n">alerts_obj</span><span class="o">.</span><span class="n">alerts</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">alerts_obj</span><span class="p">,</span> <span class="s1">&#39;alerts&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">alert</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">alert</span> <span class="ow">in</span> <span class="n">alerts_list</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[]</span>
-
+    <span class="c1"># The ZDX SDK returns a list containing a single AffectedDevices object</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">affected_devices_obj</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) AffectedDevices object</span>
+        <span class="c1"># Access the devices property which contains a list of device objects</span>
+        <span class="n">devices_list</span> <span class="o">=</span> <span class="n">affected_devices_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">affected_devices_obj</span><span class="p">,</span> <span class="s1">&#39;devices&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">device</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices_list</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid action. Must be one of: &#39;read&#39;, &#39;read_alert&#39;, &#39;read_affected_devices&#39;&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">[]</span></div>
 
 </pre></div>
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -490,21 +547,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>

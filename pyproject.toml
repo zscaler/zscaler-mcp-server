@@ -1,6 +1,6 @@
 [project]
 name = "zscaler-mcp"
-version = "0.2.2"
+version = "0.3.0"
 description = "Official Zscaler Integrations MCP Server"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
@@ -35,6 +35,7 @@ dependencies = [
   "pydantic>=2.11.9",
   "starlette>=0.48.0",
   "zstandard>=0.25.0",
+  "package-name>=0.1",
 ]
 
 [project.scripts]
