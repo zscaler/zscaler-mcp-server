@@ -1,5 +1,5 @@
 Getting Started with Zscaler Integrations MCP Server
-========================================
+=====================================================
 
 This guide will help you get up and running with the Zscaler Integrations MCP Server quickly.
 

@@ -10,38 +10,38 @@
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=eaa1d806" />
-
-
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=4cbd6b35" />
+    
+    
 
 
 <style>
   body {
     --color-code-background: #f2f2f2;
   --color-code-foreground: #1e1e1e;
-
+  
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #2b2b2b;
   --color-code-foreground: #f8f8f2;
-
+  
       }
     }
   }
 </style></head>
   <body>
-
+    
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-
+    
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -187,13 +187,13 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-
+      
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
   <div class="sidebar-logo-container">
     <img class="sidebar-logo" src="../../_static/logo.svg" alt="Logo"/>
   </div>
-
-
+  
+  
 </a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -236,7 +236,7 @@
 </div>
 
       </div>
-
+      
     </div>
   </aside>
   <div class="main">
@@ -280,9 +280,23 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolAnnotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_logging</span><span class="p">,</span> <span class="n">get_logger</span>
+
+<span class="c1"># Import version from package metadata</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+    <span class="n">__version__</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c1"># Fallback for Python &lt; 3.8</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">importlib_metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+        <span class="n">__version__</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="c1"># Final fallback - read from pyproject.toml or use a default</span>
+        <span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;0.2.2&quot;</span>
 
 <span class="c1"># Add the project root to Python path for imports</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))))</span>
@@ -306,6 +320,8 @@
         <span class="n">enabled_services</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enabled_tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">user_agent_comment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">enable_write_tools</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">write_tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Zscaler Integrations MCP Server.</span>
 
@@ -317,7 +333,10 @@
 <span class="sd">            cloud: Zscaler cloud environment (e.g., &#39;beta&#39;, &#39;zscalertwo&#39;)</span>
 <span class="sd">            debug: Enable debug logging</span>
 <span class="sd">            enabled_services: Set of service names to enable (defaults to all services)</span>
+<span class="sd">            enabled_tools: Set of tool names to enable (defaults to all tools)</span>
 <span class="sd">            user_agent_comment: Additional information to include in the User-Agent comment section</span>
+<span class="sd">            enable_write_tools: Enable write operations (create, update, delete). Default: False for safety.</span>
+<span class="sd">            write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Store configuration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
@@ -330,11 +349,34 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span> <span class="o">=</span> <span class="n">enabled_services</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">(</span><span class="n">services</span><span class="o">.</span><span class="n">get_service_names</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span> <span class="o">=</span> <span class="n">enabled_tools</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span> <span class="o">=</span> <span class="n">enable_write_tools</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="n">write_tools</span>  <span class="c1"># Explicit allowlist for write tools</span>
 
         <span class="c1"># Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol</span>
         <span class="n">configure_logging</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">use_stderr</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        
+        <span class="c1"># Log security posture</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing Zscaler Integrations MCP Server&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  WRITE TOOLS MODE ENABLED&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Explicit allowlist provided - only listed write tools will be registered&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️  Allowed patterns: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Server can CREATE, MODIFY, and DELETE Zscaler resources&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Ensure this is intentional and appropriate for your use case&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  NO allowlist provided - 0 write tools will be registered&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Read-only tools will still be available&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  To enable write operations, add: --write-tools &#39;pattern&#39;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;🔒 Server running in READ-ONLY mode (safe default)&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;   Only list and get operations are available&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;   To enable write operations, use --enable-write-tools AND --write-tools flags&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
 
         <span class="c1"># Don&#39;t initialize the Zscaler client during server startup to avoid pickle issues</span>
         <span class="c1"># Clients will be created on-demand when tools are called</span>
@@ -391,12 +433,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">zscaler_check_connectivity</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_check_connectivity&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Check connectivity to the Zscaler API.&quot;</span><span class="p">,</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Read-only diagnostic tool</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">get_available_services</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_get_available_services&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get information about available services.&quot;</span><span class="p">,</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Read-only informational tool</span>
         <span class="p">)</span>
 
         <span class="n">tool_count</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># the tools added above</span>
@@ -404,30 +448,37 @@
         <span class="c1"># Register tools from services</span>
         <span class="k">for</span> <span class="n">service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="c1"># If specific tools are enabled, filter them</span>
+                <span class="c1"># Register tools with write mode flag and allowlist</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span><span class="p">:</span>
                     <span class="n">service</span><span class="o">.</span><span class="n">register_tools</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span>
+                        <span class="n">enabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span><span class="p">,</span>
+                        <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
+                        <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span>
                     <span class="p">)</span>
-                    <span class="c1"># Count only the enabled tools</span>
-                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;tools&quot;</span><span class="p">):</span>
-                        <span class="n">enabled_tools_in_service</span> <span class="o">=</span> <span class="p">[</span>
-                            <span class="n">tool</span>
-                            <span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="n">service</span><span class="o">.</span><span class="n">tools</span>
-                            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tool</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">tool</span><span class="p">))</span>
-                            <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span>
-                        <span class="p">]</span>
-                        <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">enabled_tools_in_service</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># Register all tools from the service</span>
-                    <span class="n">service</span><span class="o">.</span><span class="n">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">)</span>
-                    <span class="c1"># Count all tools from services</span>
-                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;tools&quot;</span><span class="p">):</span>
-                        <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">tools</span><span class="p">)</span>
+                    <span class="n">service</span><span class="o">.</span><span class="n">register_tools</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span>
+                        <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
+                        <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span>
+                    <span class="p">)</span>
+                
+                <span class="c1"># Count tools (read + write)</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">):</span>
+                    <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">read_tools</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">:</span>
+                    <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">write_tools</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;tools&quot;</span><span class="p">):</span>
+                    <span class="c1"># Fallback for services not yet migrated</span>
+                    <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">tools</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to register tools for service: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="c1"># Still count the tools even if registration fails</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;tools&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">):</span>
+                    <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">read_tools</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">):</span>
+                    <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">write_tools</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;tools&quot;</span><span class="p">):</span>
                     <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">tools</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">tool_count</span>
@@ -547,12 +598,13 @@
                 <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">tools</span> <span class="o">=</span> <span class="p">[]</span>
 
-                <span class="k">def</span><span class="w"> </span><span class="nf">add_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">add_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="p">{</span>
                             <span class="s2">&quot;tool&quot;</span><span class="p">:</span> <span class="n">tool</span><span class="p">,</span>
                             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">tool</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                             <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span> <span class="ow">or</span> <span class="p">(</span><span class="n">tool</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;annotations&quot;</span><span class="p">:</span> <span class="n">annotations</span><span class="p">,</span>
                         <span class="p">}</span>
                     <span class="p">)</span>
 
@@ -635,12 +687,13 @@
             <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">tools</span> <span class="o">=</span> <span class="p">[]</span>
 
-            <span class="k">def</span><span class="w"> </span><span class="nf">add_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">add_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">annotations</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="p">{</span>
                         <span class="s2">&quot;tool&quot;</span><span class="p">:</span> <span class="n">tool</span><span class="p">,</span>
                         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">tool</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                         <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span> <span class="ow">or</span> <span class="p">(</span><span class="n">tool</span><span class="o">.</span><span class="vm">__doc__</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;annotations&quot;</span><span class="p">:</span> <span class="n">annotations</span><span class="p">,</span>
                     <span class="p">}</span>
                 <span class="p">)</span>
 
@@ -708,6 +761,25 @@
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable debug logging (env: ZSCALER_MCP_DEBUG)&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
+    <span class="c1"># Write tools enablement (NEW)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--enable-write-tools&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_WRITE_ENABLED&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable write operations (create, update, delete). &quot;</span>
+             <span class="s2">&quot;By default, only read-only operations are available for safety. &quot;</span>
+             <span class="s2">&quot;(env: ZSCALER_MCP_WRITE_ENABLED)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--write-tools&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_WRITE_TOOLS&quot;</span><span class="p">),</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of write tools to explicitly allow. &quot;</span>
+             <span class="s2">&quot;Supports wildcards (e.g., &#39;zpa_create_*,zpa_delete_*&#39;). &quot;</span>
+             <span class="s2">&quot;Requires --enable-write-tools to be set. &quot;</span>
+             <span class="s2">&quot;(env: ZSCALER_MCP_WRITE_TOOLS)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
     <span class="c1"># Zscaler API configuration</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--client-id&quot;</span><span class="p">,</span>
@@ -766,6 +838,14 @@
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List all available tool names and descriptions, then exit.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--version&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;-v&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span>
+        <span class="n">version</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Zscaler MCP Server version </span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Show version information and exit.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
     <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span></div>
 
 
@@ -788,6 +868,11 @@
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Parse write_tools into a set</span>
+        <span class="n">write_tools</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">write_tools</span><span class="p">:</span>
+            <span class="n">write_tools</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">write_tools</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
+        
         <span class="c1"># Create and run the server</span>
         <span class="n">server</span> <span class="o">=</span> <span class="n">ZscalerMCPServer</span><span class="p">(</span>
             <span class="n">client_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
@@ -799,6 +884,8 @@
             <span class="n">enabled_services</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">services</span><span class="p">),</span>
             <span class="n">enabled_tools</span><span class="o">=</span><span class="nb">set</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">tools</span><span class="p">),</span>
             <span class="n">user_agent_comment</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">user_agent_comment</span><span class="p">,</span>
+            <span class="n">enable_write_tools</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
+            <span class="n">write_tools</span><span class="o">=</span><span class="n">write_tools</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting server with </span><span class="si">%s</span><span class="s2"> transport&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
         <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">transport</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
@@ -824,10 +911,10 @@
         </article>
       </div>
       <footer>
-
+        
         <div class="related-pages">
-
-
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -835,21 +922,21 @@
                 Copyright &#169; 2025, Zscaler Inc.
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-
+            
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-
+            
           </div>
           <div class="right-details">
-
+            
           </div>
         </div>
-
+        
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-
-
-
+      
+      
+      
     </aside>
   </div>
 </div><script src="../../_static/documentation_options.js?v=938c9ccc"></script>

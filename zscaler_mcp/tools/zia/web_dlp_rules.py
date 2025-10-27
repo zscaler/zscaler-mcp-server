@@ -576,10 +576,13 @@ def zia_delete_web_dlp_rule(
         bool, Field(description="Whether to use the legacy API.")
     ] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
+    kwargs: str = "{}"
 ) -> str:
     """
     Deletes a ZIA Web DLP Rule by ID.
-    This is a destructive write operation that requires the --enable-write-tools flag.
+    
+    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
+    This action cannot be undone.
 
     Args:
         rule_id (int/str): The ID of the web DLP rule to delete.
@@ -593,6 +596,19 @@ def zia_delete_web_dlp_rule(
         Delete a rule:
         >>> result = zia_delete_web_dlp_rule(rule_id="12345")
     """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_web_dlp_rule",
+        confirmed,
+        {"rule_id": str(rule_id)}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     dlp = client.zia.dlp_web_rules
 

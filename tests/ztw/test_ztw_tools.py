@@ -226,8 +226,8 @@ class TestZtwIpDestinationGroups:
         mock_get_client.return_value = mock_client
         mock_client.ztw.ip_destination_groups.delete_ip_destination_group.return_value = (None, None, None)
 
-        # Execute
-        result = ztw_delete_ip_destination_group(group_id="123")
+        # Execute with confirmation
+        result = ztw_delete_ip_destination_group(group_id="123", kwargs='{"confirmed": true}')
 
         # Verify
         mock_client.ztw.ip_destination_groups.delete_ip_destination_group.assert_called_once_with("123")
@@ -235,14 +235,13 @@ class TestZtwIpDestinationGroups:
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
     def test_delete_ip_destination_group_missing_id(self, mock_get_client, mock_client):
-        """Test deleting IP destination group without ID."""
+        """Test deleting IP destination group without ID (confirmation still blocks)."""
         # Setup
         mock_get_client.return_value = mock_client
 
-        # Execute & Verify
-        with pytest.raises(ValueError) as exc_info:
-            ztw_delete_ip_destination_group(group_id="")
-        assert "group_id is required for delete" in str(exc_info.value)
+        # Execute without confirmation - returns confirmation message
+        result = ztw_delete_ip_destination_group(group_id="")
+        assert isinstance(result, str)  # Returns confirmation message
 
 
 # =============================================================================
@@ -349,8 +348,8 @@ class TestZtwIpGroups:
         mock_get_client.return_value = mock_client
         mock_client.ztw.ip_groups.delete_ip_group.return_value = (None, None, None)
 
-        # Execute
-        result = ztw_delete_ip_group(group_id=123)
+        # Execute with confirmation
+        result = ztw_delete_ip_group(group_id=123, kwargs='{"confirmed": true}')
 
         # Verify
         mock_client.ztw.ip_groups.delete_ip_group.assert_called_once_with(123)
@@ -430,13 +429,13 @@ class TestZtwIpSourceGroups:
 
     @patch("zscaler_mcp.tools.ztw.ip_source_groups.get_zscaler_client")
     def test_delete_ip_source_group_success(self, mock_get_client, mock_client):
-        """Test successful deletion of IP source group."""
+        """Test successful deletion of IP source group with confirmation."""
         # Setup
         mock_get_client.return_value = mock_client
         mock_client.ztw.ip_source_groups.delete_ip_source_group.return_value = (None, None, None)
 
-        # Execute
-        result = ztw_delete_ip_source_group(group_id="456")
+        # Execute with confirmation
+        result = ztw_delete_ip_source_group(group_id="456", kwargs='{"confirmed": true}')
 
         # Verify
         mock_client.ztw.ip_source_groups.delete_ip_source_group.assert_called_once_with("456")

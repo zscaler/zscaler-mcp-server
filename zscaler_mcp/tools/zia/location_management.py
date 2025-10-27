@@ -122,12 +122,27 @@ def zia_delete_location(
     location_id: Annotated[int, Field(description="Location ID (required).")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
+    kwargs: str = "{}"
 ) -> str:
     """
     Delete a ZIA location.
     
     Note: Associated resources must be deleted in the reverse order they were created.
     """
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zia_delete_location",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     if not location_id:
         raise ValueError("location_id is required")
     

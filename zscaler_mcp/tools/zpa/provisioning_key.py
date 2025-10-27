@@ -143,8 +143,23 @@ def zpa_delete_provisioning_key(
     query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
+    kwargs: str = "{}"
 ) -> str:
     """Delete a ZPA provisioning key. If the associated component was already deleted, this will return a safe message."""
+    from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
+    
+    # Extract confirmation from kwargs (hidden from tool schema)
+    confirmed = extract_confirmed_from_kwargs(kwargs)
+    
+    confirmation_check = check_confirmation(
+        "zpa_delete_provisioning_key",
+        confirmed,
+        {}
+    )
+    if confirmation_check:
+        return confirmation_check
+    
+
     VALID_TYPES = {"connector", "service_edge"}
     if key_type not in VALID_TYPES:
         raise ValueError(f"Invalid key_type '{key_type}'. Must be 'connector' or 'service_edge'.")
