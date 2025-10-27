@@ -182,7 +182,7 @@ class TestZtwIpDestinationGroups:
         mock_client.ztw.ip_destination_groups.add_ip_destination_group.return_value = (mock_group, None, None)
 
         # Execute
-        result = ztw_create_ip_destination_group(
+        ztw_create_ip_destination_group(
             name="Test Group",
             type="DSTN_OTHER",
             countries=["CA", "US"]
@@ -321,7 +321,7 @@ class TestZtwIpGroups:
         mock_client.ztw.ip_groups.add_ip_group.return_value = (mock_group, None, None)
 
         # Execute
-        result = ztw_create_ip_group(
+        ztw_create_ip_group(
             name="Test Group",
             ip_addresses='["192.168.1.1", "192.168.1.2"]'
         )
@@ -477,7 +477,7 @@ class TestZtwAdmins:
         mock_client.ztw.admin_users.list_admins.return_value = ([], None, None)
 
         # Execute
-        result = ztw_list_admins(
+        ztw_list_admins(
             action="list_admins",
             include_auditor_users=True,
             include_admin_users=True,
@@ -543,7 +543,7 @@ class TestZtwAdmins:
         mock_client.ztw.admin_users.list_admins.return_value = ([], None, None)
 
         # Execute
-        result = ztw_list_admins(version=1)
+        ztw_list_admins(version=1)
 
         # Verify
         call_kwargs = mock_client.ztw.admin_users.list_admins.call_args[1]["query_params"]
@@ -585,7 +585,7 @@ class TestZtwRoles:
         mock_client.ztw.admin_roles.list_roles.return_value = ([], None, None)
 
         # Execute
-        result = ztw_list_roles(
+        ztw_list_roles(
             include_auditor_role=True,
             include_partner_role=False,
             include_api_roles=True,
@@ -607,7 +607,7 @@ class TestZtwRoles:
         mock_client.ztw.admin_roles.list_roles.return_value = ([], None, None)
 
         # Execute
-        result = ztw_list_roles(role_ids=["123", "456"])
+        ztw_list_roles(role_ids=["123", "456"])
 
         # Verify
         call_kwargs = mock_client.ztw.admin_roles.list_roles.call_args[1]["query_params"]
@@ -661,7 +661,7 @@ class TestZtwNetworkServiceGroups:
         mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = ([], None, None)
 
         # Execute
-        result = ztw_list_network_service_groups(search="HTTP")
+        ztw_list_network_service_groups(search="HTTP")
 
         # Verify
         mock_client.ztw.nw_service_groups.list_network_svc_groups.assert_called_once_with(
@@ -688,7 +688,7 @@ class TestZtwNetworkServiceGroups:
         mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = ([], None, None)
 
         # Execute
-        result = ztw_list_network_service_groups(use_legacy=True)
+        ztw_list_network_service_groups(use_legacy=True)
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=True, service="ztw")

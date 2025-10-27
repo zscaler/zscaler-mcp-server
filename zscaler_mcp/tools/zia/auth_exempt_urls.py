@@ -1,5 +1,5 @@
 import json
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Union
 from pydantic import Field
 from zscaler_mcp.client import get_zscaler_client
 

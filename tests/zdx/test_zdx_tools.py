@@ -450,7 +450,7 @@ class TestZdxApplicationUser:
         mock_client.zdx.apps.list_users.return_value = ([users_wrapper], None, None)
 
         # Execute
-        result = zdx_list_application_users(app_id="app1", score_bucket="poor")
+        _result = zdx_list_application_users(app_id="app1", score_bucket="poor")
 
         # Verify
         mock_client.zdx.apps.list_users.assert_called_once_with(
@@ -591,7 +591,7 @@ class TestZdxAlerts:
         mock_client.zdx.alerts.read.return_value = ([alerts_wrapper], None, None)
 
         # Execute
-        result = zdx_list_alerts(location_id=["loc1"], since=24, limit=50)
+        zdx_list_alerts(location_id=["loc1"], since=24, limit=50)
 
         # Verify
         mock_client.zdx.alerts.read.assert_called_once_with(
@@ -744,7 +744,7 @@ class TestZdxSoftwareInventory:
         mock_client.zdx.inventory.list_software.return_value = ([inventory_wrapper], None, None)
 
         # Execute
-        result = zdx_list_software(user_ids=["user1"], device_ids=["dev1"])
+        zdx_list_software(user_ids=["user1"], device_ids=["dev1"])
 
         # Verify
         mock_client.zdx.inventory.list_software.assert_called_once_with(
@@ -822,7 +822,7 @@ class TestZdxHistoricalAlerts:
         mock_client.zdx.alerts.list_historical.return_value = ([alerts_wrapper], None, None)
 
         # Execute
-        result = zdx_list_historical_alerts(
+        zdx_list_historical_alerts(
             location_id=["loc1"],
             since=336,  # 14 days
             limit=100
