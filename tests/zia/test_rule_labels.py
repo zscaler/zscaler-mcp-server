@@ -9,16 +9,17 @@ This module tests the verb-based rule label operations:
 - zia_delete_rule_label (write)
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from zscaler_mcp.tools.zia.rule_labels import (
-    zia_list_rule_labels,
-    zia_get_rule_label,
-    zia_create_rule_label,
-    zia_update_rule_label,
-    zia_delete_rule_label,
-)
 
+import pytest
+
+from zscaler_mcp.tools.zia.rule_labels import (
+    zia_create_rule_label,
+    zia_delete_rule_label,
+    zia_get_rule_label,
+    zia_list_rule_labels,
+    zia_update_rule_label,
+)
 
 # =============================================================================
 # Fixtures

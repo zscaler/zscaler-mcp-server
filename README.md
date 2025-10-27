@@ -19,7 +19,7 @@
 
 - [📺 Overview](#-overview)
 - [🔒 Security & Permissions](#-security--permissions)
-- [⚙️ Supported Tools](#️-supported-tools)
+- [Supported Tools](#supported-tools)
   - [ZCC Features](#zcc-features)
   - [ZDX Features](#zdx-features)
   - [ZIdentity Features](#zidentity-features)
@@ -47,25 +47,25 @@
   - [OneAPI Authentication](#oneapi-authentication)
   - [Legacy Authentication](#legacy-authentication-when-zscaler_use_legacytrue)
 - [As a Library](#as-a-library)
-- [🐳 Container Usage](#container-usage)
+- [Container Usage](#container-usage)
   - [Using Pre-built Image (Recommended)](#using-pre-built-image-recommended)
   - [Building Locally (Development)](#building-locally-development)
-- [🔧 Editor/Assistant Integration](#editorassistant-integration)
+- [Editor/Assistant Integration](#editorassistant-integration)
   - [Using `uvx` (recommended)](#using-uvx-recommended)
   - [With Service Selection](#with-service-selection)
   - [Using Individual Environment Variables](#using-individual-environment-variables)
   - [Docker Version](#docker-version)
-- [🚀 Additional Deployment Options](#additional-deployment-options)
+- [Additional Deployment Options](#additional-deployment-options)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
-- [🔦 Using the MCP Server with Agents](#-using-the-mcp-server-with-agents)
-  - [🧠 Claude](#-claude)
-  - [💻 Cursor](#-cursor)
+- [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
+  - [Claude](#claude)
+  - [Cursor](#cursor)
   - [Visual Studio Code + GitHub Copilot](#visual-studio-code--github-copilot)
-- [📝 Troubleshooting](#-troubleshooting)
-- [🤝 Contributing](#contributing)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
   - [Getting Started for Contributors](#getting-started-for-contributors)
   - [Running Tests](#running-tests)
-- [📄 License](#license)
+- [License](#license)
 
 ## 📺 Overview
 
@@ -245,7 +245,7 @@ This multi-layered approach ensures that even if one security control is bypasse
 - **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
 - **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
 
-## ⚙️ Supported Tools
+## Supported Tools
 
 The Zscaler Integrations MCP Server provides tools for all major Zscaler services. Each service offers specific functionality for managing and querying Zscaler resources.
 
@@ -1373,7 +1373,7 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
 
 To deploy the MCP Server as a tool in Amazon Bedrock AgentCore, please refer to the [following document](./docs/deployment/amazon_bedrock_agentcore.md).
 
-## 🔦 Using the MCP Server with Agents
+## Using the MCP Server with Agents
 
 Once your server is running (via Docker or source), you can access its tools through AI-integrated editors or platforms.
 
@@ -1390,7 +1390,7 @@ Once your server is running (via Docker or source), you can access its tools thr
 docker pull quay.io/zscaler/zscaler-mcp-server:latest
 ```
 
-**Step 2: Create your credentials file**
+#### Step 2: Create your credentials file
 
 Create a file named `.env` with your Zscaler credentials:
 
@@ -1407,7 +1407,7 @@ ZSCALER_CLOUD=production
 # ZSCALER_MCP_WRITE_TOOLS=zpa_create_*,zpa_delete_*
 ```
 
-**Step 3: Configure Claude Desktop**
+#### Step 3: Configure Claude Desktop
 
 1. Open Claude Desktop
 2. Go to: **Settings → Developer → Edit Config**
@@ -1439,11 +1439,11 @@ Example paths:
 - macOS/Linux: `/Users/yourname/zscaler-mcp/.env`
 - Windows: `C:\\Users\\yourname\\zscaler-mcp\\.env`
 
-**Step 4: Restart Claude Desktop**
+#### Step 4: Restart Claude Desktop
 
 Completely quit and reopen Claude Desktop for changes to take effect.
 
-**Step 5: Test the connection**
+#### Step 5: Test the connection
 
 Ask Claude: `"List my ZPA application segments"` or `"Check Zscaler connectivity"`
 
@@ -1457,7 +1457,7 @@ If you have Python installed and want to run from source:
 pip install zscaler-mcp
 ```
 
-2. Configure Claude Desktop (`claude_desktop_config.json`):
+1. Configure Claude Desktop (`claude_desktop_config.json`):
 
 ```json
 {
@@ -1477,7 +1477,7 @@ pip install zscaler-mcp
 }
 ```
 
-3. Restart Claude Desktop
+1. Restart Claude Desktop
 
 #### Troubleshooting Claude Configuration
 
@@ -1522,13 +1522,12 @@ After installation, select GitHub Copilot Agent Mode and refresh the tools list.
 
 📚 Learn more about Agent Mode in the [VS Code Copilot documentation](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
 
-
 #### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) installed and running
 - Zscaler API credentials
 
-## 📝 Troubleshooting
+## Troubleshooting
 
 See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common issues and logging.
 

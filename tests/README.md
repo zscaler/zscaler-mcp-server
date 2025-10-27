@@ -4,7 +4,7 @@ This directory contains the test suite for the Zscaler MCP Server, organized by 
 
 ## 📁 Directory Structure
 
-```
+```text
 tests/
 ├── conftest.py              # Pytest configuration and fixtures
 ├── test_server.py           # Server initialization tests
@@ -35,6 +35,7 @@ tests/
 Following the test pyramid approach:
 
 ### 1. Unit Tests (Most) - `tests/[service]/`
+
 - **Purpose**: Test individual tool functions in isolation
 - **Speed**: Fast (< 1s per test)
 - **Mocking**: Full - no real API calls
@@ -50,6 +51,7 @@ pytest tests/zia/ -v
 ```
 
 ### 2. Integration Tests (Moderate) - Top level tests
+
 - **Purpose**: Test multiple components working together
 - **Speed**: Moderate (1-5s per test)
 - **Mocking**: Partial - some real components
@@ -62,6 +64,7 @@ pytest tests/test_*.py -v
 ```
 
 ### 3. End-to-End Tests (Few) - `tests/e2e/`
+
 - **Purpose**: Test complete workflows with real APIs
 - **Speed**: Slow (5-30s per test)
 - **Mocking**: None - requires real credentials
@@ -184,6 +187,7 @@ class TestWorkflow:
 ### Test Coverage Requirements
 
 Each tool function should have tests for:
+
 - ✅ **Success case** - Normal operation with valid inputs
 - ✅ **Error handling** - API errors and exceptions
 - ✅ **Input validation** - Missing or invalid parameters
@@ -193,6 +197,7 @@ Each tool function should have tests for:
 ### Example: Complete Test Coverage
 
 See `tests/zia/test_rule_labels.py` for a complete example:
+
 - **23 tests** covering all 5 CRUD operations
 - **100% code coverage** of the tool functions
 - **All edge cases** handled
@@ -241,6 +246,7 @@ pytest tests/ --lf
 ## 🤝 Contributing
 
 When adding new tools, please:
+
 1. Create unit tests in the appropriate service folder
 2. Ensure 100% code coverage for the new tool
 3. Follow the test structure and naming conventions
@@ -249,7 +255,7 @@ When adding new tools, please:
 ---
 
 For more information, see:
+
 - [Test Pyramid Best Practices](https://martinfowler.com/articles/practical-test-pyramid.html)
 - [Pytest Documentation](https://docs.pytest.org/)
 - [Contributing Guide](../CONTRIBUTING.md)
-

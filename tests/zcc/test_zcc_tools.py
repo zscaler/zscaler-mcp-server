@@ -8,13 +8,14 @@ This module tests all ZCC tools:
 - zcc_list_trusted_networks (read-only)
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from zscaler_mcp.tools.zcc.list_devices import zcc_list_devices
+
+import pytest
+
 from zscaler_mcp.tools.zcc.download_devices import zcc_devices_csv_exporter
+from zscaler_mcp.tools.zcc.list_devices import zcc_list_devices
 from zscaler_mcp.tools.zcc.list_forwarding_profiles import zcc_list_forwarding_profiles
 from zscaler_mcp.tools.zcc.list_trusted_networks import zcc_list_trusted_networks
-
 
 # =============================================================================
 # Fixtures

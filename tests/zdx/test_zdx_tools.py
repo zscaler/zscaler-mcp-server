@@ -14,21 +14,37 @@ This module tests all 18 ZDX read-only tools across 10 files:
 - list_historical_alerts: zdx_list_historical_alerts
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-# Import all ZDX tools
-from zscaler_mcp.tools.zdx.active_devices import zdx_list_devices, zdx_get_device
-from zscaler_mcp.tools.zdx.administration import zdx_list_departments, zdx_list_locations
-from zscaler_mcp.tools.zdx.list_applications import zdx_list_applications
-from zscaler_mcp.tools.zdx.get_application_score import zdx_get_application, zdx_get_application_score_trend
-from zscaler_mcp.tools.zdx.get_application_user import zdx_list_application_users, zdx_get_application_user
-from zscaler_mcp.tools.zdx.get_application_metric import zdx_get_application_metric
-from zscaler_mcp.tools.zdx.list_alerts import zdx_list_alerts, zdx_get_alert, zdx_list_alert_affected_devices
-from zscaler_mcp.tools.zdx.list_deep_traces import zdx_list_device_deep_traces, zdx_get_device_deep_trace
-from zscaler_mcp.tools.zdx.list_software_inventory import zdx_list_software, zdx_get_software_details
-from zscaler_mcp.tools.zdx.list_historical_alerts import zdx_list_historical_alerts
+import pytest
 
+# Import all ZDX tools
+from zscaler_mcp.tools.zdx.active_devices import zdx_get_device, zdx_list_devices
+from zscaler_mcp.tools.zdx.administration import zdx_list_departments, zdx_list_locations
+from zscaler_mcp.tools.zdx.get_application_metric import zdx_get_application_metric
+from zscaler_mcp.tools.zdx.get_application_score import (
+    zdx_get_application,
+    zdx_get_application_score_trend,
+)
+from zscaler_mcp.tools.zdx.get_application_user import (
+    zdx_get_application_user,
+    zdx_list_application_users,
+)
+from zscaler_mcp.tools.zdx.list_alerts import (
+    zdx_get_alert,
+    zdx_list_alert_affected_devices,
+    zdx_list_alerts,
+)
+from zscaler_mcp.tools.zdx.list_applications import zdx_list_applications
+from zscaler_mcp.tools.zdx.list_deep_traces import (
+    zdx_get_device_deep_trace,
+    zdx_list_device_deep_traces,
+)
+from zscaler_mcp.tools.zdx.list_historical_alerts import zdx_list_historical_alerts
+from zscaler_mcp.tools.zdx.list_software_inventory import (
+    zdx_get_software_details,
+    zdx_list_software,
+)
 
 # =============================================================================
 # Fixtures

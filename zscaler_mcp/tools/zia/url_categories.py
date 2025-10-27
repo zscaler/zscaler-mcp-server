@@ -1,7 +1,8 @@
-from typing import Union, Annotated, List, Optional, Dict
-from pydantic import Field
-from zscaler_mcp.client import get_zscaler_client
+from typing import Annotated, Dict, List, Optional, Union
 
+from pydantic import Field
+
+from zscaler_mcp.client import get_zscaler_client
 
 # =============================================================================
 # READ-ONLY OPERATIONS
