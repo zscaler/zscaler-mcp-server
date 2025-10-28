@@ -71,11 +71,11 @@ class ZCCService(BaseService):
     def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZCC tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
-        
+
         # Register verb-based tools with proper annotations (all read-only)
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
         write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
-        
+
         logger.info(f"ZCC Service: Registered {read_count} read tools, {write_count} write tools")
 
 
@@ -136,11 +136,11 @@ class ZDXService(BaseService):
     def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZDX tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
-        
+
         # Register verb-based tools with proper annotations (all read-only)
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
         write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
-        
+
         logger.info(f"ZDX Service: Registered {read_count} read tools, {write_count} write tools")
 
 
@@ -254,6 +254,15 @@ class ZPAService(BaseService):
             zpa_list_service_edge_groups,
             zpa_update_service_edge_group,
         )
+        from .tools.zpa.get_app_protection_profile import app_protection_profile_manager
+        from .tools.zpa.get_enrollment_certificate import enrollment_certificate_manager
+        from .tools.zpa.get_isolation_profile import isolation_profile_manager
+        from .tools.zpa.get_posture_profiles import posture_profile_manager
+        from .tools.zpa.get_saml_attributes import saml_attribute_manager
+        from .tools.zpa.get_scim_attributes import scim_attribute_manager
+        from .tools.zpa.get_scim_groups import scim_group_manager
+        from .tools.zpa.get_segments_by_type import app_segments_by_type_manager
+        from .tools.zpa.get_trusted_networks import trusted_network_manager
 
         # Define read-only tools
         self.read_tools = [
@@ -287,6 +296,18 @@ class ZPAService(BaseService):
             {"func": zpa_get_pra_portal, "name": "zpa_get_pra_portal", "description": "Get a specific ZPA PRA portal by ID (read-only)"},
             {"func": zpa_list_pra_credentials, "name": "zpa_list_pra_credentials", "description": "List ZPA PRA credentials (read-only)"},
             {"func": zpa_get_pra_credential, "name": "zpa_get_pra_credential", "description": "Get a specific ZPA PRA credential by ID (read-only)"},
+            # Profile and Certificate Management
+            {"func": app_protection_profile_manager, "name": "get_zpa_app_protection_profile", "description": "Manage ZPA App Protection Profiles (Inspection Profiles) (read-only)"},
+            {"func": enrollment_certificate_manager, "name": "get_zpa_enrollment_certificate", "description": "Manage ZPA Enrollment Certificates (read-only)"},
+            {"func": isolation_profile_manager, "name": "get_zpa_isolation_profile", "description": "Manage ZPA Cloud Browser Isolation (CBI) profiles (read-only)"},
+            {"func": posture_profile_manager, "name": "get_zpa_posture_profile", "description": "Manage ZPA Posture Profiles (read-only)"},
+            # Identity and Access Management
+            {"func": saml_attribute_manager, "name": "get_zpa_saml_attribute", "description": "Manage ZPA SAML Attributes (read-only)"},
+            {"func": scim_attribute_manager, "name": "get_zpa_scim_attribute", "description": "Manage ZPA SCIM Attributes (read-only)"},
+            {"func": scim_group_manager, "name": "get_zpa_scim_group", "description": "Manage ZPA SCIM Groups (read-only)"},
+            # Network and Segment Management
+            {"func": app_segments_by_type_manager, "name": "get_zpa_app_segments_by_type", "description": "Manage ZPA application segments by type (read-only)"},
+            {"func": trusted_network_manager, "name": "get_zpa_trusted_network", "description": "Manage ZPA Trusted Networks (read-only)"},
         ]
 
         # Define write tools
@@ -340,11 +361,11 @@ class ZPAService(BaseService):
     def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZPA tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
-        
+
         # Register verb-based tools with proper annotations
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
         write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
-        
+
         logger.info(f"ZPA Service: Registered {read_count} read tools, {write_count} write tools")
 
 
@@ -457,6 +478,11 @@ class ZIAService(BaseService):
             zia_list_web_dlp_rules_lite,
             zia_update_web_dlp_rule,
         )
+        from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
+        from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
+        from .tools.zia.list_user_departments import zia_user_department_manager
+        from .tools.zia.list_user_groups import zia_user_group_manager
+        from .tools.zia.list_users import zia_users_manager
 
         # Read-only tools
         self.read_tools = [
@@ -470,6 +496,14 @@ class ZIAService(BaseService):
             {"func": zia_list_web_dlp_rules, "name": "zia_list_web_dlp_rules", "description": "List ZIA web DLP rules (read-only)"},
             {"func": zia_list_web_dlp_rules_lite, "name": "zia_list_web_dlp_rules_lite", "description": "List ZIA web DLP rules in lite format (read-only)"},
             {"func": zia_get_web_dlp_rule, "name": "zia_get_web_dlp_rule", "description": "Get a specific ZIA web DLP rule by ID (read-only)"},
+            # DLP Dictionaries
+            {"func": zia_dlp_dictionary_manager, "name": "get_zia_dlp_dictionaries", "description": "Manage ZIA DLP dictionaries for data loss prevention pattern and phrase matching (read-only)"},
+            # DLP Engines
+            {"func": zia_dlp_engine_manager, "name": "get_zia_dlp_engines", "description": "Manage ZIA DLP engines for data loss prevention rule processing (read-only)"},
+            # User Management
+            {"func": zia_user_department_manager, "name": "get_zia_user_departments", "description": "Manage ZIA user departments for organizational structure (read-only)"},
+            {"func": zia_user_group_manager, "name": "get_zia_user_groups", "description": "Manage ZIA user groups for access control and policy assignment (read-only)"},
+            {"func": zia_users_manager, "name": "get_zia_users", "description": "Manage ZIA users for authentication and access control (read-only)"},
             # IP Source Groups
             {"func": zia_list_ip_source_groups, "name": "zia_list_ip_source_groups", "description": "List ZIA IP source groups (read-only)"},
             {"func": zia_get_ip_source_group, "name": "zia_get_ip_source_group", "description": "Get a specific ZIA IP source group by ID (read-only)"},
@@ -575,11 +609,11 @@ class ZIAService(BaseService):
     def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZIA tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
-        
+
         # Register verb-based tools with proper annotations
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
         write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
-        
+
         logger.info(f"ZIA Service: Registered {read_count} read tools, {write_count} write tools")
 
 
@@ -637,11 +671,11 @@ class ZTWService(BaseService):
     def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZTW tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
-        
+
         # Register verb-based tools with proper annotations
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
         write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
-        
+
         logger.info(f"ZTW Service: Registered {read_count} read tools, {write_count} write tools")
 
 
@@ -685,11 +719,11 @@ class ZIdentityService(BaseService):
     def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
         """Register ZIdentity tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
-        
+
         # Register verb-based tools with proper annotations (all read-only)
         read_count = register_read_tools(server, self.read_tools, enabled_tools)
         write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
-        
+
         logger.info(f"ZIdentity Service: Registered {read_count} read tools, {write_count} write tools")
 
 
