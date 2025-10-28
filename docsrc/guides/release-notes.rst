@@ -6,6 +6,44 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+0.3.1 (October 28, 2025) - Tool Registration & Naming Updates
+--------------------------------------------------------------
+
+Added
+------
+
+`PR #14 <https://github.com/zscaler/zscaler-mcp-server/pull/14>`_
+
+- **ZIA Tools**: Added missing read-only tools to services registration
+  - `get_zia_dlp_dictionaries` - Manage ZIA DLP dictionaries for data loss prevention
+  - `get_zia_dlp_engines` - Manage ZIA DLP engines for rule processing
+  - `get_zia_user_departments` - Manage ZIA user departments for organizational structure
+  - `get_zia_user_groups` - Manage ZIA user groups for access control
+  - `get_zia_users` - Manage ZIA users for authentication and access control
+
+- **ZPA Tools**: Added missing read-only tools to services registration
+  - `get_zpa_app_protection_profile` - Manage ZPA App Protection Profiles (Inspection Profiles)
+  - `get_zpa_enrollment_certificate` - Manage ZPA Enrollment Certificates
+  - `get_zpa_isolation_profile` - Manage ZPA Cloud Browser Isolation (CBI) profiles
+  - `get_zpa_posture_profile` - Manage ZPA Posture Profiles
+  - `get_zpa_saml_attribute` - Manage ZPA SAML Attributes
+  - `get_zpa_scim_attribute` - Manage ZPA SCIM Attributes
+  - `get_zpa_scim_group` - Manage ZPA SCIM Groups
+  - `get_zpa_app_segments_by_type` - Manage ZPA application segments by type
+  - `get_zpa_trusted_network` - Manage ZPA Trusted Networks
+
+### Changed
+
+- **Tool Naming Convention**: Updated tool names to follow consistent `get_*` pattern for read-only operations
+  - ZIA tools: `zia_*_manager` → `get_zia_*`
+  - ZPA tools: `*_manager` → `get_zpa_*`
+  - Maintains backward compatibility with existing `zia_get_*` and `zpa_get_*` patterns
+
+### Fixed
+
+- **Tool Registration**: Resolved missing tool registrations in `zscaler_mcp/services.py`
+- **Documentation**: Updated README.md with correct tool names and comprehensive tool listings
+
 0.3.0 (October 27, 2025) - Security & Confirmation Release
 -----------------------------------------------------------
 
