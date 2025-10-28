@@ -212,6 +212,15 @@ class ZPAService(BaseService):
             zpa_get_ba_certificate,
             zpa_list_ba_certificates,
         )
+        from .tools.zpa.get_app_protection_profile import app_protection_profile_manager
+        from .tools.zpa.get_enrollment_certificate import enrollment_certificate_manager
+        from .tools.zpa.get_isolation_profile import isolation_profile_manager
+        from .tools.zpa.get_posture_profiles import posture_profile_manager
+        from .tools.zpa.get_saml_attributes import saml_attribute_manager
+        from .tools.zpa.get_scim_attributes import scim_attribute_manager
+        from .tools.zpa.get_scim_groups import scim_group_manager
+        from .tools.zpa.get_segments_by_type import app_segments_by_type_manager
+        from .tools.zpa.get_trusted_networks import trusted_network_manager
         from .tools.zpa.pra_credential import (
             zpa_create_pra_credential,
             zpa_delete_pra_credential,
@@ -254,15 +263,6 @@ class ZPAService(BaseService):
             zpa_list_service_edge_groups,
             zpa_update_service_edge_group,
         )
-        from .tools.zpa.get_app_protection_profile import app_protection_profile_manager
-        from .tools.zpa.get_enrollment_certificate import enrollment_certificate_manager
-        from .tools.zpa.get_isolation_profile import isolation_profile_manager
-        from .tools.zpa.get_posture_profiles import posture_profile_manager
-        from .tools.zpa.get_saml_attributes import saml_attribute_manager
-        from .tools.zpa.get_scim_attributes import scim_attribute_manager
-        from .tools.zpa.get_scim_groups import scim_group_manager
-        from .tools.zpa.get_segments_by_type import app_segments_by_type_manager
-        from .tools.zpa.get_trusted_networks import trusted_network_manager
 
         # Define read-only tools
         self.read_tools = [
@@ -419,6 +419,11 @@ class ZIAService(BaseService):
             zia_list_ip_source_groups,
             zia_update_ip_source_group,
         )
+        from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
+        from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
+        from .tools.zia.list_user_departments import zia_user_department_manager
+        from .tools.zia.list_user_groups import zia_user_group_manager
+        from .tools.zia.list_users import zia_users_manager
         from .tools.zia.location_management import (
             zia_create_location,
             zia_delete_location,
@@ -478,11 +483,6 @@ class ZIAService(BaseService):
             zia_list_web_dlp_rules_lite,
             zia_update_web_dlp_rule,
         )
-        from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
-        from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
-        from .tools.zia.list_user_departments import zia_user_department_manager
-        from .tools.zia.list_user_groups import zia_user_group_manager
-        from .tools.zia.list_users import zia_users_manager
 
         # Read-only tools
         self.read_tools = [
