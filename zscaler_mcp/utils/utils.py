@@ -2,7 +2,7 @@ import json
 import platform
 import sys
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pycountry
 
@@ -452,37 +452,44 @@ def get_mcp_user_agent() -> str:
     return f"zscaler-mcp-server/{version}/{os_arch}"
 
 
-def get_combined_user_agent() -> str:
+def get_combined_user_agent(user_agent_comment: Optional[str] = None) -> str:
     """
-    Generate a combined user-agent string that includes both the MCP server
-    and the underlying SDK user-agent information.
+    Generate a user-agent string for the Zscaler MCP Server.
+
+    Args:
+        user_agent_comment: Optional additional information to append to the user-agent
+                          (e.g., "Claude Desktop 1.2024.10.23")
 
     Returns:
-        str: Combined user-agent string in the format:
-             zscaler-mcp-server/<version>/<OS_Architecture> zscaler-sdk-python/<sdk_version> python/<python_version> <OS>/<release>
+        str: User-agent string in the format:
+             zscaler-mcp-server/<version> python/<python_version> <os>/<arch> [comment]
 
     Examples:
         >>> get_combined_user_agent()
-        'zscaler-mcp-server/0.2.0/Darwin-24.6.0-x86_64 zscaler-sdk-python/1.7.9 python/3.11.8 Darwin/24.6.0'
+        'zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64'
+        >>> get_combined_user_agent("Claude Desktop 1.2024.10.23")
+        'zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64 Claude Desktop 1.2024.10.23'
     """
     import importlib.metadata
 
-    mcp_ua = get_mcp_user_agent()
-
-    # Get SDK version
+    # Get MCP server version
     try:
-        sdk_version = importlib.metadata.version("zscaler-sdk-python")
+        version = importlib.metadata.version("zscaler-mcp")
     except importlib.metadata.PackageNotFoundError:
-        sdk_version = "unknown"
+        version = "0.3.1"  # Default version from pyproject.toml
 
     # Get Python version
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
-    # Get OS information
-    system = platform.system()
-    release = platform.release()
+    # Get OS and architecture
+    system = platform.system().lower()  # e.g., 'darwin', 'linux', 'windows'
+    machine = platform.machine().lower()  # e.g., 'arm64', 'x86_64', 'amd64'
 
-    # Combine all user-agent components
-    sdk_ua = f"zscaler-sdk-python/{sdk_version} python/{python_version} {system}/{release}"
+    # Build the base user-agent string
+    user_agent = f"zscaler-mcp-server/{version} python/{python_version} {system}/{machine}"
 
-    return f"{mcp_ua} {sdk_ua}"
+    # Append optional comment if provided
+    if user_agent_comment:
+        user_agent += f" {user_agent_comment}"
+
+    return user_agent
