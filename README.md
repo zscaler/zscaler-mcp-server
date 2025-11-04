@@ -1058,12 +1058,13 @@ The Zscaler Integrations MCP Server uses the following internal environment vari
 
 The MCP server automatically includes a custom User-Agent header in all API requests to Zscaler services. The format is:
 
-```
+```sh
 User-Agent: zscaler-mcp-server/<version> python/<python_version> <os>/<architecture>
 ```
 
 **Example:**
-```
+
+```sh
 User-Agent: zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64
 ```
 
@@ -1080,7 +1081,8 @@ zscaler-mcp --user-agent-comment "Claude Desktop 1.2024.10.23"
 ```
 
 This results in:
-```
+
+```sh
 User-Agent: zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64 Claude Desktop 1.2024.10.23
 ```
 
