@@ -28,7 +28,7 @@ def main():
         # cloud="beta",
         debug=os.environ.get("ZSCALER_MCP_DEBUG", "").lower() == "true",
         enabled_services={"zia", "zpa", "zdx", "zcc"},  # Optional: enable specific services
-        user_agent_comment="Streamable HTTP Example"  # Optional: custom User-Agent
+        user_agent_comment="Streamable HTTP Example"  # Optional: appends to User-Agent (zscaler-mcp-server/VERSION python/VERSION os/arch)
     )
 
     # Example 1: Run with default settings (port 8000, localhost)

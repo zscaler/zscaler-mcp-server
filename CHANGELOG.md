@@ -1,5 +1,15 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.3.2 (November 4, 2025)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Enhancements
+
+[PR #15](https://github.com/zscaler/zscaler-mcp-server/pull/15) - Added custom User-Agent header support with format `zscaler-mcp-server/VERSION python/VERSION os/arch`. Users can append AI agent information via `--user-agent-comment` flag or `ZSCALER_MCP_USER_AGENT_COMMENT` environment variable.
+
 ## 0.3.1 (October 28, 2025) - Tool Registration & Naming Updates
 
 ### Added

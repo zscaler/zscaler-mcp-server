@@ -18,6 +18,8 @@ You'll need to create API credentials in the Zscaler platform with the appropria
    - `ZSCALER_VANITY_DOMAIN` - Your Zscaler Zidentity/OneAPI  vanity domain i.e acme
    - `ZSCALER_CUSTOMER_ID` - Your ZPA Customer ID if interacting with ZPA platform
    - `ZSCALER_CLOUD` - (Optional) Zscaler cloud environment (e.g., `beta`) - Required when interacting with Beta Tenant ONLY.
+   - `ZSCALER_MCP_WRITE_ENABLED` - (Optional) Enable write operations (default: `false`). Set to `true` to enable CREATE, UPDATE, and DELETE operations.
+   - `ZSCALER_MCP_WRITE_TOOLS` - (Optional) **MANDATORY** when `ZSCALER_MCP_WRITE_ENABLED=true`. Comma-separated allowlist of write tools (supports wildcards, e.g., `zpa_create_*,zpa_delete_*`). If empty when write mode is enabled, 0 write tools will be registered.
 
 ### AWS VPC Requirements
 
@@ -195,6 +197,8 @@ To host this agent in Amazon Bedrock AgentCore, the following variables will nee
 | `ZSCALER_CUSTOMER_ID` | Zscaler Private Access Customer ID |
 | `ZSCALER_VANITY_DOMAIN` | This refers to the domain name used by your organization |
 | `ZSCALER_CLOUD` | (Optional) This refers to Zscaler cloud name where API calls will be directed to. Only `beta` is supported |
+| `ZSCALER_MCP_WRITE_ENABLED` | (Optional) Enable write operations mode. Set to `true` to enable CREATE, UPDATE, and DELETE operations. Default: `false` (read-only mode). **⚠️ Security Note**: MCP server operates in read-only mode by default for security. |
+| `ZSCALER_MCP_WRITE_TOOLS` | (Optional) **MANDATORY** when `ZSCALER_MCP_WRITE_ENABLED=true`. Comma-separated allowlist of write tools that can be used. Supports wildcard patterns (e.g., `zpa_create_*`, `zpa_delete_*`, `zia_update_*`). If empty when write mode is enabled, 0 write tools will be registered (by design for security). Examples: `zpa_create_*`, `zpa_create_*,zpa_delete_*`, `zpa_*`, `zpa_create_application_segment` |
 | `AGENT_NAME` | The name of the agent (_ex: zscalermcp_) |
 | `AGENT_DESCRIPTION` | A description of the agent |
 | `AGENT_ROLE_ARN` | The ARN of the IAM execution role created in Step 1 |
@@ -226,8 +230,45 @@ aws bedrock-agentcore-control create-agent-runtime \
     "ZSCALER_CUSTOMER_ID": "ZSCALER_CUSTOMER_ID_VALUE",
     "ZSCALER_VANITY_DOMAIN": "ZSCALER_VANITY_DOMAIN_VALUE",
     "ZSCALER_CLOUD": "ZSCALER_CLOUD_VALUE",
+    "ZSCALER_MCP_WRITE_ENABLED": "false",
+    "ZSCALER_MCP_WRITE_TOOLS": ""
   }'
 ```
+
+#### Example Deployment with Write Mode Enabled
+
+If you need to enable write operations (CREATE, UPDATE, DELETE), you can configure the agent with write mode enabled and an allowlist:
+
+```bash
+aws bedrock-agentcore-control create-agent-runtime \
+  --region us-east-1 \
+  --agent-runtime-name "<AGENT_NAME>" \
+  --description "<AGENT_DESCRIPTION>" \
+  --agent-runtime-artifact '{
+    "containerConfiguration": {
+      "containerUri": "arn:aws:ecr:us-east-1:709825985650:repository/zscaler/zscaler-mcp-server"
+    }
+  }' \
+  --role-arn "<AGENT_ROLE_ARN>" \
+  --network-configuration '{
+    "networkMode": "PUBLIC"
+  }' \
+  --protocol-configuration '{
+    "serverProtocol": "MCP"
+  }' \
+  --environment-variables '{
+    "ZSCALER_CLIENT_ID": "ZSCALER_CLIENT_ID_VALUE",
+    "ZSCALER_CLIENT_SECRET": "ZSCALER_CLIENT_SECRET_VALUE",
+    "ZSCALER_CUSTOMER_ID": "ZSCALER_CUSTOMER_ID_VALUE",
+    "ZSCALER_VANITY_DOMAIN": "ZSCALER_VANITY_DOMAIN_VALUE",
+    "ZSCALER_CLOUD": "ZSCALER_CLOUD_VALUE",
+    "ZSCALER_MCP_WRITE_ENABLED": "true",
+    "ZSCALER_MCP_WRITE_TOOLS": "zpa_create_*,zpa_update_*,zia_create_rule_label"
+  }'
+```
+
+> [!WARNING]
+> **Security Best Practice**: When enabling write mode, always specify a restrictive allowlist in `ZSCALER_MCP_WRITE_TOOLS`. Only enable the specific write operations you need (e.g., `zpa_create_*` for ZPA create operations, or specific tool names like `zpa_create_application_segment`). If `ZSCALER_MCP_WRITE_ENABLED=true` but `ZSCALER_MCP_WRITE_TOOLS` is empty, 0 write tools will be registered (by design for security).
 
 #### Verify the AgentCore Status - Example
 

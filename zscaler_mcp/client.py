@@ -34,12 +34,17 @@ def get_zscaler_client(
     cloud: str = None,
     service: str = None,  # 'zpa' or 'zia'
     use_legacy: bool = False,
+    user_agent_comment: str = None,
 ):
     import os
 
     from dotenv import load_dotenv
 
     load_dotenv()
+    
+    # Get user agent comment from environment variable if not explicitly provided
+    if user_agent_comment is None:
+        user_agent_comment = os.getenv("ZSCALER_MCP_USER_AGENT_COMMENT")
 
     # ✅ Defensive fallback logic
     client_id = (
@@ -151,6 +156,9 @@ def get_zscaler_client(
         use_legacy (bool): If True, selects the appropriate legacy client (
                           LegacyZCCClient, LegacyZDXClient, LegacyZPAClient, LegacyZIAClient, LegacyZTWClient).
                           Can also be set via ZSCALER_USE_LEGACY environment variable.
+        user_agent_comment (str): Optional additional information to include in the User-Agent header
+                                 (e.g., "Claude Desktop 1.2024.10.23"). Can also be set via
+                                 ZSCALER_MCP_USER_AGENT_COMMENT environment variable.
 
     Returns:
         Union[ZscalerClient, LegacyZPAClient, LegacyZIAClient]: An authenticated client instance.
@@ -167,7 +175,7 @@ def get_zscaler_client(
     """
 
     # Generate custom user-agent for all requests
-    custom_user_agent = get_combined_user_agent()
+    custom_user_agent = get_combined_user_agent(user_agent_comment)
     logger.debug(f"[DEBUG] Using custom user-agent: {custom_user_agent}")
 
     if use_legacy:
