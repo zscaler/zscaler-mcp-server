@@ -10,15 +10,15 @@
 
 ## Support Disclaimer
 
--> **Disclaimer:** Please refer to our [General Support Statement](docs/guides/support.md) before proceeding with the use of this provider. You can also refer to our [troubleshooting guide](docs/guides/troubleshooting.md) for guidance on typical problems.
+-> **Disclaimer:** Please refer to our [General Support Statement](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/support.md) before proceeding with the use of this provider. You can also refer to our [troubleshooting guide](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/TROUBLESHOOTING.md) for guidance on typical problems.
 
 > [!IMPORTANT]
 > **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/zscaler/zscaler-mcp-server/issues) to help shape the final release.
 
 ## 📄 Table of contents
 
-- [📺 Overview](#-overview)
-- [🔒 Security & Permissions](#-security--permissions)
+- [📺 Overview](#overview)
+- [🔒 Security & Permissions](#security-permissions)
 - [Supported Tools](#supported-tools)
   - [ZCC Features](#zcc-features)
   - [ZDX Features](#zdx-features)
@@ -26,7 +26,7 @@
   - [ZIA Features](#zia-features)
   - [ZPA Features](#zpa-features)
   - [ZTW Features](#ztw-features)
-- [Installation & Setup](#installation--setup)
+- [Installation & Setup](#installation-setup)
   - [Prerequisites](#prerequisites)
   - [Environment Configuration](#environment-configuration)
   - [Installation](#installation)
@@ -34,7 +34,7 @@
   - [Command Line](#command-line)
   - [Service Configuration](#service-configuration)
   - [Additional Command Line Options](#additional-command-line-options)
-- [Zscaler API Credentials & Authentication](#zscaler-api-credentials--authentication)
+- [Zscaler API Credentials & Authentication](#zscaler-api-credentials-authentication)
   - [Zscaler OneAPI Authentication](#zscaler-oneapi-authentication)
   - [Using Legacy Mode with Environment Variable](#using-legacy-mode-with-environment-variable)
   - [Zscaler Legacy API Login](#zscaler-legacy-api-login)
@@ -45,12 +45,12 @@
 - [Internal Environment Variables](#internal-environment-variables)
   - [MCP Server Configuration](#mcp-server-configuration)
   - [OneAPI Authentication](#oneapi-authentication)
-  - [Legacy Authentication](#legacy-authentication-when-zscaler_use_legacytrue)
+  - [Legacy Authentication](#legacy-authentication-when-zscaler-use-legacy-true)
 - [As a Library](#as-a-library)
 - [Container Usage](#container-usage)
   - [Using Pre-built Image (Recommended)](#using-pre-built-image-recommended)
   - [Building Locally (Development)](#building-locally-development)
-- [Editor/Assistant Integration](#editorassistant-integration)
+- [Editor/Assistant Integration](#editor-assistant-integration)
   - [Using `uvx` (recommended)](#using-uvx-recommended)
   - [With Service Selection](#with-service-selection)
   - [Using Individual Environment Variables](#using-individual-environment-variables)
@@ -58,9 +58,9 @@
 - [Additional Deployment Options](#additional-deployment-options)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
 - [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
-  - [Claude](#claude)
+  - [Claude Desktop](#claude-desktop)
   - [Cursor](#cursor)
-  - [Visual Studio Code + GitHub Copilot](#visual-studio-code--github-copilot)
+  - [Visual Studio Code + GitHub Copilot](#visual-studio-code-github-copilot)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
   - [Getting Started for Contributors](#getting-started-for-contributors)
@@ -96,18 +96,15 @@ By default, the server operates in **read-only mode**, exposing only tools that 
 ```bash
 # Read-only mode (default - safe)
 zscaler-mcp
-
-```text
+```
 
 When the server starts in read-only mode, you'll see:
 
 ```text
-
 🔒 Server running in READ-ONLY mode (safe default)
    Only list and get operations are available
    To enable write operations, use --enable-write-tools AND --write-tools flags
-
-```text
+```
 
 > **💡 Read-only tools are ALWAYS registered** by the server regardless of any flags. You never need to enable them server-side. Note: Your AI agent UI (like Claude Desktop) may require you to enable individual tools before use.
 
@@ -126,19 +123,16 @@ zscaler-mcp --enable-write-tools
 
 # ✅ CORRECT: Explicit allowlist required
 zscaler-mcp --enable-write-tools --write-tools "zpa_create_*,zpa_delete_*"
-
-```text
+```
 
 When you try to enable write mode without an allowlist:
 
 ```text
-
 ⚠️  WRITE TOOLS MODE ENABLED
 ⚠️  NO allowlist provided - 0 write tools will be registered
 ⚠️  Read-only tools will still be available
 ⚠️  To enable write operations, add: --write-tools 'pattern'
-
-```text
+```
 
 #### Write Tools Allowlist (MANDATORY)
 
@@ -158,17 +152,15 @@ zscaler-mcp --enable-write-tools --write-tools "zpa_create_application_segment,z
 
 # Enable all ZPA write operations (but no ZIA/ZDX/ZTW)
 zscaler-mcp --enable-write-tools --write-tools "zpa_*"
-
-```text
+```
 
 Or via environment variable:
-```bash
 
+```bash
 export ZSCALER_MCP_WRITE_ENABLED=true
 export ZSCALER_MCP_WRITE_TOOLS="zpa_create_*,zpa_delete_*"
 zscaler-mcp
-
-```text
+```
 
 **Wildcard patterns supported:**
 
@@ -181,30 +173,26 @@ zscaler-mcp
 When using a valid allowlist, you'll see:
 
 ```text
-
 ⚠️  WRITE TOOLS MODE ENABLED
 ⚠️  Explicit allowlist provided - only listed write tools will be registered
 ⚠️  Allowed patterns: zpa_create_*, zpa_delete_*
 ⚠️  Server can CREATE, MODIFY, and DELETE Zscaler resources
 🔒 Security: 85 write tools blocked by allowlist, 8 allowed
-
-```text
+```
 
 ### Tool Design Philosophy
 
 Each operation is a **separate, single-purpose tool** with explicit naming that makes its intent clear:
 
-**✅ Good (Verb-Based - Current Design)**
+#### ✅ Good (Verb-Based - Current Design)
 
 ```text
-
 zpa_list_application_segments    ← Read-only, safe to allow-list
 zpa_get_application_segment      ← Read-only, safe to allow-list
 zpa_create_application_segment   ← Write operation, requires --enable-write-tools
 zpa_update_application_segment   ← Write operation, requires --enable-write-tools
 zpa_delete_application_segment   ← Destructive, requires --enable-write-tools
-
-```text
+```
 
 This design allows AI assistants (Claude, Cursor, GitHub Copilot) to:
 
@@ -700,10 +688,8 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 Copy the example environment file and configure your credentials:
 
 ```bash
-
 cp .env.example .env
-
-```text
+```
 
 Then edit `.env` with your Zscaler API credentials:
 
@@ -739,39 +725,31 @@ Then edit `.env` with your Zscaler API credentials:
 #### Install using uv (recommended)
 
 ```bash
-
 uv tool install zscaler-mcp
-
-```text
+```
 
 #### Install from source using uv (development)
 
 ```bash
-
 uv pip install -e .
-
-```text
+```
 
 #### Install from source using pip
 
 ```bash
-
 pip install -e .
-
-```text
+```
 
 #### Install using make (convenience)
 
 ```bash
-
 make install-dev
-
-```text
+```
 
 > [!TIP]
 > If `zscaler-mcp-server` isn't found, update your shell PATH.
 
-For installation via code editors/assistants, see the [Using the MCP Server with Agents](#-using-the-mcp-server-with-agents) section below.
+For installation via code editors/assistants, see the [Using the MCP Server with Agents](#using-the-mcp-server-with-agents) section below.
 
 ## Usage
 
@@ -783,42 +761,32 @@ For installation via code editors/assistants, see the [Using the MCP Server with
 Run the server with default settings (stdio transport, read-only mode):
 
 ```bash
-
 zscaler-mcp
-
-```text
+```
 
 Run the server with write operations enabled:
 
 ```bash
-
 zscaler-mcp --enable-write-tools
-
-```text
+```
 
 Run with SSE transport:
 
 ```bash
-
 zscaler-mcp --transport sse
-
-```text
+```
 
 Run with streamable-http transport:
 
 ```bash
-
 zscaler-mcp --transport streamable-http
-
-```text
+```
 
 Run with streamable-http transport on custom port:
 
 ```bash
-
 zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8080
-
-```text
+```
 
 ### Service Configuration
 
@@ -834,8 +802,7 @@ zscaler-mcp --services zia,zpa,zdx
 
 # Enable only one service
 zscaler-mcp --services zia
-
-```text
+```
 
 #### 2. Environment Variable (fallback)
 
@@ -848,8 +815,7 @@ zscaler-mcp
 
 # Or set inline
 ZSCALER_MCP_SERVICES=zia,zpa,zdx zscaler-mcp
-
-```text
+```
 
 #### 3. Default Behavior (all services)
 
@@ -872,16 +838,13 @@ zscaler-mcp --debug
 
 # Combine multiple options
 zscaler-mcp --services zia,zpa --enable-write-tools --debug
-
-```text
+```
 
 For all available options:
 
 ```bash
-
 zscaler-mcp --help
-
-```text
+```
 
 Available command-line flags:
 
@@ -912,14 +875,12 @@ Before using the Zscaler Integrations MCP Server, you need to create API credent
 Create a `.env` file in your project root with the following:
 
 ```env
-
 ZSCALER_CLIENT_ID=your_client_id
 ZSCALER_CLIENT_SECRET=your_client_secret
 ZSCALER_CUSTOMER_ID=your_customer_id
 ZSCALER_VANITY_DOMAIN=your_vanity_domain
 ZSCALER_CLOUD=beta
-
-```text
+```
 
 ⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
 
@@ -962,8 +923,7 @@ ZCC_CLOUD=beta
 ZDX_CLIENT_ID=your_zdx_client_id
 ZDX_CLIENT_SECRET=your_zdx_client_secret
 ZDX_CLOUD=beta
-
-```text
+```
 
 When `ZSCALER_USE_LEGACY=true` is set, all tools will use legacy API clients by default. You can still override this per tool call by explicitly setting `use_legacy: false` in the tool parameters.
 
@@ -978,13 +938,11 @@ When `ZSCALER_USE_LEGACY=true` is set, all tools will use legacy API clients by 
 You can provide credentials via the `ZIA_USERNAME`, `ZIA_PASSWORD`, `ZIA_API_KEY`, `ZIA_CLOUD` environment variables, representing your ZIA `username`, `password`, `api_key` and `cloud` respectively.
 
 ```env
-
 ZIA_USERNAME=username
 ZIA_PASSWORD=password
 ZIA_API_KEY=api_key
 ZIA_CLOUD=cloud
-
-```text
+```
 
 ⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
 
@@ -1012,13 +970,11 @@ The following cloud environments are supported:
 You can provide credentials via the `ZPA_CLIENT_ID`, `ZPA_CLIENT_SECRET`, `ZPA_CUSTOMER_ID`, `ZPA_CLOUD` environment variables, representing your ZPA `clientId`, `clientSecret`, `customerId` and `cloud` of your ZPA account, respectively.
 
 ```env
-
 ZPA_CLIENT_ID=client_id
 ZPA_CLIENT_SECRET=client_secret
 ZPA_CUSTOMER_ID=customer_id
 ZPA_CLOUD=cloud
-
-```text
+```
 
 ⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
 
@@ -1037,12 +993,10 @@ You can provide credentials via the `ZCC_CLIENT_ID`, `ZCC_CLIENT_SECRET`, `ZCC_C
 ~> **NOTE** `ZCC_CLOUD` environment variable is required, and is used to identify the correct API gateway where the API requests should be forwarded to.
 
 ```env
-
 ZCC_CLIENT_ID=api_key
 ZCC_CLIENT_SECRET=secret_key
 ZCC_CLOUD=cloud
-
-```text
+```
 
 ⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
 
@@ -1069,12 +1023,10 @@ The following cloud environments are supported:
 You can provide credentials via the `ZDX_CLIENT_ID`, `ZDX_CLIENT_SECRET` environment variables, representing your ZDX `key_id`, `key_secret` of your ZDX account, respectively.
 
 ```env
-
 ZDX_CLIENT_ID=api_key
 ZDX_CLIENT_SECRET=secret_key
 ZDX_CLOUD=cloud
-
-```text
+```
 
 ⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
 
@@ -1101,6 +1053,40 @@ The Zscaler Integrations MCP Server uses the following internal environment vari
 | `ZSCALER_MCP_HOST` | `127.0.0.1` | Host to bind to for HTTP transports |
 | `ZSCALER_MCP_PORT` | `8000` | Port to listen on for HTTP transports |
 | `ZSCALER_MCP_USER_AGENT_COMMENT` | `""` | Additional information to include in User-Agent comment section |
+
+#### User-Agent Header
+
+The MCP server automatically includes a custom User-Agent header in all API requests to Zscaler services. The format is:
+
+```sh
+User-Agent: zscaler-mcp-server/<version> python/<python_version> <os>/<architecture>
+```
+
+**Example:**
+
+```sh
+User-Agent: zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64
+```
+
+**With Custom Comment:**
+
+You can append additional information (such as the AI agent details) using the `ZSCALER_MCP_USER_AGENT_COMMENT` environment variable or the `--user-agent-comment` CLI flag:
+
+```bash
+# Via environment variable
+export ZSCALER_MCP_USER_AGENT_COMMENT="Claude Desktop 1.2024.10.23"
+
+# Via CLI flag
+zscaler-mcp --user-agent-comment "Claude Desktop 1.2024.10.23"
+```
+
+This results in:
+
+```sh
+User-Agent: zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64 Claude Desktop 1.2024.10.23
+```
+
+The User-Agent helps Zscaler identify API traffic from the MCP server and can be useful for support, analytics, and debugging purposes.
 
 #### OneAPI Authentication
 
@@ -1155,7 +1141,6 @@ The Zscaler Integrations MCP Server uses the following internal environment vari
 You can use the Zscaler Integrations MCP Server as a Python library in your own applications:
 
 ```python
-
 from zscaler_mcp.server import ZscalerMCPServer
 
 # Create server with read-only mode (default - safe)
@@ -1178,13 +1163,11 @@ server.run("streamable-http")
 
 # Or run with streamable-http transport on custom host/port
 server.run("streamable-http", host="0.0.0.0", port=8080)
-
-```text
+```
 
 **Example with write operations enabled:**
 
 ```python
-
 from zscaler_mcp.server import ZscalerMCPServer
 
 # Create server with write operations enabled
@@ -1196,15 +1179,13 @@ server = ZscalerMCPServer(
 
 # Run the server
 server.run("stdio")
-
-```text
+```
 
 **Available Services**: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`
 
 **Example with Environment Variables**:
 
 ```python
-
 from zscaler_mcp.server import ZscalerMCPServer
 import os
 
@@ -1216,8 +1197,7 @@ server = ZscalerMCPServer(
 
 # Run the server
 server.run("stdio")
-
-```text
+```
 
 ### Running Examples
 
@@ -1230,8 +1210,7 @@ python examples/sse_usage.py
 
 # Run with streamable-http transport
 python examples/streamable_http_usage.py
-
-```text
+```
 
 ## Container Usage
 
@@ -1270,8 +1249,7 @@ docker run --rm --env-file /path/to/.env \
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
   -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain \
   quay.io/zscaler/zscaler-mcp-server:latest
-
-```text
+```
 
 ### Building Locally (Development)
 
@@ -1284,8 +1262,7 @@ docker build -t zscaler-mcp-server .
 # Run the locally built image
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
   -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain zscaler-mcp-server
-
-```text
+```
 
 **Note**: When using HTTP transports in Docker, always set `--host 0.0.0.0` to allow external connections to the container.
 
@@ -1296,7 +1273,6 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
 ### Using `uvx` (recommended)
 
 ```json
-
 {
   "mcpServers": {
     "zscaler-mcp-server": {
@@ -1305,13 +1281,11 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
     }
   }
 }
-
-```text
+```
 
 ### With Service Selection
 
 ```json
-
 {
   "mcpServers": {
     "zscaler-mcp-server": {
@@ -1324,13 +1298,11 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
     }
   }
 }
-
-```text
+```
 
 ### Using Individual Environment Variables
 
 ```json
-
 {
   "mcpServers": {
     "zscaler-mcp-server": {
@@ -1345,13 +1317,11 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
     }
   }
 }
-
-```text
+```
 
 ### Docker Version
 
 ```json
-
 {
   "mcpServers": {
     "zscaler-mcp-server": {
@@ -1364,8 +1334,7 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
     }
   }
 }
-
-```text
+```
 
 ## Additional Deployment Options
 
@@ -1384,13 +1353,13 @@ Once your server is running (via Docker or source), you can access its tools thr
 
 #### Option 1: Using Docker (Recommended)
 
-**Step 1: Pull the Docker image**
+##### Step 1: Pull the Docker image
 
 ```bash
 docker pull quay.io/zscaler/zscaler-mcp-server:latest
 ```
 
-#### Step 2: Create your credentials file
+##### Step 2: Create your credentials file
 
 Create a file named `.env` with your Zscaler credentials:
 
@@ -1407,7 +1376,7 @@ ZSCALER_CLOUD=production
 # ZSCALER_MCP_WRITE_TOOLS=zpa_create_*,zpa_delete_*
 ```
 
-#### Step 3: Configure Claude Desktop
+##### Step 3: Configure Claude Desktop
 
 1. Open Claude Desktop
 2. Go to: **Settings → Developer → Edit Config**
@@ -1439,11 +1408,11 @@ Example paths:
 - macOS/Linux: `/Users/yourname/zscaler-mcp/.env`
 - Windows: `C:\\Users\\yourname\\zscaler-mcp\\.env`
 
-#### Step 4: Restart Claude Desktop
+##### Step 4: Restart Claude Desktop
 
 Completely quit and reopen Claude Desktop for changes to take effect.
 
-#### Step 5: Test the connection
+##### Step 5: Test the connection
 
 Ask Claude: `"List my ZPA application segments"` or `"Check Zscaler connectivity"`
 
@@ -1538,11 +1507,9 @@ See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common 
 1. Clone the repository:
 
    ```bash
-
    git clone https://github.com/zscaler/zscaler-mcp-server.git
    cd zscaler-mcp-server
-
-```text
+   ```
 
 2. Install in development mode:
 
@@ -1552,8 +1519,7 @@ See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common 
 
    # Activate the venv
    source .venv/bin/activate
-
-```text
+   ```
 
 > [!IMPORTANT]
 > This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated releases and semantic versioning. Please follow the commit message format outlined in our [Contributing Guide](docs/CONTRIBUTING.md) when submitting changes.
@@ -1569,8 +1535,7 @@ pytest --run-e2e tests/e2e/
 
 # Run end-to-end tests with verbose output (note: -s is required to see output)
 pytest --run-e2e -v -s tests/e2e/
-
-```text
+```
 
 ## Privacy Policy
 
