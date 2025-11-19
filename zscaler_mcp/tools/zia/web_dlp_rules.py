@@ -1,22 +1,13 @@
-import json
 from typing import Annotated, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
-
-def _parse_list(val):
-    """Helper function to parse list parameters that can be JSON strings or lists."""
-    if isinstance(val, str):
-        try:
-            return json.loads(val)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON string: {e}")
-    return val
 
 
 def _build_web_dlp_rule_payload(
@@ -71,7 +62,7 @@ def _build_web_dlp_rule_payload(
 
     # File and content parameters
     if file_types is not None:
-        payload["file_types"] = _parse_list(file_types)
+        payload["file_types"] = parse_list(file_types)
     if min_size is not None:
         payload["min_size"] = min_size
     if match_only is not None:
@@ -79,7 +70,7 @@ def _build_web_dlp_rule_payload(
 
     # DLP-specific parameters
     if dlp_content_locations_scopes is not None:
-        payload["dlp_content_locations_scopes"] = _parse_list(dlp_content_locations_scopes)
+        payload["dlp_content_locations_scopes"] = parse_list(dlp_content_locations_scopes)
     if dlp_download_scan_enabled is not None:
         payload["dlp_download_scan_enabled"] = dlp_download_scan_enabled
     if without_content_inspection is not None:
@@ -113,7 +104,7 @@ def _build_web_dlp_rule_payload(
         ("url_categories", url_categories),
     ]:
         if param_value is not None:
-            payload[param_name] = _parse_list(param_value)
+            payload[param_name] = parse_list(param_value)
 
     return payload
 

@@ -52,6 +52,8 @@ Available Tools
      - Tool for managing ZIA URL Categories
    * - ``zia_vpn_credentials``
      - Tool for managing ZIA VPN Credentials
+   * - ``zia_ssl_inspection_rules``
+     - Tool for managing ZIA SSL Inspection Rules
 
 Tool Categories
 ~~~~~~~~~~~~~~~

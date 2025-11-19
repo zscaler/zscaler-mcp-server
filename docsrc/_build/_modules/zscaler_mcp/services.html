@@ -351,11 +351,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZCC tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
-        
+
         <span class="c1"># Register verb-based tools with proper annotations (all read-only)</span>
         <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
-        
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZCC Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
 </div>
 
@@ -369,16 +369,29 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import verb-based ZDX tools (all read-only)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.active_devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_devices</span><span class="p">,</span> <span class="n">zdx_get_device</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.active_devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_get_device</span><span class="p">,</span> <span class="n">zdx_list_devices</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.administration</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_departments</span><span class="p">,</span> <span class="n">zdx_list_locations</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.get_application_metric</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_get_application_metric</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.get_application_score</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_get_application</span><span class="p">,</span> <span class="n">zdx_get_application_score_trend</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.get_application_user</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_application_users</span><span class="p">,</span> <span class="n">zdx_get_application_user</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_alerts</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_alerts</span><span class="p">,</span> <span class="n">zdx_get_alert</span><span class="p">,</span> <span class="n">zdx_list_alert_affected_devices</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.get_application_score</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zdx_get_application</span><span class="p">,</span>
+            <span class="n">zdx_get_application_score_trend</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.get_application_user</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zdx_get_application_user</span><span class="p">,</span>
+            <span class="n">zdx_list_application_users</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_alerts</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zdx_get_alert</span><span class="p">,</span>
+            <span class="n">zdx_list_alert_affected_devices</span><span class="p">,</span>
+            <span class="n">zdx_list_alerts</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_applications</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_applications</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_deep_traces</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_device_deep_traces</span><span class="p">,</span> <span class="n">zdx_get_device_deep_trace</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_deep_traces</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zdx_get_device_deep_trace</span><span class="p">,</span>
+            <span class="n">zdx_list_device_deep_traces</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_historical_alerts</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_historical_alerts</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_software_inventory</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_list_software</span><span class="p">,</span> <span class="n">zdx_get_software_details</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zdx.list_software_inventory</span><span class="w"> </span><span class="kn">import</span> <span class="n">zdx_get_software_details</span><span class="p">,</span> <span class="n">zdx_list_software</span>
 
         <span class="c1"># All ZDX tools are read-only</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
@@ -409,11 +422,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZDX tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
-        
+
         <span class="c1"># Register verb-based tools with proper annotations (all read-only)</span>
         <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
-        
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZDX Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
 </div>
 
@@ -427,109 +440,118 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import all verb-based ZPA tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.app_segments</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_application_segments</span><span class="p">,</span>
-            <span class="n">zpa_get_application_segment</span><span class="p">,</span>
-            <span class="n">zpa_create_application_segment</span><span class="p">,</span>
-            <span class="n">zpa_update_application_segment</span><span class="p">,</span>
-            <span class="n">zpa_delete_application_segment</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.app_connector_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_app_connector_groups</span><span class="p">,</span>
-            <span class="n">zpa_get_app_connector_group</span><span class="p">,</span>
-            <span class="n">zpa_create_app_connector_group</span><span class="p">,</span>
-            <span class="n">zpa_update_app_connector_group</span><span class="p">,</span>
-            <span class="n">zpa_delete_app_connector_group</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.server_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_server_groups</span><span class="p">,</span>
-            <span class="n">zpa_get_server_group</span><span class="p">,</span>
-            <span class="n">zpa_create_server_group</span><span class="p">,</span>
-            <span class="n">zpa_update_server_group</span><span class="p">,</span>
-            <span class="n">zpa_delete_server_group</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.segment_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_segment_groups</span><span class="p">,</span>
-            <span class="n">zpa_get_segment_group</span><span class="p">,</span>
-            <span class="n">zpa_create_segment_group</span><span class="p">,</span>
-            <span class="n">zpa_update_segment_group</span><span class="p">,</span>
-            <span class="n">zpa_delete_segment_group</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.application_servers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_application_servers</span><span class="p">,</span>
-            <span class="n">zpa_get_application_server</span><span class="p">,</span>
-            <span class="n">zpa_create_application_server</span><span class="p">,</span>
-            <span class="n">zpa_update_application_server</span><span class="p">,</span>
-            <span class="n">zpa_delete_application_server</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.service_edge_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_service_edge_groups</span><span class="p">,</span>
-            <span class="n">zpa_get_service_edge_group</span><span class="p">,</span>
-            <span class="n">zpa_create_service_edge_group</span><span class="p">,</span>
-            <span class="n">zpa_update_service_edge_group</span><span class="p">,</span>
-            <span class="n">zpa_delete_service_edge_group</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.ba_certificate</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_ba_certificates</span><span class="p">,</span>
-            <span class="n">zpa_get_ba_certificate</span><span class="p">,</span>
-            <span class="n">zpa_create_ba_certificate</span><span class="p">,</span>
-            <span class="n">zpa_delete_ba_certificate</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_policy_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_access_policy_rules</span><span class="p">,</span>
-            <span class="n">zpa_get_access_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_create_access_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_update_access_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_delete_access_policy_rule</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_app_protection_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_app_protection_rule</span><span class="p">,</span>
+            <span class="n">zpa_delete_app_protection_rule</span><span class="p">,</span>
+            <span class="n">zpa_get_app_protection_rule</span><span class="p">,</span>
+            <span class="n">zpa_list_app_protection_rules</span><span class="p">,</span>
+            <span class="n">zpa_update_app_protection_rule</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_forwarding_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_forwarding_policy_rules</span><span class="p">,</span>
-            <span class="n">zpa_get_forwarding_policy_rule</span><span class="p">,</span>
             <span class="n">zpa_create_forwarding_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_update_forwarding_policy_rule</span><span class="p">,</span>
             <span class="n">zpa_delete_forwarding_policy_rule</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_timeout_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_timeout_policy_rules</span><span class="p">,</span>
-            <span class="n">zpa_get_timeout_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_create_timeout_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_update_timeout_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_delete_timeout_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_get_forwarding_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_list_forwarding_policy_rules</span><span class="p">,</span>
+            <span class="n">zpa_update_forwarding_policy_rule</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_isolation_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_isolation_policy_rules</span><span class="p">,</span>
-            <span class="n">zpa_get_isolation_policy_rule</span><span class="p">,</span>
             <span class="n">zpa_create_isolation_policy_rule</span><span class="p">,</span>
-            <span class="n">zpa_update_isolation_policy_rule</span><span class="p">,</span>
             <span class="n">zpa_delete_isolation_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_get_isolation_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_list_isolation_policy_rules</span><span class="p">,</span>
+            <span class="n">zpa_update_isolation_policy_rule</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_app_protection_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_app_protection_rules</span><span class="p">,</span>
-            <span class="n">zpa_get_app_protection_rule</span><span class="p">,</span>
-            <span class="n">zpa_create_app_protection_rule</span><span class="p">,</span>
-            <span class="n">zpa_update_app_protection_rule</span><span class="p">,</span>
-            <span class="n">zpa_delete_app_protection_rule</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_policy_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_access_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_delete_access_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_get_access_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_list_access_policy_rules</span><span class="p">,</span>
+            <span class="n">zpa_update_access_policy_rule</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.provisioning_key</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_provisioning_keys</span><span class="p">,</span>
-            <span class="n">zpa_get_provisioning_key</span><span class="p">,</span>
-            <span class="n">zpa_create_provisioning_key</span><span class="p">,</span>
-            <span class="n">zpa_update_provisioning_key</span><span class="p">,</span>
-            <span class="n">zpa_delete_provisioning_key</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.access_timeout_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_timeout_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_delete_timeout_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_get_timeout_policy_rule</span><span class="p">,</span>
+            <span class="n">zpa_list_timeout_policy_rules</span><span class="p">,</span>
+            <span class="n">zpa_update_timeout_policy_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.app_connector_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_app_connector_group</span><span class="p">,</span>
+            <span class="n">zpa_delete_app_connector_group</span><span class="p">,</span>
+            <span class="n">zpa_get_app_connector_group</span><span class="p">,</span>
+            <span class="n">zpa_list_app_connector_groups</span><span class="p">,</span>
+            <span class="n">zpa_update_app_connector_group</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.app_segments</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_application_segment</span><span class="p">,</span>
+            <span class="n">zpa_delete_application_segment</span><span class="p">,</span>
+            <span class="n">zpa_get_application_segment</span><span class="p">,</span>
+            <span class="n">zpa_list_application_segments</span><span class="p">,</span>
+            <span class="n">zpa_update_application_segment</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.application_servers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_application_server</span><span class="p">,</span>
+            <span class="n">zpa_delete_application_server</span><span class="p">,</span>
+            <span class="n">zpa_get_application_server</span><span class="p">,</span>
+            <span class="n">zpa_list_application_servers</span><span class="p">,</span>
+            <span class="n">zpa_update_application_server</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.ba_certificate</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_ba_certificate</span><span class="p">,</span>
+            <span class="n">zpa_delete_ba_certificate</span><span class="p">,</span>
+            <span class="n">zpa_get_ba_certificate</span><span class="p">,</span>
+            <span class="n">zpa_list_ba_certificates</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_app_protection_profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">app_protection_profile_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_enrollment_certificate</span><span class="w"> </span><span class="kn">import</span> <span class="n">enrollment_certificate_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_isolation_profile</span><span class="w"> </span><span class="kn">import</span> <span class="n">isolation_profile_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_posture_profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">posture_profile_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_saml_attributes</span><span class="w"> </span><span class="kn">import</span> <span class="n">saml_attribute_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_scim_attributes</span><span class="w"> </span><span class="kn">import</span> <span class="n">scim_attribute_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_scim_groups</span><span class="w"> </span><span class="kn">import</span> <span class="n">scim_group_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_segments_by_type</span><span class="w"> </span><span class="kn">import</span> <span class="n">app_segments_by_type_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.get_trusted_networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">trusted_network_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.pra_credential</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_pra_credential</span><span class="p">,</span>
+            <span class="n">zpa_delete_pra_credential</span><span class="p">,</span>
+            <span class="n">zpa_get_pra_credential</span><span class="p">,</span>
+            <span class="n">zpa_list_pra_credentials</span><span class="p">,</span>
+            <span class="n">zpa_update_pra_credential</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.pra_portal</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_pra_portals</span><span class="p">,</span>
-            <span class="n">zpa_get_pra_portal</span><span class="p">,</span>
             <span class="n">zpa_create_pra_portal</span><span class="p">,</span>
-            <span class="n">zpa_update_pra_portal</span><span class="p">,</span>
             <span class="n">zpa_delete_pra_portal</span><span class="p">,</span>
+            <span class="n">zpa_get_pra_portal</span><span class="p">,</span>
+            <span class="n">zpa_list_pra_portals</span><span class="p">,</span>
+            <span class="n">zpa_update_pra_portal</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.pra_credential</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zpa_list_pra_credentials</span><span class="p">,</span>
-            <span class="n">zpa_get_pra_credential</span><span class="p">,</span>
-            <span class="n">zpa_create_pra_credential</span><span class="p">,</span>
-            <span class="n">zpa_update_pra_credential</span><span class="p">,</span>
-            <span class="n">zpa_delete_pra_credential</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.provisioning_key</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_provisioning_key</span><span class="p">,</span>
+            <span class="n">zpa_delete_provisioning_key</span><span class="p">,</span>
+            <span class="n">zpa_get_provisioning_key</span><span class="p">,</span>
+            <span class="n">zpa_list_provisioning_keys</span><span class="p">,</span>
+            <span class="n">zpa_update_provisioning_key</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.segment_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_segment_group</span><span class="p">,</span>
+            <span class="n">zpa_delete_segment_group</span><span class="p">,</span>
+            <span class="n">zpa_get_segment_group</span><span class="p">,</span>
+            <span class="n">zpa_list_segment_groups</span><span class="p">,</span>
+            <span class="n">zpa_update_segment_group</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.server_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_server_group</span><span class="p">,</span>
+            <span class="n">zpa_delete_server_group</span><span class="p">,</span>
+            <span class="n">zpa_get_server_group</span><span class="p">,</span>
+            <span class="n">zpa_list_server_groups</span><span class="p">,</span>
+            <span class="n">zpa_update_server_group</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zpa.service_edge_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zpa_create_service_edge_group</span><span class="p">,</span>
+            <span class="n">zpa_delete_service_edge_group</span><span class="p">,</span>
+            <span class="n">zpa_get_service_edge_group</span><span class="p">,</span>
+            <span class="n">zpa_list_service_edge_groups</span><span class="p">,</span>
+            <span class="n">zpa_update_service_edge_group</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Define read-only tools</span>
@@ -564,6 +586,18 @@
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_pra_portal</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_get_pra_portal&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZPA PRA portal by ID (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_pra_credentials</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_pra_credentials&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA PRA credentials (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_pra_credential</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_get_pra_credential&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZPA PRA credential by ID (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Profile and Certificate Management</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">app_protection_profile_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_app_protection_profile&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA App Protection Profiles (Inspection Profiles) (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">enrollment_certificate_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_enrollment_certificate&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA Enrollment Certificates (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">isolation_profile_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_isolation_profile&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA Cloud Browser Isolation (CBI) profiles (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">posture_profile_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_posture_profile&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA Posture Profiles (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Identity and Access Management</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">saml_attribute_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_saml_attribute&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA SAML Attributes (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">scim_attribute_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_scim_attribute&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA SCIM Attributes (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">scim_group_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_scim_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA SCIM Groups (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Network and Segment Management</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">app_segments_by_type_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_app_segments_by_type&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA application segments by type (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">trusted_network_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zpa_trusted_network&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZPA Trusted Networks (read-only)&quot;</span><span class="p">},</span>
         <span class="p">]</span>
 
         <span class="c1"># Define write tools</span>
@@ -619,11 +653,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZPA tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
-        
+
         <span class="c1"># Register verb-based tools with proper annotations</span>
         <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
-        
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZPA Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
 </div>
 
@@ -637,65 +671,128 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import all verb-based ZIA tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_cloud_firewall_rules</span><span class="p">,</span> <span class="n">zia_get_cloud_firewall_rule</span><span class="p">,</span>
-            <span class="n">zia_create_cloud_firewall_rule</span><span class="p">,</span> <span class="n">zia_update_cloud_firewall_rule</span><span class="p">,</span> <span class="n">zia_delete_cloud_firewall_rule</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_filtering_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_url_filtering_rules</span><span class="p">,</span> <span class="n">zia_get_url_filtering_rule</span><span class="p">,</span>
-            <span class="n">zia_create_url_filtering_rule</span><span class="p">,</span> <span class="n">zia_update_url_filtering_rule</span><span class="p">,</span> <span class="n">zia_delete_url_filtering_rule</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.web_dlp_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_web_dlp_rules</span><span class="p">,</span> <span class="n">zia_list_web_dlp_rules_lite</span><span class="p">,</span> <span class="n">zia_get_web_dlp_rule</span><span class="p">,</span>
-            <span class="n">zia_create_web_dlp_rule</span><span class="p">,</span> <span class="n">zia_update_web_dlp_rule</span><span class="p">,</span> <span class="n">zia_delete_web_dlp_rule</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ip_source_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_ip_source_groups</span><span class="p">,</span> <span class="n">zia_get_ip_source_group</span><span class="p">,</span>
-            <span class="n">zia_create_ip_source_group</span><span class="p">,</span> <span class="n">zia_update_ip_source_group</span><span class="p">,</span> <span class="n">zia_delete_ip_source_group</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ip_destination_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_ip_destination_groups</span><span class="p">,</span> <span class="n">zia_get_ip_destination_group</span><span class="p">,</span>
-            <span class="n">zia_create_ip_destination_group</span><span class="p">,</span> <span class="n">zia_update_ip_destination_group</span><span class="p">,</span> <span class="n">zia_delete_ip_destination_group</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.network_app_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_network_app_groups</span><span class="p">,</span> <span class="n">zia_get_network_app_group</span><span class="p">,</span>
-            <span class="n">zia_create_network_app_group</span><span class="p">,</span> <span class="n">zia_update_network_app_group</span><span class="p">,</span> <span class="n">zia_delete_network_app_group</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_categories</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_url_categories</span><span class="p">,</span> <span class="n">zia_get_url_category</span><span class="p">,</span>
-            <span class="n">zia_create_url_category</span><span class="p">,</span> <span class="n">zia_update_url_category</span><span class="p">,</span> <span class="n">zia_delete_url_category</span><span class="p">,</span>
-            <span class="n">zia_add_urls_to_category</span><span class="p">,</span> <span class="n">zia_remove_urls_from_category</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.rule_labels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_rule_labels</span><span class="p">,</span> <span class="n">zia_get_rule_label</span><span class="p">,</span>
-            <span class="n">zia_create_rule_label</span><span class="p">,</span> <span class="n">zia_update_rule_label</span><span class="p">,</span> <span class="n">zia_delete_rule_label</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.location_management</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_locations</span><span class="p">,</span> <span class="n">zia_get_location</span><span class="p">,</span>
-            <span class="n">zia_create_location</span><span class="p">,</span> <span class="n">zia_update_location</span><span class="p">,</span> <span class="n">zia_delete_location</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.vpn_credentials</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_vpn_credentials</span><span class="p">,</span> <span class="n">zia_get_vpn_credential</span><span class="p">,</span>
-            <span class="n">zia_create_vpn_credential</span><span class="p">,</span> <span class="n">zia_update_vpn_credential</span><span class="p">,</span> <span class="n">zia_delete_vpn_credential</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.static_ips</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_static_ips</span><span class="p">,</span> <span class="n">zia_get_static_ip</span><span class="p">,</span>
-            <span class="n">zia_create_static_ip</span><span class="p">,</span> <span class="n">zia_update_static_ip</span><span class="p">,</span> <span class="n">zia_delete_static_ip</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.gre_tunnels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_gre_tunnels</span><span class="p">,</span> <span class="n">zia_get_gre_tunnel</span><span class="p">,</span>
-            <span class="n">zia_create_gre_tunnel</span><span class="p">,</span> <span class="n">zia_delete_gre_tunnel</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.gre_ranges</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_list_gre_ranges</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.activation</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_get_activation_status</span><span class="p">,</span> <span class="n">zia_activate_configuration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.activation</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_activate_configuration</span><span class="p">,</span> <span class="n">zia_get_activation_status</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.atp_malicious_urls</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_atp_malicious_urls</span><span class="p">,</span> <span class="n">zia_add_atp_malicious_urls</span><span class="p">,</span> <span class="n">zia_delete_atp_malicious_urls</span>
+            <span class="n">zia_add_atp_malicious_urls</span><span class="p">,</span>
+            <span class="n">zia_delete_atp_malicious_urls</span><span class="p">,</span>
+            <span class="n">zia_list_atp_malicious_urls</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.auth_exempt_urls</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_auth_exempt_urls</span><span class="p">,</span> <span class="n">zia_add_auth_exempt_urls</span><span class="p">,</span> <span class="n">zia_delete_auth_exempt_urls</span>
+            <span class="n">zia_add_auth_exempt_urls</span><span class="p">,</span>
+            <span class="n">zia_delete_auth_exempt_urls</span><span class="p">,</span>
+            <span class="n">zia_list_auth_exempt_urls</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_applications</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_list_cloud_applications</span><span class="p">,</span> <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span> <span class="n">zia_bulk_update_cloud_applications</span>
+            <span class="n">zia_bulk_update_cloud_applications</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_applications</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_cloud_firewall_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_cloud_firewall_rule</span><span class="p">,</span>
+            <span class="n">zia_get_cloud_firewall_rule</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_firewall_rules</span><span class="p">,</span>
+            <span class="n">zia_update_cloud_firewall_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.gre_ranges</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_list_gre_ranges</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.gre_tunnels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_gre_tunnel</span><span class="p">,</span>
+            <span class="n">zia_delete_gre_tunnel</span><span class="p">,</span>
+            <span class="n">zia_get_gre_tunnel</span><span class="p">,</span>
+            <span class="n">zia_list_gre_tunnels</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ip_destination_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_ip_destination_group</span><span class="p">,</span>
+            <span class="n">zia_delete_ip_destination_group</span><span class="p">,</span>
+            <span class="n">zia_get_ip_destination_group</span><span class="p">,</span>
+            <span class="n">zia_list_ip_destination_groups</span><span class="p">,</span>
+            <span class="n">zia_update_ip_destination_group</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ip_source_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_ip_source_group</span><span class="p">,</span>
+            <span class="n">zia_delete_ip_source_group</span><span class="p">,</span>
+            <span class="n">zia_get_ip_source_group</span><span class="p">,</span>
+            <span class="n">zia_list_ip_source_groups</span><span class="p">,</span>
+            <span class="n">zia_update_ip_source_group</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.list_dlp_dictionaries</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_dlp_dictionary_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.list_dlp_engines</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_dlp_engine_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.list_user_departments</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_user_department_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.list_user_groups</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_user_group_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.list_users</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_users_manager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.location_management</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_location</span><span class="p">,</span>
+            <span class="n">zia_delete_location</span><span class="p">,</span>
+            <span class="n">zia_get_location</span><span class="p">,</span>
+            <span class="n">zia_list_locations</span><span class="p">,</span>
+            <span class="n">zia_update_location</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.network_app_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_network_app_group</span><span class="p">,</span>
+            <span class="n">zia_delete_network_app_group</span><span class="p">,</span>
+            <span class="n">zia_get_network_app_group</span><span class="p">,</span>
+            <span class="n">zia_list_network_app_groups</span><span class="p">,</span>
+            <span class="n">zia_update_network_app_group</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.rule_labels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_rule_label</span><span class="p">,</span>
+            <span class="n">zia_delete_rule_label</span><span class="p">,</span>
+            <span class="n">zia_get_rule_label</span><span class="p">,</span>
+            <span class="n">zia_list_rule_labels</span><span class="p">,</span>
+            <span class="n">zia_update_rule_label</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.static_ips</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_static_ip</span><span class="p">,</span>
+            <span class="n">zia_delete_static_ip</span><span class="p">,</span>
+            <span class="n">zia_get_static_ip</span><span class="p">,</span>
+            <span class="n">zia_list_static_ips</span><span class="p">,</span>
+            <span class="n">zia_update_static_ip</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ssl_inspection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_ssl_inspection_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_ssl_inspection_rule</span><span class="p">,</span>
+            <span class="n">zia_get_ssl_inspection_rule</span><span class="p">,</span>
+            <span class="n">zia_list_ssl_inspection_rules</span><span class="p">,</span>
+            <span class="n">zia_update_ssl_inspection_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.geo_search</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_geo_search_tool</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.get_sandbox_info</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">sandbox_manager</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_behavioral_analysis</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_file_hash_count</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_quota</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_report</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_categories</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_add_urls_to_category</span><span class="p">,</span>
+            <span class="n">zia_create_url_category</span><span class="p">,</span>
+            <span class="n">zia_delete_url_category</span><span class="p">,</span>
+            <span class="n">zia_get_url_category</span><span class="p">,</span>
+            <span class="n">zia_list_url_categories</span><span class="p">,</span>
+            <span class="n">zia_remove_urls_from_category</span><span class="p">,</span>
+            <span class="n">zia_update_url_category</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_filtering_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_url_filtering_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_url_filtering_rule</span><span class="p">,</span>
+            <span class="n">zia_get_url_filtering_rule</span><span class="p">,</span>
+            <span class="n">zia_list_url_filtering_rules</span><span class="p">,</span>
+            <span class="n">zia_update_url_filtering_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.vpn_credentials</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_vpn_credential</span><span class="p">,</span>
+            <span class="n">zia_delete_vpn_credential</span><span class="p">,</span>
+            <span class="n">zia_get_vpn_credential</span><span class="p">,</span>
+            <span class="n">zia_list_vpn_credentials</span><span class="p">,</span>
+            <span class="n">zia_update_vpn_credential</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.web_dlp_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_web_dlp_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_web_dlp_rule</span><span class="p">,</span>
+            <span class="n">zia_get_web_dlp_rule</span><span class="p">,</span>
+            <span class="n">zia_list_web_dlp_rules</span><span class="p">,</span>
+            <span class="n">zia_list_web_dlp_rules_lite</span><span class="p">,</span>
+            <span class="n">zia_update_web_dlp_rule</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Read-only tools</span>
@@ -710,6 +807,17 @@
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_web_dlp_rules</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_web_dlp_rules&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA web DLP rules (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_web_dlp_rules_lite</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_web_dlp_rules_lite&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA web DLP rules in lite format (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_web_dlp_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_web_dlp_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA web DLP rule by ID (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># SSL Inspection Rules</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_ssl_inspection_rules</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_ssl_inspection_rules&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA SSL inspection rules (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_ssl_inspection_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_ssl_inspection_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA SSL inspection rule by ID (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># DLP Dictionaries</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_dlp_dictionary_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zia_dlp_dictionaries&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZIA DLP dictionaries for data loss prevention pattern and phrase matching (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># DLP Engines</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_dlp_engine_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zia_dlp_engines&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZIA DLP engines for data loss prevention rule processing (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># User Management</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_user_department_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zia_user_departments&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZIA user departments for organizational structure (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_user_group_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zia_user_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZIA user groups for access control and policy assignment (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_users_manager</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zia_users&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZIA users for authentication and access control (read-only)&quot;</span><span class="p">},</span>
             <span class="c1"># IP Source Groups</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_ip_source_groups</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_ip_source_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA IP source groups (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_ip_source_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_ip_source_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA IP source group by ID (read-only)&quot;</span><span class="p">},</span>
@@ -747,6 +855,12 @@
             <span class="c1"># Cloud Applications</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_applications</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_applications&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud applications (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_application_custom_tags&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud application custom tags (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Utilities</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_geo_search_tool</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_geo_search&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Perform ZIA geographic lookups (coordinates, IP, or city prefix) (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_quota</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_quota&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieve current ZIA sandbox quota information (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_behavioral_analysis</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_behavioral_analysis&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieve sandbox behavioral analysis hash list (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_file_hash_count</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_file_hash_count&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieve sandbox file hash usage counts (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_report</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_report&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieve sandbox analysis report for a specific MD5 hash (read-only)&quot;</span><span class="p">},</span>
         <span class="p">]</span>
 
         <span class="c1"># Write tools</span>
@@ -759,6 +873,10 @@
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_url_filtering_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_url_filtering_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA URL filtering rule (write operation)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_url_filtering_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_url_filtering_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA URL filtering rule (write operation)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_url_filtering_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_url_filtering_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA URL filtering rule (destructive operation)&quot;</span><span class="p">},</span>
+            <span class="c1"># SSL Inspection Rules</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_ssl_inspection_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_ssl_inspection_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA SSL inspection rule (write operation)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_ssl_inspection_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_ssl_inspection_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA SSL inspection rule (write operation)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_ssl_inspection_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_ssl_inspection_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA SSL inspection rule (destructive operation)&quot;</span><span class="p">},</span>
             <span class="c1"># Web DLP Rules</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_web_dlp_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_web_dlp_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA web DLP rule (write operation)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_web_dlp_rule</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_web_dlp_rule&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA web DLP rule (write operation)&quot;</span><span class="p">},</span>
@@ -817,11 +935,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZIA tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
-        
+
         <span class="c1"># Register verb-based tools with proper annotations</span>
         <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
-        
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZIA Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
 </div>
 
@@ -836,20 +954,30 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import verb-based ZTW tools</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.ip_destination_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">ztw_list_ip_destination_groups</span><span class="p">,</span> <span class="n">ztw_list_ip_destination_groups_lite</span><span class="p">,</span>
-            <span class="n">ztw_create_ip_destination_group</span><span class="p">,</span> <span class="n">ztw_delete_ip_destination_group</span>
+            <span class="n">ztw_create_ip_destination_group</span><span class="p">,</span>
+            <span class="n">ztw_delete_ip_destination_group</span><span class="p">,</span>
+            <span class="n">ztw_list_ip_destination_groups</span><span class="p">,</span>
+            <span class="n">ztw_list_ip_destination_groups_lite</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.ip_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">ztw_list_ip_groups</span><span class="p">,</span> <span class="n">ztw_list_ip_groups_lite</span><span class="p">,</span>
-            <span class="n">ztw_create_ip_group</span><span class="p">,</span> <span class="n">ztw_delete_ip_group</span>
+            <span class="n">ztw_create_ip_group</span><span class="p">,</span>
+            <span class="n">ztw_delete_ip_group</span><span class="p">,</span>
+            <span class="n">ztw_list_ip_groups</span><span class="p">,</span>
+            <span class="n">ztw_list_ip_groups_lite</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.ip_source_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">ztw_list_ip_source_groups</span><span class="p">,</span> <span class="n">ztw_list_ip_source_groups_lite</span><span class="p">,</span>
-            <span class="n">ztw_create_ip_source_group</span><span class="p">,</span> <span class="n">ztw_delete_ip_source_group</span>
+            <span class="n">ztw_create_ip_source_group</span><span class="p">,</span>
+            <span class="n">ztw_delete_ip_source_group</span><span class="p">,</span>
+            <span class="n">ztw_list_ip_source_groups</span><span class="p">,</span>
+            <span class="n">ztw_list_ip_source_groups_lite</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.network_service_groups</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_network_service_groups</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.list_admins</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_admins</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.list_roles</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_roles</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.network_service_groups</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_network_service_groups</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.account_details</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_public_account_details</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.discovery_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_get_discovery_settings</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.network_services</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_network_services</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.public_cloud_info</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_public_cloud_info</span>
 
         <span class="c1"># Read-only tools</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
@@ -862,6 +990,10 @@
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_network_service_groups</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_network_service_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW network service groups (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_roles</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_roles&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all existing admin roles in ZTW (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_admins</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_admins&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all existing admin users in ZTW (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_public_cloud_info</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_public_cloud_info&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW public cloud accounts with metadata (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_network_services</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_network_services&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW network services (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_public_account_details</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_public_account_details&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List detailed ZTW public cloud account information (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_get_discovery_settings</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_get_discovery_settings&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get ZTW workload discovery service settings (read-only)&quot;</span><span class="p">},</span>
         <span class="p">]</span>
 
         <span class="c1"># Write tools</span>
@@ -879,11 +1011,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZTW tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
-        
+
         <span class="c1"># Register verb-based tools with proper annotations</span>
         <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
-        
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZTW Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
 </div>
 
@@ -898,12 +1030,18 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import verb-based ZIdentity tools</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zidentity.groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zidentity_list_groups</span><span class="p">,</span> <span class="n">zidentity_get_group</span><span class="p">,</span> <span class="n">zidentity_search_groups</span><span class="p">,</span>
-            <span class="n">zidentity_get_group_users</span><span class="p">,</span> <span class="n">zidentity_get_group_users_by_name</span>
+            <span class="n">zidentity_get_group</span><span class="p">,</span>
+            <span class="n">zidentity_get_group_users</span><span class="p">,</span>
+            <span class="n">zidentity_get_group_users_by_name</span><span class="p">,</span>
+            <span class="n">zidentity_list_groups</span><span class="p">,</span>
+            <span class="n">zidentity_search_groups</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zidentity.users</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zidentity_list_users</span><span class="p">,</span> <span class="n">zidentity_get_user</span><span class="p">,</span> <span class="n">zidentity_search_users</span><span class="p">,</span>
-            <span class="n">zidentity_get_user_groups</span><span class="p">,</span> <span class="n">zidentity_get_user_groups_by_name</span>
+            <span class="n">zidentity_get_user</span><span class="p">,</span>
+            <span class="n">zidentity_get_user_groups</span><span class="p">,</span>
+            <span class="n">zidentity_get_user_groups_by_name</span><span class="p">,</span>
+            <span class="n">zidentity_list_users</span><span class="p">,</span>
+            <span class="n">zidentity_search_users</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># All ZIdentity tools are read-only</span>
@@ -927,11 +1065,11 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZIdentity tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
-        
+
         <span class="c1"># Register verb-based tools with proper annotations (all read-only)</span>
         <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
-        
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZIdentity Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
 </div>
 

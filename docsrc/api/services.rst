@@ -76,8 +76,16 @@ Zscaler Internet Access service for web security and policy management.
      - Manage network application groups
    * - ``rule_labels``
      - Manage rule labels
-   * - ``sandbox_info``
-     - Retrieve sandbox information
+   * - ``ssl_inspection_rules``
+     - Manage SSL inspection rules
+   * - ``get_sandbox_quota``
+     - Retrieve current sandbox quota usage
+   * - ``get_sandbox_behavioral_analysis``
+     - Retrieve sandbox behavioral analysis hash list
+   * - ``get_sandbox_file_hash_count``
+     - Retrieve sandbox file hash usage counts
+   * - ``get_sandbox_report``
+     - Retrieve sandbox analysis report for a specific hash
    * - ``static_ips``
      - Manage static IP addresses
    * - ``url_categories``
@@ -200,6 +208,8 @@ Zscaler Cloud & Branch Connector service for branch connectivity.
      - List admin roles
    * - ``list_admins``
      - List admin users
+   * - ``discovery_service``
+     - Manage workload discovery service settings
 
 ZIdentity Service
 ~~~~~~~~~~~~~~~~~
