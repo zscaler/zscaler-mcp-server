@@ -895,6 +895,7 @@ The Zscaler Integrations MCP Server supports two authentication methods: **OneAP
 
 > [!IMPORTANT]
 > **⚠️ CRITICAL: Choose ONE Authentication Method**
+>
 > - **OneAPI**: Single credential set for ALL services (ZIA, ZPA, ZCC, ZDX)
 > - **Legacy**: Separate credentials required for EACH service
 > - **DO NOT** set both OneAPI and Legacy credentials simultaneously
@@ -902,21 +903,24 @@ The Zscaler Integrations MCP Server supports two authentication methods: **OneAP
 
 ### Quick Start: Choose Your Authentication Method
 
-**Option A: OneAPI (Recommended - Single Credential Set)**
+#### Option A: OneAPI (Recommended - Single Credential Set)
+
 - ✅ **One set of credentials** works for ALL services (ZIA, ZPA, ZCC, ZDX, ZTW)
 - ✅ Modern OAuth2.0 authentication via Zidentity
 - ✅ Easier to manage and maintain
 - ✅ Default authentication method (no flag needed)
 - **Use this if:** You have access to Zidentity console and want simplicity
 
-**Option B: Legacy Mode (Per-Service Credentials)**
+#### Option B: Legacy Mode (Per-Service Credentials)
+
 - ⚠️ **Separate credentials** required for each service you want to use
 - ⚠️ Different authentication methods per service (OAuth for ZPA, API key for ZIA, etc.)
 - ⚠️ Must set `ZSCALER_USE_LEGACY=true` environment variable
 - **Use this if:** You don't have OneAPI access or need per-service credential management
 
-**Decision Tree:**
-```
+#### Decision Tree
+
+```text
 Do you have access to Zidentity console?
 ├─ YES → Use OneAPI (Option A)
 └─ NO  → Use Legacy Mode (Option B)
@@ -931,6 +935,7 @@ OneAPI provides a single set of credentials that authenticate to all Zscaler ser
 #### Prerequisites
 
 Before using OneAPI, you need to:
+
 1. Create an API Client in the [Zidentity platform](https://help.zscaler.com/zidentity/about-api-clients)
 2. Obtain your credentials: `clientId`, `clientSecret`, `customerId`, and `vanityDomain`
 3. Learn more: [Understanding OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi)
@@ -973,6 +978,7 @@ zscaler-mcp
 ```
 
 If authentication is successful, the server will start without errors. If you see authentication errors, verify:
+
 - All required environment variables are set correctly
 - Your API client has the necessary permissions in Zidentity
 - Your credentials are valid and not expired
@@ -985,6 +991,7 @@ Legacy mode requires separate credentials for each Zscaler service. This method 
 
 > [!WARNING]
 > **⚠️ IMPORTANT**: When using Legacy mode:
+>
 > - You **MUST** set `ZSCALER_USE_LEGACY=true` in your `.env` file
 > - You **MUST** provide credentials for each service you want to use
 > - OneAPI credentials are **ignored** when `ZSCALER_USE_LEGACY=true` is set
@@ -1036,6 +1043,7 @@ ZDX_CLOUD=zscalertwo
 | `ZPA_MICROTENANT_ID` | No | ZPA microtenant ID (if using microtenants) |
 
 **Where to find ZPA credentials:**
+
 - API Client ID/Secret: ZPA console > Configuration & Control > Public API > API Keys
 - Customer ID: ZPA console > Administration > Company
 
@@ -1049,10 +1057,12 @@ ZDX_CLOUD=zscalertwo
 | `ZIA_CLOUD` | Yes | Zscaler cloud name (see supported clouds below) |
 
 **Supported ZIA Cloud Environments:**
+
 - `zscaler`, `zscalerone`, `zscalertwo`, `zscalerthree`
 - `zscloud`, `zscalerbeta`, `zscalergov`, `zscalerten`, `zspreview`
 
 **Where to find ZIA credentials:**
+
 - Username/Password: Your ZIA admin account
 - API Key: ZIA Admin Portal > Administration > API Key Management
 
@@ -1067,6 +1077,7 @@ ZDX_CLOUD=zscalertwo
 > **NOTE**: `ZCC_CLOUD` is required and identifies the correct API gateway.
 
 **Supported ZCC Cloud Environments:**
+
 - `zscaler`, `zscalerone`, `zscalertwo`, `zscalerthree`
 - `zscloud`, `zscalerbeta`, `zscalergov`, `zscalerten`, `zspreview`
 
@@ -1079,11 +1090,13 @@ ZDX_CLOUD=zscalertwo
 | `ZDX_CLOUD` | Yes | Zscaler cloud name prefix |
 
 **Where to find ZDX credentials:**
+
 - ZDX Portal > API Keys section
 
 #### Legacy Mode Behavior
 
 When `ZSCALER_USE_LEGACY=true`:
+
 - All tools use legacy API clients by default
 - You can override per-tool by setting `use_legacy: false` in tool parameters
 - The MCP server initializes without creating clients at startup
@@ -1314,6 +1327,7 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
 ## Using the MCP Server with Agents
 
 This section provides instructions for configuring the Zscaler Integrations MCP Server with popular AI agents. **Before starting, ensure you have:**
+
 1. ✅ Completed [Installation & Setup](#installation-setup)
 2. ✅ Configured [Authentication](#zscaler-api-credentials-authentication)
 3. ✅ Created your `.env` file with credentials
@@ -1352,11 +1366,12 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
 
 > **Important**: Replace `/absolute/path/to/your/.env` with the **absolute path** to your `.env` file. Relative paths will not work.
 
-4. Save the configuration file
-5. Restart Claude Desktop completely (quit and reopen)
-6. Verify by asking Claude: "What Zscaler tools are available?"
+1. Save the configuration file
+2. Restart Claude Desktop completely (quit and reopen)
+3. Verify by asking Claude: "What Zscaler tools are available?"
 
 **Troubleshooting:**
+
 - **"MCP server not found"**: Verify the `.env` file path is absolute and correct
 - **"Authentication failed"**: Check that your `.env` file contains valid credentials
 - **Tools not appearing**: Check Claude Desktop logs (Help > View Logs) for errors
@@ -1380,6 +1395,7 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
 ```
 
 > **Alternative**: You can also use Docker instead of `uvx`:
+>
 > ```json
 > {
 >   "mcpServers": {
@@ -1398,11 +1414,12 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
 > }
 > ```
 
-4. Save the configuration file
-5. Restart Cursor completely (quit and reopen)
-6. Verify by asking: "List my ZIA rule labels"
+1. Save the configuration file
+2. Restart Cursor completely (quit and reopen)
+3. Verify by asking: "List my ZIA rule labels"
 
 **Troubleshooting:**
+
 - Check Cursor's MCP logs (View > Output > MCP) for connection errors
 - Verify the `.env` file path is absolute and credentials are correct
 - The configuration file is located at `~/.cursor/mcp.json` (or `%USERPROFILE%\.cursor\mcp.json` on Windows)
