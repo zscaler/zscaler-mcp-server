@@ -303,12 +303,17 @@
     <span class="n">cloud</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># &#39;zpa&#39; or &#39;zia&#39;</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">user_agent_comment</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 
     <span class="n">load_dotenv</span><span class="p">()</span>
+    
+    <span class="c1"># Get user agent comment from environment variable if not explicitly provided</span>
+    <span class="k">if</span> <span class="n">user_agent_comment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">user_agent_comment</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_USER_AGENT_COMMENT&quot;</span><span class="p">)</span>
 
     <span class="c1"># ✅ Defensive fallback logic</span>
     <span class="n">client_id</span> <span class="o">=</span> <span class="p">(</span>
@@ -420,6 +425,9 @@
 <span class="sd">        use_legacy (bool): If True, selects the appropriate legacy client (</span>
 <span class="sd">                          LegacyZCCClient, LegacyZDXClient, LegacyZPAClient, LegacyZIAClient, LegacyZTWClient).</span>
 <span class="sd">                          Can also be set via ZSCALER_USE_LEGACY environment variable.</span>
+<span class="sd">        user_agent_comment (str): Optional additional information to include in the User-Agent header</span>
+<span class="sd">                                 (e.g., &quot;Claude Desktop 1.2024.10.23&quot;). Can also be set via</span>
+<span class="sd">                                 ZSCALER_MCP_USER_AGENT_COMMENT environment variable.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Union[ZscalerClient, LegacyZPAClient, LegacyZIAClient]: An authenticated client instance.</span>
@@ -436,7 +444,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Generate custom user-agent for all requests</span>
-    <span class="n">custom_user_agent</span> <span class="o">=</span> <span class="n">get_combined_user_agent</span><span class="p">()</span>
+    <span class="n">custom_user_agent</span> <span class="o">=</span> <span class="n">get_combined_user_agent</span><span class="p">(</span><span class="n">user_agent_comment</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[DEBUG] Using custom user-agent: </span><span class="si">{</span><span class="n">custom_user_agent</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">use_legacy</span><span class="p">:</span>

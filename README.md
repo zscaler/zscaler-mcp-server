@@ -35,17 +35,11 @@
   - [Service Configuration](#service-configuration)
   - [Additional Command Line Options](#additional-command-line-options)
 - [Zscaler API Credentials & Authentication](#zscaler-api-credentials-authentication)
-  - [Zscaler OneAPI Authentication](#zscaler-oneapi-authentication)
-  - [Using Legacy Mode with Environment Variable](#using-legacy-mode-with-environment-variable)
-  - [Zscaler Legacy API Login](#zscaler-legacy-api-login)
-    - [ZIA Legacy Authentication](#zia-legacy-authentication)
-    - [ZPA Legacy Authentication](#zpa-legacy-authentication)
-    - [ZCC Legacy Authentication](#zcc-legacy-authentication)
-    - [ZDX Legacy Authentication](#zdx-legacy-authentication)
-- [Internal Environment Variables](#internal-environment-variables)
+  - [Quick Start: Choose Your Authentication Method](#quick-start-choose-your-authentication-method)
+  - [OneAPI Authentication (Recommended)](#oneapi-authentication-recommended)
+  - [Legacy API Authentication](#legacy-api-authentication)
+  - [Authentication Troubleshooting](#authentication-troubleshooting)
   - [MCP Server Configuration](#mcp-server-configuration)
-  - [OneAPI Authentication](#oneapi-authentication)
-  - [Legacy Authentication](#legacy-authentication-when-zscaler-use-legacy-true)
 - [As a Library](#as-a-library)
 - [Container Usage](#container-usage)
   - [Using Pre-built Image (Recommended)](#using-pre-built-image-recommended)
@@ -418,6 +412,16 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 | `zia_list_users` | List users | Read-only |
 | `zia_get_user` | Get a specific user | Read-only |
 
+#### SSL Inspection Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zia_list_ssl_inspection_rules` | List SSL inspection rules | Read-only |
+| `zia_get_ssl_inspection_rule` | Get a specific SSL inspection rule | Read-only |
+| `zia_create_ssl_inspection_rule` | Create a new SSL inspection rule | Write |
+| `zia_update_ssl_inspection_rule` | Update an existing SSL inspection rule | Write |
+| `zia_delete_ssl_inspection_rule` | Delete an SSL inspection rule | Write |
+
 #### Labels & Utilities
 
 | Tool Name | Description | Type |
@@ -428,8 +432,12 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 | `zia_update_rule_label` | Update an existing rule label | Write |
 | `zia_delete_rule_label` | Delete a rule label | Write |
 | `zia_geo_search` | Perform geographical lookup | Read-only |
-| `zia_get_sandbox_report` | Get sandbox report for a hash | Read-only |
-| `zia_get_sandbox_quota` | Get sandbox quota information | Read-only |
+| `zia_get_sandbox_quota` | Retrieve current sandbox quota information | Read-only |
+| `zia_get_sandbox_behavioral_analysis` | Retrieve sandbox behavioral analysis hash list | Read-only |
+| `zia_get_sandbox_file_hash_count` | Retrieve sandbox file hash usage counts | Read-only |
+| `zia_get_sandbox_report` | Retrieve sandbox report for a specific hash | Read-only |
+
+> **Note:** The legacy `zia_sandbox_info` tool is still available for backward compatibility, but new automations should call the more specific sandbox tools above for clearer intent matching.
 
 #### DLP Management
 
@@ -667,6 +675,12 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 | `ztw_update_network_service_group` | Update an existing network service group | Write |
 | `ztw_delete_network_service_group` | Delete a network service group | Write |
 
+#### Network Services
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `ztw_list_network_services` | List network services with optional filtering | Read-only |
+
 #### Administration
 
 | Tool Name | Description | Type |
@@ -674,6 +688,19 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 | `ztw_list_roles` | List all admin roles | Read-only |
 | `ztw_list_admins` | List all admin users | Read-only |
 | `ztw_get_admin` | Get a specific admin user | Read-only |
+
+#### Public Cloud Info
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `ztw_list_public_cloud_info` | List public cloud accounts with metadata | Read-only |
+| `ztw_list_public_account_details` | List detailed public cloud account information | Read-only |
+
+#### Discovery Service
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `ztw_get_discovery_settings` | Get workload discovery service settings | Read-only |
 
 ## Installation & Setup
 
@@ -864,188 +891,250 @@ Available command-line flags:
 
 ## Zscaler API Credentials & Authentication
 
-The Zscaler Integrations MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.
+The Zscaler Integrations MCP Server supports two authentication methods: **OneAPI (recommended)** and **Legacy API**. You must choose **ONE** method - do not mix them.
 
-### Zscaler OneAPI Authentication
+> [!IMPORTANT]
+> **⚠️ CRITICAL: Choose ONE Authentication Method**
+>
+> - **OneAPI**: Single credential set for ALL services (ZIA, ZPA, ZCC, ZDX)
+> - **Legacy**: Separate credentials required for EACH service
+> - **DO NOT** set both OneAPI and Legacy credentials simultaneously
+> - **DO NOT** set `ZSCALER_USE_LEGACY=true` if using OneAPI
 
-Before using the Zscaler Integrations MCP Server, you need to create API credentials in your Zidentity console. The Zscaler Integrations MCP Server supports Zscaler's OneAPI authentication via OAuth2.0 as the default and preferred method.
+### Quick Start: Choose Your Authentication Method
 
-- [OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi): If you are using the OneAPI entrypoint you must have a API Client created in the [Zidentity platform](https://help.zscaler.com/zidentity/about-api-clients)
+#### Option A: OneAPI (Recommended - Single Credential Set)
 
-Create a `.env` file in your project root with the following:
+- ✅ **One set of credentials** works for ALL services (ZIA, ZPA, ZCC, ZDX, ZTW)
+- ✅ Modern OAuth2.0 authentication via Zidentity
+- ✅ Easier to manage and maintain
+- ✅ Default authentication method (no flag needed)
+- **Use this if:** You have access to Zidentity console and want simplicity
+
+#### Option B: Legacy Mode (Per-Service Credentials)
+
+- ⚠️ **Separate credentials** required for each service you want to use
+- ⚠️ Different authentication methods per service (OAuth for ZPA, API key for ZIA, etc.)
+- ⚠️ Must set `ZSCALER_USE_LEGACY=true` environment variable
+- **Use this if:** You don't have OneAPI access or need per-service credential management
+
+#### Decision Tree
+
+```text
+Do you have access to Zidentity console?
+├─ YES → Use OneAPI (Option A)
+└─ NO  → Use Legacy Mode (Option B)
+```
+
+---
+
+### OneAPI Authentication (Recommended)
+
+OneAPI provides a single set of credentials that authenticate to all Zscaler services. This is the default and recommended method.
+
+#### Prerequisites
+
+Before using OneAPI, you need to:
+
+1. Create an API Client in the [Zidentity platform](https://help.zscaler.com/zidentity/about-api-clients)
+2. Obtain your credentials: `clientId`, `clientSecret`, `customerId`, and `vanityDomain`
+3. Learn more: [Understanding OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi)
+
+#### Quick Setup
+
+Create a `.env` file in your project root (or where you'll run the MCP server):
 
 ```env
+# OneAPI Credentials (Required)
 ZSCALER_CLIENT_ID=your_client_id
 ZSCALER_CLIENT_SECRET=your_client_secret
 ZSCALER_CUSTOMER_ID=your_customer_id
 ZSCALER_VANITY_DOMAIN=your_vanity_domain
+
+# Optional: Only required for Beta tenants
 ZSCALER_CLOUD=beta
 ```
 
-⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
+⚠️ **Security**: Do not commit `.env` to source control. Add it to your `.gitignore`.
 
-You can provide credentials via the `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, `ZSCALER_VANITY_DOMAIN`, `ZSCALER_CLOUD` environment variables, representing your Zidentity OneAPI credentials `clientId`, `clientSecret`, `vanityDomain` and `cloud` respectively.
+#### OneAPI Environment Variables
 
-| Argument     | Description | Environment variable |
-|--------------|-------------|-------------------|
-| `clientId`       | *(String)* Zscaler API Client ID, used with `clientSecret` or `PrivateKey` OAuth auth mode.| `ZSCALER_CLIENT_ID` |
-| `clientSecret`       | *(String)* A string that contains the password for the API admin.| `ZSCALER_CLIENT_SECRET` |
-| `vanityDomain`       | *(String)* Refers to the domain name used by your organization i.e `acme` | `ZSCALER_VANITY_DOMAIN` |
-| `cloud`       | *(String)* The Zidentity cloud to authenticate to i.e `beta`| `ZSCALER_CLOUD` |
-| `use_legacy`       | *(Boolean)* Whether to use legacy API clients instead of OneAPI. Can be set to `true` or `false`.| `ZSCALER_USE_LEGACY` |
+| Environment Variable | Required | Description |
+|---------------------|----------|-------------|
+| `ZSCALER_CLIENT_ID` | Yes | Zscaler OAuth client ID from Zidentity console |
+| `ZSCALER_CLIENT_SECRET` | Yes | Zscaler OAuth client secret from Zidentity console |
+| `ZSCALER_CUSTOMER_ID` | Yes | Zscaler customer ID |
+| `ZSCALER_VANITY_DOMAIN` | Yes | Your organization's vanity domain (e.g., `acme`) |
+| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`, `zscalertwo`). **Only required for Beta tenants** |
+| `ZSCALER_PRIVATE_KEY` | No | OAuth private key for JWT-based authentication (alternative to client secret) |
 
-### Using Legacy Mode with Environment Variable
+#### Verification
 
-To enable legacy API mode for all tools, set the `ZSCALER_USE_LEGACY` environment variable:
+After setting up your `.env` file, test the connection:
+
+```bash
+# Test with a simple command
+zscaler-mcp
+```
+
+If authentication is successful, the server will start without errors. If you see authentication errors, verify:
+
+- All required environment variables are set correctly
+- Your API client has the necessary permissions in Zidentity
+- Your credentials are valid and not expired
+
+---
+
+### Legacy API Authentication
+
+Legacy mode requires separate credentials for each Zscaler service. This method is only needed if you don't have access to OneAPI.
+
+> [!WARNING]
+> **⚠️ IMPORTANT**: When using Legacy mode:
+>
+> - You **MUST** set `ZSCALER_USE_LEGACY=true` in your `.env` file
+> - You **MUST** provide credentials for each service you want to use
+> - OneAPI credentials are **ignored** when `ZSCALER_USE_LEGACY=true` is set
+> - Clients are created on-demand when tools are called (not at startup)
+
+#### Quick Setup
+
+Create a `.env` file with the following structure:
 
 ```env
-# Enable legacy mode for all tools
+# Enable Legacy Mode (REQUIRED - set once at the top)
 ZSCALER_USE_LEGACY=true
 
-# Legacy ZPA credentials
+# ZPA Legacy Credentials (if using ZPA)
 ZPA_CLIENT_ID=your_zpa_client_id
 ZPA_CLIENT_SECRET=your_zpa_client_secret
 ZPA_CUSTOMER_ID=your_zpa_customer_id
 ZPA_CLOUD=BETA
 
-# Legacy ZIA credentials
+# ZIA Legacy Credentials (if using ZIA)
 ZIA_USERNAME=your_zia_username
 ZIA_PASSWORD=your_zia_password
 ZIA_API_KEY=your_zia_api_key
-ZIA_CLOUD=beta
+ZIA_CLOUD=zscalertwo
 
-# Legacy ZCC credentials
+# ZCC Legacy Credentials (if using ZCC)
 ZCC_CLIENT_ID=your_zcc_client_id
 ZCC_CLIENT_SECRET=your_zcc_client_secret
-ZCC_CLOUD=beta
+ZCC_CLOUD=zscalertwo
 
-# Legacy ZDX credentials
+# ZDX Legacy Credentials (if using ZDX)
 ZDX_CLIENT_ID=your_zdx_client_id
 ZDX_CLIENT_SECRET=your_zdx_client_secret
-ZDX_CLOUD=beta
+ZDX_CLOUD=zscalertwo
 ```
 
-When `ZSCALER_USE_LEGACY=true` is set, all tools will use legacy API clients by default. You can still override this per tool call by explicitly setting `use_legacy: false` in the tool parameters.
+⚠️ **Security**: Do not commit `.env` to source control. Add it to your `.gitignore`.
 
-**Note**: When using legacy mode, the MCP server will initialize without creating a client during startup. Clients are created on-demand when individual tools are called, which allows the server to work with different legacy services (ZPA, ZIA, ZDX) without requiring a specific service to be specified during initialization.
+#### Legacy Authentication by Service
 
-**Important**: Legacy credentials are only loaded when `ZSCALER_USE_LEGACY=true` is set. In OneAPI mode, legacy credentials are ignored to prevent conflicts.
+##### ZPA Legacy Authentication
 
-## Zscaler Legacy API Login
+| Environment Variable | Required | Description |
+|---------------------|----------|-------------|
+| `ZPA_CLIENT_ID` | Yes | ZPA API client ID from ZPA console |
+| `ZPA_CLIENT_SECRET` | Yes | ZPA API client secret from ZPA console |
+| `ZPA_CUSTOMER_ID` | Yes | ZPA tenant ID (found in Administration > Company menu) |
+| `ZPA_CLOUD` | Yes | Zscaler cloud for ZPA tenancy (e.g., `BETA`, `zscalertwo`) |
+| `ZPA_MICROTENANT_ID` | No | ZPA microtenant ID (if using microtenants) |
 
-### ZIA Legacy Authentication
+**Where to find ZPA credentials:**
 
-You can provide credentials via the `ZIA_USERNAME`, `ZIA_PASSWORD`, `ZIA_API_KEY`, `ZIA_CLOUD` environment variables, representing your ZIA `username`, `password`, `api_key` and `cloud` respectively.
+- API Client ID/Secret: ZPA console > Configuration & Control > Public API > API Keys
+- Customer ID: ZPA console > Administration > Company
 
-```env
-ZIA_USERNAME=username
-ZIA_PASSWORD=password
-ZIA_API_KEY=api_key
-ZIA_CLOUD=cloud
-```
+##### ZIA Legacy Authentication
 
-⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
+| Environment Variable | Required | Description |
+|---------------------|----------|-------------|
+| `ZIA_USERNAME` | Yes | ZIA API admin email address |
+| `ZIA_PASSWORD` | Yes | ZIA API admin password |
+| `ZIA_API_KEY` | Yes | ZIA obfuscated API key (from obfuscateApiKey() method) |
+| `ZIA_CLOUD` | Yes | Zscaler cloud name (see supported clouds below) |
 
-| Argument     | Description | Environment variable |
-|--------------|-------------|-------------------|
-| `username`       | *(String)* A string that contains the email ID of the API admin.| `ZIA_USERNAME` |
-| `password`       | *(String)* A string that contains the password for the API admin.| `ZIA_PASSWORD` |
-| `api_key`       | *(String)* A string that contains the obfuscated API key (i.e., the return value of the obfuscateApiKey() method).| `ZIA_API_KEY` |
-| `cloud`       | *(String)* The cloud name to authenticate to i.e `zscalertwo`| `ZIA_CLOUD` |
+**Supported ZIA Cloud Environments:**
 
-The following cloud environments are supported:
+- `zscaler`, `zscalerone`, `zscalertwo`, `zscalerthree`
+- `zscloud`, `zscalerbeta`, `zscalergov`, `zscalerten`, `zspreview`
 
-- `zscaler`
-- `zscalerone`
-- `zscalertwo`
-- `zscalerthree`
-- `zscloud`
-- `zscalerbeta`
-- `zscalergov`
-- `zscalerten`
-- `zspreview`
+**Where to find ZIA credentials:**
 
-### ZPA Legacy Authentication
+- Username/Password: Your ZIA admin account
+- API Key: ZIA Admin Portal > Administration > API Key Management
 
-You can provide credentials via the `ZPA_CLIENT_ID`, `ZPA_CLIENT_SECRET`, `ZPA_CUSTOMER_ID`, `ZPA_CLOUD` environment variables, representing your ZPA `clientId`, `clientSecret`, `customerId` and `cloud` of your ZPA account, respectively.
+##### ZCC Legacy Authentication
 
-```env
-ZPA_CLIENT_ID=client_id
-ZPA_CLIENT_SECRET=client_secret
-ZPA_CUSTOMER_ID=customer_id
-ZPA_CLOUD=cloud
-```
+| Environment Variable | Required | Description |
+|---------------------|----------|-------------|
+| `ZCC_CLIENT_ID` | Yes | ZCC API key (Mobile Portal) |
+| `ZCC_CLIENT_SECRET` | Yes | ZCC secret key (Mobile Portal) |
+| `ZCC_CLOUD` | Yes | Zscaler cloud name (see supported clouds below) |
 
-⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
+> **NOTE**: `ZCC_CLOUD` is required and identifies the correct API gateway.
 
-| Argument     | Description | Environment variable |
-|--------------|-------------|-------------------|
-| `clientId`       | *(String)* The ZPA API client ID generated from the ZPA console.| `ZPA_CLIENT_ID` |
-| `clientSecret`       | *(String)* The ZPA API client secret generated from the ZPA console.| `ZPA_CLIENT_SECRET` |
-| `customerId`       | *(String)* The ZPA tenant ID found in the Administration > Company menu in the ZPA console.| `ZPA_CUSTOMER_ID` |
-| `microtenantId`       | *(String)* The ZPA microtenant ID found in the respective microtenant instance under Configuration & Control > Public API > API Keys menu in the ZPA console.| `ZPA_MICROTENANT_ID` |
-| `cloud`       | *(String)* The Zscaler cloud for your tenancy.| `ZPA_CLOUD` |
+**Supported ZCC Cloud Environments:**
 
-### ZCC Legacy Authentication
+- `zscaler`, `zscalerone`, `zscalertwo`, `zscalerthree`
+- `zscloud`, `zscalerbeta`, `zscalergov`, `zscalerten`, `zspreview`
 
-You can provide credentials via the `ZCC_CLIENT_ID`, `ZCC_CLIENT_SECRET`, `ZCC_CLOUD` environment variables, representing your ZIA `api_key`, `secret_key`, and `cloud` respectively.
+##### ZDX Legacy Authentication
 
-~> **NOTE** `ZCC_CLOUD` environment variable is required, and is used to identify the correct API gateway where the API requests should be forwarded to.
+| Environment Variable | Required | Description |
+|---------------------|----------|-------------|
+| `ZDX_CLIENT_ID` | Yes | ZDX key ID |
+| `ZDX_CLIENT_SECRET` | Yes | ZDX secret key |
+| `ZDX_CLOUD` | Yes | Zscaler cloud name prefix |
 
-```env
-ZCC_CLIENT_ID=api_key
-ZCC_CLIENT_SECRET=secret_key
-ZCC_CLOUD=cloud
-```
+**Where to find ZDX credentials:**
 
-⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
+- ZDX Portal > API Keys section
 
-| Argument     | Description | Environment variable |
-|--------------|-------------|-------------------|
-| `api_key`       | *(String)* A string that contains the apiKey for the Mobile Portal.| `ZCC_CLIENT_ID` |
-| `secret_key`       | *(String)* A string that contains the secret key for the Mobile Portal.| `ZCC_CLIENT_SECRET` |
-| `cloud`       | *(String)* The cloud name to authenticate to i.e `zscalertwo`| `ZCC_CLOUD` |
+#### Legacy Mode Behavior
 
-The following cloud environments are supported:
+When `ZSCALER_USE_LEGACY=true`:
 
-- `zscaler`
-- `zscalerone`
-- `zscalertwo`
-- `zscalerthree`
-- `zscloud`
-- `zscalerbeta`
-- `zscalergov`
-- `zscalerten`
-- `zspreview`
+- All tools use legacy API clients by default
+- You can override per-tool by setting `use_legacy: false` in tool parameters
+- The MCP server initializes without creating clients at startup
+- Clients are created on-demand when individual tools are called
+- This allows the server to work with different legacy services without requiring a specific service during initialization
 
-### ZDX Legacy Authentication
+---
 
-You can provide credentials via the `ZDX_CLIENT_ID`, `ZDX_CLIENT_SECRET` environment variables, representing your ZDX `key_id`, `key_secret` of your ZDX account, respectively.
+### Authentication Troubleshooting
 
-```env
-ZDX_CLIENT_ID=api_key
-ZDX_CLIENT_SECRET=secret_key
-ZDX_CLOUD=cloud
-```
+**Common Issues:**
 
-⚠️ Do not commit `.env` to source control. Add it to your `.gitignore`.
+1. **"Authentication failed" errors:**
+   - Verify all required environment variables are set
+   - Check that credentials are correct and not expired
+   - Ensure you're using the correct cloud environment
 
-| Argument     | Description | Environment variable |
-|--------------|-------------|-------------------|
-| `key_id`       | *(String)* A string that contains the key_id for the ZDX Portal.| `ZDX_CLIENT_ID` |
-| `key_secret`       | *(String)* A string that contains the key_secret key for the ZDX Portal.| `ZDX_CLIENT_SECRET` |
-| `cloud`            | *(String)* The cloud name prefix that identifies the correct API endpoint.| `ZDX_CLOUD` |
+2. **"Legacy credentials ignored" warning:**
+   - This is normal when using OneAPI mode
+   - Legacy credentials are only loaded when `ZSCALER_USE_LEGACY=true`
 
-### Internal Environment Variables
+3. **"OneAPI credentials ignored" warning:**
+   - This is normal when using Legacy mode
+   - OneAPI credentials are only used when `ZSCALER_USE_LEGACY` is not set or is `false`
 
-The Zscaler Integrations MCP Server uses the following internal environment variables for configuration:
+4. **Mixed authentication errors:**
+   - **DO NOT** set both OneAPI and Legacy credentials
+   - **DO NOT** set `ZSCALER_USE_LEGACY=true` if using OneAPI
+   - Choose ONE method and stick with it
 
-#### MCP Server Configuration
+### MCP Server Configuration
+
+The following environment variables control MCP server behavior (not authentication):
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
 | `ZSCALER_MCP_TRANSPORT` | `stdio` | Transport protocol to use (`stdio`, `sse`, or `streamable-http`) |
-| `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa` |
+| `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
 | `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
 | `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_create_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
@@ -1087,54 +1176,6 @@ User-Agent: zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64 Claude Desktop 1
 ```
 
 The User-Agent helps Zscaler identify API traffic from the MCP server and can be useful for support, analytics, and debugging purposes.
-
-#### OneAPI Authentication
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZSCALER_CLIENT_ID` | Yes | Zscaler OAuth client ID |
-| `ZSCALER_CLIENT_SECRET` | Yes | Zscaler OAuth client secret |
-| `ZSCALER_CUSTOMER_ID` | Yes | Zscaler customer ID |
-| `ZSCALER_VANITY_DOMAIN` | Yes | Zscaler vanity domain |
-| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`, `zscalertwo`) |
-| `ZSCALER_PRIVATE_KEY` | No | OAuth private key for JWT-based authentication |
-| `ZSCALER_USE_LEGACY` | `false` | Enable legacy API mode (`true`/`false`) |
-
-#### Legacy Authentication (when `ZSCALER_USE_LEGACY=true`)
-
-**ZPA Legacy:**
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZPA_CLIENT_ID` | Yes | ZPA API client ID |
-| `ZPA_CLIENT_SECRET` | Yes | ZPA API client secret |
-| `ZPA_CUSTOMER_ID` | Yes | ZPA tenant ID |
-| `ZPA_CLOUD` | Yes | Zscaler cloud for ZPA tenancy |
-
-**ZIA Legacy:**
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZIA_USERNAME` | Yes | ZIA API admin email |
-| `ZIA_PASSWORD` | Yes | ZIA API admin password |
-| `ZIA_API_KEY` | Yes | ZIA obfuscated API key |
-| `ZIA_CLOUD` | Yes | Zscaler cloud for ZIA |
-
-**ZCC Legacy:**
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZCC_CLIENT_ID` | Yes | ZCC API key |
-| `ZCC_CLIENT_SECRET` | Yes | ZCC secret key |
-| `ZCC_CLOUD` | Yes | Zscaler cloud for ZCC |
-
-**ZDX Legacy:**
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZDX_CLIENT_ID` | Yes | ZDX key ID |
-| `ZDX_CLIENT_SECRET` | Yes | ZDX secret key |
-| `ZDX_CLOUD` | Yes | Zscaler cloud for ZDX |
 
 ### As a Library
 
@@ -1283,297 +1324,169 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
 }
 ```
 
-### With Service Selection
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-server": {
-      "command": "uvx",
-      "args": [
-        "--env-file", "/path/to/.env",
-        "zscaler-mcp-server",
-        "--services", "zia,zpa,zdx"
-      ]
-    }
-  }
-}
-```
-
-### Using Individual Environment Variables
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-server": {
-      "command": "uvx",
-      "args": ["zscaler-mcp-server"],
-      "env": {
-        "ZSCALER_CLIENT_ID": "your-client-id",
-        "ZSCALER_CLIENT_SECRET": "your-client-secret",
-        "ZSCALER_CUSTOMER_ID": "your-customer-id",
-        "ZSCALER_VANITY_DOMAIN": "your-vanity-domain"
-      }
-    }
-  }
-}
-```
-
-### Docker Version
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-server": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "--env-file", "/full/path/to/.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
-      ]
-    }
-  }
-}
-```
-
 ## Additional Deployment Options
 
 ### Amazon Bedrock AgentCore
 
-To deploy the MCP Server as a tool in Amazon Bedrock AgentCore, please refer to the [following document](./docs/deployment/amazon_bedrock_agentcore.md).
+> [!IMPORTANT]
+> **AWS Marketplace Image Available**: For Amazon Bedrock AgentCore deployments, we provide a dedicated container image optimized for Bedrock's stateless HTTP environment. This image includes a custom web server wrapper that handles session management and is specifically designed for AWS Bedrock AgentCore Runtime.
+
+**🚀 Quick Start with AWS Marketplace:**
+
+The easiest way to deploy the Zscaler Integrations MCP Server to Amazon Bedrock AgentCore is through the [AWS Marketplace listing](https://aws.amazon.com/marketplace/pp/prodview-dtjfklwemb54y?sr=0-1&ref_=beagle&applicationId=AWSMPContessa). The Marketplace image includes:
+
+- ✅ Pre-configured for Bedrock AgentCore Runtime
+- ✅ Custom web server wrapper for stateless HTTP environments
+- ✅ Session management handled automatically
+- ✅ Health check endpoints for ECS compatibility
+- ✅ Optimized for AWS Bedrock AgentCore's requirements
+
+**📚 Full Deployment Guide:**
+
+For detailed deployment instructions, IAM configuration, and troubleshooting, please refer to the comprehensive [Amazon Bedrock AgentCore deployment guide](./docs/deployment/amazon_bedrock_agentcore.md).
+
+The deployment guide covers:
+
+- Prerequisites and AWS VPC requirements
+- IAM role and trust policy configuration
+- Step-by-step deployment instructions
+- Environment variable configuration
+- Write mode configuration (for CREATE/UPDATE/DELETE operations)
+- Troubleshooting and verification steps
+
+> [!NOTE]
+> The AWS Marketplace image uses a different architecture than the standard `streamable-http` transport. It includes a FastAPI-based web server wrapper (`web_server.py`) that bypasses the MCP protocol's session initialization requirements, making it compatible with Bedrock's stateless HTTP environment. This is why the Marketplace image is recommended for Bedrock deployments.
 
 ## Using the MCP Server with Agents
 
-Once your server is running (via Docker or source), you can access its tools through AI-integrated editors or platforms.
+This section provides instructions for configuring the Zscaler Integrations MCP Server with popular AI agents. **Before starting, ensure you have:**
 
-> [!IMPORTANT]
-> **Read-Only Mode**: By default, the server exposes only **read-only tools** (`list_*`, `get_*`). If you need write capabilities (`create_*`, `update_*`, `delete_*`), you must explicitly enable write tools in your MCP configuration by adding `--enable-write-tools` to the command or setting `ZSCALER_MCP_WRITE_ENABLED=true`. See [Security & Permissions](#-security--permissions) for details.
+1. ✅ Completed [Installation & Setup](#installation-setup)
+2. ✅ Configured [Authentication](#zscaler-api-credentials-authentication)
+3. ✅ Created your `.env` file with credentials
 
-### 🧠 Claude Desktop
+### Claude Desktop
 
-#### Option 1: Using Docker (Recommended)
+You can install the Zscaler MCP Server in Claude Desktop using either method:
 
-##### Step 1: Pull the Docker image
-
-```bash
-docker pull quay.io/zscaler/zscaler-mcp-server:latest
-```
-
-##### Step 2: Create your credentials file
-
-Create a file named `.env` with your Zscaler credentials:
-
-```bash
-# Example: ~/zscaler-mcp/.env
-ZSCALER_CLIENT_ID=your_client_id
-ZSCALER_CLIENT_SECRET=your_client_secret
-ZSCALER_CUSTOMER_ID=your_customer_id
-ZSCALER_VANITY_DOMAIN=your_vanity_domain
-ZSCALER_CLOUD=production
-
-# Optional: Enable write operations (use with caution!)
-# ZSCALER_MCP_WRITE_ENABLED=true
-# ZSCALER_MCP_WRITE_TOOLS=zpa_create_*,zpa_delete_*
-```
-
-##### Step 3: Configure Claude Desktop
+#### Option 1: Install as Extension (Recommended)
 
 1. Open Claude Desktop
-2. Go to: **Settings → Developer → Edit Config**
-3. This opens `claude_desktop_config.json`
-4. Add the following configuration:
+2. Go to **Settings** → **Extensions** → **Browse Extensions**
+3. In the search box, type `zscaler`
+4. Select **Zscaler MCP Server** from the results
+5. Click **Install** or **Add**
+6. Configure your `.env` file path when prompted (or edit the configuration after installation)
+7. Restart Claude Desktop completely (quit and reopen)
+8. Verify by asking Claude: "What Zscaler tools are available?"
+
+#### Option 2: Manual Configuration
+
+1. Open Claude Desktop
+2. Go to **Settings** → **Developer** → **Edit Config**
+3. Add the following configuration:
 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp-docker": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "--env-file",
-        "/absolute/path/to/your/.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
-      ]
+    "zscaler-mcp-server": {
+      "command": "uvx",
+      "args": ["--env-file", "/absolute/path/to/your/.env", "zscaler-mcp-server"]
     }
   }
 }
 ```
 
-**Important**: Replace `/absolute/path/to/your/.env` with the full path to your `.env` file.
+> **Important**: Replace `/absolute/path/to/your/.env` with the **absolute path** to your `.env` file. Relative paths will not work.
 
-Example paths:
+1. Save the configuration file
+2. Restart Claude Desktop completely (quit and reopen)
+3. Verify by asking Claude: "What Zscaler tools are available?"
 
-- macOS/Linux: `/Users/yourname/zscaler-mcp/.env`
-- Windows: `C:\\Users\\yourname\\zscaler-mcp\\.env`
+**Troubleshooting:**
 
-##### Step 4: Restart Claude Desktop
+- **"MCP server not found"**: Verify the `.env` file path is absolute and correct
+- **"Authentication failed"**: Check that your `.env` file contains valid credentials
+- **Tools not appearing**: Check Claude Desktop logs (Help > View Logs) for errors
+- **Extension not found**: Ensure you're searching in the "Desktop extensions" tab, not "Web"
 
-Completely quit and reopen Claude Desktop for changes to take effect.
+### Cursor
 
-##### Step 5: Test the connection
-
-Ask Claude: `"List my ZPA application segments"` or `"Check Zscaler connectivity"`
-
-#### Option 2: Using Python (Development)
-
-If you have Python installed and want to run from source:
-
-1. Install the package:
-
-```bash
-pip install zscaler-mcp
-```
-
-1. Configure Claude Desktop (`claude_desktop_config.json`):
+1. Open Cursor
+2. Go to **Settings** → **Cursor Settings** → **Tools & MCP** → **New MCP Server**
+3. The configuration will be saved to `~/.cursor/mcp.json`. Add the following configuration:
 
 ```json
 {
   "mcpServers": {
-    "zscaler-mcp": {
-      "command": "zscaler-mcp",
-      "args": ["--transport", "stdio"],
-      "env": {
-        "ZSCALER_CLIENT_ID": "your_client_id",
-        "ZSCALER_CLIENT_SECRET": "your_client_secret",
-        "ZSCALER_CUSTOMER_ID": "your_customer_id",
-        "ZSCALER_VANITY_DOMAIN": "your_vanity_domain",
-        "ZSCALER_CLOUD": "production"
-      }
+    "zscaler-mcp-server": {
+      "command": "uvx",
+      "args": ["--env-file", "/absolute/path/to/your/.env", "zscaler-mcp-server"]
     }
   }
 }
 ```
 
-1. Restart Claude Desktop
+> **Alternative**: You can also use Docker instead of `uvx`:
+>
+> ```json
+> {
+>   "mcpServers": {
+>     "zscaler-mcp-server": {
+>       "command": "docker",
+>       "args": [
+>         "run",
+>         "-i",
+>         "--rm",
+>         "--env-file",
+>         "/absolute/path/to/your/.env",
+>         "quay.io/zscaler/zscaler-mcp-server:latest"
+>       ]
+>     }
+>   }
+> }
+> ```
 
-#### Troubleshooting Claude Configuration
+1. Save the configuration file
+2. Restart Cursor completely (quit and reopen)
+3. Verify by asking: "List my ZIA rule labels"
 
-**Server not appearing:**
+**Troubleshooting:**
 
-- Check Claude Desktop logs: Settings → Developer → Open Logs Folder
-- Verify Docker is running: `docker ps`
-- Test server manually: `docker run -i --rm --env-file .env quay.io/zscaler/zscaler-mcp-server:latest`
+- Check Cursor's MCP logs (View > Output > MCP) for connection errors
+- Verify the `.env` file path is absolute and credentials are correct
+- The configuration file is located at `~/.cursor/mcp.json` (or `%USERPROFILE%\.cursor\mcp.json` on Windows)
 
-**Connection errors:**
+### General Troubleshooting for All Agents
 
-- Verify `.env` file path is absolute (not relative)
-- Check credentials are correct and not expired
-- Ensure Docker has permission to read the `.env` file
+**Common Issues:**
 
-**No tools available:**
+1. **"Command not found: uvx"**
+   - Install `uv`: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+   - Or use Docker: Replace `uvx` with `docker run --rm --env-file /path/to/.env quay.io/zscaler/zscaler-mcp-server:latest`
 
-- Default: Only read-only tools (`list_*`, `get_*`) are available
-- For write tools: Add `ZSCALER_MCP_WRITE_ENABLED=true` and `ZSCALER_MCP_WRITE_TOOLS=...` to `.env`
+2. **".env file not found"**
+   - Use absolute paths, not relative paths
+   - Verify the file exists at the specified path
+   - Check file permissions (should be readable)
 
-### 💻 Cursor
+3. **"Authentication failed"**
+   - Verify all required environment variables are in `.env`
+   - Check that credentials are correct and not expired
+   - Ensure you're using the correct authentication method (OneAPI vs Legacy)
 
-1. Open Cursor, then settings
-2. In Cursor Settings, select "Tools & Integrations"
-3. In the MCP Tools section, turn on `zscaler-mcp-server`
-4. Select `View` and `Command Palette` and `Chat: Open Chat Agent`
-5. In chat, switch to [Agent Mode](https://docs.cursor.com/chat/agent).
-6. Try prompts like "List ZPA Segment Groups" or "List ZIA Rule Labels"
-7. Click "Submit"
+4. **"Tools not appearing"**
+   - Some agents require you to enable tools in their UI
+   - Check agent logs for connection errors
+   - Verify the MCP server is running (check agent's MCP status)
 
-### Visual Studio Code + GitHub Copilot
+5. **"Server connection timeout"**
+   - Ensure the MCP server can start successfully
+   - Test manually: `uvx --env-file /path/to/.env zscaler-mcp-server`
+   - Check for port conflicts if using HTTP transports
 
-Install
+**Getting Help:**
 
-After installation, select GitHub Copilot Agent Mode and refresh the tools list. Learn more about Agent Mode in the [VS Code Documentation](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode).
-
-1. Open VS Code and launch GitHub Copilot
-2. Switch to Agent Mode (via the gear menu)
-3. Start the MCP Server
-4. Refresh the tools list
-5. Try a prompt like: `Create a ZPA segment group named "DevServices"`
-
-📚 Learn more about Agent Mode in the [VS Code Copilot documentation](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
-
-#### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) installed and running
-- Zscaler API credentials
-
-## Troubleshooting
-
-See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common issues and logging.
-
-## Contributing
-
-### Getting Started for Contributors
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/zscaler/zscaler-mcp-server.git
-   cd zscaler-mcp-server
-   ```
-
-2. Install in development mode:
-
-   ```bash
-   # Create .venv and install dependencies
-   uv sync --all-extras
-
-   # Activate the venv
-   source .venv/bin/activate
-   ```
-
-> [!IMPORTANT]
-> This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated releases and semantic versioning. Please follow the commit message format outlined in our [Contributing Guide](docs/CONTRIBUTING.md) when submitting changes.
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run end-to-end tests
-pytest --run-e2e tests/e2e/
-
-# Run end-to-end tests with verbose output (note: -s is required to see output)
-pytest --run-e2e -v -s tests/e2e/
-```
-
-## Privacy Policy
-
-This MCP server connects to the Zscaler API to manage and retrieve information about your Zscaler resources. When using this server, data is transmitted between your local environment and Zscaler's cloud services.
-
-**Data Handling:**
-
-- This MCP server acts as a client to the Zscaler API and does not store or log any data locally beyond what is necessary for operation
-- All API communications are made directly to Zscaler's cloud infrastructure
-- Authentication credentials (Client ID, Client Secret, Customer ID) are used only for API authentication and are not transmitted to any third parties
-- The server operates in read-only mode by default; write operations require explicit enablement via the `--enable-write-tools` flag
-
-**User Responsibility:**
-
-- Users are responsible for securing their Zscaler API credentials
-- Users should review and understand which tools they enable and grant to AI agents
-- Users should be aware that AI agents with access to this server can query and (if enabled) modify Zscaler resources within the scope of the provided credentials
-
-For information about how Zscaler handles data and privacy, please refer to the [Zscaler Privacy Policy](https://www.zscaler.com/privacy/company-privacy-policy).
-
-## License
-
-Copyright (c) 2025 [Zscaler](https://github.com/zscaler)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- Check agent-specific logs (usually in Help/View menu)
+- Test the server manually to isolate agent vs server issues
+- Review the [Troubleshooting](#troubleshooting) section for more details

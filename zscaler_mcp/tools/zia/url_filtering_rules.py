@@ -1,22 +1,13 @@
-import json
 from typing import Annotated, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
-
-def _parse_list(val):
-    """Helper function to parse list parameters that can be JSON strings or lists."""
-    if isinstance(val, str):
-        try:
-            return json.loads(val)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON string: {e}")
-    return val
 
 
 def _build_url_filtering_rule_payload(
@@ -93,7 +84,7 @@ def _build_url_filtering_rule_payload(
         ("override_groups", override_groups),
     ]:
         if param_value is not None:
-            payload[param_name] = _parse_list(param_value)
+            payload[param_name] = parse_list(param_value)
 
     # Boolean parameters
     if block_override is not None:
