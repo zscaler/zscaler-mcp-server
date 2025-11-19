@@ -7,6 +7,35 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pycountry
 
 
+def parse_list(val: Union[str, List, Any]) -> Union[List, Any]:
+    """
+    Helper function to parse list parameters that can be JSON strings or lists.
+    
+    Args:
+        val: Either a JSON string representation of a list, or an actual list/other type.
+    
+    Returns:
+        Parsed list if input was a JSON string, otherwise returns the value as-is.
+    
+    Raises:
+        ValueError: If the input is a string but not valid JSON.
+    
+    Examples:
+        >>> parse_list('["item1", "item2"]')
+        ['item1', 'item2']
+        >>> parse_list(["item1", "item2"])
+        ['item1', 'item2']
+        >>> parse_list(123)
+        123
+    """
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON string: {exc}")
+    return val
+
+
 def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
     """
     Convert various condition formats to the SDK's expected v2 format.

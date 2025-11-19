@@ -276,11 +276,174 @@
 <section id="zscaler-integrations-mcp-server-changelog">
 <h2>Zscaler Integrations MCP Server Changelog<a class="headerlink" href="#zscaler-integrations-mcp-server-changelog" title="Link to this heading">¶</a></h2>
 </section>
+<section id="november-19-2025">
+<h2>0.4.0 (November 19, 2025)<a class="headerlink" href="#november-19-2025" title="Link to this heading">¶</a></h2>
+<section id="notes">
+<h3>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+</section>
+<section id="enhancements">
+<h3>Enhancements<a class="headerlink" href="#enhancements" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/16">PR #16</a></dt><dd><ul class="simple">
+<li><p>Split the ZIA sandbox helper into dedicated tools (<cite>zia_get_sandbox_quota</cite>, <cite>zia_get_sandbox_behavioral_analysis</cite>, <cite>zia_get_sandbox_file_hash_count</cite>, <cite>zia_get_sandbox_report</cite>) so MCP clients can directly invoke quota/report endpoints.</p></li>
+</ul>
+</dd>
+<dt><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/16">PR #16</a></dt><dd><ul class="simple">
+<li><p>Added ZIA SSL Inspection Rules tools (<cite>zia_list_ssl_inspection_rules</cite>, <cite>zia_get_ssl_inspection_rule</cite>, <cite>zia_create_ssl_inspection_rule</cite>, <cite>zia_update_ssl_inspection_rule</cite>, <cite>zia_delete_ssl_inspection_rule</cite>) for managing SSL/TLS traffic decryption and inspection policies.</p></li>
+</ul>
+</dd>
+<dt><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/16">PR #16</a></dt><dd><ul class="simple">
+<li><p>Added ZTW workload discovery service tool (<cite>ztw_get_discovery_settings</cite>) for retrieving workload discovery service settings.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+<section id="november-4-2025">
+<h2>0.3.2 (November 4, 2025)<a class="headerlink" href="#november-4-2025" title="Link to this heading">¶</a></h2>
+<section id="id4">
+<h3>Notes<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+</section>
+<section id="id5">
+<h3>Enhancements<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/15">PR #15</a></dt><dd><ul class="simple">
+<li><p>Added custom User-Agent header support with format <cite>zscaler-mcp-server/VERSION python/VERSION os/arch</cite>. Users can append AI agent information via <cite>–user-agent-comment</cite> flag or <cite>ZSCALER_MCP_USER_AGENT_COMMENT</cite> environment variable.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+<section id="october-28-2025-tool-registration-naming-updates">
+<h2>0.3.1 (October 28, 2025) - Tool Registration &amp; Naming Updates<a class="headerlink" href="#october-28-2025-tool-registration-naming-updates" title="Link to this heading">¶</a></h2>
+</section>
+<section id="added">
+<h2>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h2>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/14">PR #14</a></p>
+<ul class="simple">
+<li><p><strong>ZIA Tools</strong>: Added missing read-only tools to services registration
+- <cite>get_zia_dlp_dictionaries</cite> - Manage ZIA DLP dictionaries for data loss prevention
+- <cite>get_zia_dlp_engines</cite> - Manage ZIA DLP engines for rule processing
+- <cite>get_zia_user_departments</cite> - Manage ZIA user departments for organizational structure
+- <cite>get_zia_user_groups</cite> - Manage ZIA user groups for access control
+- <cite>get_zia_users</cite> - Manage ZIA users for authentication and access control</p></li>
+<li><p><strong>ZPA Tools</strong>: Added missing read-only tools to services registration
+- <cite>get_zpa_app_protection_profile</cite> - Manage ZPA App Protection Profiles (Inspection Profiles)
+- <cite>get_zpa_enrollment_certificate</cite> - Manage ZPA Enrollment Certificates
+- <cite>get_zpa_isolation_profile</cite> - Manage ZPA Cloud Browser Isolation (CBI) profiles
+- <cite>get_zpa_posture_profile</cite> - Manage ZPA Posture Profiles
+- <cite>get_zpa_saml_attribute</cite> - Manage ZPA SAML Attributes
+- <cite>get_zpa_scim_attribute</cite> - Manage ZPA SCIM Attributes
+- <cite>get_zpa_scim_group</cite> - Manage ZPA SCIM Groups
+- <cite>get_zpa_app_segments_by_type</cite> - Manage ZPA application segments by type
+- <cite>get_zpa_trusted_network</cite> - Manage ZPA Trusted Networks</p></li>
+</ul>
+<p>### Changed</p>
+<ul class="simple">
+<li><p><strong>Tool Naming Convention</strong>: Updated tool names to follow consistent <cite>get_*</cite> pattern for read-only operations
+- ZIA tools: <cite>zia_*_manager</cite> → <cite>get_zia_*</cite>
+- ZPA tools: <cite>*_manager</cite> → <cite>get_zpa_*</cite>
+- Maintains backward compatibility with existing <cite>zia_get_*</cite> and <cite>zpa_get_*</cite> patterns</p></li>
+</ul>
+<p>### Fixed</p>
+<ul class="simple">
+<li><p><strong>Tool Registration</strong>: Resolved missing tool registrations in <cite>zscaler_mcp/services.py</cite></p></li>
+<li><p><strong>Documentation</strong>: Updated README.md with correct tool names and comprehensive tool listings</p></li>
+</ul>
+</section>
+<section id="october-27-2025-security-confirmation-release">
+<h2>0.3.0 (October 27, 2025) - Security &amp; Confirmation Release<a class="headerlink" href="#october-27-2025-security-confirmation-release" title="Link to this heading">¶</a></h2>
+<section id="id6">
+<h3>Notes<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+</section>
+<section id="security-enhancements">
+<h3>Security Enhancements<a class="headerlink" href="#security-enhancements" title="Link to this heading">¶</a></h3>
+<p><strong>Multi-Layer Security Model</strong>:</p>
+<ul class="simple">
+<li><p>Default read-only mode (110+ safe tools always available)</p></li>
+<li><p>Global <code class="docutils literal notranslate"><span class="pre">--enable-write-tools</span></code> flag required for write operations</p></li>
+<li><p><strong>Mandatory allowlist</strong> via <code class="docutils literal notranslate"><span class="pre">--write-tools</span></code> (supports wildcards: <code class="docutils literal notranslate"><span class="pre">zpa_create_*</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_delete_*</span></code>)</p></li>
+<li><p>Tool annotations: <code class="docutils literal notranslate"><span class="pre">readOnlyHint=True</span></code> for read operations, <code class="docutils literal notranslate"><span class="pre">destructiveHint=True</span></code> for write operations</p></li>
+<li><p><strong>Double-confirmation for DELETE operations</strong>: Permission dialog + server-side confirmation block (33 delete tools)</p></li>
+</ul>
+<p><strong>Write Tools Allowlist</strong> (Mandatory):</p>
+<ul class="simple">
+<li><p>No write tools registered unless explicit allowlist provided</p></li>
+<li><p>Prevents accidental “allow all” scenarios</p></li>
+<li><p>Granular control with wildcard patterns</p></li>
+</ul>
+<p><strong>DELETE Operation Protection</strong>:</p>
+<ul class="simple">
+<li><p>All 33 delete operations require <strong>double confirmation</strong></p></li>
+<li><p>First: AI agent permission dialog (<code class="docutils literal notranslate"><span class="pre">destructiveHint</span></code>)</p></li>
+<li><p>Second: Server-side confirmation via hidden <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> parameter</p></li>
+<li><p>Prevents irreversible actions from being executed accidentally</p></li>
+</ul>
+</section>
+<section id="id7">
+<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">zscaler_mcp/common/tool_helpers.py</span></code>: Registration utilities for read/write tools with annotations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zscaler_mcp/common/elicitation.py</span></code>: Confirmation logic for delete operations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--enable-write-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED</span></code>: Global write mode toggle</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--write-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code>: Mandatory allowlist (required when write mode enabled)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build_mcpb.sh</span></code>: Automated packaging script with bundled Python dependencies</p></li>
+<li><p>Hidden <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> parameter to all 33 delete functions for server-side confirmation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">destructiveHint=True</span></code> annotation to all 93 write operations</p></li>
+</ul>
+</section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>MCPB packages now bundle all Python dependencies (51MB vs 499KB)</p></li>
+<li><p>Update operations now fetch current resource state to avoid sending null values to API</p></li>
+<li><p>Enhanced server logging with security posture information</p></li>
+<li><p>Updated test suite for confirmation-based delete operations (163 tests passing)</p></li>
+</ul>
+</section>
+<section id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">MockServer.add_tool()</span></code> missing <code class="docutils literal notranslate"><span class="pre">annotations</span></code> parameter for <code class="docutils literal notranslate"><span class="pre">--list-tools</span></code> functionality</p></li>
+<li><p>Fixed update operations in ZPA segment groups, server groups, app connector groups, service edge groups to handle optional fields correctly</p></li>
+<li><p>Fixed Pydantic validation errors in confirmation responses (return string instead of dict)</p></li>
+<li><p>Fixed MCPB packaging to include all required dependencies</p></li>
+<li><p>Removed problematic <code class="docutils literal notranslate"><span class="pre">test_use_legacy_env.py</span></code> (attempted real API calls)</p></li>
+<li><p>Fixed 21 orphaned commas causing syntax errors</p></li>
+<li><p>Fixed missing Union imports</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Updated README with comprehensive security model documentation</p></li>
+<li><p>Rewrote <code class="docutils literal notranslate"><span class="pre">docsrc/guides/configuration.rst</span></code> with clear authentication guide</p></li>
+<li><p>Added write tools allowlist examples and usage patterns</p></li>
+<li><p>Documented double-confirmation flow for delete operations</p></li>
+<li><p>Fixed Sphinx RST title underlines</p></li>
+</ul>
+<p>## 0.2.2 (October 6, 2025)</p>
+<p>### Notes</p>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+<p><cite>PR #11 &lt;https://github.com/zscaler/zscaler-mcp-server/pull/11&gt;</cite> Fixed README and other documents to change the name title from “Zscaler MCP Server” to “Zscaler Integrations MCP Server”</p>
+</section>
+</section>
 <section id="september-18-2025">
 <h2>0.2.1 (September 18, 2025)<a class="headerlink" href="#september-18-2025" title="Link to this heading">¶</a></h2>
 </section>
-<section id="notes">
-<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h2>
+<section id="id8">
+<h2>Notes<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
@@ -291,11 +454,11 @@
 <li><p>Updated GitHub workflows to include linter checks in release process</p></li>
 </ul>
 </section>
-<section id="id2">
-<h2>0.2.0 (September 18, 2025)<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<section id="id9">
+<h2>0.2.0 (September 18, 2025)<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
 </section>
-<section id="id3">
-<h2>Notes<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<section id="id10">
+<h2>Notes<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
@@ -324,13 +487,13 @@
 <section id="august-15-2025-initial-release">
 <h2>0.1.0 (August 15, 2025) - Initial Release<a class="headerlink" href="#august-15-2025-initial-release" title="Link to this heading">¶</a></h2>
 </section>
-<section id="id6">
-<h2>Notes<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
+<section id="id13">
+<h2>Notes<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>Added<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Initial implementation for the zscaler-mcp server (<a class="reference external" href="https://github.com/zscaler/zscaler-mcp/issues/1">#1</a>)</p></li>
 <li><p>Support for Zscaler services: <code class="docutils literal notranslate"><span class="pre">zcc</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx</span></code>, <code class="docutils literal notranslate"><span class="pre">zia</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa</span></code>, <code class="docutils literal notranslate"><span class="pre">zidentity</span></code> (<a class="reference external" href="https://github.com/zscaler/zscaler-mcp/issues/1">#1</a>)</p></li>
@@ -350,16 +513,16 @@
 </li>
 </ul>
 </section>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<section id="id21">
+<h3>Changed<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed import sorting and linting issues</p></li>
 <li><p>Simplified project structure by removing unnecessary nesting</p></li>
 <li><p>Updated test organization for better maintainability</p></li>
 </ul>
 </section>
-<section id="documentation">
-<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h3>
+<section id="id22">
+<h3>Documentation<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Updated README ZIA Features to include the new tools (<code class="docutils literal notranslate"><span class="pre">zia_user_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_user_departments</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_users</span></code>).</p></li>
 </ul>
@@ -424,19 +587,40 @@
             <ul>
 <li><a class="reference internal" href="#">Release Notes</a><ul>
 <li><a class="reference internal" href="#zscaler-integrations-mcp-server-changelog">Zscaler Integrations MCP Server Changelog</a></li>
-<li><a class="reference internal" href="#september-18-2025">0.2.1 (September 18, 2025)</a></li>
+<li><a class="reference internal" href="#november-19-2025">0.4.0 (November 19, 2025)</a><ul>
 <li><a class="reference internal" href="#notes">Notes</a></li>
-<li><a class="reference internal" href="#id2">0.2.0 (September 18, 2025)</a></li>
-<li><a class="reference internal" href="#id3">Notes</a><ul>
+<li><a class="reference internal" href="#enhancements">Enhancements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#november-4-2025">0.3.2 (November 4, 2025)</a><ul>
+<li><a class="reference internal" href="#id4">Notes</a></li>
+<li><a class="reference internal" href="#id5">Enhancements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#october-28-2025-tool-registration-naming-updates">0.3.1 (October 28, 2025) - Tool Registration &amp; Naming Updates</a></li>
+<li><a class="reference internal" href="#added">Added</a></li>
+<li><a class="reference internal" href="#october-27-2025-security-confirmation-release">0.3.0 (October 27, 2025) - Security &amp; Confirmation Release</a><ul>
+<li><a class="reference internal" href="#id6">Notes</a></li>
+<li><a class="reference internal" href="#security-enhancements">Security Enhancements</a></li>
+<li><a class="reference internal" href="#id7">Added</a></li>
+<li><a class="reference internal" href="#changed">Changed</a></li>
+<li><a class="reference internal" href="#fixed">Fixed</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#september-18-2025">0.2.1 (September 18, 2025)</a></li>
+<li><a class="reference internal" href="#id8">Notes</a></li>
+<li><a class="reference internal" href="#id9">0.2.0 (September 18, 2025)</a></li>
+<li><a class="reference internal" href="#id10">Notes</a><ul>
 <li><a class="reference internal" href="#new-zcc-mcp-tools">NEW ZCC MCP Tools</a></li>
 <li><a class="reference internal" href="#new-ztw-mcp-tools">NEW ZTW MCP Tools</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#august-15-2025-initial-release">0.1.0 (August 15, 2025) - Initial Release</a></li>
-<li><a class="reference internal" href="#id6">Notes</a><ul>
-<li><a class="reference internal" href="#added">Added</a></li>
-<li><a class="reference internal" href="#changed">Changed</a></li>
-<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#id13">Notes</a><ul>
+<li><a class="reference internal" href="#id14">Added</a></li>
+<li><a class="reference internal" href="#id21">Changed</a></li>
+<li><a class="reference internal" href="#id22">Documentation</a></li>
 </ul>
 </li>
 </ul>

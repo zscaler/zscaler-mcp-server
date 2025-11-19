@@ -265,26 +265,16 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zia.cloud_firewall_rules</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_list</span>
 
 <span class="c1"># ============================================================================</span>
 <span class="c1"># Helper Functions</span>
 <span class="c1"># ============================================================================</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_parse_list</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to parse list parameters that can be JSON strings or lists.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">val</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_build_firewall_rule_payload</span><span class="p">(</span>
@@ -366,7 +356,7 @@
         <span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">users</span><span class="p">),</span>
     <span class="p">]:</span>
         <span class="k">if</span> <span class="n">param_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">payload</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_parse_list</span><span class="p">(</span><span class="n">param_value</span><span class="p">)</span>
+            <span class="n">payload</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">param_value</span><span class="p">)</span>
 
     <span class="c1"># Boolean parameters</span>
     <span class="k">if</span> <span class="n">exclude_src_countries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
