@@ -1,18 +1,9 @@
-import json
 from typing import Annotated, Dict, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
-from zscaler_mcp.utils.utils import validate_and_convert_country_codes
-
-
-def _parse_list(val):
-    """Helper to parse JSON string to list."""
-    if isinstance(val, str):
-        return json.loads(val)
-    return val
-
+from zscaler_mcp.utils.utils import parse_list, validate_and_convert_country_codes
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -68,7 +59,7 @@ def ztw_create_ip_destination_group(
         raise ValueError("name and type are required")
     
     # Normalize list fields
-    addresses = _parse_list(addresses)
+    addresses = parse_list(addresses)
     
     # Validate and convert country codes to Zscaler format
     if countries:

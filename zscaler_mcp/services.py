@@ -398,6 +398,13 @@ class ZIAService(BaseService):
             zia_list_cloud_firewall_rules,
             zia_update_cloud_firewall_rule,
         )
+        from .tools.zia.geo_search import zia_geo_search_tool
+        from .tools.zia.get_sandbox_info import (
+            zia_get_sandbox_behavioral_analysis,
+            zia_get_sandbox_file_hash_count,
+            zia_get_sandbox_quota,
+            zia_get_sandbox_report,
+        )
         from .tools.zia.gre_ranges import zia_list_gre_ranges
         from .tools.zia.gre_tunnels import (
             zia_create_gre_tunnel,
@@ -444,6 +451,13 @@ class ZIAService(BaseService):
             zia_get_rule_label,
             zia_list_rule_labels,
             zia_update_rule_label,
+        )
+        from .tools.zia.ssl_inspection import (
+            zia_create_ssl_inspection_rule,
+            zia_delete_ssl_inspection_rule,
+            zia_get_ssl_inspection_rule,
+            zia_list_ssl_inspection_rules,
+            zia_update_ssl_inspection_rule,
         )
         from .tools.zia.static_ips import (
             zia_create_static_ip,
@@ -496,6 +510,9 @@ class ZIAService(BaseService):
             {"func": zia_list_web_dlp_rules, "name": "zia_list_web_dlp_rules", "description": "List ZIA web DLP rules (read-only)"},
             {"func": zia_list_web_dlp_rules_lite, "name": "zia_list_web_dlp_rules_lite", "description": "List ZIA web DLP rules in lite format (read-only)"},
             {"func": zia_get_web_dlp_rule, "name": "zia_get_web_dlp_rule", "description": "Get a specific ZIA web DLP rule by ID (read-only)"},
+            # SSL Inspection Rules
+            {"func": zia_list_ssl_inspection_rules, "name": "zia_list_ssl_inspection_rules", "description": "List ZIA SSL inspection rules (read-only)"},
+            {"func": zia_get_ssl_inspection_rule, "name": "zia_get_ssl_inspection_rule", "description": "Get a specific ZIA SSL inspection rule by ID (read-only)"},
             # DLP Dictionaries
             {"func": zia_dlp_dictionary_manager, "name": "get_zia_dlp_dictionaries", "description": "Manage ZIA DLP dictionaries for data loss prevention pattern and phrase matching (read-only)"},
             # DLP Engines
@@ -541,6 +558,12 @@ class ZIAService(BaseService):
             # Cloud Applications
             {"func": zia_list_cloud_applications, "name": "zia_list_cloud_applications", "description": "List ZIA cloud applications (read-only)"},
             {"func": zia_list_cloud_application_custom_tags, "name": "zia_list_cloud_application_custom_tags", "description": "List ZIA cloud application custom tags (read-only)"},
+            # Utilities
+            {"func": zia_geo_search_tool, "name": "zia_geo_search", "description": "Perform ZIA geographic lookups (coordinates, IP, or city prefix) (read-only)"},
+            {"func": zia_get_sandbox_quota, "name": "zia_get_sandbox_quota", "description": "Retrieve current ZIA sandbox quota information (read-only)"},
+            {"func": zia_get_sandbox_behavioral_analysis, "name": "zia_get_sandbox_behavioral_analysis", "description": "Retrieve sandbox behavioral analysis hash list (read-only)"},
+            {"func": zia_get_sandbox_file_hash_count, "name": "zia_get_sandbox_file_hash_count", "description": "Retrieve sandbox file hash usage counts (read-only)"},
+            {"func": zia_get_sandbox_report, "name": "zia_get_sandbox_report", "description": "Retrieve sandbox analysis report for a specific MD5 hash (read-only)"},
         ]
 
         # Write tools
@@ -553,6 +576,10 @@ class ZIAService(BaseService):
             {"func": zia_create_url_filtering_rule, "name": "zia_create_url_filtering_rule", "description": "Create a new ZIA URL filtering rule (write operation)"},
             {"func": zia_update_url_filtering_rule, "name": "zia_update_url_filtering_rule", "description": "Update an existing ZIA URL filtering rule (write operation)"},
             {"func": zia_delete_url_filtering_rule, "name": "zia_delete_url_filtering_rule", "description": "Delete a ZIA URL filtering rule (destructive operation)"},
+            # SSL Inspection Rules
+            {"func": zia_create_ssl_inspection_rule, "name": "zia_create_ssl_inspection_rule", "description": "Create a new ZIA SSL inspection rule (write operation)"},
+            {"func": zia_update_ssl_inspection_rule, "name": "zia_update_ssl_inspection_rule", "description": "Update an existing ZIA SSL inspection rule (write operation)"},
+            {"func": zia_delete_ssl_inspection_rule, "name": "zia_delete_ssl_inspection_rule", "description": "Delete a ZIA SSL inspection rule (destructive operation)"},
             # Web DLP Rules
             {"func": zia_create_web_dlp_rule, "name": "zia_create_web_dlp_rule", "description": "Create a new ZIA web DLP rule (write operation)"},
             {"func": zia_update_web_dlp_rule, "name": "zia_update_web_dlp_rule", "description": "Update an existing ZIA web DLP rule (write operation)"},
@@ -623,6 +650,8 @@ class ZTWService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import verb-based ZTW tools
+        from .tools.ztw.account_details import ztw_list_public_account_details
+        from .tools.ztw.discovery_service import ztw_get_discovery_settings
         from .tools.ztw.ip_destination_groups import (
             ztw_create_ip_destination_group,
             ztw_delete_ip_destination_group,
@@ -644,6 +673,8 @@ class ZTWService(BaseService):
         from .tools.ztw.list_admins import ztw_list_admins
         from .tools.ztw.list_roles import ztw_list_roles
         from .tools.ztw.network_service_groups import ztw_list_network_service_groups
+        from .tools.ztw.network_services import ztw_list_network_services
+        from .tools.ztw.public_cloud_info import ztw_list_public_cloud_info
 
         # Read-only tools
         self.read_tools = [
@@ -656,6 +687,10 @@ class ZTWService(BaseService):
             {"func": ztw_list_network_service_groups, "name": "ztw_list_network_service_groups", "description": "List ZTW network service groups (read-only)"},
             {"func": ztw_list_roles, "name": "ztw_list_roles", "description": "List all existing admin roles in ZTW (read-only)"},
             {"func": ztw_list_admins, "name": "ztw_list_admins", "description": "List all existing admin users in ZTW (read-only)"},
+            {"func": ztw_list_public_cloud_info, "name": "ztw_list_public_cloud_info", "description": "List ZTW public cloud accounts with metadata (read-only)"},
+            {"func": ztw_list_network_services, "name": "ztw_list_network_services", "description": "List ZTW network services (read-only)"},
+            {"func": ztw_list_public_account_details, "name": "ztw_list_public_account_details", "description": "List detailed ZTW public cloud account information (read-only)"},
+            {"func": ztw_get_discovery_settings, "name": "ztw_get_discovery_settings", "description": "Get ZTW workload discovery service settings (read-only)"},
         ]
 
         # Write tools

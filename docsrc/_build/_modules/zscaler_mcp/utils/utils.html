@@ -269,9 +269,41 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pycountry</span>
+
+
+<div class="viewcode-block" id="parse_list">
+<a class="viewcode-back" href="../../../api/utils.html#zscaler_mcp.utils.utils.parse_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_list</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to parse list parameters that can be JSON strings or lists.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        val: Either a JSON string representation of a list, or an actual list/other type.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Parsed list if input was a JSON string, otherwise returns the value as-is.</span>
+<span class="sd">    </span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the input is a string but not valid JSON.</span>
+<span class="sd">    </span>
+<span class="sd">    Examples:</span>
+<span class="sd">        &gt;&gt;&gt; parse_list(&#39;[&quot;item1&quot;, &quot;item2&quot;]&#39;)</span>
+<span class="sd">        [&#39;item1&#39;, &#39;item2&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; parse_list([&quot;item1&quot;, &quot;item2&quot;])</span>
+<span class="sd">        [&#39;item1&#39;, &#39;item2&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; parse_list(123)</span>
+<span class="sd">        123</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON string: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">val</span></div>
+
 
 
 <div class="viewcode-block" id="convert_v2_to_sdk_format">
@@ -739,40 +771,47 @@
 
 <div class="viewcode-block" id="get_combined_user_agent">
 <a class="viewcode-back" href="../../../api/utils.html#zscaler_mcp.utils.utils.get_combined_user_agent">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_combined_user_agent</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_combined_user_agent</span><span class="p">(</span><span class="n">user_agent_comment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Generate a combined user-agent string that includes both the MCP server</span>
-<span class="sd">    and the underlying SDK user-agent information.</span>
+<span class="sd">    Generate a user-agent string for the Zscaler MCP Server.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        user_agent_comment: Optional additional information to append to the user-agent</span>
+<span class="sd">                          (e.g., &quot;Claude Desktop 1.2024.10.23&quot;)</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        str: Combined user-agent string in the format:</span>
-<span class="sd">             zscaler-mcp-server/&lt;version&gt;/&lt;OS_Architecture&gt; zscaler-sdk-python/&lt;sdk_version&gt; python/&lt;python_version&gt; &lt;OS&gt;/&lt;release&gt;</span>
+<span class="sd">        str: User-agent string in the format:</span>
+<span class="sd">             zscaler-mcp-server/&lt;version&gt; python/&lt;python_version&gt; &lt;os&gt;/&lt;arch&gt; [comment]</span>
 
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; get_combined_user_agent()</span>
-<span class="sd">        &#39;zscaler-mcp-server/0.2.0/Darwin-24.6.0-x86_64 zscaler-sdk-python/1.7.9 python/3.11.8 Darwin/24.6.0&#39;</span>
+<span class="sd">        &#39;zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64&#39;</span>
+<span class="sd">        &gt;&gt;&gt; get_combined_user_agent(&quot;Claude Desktop 1.2024.10.23&quot;)</span>
+<span class="sd">        &#39;zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64 Claude Desktop 1.2024.10.23&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
 
-    <span class="n">mcp_ua</span> <span class="o">=</span> <span class="n">get_mcp_user_agent</span><span class="p">()</span>
-
-    <span class="c1"># Get SDK version</span>
+    <span class="c1"># Get MCP server version</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">sdk_version</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="s2">&quot;zscaler-sdk-python&quot;</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
-        <span class="n">sdk_version</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;0.3.1&quot;</span>  <span class="c1"># Default version from pyproject.toml</span>
 
     <span class="c1"># Get Python version</span>
     <span class="n">python_version</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">minor</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">micro</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="c1"># Get OS information</span>
-    <span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
-    <span class="n">release</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+    <span class="c1"># Get OS and architecture</span>
+    <span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>  <span class="c1"># e.g., &#39;darwin&#39;, &#39;linux&#39;, &#39;windows&#39;</span>
+    <span class="n">machine</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">machine</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>  <span class="c1"># e.g., &#39;arm64&#39;, &#39;x86_64&#39;, &#39;amd64&#39;</span>
 
-    <span class="c1"># Combine all user-agent components</span>
-    <span class="n">sdk_ua</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;zscaler-sdk-python/</span><span class="si">{</span><span class="n">sdk_version</span><span class="si">}</span><span class="s2"> python/</span><span class="si">{</span><span class="n">python_version</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">system</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">release</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="c1"># Build the base user-agent string</span>
+    <span class="n">user_agent</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;zscaler-mcp-server/</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2"> python/</span><span class="si">{</span><span class="n">python_version</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">system</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">machine</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mcp_ua</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">sdk_ua</span><span class="si">}</span><span class="s2">&quot;</span></div>
+    <span class="c1"># Append optional comment if provided</span>
+    <span class="k">if</span> <span class="n">user_agent_comment</span><span class="p">:</span>
+        <span class="n">user_agent</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">user_agent_comment</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">user_agent</span></div>
 
 </pre></div>
         </article>

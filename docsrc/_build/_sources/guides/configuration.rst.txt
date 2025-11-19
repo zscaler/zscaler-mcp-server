@@ -71,7 +71,7 @@ Legacy authentication uses service-specific API keys and credentials.
    export ZIA_USERNAME="admin@company.com"         # ZIA admin email
    export ZIA_PASSWORD="your_password"             # ZIA admin password
    export ZIA_API_KEY="your_api_key"               # ZIA obfuscated API key
-   export ZIA_CLOUD="zscalertwo.net"               # ZIA cloud
+   export ZIA_CLOUD="zscalertwo"               # ZIA cloud
 
 **ZCC Legacy Authentication:**
 
@@ -80,7 +80,7 @@ Legacy authentication uses service-specific API keys and credentials.
    export ZSCALER_USE_LEGACY="true"
    export ZCC_CLIENT_ID="your_api_key"             # ZCC API key
    export ZCC_CLIENT_SECRET="your_secret_key"      # ZCC secret key
-   export ZCC_CLOUD="zscalertwo.net"               # ZCC cloud
+   export ZCC_CLOUD="zscalertwo"               # ZCC cloud
 
 **ZDX Legacy Authentication:**
 
@@ -89,7 +89,6 @@ Legacy authentication uses service-specific API keys and credentials.
    export ZSCALER_USE_LEGACY="true"
    export ZDX_CLIENT_ID="your_key_id"              # ZDX key ID
    export ZDX_CLIENT_SECRET="your_secret_key"      # ZDX secret key
-   export ZDX_CLOUD="production"                   # ZDX cloud
 
 **When to Use Legacy:**
 
@@ -217,7 +216,7 @@ Legacy Mode Configuration
    export ZIA_USERNAME="admin@company.com"
    export ZIA_PASSWORD="your_password"
    export ZIA_API_KEY="your_api_key"
-   export ZIA_CLOUD="zscalertwo.net"
+   export ZIA_CLOUD="zscalertwo"
    
    # Optional: Enable write mode with allowlist
    export ZSCALER_MCP_WRITE_ENABLED="true"

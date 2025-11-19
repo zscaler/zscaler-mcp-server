@@ -418,6 +418,16 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 | `zia_list_users` | List users | Read-only |
 | `zia_get_user` | Get a specific user | Read-only |
 
+#### SSL Inspection Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zia_list_ssl_inspection_rules` | List SSL inspection rules | Read-only |
+| `zia_get_ssl_inspection_rule` | Get a specific SSL inspection rule | Read-only |
+| `zia_create_ssl_inspection_rule` | Create a new SSL inspection rule | Write |
+| `zia_update_ssl_inspection_rule` | Update an existing SSL inspection rule | Write |
+| `zia_delete_ssl_inspection_rule` | Delete an SSL inspection rule | Write |
+
 #### Labels & Utilities
 
 | Tool Name | Description | Type |
@@ -428,8 +438,12 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 | `zia_update_rule_label` | Update an existing rule label | Write |
 | `zia_delete_rule_label` | Delete a rule label | Write |
 | `zia_geo_search` | Perform geographical lookup | Read-only |
-| `zia_get_sandbox_report` | Get sandbox report for a hash | Read-only |
-| `zia_get_sandbox_quota` | Get sandbox quota information | Read-only |
+| `zia_get_sandbox_quota` | Retrieve current sandbox quota information | Read-only |
+| `zia_get_sandbox_behavioral_analysis` | Retrieve sandbox behavioral analysis hash list | Read-only |
+| `zia_get_sandbox_file_hash_count` | Retrieve sandbox file hash usage counts | Read-only |
+| `zia_get_sandbox_report` | Retrieve sandbox report for a specific hash | Read-only |
+
+> **Note:** The legacy `zia_sandbox_info` tool is still available for backward compatibility, but new automations should call the more specific sandbox tools above for clearer intent matching.
 
 #### DLP Management
 
@@ -667,6 +681,12 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 | `ztw_update_network_service_group` | Update an existing network service group | Write |
 | `ztw_delete_network_service_group` | Delete a network service group | Write |
 
+#### Network Services
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `ztw_list_network_services` | List network services with optional filtering | Read-only |
+
 #### Administration
 
 | Tool Name | Description | Type |
@@ -674,6 +694,19 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 | `ztw_list_roles` | List all admin roles | Read-only |
 | `ztw_list_admins` | List all admin users | Read-only |
 | `ztw_get_admin` | Get a specific admin user | Read-only |
+
+#### Public Cloud Info
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `ztw_list_public_cloud_info` | List public cloud accounts with metadata | Read-only |
+| `ztw_list_public_account_details` | List detailed public cloud account information | Read-only |
+
+#### Discovery Service
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `ztw_get_discovery_settings` | Get workload discovery service settings | Read-only |
 
 ## Installation & Setup
 
@@ -1282,298 +1315,3 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
   }
 }
 ```
-
-### With Service Selection
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-server": {
-      "command": "uvx",
-      "args": [
-        "--env-file", "/path/to/.env",
-        "zscaler-mcp-server",
-        "--services", "zia,zpa,zdx"
-      ]
-    }
-  }
-}
-```
-
-### Using Individual Environment Variables
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-server": {
-      "command": "uvx",
-      "args": ["zscaler-mcp-server"],
-      "env": {
-        "ZSCALER_CLIENT_ID": "your-client-id",
-        "ZSCALER_CLIENT_SECRET": "your-client-secret",
-        "ZSCALER_CUSTOMER_ID": "your-customer-id",
-        "ZSCALER_VANITY_DOMAIN": "your-vanity-domain"
-      }
-    }
-  }
-}
-```
-
-### Docker Version
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-server": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "--env-file", "/full/path/to/.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
-      ]
-    }
-  }
-}
-```
-
-## Additional Deployment Options
-
-### Amazon Bedrock AgentCore
-
-To deploy the MCP Server as a tool in Amazon Bedrock AgentCore, please refer to the [following document](./docs/deployment/amazon_bedrock_agentcore.md).
-
-## Using the MCP Server with Agents
-
-Once your server is running (via Docker or source), you can access its tools through AI-integrated editors or platforms.
-
-> [!IMPORTANT]
-> **Read-Only Mode**: By default, the server exposes only **read-only tools** (`list_*`, `get_*`). If you need write capabilities (`create_*`, `update_*`, `delete_*`), you must explicitly enable write tools in your MCP configuration by adding `--enable-write-tools` to the command or setting `ZSCALER_MCP_WRITE_ENABLED=true`. See [Security & Permissions](#-security--permissions) for details.
-
-### 🧠 Claude Desktop
-
-#### Option 1: Using Docker (Recommended)
-
-##### Step 1: Pull the Docker image
-
-```bash
-docker pull quay.io/zscaler/zscaler-mcp-server:latest
-```
-
-##### Step 2: Create your credentials file
-
-Create a file named `.env` with your Zscaler credentials:
-
-```bash
-# Example: ~/zscaler-mcp/.env
-ZSCALER_CLIENT_ID=your_client_id
-ZSCALER_CLIENT_SECRET=your_client_secret
-ZSCALER_CUSTOMER_ID=your_customer_id
-ZSCALER_VANITY_DOMAIN=your_vanity_domain
-ZSCALER_CLOUD=production
-
-# Optional: Enable write operations (use with caution!)
-# ZSCALER_MCP_WRITE_ENABLED=true
-# ZSCALER_MCP_WRITE_TOOLS=zpa_create_*,zpa_delete_*
-```
-
-##### Step 3: Configure Claude Desktop
-
-1. Open Claude Desktop
-2. Go to: **Settings → Developer → Edit Config**
-3. This opens `claude_desktop_config.json`
-4. Add the following configuration:
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp-docker": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "--env-file",
-        "/absolute/path/to/your/.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
-      ]
-    }
-  }
-}
-```
-
-**Important**: Replace `/absolute/path/to/your/.env` with the full path to your `.env` file.
-
-Example paths:
-
-- macOS/Linux: `/Users/yourname/zscaler-mcp/.env`
-- Windows: `C:\\Users\\yourname\\zscaler-mcp\\.env`
-
-##### Step 4: Restart Claude Desktop
-
-Completely quit and reopen Claude Desktop for changes to take effect.
-
-##### Step 5: Test the connection
-
-Ask Claude: `"List my ZPA application segments"` or `"Check Zscaler connectivity"`
-
-#### Option 2: Using Python (Development)
-
-If you have Python installed and want to run from source:
-
-1. Install the package:
-
-```bash
-pip install zscaler-mcp
-```
-
-1. Configure Claude Desktop (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "zscaler-mcp": {
-      "command": "zscaler-mcp",
-      "args": ["--transport", "stdio"],
-      "env": {
-        "ZSCALER_CLIENT_ID": "your_client_id",
-        "ZSCALER_CLIENT_SECRET": "your_client_secret",
-        "ZSCALER_CUSTOMER_ID": "your_customer_id",
-        "ZSCALER_VANITY_DOMAIN": "your_vanity_domain",
-        "ZSCALER_CLOUD": "production"
-      }
-    }
-  }
-}
-```
-
-1. Restart Claude Desktop
-
-#### Troubleshooting Claude Configuration
-
-**Server not appearing:**
-
-- Check Claude Desktop logs: Settings → Developer → Open Logs Folder
-- Verify Docker is running: `docker ps`
-- Test server manually: `docker run -i --rm --env-file .env quay.io/zscaler/zscaler-mcp-server:latest`
-
-**Connection errors:**
-
-- Verify `.env` file path is absolute (not relative)
-- Check credentials are correct and not expired
-- Ensure Docker has permission to read the `.env` file
-
-**No tools available:**
-
-- Default: Only read-only tools (`list_*`, `get_*`) are available
-- For write tools: Add `ZSCALER_MCP_WRITE_ENABLED=true` and `ZSCALER_MCP_WRITE_TOOLS=...` to `.env`
-
-### 💻 Cursor
-
-1. Open Cursor, then settings
-2. In Cursor Settings, select "Tools & Integrations"
-3. In the MCP Tools section, turn on `zscaler-mcp-server`
-4. Select `View` and `Command Palette` and `Chat: Open Chat Agent`
-5. In chat, switch to [Agent Mode](https://docs.cursor.com/chat/agent).
-6. Try prompts like "List ZPA Segment Groups" or "List ZIA Rule Labels"
-7. Click "Submit"
-
-### Visual Studio Code + GitHub Copilot
-
-Install
-
-After installation, select GitHub Copilot Agent Mode and refresh the tools list. Learn more about Agent Mode in the [VS Code Documentation](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode).
-
-1. Open VS Code and launch GitHub Copilot
-2. Switch to Agent Mode (via the gear menu)
-3. Start the MCP Server
-4. Refresh the tools list
-5. Try a prompt like: `Create a ZPA segment group named "DevServices"`
-
-📚 Learn more about Agent Mode in the [VS Code Copilot documentation](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
-
-#### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) installed and running
-- Zscaler API credentials
-
-## Troubleshooting
-
-See the [Troubleshooting guide](./docs/TROUBLESHOOTING.md) for help with common issues and logging.
-
-## Contributing
-
-### Getting Started for Contributors
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/zscaler/zscaler-mcp-server.git
-   cd zscaler-mcp-server
-   ```
-
-2. Install in development mode:
-
-   ```bash
-   # Create .venv and install dependencies
-   uv sync --all-extras
-
-   # Activate the venv
-   source .venv/bin/activate
-   ```
-
-> [!IMPORTANT]
-> This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated releases and semantic versioning. Please follow the commit message format outlined in our [Contributing Guide](docs/CONTRIBUTING.md) when submitting changes.
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run end-to-end tests
-pytest --run-e2e tests/e2e/
-
-# Run end-to-end tests with verbose output (note: -s is required to see output)
-pytest --run-e2e -v -s tests/e2e/
-```
-
-## Privacy Policy
-
-This MCP server connects to the Zscaler API to manage and retrieve information about your Zscaler resources. When using this server, data is transmitted between your local environment and Zscaler's cloud services.
-
-**Data Handling:**
-
-- This MCP server acts as a client to the Zscaler API and does not store or log any data locally beyond what is necessary for operation
-- All API communications are made directly to Zscaler's cloud infrastructure
-- Authentication credentials (Client ID, Client Secret, Customer ID) are used only for API authentication and are not transmitted to any third parties
-- The server operates in read-only mode by default; write operations require explicit enablement via the `--enable-write-tools` flag
-
-**User Responsibility:**
-
-- Users are responsible for securing their Zscaler API credentials
-- Users should review and understand which tools they enable and grant to AI agents
-- Users should be aware that AI agents with access to this server can query and (if enabled) modify Zscaler resources within the scope of the provided credentials
-
-For information about how Zscaler handles data and privacy, please refer to the [Zscaler Privacy Policy](https://www.zscaler.com/privacy/company-privacy-policy).
-
-## License
-
-Copyright (c) 2025 [Zscaler](https://github.com/zscaler)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
