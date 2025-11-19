@@ -1324,6 +1324,39 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
 }
 ```
 
+## Additional Deployment Options
+
+### Amazon Bedrock AgentCore
+
+> [!IMPORTANT]
+> **AWS Marketplace Image Available**: For Amazon Bedrock AgentCore deployments, we provide a dedicated container image optimized for Bedrock's stateless HTTP environment. This image includes a custom web server wrapper that handles session management and is specifically designed for AWS Bedrock AgentCore Runtime.
+
+**🚀 Quick Start with AWS Marketplace:**
+
+The easiest way to deploy the Zscaler Integrations MCP Server to Amazon Bedrock AgentCore is through the [AWS Marketplace listing](https://aws.amazon.com/marketplace/pp/prodview-dtjfklwemb54y?sr=0-1&ref_=beagle&applicationId=AWSMPContessa). The Marketplace image includes:
+
+- ✅ Pre-configured for Bedrock AgentCore Runtime
+- ✅ Custom web server wrapper for stateless HTTP environments
+- ✅ Session management handled automatically
+- ✅ Health check endpoints for ECS compatibility
+- ✅ Optimized for AWS Bedrock AgentCore's requirements
+
+**📚 Full Deployment Guide:**
+
+For detailed deployment instructions, IAM configuration, and troubleshooting, please refer to the comprehensive [Amazon Bedrock AgentCore deployment guide](./docs/deployment/amazon_bedrock_agentcore.md).
+
+The deployment guide covers:
+
+- Prerequisites and AWS VPC requirements
+- IAM role and trust policy configuration
+- Step-by-step deployment instructions
+- Environment variable configuration
+- Write mode configuration (for CREATE/UPDATE/DELETE operations)
+- Troubleshooting and verification steps
+
+> [!NOTE]
+> The AWS Marketplace image uses a different architecture than the standard `streamable-http` transport. It includes a FastAPI-based web server wrapper (`web_server.py`) that bypasses the MCP protocol's session initialization requirements, making it compatible with Bedrock's stateless HTTP environment. This is why the Marketplace image is recommended for Bedrock deployments.
+
 ## Using the MCP Server with Agents
 
 This section provides instructions for configuring the Zscaler Integrations MCP Server with popular AI agents. **Before starting, ensure you have:**
