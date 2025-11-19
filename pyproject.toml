@@ -1,6 +1,6 @@
 [project]
 name = "zscaler-mcp"
-version = "0.3.2"
+version = "0.4.0"
 description = "Official Zscaler Integrations MCP Server"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
