@@ -1,5 +1,29 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.5.0 (November 22, 2025) - AWS Bedrock AgentCore Security Enhancement
+
+> **⚠️ Important:** This release contains enhancements specific to **AWS Bedrock AgentCore deployments only**. These changes are maintained in a separate AWS-specific repository and do **not** modify the core Zscaler MCP Server in this repository. Standard MCP server functionality remains unchanged.
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### 🔐 AWS Bedrock AgentCore Security Enhancements
+
+**Container-Based Secrets Manager Integration:**
+
+- Container retrieves Zscaler API credentials from AWS Secrets Manager at runtime
+- **Zero credentials exposed** in AgentCore configuration, CloudFormation templates, or deployment scripts
+- Secrets encrypted at rest with AWS KMS and in transit via TLS
+- Full CloudTrail audit logging for all secret access
+- Backward compatible - supports both Secrets Manager and direct environment variable approaches
+
+**CloudFormation Automation:**
+
+- One-click deployment via Launch Stack button
+- Automated AgentCore runtime deployment with conditional secret creation
+- IAM execution roles with Secrets Manager permissions automatically configured
+
 ## 0.4.0 (November 19, 2025)
 
 ### Notes

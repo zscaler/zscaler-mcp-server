@@ -443,7 +443,6 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 
 | Tool Name | Description | Type |
 |-----------|-------------|------|
-| `zia_list_dlp_dictionaries` | List DLP dictionaries | Read-only |
 | `zia_get_dlp_dictionary` | Get a specific DLP dictionary | Read-only |
 | `zia_list_dlp_engines` | List DLP engines | Read-only |
 | `zia_get_dlp_engine` | Get a specific DLP engine | Read-only |
@@ -1137,7 +1136,7 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
 | `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
-| `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_create_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
+| `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
 | `ZSCALER_MCP_DEBUG` | `false` | Enable debug logging (`true`/`false`) |
 | `ZSCALER_MCP_HOST` | `127.0.0.1` | Host to bind to for HTTP transports |
 | `ZSCALER_MCP_PORT` | `8000` | Port to listen on for HTTP transports |
