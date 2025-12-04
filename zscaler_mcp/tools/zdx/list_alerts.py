@@ -85,7 +85,7 @@ def zdx_list_alerts(
     if limit:
         query_params["limit"] = limit
 
-    result, _, err = client.zdx.alerts.read(query_params=query_params)
+    result, _, err = client.zdx.alerts.list_ongoing(query_params=query_params)
     if err:
         raise Exception(f"Ongoing alerts listing failed: {err}")
 
@@ -241,7 +241,7 @@ def zdx_list_alert_affected_devices(
     if location_groups:
         query_params["location_groups"] = location_groups
 
-    result, _, err = client.zdx.alerts.read_affected_devices(
+    result, _, err = client.zdx.alerts.list_affected_devices(
         alert_id, query_params=query_params
     )
     if err:

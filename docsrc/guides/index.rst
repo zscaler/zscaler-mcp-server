@@ -12,7 +12,6 @@ This section contains comprehensive guides for using the Zscaler Integrations MC
    troubleshooting
    support
    release-notes
-   contributing
 
 Configuration Guide
 -------------------
@@ -43,8 +42,3 @@ Release Notes
 -------------
 
 Information about releases and changes.
-
-Contributing
-------------
-
-How to contribute to the Zscaler Integrations MCP Server project.

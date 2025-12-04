@@ -446,13 +446,13 @@ class TestZdxApplicationUser:
         user2 = MagicMock()
         user2.as_dict.return_value = {"id": "user2", "email": "user2@example.com"}
         users_wrapper.users = [user1, user2]
-        mock_client.zdx.apps.list_users.return_value = ([users_wrapper], None, None)
+        mock_client.zdx.apps.list_app_users.return_value = ([users_wrapper], None, None)
 
         # Execute
         result = zdx_list_application_users(app_id="app1")
 
         # Verify
-        mock_client.zdx.apps.list_users.assert_called_once_with("app1", query_params={})
+        mock_client.zdx.apps.list_app_users.assert_called_once_with("app1", query_params={})
         assert len(result) == 2
         assert result[0]["email"] == "user1@example.com"
 
@@ -463,13 +463,13 @@ class TestZdxApplicationUser:
         mock_get_client.return_value = mock_client
         users_wrapper = MagicMock()
         users_wrapper.users = []
-        mock_client.zdx.apps.list_users.return_value = ([users_wrapper], None, None)
+        mock_client.zdx.apps.list_app_users.return_value = ([users_wrapper], None, None)
 
         # Execute
         _result = zdx_list_application_users(app_id="app1", score_bucket="poor")
 
         # Verify
-        mock_client.zdx.apps.list_users.assert_called_once_with(
+        mock_client.zdx.apps.list_app_users.assert_called_once_with(
             "app1",
             query_params={"score_bucket": "poor"}
         )
@@ -481,13 +481,14 @@ class TestZdxApplicationUser:
         mock_get_client.return_value = mock_client
         user = MagicMock()
         user.as_dict.return_value = {"id": "user1", "email": "user1@example.com", "score": 75}
-        mock_client.zdx.apps.get_user.return_value = (user, None, None)  # Returns single object, not list
+        # SDK returns a list with single item
+        mock_client.zdx.apps.get_app_user.return_value = ([user], None, None)
 
         # Execute
         result = zdx_get_application_user(app_id="app1", user_id="user1")
 
         # Verify
-        mock_client.zdx.apps.get_user.assert_called_once_with("app1", "user1", query_params={})
+        mock_client.zdx.apps.get_app_user.assert_called_once_with("app1", "user1", query_params={})
         assert result["id"] == "user1"
         assert result["score"] == 75
 
@@ -496,7 +497,7 @@ class TestZdxApplicationUser:
         """Test listing application users with API error."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zdx.apps.list_users.return_value = (None, None, "API Error")
+        mock_client.zdx.apps.list_app_users.return_value = (None, None, "API Error")
 
         # Execute & Verify
         with pytest.raises(Exception) as exc_info:
@@ -586,14 +587,14 @@ class TestZdxAlerts:
         alert2 = MagicMock()
         alert2.as_dict.return_value = {"id": "alert2", "severity": "medium"}
         alerts_wrapper.alerts = [alert1, alert2]
-        mock_client.zdx.alerts.read.return_value = ([alerts_wrapper], None, None)
+        mock_client.zdx.alerts.list_ongoing.return_value = ([alerts_wrapper], None, None)
 
         # Execute
         result = zdx_list_alerts()
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
-        mock_client.zdx.alerts.read.assert_called_once_with(query_params={})
+        mock_client.zdx.alerts.list_ongoing.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["severity"] == "high"
 
@@ -604,13 +605,13 @@ class TestZdxAlerts:
         mock_get_client.return_value = mock_client
         alerts_wrapper = MagicMock()
         alerts_wrapper.alerts = []
-        mock_client.zdx.alerts.read.return_value = ([alerts_wrapper], None, None)
+        mock_client.zdx.alerts.list_ongoing.return_value = ([alerts_wrapper], None, None)
 
         # Execute
         zdx_list_alerts(location_id=["loc1"], since=24, limit=50)
 
         # Verify
-        mock_client.zdx.alerts.read.assert_called_once_with(
+        mock_client.zdx.alerts.list_ongoing.assert_called_once_with(
             query_params={"location_id": ["loc1"], "since": 24, "limit": 50}
         )
 
@@ -640,13 +641,13 @@ class TestZdxAlerts:
         device1 = MagicMock()
         device1.as_dict.return_value = {"id": "dev1", "name": "Device 1"}
         devices_wrapper.devices = [device1]
-        mock_client.zdx.alerts.read_affected_devices.return_value = ([devices_wrapper], None, None)
+        mock_client.zdx.alerts.list_affected_devices.return_value = ([devices_wrapper], None, None)
 
         # Execute
         result = zdx_list_alert_affected_devices(alert_id="alert1")
 
         # Verify
-        mock_client.zdx.alerts.read_affected_devices.assert_called_once_with("alert1", query_params={})
+        mock_client.zdx.alerts.list_affected_devices.assert_called_once_with("alert1", query_params={})
         assert len(result) == 1
         assert result[0]["name"] == "Device 1"
 
@@ -655,7 +656,7 @@ class TestZdxAlerts:
         """Test listing alerts with API error."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zdx.alerts.read.return_value = (None, None, "API Error")
+        mock_client.zdx.alerts.list_ongoing.return_value = (None, None, "API Error")
 
         # Execute & Verify
         with pytest.raises(Exception) as exc_info:
@@ -698,7 +699,8 @@ class TestZdxDeepTraces:
         mock_get_client.return_value = mock_client
         trace = MagicMock()
         trace.as_dict.return_value = {"id": "trace1", "status": "completed", "hops": 10}
-        mock_client.zdx.troubleshooting.get_deeptrace.return_value = (trace, None, None)  # Returns single object, not list
+        # SDK returns a list with single item
+        mock_client.zdx.troubleshooting.get_deeptrace.return_value = ([trace], None, None)
 
         # Execute
         result = zdx_get_device_deep_trace(device_id="dev123", trace_id="trace1")
@@ -733,20 +735,19 @@ class TestZdxSoftwareInventory:
         """Test successful listing of software inventory."""
         # Setup
         mock_get_client.return_value = mock_client
-        inventory_wrapper = MagicMock()
+        # SDK returns list directly, not wrapper
         sw1 = MagicMock()
         sw1.as_dict.return_value = {"key": "sw1", "name": "Chrome", "version": "120.0"}
         sw2 = MagicMock()
         sw2.as_dict.return_value = {"key": "sw2", "name": "Firefox", "version": "121.0"}
-        inventory_wrapper.software = [sw1, sw2]
-        mock_client.zdx.inventory.list_software.return_value = ([inventory_wrapper], None, None)
+        mock_client.zdx.inventory.list_softwares.return_value = ([sw1, sw2], None, None)
 
         # Execute
         result = zdx_list_software()
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
-        mock_client.zdx.inventory.list_software.assert_called_once_with(query_params={})
+        mock_client.zdx.inventory.list_softwares.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["name"] == "Chrome"
 
@@ -755,15 +756,13 @@ class TestZdxSoftwareInventory:
         """Test listing software with filters."""
         # Setup
         mock_get_client.return_value = mock_client
-        inventory_wrapper = MagicMock()
-        inventory_wrapper.software = []
-        mock_client.zdx.inventory.list_software.return_value = ([inventory_wrapper], None, None)
+        mock_client.zdx.inventory.list_softwares.return_value = ([], None, None)
 
         # Execute
         zdx_list_software(user_ids=["user1"], device_ids=["dev1"])
 
         # Verify
-        mock_client.zdx.inventory.list_software.assert_called_once_with(
+        mock_client.zdx.inventory.list_softwares.assert_called_once_with(
             query_params={"user_ids": ["user1"], "device_ids": ["dev1"]}
         )
 
@@ -772,17 +771,16 @@ class TestZdxSoftwareInventory:
         """Test successful retrieval of software details."""
         # Setup
         mock_get_client.return_value = mock_client
-        software_wrapper = MagicMock()
+        # SDK returns list directly
         device = MagicMock()
         device.as_dict.return_value = {"device_id": "dev1", "user": "user1@example.com"}
-        software_wrapper.devices = [device]
-        mock_client.zdx.inventory.get_software.return_value = ([software_wrapper], None, None)
+        mock_client.zdx.inventory.list_software_keys.return_value = ([device], None, None)
 
         # Execute
         result = zdx_get_software_details(software_key="Chrome-120.0")
 
         # Verify
-        mock_client.zdx.inventory.get_software.assert_called_once_with("Chrome-120.0", query_params={})
+        mock_client.zdx.inventory.list_software_keys.assert_called_once_with("Chrome-120.0", query_params={})
         assert len(result) == 1  # Returns list of devices
         assert result[0]["device_id"] == "dev1"
 
@@ -791,7 +789,7 @@ class TestZdxSoftwareInventory:
         """Test listing software with API error."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zdx.inventory.list_software.return_value = (None, None, "API Error")
+        mock_client.zdx.inventory.list_softwares.return_value = (None, None, "API Error")
 
         # Execute & Verify
         with pytest.raises(Exception) as exc_info:
