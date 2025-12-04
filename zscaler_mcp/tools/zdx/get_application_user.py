@@ -80,7 +80,7 @@ def zdx_list_application_users(
     if since:
         query_params["since"] = since
 
-    result, _, err = client.zdx.apps.list_users(app_id, query_params=query_params)
+    result, _, err = client.zdx.apps.list_app_users(app_id, query_params=query_params)
     if err:
         raise Exception(f"Application user listing failed: {err}")
 
@@ -140,11 +140,12 @@ def zdx_get_application_user(
     if since:
         query_params["since"] = since
 
-    result, _, err = client.zdx.apps.get_user(app_id, user_id, query_params=query_params)
+    result, _, err = client.zdx.apps.get_app_user(app_id, user_id, query_params=query_params)
     if err:
         raise Exception(f"Application user lookup failed: {err}")
 
-    if result:
-        return result.as_dict()
+    # The SDK returns a list with a single ApplicationUserDetails object
+    if result and len(result) > 0:
+        return result[0].as_dict()
     else:
         return {}

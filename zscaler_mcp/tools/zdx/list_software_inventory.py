@@ -77,14 +77,13 @@ def zdx_list_software(
     if device_ids:
         query_params["device_ids"] = device_ids
 
-    result, _, err = client.zdx.inventory.list_software(query_params=query_params)
+    result, _, err = client.zdx.inventory.list_softwares(query_params=query_params)
     if err:
         raise Exception(f"Software inventory listing failed: {err}")
 
-    if result and len(result) > 0:
-        inventory_obj = result[0]
-        software_list = inventory_obj.software if hasattr(inventory_obj, 'software') else []
-        return [software.as_dict() for software in software_list]
+    # The SDK already returns the list of software objects directly
+    if result:
+        return [software.as_dict() for software in result]
     else:
         return []
 
@@ -161,13 +160,13 @@ def zdx_get_software_details(
     if device_ids:
         query_params["device_ids"] = device_ids
 
-    result, _, err = client.zdx.inventory.get_software(software_key, query_params=query_params)
+    # Use list_software_keys to get details for a specific software
+    result, _, err = client.zdx.inventory.list_software_keys(software_key, query_params=query_params)
     if err:
         raise Exception(f"Software details lookup failed: {err}")
 
-    if result and len(result) > 0:
-        software_obj = result[0]
-        devices_list = software_obj.devices if hasattr(software_obj, 'devices') else []
-        return [device.as_dict() for device in devices_list]
+    # The SDK already returns the list of software/device objects directly
+    if result:
+        return [item.as_dict() for item in result]
     else:
         return []

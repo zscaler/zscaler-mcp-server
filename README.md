@@ -56,9 +56,6 @@
   - [Cursor](#cursor)
   - [Visual Studio Code + GitHub Copilot](#visual-studio-code-github-copilot)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-  - [Getting Started for Contributors](#getting-started-for-contributors)
-  - [Running Tests](#running-tests)
 - [License](#license)
 
 ## 📺 Overview
@@ -700,6 +697,32 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 | Tool Name | Description | Type |
 |-----------|-------------|------|
 | `ztw_get_discovery_settings` | Get workload discovery service settings | Read-only |
+
+### EASM - External Attack Surface Management
+
+EASM provides **read-only** tools for monitoring your organization's external attack surface, including findings and lookalike domains.
+
+#### Organizations
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zeasm_list_organizations` | List all EASM organizations configured for the tenant | Read-only |
+
+#### Findings
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zeasm_list_findings` | List all findings for an organization's internet-facing assets | Read-only |
+| `zeasm_get_finding_details` | Get detailed information for a specific finding | Read-only |
+| `zeasm_get_finding_evidence` | Get scan evidence attributed to a specific finding | Read-only |
+| `zeasm_get_finding_scan_output` | Get complete scan output for a specific finding | Read-only |
+
+#### Lookalike Domains
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zeasm_list_lookalike_domains` | List all lookalike domains detected for an organization | Read-only |
+| `zeasm_get_lookalike_domain` | Get details for a specific lookalike domain | Read-only |
 
 ## Installation & Setup
 

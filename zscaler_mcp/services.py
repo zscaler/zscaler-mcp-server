@@ -762,6 +762,53 @@ class ZIdentityService(BaseService):
         logger.info(f"ZIdentity Service: Registered {read_count} read tools, {write_count} write tools")
 
 
+class ZEASMService(BaseService):
+    """Zscaler External Attack Surface Management (EASM) service."""
+
+    def __init__(self, zscaler_client):
+        super().__init__(zscaler_client)
+        # Import EASM tools
+        from .tools.easm.findings import (
+            zeasm_get_finding_details,
+            zeasm_get_finding_evidence,
+            zeasm_get_finding_scan_output,
+            zeasm_list_findings,
+        )
+        from .tools.easm.lookalike_domains import (
+            zeasm_get_lookalike_domain,
+            zeasm_list_lookalike_domains,
+        )
+        from .tools.easm.organizations import zeasm_list_organizations
+
+        # All EASM tools are read-only
+        self.read_tools = [
+            # Organizations
+            {"func": zeasm_list_organizations, "name": "zeasm_list_organizations", "description": "List all EASM organizations configured for the tenant (read-only)"},
+            
+            # Findings
+            {"func": zeasm_list_findings, "name": "zeasm_list_findings", "description": "List all EASM findings for an organization (read-only)"},
+            {"func": zeasm_get_finding_details, "name": "zeasm_get_finding_details", "description": "Get details for a specific EASM finding (read-only)"},
+            {"func": zeasm_get_finding_evidence, "name": "zeasm_get_finding_evidence", "description": "Get scan evidence for a specific EASM finding (read-only)"},
+            {"func": zeasm_get_finding_scan_output, "name": "zeasm_get_finding_scan_output", "description": "Get complete scan output for a specific EASM finding (read-only)"},
+            
+            # Lookalike Domains
+            {"func": zeasm_list_lookalike_domains, "name": "zeasm_list_lookalike_domains", "description": "List all lookalike domains detected for an organization (read-only)"},
+            {"func": zeasm_get_lookalike_domain, "name": "zeasm_get_lookalike_domain", "description": "Get details for a specific lookalike domain (read-only)"},
+        ]
+
+        self.write_tools = []  # EASM has no write operations
+
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
+        """Register EASM tools with the server."""
+        from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
+
+        # Register read-only tools
+        read_count = register_read_tools(server, self.read_tools, enabled_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
+
+        logger.info(f"EASM Service: Registered {read_count} read tools, {write_count} write tools")
+
+
 # Service registry
 _AVAILABLE_SERVICES = {
     "zcc": ZCCService,
@@ -770,6 +817,7 @@ _AVAILABLE_SERVICES = {
     "zia": ZIAService,
     "ztw": ZTWService,
     "zidentity": ZIdentityService,
+    "zeasm": ZEASMService,
 }
 
 

@@ -247,12 +247,16 @@ def get_zscaler_client(
 
     # Default: OneAPI client
     # ✅ Check for required OneAPI credentials
+    # ZSCALER_CUSTOMER_ID is only required for ZPA service
     auth_fields = {
         "ZSCALER_CLIENT_ID": client_id,
         "ZSCALER_CLIENT_SECRET": client_secret,
-        "ZSCALER_CUSTOMER_ID": customer_id,
         "ZSCALER_VANITY_DOMAIN": vanity_domain,
     }
+    
+    # Add customer_id requirement only for ZPA
+    if service == "zpa":
+        auth_fields["ZSCALER_CUSTOMER_ID"] = customer_id
 
     missing = [
         key for key, value in auth_fields.items() if not (value and value.strip())
@@ -270,11 +274,13 @@ def get_zscaler_client(
 
     config = {
         "clientId": client_id,
-        "customerId": customer_id,
         "vanityDomain": vanity_domain,
         "userAgent": custom_user_agent,
     }
 
+    # Only include customerId if provided (required only for ZPA)
+    if customer_id and customer_id.strip():
+        config["customerId"] = customer_id
     if cloud:
         config["cloud"] = cloud
     if client_secret:

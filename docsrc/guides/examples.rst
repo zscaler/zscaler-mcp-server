@@ -282,3 +282,33 @@ Zscaler Identity (ZIdentity) Examples
 * "Show me groups for the Finance department"
 * "Search for groups with specific permissions"
 * "Get group details and member information"
+
+Zscaler External Attack Surface Management (EASM) Examples
+----------------------------------------------------------
+
+**Organization Management:**
+
+* "List all EASM organizations configured for my tenant"
+* "Show me the organizations being monitored by EASM"
+* "What organizations are configured in my EASM environment?"
+
+**Findings and Vulnerabilities:**
+
+* "List all findings for organization ID 12345"
+* "Show me security findings for our external assets"
+* "What vulnerabilities have been discovered on our internet-facing assets?"
+* "Get details for finding ID 67890"
+* "Show me the evidence for a specific security finding"
+* "Get the complete scan output for finding ID 11111"
+* "List all high-severity findings across our external attack surface"
+* "Show me findings related to exposed services"
+
+**Lookalike Domain Monitoring:**
+
+* "List all lookalike domains detected for organization ID 12345"
+* "Show me domains that are impersonating our brand"
+* "What phishing domains have been detected targeting our organization?"
+* "Get details for lookalike domain ID 22222"
+* "Show me recently detected lookalike domains"
+* "List all active lookalike domain threats"
+* "Are there any domains similar to our company name being used maliciously?"
