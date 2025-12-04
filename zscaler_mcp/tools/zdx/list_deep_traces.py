@@ -146,8 +146,9 @@ def zdx_get_device_deep_trace(
     if err:
         raise Exception(f"Deeptrace lookup failed: {err}")
 
-    if result:
-        trace_data = result.as_dict()
+    # The SDK returns a list with a single DeviceDeepTraces object
+    if result and len(result) > 0:
+        trace_data = result[0].as_dict()
         return _convert_timestamps(trace_data)
     else:
         return {}

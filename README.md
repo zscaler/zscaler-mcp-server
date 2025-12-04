@@ -56,9 +56,6 @@
   - [Cursor](#cursor)
   - [Visual Studio Code + GitHub Copilot](#visual-studio-code-github-copilot)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-  - [Getting Started for Contributors](#getting-started-for-contributors)
-  - [Running Tests](#running-tests)
 - [License](#license)
 
 ## 📺 Overview
@@ -443,7 +440,6 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 
 | Tool Name | Description | Type |
 |-----------|-------------|------|
-| `zia_list_dlp_dictionaries` | List DLP dictionaries | Read-only |
 | `zia_get_dlp_dictionary` | Get a specific DLP dictionary | Read-only |
 | `zia_list_dlp_engines` | List DLP engines | Read-only |
 | `zia_get_dlp_engine` | Get a specific DLP engine | Read-only |
@@ -701,6 +697,32 @@ ZTW provides both **read-only** and **write** tools. Write operations require `-
 | Tool Name | Description | Type |
 |-----------|-------------|------|
 | `ztw_get_discovery_settings` | Get workload discovery service settings | Read-only |
+
+### EASM - External Attack Surface Management
+
+EASM provides **read-only** tools for monitoring your organization's external attack surface, including findings and lookalike domains.
+
+#### Organizations
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zeasm_list_organizations` | List all EASM organizations configured for the tenant | Read-only |
+
+#### Findings
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zeasm_list_findings` | List all findings for an organization's internet-facing assets | Read-only |
+| `zeasm_get_finding_details` | Get detailed information for a specific finding | Read-only |
+| `zeasm_get_finding_evidence` | Get scan evidence attributed to a specific finding | Read-only |
+| `zeasm_get_finding_scan_output` | Get complete scan output for a specific finding | Read-only |
+
+#### Lookalike Domains
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zeasm_list_lookalike_domains` | List all lookalike domains detected for an organization | Read-only |
+| `zeasm_get_lookalike_domain` | Get details for a specific lookalike domain | Read-only |
 
 ## Installation & Setup
 
@@ -1137,7 +1159,7 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
 | `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
-| `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_create_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
+| `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
 | `ZSCALER_MCP_DEBUG` | `false` | Enable debug logging (`true`/`false`) |
 | `ZSCALER_MCP_HOST` | `127.0.0.1` | Host to bind to for HTTP transports |
 | `ZSCALER_MCP_PORT` | `8000` | Port to listen on for HTTP transports |
