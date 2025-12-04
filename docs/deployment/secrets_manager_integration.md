@@ -22,6 +22,7 @@ After reviewing the AWS CLI API documentation for `bedrock-agentcore-control cre
 **Key Finding**: There is **NO** `identity-configuration` or `secretsManagerConfiguration` parameter in the current AgentCore API.
 
 This means:
+
 - ❌ AgentCore does NOT have built-in Secrets Manager integration at the container configuration level
 - ❌ No native "token vault" parameter for automatic secret injection
 - ✅ You must use one of the practical approaches below
@@ -43,12 +44,14 @@ This means:
 Retrieve secrets from Secrets Manager **before** creating the agent runtime and pass them as environment variables.
 
 ### ✅ Advantages
+
 - No container modifications
 - Simple to implement
 - Works with existing image
 - Easy to automate
 
 ### ⚠️ Considerations
+
 - Credentials visible in AWS console (in agent runtime configuration)
 - Requires re-deployment for rotation
 
@@ -272,6 +275,7 @@ aws bedrock-agentcore-control get-agent-runtime \
 ```
 
 **Expected output:**
+
 ```json
 {
   "agentRuntimeName": "zscalermcp",
@@ -291,11 +295,13 @@ aws bedrock-agentcore-control get-agent-runtime \
 This approach modifies the container to retrieve secrets at runtime (when the container starts).
 
 ### ✅ Advantages
+
 - Secrets not visible in AWS console
 - Credentials retrieved fresh on each container start
 - Better security posture
 
 ### ⚠️ Considerations
+
 - Requires container modifications
 - Need to rebuild and push Docker image
 - AgentCore execution role needs Secrets Manager permissions
@@ -542,7 +548,7 @@ aws logs tail /aws/bedrock-agentcore/runtimes/<AGENT_RUNTIME_ID> \
 
 **Expected log output:**
 
-```
+```text
 ================================================================================
 🔐 Loading credentials from AWS Secrets Manager
 ================================================================================
@@ -840,6 +846,7 @@ aws bedrock-agentcore-control create-agent-runtime \
 ### For Most Users: **Approach 1** (Pre-Deployment Retrieval)
 
 **Why:**
+
 - ✅ No container modifications needed
 - ✅ Works with existing Docker image
 - ✅ Simple bash script
@@ -850,6 +857,7 @@ aws bedrock-agentcore-control create-agent-runtime \
 ### For High Security Requirements: **Approach 2** (Runtime Retrieval)
 
 **Why:**
+
 - ✅ Credentials never visible in console
 - ✅ Retrieved fresh on each container start
 - ✅ Better audit trail
@@ -859,6 +867,7 @@ aws bedrock-agentcore-control create-agent-runtime \
 ### For CI/CD Automation: **Approach 3** (Lambda Proxy)
 
 **Why:**
+
 - ✅ Fully automated
 - ✅ No manual deployment steps
 - ✅ Can trigger on schedule or events
@@ -1019,48 +1028,54 @@ aws secretsmanager put-resource-policy \
 ### Issue: "Access Denied to Secret"
 
 **Symptom:**
-```
+
+```text
 AccessDeniedException: User is not authorized to perform: secretsmanager:GetSecretValue
 ```
 
 **Solution:**
 
 1. **For Approach 1**: Check your deployment user/role permissions
-```bash
-aws iam get-user-policy \
-  --user-name your-user \
-  --policy-name ZscalerSecretsAccess
-```
+
+   ```bash
+   aws iam get-user-policy \
+     --user-name your-user \
+     --policy-name ZscalerSecretsAccess
+   ```
 
 2. **For Approach 2**: Check the AgentCore execution role permissions
-```bash
-aws iam get-role-policy \
-  --role-name bedrock-core-zscaler-role \
-  --policy-name SecretsManagerRuntimeAccess
-```
+
+   ```bash
+   aws iam get-role-policy \
+     --role-name bedrock-core-zscaler-role \
+     --policy-name SecretsManagerRuntimeAccess
+   ```
 
 3. Test access manually:
-```bash
-aws secretsmanager get-secret-value \
-  --region us-east-1 \
-  --secret-id zscaler/mcp/credentials
-```
+
+   ```bash
+   aws secretsmanager get-secret-value \
+     --region us-east-1 \
+     --secret-id zscaler/mcp/credentials
+   ```
 
 ### Issue: "Secret Not Found"
 
 **Symptom:**
-```
+
+```text
 ResourceNotFoundException: Secrets Manager can't find the specified secret
 ```
 
 **Solution:**
 
 1. List secrets to verify it exists:
-```bash
-aws secretsmanager list-secrets \
-  --region us-east-1 \
-  --filters Key=name,Values=zscaler/mcp
-```
+
+   ```bash
+   aws secretsmanager list-secrets \
+     --region us-east-1 \
+     --filters Key=name,Values=zscaler/mcp
+   ```
 
 2. Check the region matches
 
@@ -1074,11 +1089,12 @@ Agent runtime status shows `FAILED`
 **Solution:**
 
 1. Check CloudWatch logs:
-```bash
-aws logs tail /aws/bedrock-agentcore/runtimes/<AGENT_RUNTIME_ID> \
-  --region us-east-1 \
-  --follow
-```
+
+   ```bash
+   aws logs tail /aws/bedrock-agentcore/runtimes/<AGENT_RUNTIME_ID> \
+     --region us-east-1 \
+     --follow
+   ```
 
 2. Look for errors like:
    - "Failed to create Secrets Manager client"
@@ -1086,21 +1102,23 @@ aws logs tail /aws/bedrock-agentcore/runtimes/<AGENT_RUNTIME_ID> \
    - "Missing required fields in secret"
 
 3. Test the container locally:
-```bash
-docker run -it --rm \
-  -e USE_SECRETS_MANAGER=true \
-  -e SECRET_NAME=zscaler/mcp/credentials \
-  -e AWS_REGION=us-east-1 \
-  -e AWS_ACCESS_KEY_ID=<YOUR_KEY> \
-  -e AWS_SECRET_ACCESS_KEY=<YOUR_SECRET> \
-  -p 8000:8000 \
-  zscaler/zscaler-mcp-server:latest
-```
+
+   ```bash
+   docker run -it --rm \
+     -e USE_SECRETS_MANAGER=true \
+     -e SECRET_NAME=zscaler/mcp/credentials \
+     -e AWS_REGION=us-east-1 \
+     -e AWS_ACCESS_KEY_ID=<YOUR_KEY> \
+     -e AWS_SECRET_ACCESS_KEY=<YOUR_SECRET> \
+     -p 8000:8000 \
+     zscaler/zscaler-mcp-server:latest
+   ```
 
 ### Issue: "Invalid JSON in Secret"
 
 **Symptom:**
-```
+
+```text
 JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 ```
 
@@ -1117,6 +1135,7 @@ aws secretsmanager get-secret-value \
 ```
 
 Ensure it's valid JSON with required fields:
+
 ```json
 {
   "ZSCALER_CLIENT_ID": "...",
@@ -1140,17 +1159,20 @@ Ensure it's valid JSON with required fields:
 
 ### Example Scenarios
 
-**Scenario 1: Approach 1 (Pre-Deployment)**
+#### Scenario 1: Approach 1 (Pre-Deployment)
+
 - 1 secret
 - 20 deployments/month
 - **Cost: $0.40/month** (API calls negligible)
 
-**Scenario 2: Approach 2 (Runtime Retrieval)**
+#### Scenario 2: Approach 2 (Runtime Retrieval)
+
 - 1 secret
 - Container restarts 100 times/month
 - **Cost: $0.40/month** (API calls negligible)
 
-**Scenario 3: Multi-Environment**
+#### Scenario 3: Multi-Environment
+
 - 3 secrets (dev/staging/prod)
 - 50 total deployments/month
 - **Cost: $1.20/month**
@@ -1171,6 +1193,7 @@ Ensure it's valid JSON with required fields:
 ### Recommended Approach
 
 For **most users**: **Approach 1 (Pre-Deployment Retrieval)**
+
 - Simplest to implement
 - No container changes
 - Works immediately
@@ -1178,12 +1201,14 @@ For **most users**: **Approach 1 (Pre-Deployment Retrieval)**
 - Good enough security for most use cases
 
 For **high security requirements**: **Approach 2 (Runtime Retrieval)**
+
 - Credentials never visible in console
 - Retrieved at container startup
 - Requires container modification
 - Best security posture
 
 For **automated pipelines**: **Approach 3 (Lambda Proxy)**
+
 - Fully automated
 - Event-driven deployments
 - Centralized deployment logic
