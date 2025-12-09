@@ -1,6 +1,17 @@
 # Zscaler Integrations MCP Server Changelog
 
-## 0.5.0 (November 22, 2025) - AWS Bedrock AgentCore Security Enhancement
+## 0.5.1 (December 8, 2025)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+
+### Enhancements
+
+[PR #21](https://github.com/zscaler/zscaler-mcp-server/pull/21) - ✨ Added AWS Kiro Power integration for AI-assisted Zscaler platform management within the Kiro IDE. Includes POWER.md, mcp.json, and service-specific steering files for ZPA, ZIA, ZDX, ZCC, ZTW, EASM, and ZIdentity.
+
+## 0.5.0 (November 22, 2025)
 
 > **⚠️ Important:** This release contains enhancements specific to **AWS Bedrock AgentCore deployments only**. These changes are maintained in a separate private AWS-specific repository and do **not** modify the core Zscaler MCP Server in this repository. Standard MCP server functionality remains unchanged.
 
