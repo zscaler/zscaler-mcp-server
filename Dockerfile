@@ -35,7 +35,19 @@ RUN find /app/.venv -name '__pycache__' -type d -exec rm -rf {} + && \
 
 # Final stage
 # python:3.13-alpine (multi-arch: amd64, arm64)
-FROM python@sha256:9ba6d8cbebf0fb6546ae71f2a1c14f6ffd2fdab83af7fa5669734ef30ad48844
+# Using latest tag to get security patches - pin after security review
+FROM python:3.13-alpine
+
+# Security: Update Alpine packages to latest versions to fix:
+# - CVE-2024-58251, CVE-2025-46394 (busybox)
+# - CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 (openssl/libcrypto3/libssl3)
+RUN apk update && apk upgrade --no-cache && \
+    rm -rf /var/cache/apk/*
+
+# Security: Upgrade pip and setuptools to fix:
+# - CVE-2025-8869 (pip)
+# - CVE-2024-6345, CVE-2025-47273 (setuptools)
+RUN pip install --no-cache-dir --upgrade pip>=25.3 setuptools>=78.1.1
 
 # Create a non-root user 'app'
 RUN adduser -D -h /home/app -s /bin/sh app
