@@ -21,11 +21,12 @@ coverage:
         informational: false
 
 comment:
-  layout: "reach,diff,flags,files,components"
+  layout: "header,diff,flags,components,tree,footer"
   behavior: default
   require_changes: false
   require_base: false
   require_head: true
+  show_critical_paths: true
 
 ignore:
   - "tests/**/*"
