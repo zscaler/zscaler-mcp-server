@@ -36,11 +36,18 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          uv run pytest --cov=zscaler_mcp --cov-branch --cov-report=xml --cov-report=term-missing
+          uv run pytest \
+            --cov=zscaler_mcp \
+            --cov-branch \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junitxml=junit.xml \
+            -o junit_family=legacy
         env:
           PYTHONPATH: ${{ github.workspace }}
 
       - name: Upload coverage reports to Codecov
+        if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -51,3 +58,10 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests
+          verbose: true
