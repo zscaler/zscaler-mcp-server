@@ -23,7 +23,6 @@ from zscaler_mcp.tools.zinsights.common import (
     validate_time_range,
 )
 
-
 # ============================================================================
 # READ OPERATIONS (Read-Only)
 # ============================================================================

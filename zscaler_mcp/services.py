@@ -827,38 +827,42 @@ class ZInsightsService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import Z-Insights Web Traffic tools
-        from .tools.zinsights.web_traffic import (
-            zinsights_get_web_traffic_by_location,
-            zinsights_get_web_traffic_no_grouping,
-            zinsights_get_web_protocols,
-            zinsights_get_threat_super_categories,
-            zinsights_get_threat_class,
-        )
         # Import Z-Insights Cyber Security tools
         from .tools.zinsights.cyber_security import (
             zinsights_get_cyber_incidents,
             zinsights_get_cyber_incidents_by_location,
-            zinsights_get_cyber_incidents_daily,
             zinsights_get_cyber_incidents_by_threat_and_app,
+            zinsights_get_cyber_incidents_daily,
         )
+
         # Import Z-Insights Firewall tools
         from .tools.zinsights.firewall import (
             zinsights_get_firewall_by_action,
             zinsights_get_firewall_by_location,
             zinsights_get_firewall_network_services,
         )
+
+        # Import Z-Insights IoT tools
+        from .tools.zinsights.iot import (
+            zinsights_get_iot_device_stats,
+        )
+
         # Import Z-Insights SaaS Security / CASB tools
         from .tools.zinsights.saas_security import (
             zinsights_get_casb_app_report,
         )
+
         # Import Z-Insights Shadow IT tools
         from .tools.zinsights.shadow_it import (
             zinsights_get_shadow_it_apps,
             zinsights_get_shadow_it_summary,
         )
-        # Import Z-Insights IoT tools
-        from .tools.zinsights.iot import (
-            zinsights_get_iot_device_stats,
+        from .tools.zinsights.web_traffic import (
+            zinsights_get_threat_class,
+            zinsights_get_threat_super_categories,
+            zinsights_get_web_protocols,
+            zinsights_get_web_traffic_by_location,
+            zinsights_get_web_traffic_no_grouping,
         )
 
         # All Z-Insights tools are read-only (analytics)

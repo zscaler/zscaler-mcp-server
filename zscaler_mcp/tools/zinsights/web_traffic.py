@@ -27,7 +27,6 @@ from zscaler_mcp.tools.zinsights.common import (
     validate_trend_interval,
 )
 
-
 # ============================================================================
 # READ OPERATIONS (Read-Only)
 # ============================================================================
