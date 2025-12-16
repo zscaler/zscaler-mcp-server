@@ -20,16 +20,8 @@ coverage:
         threshold: 1%
         informational: false
 
-parsers:
-  gcov:
-    branch_detection:
-      conditional: true
-      loop: true
-      macro: false
-      method: false
-
 comment:
-  layout: "reach,diff,flags,files"
+  layout: "reach,diff,flags,files,components"
   behavior: default
   require_changes: false
   require_base: false
@@ -41,9 +33,11 @@ ignore:
   - "examples/**/*"
   - "docsrc/**/*"
   - "docs/**/*"
+  - "integrations/**/*"
   - "**/__init__.py"
   - "**/conftest.py"
 
+# Flags for granular coverage tracking per service
 flags:
   unittests:
     paths:
@@ -77,8 +71,66 @@ flags:
     paths:
       - zscaler_mcp/tools/zinsights/
     carryforward: true
+  zeasm-tools:
+    paths:
+      - zscaler_mcp/tools/easm/
+    carryforward: true
+  core:
+    paths:
+      - zscaler_mcp/server.py
+      - zscaler_mcp/client.py
+      - zscaler_mcp/services.py
+    carryforward: true
 
-# Codecov AI Configuration
+# Components group related flags for organized reporting
+# https://docs.codecov.com/docs/components
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+  individual_components:
+    - component_id: zscaler-internet-access
+      name: ZIA (Zscaler Internet Access)
+      paths:
+        - zscaler_mcp/tools/zia/**
+    - component_id: zscaler-private-access
+      name: ZPA (Zscaler Private Access)
+      paths:
+        - zscaler_mcp/tools/zpa/**
+    - component_id: zscaler-client-connector
+      name: ZCC (Zscaler Client Connector)
+      paths:
+        - zscaler_mcp/tools/zcc/**
+    - component_id: zscaler-digital-experience
+      name: ZDX (Zscaler Digital Experience)
+      paths:
+        - zscaler_mcp/tools/zdx/**
+    - component_id: zscaler-workload-segmentation
+      name: ZTW (Zscaler Workload Segmentation)
+      paths:
+        - zscaler_mcp/tools/ztw/**
+    - component_id: zscaler-identity
+      name: ZIdentity (Identity Management)
+      paths:
+        - zscaler_mcp/tools/zidentity/**
+    - component_id: zscaler-insights
+      name: Z-Insights (Analytics)
+      paths:
+        - zscaler_mcp/tools/zinsights/**
+    - component_id: zscaler-easm
+      name: ZEASM (External Attack Surface Management)
+      paths:
+        - zscaler_mcp/tools/easm/**
+    - component_id: core-server
+      name: Core Server & Services
+      paths:
+        - zscaler_mcp/server.py
+        - zscaler_mcp/client.py
+        - zscaler_mcp/services.py
+        - zscaler_mcp/common/**
+
+# Codecov AI PR Review
 ai_pr_review:
   enabled: true
-
