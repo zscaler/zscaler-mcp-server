@@ -312,3 +312,131 @@ Zscaler External Attack Surface Management (EASM) Examples
 * "Show me recently detected lookalike domains"
 * "List all active lookalike domain threats"
 * "Are there any domains similar to our company name being used maliciously?"
+
+Z-Insights Analytics Examples
+-----------------------------
+
+Z-Insights provides analytics and reporting capabilities through Zscaler's GraphQL-based analytics API.
+These tools provide read-only access to historical traffic and security data across 16 specialized analytics tools.
+
+.. note::
+
+   Z-Insights data has a 24-48 hour processing delay. When querying data, use time ranges
+   that end at least 2 days ago for accurate results. Use ``start_days_ago`` and ``end_days_ago``
+   parameters for easy time range specification.
+
+**Available Z-Insights Domains:**
+
+- WEB_TRAFFIC: Web traffic analytics and threat data
+- CYBER_SECURITY: Cybersecurity incidents and threat analysis
+- ZERO_TRUST_FIREWALL: Firewall activity and rule analytics
+- SAAS_SECURITY: Cloud Access Security Broker (CASB) data
+- SHADOW_IT: Unsanctioned application discovery
+- IOT: IoT device visibility and statistics
+
+**Web Traffic Analytics (5 tools):**
+
+* "What's our total web traffic volume for the past week?"
+* "Show me web traffic by location for the last 7 days"
+* "Which office locations have the highest web traffic?"
+* "What's the traffic distribution across our branch offices?"
+* "Show me traffic trends for the past 14 days"
+* "How much bandwidth are we using across all locations?"
+* "Compare traffic volume between different office locations"
+* "Get web traffic in bytes instead of transactions"
+* "Show me overall traffic without any grouping"
+* "What's our total bandwidth consumption this month?"
+
+**Protocol Analysis:**
+
+* "What protocols are being used in our web traffic?"
+* "Show me HTTP vs HTTPS traffic distribution"
+* "What's our SSL/TLS adoption rate?"
+* "Are there any non-HTTPS protocols being used?"
+* "Show me protocol usage trends over the past week"
+* "What percentage of traffic is encrypted?"
+* "List all protocols with transaction counts"
+
+**Threat Analytics:**
+
+* "What types of threats are we seeing?"
+* "Show me threat categories detected in our traffic"
+* "What malware types have been detected?"
+* "Are there any phishing attempts in our traffic?"
+* "Show me threat super categories for the past week"
+* "What's our threat detection breakdown by category?"
+* "List all security threats detected recently"
+* "Show me top 10 threat categories by volume"
+* "What spyware has been blocked?"
+
+**Threat Classification:**
+
+* "What threat classes are present in our traffic?"
+* "Show me virus and spyware detections"
+* "Are there any advanced threats detected?"
+* "What's the distribution of threat types?"
+* "Show me behavioral analysis detections"
+* "List threat classes for the past 14 days"
+* "How many threats were in the VIRUS_SPYWARE class?"
+
+**Cyber Security Incidents (4 tools):**
+
+* "Show me cybersecurity incidents from the past two weeks"
+* "What security incidents have we had by category?"
+* "Which locations have the most security incidents?"
+* "Show me daily security incident trends"
+* "What applications are being targeted by threats?"
+* "Give me a breakdown of incidents by threat category"
+* "How many cyber incidents did we have per day last month?"
+* "Which departments have the most security incidents?"
+* "Show me incident correlation between threats and applications"
+* "What's the security incident trend over the past 30 days?"
+* "Group incidents by user to find risky employees"
+* "Show incidents by source country"
+* "Which apps have the most threat-related incidents?"
+
+**Firewall Analytics (3 tools):**
+
+* "Show me firewall traffic by action"
+* "How much traffic is being blocked vs allowed?"
+* "Which locations have the most firewall activity?"
+* "What network services are being used through the firewall?"
+* "Show me firewall stats by location"
+* "What's our firewall block rate?"
+* "List network services with traffic volumes"
+* "Which locations generate the most firewall logs?"
+* "Show me allowed vs blocked traffic ratio"
+
+**SaaS Security / CASB (1 tool):**
+
+* "What SaaS applications are being used?"
+* "Show me CASB application report"
+* "Which cloud apps have the most usage?"
+* "List cloud applications monitored by CASB"
+* "What's our cloud app usage by transaction count?"
+* "Show me top 20 SaaS applications"
+
+**Shadow IT Analytics (2 tools):**
+
+* "What shadow IT applications have been discovered?"
+* "Show me unsanctioned apps being used"
+* "Give me a shadow IT summary"
+* "What high-risk shadow applications are in use?"
+* "Show me shadow IT apps by risk score"
+* "How much data is being transferred to shadow apps?"
+* "What's our total shadow IT exposure?"
+* "Show me shadow apps grouped by category"
+* "How many shadow apps are sanctioned vs unsanctioned?"
+* "What's the total data uploaded to shadow IT apps?"
+* "Show me shadow IT apps with risk index above 5"
+
+**IoT Device Analytics (1 tool):**
+
+* "How many IoT devices are on our network?"
+* "Show me IoT device statistics"
+* "What types of IoT devices are connected?"
+* "List IoT device classifications"
+* "Are there any unclassified devices?"
+* "How many unmanaged user devices do we have?"
+* "What's the breakdown of IoT vs user vs server devices?"
+* "Show me device categories like cameras, printers"

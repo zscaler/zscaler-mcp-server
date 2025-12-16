@@ -1,7 +1,7 @@
 Services API
 ============
 
-Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, Zidentity).
+Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, ZIdentity, EASM, Z-Insights).
 
 .. automodule:: zscaler_mcp.services
    :members:
@@ -227,6 +227,101 @@ Zscaler Identity service for user and group management.
    * - ``users``
      - Retrieve user information
 
+EASM Service
+~~~~~~~~~~~~
+
+Zscaler External Attack Surface Management service for monitoring external assets.
+
+.. list-table:: EASM Service Methods
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Method
+     - Description
+   * - ``list_organizations``
+     - List all EASM organizations
+   * - ``list_findings``
+     - List security findings for an organization
+   * - ``get_finding``
+     - Get details for a specific finding
+   * - ``get_finding_evidence``
+     - Get evidence for a finding
+   * - ``get_finding_scan_output``
+     - Get complete scan output for a finding
+   * - ``list_lookalike_domains``
+     - List lookalike domains for an organization
+   * - ``get_lookalike_domain``
+     - Get details for a specific lookalike domain
+
+Z-Insights Service
+~~~~~~~~~~~~~~~~~~
+
+Zscaler Z-Insights Analytics service for traffic and threat analytics.
+
+Z-Insights provides read-only analytics through Zscaler's GraphQL-based analytics API.
+All tools in this service query historical data with a 24-48 hour processing delay.
+
+.. note::
+
+   Z-Insights requires OneAPI authentication (OAuth2). Legacy API keys are not supported.
+   Data queries should use time ranges that end at least 2 days ago.
+
+**Available Domains:**
+
+- WEB_TRAFFIC: Web traffic analytics and threat data
+- CYBER_SECURITY: Cybersecurity incidents and threat analysis
+- ZERO_TRUST_FIREWALL: Firewall activity and rule analytics
+- SAAS_SECURITY: Cloud Access Security Broker (CASB) data
+- SHADOW_IT: Unsanctioned application discovery
+- IOT: IoT device visibility and statistics
+
+.. list-table:: Z-Insights Service Methods (16 tools)
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Method
+     - Description
+   * - ``get_web_traffic_by_location``
+     - Get web traffic analytics grouped by location
+   * - ``get_web_traffic_no_grouping``
+     - Get total/overall web traffic volume
+   * - ``get_web_protocols``
+     - Get web protocol distribution (HTTP, HTTPS, etc.)
+   * - ``get_threat_super_categories``
+     - Get threat category analytics (malware, phishing, spyware)
+   * - ``get_threat_class``
+     - Get threat class analytics (virus, trojan, ransomware)
+   * - ``get_cyber_incidents``
+     - Get cybersecurity incidents by category
+   * - ``get_cyber_incidents_by_location``
+     - Get incidents grouped by location, user, app, or department
+   * - ``get_cyber_incidents_daily``
+     - Get daily cybersecurity incident trends
+   * - ``get_cyber_incidents_by_threat_and_app``
+     - Get incidents correlated by threat category and application
+   * - ``get_firewall_by_action``
+     - Get firewall traffic by action (allow/block)
+   * - ``get_firewall_by_location``
+     - Get firewall traffic grouped by location
+   * - ``get_firewall_network_services``
+     - Get firewall network service usage
+   * - ``get_casb_app_report``
+     - Get CASB SaaS application usage report
+   * - ``get_shadow_it_apps``
+     - Get discovered shadow IT applications
+   * - ``get_shadow_it_summary``
+     - Get shadow IT summary statistics
+   * - ``get_iot_device_stats``
+     - Get IoT device statistics and classifications
+
+**Key Parameters:**
+
+- ``start_days_ago`` / ``end_days_ago``: Recommended way to specify time range (e.g., 7 to 2 for last week)
+- ``start_time`` / ``end_time``: Alternative epoch milliseconds for specific timestamps
+- ``traffic_unit``: TRANSACTIONS (request counts) or BYTES (data volume)
+- ``include_trend``: Include time series trend data
+- ``trend_interval``: DAY or HOUR for trend granularity
+
 Usage Examples
 --------------
 
@@ -279,3 +374,47 @@ Service Methods
 
    # List segment groups
    groups = client.zpa.segment_groups.list_groups()
+
+Z-Insights Analytics
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   # Z-Insights requires OneAPI (OAuth2) authentication
+   from zscaler_mcp.client import get_zscaler_client
+
+   # Get client with OneAPI (not legacy)
+   client = get_zscaler_client(use_legacy=False, service="zinsights")
+
+   # Get web traffic by location for the past week
+   # Using days_ago approach (recommended)
+   import time
+
+   # Calculate timestamps: 7 days ago to 2 days ago
+   current_time_ms = int(time.time() * 1000)
+   end_time = current_time_ms - (2 * 24 * 60 * 60 * 1000)   # 2 days ago
+   start_time = current_time_ms - (7 * 24 * 60 * 60 * 1000)  # 7 days ago
+
+   # Get traffic by location
+   entries, response, err = client.zinsights.web_traffic.get_traffic_by_location(
+       start_time=start_time,
+       end_time=end_time,
+       traffic_unit="TRANSACTIONS",
+       limit=10
+   )
+
+   # Get threat categories
+   entries, response, err = client.zinsights.web_traffic.get_threat_super_categories(
+       start_time=start_time,
+       end_time=end_time,
+       traffic_unit="TRANSACTIONS",
+       limit=50
+   )
+
+   # Get web protocols distribution
+   entries, response, err = client.zinsights.web_traffic.get_protocols(
+       start_time=start_time,
+       end_time=end_time,
+       traffic_unit="BYTES",
+       limit=20
+   )

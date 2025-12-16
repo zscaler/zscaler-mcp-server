@@ -1,11 +1,10 @@
 # Zscaler Integrations MCP Server Changelog
 
-## 0.5.1 (December 8, 2025)
+## 0.6.0 (December 8, 2025)
 
 ### Notes
 
 - Python Versions: **v3.11, v3.12, v3.13**
-
 
 ### Enhancements
 
