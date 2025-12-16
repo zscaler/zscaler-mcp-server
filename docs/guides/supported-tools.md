@@ -523,4 +523,3 @@ EASM provides **read-only** tools for monitoring your organization's external at
 |-----------|-------------|------|
 | `zeasm_list_lookalike_domains` | List all lookalike domains detected for an organization | Read-only |
 | `zeasm_get_lookalike_domain` | Get details for a specific lookalike domain | Read-only |
-

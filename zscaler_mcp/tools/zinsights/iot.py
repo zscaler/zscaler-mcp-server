@@ -7,7 +7,7 @@ detection, classification, and statistics.
 All tools in this module are read-only operations.
 """
 
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List
 
 from pydantic import Field
 
