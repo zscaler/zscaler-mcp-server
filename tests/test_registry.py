@@ -28,9 +28,9 @@ class TestRegistry(unittest.TestCase):
         service_names = services.get_service_names()
 
         # Verify that the returned list contains all the expected service names
-        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity", "ztw"}
+        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity", "ztw", "zeasm", "zinsights"}
         self.assertEqual(set(service_names), expected_services)
-        self.assertEqual(len(service_names), 6)
+        self.assertEqual(len(service_names), 8)
 
     def test_get_available_services(self):
         """Test that get_available_services returns the correct dictionary of services."""
@@ -38,7 +38,7 @@ class TestRegistry(unittest.TestCase):
         available_services = services.get_available_services()
 
         # Verify that all expected services are present
-        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity", "ztw"}
+        expected_services = {"zcc", "zdx", "zpa", "zia", "zidentity", "ztw", "zeasm", "zinsights"}
         self.assertEqual(set(available_services.keys()), expected_services)
 
         # Verify that all services are subclasses of BaseService
@@ -133,7 +133,7 @@ class TestRegistry(unittest.TestCase):
 
         # Verify that the original registry was not modified
         self.assertNotIn("test_service", available_services_2)
-        self.assertEqual(len(available_services_2), 6)  # Should still have 6 services
+        self.assertEqual(len(available_services_2), 8)  # Should still have 8 services
 
 
 if __name__ == "__main__":

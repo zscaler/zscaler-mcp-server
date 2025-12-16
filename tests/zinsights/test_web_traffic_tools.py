@@ -143,10 +143,14 @@ class TestWebTrafficTools:
             limit=10,
         )
 
-        # Verify
+        # Verify - response is now wrapped with metadata
         assert len(result) == 1
-        assert result[0]["name"] == "HQ"
-        assert result[0]["total"] == 12345
+        assert result[0]["status"] == "success"
+        assert result[0]["authoritative"] is True
+        assert "data" in result[0]
+        assert len(result[0]["data"]) == 1
+        assert result[0]["data"][0]["name"] == "HQ"
+        assert result[0]["data"][0]["total"] == 12345
 
     @patch("zscaler_mcp.tools.zinsights.web_traffic.get_zscaler_client")
     def test_get_web_traffic_by_location_empty_result(self, mock_get_client):
@@ -169,7 +173,11 @@ class TestWebTrafficTools:
             traffic_unit="TRANSACTIONS",
         )
 
-        assert result == []
+        # Empty results now return a no_data response with metadata
+        assert len(result) == 1
+        assert result[0]["status"] == "no_data"
+        assert result[0]["authoritative"] is True
+        assert result[0]["data"] == []
 
     @patch("zscaler_mcp.tools.zinsights.web_traffic.get_zscaler_client")
     def test_get_web_traffic_by_location_api_error(self, mock_get_client):
@@ -186,13 +194,15 @@ class TestWebTrafficTools:
         )
         mock_get_client.return_value = mock_client
 
-        with pytest.raises(Exception) as exc_info:
-            zinsights_get_web_traffic_by_location(
-                start_time=1702600000000,
-                end_time=1702686400000,
-                traffic_unit="TRANSACTIONS",
-            )
-        assert "Failed to get web traffic by location" in str(exc_info.value)
+        # API errors now return an error response instead of raising exception
+        result = zinsights_get_web_traffic_by_location(
+            start_time=1702600000000,
+            end_time=1702686400000,
+            traffic_unit="TRANSACTIONS",
+        )
+        assert len(result) == 1
+        assert result[0]["status"] == "error"
+        assert "SDK error" in result[0]["message"] or "API Error" in result[0]["message"]
 
     @patch("zscaler_mcp.tools.zinsights.web_traffic.get_zscaler_client")
     def test_get_web_protocols_success(self, mock_get_client):
@@ -218,9 +228,13 @@ class TestWebTrafficTools:
             traffic_unit="TRANSACTIONS",
         )
 
-        assert len(result) == 2
-        assert result[0]["name"] == "HTTPS"
-        assert result[1]["name"] == "HTTP"
+        # Response is now wrapped with metadata
+        assert len(result) == 1
+        assert result[0]["status"] == "success"
+        assert result[0]["record_count"] == 2
+        assert len(result[0]["data"]) == 2
+        assert result[0]["data"][0]["name"] == "HTTPS"
+        assert result[0]["data"][1]["name"] == "HTTP"
 
     @patch("zscaler_mcp.tools.zinsights.web_traffic.get_zscaler_client")
     def test_get_threat_super_categories_success(self, mock_get_client):
@@ -246,8 +260,11 @@ class TestWebTrafficTools:
             traffic_unit="TRANSACTIONS",
         )
 
+        # Response is now wrapped with metadata
         assert len(result) == 1
-        assert result[0]["name"] == "Malware"
+        assert result[0]["status"] == "success"
+        assert len(result[0]["data"]) == 1
+        assert result[0]["data"][0]["name"] == "Malware"
 
     @patch("zscaler_mcp.tools.zinsights.web_traffic.get_zscaler_client")
     def test_get_threat_class_success(self, mock_get_client):
@@ -271,8 +288,11 @@ class TestWebTrafficTools:
             traffic_unit="TRANSACTIONS",
         )
 
+        # Response is now wrapped with metadata
         assert len(result) == 1
-        assert result[0]["name"] == "Advanced"
+        assert result[0]["status"] == "success"
+        assert len(result[0]["data"]) == 1
+        assert result[0]["data"][0]["name"] == "Advanced"
 
     @patch("zscaler_mcp.tools.zinsights.web_traffic.get_zscaler_client")
     def test_get_web_traffic_no_grouping_with_filters(self, mock_get_client):
@@ -327,7 +347,8 @@ class TestZInsightsServiceRegistration:
         from zscaler_mcp.services import ZInsightsService
 
         service = ZInsightsService(None)
-        assert len(service.read_tools) == 5
+        # ZInsights now has 16 read tools across all domains
+        assert len(service.read_tools) == 16
         assert len(service.write_tools) == 0
 
     def test_zinsights_service_tool_names(self):
@@ -337,12 +358,19 @@ class TestZInsightsServiceRegistration:
         service = ZInsightsService(None)
         tool_names = [tool["name"] for tool in service.read_tools]
 
+        # Core web traffic tools that should always be present
         expected_names = [
             "zinsights_get_web_traffic_by_location",
             "zinsights_get_web_traffic_no_grouping",
             "zinsights_get_web_protocols",
             "zinsights_get_threat_super_categories",
             "zinsights_get_threat_class",
+            # Additional domains
+            "zinsights_get_cyber_incidents",
+            "zinsights_get_firewall_by_action",
+            "zinsights_get_casb_app_report",
+            "zinsights_get_shadow_it_apps",
+            "zinsights_get_iot_device_stats",
         ]
 
         for name in expected_names:
