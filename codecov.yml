@@ -1,0 +1,137 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: false
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+        informational: false
+
+comment:
+  layout: "header,diff,flags,components,tree,footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  show_critical_paths: true
+
+ignore:
+  - "tests/**/*"
+  - "local_dev/**/*"
+  - "examples/**/*"
+  - "docsrc/**/*"
+  - "docs/**/*"
+  - "integrations/**/*"
+  - "**/__init__.py"
+  - "**/conftest.py"
+
+# Flags for granular coverage tracking per service
+flags:
+  unittests:
+    paths:
+      - zscaler_mcp/
+    carryforward: true
+  zia-tools:
+    paths:
+      - zscaler_mcp/tools/zia/
+    carryforward: true
+  zpa-tools:
+    paths:
+      - zscaler_mcp/tools/zpa/
+    carryforward: true
+  zcc-tools:
+    paths:
+      - zscaler_mcp/tools/zcc/
+    carryforward: true
+  zdx-tools:
+    paths:
+      - zscaler_mcp/tools/zdx/
+    carryforward: true
+  ztw-tools:
+    paths:
+      - zscaler_mcp/tools/ztw/
+    carryforward: true
+  zidentity-tools:
+    paths:
+      - zscaler_mcp/tools/zidentity/
+    carryforward: true
+  zinsights-tools:
+    paths:
+      - zscaler_mcp/tools/zinsights/
+    carryforward: true
+  zeasm-tools:
+    paths:
+      - zscaler_mcp/tools/easm/
+    carryforward: true
+  core:
+    paths:
+      - zscaler_mcp/server.py
+      - zscaler_mcp/client.py
+      - zscaler_mcp/services.py
+    carryforward: true
+
+# Components group related flags for organized reporting
+# https://docs.codecov.com/docs/components
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+  individual_components:
+    - component_id: zscaler-internet-access
+      name: ZIA (Zscaler Internet Access)
+      paths:
+        - zscaler_mcp/tools/zia/**
+    - component_id: zscaler-private-access
+      name: ZPA (Zscaler Private Access)
+      paths:
+        - zscaler_mcp/tools/zpa/**
+    - component_id: zscaler-client-connector
+      name: ZCC (Zscaler Client Connector)
+      paths:
+        - zscaler_mcp/tools/zcc/**
+    - component_id: zscaler-digital-experience
+      name: ZDX (Zscaler Digital Experience)
+      paths:
+        - zscaler_mcp/tools/zdx/**
+    - component_id: zscaler-workload-segmentation
+      name: ZTW (Zscaler Workload Segmentation)
+      paths:
+        - zscaler_mcp/tools/ztw/**
+    - component_id: zscaler-identity
+      name: ZIdentity (Identity Management)
+      paths:
+        - zscaler_mcp/tools/zidentity/**
+    - component_id: zscaler-insights
+      name: Z-Insights (Analytics)
+      paths:
+        - zscaler_mcp/tools/zinsights/**
+    - component_id: zscaler-easm
+      name: ZEASM (External Attack Surface Management)
+      paths:
+        - zscaler_mcp/tools/easm/**
+    - component_id: core-server
+      name: Core Server & Services
+      paths:
+        - zscaler_mcp/server.py
+        - zscaler_mcp/client.py
+        - zscaler_mcp/services.py
+        - zscaler_mcp/common/**
+
+# Codecov AI PR Review
+ai_pr_review:
+  enabled: true
