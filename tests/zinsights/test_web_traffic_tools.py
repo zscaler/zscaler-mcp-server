@@ -4,8 +4,9 @@ Tests for Z-Insights Web Traffic Tools
 These tests validate the tool parameter validation and basic functionality.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestWebTrafficTools:
@@ -334,7 +335,7 @@ class TestZInsightsServiceRegistration:
 
     def test_zinsights_service_exists_in_registry(self):
         """Test that zinsights service is registered."""
-        from zscaler_mcp.services import get_service_names, get_available_services
+        from zscaler_mcp.services import get_available_services, get_service_names
 
         service_names = get_service_names()
         assert "zinsights" in service_names
