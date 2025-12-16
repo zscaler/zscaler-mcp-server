@@ -809,6 +809,227 @@ class ZEASMService(BaseService):
         logger.info(f"EASM Service: Registered {read_count} read tools, {write_count} write tools")
 
 
+class ZInsightsService(BaseService):
+    """Zscaler Z-Insights Analytics service.
+
+    Provides analytics and reporting capabilities through the Z-Insights GraphQL API.
+    All tools in this service are read-only operations.
+
+    Available domains in Z-Insights API:
+    - WEB_TRAFFIC: Web traffic analytics and threat data
+    - CYBER_SECURITY: Cybersecurity incidents and threat analysis
+    - ZERO_TRUST_FIREWALL: Firewall activity and rule analytics
+    - SAAS_SECURITY: Cloud Access Security Broker (CASB) data
+    - SHADOW_IT: Unsanctioned application discovery
+    - IOT: IoT device visibility and statistics
+    """
+
+    def __init__(self, zscaler_client):
+        super().__init__(zscaler_client)
+        # Import Z-Insights Web Traffic tools
+        from .tools.zinsights.web_traffic import (
+            zinsights_get_web_traffic_by_location,
+            zinsights_get_web_traffic_no_grouping,
+            zinsights_get_web_protocols,
+            zinsights_get_threat_super_categories,
+            zinsights_get_threat_class,
+        )
+        # Import Z-Insights Cyber Security tools
+        from .tools.zinsights.cyber_security import (
+            zinsights_get_cyber_incidents,
+            zinsights_get_cyber_incidents_by_location,
+            zinsights_get_cyber_incidents_daily,
+            zinsights_get_cyber_incidents_by_threat_and_app,
+        )
+        # Import Z-Insights Firewall tools
+        from .tools.zinsights.firewall import (
+            zinsights_get_firewall_by_action,
+            zinsights_get_firewall_by_location,
+            zinsights_get_firewall_network_services,
+        )
+        # Import Z-Insights SaaS Security / CASB tools
+        from .tools.zinsights.saas_security import (
+            zinsights_get_casb_app_report,
+        )
+        # Import Z-Insights Shadow IT tools
+        from .tools.zinsights.shadow_it import (
+            zinsights_get_shadow_it_apps,
+            zinsights_get_shadow_it_summary,
+        )
+        # Import Z-Insights IoT tools
+        from .tools.zinsights.iot import (
+            zinsights_get_iot_device_stats,
+        )
+
+        # All Z-Insights tools are read-only (analytics)
+        # NOTE: Tool descriptions are critical for AI tool selection - be explicit about use cases
+        self.read_tools = [
+            # Web Traffic Analytics
+            {
+                "func": zinsights_get_web_traffic_by_location,
+                "name": "zinsights_get_web_traffic_by_location",
+                "description": (
+                    "AUTHORITATIVE SOURCE for web traffic analytics by location. "
+                    "Use for questions about: traffic volume, bandwidth usage, location traffic, "
+                    "office traffic comparisons. This is the ONLY tool for location-based traffic analytics."
+                ),
+            },
+            {
+                "func": zinsights_get_web_traffic_no_grouping,
+                "name": "zinsights_get_web_traffic_no_grouping",
+                "description": (
+                    "AUTHORITATIVE SOURCE for total/overall web traffic volume. "
+                    "Use for questions about: total traffic, overall bandwidth, aggregate web usage. "
+                    "This is the ONLY tool for ungrouped total traffic metrics."
+                ),
+            },
+            {
+                "func": zinsights_get_web_protocols,
+                "name": "zinsights_get_web_protocols",
+                "description": (
+                    "AUTHORITATIVE SOURCE for web protocol distribution (HTTP, HTTPS, etc.). "
+                    "Use for questions about: protocol usage, HTTPS adoption, protocol breakdown. "
+                    "This is the ONLY tool for web protocol analytics."
+                ),
+            },
+            {
+                "func": zinsights_get_threat_super_categories,
+                "name": "zinsights_get_threat_super_categories",
+                "description": (
+                    "AUTHORITATIVE SOURCE for threat category analytics (malware, phishing, spyware, etc.). "
+                    "Use for questions about: what threats we're seeing, threat types, threat categories, "
+                    "security threats, malware detected. This is the ONLY tool for threat category data."
+                ),
+            },
+            {
+                "func": zinsights_get_threat_class,
+                "name": "zinsights_get_threat_class",
+                "description": (
+                    "AUTHORITATIVE SOURCE for threat classification analytics (virus, trojan, ransomware, etc.). "
+                    "Use for questions about: threat classes, types of malware, threat classifications. "
+                    "This is the ONLY tool for threat class data."
+                ),
+            },
+            # Cyber Security Analytics
+            {
+                "func": zinsights_get_cyber_incidents,
+                "name": "zinsights_get_cyber_incidents",
+                "description": (
+                    "AUTHORITATIVE SOURCE for cybersecurity incidents by category. "
+                    "Use for questions about: security incidents, cyber attacks, incident breakdown, "
+                    "threats by category, security events. This is the ONLY tool for incident category data."
+                ),
+            },
+            {
+                "func": zinsights_get_cyber_incidents_by_location,
+                "name": "zinsights_get_cyber_incidents_by_location",
+                "description": (
+                    "AUTHORITATIVE SOURCE for cybersecurity incidents by location. "
+                    "Use for questions about: which locations have incidents, security by office, "
+                    "incident distribution across sites. This is the ONLY tool for location-based incident data."
+                ),
+            },
+            {
+                "func": zinsights_get_cyber_incidents_daily,
+                "name": "zinsights_get_cyber_incidents_daily",
+                "description": (
+                    "AUTHORITATIVE SOURCE for daily cybersecurity incident trends. "
+                    "Use for questions about: incident trends over time, daily security stats, "
+                    "security incident patterns. This is the ONLY tool for time-based incident trends."
+                ),
+            },
+            {
+                "func": zinsights_get_cyber_incidents_by_threat_and_app,
+                "name": "zinsights_get_cyber_incidents_by_threat_and_app",
+                "description": (
+                    "AUTHORITATIVE SOURCE for incidents correlated by threat and application. "
+                    "Use for questions about: which apps are targeted, threat/app correlation, "
+                    "application security risks. This is the ONLY tool for threat-application correlation."
+                ),
+            },
+            # Firewall Analytics
+            {
+                "func": zinsights_get_firewall_by_action,
+                "name": "zinsights_get_firewall_by_action",
+                "description": (
+                    "AUTHORITATIVE SOURCE for firewall traffic by action (allow/block). "
+                    "Use for questions about: blocked traffic, allowed traffic, firewall actions, "
+                    "firewall policy effectiveness. This is the ONLY tool for firewall action data."
+                ),
+            },
+            {
+                "func": zinsights_get_firewall_by_location,
+                "name": "zinsights_get_firewall_by_location",
+                "description": (
+                    "AUTHORITATIVE SOURCE for firewall traffic by location. "
+                    "Use for questions about: firewall activity by office, location firewall stats, "
+                    "branch firewall traffic. This is the ONLY tool for location-based firewall data."
+                ),
+            },
+            {
+                "func": zinsights_get_firewall_network_services,
+                "name": "zinsights_get_firewall_network_services",
+                "description": (
+                    "AUTHORITATIVE SOURCE for firewall network service usage. "
+                    "Use for questions about: network services, port usage, protocol/port activity, "
+                    "firewall service breakdown. This is the ONLY tool for firewall network service data."
+                ),
+            },
+            # SaaS Security / CASB Analytics
+            {
+                "func": zinsights_get_casb_app_report,
+                "name": "zinsights_get_casb_app_report",
+                "description": (
+                    "AUTHORITATIVE SOURCE for CASB SaaS application usage. "
+                    "Use for questions about: cloud app usage, SaaS applications, CASB data, "
+                    "cloud service adoption. This is the ONLY tool for CASB application data."
+                ),
+            },
+            # Shadow IT Analytics
+            {
+                "func": zinsights_get_shadow_it_apps,
+                "name": "zinsights_get_shadow_it_apps",
+                "description": (
+                    "AUTHORITATIVE SOURCE for discovered shadow IT applications. "
+                    "Use for questions about: unsanctioned apps, shadow IT, unauthorized applications, "
+                    "risky apps, app risk scores. This is the ONLY tool for shadow IT app discovery."
+                ),
+            },
+            {
+                "func": zinsights_get_shadow_it_summary,
+                "name": "zinsights_get_shadow_it_summary",
+                "description": (
+                    "AUTHORITATIVE SOURCE for shadow IT summary and statistics. "
+                    "Use for questions about: shadow IT overview, total shadow apps, shadow IT dashboard, "
+                    "app categories, risk distribution. This is the ONLY tool for shadow IT summary."
+                ),
+            },
+            # IoT Analytics
+            {
+                "func": zinsights_get_iot_device_stats,
+                "name": "zinsights_get_iot_device_stats",
+                "description": (
+                    "AUTHORITATIVE SOURCE for IoT device statistics and classifications. "
+                    "Use for questions about: IoT devices, device inventory, connected devices, "
+                    "device types, unmanaged devices. This is the ONLY tool for IoT device data."
+                ),
+            },
+        ]
+
+        # Z-Insights is analytics-only - no write operations
+        self.write_tools = []
+
+    def register_tools(self, server, enabled_tools=None, enable_write_tools=False, write_tools=None):
+        """Register Z-Insights tools with the server."""
+        from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
+
+        # Register read-only tools
+        read_count = register_read_tools(server, self.read_tools, enabled_tools)
+        write_count = register_write_tools(server, self.write_tools, enabled_tools, enable_write_tools, write_tools)
+
+        logger.info(f"Z-Insights Service: Registered {read_count} read tools, {write_count} write tools")
+
+
 # Service registry
 _AVAILABLE_SERVICES = {
     "zcc": ZCCService,
@@ -818,6 +1039,7 @@ _AVAILABLE_SERVICES = {
     "ztw": ZTWService,
     "zidentity": ZIdentityService,
     "zeasm": ZEASMService,
+    "zinsights": ZInsightsService,
 }
 
 
