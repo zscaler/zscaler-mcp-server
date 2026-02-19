@@ -12,6 +12,8 @@
   - `network_apps`
   - `network_services_group`
   - `network_services`
+  - `zia_url_lookup`
+  - `zia_list_cloud_app_control_actions`
   
 [PR #29](https://github.com/zscaler/zscaler-mcp-server/pull/29) - Improved search capabilities in the ZIA tool:
   - `device_management`

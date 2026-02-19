@@ -21,7 +21,7 @@
 - [📺 Overview](#overview)
 - [🔒 Security & Permissions](#security-permissions)
 - [Supported Tools](#supported-tools)
-- [Installation & Setup](#installation-setup)
+- [Installation & Setup](#installation--setup)
   - [Prerequisites](#prerequisites)
   - [Environment Configuration](#environment-configuration)
   - [Installation](#installation)
@@ -896,7 +896,7 @@ The deployment guide covers:
 
 This section provides instructions for configuring the Zscaler Integrations MCP Server with popular AI agents. **Before starting, ensure you have:**
 
-1. ✅ Completed [Installation & Setup](#installation-setup)
+1. ✅ Completed [Installation & Setup](#installation--setup)
 2. ✅ Configured [Authentication](#zscaler-api-credentials-authentication)
 3. ✅ Created your `.env` file with credentials
 
@@ -904,7 +904,13 @@ This section provides instructions for configuring the Zscaler Integrations MCP 
 
 You can install the Zscaler MCP Server in Claude Desktop using either method:
 
-#### Option 1: Install as Extension (Recommended)
+> **Windows users**: The one-click extension bundles macOS/Linux binaries and will not work on Windows. Use **Option 2: Manual Configuration** instead—it uses `uvx` to install platform-appropriate packages at runtime. See [Troubleshooting: Windows](docs/guides/TROUBLESHOOTING.md#windows-claude-desktop-extension-fails-to-start) for details.
+
+#### Option 1: Install as Extension (macOS / Linux)
+
+The easiest way to get started—one-click install with a user-friendly UI in Claude Desktop and low barrier to entry.
+
+**Prerequisites:** [uv](https://docs.astral.sh/uv/) must be installed (provides `uvx`). The extension uses uvx to run the server from PyPI at runtime—**no manual `pip install zscaler-mcp` required**. Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
 1. Open Claude Desktop
 2. Go to **Settings** → **Extensions** → **Browse Extensions**
@@ -915,7 +921,7 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
 7. Restart Claude Desktop completely (quit and reopen)
 8. Verify by asking Claude: "What Zscaler tools are available?"
 
-#### Option 2: Manual Configuration
+#### Option 2: Manual Configuration (All platforms, recommended on Windows)
 
 1. Open Claude Desktop
 2. Go to **Settings** → **Developer** → **Edit Config**
@@ -926,13 +932,13 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
   "mcpServers": {
     "zscaler-mcp-server": {
       "command": "uvx",
-      "args": ["--env-file", "/absolute/path/to/your/.env", "zscaler-mcp-server"]
+      "args": ["--env-file", "/absolute/path/to/your/.env", "zscaler-mcp"]
     }
   }
 }
 ```
 
-> **Important**: Replace `/absolute/path/to/your/.env` with the **absolute path** to your `.env` file. Relative paths will not work.
+> **Important**: Replace `/absolute/path/to/your/.env` with the **absolute path** to your `.env` file. On Windows, use a path like `C:\Users\You\.env`. Relative paths will not work.
 
 1. Save the configuration file
 2. Restart Claude Desktop completely (quit and reopen)
@@ -944,6 +950,7 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
 - **"Authentication failed"**: Check that your `.env` file contains valid credentials
 - **Tools not appearing**: Check Claude Desktop logs (Help > View Logs) for errors
 - **Extension not found**: Ensure you're searching in the "Desktop extensions" tab, not "Web"
+- **Windows: `ModuleNotFoundError` (rpds, pydantic_core, etc.)**: The extension bundles macOS/Linux binaries. Use Option 2 (Manual Configuration) instead. See [Troubleshooting guide](docs/guides/TROUBLESHOOTING.md#windows-claude-desktop-extension-fails-to-start).
 
 ### Cursor
 
@@ -1017,8 +1024,12 @@ You can install the Zscaler MCP Server in Claude Desktop using either method:
 
 5. **"Server connection timeout"**
    - Ensure the MCP server can start successfully
-   - Test manually: `uvx --env-file /path/to/.env zscaler-mcp-server`
+   - Test manually: `uvx --env-file /path/to/.env zscaler-mcp`
    - Check for port conflicts if using HTTP transports
+
+6. **Windows: `ModuleNotFoundError: No module named 'rpds.rpds'`** (Claude Desktop extension)
+   - The extension bundles macOS/Linux binaries. Use manual configuration with `uvx zscaler-mcp` instead.
+   - See [Troubleshooting: Windows](docs/guides/TROUBLESHOOTING.md#windows-claude-desktop-extension-fails-to-start).
 
 **Getting Help:**
 
