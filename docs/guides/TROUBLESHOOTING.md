@@ -18,7 +18,7 @@
 
 ### Symptom
 
-```
+```text
 ModuleNotFoundError: No module named 'rpds.rpds'
 ```
 
@@ -49,7 +49,7 @@ On **Windows**, use **Manual Configuration** instead of the one-click extension.
 }
 ```
 
-4. Save and restart Claude Desktop.
+1. Save and restart Claude Desktop.
 
 ### If You Already Installed the Extension
 
