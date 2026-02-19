@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Contributing Guide" href="contributing.html" /><link rel="prev" title="Support Guide" href="support.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="API Reference" href="../api/index.html" /><link rel="prev" title="Support Guide" href="support.html" />
         <link rel="prefetch" href="../_static/logo.svg" as="image" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
@@ -211,6 +211,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -220,7 +221,6 @@
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -276,8 +276,8 @@
 <section id="zscaler-integrations-mcp-server-changelog">
 <h2>Zscaler Integrations MCP Server Changelog<a class="headerlink" href="#zscaler-integrations-mcp-server-changelog" title="Link to this heading">¶</a></h2>
 </section>
-<section id="november-19-2025">
-<h2>0.4.0 (November 19, 2025)<a class="headerlink" href="#november-19-2025" title="Link to this heading">¶</a></h2>
+<section id="december-16-2025-z-insights-analytics-integration">
+<h2>0.6.1 (December 16, 2025) - Z-Insights Analytics Integration<a class="headerlink" href="#december-16-2025-z-insights-analytics-integration" title="Link to this heading">¶</a></h2>
 <section id="notes">
 <h3>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h3>
 <ul class="simple">
@@ -286,6 +286,114 @@
 </section>
 <section id="enhancements">
 <h3>Enhancements<a class="headerlink" href="#enhancements" title="Link to this heading">¶</a></h3>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - ✨ Added Z-Insights Analytics service with 16 read-only tools for Zscaler analytics via GraphQL API
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_web_traffic_by_location</span></code> - Get web traffic analytics grouped by location
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_web_traffic_no_grouping</span></code> - Get overall web traffic volume metrics
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_web_protocols</span></code> - Get web traffic by protocol (HTTP, HTTPS, SSL)
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_threat_super_categories</span></code> - Get threat super categories (malware, phishing, spyware)
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_threat_class</span></code> - Get detailed threat class breakdown
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents</span></code> - Get cybersecurity incidents by category
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_by_location</span></code> - Get cybersecurity incidents grouped by location
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_daily</span></code> - Get daily cybersecurity incident trends
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_by_threat_and_app</span></code> - Get incidents correlated by threat and application
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_by_action</span></code> - Get Zero Trust Firewall traffic by action (allow/block)
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_by_location</span></code> - Get firewall traffic grouped by location
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_network_services</span></code> - Get firewall network service usage
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_casb_app_report</span></code> - Get CASB SaaS application usage report
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_shadow_it_apps</span></code> - Get discovered shadow IT applications with risk scores
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_shadow_it_summary</span></code> - Get shadow IT summary statistics and groupings
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added <code class="docutils literal notranslate"><span class="pre">zinsights_get_iot_device_stats</span></code> - Get IoT device statistics and classifications</p>
+</section>
+<section id="bug-fixes">
+<h3>Bug Fixes<a class="headerlink" href="#bug-fixes" title="Link to this heading">¶</a></h3>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Fixed Z-Insights time interval defaults - changed from invalid intervals (5-day, 12-day) to valid 7 or 14-day intervals required by the API
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Fixed Z-Insights tools to return structured “no data” responses instead of throwing exceptions when API returns empty results
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Fixed Z-Insights tools to handle GraphQL errors gracefully (checking response body for errors even with HTTP 200 status)
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Fixed Z-Insights time range validation to ensure <code class="docutils literal notranslate"><span class="pre">end_time</span></code> is at least 1 day in the past for data availability
+<a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/22">PR #22</a> - Added auto-adjustment logic for Z-Insights time intervals to automatically correct invalid intervals to nearest valid 7 or 14-day interval</p>
+</section>
+</section>
+<section id="december-8-2025-aws-kiro-power-integration">
+<h2>0.6.0 (December 8, 2025) - AWS Kiro Power Integration<a class="headerlink" href="#december-8-2025-aws-kiro-power-integration" title="Link to this heading">¶</a></h2>
+<section id="id23">
+<h3>Notes<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+</section>
+<section id="id24">
+<h3>Enhancements<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/21">PR #21</a> - ✨ Added AWS Kiro Power integration for AI-assisted Zscaler platform management within the Kiro IDE. Includes POWER.md, mcp.json, and service-specific steering files for ZPA, ZIA, ZDX, ZCC, ZTW, EASM, and ZIdentity.</p>
+</section>
+</section>
+<section id="november-22-2025-aws-bedrock-agentcore-security-enhancement">
+<h2>0.5.0 (November 22, 2025) - AWS Bedrock AgentCore Security Enhancement<a class="headerlink" href="#november-22-2025-aws-bedrock-agentcore-security-enhancement" title="Link to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This release contains enhancements specific to <strong>AWS Bedrock AgentCore deployments only</strong>. These changes are maintained in a separate private AWS-specific repository and do <strong>not</strong> modify the core Zscaler MCP Server in this repository. Standard MCP server functionality remains unchanged.</p>
+</div>
+<section id="id25">
+<h3>Notes<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+</section>
+<section id="id26">
+<h3>Enhancements<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - 🔐 AWS Bedrock AgentCore Security Enhancements</p>
+<p><strong>Container-Based Secrets Manager Integration:</strong></p>
+<ul class="simple">
+<li><p>Container retrieves Zscaler API credentials from AWS Secrets Manager at runtime</p></li>
+<li><p><strong>Zero credentials exposed</strong> in AgentCore configuration, CloudFormation templates, or deployment scripts</p></li>
+<li><p>Secrets encrypted at rest with AWS KMS and in transit via TLS</p></li>
+<li><p>Full CloudTrail audit logging for all secret access</p></li>
+<li><p>Backward compatible - supports both Secrets Manager and direct environment variable approaches</p></li>
+</ul>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - <strong>CloudFormation Automation:</strong></p>
+<ul class="simple">
+<li><p>One-click deployment via Launch Stack button</p></li>
+<li><p>Automated AgentCore runtime deployment with conditional secret creation</p></li>
+<li><p>IAM execution roles with Secrets Manager permissions automatically configured</p></li>
+</ul>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Added ZEASM (External Attack Surface Management) service with 7 read-only tools:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_list_organizations</span></code> - List all EASM organizations configured for the tenant</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_list_findings</span></code> - List all findings for an organization’s internet-facing assets</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_finding_details</span></code> - Get detailed information for a specific finding</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_finding_evidence</span></code> - Get scan evidence attributed to a specific finding</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_finding_scan_output</span></code> - Get complete scan output for a specific finding</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_list_lookalike_domains</span></code> - List all lookalike domains detected for an organization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_lookalike_domain</span></code> - Get details for a specific lookalike domain</p></li>
+</ul>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Updated README.md with EASM tools documentation</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Created EASM documentation in <code class="docutils literal notranslate"><span class="pre">docsrc/tools/easm/index.rst</span></code></p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Updated <code class="docutils literal notranslate"><span class="pre">docsrc/tools/index.rst</span></code> with EASM service reference</p>
+</section>
+<section id="id32">
+<h3>Bug Fixes<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h3>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_list_alerts</span></code> calling wrong SDK method (<code class="docutils literal notranslate"><span class="pre">alerts.read</span></code> → <code class="docutils literal notranslate"><span class="pre">alerts.list_ongoing</span></code>)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_list_alert_affected_devices</span></code> calling wrong SDK method (<code class="docutils literal notranslate"><span class="pre">alerts.read_affected_devices</span></code> → <code class="docutils literal notranslate"><span class="pre">alerts.list_affected_devices</span></code>)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_list_application_users</span></code> calling wrong SDK method (<code class="docutils literal notranslate"><span class="pre">apps.list_users</span></code> → <code class="docutils literal notranslate"><span class="pre">apps.list_app_users</span></code>)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_get_application_user</span></code> calling wrong SDK method and incorrect return handling (<code class="docutils literal notranslate"><span class="pre">apps.get_user</span></code> → <code class="docutils literal notranslate"><span class="pre">apps.get_app_user</span></code>)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_list_software</span></code> calling wrong SDK method and incorrect return handling (<code class="docutils literal notranslate"><span class="pre">inventory.list_software</span></code> → <code class="docutils literal notranslate"><span class="pre">inventory.list_softwares</span></code>)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_get_software_details</span></code> calling wrong SDK method (<code class="docutils literal notranslate"><span class="pre">inventory.get_software</span></code> → <code class="docutils literal notranslate"><span class="pre">inventory.list_software_keys</span></code>)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed ZDX <code class="docutils literal notranslate"><span class="pre">zdx_get_device_deep_trace</span></code> incorrect return handling (SDK returns list, not single object)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed syntax error in <code class="docutils literal notranslate"><span class="pre">services.py</span></code> ZIdentityService (missing <code class="docutils literal notranslate"><span class="pre">description</span></code> key in tool registration)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed EASM tools incorrect <code class="docutils literal notranslate"><span class="pre">use_legacy</span></code> parameter handling (removed invalid syntax)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Fixed <code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> incorrectly required for non-ZPA services (now only required for ZPA)</p>
+<p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/20">PR #20</a> - Updated ZDX unit tests to match corrected SDK method names (42 tests)</p>
+</section>
+</section>
+<section id="november-19-2025">
+<h2>0.4.0 (November 19, 2025)<a class="headerlink" href="#november-19-2025" title="Link to this heading">¶</a></h2>
+<section id="id44">
+<h3>Notes<a class="headerlink" href="#id44" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
+</ul>
+</section>
+<section id="id45">
+<h3>Enhancements<a class="headerlink" href="#id45" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/16">PR #16</a></dt><dd><ul class="simple">
 <li><p>Split the ZIA sandbox helper into dedicated tools (<cite>zia_get_sandbox_quota</cite>, <cite>zia_get_sandbox_behavioral_analysis</cite>, <cite>zia_get_sandbox_file_hash_count</cite>, <cite>zia_get_sandbox_report</cite>) so MCP clients can directly invoke quota/report endpoints.</p></li>
@@ -304,14 +412,14 @@
 </section>
 <section id="november-4-2025">
 <h2>0.3.2 (November 4, 2025)<a class="headerlink" href="#november-4-2025" title="Link to this heading">¶</a></h2>
-<section id="id4">
-<h3>Notes<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="id48">
+<h3>Notes<a class="headerlink" href="#id48" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>Enhancements<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id49">
+<h3>Enhancements<a class="headerlink" href="#id49" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/pull/15">PR #15</a></dt><dd><ul class="simple">
 <li><p>Added custom User-Agent header support with format <cite>zscaler-mcp-server/VERSION python/VERSION os/arch</cite>. Users can append AI agent information via <cite>–user-agent-comment</cite> flag or <cite>ZSCALER_MCP_USER_AGENT_COMMENT</cite> environment variable.</p></li>
@@ -359,8 +467,8 @@
 </section>
 <section id="october-27-2025-security-confirmation-release">
 <h2>0.3.0 (October 27, 2025) - Security &amp; Confirmation Release<a class="headerlink" href="#october-27-2025-security-confirmation-release" title="Link to this heading">¶</a></h2>
-<section id="id6">
-<h3>Notes<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id50">
+<h3>Notes<a class="headerlink" href="#id50" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
@@ -389,8 +497,8 @@
 <li><p>Prevents irreversible actions from being executed accidentally</p></li>
 </ul>
 </section>
-<section id="id7">
-<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<section id="id51">
+<h3>Added<a class="headerlink" href="#id51" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">zscaler_mcp/common/tool_helpers.py</span></code>: Registration utilities for read/write tools with annotations</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">zscaler_mcp/common/elicitation.py</span></code>: Confirmation logic for delete operations</p></li>
@@ -442,8 +550,8 @@
 <section id="september-18-2025">
 <h2>0.2.1 (September 18, 2025)<a class="headerlink" href="#september-18-2025" title="Link to this heading">¶</a></h2>
 </section>
-<section id="id8">
-<h2>Notes<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
+<section id="id52">
+<h2>Notes<a class="headerlink" href="#id52" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
@@ -454,11 +562,11 @@
 <li><p>Updated GitHub workflows to include linter checks in release process</p></li>
 </ul>
 </section>
-<section id="id9">
-<h2>0.2.0 (September 18, 2025)<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
+<section id="id53">
+<h2>0.2.0 (September 18, 2025)<a class="headerlink" href="#id53" title="Link to this heading">¶</a></h2>
 </section>
-<section id="id10">
-<h2>Notes<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
+<section id="id54">
+<h2>Notes<a class="headerlink" href="#id54" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
@@ -487,13 +595,13 @@
 <section id="august-15-2025-initial-release">
 <h2>0.1.0 (August 15, 2025) - Initial Release<a class="headerlink" href="#august-15-2025-initial-release" title="Link to this heading">¶</a></h2>
 </section>
-<section id="id13">
-<h2>Notes<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h2>
+<section id="id57">
+<h2>Notes<a class="headerlink" href="#id57" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Python Versions: <strong>v3.11, v3.12, v3.13</strong></p></li>
 </ul>
-<section id="id14">
-<h3>Added<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<section id="id58">
+<h3>Added<a class="headerlink" href="#id58" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Initial implementation for the zscaler-mcp server (<a class="reference external" href="https://github.com/zscaler/zscaler-mcp/issues/1">#1</a>)</p></li>
 <li><p>Support for Zscaler services: <code class="docutils literal notranslate"><span class="pre">zcc</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx</span></code>, <code class="docutils literal notranslate"><span class="pre">zia</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa</span></code>, <code class="docutils literal notranslate"><span class="pre">zidentity</span></code> (<a class="reference external" href="https://github.com/zscaler/zscaler-mcp/issues/1">#1</a>)</p></li>
@@ -513,16 +621,16 @@
 </li>
 </ul>
 </section>
-<section id="id21">
-<h3>Changed<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
+<section id="id65">
+<h3>Changed<a class="headerlink" href="#id65" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed import sorting and linting issues</p></li>
 <li><p>Simplified project structure by removing unnecessary nesting</p></li>
 <li><p>Updated test organization for better maintainability</p></li>
 </ul>
 </section>
-<section id="id22">
-<h3>Documentation<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<section id="id66">
+<h3>Documentation<a class="headerlink" href="#id66" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Updated README ZIA Features to include the new tools (<code class="docutils literal notranslate"><span class="pre">zia_user_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_user_departments</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_users</span></code>).</p></li>
 </ul>
@@ -535,12 +643,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="contributing.html">
+          <a class="next-page" href="../api/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Contributing Guide</div>
+                <div class="title">API Reference</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -587,40 +695,57 @@
             <ul>
 <li><a class="reference internal" href="#">Release Notes</a><ul>
 <li><a class="reference internal" href="#zscaler-integrations-mcp-server-changelog">Zscaler Integrations MCP Server Changelog</a></li>
-<li><a class="reference internal" href="#november-19-2025">0.4.0 (November 19, 2025)</a><ul>
+<li><a class="reference internal" href="#december-16-2025-z-insights-analytics-integration">0.6.1 (December 16, 2025) - Z-Insights Analytics Integration</a><ul>
 <li><a class="reference internal" href="#notes">Notes</a></li>
 <li><a class="reference internal" href="#enhancements">Enhancements</a></li>
+<li><a class="reference internal" href="#bug-fixes">Bug Fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#december-8-2025-aws-kiro-power-integration">0.6.0 (December 8, 2025) - AWS Kiro Power Integration</a><ul>
+<li><a class="reference internal" href="#id23">Notes</a></li>
+<li><a class="reference internal" href="#id24">Enhancements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#november-22-2025-aws-bedrock-agentcore-security-enhancement">0.5.0 (November 22, 2025) - AWS Bedrock AgentCore Security Enhancement</a><ul>
+<li><a class="reference internal" href="#id25">Notes</a></li>
+<li><a class="reference internal" href="#id26">Enhancements</a></li>
+<li><a class="reference internal" href="#id32">Bug Fixes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#november-19-2025">0.4.0 (November 19, 2025)</a><ul>
+<li><a class="reference internal" href="#id44">Notes</a></li>
+<li><a class="reference internal" href="#id45">Enhancements</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#november-4-2025">0.3.2 (November 4, 2025)</a><ul>
-<li><a class="reference internal" href="#id4">Notes</a></li>
-<li><a class="reference internal" href="#id5">Enhancements</a></li>
+<li><a class="reference internal" href="#id48">Notes</a></li>
+<li><a class="reference internal" href="#id49">Enhancements</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#october-28-2025-tool-registration-naming-updates">0.3.1 (October 28, 2025) - Tool Registration &amp; Naming Updates</a></li>
 <li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#october-27-2025-security-confirmation-release">0.3.0 (October 27, 2025) - Security &amp; Confirmation Release</a><ul>
-<li><a class="reference internal" href="#id6">Notes</a></li>
+<li><a class="reference internal" href="#id50">Notes</a></li>
 <li><a class="reference internal" href="#security-enhancements">Security Enhancements</a></li>
-<li><a class="reference internal" href="#id7">Added</a></li>
+<li><a class="reference internal" href="#id51">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#september-18-2025">0.2.1 (September 18, 2025)</a></li>
-<li><a class="reference internal" href="#id8">Notes</a></li>
-<li><a class="reference internal" href="#id9">0.2.0 (September 18, 2025)</a></li>
-<li><a class="reference internal" href="#id10">Notes</a><ul>
+<li><a class="reference internal" href="#id52">Notes</a></li>
+<li><a class="reference internal" href="#id53">0.2.0 (September 18, 2025)</a></li>
+<li><a class="reference internal" href="#id54">Notes</a><ul>
 <li><a class="reference internal" href="#new-zcc-mcp-tools">NEW ZCC MCP Tools</a></li>
 <li><a class="reference internal" href="#new-ztw-mcp-tools">NEW ZTW MCP Tools</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#august-15-2025-initial-release">0.1.0 (August 15, 2025) - Initial Release</a></li>
-<li><a class="reference internal" href="#id13">Notes</a><ul>
-<li><a class="reference internal" href="#id14">Added</a></li>
-<li><a class="reference internal" href="#id21">Changed</a></li>
-<li><a class="reference internal" href="#id22">Documentation</a></li>
+<li><a class="reference internal" href="#id57">Notes</a><ul>
+<li><a class="reference internal" href="#id58">Added</a></li>
+<li><a class="reference internal" href="#id65">Changed</a></li>
+<li><a class="reference internal" href="#id66">Documentation</a></li>
 </ul>
 </li>
 </ul>
@@ -634,7 +759,7 @@
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

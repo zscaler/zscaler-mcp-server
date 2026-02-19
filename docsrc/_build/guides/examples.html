@@ -211,6 +211,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -220,7 +221,6 @@
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -552,6 +552,163 @@
 <li><p>“Get group details and member information”</p></li>
 </ul>
 </section>
+<section id="zscaler-external-attack-surface-management-easm-examples">
+<h2>Zscaler External Attack Surface Management (EASM) Examples<a class="headerlink" href="#zscaler-external-attack-surface-management-easm-examples" title="Link to this heading">¶</a></h2>
+<p><strong>Organization Management:</strong></p>
+<ul class="simple">
+<li><p>“List all EASM organizations configured for my tenant”</p></li>
+<li><p>“Show me the organizations being monitored by EASM”</p></li>
+<li><p>“What organizations are configured in my EASM environment?”</p></li>
+</ul>
+<p><strong>Findings and Vulnerabilities:</strong></p>
+<ul class="simple">
+<li><p>“List all findings for organization ID 12345”</p></li>
+<li><p>“Show me security findings for our external assets”</p></li>
+<li><p>“What vulnerabilities have been discovered on our internet-facing assets?”</p></li>
+<li><p>“Get details for finding ID 67890”</p></li>
+<li><p>“Show me the evidence for a specific security finding”</p></li>
+<li><p>“Get the complete scan output for finding ID 11111”</p></li>
+<li><p>“List all high-severity findings across our external attack surface”</p></li>
+<li><p>“Show me findings related to exposed services”</p></li>
+</ul>
+<p><strong>Lookalike Domain Monitoring:</strong></p>
+<ul class="simple">
+<li><p>“List all lookalike domains detected for organization ID 12345”</p></li>
+<li><p>“Show me domains that are impersonating our brand”</p></li>
+<li><p>“What phishing domains have been detected targeting our organization?”</p></li>
+<li><p>“Get details for lookalike domain ID 22222”</p></li>
+<li><p>“Show me recently detected lookalike domains”</p></li>
+<li><p>“List all active lookalike domain threats”</p></li>
+<li><p>“Are there any domains similar to our company name being used maliciously?”</p></li>
+</ul>
+</section>
+<section id="z-insights-analytics-examples">
+<h2>Z-Insights Analytics Examples<a class="headerlink" href="#z-insights-analytics-examples" title="Link to this heading">¶</a></h2>
+<p>Z-Insights provides analytics and reporting capabilities through Zscaler’s GraphQL-based analytics API.
+These tools provide read-only access to historical traffic and security data across 16 specialized analytics tools.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Z-Insights data has a 24-48 hour processing delay. When querying data, use time ranges
+that end at least 2 days ago for accurate results. Use <code class="docutils literal notranslate"><span class="pre">start_days_ago</span></code> and <code class="docutils literal notranslate"><span class="pre">end_days_ago</span></code>
+parameters for easy time range specification.</p>
+</div>
+<p><strong>Available Z-Insights Domains:</strong></p>
+<ul class="simple">
+<li><p>WEB_TRAFFIC: Web traffic analytics and threat data</p></li>
+<li><p>CYBER_SECURITY: Cybersecurity incidents and threat analysis</p></li>
+<li><p>ZERO_TRUST_FIREWALL: Firewall activity and rule analytics</p></li>
+<li><p>SAAS_SECURITY: Cloud Access Security Broker (CASB) data</p></li>
+<li><p>SHADOW_IT: Unsanctioned application discovery</p></li>
+<li><p>IOT: IoT device visibility and statistics</p></li>
+</ul>
+<p><strong>Web Traffic Analytics (5 tools):</strong></p>
+<ul class="simple">
+<li><p>“What’s our total web traffic volume for the past week?”</p></li>
+<li><p>“Show me web traffic by location for the last 7 days”</p></li>
+<li><p>“Which office locations have the highest web traffic?”</p></li>
+<li><p>“What’s the traffic distribution across our branch offices?”</p></li>
+<li><p>“Show me traffic trends for the past 14 days”</p></li>
+<li><p>“How much bandwidth are we using across all locations?”</p></li>
+<li><p>“Compare traffic volume between different office locations”</p></li>
+<li><p>“Get web traffic in bytes instead of transactions”</p></li>
+<li><p>“Show me overall traffic without any grouping”</p></li>
+<li><p>“What’s our total bandwidth consumption this month?”</p></li>
+</ul>
+<p><strong>Protocol Analysis:</strong></p>
+<ul class="simple">
+<li><p>“What protocols are being used in our web traffic?”</p></li>
+<li><p>“Show me HTTP vs HTTPS traffic distribution”</p></li>
+<li><p>“What’s our SSL/TLS adoption rate?”</p></li>
+<li><p>“Are there any non-HTTPS protocols being used?”</p></li>
+<li><p>“Show me protocol usage trends over the past week”</p></li>
+<li><p>“What percentage of traffic is encrypted?”</p></li>
+<li><p>“List all protocols with transaction counts”</p></li>
+</ul>
+<p><strong>Threat Analytics:</strong></p>
+<ul class="simple">
+<li><p>“What types of threats are we seeing?”</p></li>
+<li><p>“Show me threat categories detected in our traffic”</p></li>
+<li><p>“What malware types have been detected?”</p></li>
+<li><p>“Are there any phishing attempts in our traffic?”</p></li>
+<li><p>“Show me threat super categories for the past week”</p></li>
+<li><p>“What’s our threat detection breakdown by category?”</p></li>
+<li><p>“List all security threats detected recently”</p></li>
+<li><p>“Show me top 10 threat categories by volume”</p></li>
+<li><p>“What spyware has been blocked?”</p></li>
+</ul>
+<p><strong>Threat Classification:</strong></p>
+<ul class="simple">
+<li><p>“What threat classes are present in our traffic?”</p></li>
+<li><p>“Show me virus and spyware detections”</p></li>
+<li><p>“Are there any advanced threats detected?”</p></li>
+<li><p>“What’s the distribution of threat types?”</p></li>
+<li><p>“Show me behavioral analysis detections”</p></li>
+<li><p>“List threat classes for the past 14 days”</p></li>
+<li><p>“How many threats were in the VIRUS_SPYWARE class?”</p></li>
+</ul>
+<p><strong>Cyber Security Incidents (4 tools):</strong></p>
+<ul class="simple">
+<li><p>“Show me cybersecurity incidents from the past two weeks”</p></li>
+<li><p>“What security incidents have we had by category?”</p></li>
+<li><p>“Which locations have the most security incidents?”</p></li>
+<li><p>“Show me daily security incident trends”</p></li>
+<li><p>“What applications are being targeted by threats?”</p></li>
+<li><p>“Give me a breakdown of incidents by threat category”</p></li>
+<li><p>“How many cyber incidents did we have per day last month?”</p></li>
+<li><p>“Which departments have the most security incidents?”</p></li>
+<li><p>“Show me incident correlation between threats and applications”</p></li>
+<li><p>“What’s the security incident trend over the past 30 days?”</p></li>
+<li><p>“Group incidents by user to find risky employees”</p></li>
+<li><p>“Show incidents by source country”</p></li>
+<li><p>“Which apps have the most threat-related incidents?”</p></li>
+</ul>
+<p><strong>Firewall Analytics (3 tools):</strong></p>
+<ul class="simple">
+<li><p>“Show me firewall traffic by action”</p></li>
+<li><p>“How much traffic is being blocked vs allowed?”</p></li>
+<li><p>“Which locations have the most firewall activity?”</p></li>
+<li><p>“What network services are being used through the firewall?”</p></li>
+<li><p>“Show me firewall stats by location”</p></li>
+<li><p>“What’s our firewall block rate?”</p></li>
+<li><p>“List network services with traffic volumes”</p></li>
+<li><p>“Which locations generate the most firewall logs?”</p></li>
+<li><p>“Show me allowed vs blocked traffic ratio”</p></li>
+</ul>
+<p><strong>SaaS Security / CASB (1 tool):</strong></p>
+<ul class="simple">
+<li><p>“What SaaS applications are being used?”</p></li>
+<li><p>“Show me CASB application report”</p></li>
+<li><p>“Which cloud apps have the most usage?”</p></li>
+<li><p>“List cloud applications monitored by CASB”</p></li>
+<li><p>“What’s our cloud app usage by transaction count?”</p></li>
+<li><p>“Show me top 20 SaaS applications”</p></li>
+</ul>
+<p><strong>Shadow IT Analytics (2 tools):</strong></p>
+<ul class="simple">
+<li><p>“What shadow IT applications have been discovered?”</p></li>
+<li><p>“Show me unsanctioned apps being used”</p></li>
+<li><p>“Give me a shadow IT summary”</p></li>
+<li><p>“What high-risk shadow applications are in use?”</p></li>
+<li><p>“Show me shadow IT apps by risk score”</p></li>
+<li><p>“How much data is being transferred to shadow apps?”</p></li>
+<li><p>“What’s our total shadow IT exposure?”</p></li>
+<li><p>“Show me shadow apps grouped by category”</p></li>
+<li><p>“How many shadow apps are sanctioned vs unsanctioned?”</p></li>
+<li><p>“What’s the total data uploaded to shadow IT apps?”</p></li>
+<li><p>“Show me shadow IT apps with risk index above 5”</p></li>
+</ul>
+<p><strong>IoT Device Analytics (1 tool):</strong></p>
+<ul class="simple">
+<li><p>“How many IoT devices are on our network?”</p></li>
+<li><p>“Show me IoT device statistics”</p></li>
+<li><p>“What types of IoT devices are connected?”</p></li>
+<li><p>“List IoT device classifications”</p></li>
+<li><p>“Are there any unclassified devices?”</p></li>
+<li><p>“How many unmanaged user devices do we have?”</p></li>
+<li><p>“What’s the breakdown of IoT vs user vs server devices?”</p></li>
+<li><p>“Show me device categories like cameras, printers”</p></li>
+</ul>
+</section>
 </section>
 
         </article>
@@ -616,6 +773,8 @@
 <li><a class="reference internal" href="#zscaler-private-access-zpa-examples">Zscaler Private Access (ZPA) Examples</a></li>
 <li><a class="reference internal" href="#zscaler-cloud-branch-connector-ztw-examples">Zscaler Cloud &amp; Branch Connector (ZTW) Examples</a></li>
 <li><a class="reference internal" href="#zscaler-identity-zidentity-examples">Zscaler Identity (ZIdentity) Examples</a></li>
+<li><a class="reference internal" href="#zscaler-external-attack-surface-management-easm-examples">Zscaler External Attack Surface Management (EASM) Examples</a></li>
+<li><a class="reference internal" href="#z-insights-analytics-examples">Z-Insights Analytics Examples</a></li>
 </ul>
 </li>
 </ul>
@@ -627,7 +786,7 @@
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

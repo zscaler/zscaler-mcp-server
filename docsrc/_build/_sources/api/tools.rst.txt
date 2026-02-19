@@ -273,6 +273,31 @@ ZIdentity Tools
    :undoc-members:
    :show-inheritance:
 
+EASM Tools
+~~~~~~~~~~
+
+External Attack Surface Management (EASM) tools for monitoring your organization's internet-facing assets.
+
+.. note::
+
+   EASM tools are **read-only** and do not support the ``use_legacy`` parameter.
+   EASM does not require ``ZSCALER_CUSTOMER_ID``.
+
+.. automodule:: zscaler_mcp.tools.easm.organizations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: zscaler_mcp.tools.easm.findings
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: zscaler_mcp.tools.easm.lookalike_domains
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Tool Usage Examples
 -------------------
 
