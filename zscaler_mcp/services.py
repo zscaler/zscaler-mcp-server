@@ -391,6 +391,7 @@ class ZIAService(BaseService):
             zia_list_cloud_application_custom_tags,
             zia_list_cloud_applications,
         )
+        from .tools.zia.cloud_app_control import zia_list_cloud_app_control_actions
         from .tools.zia.device_management import (
             zia_list_device_groups,
             zia_list_devices,
@@ -496,6 +497,7 @@ class ZIAService(BaseService):
             zia_get_url_category,
             zia_list_url_categories,
             zia_remove_urls_from_category,
+            zia_url_lookup,
             zia_update_url_category,
         )
         from .tools.zia.url_filtering_rules import (
@@ -565,6 +567,7 @@ class ZIAService(BaseService):
             # URL Categories
             {"func": zia_list_url_categories, "name": "zia_list_url_categories", "description": "List ZIA URL categories (read-only)"},
             {"func": zia_get_url_category, "name": "zia_get_url_category", "description": "Get a specific ZIA URL category by ID (read-only)"},
+            {"func": zia_url_lookup, "name": "zia_url_lookup", "description": "Look up URL category for given URLs (read-only)"},
             # Rule Labels
             {"func": zia_list_rule_labels, "name": "zia_list_rule_labels", "description": "List ZIA rule labels (read-only)"},
             {"func": zia_get_rule_label, "name": "zia_get_rule_label", "description": "Get a specific ZIA rule label by ID (read-only)"},
@@ -590,6 +593,8 @@ class ZIAService(BaseService):
             # Cloud Applications
             {"func": zia_list_cloud_applications, "name": "zia_list_cloud_applications", "description": "List ZIA cloud applications (read-only)"},
             {"func": zia_list_cloud_application_custom_tags, "name": "zia_list_cloud_application_custom_tags", "description": "List ZIA cloud application custom tags (read-only)"},
+            # Cloud App Control
+            {"func": zia_list_cloud_app_control_actions, "name": "zia_list_cloud_app_control_actions", "description": "List granular actions supported for a Cloud App Control rule type (read-only)"},
             # Device Management
             {"func": zia_list_device_groups, "name": "zia_list_device_groups", "description": "List ZIA device groups with optional device info and pseudo group filtering (read-only)"},
             {"func": zia_list_devices, "name": "zia_list_devices", "description": "List ZIA devices with filtering by name, user, pagination support (read-only)"},
