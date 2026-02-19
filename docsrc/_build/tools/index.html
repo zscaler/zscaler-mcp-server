@@ -211,6 +211,7 @@
 <li class="toctree-l2"><a class="reference internal" href="zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -220,7 +221,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -285,6 +285,7 @@
 <li class="toctree-l1"><a class="reference internal" href="zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </div>
 </section>
@@ -324,8 +325,8 @@
 <h2>Tool Parameters<a class="headerlink" href="#tool-parameters" title="Link to this heading">¶</a></h2>
 <p>Most tools accept the following common parameters:</p>
 <ul class="simple">
-<li><p><strong>use_legacy</strong>: Whether to use legacy API authentication (default: False)</p></li>
-<li><p><strong>service</strong>: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zidentity)</p></li>
+<li><p><strong>use_legacy</strong>: Whether to use legacy API authentication (default: False). Note: EASM does not support legacy authentication.</p></li>
+<li><p><strong>service</strong>: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zidentity, zeasm)</p></li>
 <li><p><strong>page</strong>: Page number for paginated results</p></li>
 <li><p><strong>page_size</strong>: Number of results per page</p></li>
 <li><p><strong>search</strong>: Search string for filtering results</p></li>
@@ -434,7 +435,7 @@
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -386,6 +386,7 @@ class ZIAService(BaseService):
             zia_delete_auth_exempt_urls,
             zia_list_auth_exempt_urls,
         )
+        from .tools.zia.cloud_app_control import zia_list_cloud_app_control_actions
         from .tools.zia.cloud_applications import (
             zia_bulk_update_cloud_applications,
             zia_list_cloud_application_custom_tags,
@@ -397,6 +398,11 @@ class ZIAService(BaseService):
             zia_get_cloud_firewall_rule,
             zia_list_cloud_firewall_rules,
             zia_update_cloud_firewall_rule,
+        )
+        from .tools.zia.device_management import (
+            zia_list_device_groups,
+            zia_list_devices,
+            zia_list_devices_lite,
         )
         from .tools.zia.geo_search import zia_geo_search_tool
         from .tools.zia.get_sandbox_info import (
@@ -445,6 +451,24 @@ class ZIAService(BaseService):
             zia_list_network_app_groups,
             zia_update_network_app_group,
         )
+        from .tools.zia.network_apps import (
+            zia_get_network_app,
+            zia_list_network_apps,
+        )
+        from .tools.zia.network_services import (
+            zia_create_network_service,
+            zia_delete_network_service,
+            zia_get_network_service,
+            zia_list_network_services,
+            zia_update_network_service,
+        )
+        from .tools.zia.network_services_group import (
+            zia_create_network_svc_group,
+            zia_delete_network_svc_group,
+            zia_get_network_svc_group,
+            zia_list_network_svc_groups,
+            zia_update_network_svc_group,
+        )
         from .tools.zia.rule_labels import (
             zia_create_rule_label,
             zia_delete_rule_label,
@@ -474,6 +498,7 @@ class ZIAService(BaseService):
             zia_list_url_categories,
             zia_remove_urls_from_category,
             zia_update_url_category,
+            zia_url_lookup,
         )
         from .tools.zia.url_filtering_rules import (
             zia_create_url_filtering_rule,
@@ -530,9 +555,19 @@ class ZIAService(BaseService):
             # Network App Groups
             {"func": zia_list_network_app_groups, "name": "zia_list_network_app_groups", "description": "List ZIA network application groups (read-only)"},
             {"func": zia_get_network_app_group, "name": "zia_get_network_app_group", "description": "Get a specific ZIA network application group by ID (read-only)"},
+            # Network Applications
+            {"func": zia_list_network_apps, "name": "zia_list_network_apps", "description": "List ZIA network applications with optional filtering by search or locale (read-only)"},
+            {"func": zia_get_network_app, "name": "zia_get_network_app", "description": "Get a specific ZIA network application by ID (read-only)"},
+            # Network Services
+            {"func": zia_list_network_services, "name": "zia_list_network_services", "description": "List ZIA network services with optional filtering by protocol or search (read-only)"},
+            {"func": zia_get_network_service, "name": "zia_get_network_service", "description": "Get a specific ZIA network service by ID (read-only)"},
+            # Network Service Groups
+            {"func": zia_list_network_svc_groups, "name": "zia_list_network_svc_groups", "description": "List ZIA network service groups with optional filtering (read-only)"},
+            {"func": zia_get_network_svc_group, "name": "zia_get_network_svc_group", "description": "Get a specific ZIA network service group by ID (read-only)"},
             # URL Categories
             {"func": zia_list_url_categories, "name": "zia_list_url_categories", "description": "List ZIA URL categories (read-only)"},
             {"func": zia_get_url_category, "name": "zia_get_url_category", "description": "Get a specific ZIA URL category by ID (read-only)"},
+            {"func": zia_url_lookup, "name": "zia_url_lookup", "description": "Look up URL category for given URLs (read-only)"},
             # Rule Labels
             {"func": zia_list_rule_labels, "name": "zia_list_rule_labels", "description": "List ZIA rule labels (read-only)"},
             {"func": zia_get_rule_label, "name": "zia_get_rule_label", "description": "Get a specific ZIA rule label by ID (read-only)"},
@@ -558,6 +593,12 @@ class ZIAService(BaseService):
             # Cloud Applications
             {"func": zia_list_cloud_applications, "name": "zia_list_cloud_applications", "description": "List ZIA cloud applications (read-only)"},
             {"func": zia_list_cloud_application_custom_tags, "name": "zia_list_cloud_application_custom_tags", "description": "List ZIA cloud application custom tags (read-only)"},
+            # Cloud App Control
+            {"func": zia_list_cloud_app_control_actions, "name": "zia_list_cloud_app_control_actions", "description": "List granular actions supported for a Cloud App Control rule type (read-only)"},
+            # Device Management
+            {"func": zia_list_device_groups, "name": "zia_list_device_groups", "description": "List ZIA device groups with optional device info and pseudo group filtering (read-only)"},
+            {"func": zia_list_devices, "name": "zia_list_devices", "description": "List ZIA devices with filtering by name, user, pagination support (read-only)"},
+            {"func": zia_list_devices_lite, "name": "zia_list_devices_lite", "description": "List ZIA devices in lightweight format (ID, name, owner only) (read-only)"},
             # Utilities
             {"func": zia_geo_search_tool, "name": "zia_geo_search", "description": "Perform ZIA geographic lookups (coordinates, IP, or city prefix) (read-only)"},
             {"func": zia_get_sandbox_quota, "name": "zia_get_sandbox_quota", "description": "Retrieve current ZIA sandbox quota information (read-only)"},
@@ -596,6 +637,14 @@ class ZIAService(BaseService):
             {"func": zia_create_network_app_group, "name": "zia_create_network_app_group", "description": "Create a new ZIA network application group (write operation)"},
             {"func": zia_update_network_app_group, "name": "zia_update_network_app_group", "description": "Update an existing ZIA network application group (write operation)"},
             {"func": zia_delete_network_app_group, "name": "zia_delete_network_app_group", "description": "Delete a ZIA network application group (destructive operation)"},
+            # Network Services
+            {"func": zia_create_network_service, "name": "zia_create_network_service", "description": "Create a new ZIA network service with custom TCP/UDP ports (write operation)"},
+            {"func": zia_update_network_service, "name": "zia_update_network_service", "description": "Update an existing ZIA network service (write operation)"},
+            {"func": zia_delete_network_service, "name": "zia_delete_network_service", "description": "Delete a ZIA network service (destructive operation)"},
+            # Network Service Groups
+            {"func": zia_create_network_svc_group, "name": "zia_create_network_svc_group", "description": "Create a new ZIA network service group (write operation)"},
+            {"func": zia_update_network_svc_group, "name": "zia_update_network_svc_group", "description": "Update an existing ZIA network service group (write operation)"},
+            {"func": zia_delete_network_svc_group, "name": "zia_delete_network_svc_group", "description": "Delete a ZIA network service group (destructive operation)"},
             # URL Categories
             {"func": zia_create_url_category, "name": "zia_create_url_category", "description": "Create a new ZIA URL category (write operation)"},
             {"func": zia_update_url_category, "name": "zia_update_url_category", "description": "Update an existing ZIA URL category (write operation)"},

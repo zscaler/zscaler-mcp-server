@@ -211,6 +211,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -220,7 +221,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -273,7 +273,7 @@
         <article role="main" id="furo-main-content">
           <section id="services-api">
 <h1>Services API<a class="headerlink" href="#services-api" title="Link to this heading">¶</a></h1>
-<p>Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, Zidentity).</p>
+<p>Service classes for each Zscaler product (ZCC, ZIA, ZPA, ZDX, ZTW, ZIdentity, EASM, Z-Insights).</p>
 <p id="module-zscaler_mcp.services">Zscaler Integrations MCP Server Services</p>
 <p>This module provides the service classes for the Zscaler Integrations MCP Server.</p>
 <dl class="py class">
@@ -337,6 +337,19 @@
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZEASMService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZEASMService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZEASMService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZEASMService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler External Attack Surface Management (EASM) service.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZEASMService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZEASMService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZEASMService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register EASM tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZIAService">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZIAService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIAService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIAService" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
@@ -358,6 +371,28 @@
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZIdentityService.register_tools">
 <span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIdentityService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIdentityService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZIdentity tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZInsightsService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZInsightsService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZInsightsService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZInsightsService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Z-Insights Analytics service.</p>
+<p>Provides analytics and reporting capabilities through the Z-Insights GraphQL API.
+All tools in this service are read-only operations.</p>
+<p>Available domains in Z-Insights API:
+- WEB_TRAFFIC: Web traffic analytics and threat data
+- CYBER_SECURITY: Cybersecurity incidents and threat analysis
+- ZERO_TRUST_FIREWALL: Firewall activity and rule analytics
+- SAAS_SECURITY: Cloud Access Security Broker (CASB) data
+- SHADOW_IT: Unsanctioned application discovery
+- IOT: IoT device visibility and statistics</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZInsightsService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZInsightsService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZInsightsService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register Z-Insights tools with the server.</p>
 </dd></dl>
 
 </dd></dl>
@@ -752,6 +787,139 @@
 </table>
 </div>
 </section>
+<section id="easm-service">
+<h3>EASM Service<a class="headerlink" href="#easm-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler External Attack Surface Management service for monitoring external assets.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id7">
+<table class="docutils align-default" id="id7">
+<caption><span class="caption-text">EASM Service Methods</span><a class="headerlink" href="#id7" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">list_organizations</span></code></p></td>
+<td><p>List all EASM organizations</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_findings</span></code></p></td>
+<td><p>List security findings for an organization</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_finding</span></code></p></td>
+<td><p>Get details for a specific finding</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_finding_evidence</span></code></p></td>
+<td><p>Get evidence for a finding</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_finding_scan_output</span></code></p></td>
+<td><p>Get complete scan output for a finding</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">list_lookalike_domains</span></code></p></td>
+<td><p>List lookalike domains for an organization</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_lookalike_domain</span></code></p></td>
+<td><p>Get details for a specific lookalike domain</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="z-insights-service">
+<h3>Z-Insights Service<a class="headerlink" href="#z-insights-service" title="Link to this heading">¶</a></h3>
+<p>Zscaler Z-Insights Analytics service for traffic and threat analytics.</p>
+<p>Z-Insights provides read-only analytics through Zscaler’s GraphQL-based analytics API.
+All tools in this service query historical data with a 24-48 hour processing delay.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Z-Insights requires OneAPI authentication (OAuth2). Legacy API keys are not supported.
+Data queries should use time ranges that end at least 2 days ago.</p>
+</div>
+<p><strong>Available Domains:</strong></p>
+<ul class="simple">
+<li><p>WEB_TRAFFIC: Web traffic analytics and threat data</p></li>
+<li><p>CYBER_SECURITY: Cybersecurity incidents and threat analysis</p></li>
+<li><p>ZERO_TRUST_FIREWALL: Firewall activity and rule analytics</p></li>
+<li><p>SAAS_SECURITY: Cloud Access Security Broker (CASB) data</p></li>
+<li><p>SHADOW_IT: Unsanctioned application discovery</p></li>
+<li><p>IOT: IoT device visibility and statistics</p></li>
+</ul>
+<div class="table-wrapper colwidths-given docutils container" id="id8">
+<table class="docutils align-default" id="id8">
+<caption><span class="caption-text">Z-Insights Service Methods (16 tools)</span><a class="headerlink" href="#id8" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_web_traffic_by_location</span></code></p></td>
+<td><p>Get web traffic analytics grouped by location</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_web_traffic_no_grouping</span></code></p></td>
+<td><p>Get total/overall web traffic volume</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_web_protocols</span></code></p></td>
+<td><p>Get web protocol distribution (HTTP, HTTPS, etc.)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_threat_super_categories</span></code></p></td>
+<td><p>Get threat category analytics (malware, phishing, spyware)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_threat_class</span></code></p></td>
+<td><p>Get threat class analytics (virus, trojan, ransomware)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_cyber_incidents</span></code></p></td>
+<td><p>Get cybersecurity incidents by category</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_cyber_incidents_by_location</span></code></p></td>
+<td><p>Get incidents grouped by location, user, app, or department</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_cyber_incidents_daily</span></code></p></td>
+<td><p>Get daily cybersecurity incident trends</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_cyber_incidents_by_threat_and_app</span></code></p></td>
+<td><p>Get incidents correlated by threat category and application</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_firewall_by_action</span></code></p></td>
+<td><p>Get firewall traffic by action (allow/block)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_firewall_by_location</span></code></p></td>
+<td><p>Get firewall traffic grouped by location</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_firewall_network_services</span></code></p></td>
+<td><p>Get firewall network service usage</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_casb_app_report</span></code></p></td>
+<td><p>Get CASB SaaS application usage report</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_shadow_it_apps</span></code></p></td>
+<td><p>Get discovered shadow IT applications</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_shadow_it_summary</span></code></p></td>
+<td><p>Get shadow IT summary statistics</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">get_iot_device_stats</span></code></p></td>
+<td><p>Get IoT device statistics and classifications</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Key Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">start_days_ago</span></code> / <code class="docutils literal notranslate"><span class="pre">end_days_ago</span></code>: Recommended way to specify time range (e.g., 7 to 2 for last week)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">start_time</span></code> / <code class="docutils literal notranslate"><span class="pre">end_time</span></code>: Alternative epoch milliseconds for specific timestamps</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">traffic_unit</span></code>: TRANSACTIONS (request counts) or BYTES (data volume)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">include_trend</span></code>: Include time series trend data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">trend_interval</span></code>: DAY or HOUR for trend granularity</p></li>
+</ul>
+</section>
 </section>
 <section id="usage-examples">
 <h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading">¶</a></h2>
@@ -800,6 +968,49 @@
 
 <span class="c1"># List segment groups</span>
 <span class="n">groups</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">segment_groups</span><span class="o">.</span><span class="n">list_groups</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="z-insights-analytics">
+<h3>Z-Insights Analytics<a class="headerlink" href="#z-insights-analytics" title="Link to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Z-Insights requires OneAPI (OAuth2) authentication</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
+
+<span class="c1"># Get client with OneAPI (not legacy)</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="s2">&quot;zinsights&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get web traffic by location for the past week</span>
+<span class="c1"># Using days_ago approach (recommended)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="c1"># Calculate timestamps: 7 days ago to 2 days ago</span>
+<span class="n">current_time_ms</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">end_time</span> <span class="o">=</span> <span class="n">current_time_ms</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>   <span class="c1"># 2 days ago</span>
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">current_time_ms</span> <span class="o">-</span> <span class="p">(</span><span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># 7 days ago</span>
+
+<span class="c1"># Get traffic by location</span>
+<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zinsights</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_traffic_by_location</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
+    <span class="n">traffic_unit</span><span class="o">=</span><span class="s2">&quot;TRANSACTIONS&quot;</span><span class="p">,</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+
+<span class="c1"># Get threat categories</span>
+<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zinsights</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_threat_super_categories</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
+    <span class="n">traffic_unit</span><span class="o">=</span><span class="s2">&quot;TRANSACTIONS&quot;</span><span class="p">,</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+
+<span class="c1"># Get web protocols distribution</span>
+<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zinsights</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_protocols</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
+    <span class="n">traffic_unit</span><span class="o">=</span><span class="s2">&quot;BYTES&quot;</span><span class="p">,</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">20</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -875,12 +1086,20 @@
 <li><a class="reference internal" href="#zscaler_mcp.services.ZDXService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZDXService.register_tools()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZEASMService"><code class="docutils literal notranslate"><span class="pre">ZEASMService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZEASMService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZEASMService.register_tools()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZIAService"><code class="docutils literal notranslate"><span class="pre">ZIAService</span></code></a><ul>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZIAService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIAService.register_tools()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZIdentityService"><code class="docutils literal notranslate"><span class="pre">ZIdentityService</span></code></a><ul>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZIdentityService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIdentityService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZInsightsService"><code class="docutils literal notranslate"><span class="pre">ZInsightsService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZInsightsService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZInsightsService.register_tools()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZPAService"><code class="docutils literal notranslate"><span class="pre">ZPAService</span></code></a><ul>
@@ -900,11 +1119,14 @@
 <li><a class="reference internal" href="#zdx-service">ZDX Service</a></li>
 <li><a class="reference internal" href="#ztw-service">ZTW Service</a></li>
 <li><a class="reference internal" href="#zidentity-service">ZIdentity Service</a></li>
+<li><a class="reference internal" href="#easm-service">EASM Service</a></li>
+<li><a class="reference internal" href="#z-insights-service">Z-Insights Service</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#usage-examples">Usage Examples</a><ul>
 <li><a class="reference internal" href="#accessing-services">Accessing Services</a></li>
 <li><a class="reference internal" href="#service-methods">Service Methods</a></li>
+<li><a class="reference internal" href="#z-insights-analytics">Z-Insights Analytics</a></li>
 </ul>
 </li>
 </ul>
@@ -918,7 +1140,7 @@
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

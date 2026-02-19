@@ -23,6 +23,93 @@ def zia_list_url_categories(
     return [r.as_dict() for r in results]
 
 
+def zia_url_lookup(
+    urls: Annotated[
+        Union[List[str], str],
+        Field(
+            description="List of URLs to perform a category lookup on. "
+            "Examples: ['google.com', 'acme.com'], ['example.com', 'github.com']. Accepts JSON string or list. "
+            "URLs are processed in batches of 100; large lists may take longer due to API rate limiting."
+        ),
+    ],
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    service: Annotated[str, Field(description="The service to use.")] = "zia",
+) -> List[Dict]:
+    """
+    Look up the URL category for the provided URLs.
+
+    Performs a bulk category lookup against the Zscaler URL categorization database.
+    Each URL is matched to a category (e.g., SEARCH_ENGINES, BUSINESS_AND_ECONOMY,
+    COMPUTER_AND_INTERNET_SECURITY). URLs are processed in batches of 100 with
+    a short delay between batches to respect API limits.
+
+    Args:
+        urls: List of URLs or domains to look up (e.g., "google.com", "acme.com").
+            Accepts a list or JSON string. Maximum 100 URLs per batch; larger
+            lists are processed in multiple batches automatically.
+        use_legacy: Whether to use the legacy API (default: False).
+        service: The service identifier (default: "zia").
+
+    Returns:
+        List of URL category report entries. Each entry typically includes:
+        - url: The URL or domain that was looked up
+        - urlCategories: List of category IDs/names the URL belongs to
+        - Other categorization metadata from the ZIA URL Lookup API
+
+    Examples:
+        >>> # Look up category for a single URL
+        >>> results = zia_url_lookup(urls=["google.com"])
+        >>> for entry in results:
+        ...     print(f"URL: {entry.get('url')}, Categories: {entry.get('urlCategories', [])}")
+
+        >>> # Look up categories for multiple URLs
+        >>> results = zia_url_lookup(urls=["google.com", "acme.com", "github.com"])
+        >>> print(f"Looked up {len(results)} URLs")
+        >>> for entry in results:
+        ...     print(f"  {entry.get('url')}: {entry.get('urlCategories', [])}")
+
+        >>> # Look up category for a domain
+        >>> results = zia_url_lookup(urls=["finance.yahoo.com"])
+        >>> if results:
+        ...     print(f"Yahoo Finance category: {results[0]}")
+
+        >>> # Pass URLs as JSON string
+        >>> results = zia_url_lookup(urls='["example.com", "microsoft.com"]')
+        >>> for entry in results:
+        ...     print(entry)
+    """
+    # Normalize urls: accept list or JSON string
+    if isinstance(urls, str):
+        import json
+
+        try:
+            urls = json.loads(urls)
+        except json.JSONDecodeError:
+            urls = [u.strip() for u in urls.split(",") if u.strip()]
+    if not isinstance(urls, list):
+        raise ValueError("urls must be a list of URL strings or a JSON string")
+    if not urls:
+        raise ValueError("urls cannot be empty")
+
+    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    api = client.zia.url_categories
+
+    results, err = api.lookup(urls=urls)
+    if err:
+        raise Exception(f"URL lookup failed: {err}")
+
+    # Results may be dicts or objects with as_dict(); normalize to dicts
+    out = []
+    for r in results:
+        if hasattr(r, "as_dict"):
+            out.append(r.as_dict())
+        elif isinstance(r, dict):
+            out.append(r)
+        else:
+            out.append(dict(r) if hasattr(r, "__iter__") and not isinstance(r, str) else {"url": str(r), "raw": r})
+    return out or []
+
+
 def zia_get_url_category(
     category_id: Annotated[str, Field(description="Category ID.")],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,

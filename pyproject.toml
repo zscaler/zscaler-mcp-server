@@ -1,6 +1,6 @@
 [project]
 name = "zscaler-mcp"
-version = "0.6.1"
+version = "0.6.2"
 description = "Official Zscaler Integrations MCP Server"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
@@ -26,7 +26,7 @@ dependencies = [
   "fastapi",
   "pycountry",
   "authlib>=1.6.5",
-  "cryptography>=46.0.1",
+  "cryptography>=46.0.5",
   "huggingface-hub>=0.35.0",
   "jiter>=0.11.0",
   "langsmith>=0.4.28",
@@ -36,8 +36,12 @@ dependencies = [
   "starlette>=0.49.1",
   "zstandard>=0.25.0",
   "package-name>=0.1",
-  "urllib3>=2.6.0",
-  "werkzeug>=3.1.4",
+  "urllib3>=2.6.3",
+  "werkzeug>=3.1.5",
+  "filelock>=3.20.3",
+  "python-multipart>=0.0.22",
+  "wheel>=0.46.2",
+  "orjson>=3.11.7",
 ]
 
 [project.scripts]
@@ -81,8 +85,13 @@ disallow_incomplete_defs = true
 target-version = "py311"
 line-length = 100
 
+[tool.uv]
+# Override transitive pillow to fix CVE (out-of-bounds write in PSD loader)
+# https://pillow.readthedocs.io/en/stable/releasenotes/
+override-dependencies = ["pillow>=12.1.1"]
+
 [build-system]
-requires = ["setuptools>=78.1.1", "wheel"]
+requires = ["setuptools>=78.1.1", "wheel>=0.46.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]

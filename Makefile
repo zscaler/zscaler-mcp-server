@@ -49,6 +49,7 @@ help:
 	@echo "$(COLOR_OK)  docker-build                  Build Docker image$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-rebuild                Clean and rebuild Docker image$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-run                    Run Docker container$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docker-save                   Export Docker image to tarball$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-clean                  Clean Docker images and containers$(COLOR_NONE)"
 	@echo "$(COLOR_WARNING)documentation$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-build                    Build Sphinx documentation$(COLOR_NONE)"
@@ -62,9 +63,6 @@ clean-build:
 	rm -fr build/
 	rm -fr dist/
 	rm -fr *.egg-info
-
-clean-docsrc:
-	echo "Wg!2161980" | sudo -S rm -fr docsrc/_build/
 
 docs: clean-docsrc
 	@echo "$(COLOR_WARNING)Building Sphinx documentation...$(COLOR_NONE)"
@@ -138,6 +136,12 @@ docker-rebuild: docker-clean docker-build
 docker-run:
 	$(DOCKER) run -i --rm --env-file .env $(BINARY_NAME):$(VERSION)
 
+docker-save:
+	@echo "$(COLOR_WARNING)Exporting Docker image to tarball...$(COLOR_NONE)"
+	$(DOCKER) save $(BINARY_NAME):$(VERSION) -o $(BINARY_NAME)-$(VERSION).tar
+	@echo "$(COLOR_OK)Docker image exported to $(BINARY_NAME)-$(VERSION).tar$(COLOR_NONE)"
+	@echo "$(COLOR_WARNING)File size:$(COLOR_NONE) $$(du -h $(BINARY_NAME)-$(VERSION).tar | cut -f1)"
+
 # Documentation targets
 docs-build:
 	cd docsrc && python -m sphinx -b html . _build
@@ -151,4 +155,4 @@ docs-install-deps:
 docs-github:
 	cd docsrc && python -m sphinx -b html . _build && cp -a _build/. ../docs
 
-.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docs-build docs-clean docs-install-deps docs-github
+.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-save docs-build docs-clean docs-install-deps docs-github
