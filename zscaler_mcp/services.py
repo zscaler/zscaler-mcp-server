@@ -386,16 +386,11 @@ class ZIAService(BaseService):
             zia_delete_auth_exempt_urls,
             zia_list_auth_exempt_urls,
         )
+        from .tools.zia.cloud_app_control import zia_list_cloud_app_control_actions
         from .tools.zia.cloud_applications import (
             zia_bulk_update_cloud_applications,
             zia_list_cloud_application_custom_tags,
             zia_list_cloud_applications,
-        )
-        from .tools.zia.cloud_app_control import zia_list_cloud_app_control_actions
-        from .tools.zia.device_management import (
-            zia_list_device_groups,
-            zia_list_devices,
-            zia_list_devices_lite,
         )
         from .tools.zia.cloud_firewall_rules import (
             zia_create_cloud_firewall_rule,
@@ -403,6 +398,11 @@ class ZIAService(BaseService):
             zia_get_cloud_firewall_rule,
             zia_list_cloud_firewall_rules,
             zia_update_cloud_firewall_rule,
+        )
+        from .tools.zia.device_management import (
+            zia_list_device_groups,
+            zia_list_devices,
+            zia_list_devices_lite,
         )
         from .tools.zia.geo_search import zia_geo_search_tool
         from .tools.zia.get_sandbox_info import (
@@ -497,8 +497,8 @@ class ZIAService(BaseService):
             zia_get_url_category,
             zia_list_url_categories,
             zia_remove_urls_from_category,
-            zia_url_lookup,
             zia_update_url_category,
+            zia_url_lookup,
         )
         from .tools.zia.url_filtering_rules import (
             zia_create_url_filtering_rule,
