@@ -209,6 +209,7 @@
 <li class="toctree-l2"><a class="reference internal" href="tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -218,7 +219,6 @@
 <li class="toctree-l2"><a class="reference internal" href="guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -348,6 +348,12 @@
 </li>
           <li><a href="api/services.html#module-zscaler_mcp.services">zscaler_mcp.services</a>
 </li>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.easm.findings">zscaler_mcp.tools.easm.findings</a>
+</li>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.easm.lookalike_domains">zscaler_mcp.tools.easm.lookalike_domains</a>
+</li>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.easm.organizations">zscaler_mcp.tools.easm.organizations</a>
+</li>
           <li><a href="api/tools.html#module-zscaler_mcp.tools.zcc.list_devices">zscaler_mcp.tools.zcc.list_devices</a>
 </li>
           <li><a href="api/tools.html#module-zscaler_mcp.tools.zdx.active_devices">zscaler_mcp.tools.zdx.active_devices</a>
@@ -462,9 +468,13 @@
 </li>
           <li><a href="api/services.html#zscaler_mcp.services.ZDXService.register_tools">(ZDXService method)</a>
 </li>
+          <li><a href="api/services.html#zscaler_mcp.services.ZEASMService.register_tools">(ZEASMService method)</a>
+</li>
           <li><a href="api/services.html#zscaler_mcp.services.ZIAService.register_tools">(ZIAService method)</a>
 </li>
           <li><a href="api/services.html#zscaler_mcp.services.ZIdentityService.register_tools">(ZIdentityService method)</a>
+</li>
+          <li><a href="api/services.html#zscaler_mcp.services.ZInsightsService.register_tools">(ZInsightsService method)</a>
 </li>
           <li><a href="api/services.html#zscaler_mcp.services.ZPAService.register_tools">(ZPAService method)</a>
 </li>
@@ -526,6 +536,22 @@
         <li><a href="api/tools.html#zscaler_mcp.tools.zdx.list_software_inventory.zdx_list_software">zdx_list_software() (in module zscaler_mcp.tools.zdx.list_software_inventory)</a>
 </li>
         <li><a href="api/services.html#zscaler_mcp.services.ZDXService">ZDXService (class in zscaler_mcp.services)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.findings.zeasm_get_finding_details">zeasm_get_finding_details() (in module zscaler_mcp.tools.easm.findings)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.findings.zeasm_get_finding_evidence">zeasm_get_finding_evidence() (in module zscaler_mcp.tools.easm.findings)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.findings.zeasm_get_finding_scan_output">zeasm_get_finding_scan_output() (in module zscaler_mcp.tools.easm.findings)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.lookalike_domains.zeasm_get_lookalike_domain">zeasm_get_lookalike_domain() (in module zscaler_mcp.tools.easm.lookalike_domains)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.findings.zeasm_list_findings">zeasm_list_findings() (in module zscaler_mcp.tools.easm.findings)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.lookalike_domains.zeasm_list_lookalike_domains">zeasm_list_lookalike_domains() (in module zscaler_mcp.tools.easm.lookalike_domains)</a>
+</li>
+        <li><a href="api/tools.html#zscaler_mcp.tools.easm.organizations.zeasm_list_organizations">zeasm_list_organizations() (in module zscaler_mcp.tools.easm.organizations)</a>
+</li>
+        <li><a href="api/services.html#zscaler_mcp.services.ZEASMService">ZEASMService (class in zscaler_mcp.services)</a>
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zia.atp_malicious_urls.zia_add_atp_malicious_urls">zia_add_atp_malicious_urls() (in module zscaler_mcp.tools.zia.atp_malicious_urls)</a>
 </li>
@@ -665,6 +691,8 @@
 </li>
         <li><a href="api/services.html#zscaler_mcp.services.ZIdentityService">ZIdentityService (class in zscaler_mcp.services)</a>
 </li>
+        <li><a href="api/services.html#zscaler_mcp.services.ZInsightsService">ZInsightsService (class in zscaler_mcp.services)</a>
+</li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_policy_rules.zpa_create_access_policy_rule">zpa_create_access_policy_rule() (in module zscaler_mcp.tools.zpa.access_policy_rules)</a>
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.app_connector_groups.zpa_create_app_connector_group">zpa_create_app_connector_group() (in module zscaler_mcp.tools.zpa.app_connector_groups)</a>
@@ -731,12 +759,12 @@
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_app_protection_rules.zpa_list_app_protection_rules">zpa_list_app_protection_rules() (in module zscaler_mcp.tools.zpa.access_app_protection_rules)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.app_segments.zpa_list_application_segments">zpa_list_application_segments() (in module zscaler_mcp.tools.zpa.app_segments)</a>
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_forwarding_rules.zpa_list_forwarding_policy_rules">zpa_list_forwarding_policy_rules() (in module zscaler_mcp.tools.zpa.access_forwarding_rules)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_isolation_rules.zpa_list_isolation_policy_rules">zpa_list_isolation_policy_rules() (in module zscaler_mcp.tools.zpa.access_isolation_rules)</a>
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.segment_groups.zpa_list_segment_groups">zpa_list_segment_groups() (in module zscaler_mcp.tools.zpa.segment_groups)</a>
@@ -797,6 +825,27 @@
 
         <ul>
           <li><a href="api/services.html#module-zscaler_mcp.services">module</a>
+</li>
+        </ul></li>
+        <li>
+    zscaler_mcp.tools.easm.findings
+
+        <ul>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.easm.findings">module</a>
+</li>
+        </ul></li>
+        <li>
+    zscaler_mcp.tools.easm.lookalike_domains
+
+        <ul>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.easm.lookalike_domains">module</a>
+</li>
+        </ul></li>
+        <li>
+    zscaler_mcp.tools.easm.organizations
+
+        <ul>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.easm.organizations">module</a>
 </li>
         </ul></li>
         <li>
@@ -1138,7 +1187,7 @@
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="_static/documentation_options.js?v=b9afe91b"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

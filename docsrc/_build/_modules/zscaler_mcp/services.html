@@ -210,6 +210,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -219,7 +220,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -687,12 +687,24 @@
             <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span>
             <span class="n">zia_list_cloud_applications</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.device_management</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_list_device_groups</span><span class="p">,</span>
+            <span class="n">zia_list_devices</span><span class="p">,</span>
+            <span class="n">zia_list_devices_lite</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_cloud_firewall_rule</span><span class="p">,</span>
             <span class="n">zia_delete_cloud_firewall_rule</span><span class="p">,</span>
             <span class="n">zia_get_cloud_firewall_rule</span><span class="p">,</span>
             <span class="n">zia_list_cloud_firewall_rules</span><span class="p">,</span>
             <span class="n">zia_update_cloud_firewall_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.geo_search</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_geo_search_tool</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.get_sandbox_info</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_get_sandbox_behavioral_analysis</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_file_hash_count</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_quota</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_report</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.gre_ranges</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_list_gre_ranges</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.gre_tunnels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -734,19 +746,30 @@
             <span class="n">zia_list_network_app_groups</span><span class="p">,</span>
             <span class="n">zia_update_network_app_group</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.network_apps</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_get_network_app</span><span class="p">,</span>
+            <span class="n">zia_list_network_apps</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.network_services</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_network_service</span><span class="p">,</span>
+            <span class="n">zia_delete_network_service</span><span class="p">,</span>
+            <span class="n">zia_get_network_service</span><span class="p">,</span>
+            <span class="n">zia_list_network_services</span><span class="p">,</span>
+            <span class="n">zia_update_network_service</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.network_services_group</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_network_svc_group</span><span class="p">,</span>
+            <span class="n">zia_delete_network_svc_group</span><span class="p">,</span>
+            <span class="n">zia_get_network_svc_group</span><span class="p">,</span>
+            <span class="n">zia_list_network_svc_groups</span><span class="p">,</span>
+            <span class="n">zia_update_network_svc_group</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.rule_labels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_rule_label</span><span class="p">,</span>
             <span class="n">zia_delete_rule_label</span><span class="p">,</span>
             <span class="n">zia_get_rule_label</span><span class="p">,</span>
             <span class="n">zia_list_rule_labels</span><span class="p">,</span>
             <span class="n">zia_update_rule_label</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.static_ips</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_create_static_ip</span><span class="p">,</span>
-            <span class="n">zia_delete_static_ip</span><span class="p">,</span>
-            <span class="n">zia_get_static_ip</span><span class="p">,</span>
-            <span class="n">zia_list_static_ips</span><span class="p">,</span>
-            <span class="n">zia_update_static_ip</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ssl_inspection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_ssl_inspection_rule</span><span class="p">,</span>
@@ -755,13 +778,12 @@
             <span class="n">zia_list_ssl_inspection_rules</span><span class="p">,</span>
             <span class="n">zia_update_ssl_inspection_rule</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.geo_search</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_geo_search_tool</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.get_sandbox_info</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">sandbox_manager</span><span class="p">,</span>
-            <span class="n">zia_get_sandbox_behavioral_analysis</span><span class="p">,</span>
-            <span class="n">zia_get_sandbox_file_hash_count</span><span class="p">,</span>
-            <span class="n">zia_get_sandbox_quota</span><span class="p">,</span>
-            <span class="n">zia_get_sandbox_report</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.static_ips</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_static_ip</span><span class="p">,</span>
+            <span class="n">zia_delete_static_ip</span><span class="p">,</span>
+            <span class="n">zia_get_static_ip</span><span class="p">,</span>
+            <span class="n">zia_list_static_ips</span><span class="p">,</span>
+            <span class="n">zia_update_static_ip</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_categories</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_add_urls_to_category</span><span class="p">,</span>
@@ -827,6 +849,15 @@
             <span class="c1"># Network App Groups</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_app_groups</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_app_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network application groups (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_app_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_network_app_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA network application group by ID (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Network Applications</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_apps</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_apps&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network applications with optional filtering by search or locale (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_app</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_network_app&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA network application by ID (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Network Services</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_services</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_services&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network services with optional filtering by protocol or search (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_service</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_network_service&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA network service by ID (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Network Service Groups</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_svc_groups</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_svc_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network service groups with optional filtering (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_svc_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_network_svc_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA network service group by ID (read-only)&quot;</span><span class="p">},</span>
             <span class="c1"># URL Categories</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_url_categories</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_url_categories&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA URL categories (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_url_category</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_url_category&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA URL category by ID (read-only)&quot;</span><span class="p">},</span>
@@ -855,6 +886,10 @@
             <span class="c1"># Cloud Applications</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_applications</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_applications&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud applications (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_application_custom_tags&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud application custom tags (read-only)&quot;</span><span class="p">},</span>
+            <span class="c1"># Device Management</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_device_groups</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_device_groups&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA device groups with optional device info and pseudo group filtering (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_devices</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_devices&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA devices with filtering by name, user, pagination support (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_devices_lite</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_devices_lite&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA devices in lightweight format (ID, name, owner only) (read-only)&quot;</span><span class="p">},</span>
             <span class="c1"># Utilities</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_geo_search_tool</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_geo_search&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Perform ZIA geographic lookups (coordinates, IP, or city prefix) (read-only)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_quota</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_quota&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieve current ZIA sandbox quota information (read-only)&quot;</span><span class="p">},</span>
@@ -893,6 +928,14 @@
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_network_app_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_network_app_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA network application group (write operation)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_network_app_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_network_app_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA network application group (write operation)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_network_app_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_network_app_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA network application group (destructive operation)&quot;</span><span class="p">},</span>
+            <span class="c1"># Network Services</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_network_service</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_network_service&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA network service with custom TCP/UDP ports (write operation)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_network_service</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_network_service&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA network service (write operation)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_network_service</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_network_service&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA network service (destructive operation)&quot;</span><span class="p">},</span>
+            <span class="c1"># Network Service Groups</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_network_svc_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_network_svc_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA network service group (write operation)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_network_svc_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_network_svc_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA network service group (write operation)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_network_svc_group</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_network_svc_group&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA network service group (destructive operation)&quot;</span><span class="p">},</span>
             <span class="c1"># URL Categories</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_url_category</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_url_category&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA URL category (write operation)&quot;</span><span class="p">},</span>
             <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_url_category</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_url_category&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA URL category (write operation)&quot;</span><span class="p">},</span>
@@ -953,6 +996,8 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import verb-based ZTW tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.account_details</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_public_account_details</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.discovery_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_get_discovery_settings</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.ip_destination_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">ztw_create_ip_destination_group</span><span class="p">,</span>
             <span class="n">ztw_delete_ip_destination_group</span><span class="p">,</span>
@@ -974,8 +1019,6 @@
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.list_admins</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_admins</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.list_roles</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_roles</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.network_service_groups</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_network_service_groups</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.account_details</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_public_account_details</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.discovery_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_get_discovery_settings</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.network_services</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_network_services</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.ztw.public_cloud_info</span><span class="w"> </span><span class="kn">import</span> <span class="n">ztw_list_public_cloud_info</span>
 
@@ -1075,6 +1118,290 @@
 
 
 
+<div class="viewcode-block" id="ZEASMService">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZEASMService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ZEASMService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Zscaler External Attack Surface Management (EASM) service.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
+        <span class="c1"># Import EASM tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.easm.findings</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zeasm_get_finding_details</span><span class="p">,</span>
+            <span class="n">zeasm_get_finding_evidence</span><span class="p">,</span>
+            <span class="n">zeasm_get_finding_scan_output</span><span class="p">,</span>
+            <span class="n">zeasm_list_findings</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.easm.lookalike_domains</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zeasm_get_lookalike_domain</span><span class="p">,</span>
+            <span class="n">zeasm_list_lookalike_domains</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.easm.organizations</span><span class="w"> </span><span class="kn">import</span> <span class="n">zeasm_list_organizations</span>
+
+        <span class="c1"># All EASM tools are read-only</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="c1"># Organizations</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_list_organizations</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_list_organizations&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all EASM organizations configured for the tenant (read-only)&quot;</span><span class="p">},</span>
+            
+            <span class="c1"># Findings</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_list_findings</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_list_findings&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all EASM findings for an organization (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_get_finding_details</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_get_finding_details&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get details for a specific EASM finding (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_get_finding_evidence</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_get_finding_evidence&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get scan evidence for a specific EASM finding (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_get_finding_scan_output</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_get_finding_scan_output&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get complete scan output for a specific EASM finding (read-only)&quot;</span><span class="p">},</span>
+            
+            <span class="c1"># Lookalike Domains</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_list_lookalike_domains</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_list_lookalike_domains&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all lookalike domains detected for an organization (read-only)&quot;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_get_lookalike_domain</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_get_lookalike_domain&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get details for a specific lookalike domain (read-only)&quot;</span><span class="p">},</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># EASM has no write operations</span>
+
+<div class="viewcode-block" id="ZEASMService.register_tools">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZEASMService.register_tools">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register EASM tools with the server.&quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
+
+        <span class="c1"># Register read-only tools</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
+        <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;EASM Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ZInsightsService">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZInsightsService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ZInsightsService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Zscaler Z-Insights Analytics service.</span>
+
+<span class="sd">    Provides analytics and reporting capabilities through the Z-Insights GraphQL API.</span>
+<span class="sd">    All tools in this service are read-only operations.</span>
+
+<span class="sd">    Available domains in Z-Insights API:</span>
+<span class="sd">    - WEB_TRAFFIC: Web traffic analytics and threat data</span>
+<span class="sd">    - CYBER_SECURITY: Cybersecurity incidents and threat analysis</span>
+<span class="sd">    - ZERO_TRUST_FIREWALL: Firewall activity and rule analytics</span>
+<span class="sd">    - SAAS_SECURITY: Cloud Access Security Broker (CASB) data</span>
+<span class="sd">    - SHADOW_IT: Unsanctioned application discovery</span>
+<span class="sd">    - IOT: IoT device visibility and statistics</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
+        <span class="c1"># Import Z-Insights Web Traffic tools</span>
+        <span class="c1"># Import Z-Insights Cyber Security tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.cyber_security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zinsights_get_cyber_incidents</span><span class="p">,</span>
+            <span class="n">zinsights_get_cyber_incidents_by_location</span><span class="p">,</span>
+            <span class="n">zinsights_get_cyber_incidents_by_threat_and_app</span><span class="p">,</span>
+            <span class="n">zinsights_get_cyber_incidents_daily</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Import Z-Insights Firewall tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.firewall</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zinsights_get_firewall_by_action</span><span class="p">,</span>
+            <span class="n">zinsights_get_firewall_by_location</span><span class="p">,</span>
+            <span class="n">zinsights_get_firewall_network_services</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Import Z-Insights IoT tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.iot</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zinsights_get_iot_device_stats</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Import Z-Insights SaaS Security / CASB tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.saas_security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zinsights_get_casb_app_report</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Import Z-Insights Shadow IT tools</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.shadow_it</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zinsights_get_shadow_it_apps</span><span class="p">,</span>
+            <span class="n">zinsights_get_shadow_it_summary</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.web_traffic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zinsights_get_threat_class</span><span class="p">,</span>
+            <span class="n">zinsights_get_threat_super_categories</span><span class="p">,</span>
+            <span class="n">zinsights_get_web_protocols</span><span class="p">,</span>
+            <span class="n">zinsights_get_web_traffic_by_location</span><span class="p">,</span>
+            <span class="n">zinsights_get_web_traffic_no_grouping</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># All Z-Insights tools are read-only (analytics)</span>
+        <span class="c1"># NOTE: Tool descriptions are critical for AI tool selection - be explicit about use cases</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="c1"># Web Traffic Analytics</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_web_traffic_by_location</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_web_traffic_by_location&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for web traffic analytics by location. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: traffic volume, bandwidth usage, location traffic, &quot;</span>
+                    <span class="s2">&quot;office traffic comparisons. This is the ONLY tool for location-based traffic analytics.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_web_traffic_no_grouping</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_web_traffic_no_grouping&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for total/overall web traffic volume. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: total traffic, overall bandwidth, aggregate web usage. &quot;</span>
+                    <span class="s2">&quot;This is the ONLY tool for ungrouped total traffic metrics.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_web_protocols</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_web_protocols&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for web protocol distribution (HTTP, HTTPS, etc.). &quot;</span>
+                    <span class="s2">&quot;Use for questions about: protocol usage, HTTPS adoption, protocol breakdown. &quot;</span>
+                    <span class="s2">&quot;This is the ONLY tool for web protocol analytics.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_threat_super_categories</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_threat_super_categories&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for threat category analytics (malware, phishing, spyware, etc.). &quot;</span>
+                    <span class="s2">&quot;Use for questions about: what threats we&#39;re seeing, threat types, threat categories, &quot;</span>
+                    <span class="s2">&quot;security threats, malware detected. This is the ONLY tool for threat category data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_threat_class</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_threat_class&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for threat classification analytics (virus, trojan, ransomware, etc.). &quot;</span>
+                    <span class="s2">&quot;Use for questions about: threat classes, types of malware, threat classifications. &quot;</span>
+                    <span class="s2">&quot;This is the ONLY tool for threat class data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Cyber Security Analytics</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for cybersecurity incidents by category. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: security incidents, cyber attacks, incident breakdown, &quot;</span>
+                    <span class="s2">&quot;threats by category, security events. This is the ONLY tool for incident category data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents_by_location</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents_by_location&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for cybersecurity incidents by location. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: which locations have incidents, security by office, &quot;</span>
+                    <span class="s2">&quot;incident distribution across sites. This is the ONLY tool for location-based incident data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents_daily</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents_daily&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for daily cybersecurity incident trends. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: incident trends over time, daily security stats, &quot;</span>
+                    <span class="s2">&quot;security incident patterns. This is the ONLY tool for time-based incident trends.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents_by_threat_and_app</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents_by_threat_and_app&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for incidents correlated by threat and application. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: which apps are targeted, threat/app correlation, &quot;</span>
+                    <span class="s2">&quot;application security risks. This is the ONLY tool for threat-application correlation.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Firewall Analytics</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_firewall_by_action</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_firewall_by_action&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for firewall traffic by action (allow/block). &quot;</span>
+                    <span class="s2">&quot;Use for questions about: blocked traffic, allowed traffic, firewall actions, &quot;</span>
+                    <span class="s2">&quot;firewall policy effectiveness. This is the ONLY tool for firewall action data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_firewall_by_location</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_firewall_by_location&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for firewall traffic by location. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: firewall activity by office, location firewall stats, &quot;</span>
+                    <span class="s2">&quot;branch firewall traffic. This is the ONLY tool for location-based firewall data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_firewall_network_services</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_firewall_network_services&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for firewall network service usage. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: network services, port usage, protocol/port activity, &quot;</span>
+                    <span class="s2">&quot;firewall service breakdown. This is the ONLY tool for firewall network service data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># SaaS Security / CASB Analytics</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_casb_app_report</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_casb_app_report&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for CASB SaaS application usage. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: cloud app usage, SaaS applications, CASB data, &quot;</span>
+                    <span class="s2">&quot;cloud service adoption. This is the ONLY tool for CASB application data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Shadow IT Analytics</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_shadow_it_apps</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_shadow_it_apps&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for discovered shadow IT applications. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: unsanctioned apps, shadow IT, unauthorized applications, &quot;</span>
+                    <span class="s2">&quot;risky apps, app risk scores. This is the ONLY tool for shadow IT app discovery.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_shadow_it_summary</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_shadow_it_summary&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for shadow IT summary and statistics. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: shadow IT overview, total shadow apps, shadow IT dashboard, &quot;</span>
+                    <span class="s2">&quot;app categories, risk distribution. This is the ONLY tool for shadow IT summary.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># IoT Analytics</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_iot_device_stats</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_iot_device_stats&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;AUTHORITATIVE SOURCE for IoT device statistics and classifications. &quot;</span>
+                    <span class="s2">&quot;Use for questions about: IoT devices, device inventory, connected devices, &quot;</span>
+                    <span class="s2">&quot;device types, unmanaged devices. This is the ONLY tool for IoT device data.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Z-Insights is analytics-only - no write operations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="ZInsightsService.register_tools">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZInsightsService.register_tools">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register Z-Insights tools with the server.&quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
+
+        <span class="c1"># Register read-only tools</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">)</span>
+        <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Z-Insights Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
+</div>
+
+
+
 <span class="c1"># Service registry</span>
 <span class="n">_AVAILABLE_SERVICES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;zcc&quot;</span><span class="p">:</span> <span class="n">ZCCService</span><span class="p">,</span>
@@ -1083,6 +1410,8 @@
     <span class="s2">&quot;zia&quot;</span><span class="p">:</span> <span class="n">ZIAService</span><span class="p">,</span>
     <span class="s2">&quot;ztw&quot;</span><span class="p">:</span> <span class="n">ZTWService</span><span class="p">,</span>
     <span class="s2">&quot;zidentity&quot;</span><span class="p">:</span> <span class="n">ZIdentityService</span><span class="p">,</span>
+    <span class="s2">&quot;zeasm&quot;</span><span class="p">:</span> <span class="n">ZEASMService</span><span class="p">,</span>
+    <span class="s2">&quot;zinsights&quot;</span><span class="p">:</span> <span class="n">ZInsightsService</span><span class="p">,</span>
 <span class="p">}</span>
 
 
@@ -1140,7 +1469,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

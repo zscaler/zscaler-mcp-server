@@ -1,6 +1,6 @@
 # Use a Python image with uv pre-installed
-# ghcr.io/astral-sh/uv:python3.13-alpine (multi-arch: amd64, arm64)
-FROM ghcr.io/astral-sh/uv@sha256:3ce89663b5309e77087de25ca805c49988f2716cdb2c6469b1dec2764f58b141 AS uv
+# ghcr.io/astral-sh/uv:0.10.4-python3.13-alpine (multi-arch: amd64, arm64)
+FROM ghcr.io/astral-sh/uv:0.10.4-python3.13-alpine@sha256:849da3c9d1d114758725fe11bfe59c002d8c817a06f8b79ebf02a2f9d3089cfe AS uv
 
 # Install the project into `/app`
 WORKDIR /app
@@ -47,7 +47,7 @@ RUN apk update && apk upgrade --no-cache && \
 # Security: Upgrade pip and setuptools to fix:
 # - CVE-2025-8869 (pip)
 # - CVE-2024-6345, CVE-2025-47273 (setuptools)
-RUN pip install --no-cache-dir --upgrade pip>=25.3 setuptools>=78.1.1
+RUN pip install --no-cache-dir --upgrade pip>=25.3 setuptools>=78.1.1 wheel>=0.46.2
 
 # Create a non-root user 'app'
 RUN adduser -D -h /home/app -s /bin/sh app

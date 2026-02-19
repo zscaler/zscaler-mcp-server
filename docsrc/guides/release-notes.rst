@@ -6,7 +6,45 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
-0.5.1 (December 8, 2025) - AWS Kiro Power Integration
+0.6.1 (December 16, 2025) - Z-Insights Analytics Integration
+------------------------------------------------------------
+
+Notes
+~~~~~
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+Enhancements
+~~~~~~~~~~~~
+
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - ✨ Added Z-Insights Analytics service with 16 read-only tools for Zscaler analytics via GraphQL API
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_web_traffic_by_location`` - Get web traffic analytics grouped by location
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_web_traffic_no_grouping`` - Get overall web traffic volume metrics
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_web_protocols`` - Get web traffic by protocol (HTTP, HTTPS, SSL)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_threat_super_categories`` - Get threat super categories (malware, phishing, spyware)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_threat_class`` - Get detailed threat class breakdown
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents`` - Get cybersecurity incidents by category
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents_by_location`` - Get cybersecurity incidents grouped by location
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents_daily`` - Get daily cybersecurity incident trends
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents_by_threat_and_app`` - Get incidents correlated by threat and application
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_firewall_by_action`` - Get Zero Trust Firewall traffic by action (allow/block)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_firewall_by_location`` - Get firewall traffic grouped by location
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_firewall_network_services`` - Get firewall network service usage
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_casb_app_report`` - Get CASB SaaS application usage report
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_shadow_it_apps`` - Get discovered shadow IT applications with risk scores
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_shadow_it_summary`` - Get shadow IT summary statistics and groupings
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_iot_device_stats`` - Get IoT device statistics and classifications
+
+Bug Fixes
+~~~~~~~~~
+
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Fixed Z-Insights time interval defaults - changed from invalid intervals (5-day, 12-day) to valid 7 or 14-day intervals required by the API
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Fixed Z-Insights tools to return structured "no data" responses instead of throwing exceptions when API returns empty results
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Fixed Z-Insights tools to handle GraphQL errors gracefully (checking response body for errors even with HTTP 200 status)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Fixed Z-Insights time range validation to ensure ``end_time`` is at least 1 day in the past for data availability
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added auto-adjustment logic for Z-Insights time intervals to automatically correct invalid intervals to nearest valid 7 or 14-day interval
+
+0.6.0 (December 8, 2025) - AWS Kiro Power Integration
 -----------------------------------------------------
 
 Notes
