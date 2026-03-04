@@ -36,10 +36,10 @@
         "ZSCALER_CLOUD": "${user_config.cloud}",
         "ZSCALER_MCP_WRITE_ENABLED": "${user_config.enable_write_tools}",
         "ZSCALER_MCP_WRITE_TOOLS": "${user_config.write_tools}",
-        "ZSCALER_MCP_ENABLED_SERVICES": "${user_config.enabled_services}",
-        "ZSCALER_MCP_DEBUG_MODE": "${user_config.debug_mode}",
+        "ZSCALER_MCP_SERVICES": "${user_config.enabled_services}",
+        "ZSCALER_MCP_DEBUG": "${user_config.debug_mode}",
         "ZSCALER_MCP_USER_AGENT_COMMENT": "${user_config.user_agent_comment}",
-        "ZSCALER_MCP_ENABLED_TOOLS": "${user_config.enabled_tools}"
+        "ZSCALER_MCP_TOOLS": "${user_config.enabled_tools}"
       }
     }
   },
