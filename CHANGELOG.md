@@ -1,5 +1,51 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.7.0 (March xx, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### 🔐 MCP Client Authentication
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Added multi-mode authentication for MCP clients connecting over HTTP transports (`sse`, `streamable-http`). Authentication is disabled by default for backward compatibility and does not apply to `stdio` transport.
+
+**Four authentication modes:**
+
+- **`api-key`** — Simple shared secret. Client sends `Authorization: Bearer <key>`. Best for quick setup and internal environments.
+- **`jwt`** — External Identity Provider via JWKS. Tokens are validated locally using the IdP's public keys. Supports Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, and Google Cloud Identity.
+- **`zscaler`** — Zscaler OneAPI credential validation. Client sends Basic Auth (`client_id:client_secret`) or custom headers (`X-Zscaler-Client-ID` / `X-Zscaler-Client-Secret`). Server validates against Zscaler's `/oauth2/v1/token` endpoint.
+
+**Architecture:**
+
+- Implemented as ASGI middleware (`zscaler_mcp/auth.py`) that wraps HTTP transport apps before they reach FastMCP
+- Two independent security layers: Layer 1 (MCP Client Auth) controls who can connect; Layer 2 (Zscaler API Auth) controls how the server authenticates to Zscaler APIs
+- Zero overhead when authentication is disabled — middleware returns the app unchanged
+
+### Enhancements
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Added `--generate-auth-token` CLI argument for generating authorization tokens from configured credentials
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Added `docker-run-http`, `docker-stop`, and `docker-generate-auth-token` Makefile targets for HTTP transport and authentication workflows
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Added `PyJWT[crypto]>=2.8.0` dependency for JWT token validation
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Updated `.env.example` with MCP Client Authentication environment variables for all four modes
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Updated `README.md` with MCP Client Authentication section, architecture diagram, and mode comparison table
+
+### Documentation
+
+[PR #31](https://github.com/zscaler/zscaler-mcp-server/pull/31) - Created comprehensive [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md) covering:
+
+- Transport modes and authentication architecture
+- Detailed configuration for all four authentication modes
+- IdP-specific JWKS setup instructions (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google)
+- Docker and Python library deployment examples
+- Client configuration examples for Claude Desktop, Cursor, Windsurf, VS Code, and generic MCP clients
+- Token generation, expiry, and refresh workflows
+- Environment variable reference and troubleshooting
+
 ## 0.6.2 (February 18, 2026)
 
 ### Notes
@@ -9,14 +55,16 @@
 ### Enhancements
 
 [PR #29](https://github.com/zscaler/zscaler-mcp-server/pull/29) - Added new ZIA tools:
-  - `network_apps`
-  - `network_services_group`
-  - `network_services`
-  - `zia_url_lookup`
-  - `zia_list_cloud_app_control_actions`
-  
+
+- `network_apps`
+- `network_services_group`
+- `network_services`
+- `zia_url_lookup`
+- `zia_list_cloud_app_control_actions`
+
 [PR #29](https://github.com/zscaler/zscaler-mcp-server/pull/29) - Improved search capabilities in the ZIA tool:
-  - `device_management`
+
+- `device_management`
 
 ## 0.6.1 (December 16, 2025)
 

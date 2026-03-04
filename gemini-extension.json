@@ -1,0 +1,14 @@
+{
+  "name": "zscaler",
+  "version": "0.7.0",
+  "mcpServers": {
+    "zscaler": {
+      "command": "uvx",
+      "args": [
+        "--env-file",
+        "${extensionPath}${pathSeparator}.env",
+        "zscaler-mcp"
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "zscaler": {
+      "command": "zscaler-mcp-server",
+      "args": [],
+      "env": {}
+    }
+  }
+}

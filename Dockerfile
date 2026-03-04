@@ -27,6 +27,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     uv sync --frozen --no-dev --no-editable
 
+# Override SDK with local tarball for testing (remove this block for production)
+RUN if ls /app/local_dev/zscaler_sdk_python-*.tar.gz 1>/dev/null 2>&1; then \
+      uv pip install /app/local_dev/zscaler_sdk_python-*.tar.gz --reinstall-package zscaler-sdk-python; \
+    fi
+
 # Remove unnecessary files from the virtual environment before copying
 RUN find /app/.venv -name '__pycache__' -type d -exec rm -rf {} + && \
     find /app/.venv -name '*.pyc' -delete && \

@@ -20,6 +20,7 @@
 
 - [📺 Overview](#overview)
 - [🔒 Security & Permissions](#security-permissions)
+- [🔐 MCP Client Authentication](#mcp-client-authentication)
 - [Supported Tools](#supported-tools)
 - [Installation & Setup](#installation--setup)
   - [Prerequisites](#prerequisites)
@@ -218,6 +219,111 @@ This multi-layered approach ensures that even if one security control is bypasse
 - **Least Privilege**: Use narrowest possible allowlist patterns for your use case
 - **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
 - **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
+
+## 🔐 MCP Client Authentication
+
+> **📖 Full Documentation: [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md)**
+
+When running the MCP server over HTTP (`sse` or `streamable-http` transports), you can enable authentication to control **who is allowed to connect** to the server. This is independent from the [Zscaler API credentials](#zscaler-api-credentials-authentication), which control how the server authenticates to Zscaler APIs.
+
+**By default, authentication is disabled** for backward compatibility and for `stdio` transport (where the operating system's process isolation provides security).
+
+### Authentication Modes
+
+The server supports four authentication modes, configured via environment variables:
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **`api-key`** | Simple shared secret — client sends `Authorization: Bearer <key>` | Quick setup, internal environments, development |
+| **`jwt`** | External Identity Provider via JWKS — tokens validated locally using public keys | Enterprise SSO, multi-tenant deployments (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google) |
+| **`zscaler`** | Zscaler OneAPI credential validation — client sends Basic Auth with `client_id:client_secret` | Environments already using Zscaler API credentials |
+| **`oauth-proxy`** | Full MCP spec OAuth 2.1 compliance (Phase 2) | Future MCP protocol-level authentication |
+
+### Quick Start
+
+Enable authentication by setting these environment variables in your `.env` file:
+
+```env
+# Enable authentication
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=api-key
+
+# For api-key mode: set a shared secret
+ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
+```
+
+Then start the server with an HTTP transport:
+
+```bash
+zscaler-mcp --transport streamable-http
+```
+
+Clients must include the key in the `Authorization` header:
+
+```
+Authorization: Bearer sk-your-secret-key-here
+```
+
+### How It Works
+
+Authentication is implemented as ASGI middleware that wraps the HTTP transport layer:
+
+```text
+MCP Client Request
+      │
+      ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Auth         │────▶│  FastMCP      │────▶│  Zscaler     │
+│  Middleware   │     │  Server       │     │  APIs        │
+└──────────────┘     └──────────────┘     └──────────────┘
+ Layer 1: WHO          MCP Protocol        Layer 2: HOW
+ can connect?          Processing          server talks
+                                           to Zscaler
+```
+
+- **Layer 1 (MCP Client Auth)**: Controlled by `ZSCALER_MCP_AUTH_*` variables — validates the incoming request
+- **Layer 2 (Zscaler API Auth)**: Controlled by `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc. — authenticates the server to Zscaler APIs
+
+These two layers are completely independent. You can enable one, both, or neither.
+
+### Configuration by Mode
+
+#### API Key
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=api-key
+ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
+```
+
+#### JWT (External IdP via JWKS)
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=jwt
+ZSCALER_MCP_AUTH_JWKS_URI=https://your-idp.com/.well-known/jwks.json
+ZSCALER_MCP_AUTH_ISSUER=https://your-idp.com
+ZSCALER_MCP_AUTH_AUDIENCE=zscaler-mcp-server
+```
+
+#### Zscaler OneAPI Credentials
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=zscaler
+# Uses ZSCALER_VANITY_DOMAIN and ZSCALER_CLOUD from your existing config
+```
+
+Clients authenticate with Basic Auth (`client_id:client_secret`) or custom headers (`X-Zscaler-Client-ID` / `X-Zscaler-Client-Secret`).
+
+### No Authentication (Default)
+
+When `ZSCALER_MCP_AUTH_ENABLED` is unset or `false`, the server accepts all connections without authentication. This is the default behavior and is appropriate for:
+
+- **stdio transport**: Process isolation provides security (the MCP client launches the server directly)
+- **Local development**: When the server is only accessible on `localhost`
+
+> **📖 For detailed setup instructions, IdP-specific JWKS configuration (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google), Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting, see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
 
 ## Supported Tools
 
@@ -500,7 +606,7 @@ ZSCALER_CLOUD=beta
 | `ZSCALER_CLIENT_SECRET` | Yes | Zscaler OAuth client secret from Zidentity console |
 | `ZSCALER_CUSTOMER_ID` | Yes | Zscaler customer ID |
 | `ZSCALER_VANITY_DOMAIN` | Yes | Your organization's vanity domain (e.g., `acme`) |
-| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`, `zscalertwo`). **Only required for Beta tenants** |
+| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`). **Only required for Beta tenants** |
 | `ZSCALER_PRIVATE_KEY` | No | OAuth private key for JWT-based authentication (alternative to client secret) |
 
 #### Verification

@@ -25,7 +25,7 @@ dependencies = [
   "uvicorn",
   "fastapi",
   "pycountry",
-  "authlib>=1.6.5",
+  "authlib>=1.6.8",
   "cryptography>=46.0.5",
   "huggingface-hub>=0.35.0",
   "jiter>=0.11.0",
@@ -42,6 +42,7 @@ dependencies = [
   "python-multipart>=0.0.22",
   "wheel>=0.46.2",
   "orjson>=3.11.7",
+  "PyJWT[crypto]>=2.8.0",
 ]
 
 [project.scripts]
@@ -88,7 +89,10 @@ line-length = 100
 [tool.uv]
 # Override transitive pillow to fix CVE (out-of-bounds write in PSD loader)
 # https://pillow.readthedocs.io/en/stable/releasenotes/
-override-dependencies = ["pillow>=12.1.1"]
+override-dependencies = [
+    "pillow>=12.1.1",
+    "authlib>=1.6.8",
+]
 
 [build-system]
 requires = ["setuptools>=78.1.1", "wheel>=0.46.2"]

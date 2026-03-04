@@ -265,14 +265,12 @@ class ZscalerMCPServer:
             host: Host to bind to for HTTP transports (default: 127.0.0.1)
             port: Port to listen on for HTTP transports (default: 8000)
         """
+        from zscaler_mcp.auth import apply_auth_middleware
+
         if transport == "streamable-http":
-            # For streamable-http, use uvicorn directly for custom host/port
             logger.info("Starting streamable-http server on %s:%d", host, port)
-
-            # Get the ASGI app from FastMCP (handles /mcp path automatically)
             app = self.server.streamable_http_app()
-
-            # Run with uvicorn for custom host/port configuration
+            app = apply_auth_middleware(app, transport)
             uvicorn.run(
                 app,
                 host=host,
@@ -280,13 +278,9 @@ class ZscalerMCPServer:
                 log_level="info" if not self.debug else "debug",
             )
         elif transport == "sse":
-            # For sse, use uvicorn directly for custom host/port (same pattern as streamable-http)
             logger.info("Starting sse server on %s:%d", host, port)
-
-            # Get the ASGI app from FastMCP
             app = self.server.sse_app()
-
-            # Run with uvicorn for custom host/port configuration
+            app = apply_auth_middleware(app, transport)
             uvicorn.run(
                 app,
                 host=host,
@@ -294,7 +288,6 @@ class ZscalerMCPServer:
                 log_level="info" if not self.debug else "debug",
             )
         else:
-            # For stdio, use the default FastMCP run method (no host/port needed)
             self.server.run(transport)
 
 
@@ -334,6 +327,81 @@ def list_available_tools(selected_services=None, enabled_tools=None):
                 logger.info(
                     f"  [{service_name}] {tool_info['name']}: {tool_info['description']}"
                 )
+
+
+def generate_auth_token(fmt: str = "basic"):
+    """Generate an auth token and print ready-to-use MCP client config snippets."""
+    import base64
+
+    client_id = os.environ.get("ZSCALER_CLIENT_ID", "")
+    client_secret = os.environ.get("ZSCALER_CLIENT_SECRET", "")
+
+    if not client_id or not client_secret:
+        print("Error: ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET must be set.")
+        print("Set them in your .env file or as environment variables.")
+        sys.exit(1)
+
+    if fmt == "basic":
+        raw = f"{client_id}:{client_secret}"
+        token = base64.b64encode(raw.encode()).decode()
+        header_value = f"Basic {token}"
+    else:
+        header_value = f"Bearer {client_secret}"
+
+    print()
+    print("=" * 70)
+    print("  Zscaler MCP Server — Auth Token Generator")
+    print("=" * 70)
+    print()
+    print(f"  Mode:   {'zscaler (Basic Auth)' if fmt == 'basic' else 'api-key (Bearer)'}")
+    print(f"  Header: Authorization: {header_value}")
+    print()
+    print("--- Cursor / MCP clients with header support ---")
+    print()
+    print('  {')
+    print('    "mcpServers": {')
+    print('      "zscaler-mcp-server": {')
+    print('        "url": "http://localhost:8000/mcp",')
+    print('        "headers": {')
+    print(f'          "Authorization": "{header_value}"')
+    print("        }")
+    print("      }")
+    print("    }")
+    print("  }")
+    print()
+    if fmt == "basic":
+        print("--- Alternative: raw credential headers (no Base64 needed) ---")
+        print()
+        print('  {')
+        print('    "mcpServers": {')
+        print('      "zscaler-mcp-server": {')
+        print('        "url": "http://localhost:8000/mcp",')
+        print('        "headers": {')
+        print(f'          "X-Zscaler-Client-ID": "{client_id}",')
+        print(f'          "X-Zscaler-Client-Secret": "{client_secret}"')
+        print("        }")
+        print("      }")
+        print("    }")
+        print("  }")
+        print()
+    print("--- Claude Desktop (mcp-remote bridge) ---")
+    print()
+    print('  {')
+    print('    "mcpServers": {')
+    print('      "zscaler-mcp-server": {')
+    print('        "command": "npx",')
+    print('        "args": [')
+    print('          "-y",')
+    print('          "mcp-remote",')
+    print('          "http://localhost:8000/mcp",')
+    print('          "--header",')
+    print(f'          "Authorization: {header_value}"')
+    print("        ]")
+    print("      }")
+    print("    }")
+    print("  }")
+    print()
+    print("=" * 70)
 
 
 def parse_services_list(services_string):
@@ -549,6 +617,17 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--generate-auth-token",
+        nargs="?",
+        const="basic",
+        choices=["basic", "bearer"],
+        metavar="FORMAT",
+        help="Generate an auth token from ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET "
+             "and print MCP client config snippets, then exit. "
+             "Format: 'basic' (default) for Zscaler auth mode, 'bearer' for api-key mode.",
+    )
+
+    parser.add_argument(
         "--version",
         "-v",
         action="version",
@@ -572,6 +651,10 @@ def main():
             selected_services=args.services,
             enabled_tools=set(args.tools) if args.tools else None,
         )
+        sys.exit(0)
+
+    if getattr(args, "generate_auth_token", None):
+        generate_auth_token(args.generate_auth_token)
         sys.exit(0)
 
     try:

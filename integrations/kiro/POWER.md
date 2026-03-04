@@ -1,139 +1,186 @@
 ---
 name: "zscaler"
 displayName: "Zscaler Zero Trust"
-description: "Manage your Zscaler Zero Trust Exchange platform - ZPA private access, ZIA internet security, ZDX digital experience, and more"
-keywords: ["zscaler", "zero-trust", "ztna", "zpa", "zia", "zdx", "security", "firewall", "access-policy", "private-access"]
+description: "Manage your Zscaler Zero Trust Exchange platform — ZPA private access, ZIA internet security, ZDX digital experience monitoring, and more. 200+ tools across 8 services."
+keywords: ["zscaler", "zero-trust", "ztna", "zpa", "zia", "zdx", "zcc", "easm", "security", "firewall", "access-policy", "private-access", "url-filtering", "dlp", "ssl-inspection", "digital-experience", "attack-surface", "z-insights"]
 author: "Zscaler"
 ---
 
 # Zscaler Zero Trust Power
 
-**Zscaler Zero Trust Exchange** - Manage your entire Zscaler Zero Trust platform including ZPA (Private Access), ZIA (Internet Access), ZDX (Digital Experience), ZCC (Client Connector), ZTW (Workload Segmentation), and EASM (External Attack Surface Management).
-
-**MCP Servers:** zscaler-mcp (uvx or Docker)
-
----
-
 ## Overview
 
-The Zscaler Power provides AI-assisted management of the Zscaler Zero Trust Exchange platform. With 110+ read-only tools and 85+ write tools across 7 services, you can query, explore, and manage your entire Zscaler environment through natural language.
+The Zscaler Power provides AI-assisted management of the Zscaler Zero Trust Exchange platform. With 200+ tools across 8 services, you can query, explore, and manage your entire Zscaler environment through natural language.
 
-### Key Capabilities
+**Key capabilities:**
 
-- **ZPA (Zscaler Private Access)** - Application segments, access policies, server groups, connectors
-- **ZIA (Zscaler Internet Access)** - Firewall rules, URL filtering, SSL inspection, DLP
-- **ZDX (Zscaler Digital Experience)** - Device health, application scores, alerts, deep traces
-- **ZCC (Zscaler Client Connector)** - Device enrollment, trusted networks, forwarding profiles
-- **ZTW (Workload Segmentation)** - IP groups, network services, cloud accounts
-- **EASM (External Attack Surface Management)** - Findings, lookalike domains, scan evidence
-- **ZIdentity** - Users, groups, identity management
+- **ZPA (Zscaler Private Access)** — Application segments, access/forwarding/timeout/isolation policies, server groups, connectors, PRA, browser access (59 tools)
+- **ZIA (Zscaler Internet Access)** — Cloud firewall, URL filtering, SSL inspection, DLP, locations, static IPs, VPN credentials, GRE tunnels, sandbox (76 tools)
+- **ZDX (Zscaler Digital Experience)** — Application scores, device health, alerts, deep traces, software inventory (18 tools, read-only)
+- **Z-Insights (Business Analytics)** — Web traffic, cyber incidents, shadow IT, CASB, firewall analytics, IoT (16 tools, read-only)
+- **ZCC (Zscaler Client Connector)** — Device enrollment, forwarding profiles, trusted networks (4 tools, read-only)
+- **ZTW (Workload Segmentation)** — IP groups, network services, cloud accounts, discovery (19 tools)
+- **EASM (External Attack Surface Management)** — Findings, lookalike domains, scan evidence (7 tools, read-only)
+- **ZIdentity** — Users, groups, identity management (10 tools, read-only)
 
-### Security Model
+**Authentication**: Requires Zscaler OneAPI credentials from your ZIdentity console (client ID, client secret, customer ID, vanity domain).
 
-- **Read-only by default** - Safe for autonomous AI operations
-- **Write operations require explicit opt-in** - `--enable-write-tools` flag
-- **Mandatory allowlist for writes** - Specific tools must be allowlisted
-- **Destructive operations require confirmation** - Delete operations prompt for approval
+**Security Model:**
 
----
+- **Read-only by default** — Safe for autonomous AI operations
+- **Write operations require explicit opt-in** — `--enable-write-tools` + `--write-tools` allowlist
+- **Destructive operations require confirmation** — Delete operations prompt for approval
 
-## Activation Triggers
+## Available Steering Files
 
-Activate this power when the user mentions:
+This power has the following steering files for on-demand context loading:
 
-### Product Names
-- Zscaler, ZPA, ZIA, ZDX, ZCC, ZTW, EASM, ZIdentity
-- Zero Trust Exchange, Private Access, Internet Access
-- Digital Experience, Client Connector
-- Workload Segmentation, Attack Surface Management
+- **zpa** — ZPA private access: dependency chains, application onboarding, access policy condition types, 59 tools
+- **zia** — ZIA internet access: activation requirement, location onboarding, SSL/URL/DLP audit workflows, 76 tools
+- **zdx** — ZDX digital experience: score interpretation, filtering parameters, troubleshooting workflows, 18 tools
+- **z-insights** — Z-Insights analytics: cyber incident investigation, shadow IT, firewall analytics, 16 tools
+- **zcc** — ZCC client connector: device inventory, forwarding profiles, 4 tools
+- **ztw** — ZTW workload segmentation: IP groups, network services, cloud discovery, 19 tools
+- **easm** — EASM attack surface: finding investigation, lookalike domains, 7 tools
+- **zidentity** — ZIdentity: user/group management, cross-service correlation, 10 tools
+- **cross-product** — Cross-product troubleshooting: ZCC + ZDX + ZPA + ZIA correlation workflow
 
-### Concepts
-- Zero trust, secure access, private access, ZTNA
-- Application segments, segment groups, server groups
-- Access policies, forwarding policies, timeout policies
-- Cloud firewall, URL filtering, DLP rules, SSL inspection
-- Web security, secure web gateway, SWG
-- Device enrollment, trusted networks
-- App connectors, service edges, private service edges
-- Posture profiles, isolation profiles
-- Cloud application control, CASB
+Load a steering file when the user's request matches that service. For example, load **zpa** when the user mentions private access, application segments, or access policies. Load **cross-product** when the issue spans multiple services.
 
-### Actions
-- "List my ZPA applications"
-- "Show Zscaler firewall rules"
-- "Check ZDX device health"
-- "View ZIA URL categories"
-- "Get ZCC device status"
-- "What application segments do I have?"
-- "Show me the access policies"
+## Available MCP Servers
 
----
+### zscaler
 
-## MCP Server Configuration
+**Package:** `zscaler-mcp` via uvx or Docker
+**Connection:** Local STDIO or remote HTTP (streamable-http)
 
-### Prerequisites: Create .env File
+**Tool naming convention:** All tools follow `{service}_{verb}_{resource}` — e.g., `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Use the service prefix to discover tools: `zia_`, `zpa_`, `zdx_`, `zcc_`, `zeasm_`, `zinsights_`, `zidentity_`, `ztw_`.
 
-Create a `.env` file with your Zscaler credentials:
+**Tool categories by service:**
 
-```bash
-# Create ~/.zscaler/.env with:
-ZSCALER_CLIENT_ID=your-client-id
-ZSCALER_CLIENT_SECRET=your-client-secret
-ZSCALER_CUSTOMER_ID=your-customer-id
-ZSCALER_VANITY_DOMAIN=your-vanity-domain
+| Service | Read Tools | Write Tools | Total |
+|---------|-----------|-------------|-------|
+| ZPA | 30+ (list/get for segments, groups, policies, PRA, certs) | 28 (create/update/delete) | 59 |
+| ZIA | 44+ (list/get for rules, categories, locations, sandbox) | 32 (create/update/delete + activate) | 76 |
+| ZDX | 18 (list/get for apps, devices, alerts, software) | 0 (read-only) | 18 |
+| Z-Insights | 16 (traffic, incidents, shadow IT, firewall, IoT) | 0 (read-only) | 16 |
+| ZCC | 4 (devices, trusted networks, forwarding profiles) | 0 (read-only) | 4 |
+| ZTW | 13 (IP groups, services, cloud, discovery) | 6 (create/delete) | 19 |
+| EASM | 7 (organizations, findings, lookalike domains) | 0 (read-only) | 7 |
+| ZIdentity | 10 (users, groups, search) | 0 (read-only) | 10 |
 
-# Then set the path:
-export ZSCALER_ENV_FILE="$HOME/.zscaler/.env"
+See the individual steering files for complete tool lists with parameters.
+
+## Critical Gotchas
+
+1. **ZIA requires activation.** After any ZIA create/update/delete, call `zia_activate_configuration()`. Changes are staged until activation. This is the #1 source of "my change didn't work."
+2. **ZPA dependency chains.** App onboarding order: connector group → server group → segment group → app segment → access policy rule. Out-of-order creation causes 400 errors.
+3. **ZIA location dependency chain.** Location onboarding: static IP → VPN credential → location → activate.
+4. **ZDX is entirely read-only.** No create/update/delete operations exist (except deep traces).
+5. **ZDX `since` parameter is in hours**, not timestamps. Default is 2 hours. Example: `since=24` means "last 24 hours."
+6. **Policy rules are evaluated top-to-bottom.** Order matters for ZPA access policies and ZIA firewall/URL/SSL/DLP rules.
+7. **IDs are strings**, even when they look numeric.
+8. **`use_legacy` parameter** exists on every tool, defaults to `False`. Do not change it.
+
+## Common Workflows
+
+### Application Onboarding (ZPA)
+```
+Load steering: zpa
+1. zpa_list_app_connector_groups → Check for existing connector group
+2. zpa_create_app_connector_group → Create if needed
+3. zpa_create_server_group → References connector group
+4. zpa_create_segment_group → Create or use existing
+5. zpa_create_application_segment → Domains, ports, server+segment group IDs
+6. zpa_create_access_policy_rule → Grant access with identity conditions
 ```
 
-### Option A: Docker with .env File (Default)
-
-```json
-{
-  "mcpServers": {
-    "zscaler": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "--env-file", "${ZSCALER_ENV_FILE}",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
-      ]
-    }
-  }
-}
+### Location Onboarding (ZIA)
+```
+Load steering: zia
+1. zia_create_static_ip → Register site's public IP
+2. zia_create_vpn_credential → Create VPN credential referencing static IP
+3. zia_create_location → Create location referencing VPN credential
+4. zia_activate_configuration → Push changes live
 ```
 
-### Option B: Docker with Local Image
-
-```json
-{
-  "mcpServers": {
-    "zscaler": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm", "--pull=never",
-        "--env-file", "/path/to/your/.env",
-        "zscaler-mcp-server"
-      ]
-    }
-  }
-}
+### User Troubleshooting (Cross-Product)
+```
+Load steering: cross-product
+1. zcc_list_devices → Check device enrollment
+2. zdx_get_device → Check device health
+3. zdx_get_application_score_trend → Check app performance
+4. zpa_list_access_policy_rules → Verify access policies (private apps)
+5. zia_list_url_filtering_rules → Check URL policies (internet apps)
 ```
 
-### Option C: Using uvx with .env File
-
-```json
-{
-  "mcpServers": {
-    "zscaler": {
-      "command": "uvx",
-      "args": ["--env-file", "${ZSCALER_ENV_FILE}", "zscaler-mcp"]
-    }
-  }
-}
+### Security Incident Investigation (Z-Insights)
+```
+Load steering: z-insights
+1. zinsights_get_cyber_incidents → Incident overview
+2. zinsights_get_cyber_incidents_by_location → Affected locations
+3. zinsights_get_cyber_incidents_daily → Timeline
+4. zinsights_get_threat_super_categories → Threat breakdown
 ```
 
-### Option D: Using uvx with Environment Variables
+### Attack Surface Review (EASM)
+```
+Load steering: easm
+1. zeasm_list_findings → Get all findings by severity
+2. zeasm_get_finding_details → Investigate specific finding
+3. zeasm_list_lookalike_domains → Check brand impersonation
+```
+
+## Best Practices
+
+### Do:
+
+- **Start with discovery** — Use `list_*` tools to understand current state before making changes
+- **Confirm before modifying** — Always explain proposed changes and get user confirmation for write operations
+- **Respect dependency chains** — See ZPA and ZIA steering files for required creation order
+- **Activate ZIA changes** — Always call `zia_activate_configuration` after ZIA write operations
+- **Use ZDX filtering** — Pass `location_id`, `department_id`, `geo_id`, `since` to narrow ZDX queries
+- **Load steering files on demand** — Only load the steering file for the service being discussed
+
+### Don't:
+
+- **Skip activation** — ZIA changes are invisible until activated
+- **Create ZPA resources out of order** — Causes cryptic 400 errors
+- **Run broad ZDX queries on large tenants** — Always ask for scope first
+- **Change `use_legacy` parameter** — Leave it at `False` unless explicitly asked
+- **Delete resources without checking dependencies** — App segments referenced by policy rules can't be deleted
+
+## Troubleshooting
+
+### Authentication Errors
+- Verify `ZSCALER_CLIENT_ID` and `ZSCALER_CLIENT_SECRET` are correct
+- Check `ZSCALER_VANITY_DOMAIN` and `ZSCALER_CUSTOMER_ID`
+- Ensure API client has required scopes in ZIdentity console
+
+### Permission Errors
+- Write operations require `--enable-write-tools` flag when starting the server
+- Specific tools must be in `--write-tools` allowlist
+
+### 400 Bad Request (Dependency Errors)
+- Usually means a ZPA/ZIA resource was created out of order
+- Load the relevant steering file (zpa or zia) and follow the dependency chain
+
+### "Changes didn't take effect"
+- Check `zia_get_activation_status` — status is likely "PENDING"
+- Call `zia_activate_configuration` to push changes live
+
+## Configuration
+
+**Authentication Required**: Zscaler OneAPI credentials from ZIdentity console
+
+**Setup Steps:**
+
+1. Log in to your ZIdentity console
+2. Navigate to API Clients and create a new client
+3. Copy: Client ID, Client Secret, Customer ID, Vanity Domain
+4. Configure in Kiro when installing this power
+
+**MCP Configuration:**
 
 ```json
 {
@@ -152,288 +199,32 @@ export ZSCALER_ENV_FILE="$HOME/.zscaler/.env"
 }
 ```
 
-### Option E: Remote MCP (AWS Bedrock AgentCore)
+**Alternative (Docker):**
 
 ```json
 {
   "mcpServers": {
     "zscaler": {
-      "url": "https://your-agentcore-endpoint.amazonaws.com/mcp",
-      "transport": "streamable-http"
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "--env-file", "/path/to/your/.env",
+        "quay.io/zscaler/zscaler-mcp-server:latest"
+      ]
     }
   }
 }
 ```
 
----
+## Tips
 
-## Available Tools
-
-### ZPA (Zscaler Private Access)
-
-#### Application Management
-| Tool | Description | Type |
-|------|-------------|------|
-| `zpa_list_application_segments` | List all application segments | Read |
-| `zpa_get_application_segment` | Get specific application segment details | Read |
-| `zpa_create_application_segment` | Create new application segment | Write |
-| `zpa_update_application_segment` | Update existing application segment | Write |
-| `zpa_delete_application_segment` | Delete application segment | Write |
-| `zpa_list_segment_groups` | List segment groups | Read |
-| `zpa_list_server_groups` | List server groups | Read |
-
-#### Infrastructure
-| Tool | Description | Type |
-|------|-------------|------|
-| `zpa_list_app_connector_groups` | List app connector groups | Read |
-| `zpa_list_service_edge_groups` | List service edge groups | Read |
-| `zpa_list_application_servers` | List application servers | Read |
-| `zpa_list_provisioning_keys` | List provisioning keys | Read |
-
-#### Access Policies
-| Tool | Description | Type |
-|------|-------------|------|
-| `zpa_list_access_policy_rules` | List access policy rules | Read |
-| `zpa_get_access_policy_rule` | Get specific access policy rule | Read |
-| `zpa_create_access_policy_rule` | Create access policy rule | Write |
-| `zpa_update_access_policy_rule` | Update access policy rule | Write |
-| `zpa_delete_access_policy_rule` | Delete access policy rule | Write |
-| `zpa_list_forwarding_policy_rules` | List forwarding policies | Read |
-| `zpa_list_timeout_policy_rules` | List timeout policies | Read |
-| `zpa_list_isolation_policy_rules` | List isolation policies | Read |
-
-#### Identity & Posture
-| Tool | Description | Type |
-|------|-------------|------|
-| `zpa_list_posture_profiles` | List posture profiles | Read |
-| `zpa_list_trusted_networks` | List trusted networks | Read |
-| `zpa_list_saml_attributes` | List SAML attributes | Read |
-| `zpa_list_scim_groups` | List SCIM groups | Read |
-
-### ZIA (Zscaler Internet Access)
-
-#### Firewall & Security
-| Tool | Description | Type |
-|------|-------------|------|
-| `zia_list_cloud_firewall_rules` | List firewall rules | Read |
-| `zia_get_cloud_firewall_rule` | Get specific firewall rule | Read |
-| `zia_create_cloud_firewall_rule` | Create firewall rule | Write |
-| `zia_update_cloud_firewall_rule` | Update firewall rule | Write |
-| `zia_delete_cloud_firewall_rule` | Delete firewall rule | Write |
-| `zia_list_url_filtering_rules` | List URL filtering rules | Read |
-| `zia_list_ssl_inspection_rules` | List SSL inspection rules | Read |
-
-#### DLP & Content
-| Tool | Description | Type |
-|------|-------------|------|
-| `zia_list_web_dlp_rules` | List DLP rules | Read |
-| `zia_get_dlp_dictionary` | Get DLP dictionary | Read |
-| `zia_list_dlp_engines` | List DLP engines | Read |
-| `zia_list_url_categories` | List URL categories | Read |
-| `zia_add_urls_to_category` | Add URLs to category | Write |
-| `zia_remove_urls_from_category` | Remove URLs from category | Write |
-
-#### Network & Locations
-| Tool | Description | Type |
-|------|-------------|------|
-| `zia_list_locations` | List locations | Read |
-| `zia_list_gre_tunnels` | List GRE tunnels | Read |
-| `zia_list_vpn_credentials` | List VPN credentials | Read |
-| `zia_list_static_ips` | List static IPs | Read |
-
-#### Administration
-| Tool | Description | Type |
-|------|-------------|------|
-| `zia_get_activation_status` | Check activation status | Read |
-| `zia_activate_configuration` | Activate pending changes | Write |
-| `zia_list_rule_labels` | List rule labels | Read |
-| `zia_get_sandbox_quota` | Get sandbox quota | Read |
-
-### ZDX (Zscaler Digital Experience)
-
-| Tool | Description | Type |
-|------|-------------|------|
-| `zdx_list_devices` | List monitored devices | Read |
-| `zdx_get_device` | Get device details | Read |
-| `zdx_list_applications` | List monitored applications | Read |
-| `zdx_get_application_score_trend` | Get application score trends | Read |
-| `zdx_get_application_metric` | Get application metrics (PFT, DNS) | Read |
-| `zdx_list_alerts` | List active alerts | Read |
-| `zdx_get_alert` | Get alert details | Read |
-| `zdx_list_software` | List software inventory | Read |
-| `zdx_list_departments` | List departments | Read |
-| `zdx_list_locations` | List locations | Read |
-| `zdx_list_device_deep_traces` | List deep traces | Read |
-
-### ZCC (Zscaler Client Connector)
-
-| Tool | Description | Type |
-|------|-------------|------|
-| `zcc_list_devices` | List enrolled devices | Read |
-| `zcc_devices_csv_exporter` | Export device data as CSV | Read |
-| `zcc_list_trusted_networks` | List trusted networks | Read |
-| `zcc_list_forwarding_profiles` | List forwarding profiles | Read |
-
-### ZTW (Workload Segmentation)
-
-| Tool | Description | Type |
-|------|-------------|------|
-| `ztw_list_ip_groups` | List IP groups | Read |
-| `ztw_list_ip_source_groups` | List IP source groups | Read |
-| `ztw_list_ip_destination_groups` | List IP destination groups | Read |
-| `ztw_list_network_service_groups` | List service groups | Read |
-| `ztw_list_network_services` | List network services | Read |
-| `ztw_list_roles` | List admin roles | Read |
-| `ztw_list_admins` | List admin users | Read |
-| `ztw_list_public_cloud_info` | List cloud accounts | Read |
-
-### EASM (External Attack Surface Management)
-
-| Tool | Description | Type |
-|------|-------------|------|
-| `zeasm_list_organizations` | List EASM organizations | Read |
-| `zeasm_list_findings` | List security findings | Read |
-| `zeasm_get_finding_details` | Get finding details | Read |
-| `zeasm_get_finding_evidence` | Get scan evidence | Read |
-| `zeasm_list_lookalike_domains` | List lookalike domains | Read |
-| `zeasm_get_lookalike_domain` | Get lookalike domain details | Read |
-
-### ZIdentity
-
-| Tool | Description | Type |
-|------|-------------|------|
-| `zidentity_get_users` | Get user information | Read |
-| `zidentity_get_groups` | Get group information | Read |
-| `zidentity_search` | Search across resources | Read |
-
----
-
-## Usage Guidelines
-
-### General Best Practices
-
-1. **Start with Discovery**
-   - Use `list_*` tools first to understand current state
-   - Example: "First, let me list your application segments to see what's configured"
-
-2. **Provide Context**
-   - When retrieving details, explain what the data means
-   - Highlight important configurations or potential issues
-
-3. **Confirm Before Modifying**
-   - Always explain proposed changes before executing
-   - Use `get_*` tools to show current state before updates
-   - Request explicit user confirmation for write operations
-
-4. **Handle Errors Gracefully**
-   - If a tool fails, explain the error clearly
-   - Suggest troubleshooting steps (check credentials, permissions)
-
-### Common Workflows
-
-#### Workflow 1: Application Discovery
-```
-1. zpa_list_application_segments - Get overview of all apps
-2. zpa_get_application_segment - Get specific app details
-3. zpa_list_access_policy_rules - Show who can access what
-```
-
-#### Workflow 2: Security Audit
-```
-1. zia_list_cloud_firewall_rules - Review firewall rules
-2. zia_list_ssl_inspection_rules - Check SSL inspection config
-3. zia_list_url_filtering_rules - Review URL policies
-4. zia_list_web_dlp_rules - Check DLP configuration
-```
-
-#### Workflow 3: Device Health Check
-```
-1. zdx_list_devices - Get device inventory
-2. zdx_list_alerts - Check active alerts
-3. zdx_get_application_score_trend - Review app performance
-4. zdx_list_software - Check software inventory
-```
-
-#### Workflow 4: User Access Review
-```
-1. zidentity_get_users - List users
-2. zpa_list_access_policy_rules - Review access policies
-3. zpa_list_posture_profiles - Check posture requirements
-```
-
----
-
-## Security Guidelines
-
-### Read-Only Mode (Default)
-
-The server operates in **read-only mode** by default:
-- ✅ All `list_*` and `get_*` operations available (110+ tools)
-- ❌ All `create_*`, `update_*`, `delete_*` operations disabled
-- ✅ Safe for autonomous AI operations
-- ✅ No risk of accidental modifications
-
-### Write Mode (Explicit Opt-In)
-
-To enable write operations, BOTH are required:
-1. `--enable-write-tools` flag (global unlock)
-2. `--write-tools "pattern"` (mandatory allowlist)
-
-```bash
-# Enable specific write tools
-zscaler-mcp --enable-write-tools --write-tools "zpa_create_*,zpa_update_*"
-
-# Enable all ZPA write operations
-zscaler-mcp --enable-write-tools --write-tools "zpa_*"
-```
-
-### Destructive Operations
-
-All `delete_*` operations:
-- Marked with `destructiveHint=True`
-- Trigger permission dialogs in AI assistants
-- Require explicit user confirmation
-- Should be preceded by backup/export suggestions
-
----
-
-## Error Handling
-
-### Authentication Errors
-- Verify `ZSCALER_CLIENT_ID` and `ZSCALER_CLIENT_SECRET`
-- Check `ZSCALER_VANITY_DOMAIN` and `ZSCALER_CUSTOMER_ID`
-- Ensure API client has required permissions in Zidentity console
-
-### Permission Errors
-- Write operations require `--enable-write-tools` flag
-- Specific write tools must be in `--write-tools` allowlist
-- Check API client scope in Zidentity
-
-### API Errors
-- Parse error messages and explain in plain language
-- Check rate limits if seeing throttling
-- Verify network connectivity to Zscaler cloud
-
----
-
-## Prerequisites
-
-### Zscaler Requirements
-1. Zscaler tenant with API access enabled
-2. API client created in Zidentity console
-3. Required scopes assigned to API client
-
-### Credentials
-Set the following environment variables:
-- `ZSCALER_CLIENT_ID` - OAuth client ID
-- `ZSCALER_CLIENT_SECRET` - OAuth client secret
-- `ZSCALER_CUSTOMER_ID` - Your customer ID
-- `ZSCALER_VANITY_DOMAIN` - Your vanity domain (e.g., "acme")
-
-### Optional
-- `ZSCALER_CLOUD` - Only for Beta tenant (set to "beta")
-
----
+1. **Load steering files dynamically** — Only load the service-specific steering file when the user's request matches it
+2. **ZDX is your diagnostic starting point** — ZDX scores tell you if something is wrong; ZPA/ZIA steering tells you why
+3. **Use `zia_url_lookup` before making URL policy changes** — Understand the current classification first
+4. **Cross-product issues are common** — When one service can't explain the issue, load the cross-product steering file
+5. **ZPA condition types are complex** — Load the ZPA steering file for the full condition type reference before creating policy rules
+6. **Always paginate** — List tools support `page` and `page_size` for large tenants
+7. **Check existing resources first** — Use `list_*` before `create_*` to avoid duplicates
 
 ## Resources
 
@@ -442,5 +233,9 @@ Set the following environment variables:
 - **PyPI**: https://pypi.org/project/zscaler-mcp/
 - **Docker**: https://quay.io/repository/zscaler/zscaler-mcp-server
 - **AWS Marketplace**: Available on Amazon Bedrock AgentCore
-- **Support**: https://community.zscaler.com/
 
+## License and support
+
+This power integrates with [Zscaler MCP Server](https://github.com/zscaler/zscaler-mcp-server) (MIT).
+- [Privacy Policy](https://www.zscaler.com/privacy)
+- [Support](https://community.zscaler.com/)
