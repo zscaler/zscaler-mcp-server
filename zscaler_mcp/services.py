@@ -192,6 +192,13 @@ class ZPAService(BaseService):
             zpa_list_app_connector_groups,
             zpa_update_app_connector_group,
         )
+        from .tools.zpa.app_connectors import (
+            zpa_bulk_delete_app_connectors,
+            zpa_delete_app_connector,
+            zpa_get_app_connector,
+            zpa_list_app_connectors,
+            zpa_update_app_connector,
+        )
         from .tools.zpa.app_segments import (
             zpa_create_application_segment,
             zpa_delete_application_segment,
@@ -270,6 +277,8 @@ class ZPAService(BaseService):
             {"func": zpa_get_application_segment, "name": "zpa_get_application_segment", "description": "Get a specific ZPA application segment by ID (read-only)"},
             {"func": zpa_list_app_connector_groups, "name": "zpa_list_app_connector_groups", "description": "List ZPA app connector groups (read-only)"},
             {"func": zpa_get_app_connector_group, "name": "zpa_get_app_connector_group", "description": "Get a specific ZPA app connector group by ID (read-only)"},
+            {"func": zpa_list_app_connectors, "name": "zpa_list_app_connectors", "description": "List ZPA app connectors with status, version, and health information (read-only)"},
+            {"func": zpa_get_app_connector, "name": "zpa_get_app_connector", "description": "Get a specific ZPA app connector by ID with runtime status and control connection state (read-only)"},
             {"func": zpa_list_server_groups, "name": "zpa_list_server_groups", "description": "List ZPA server groups (read-only)"},
             {"func": zpa_get_server_group, "name": "zpa_get_server_group", "description": "Get a specific ZPA server group by ID (read-only)"},
             {"func": zpa_list_segment_groups, "name": "zpa_list_segment_groups", "description": "List ZPA segment groups (read-only)"},
@@ -318,6 +327,9 @@ class ZPAService(BaseService):
             {"func": zpa_create_app_connector_group, "name": "zpa_create_app_connector_group", "description": "Create a new ZPA app connector group (write operation)"},
             {"func": zpa_update_app_connector_group, "name": "zpa_update_app_connector_group", "description": "Update an existing ZPA app connector group (write operation)"},
             {"func": zpa_delete_app_connector_group, "name": "zpa_delete_app_connector_group", "description": "Delete a ZPA app connector group (destructive operation)"},
+            {"func": zpa_update_app_connector, "name": "zpa_update_app_connector", "description": "Update a ZPA app connector (enable/disable, rename) (write operation)"},
+            {"func": zpa_delete_app_connector, "name": "zpa_delete_app_connector", "description": "Delete a ZPA app connector (destructive operation)"},
+            {"func": zpa_bulk_delete_app_connectors, "name": "zpa_bulk_delete_app_connectors", "description": "Bulk delete multiple ZPA app connectors (destructive operation)"},
             {"func": zpa_create_server_group, "name": "zpa_create_server_group", "description": "Create a new ZPA server group (write operation)"},
             {"func": zpa_update_server_group, "name": "zpa_update_server_group", "description": "Update an existing ZPA server group (write operation)"},
             {"func": zpa_delete_server_group, "name": "zpa_delete_server_group", "description": "Delete a ZPA server group (destructive operation)"},
