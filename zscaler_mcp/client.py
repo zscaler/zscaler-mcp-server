@@ -96,9 +96,8 @@ def get_zscaler_client(
         password = password if password not in [None, ""] else os.getenv("ZTW_PASSWORD")
         api_key = api_key if api_key not in [None, ""] else os.getenv("ZTW_API_KEY")
 
-        # ZCC legacy credentials
-        api_key = api_key if api_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
-        secret_key = secret_key if secret_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
+        # ZCC legacy credentials — resolved in the service block below
+        # to avoid ZIA/ZTW api_key overwriting ZCC_CLIENT_ID
 
         # ZDX legacy credentials
         key_id = key_id if key_id not in [None, ""] else os.getenv("ZDX_CLIENT_ID")
@@ -197,6 +196,8 @@ def get_zscaler_client(
             return LegacyZPAClient(config)
 
         elif service == "zcc":
+            api_key = os.getenv("ZCC_CLIENT_ID", api_key)
+            secret_key = os.getenv("ZCC_CLIENT_SECRET", secret_key)
             if not all([api_key, secret_key, cloud]):
                 raise ValueError("Missing required credentials for LegacyZCCClient.")
             config = {
