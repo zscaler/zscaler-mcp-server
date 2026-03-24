@@ -10,7 +10,6 @@ import os
 import time
 from unittest.mock import patch
 
-
 from zscaler_mcp.common.elicitation import (
     _canonical_payload,
     _generate_token,
@@ -20,7 +19,6 @@ from zscaler_mcp.common.elicitation import (
     generate_confirmation_message,
     should_skip_confirmations,
 )
-
 
 # ---------------------------------------------------------------------------
 # _canonical_payload

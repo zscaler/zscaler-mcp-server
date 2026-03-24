@@ -105,8 +105,13 @@ def zdx_list_device_deep_traces(
         raise Exception(f"Deep trace listing failed: {err}")
 
     if result and len(result) > 0:
-        traces_data = [trace.as_dict() for trace in result]
-        return _convert_timestamps(traces_data)
+        all_traces = []
+        for wrapper in result:
+            if hasattr(wrapper, "traces") and wrapper.traces:
+                all_traces.extend([trace.as_dict() for trace in wrapper.traces])
+            else:
+                all_traces.append(wrapper.as_dict())
+        return _convert_timestamps(all_traces)
     else:
         return []
 

@@ -109,6 +109,20 @@ class ZDXService(BaseService):
         # Import verb-based ZDX tools (all read-only)
         from .tools.zdx.active_devices import zdx_get_device, zdx_list_devices
         from .tools.zdx.administration import zdx_list_departments, zdx_list_locations
+        from .tools.zdx.deeptrace_analysis import (
+            zdx_delete_analysis,
+            zdx_get_analysis,
+            zdx_start_analysis,
+        )
+        from .tools.zdx.deeptrace_cloudpath import zdx_get_deeptrace_cloudpath
+        from .tools.zdx.deeptrace_cloudpath_metrics import zdx_get_deeptrace_cloudpath_metrics
+        from .tools.zdx.deeptrace_events import zdx_get_deeptrace_events
+        from .tools.zdx.deeptrace_health_metrics import zdx_get_deeptrace_health_metrics
+        from .tools.zdx.deeptrace_manage import zdx_delete_deeptrace, zdx_start_deeptrace
+        from .tools.zdx.deeptrace_top_processes import zdx_list_deeptrace_top_processes
+        from .tools.zdx.deeptrace_webprobe_metrics import zdx_get_deeptrace_webprobe_metrics
+        from .tools.zdx.device_cloudpath_probes import zdx_list_cloudpath_probes
+        from .tools.zdx.device_web_probes import zdx_get_web_probes
         from .tools.zdx.get_application_metric import zdx_get_application_metric
         from .tools.zdx.get_application_score import (
             zdx_get_application,
@@ -127,20 +141,6 @@ class ZDXService(BaseService):
         from .tools.zdx.list_deep_traces import (
             zdx_get_device_deep_trace,
             zdx_list_device_deep_traces,
-        )
-        from .tools.zdx.deeptrace_top_processes import zdx_list_deeptrace_top_processes
-        from .tools.zdx.deeptrace_webprobe_metrics import zdx_get_deeptrace_webprobe_metrics
-        from .tools.zdx.deeptrace_cloudpath_metrics import zdx_get_deeptrace_cloudpath_metrics
-        from .tools.zdx.deeptrace_cloudpath import zdx_get_deeptrace_cloudpath
-        from .tools.zdx.deeptrace_health_metrics import zdx_get_deeptrace_health_metrics
-        from .tools.zdx.deeptrace_events import zdx_get_deeptrace_events
-        from .tools.zdx.device_web_probes import zdx_get_web_probes
-        from .tools.zdx.device_cloudpath_probes import zdx_list_cloudpath_probes
-        from .tools.zdx.deeptrace_manage import zdx_start_deeptrace, zdx_delete_deeptrace
-        from .tools.zdx.deeptrace_analysis import (
-            zdx_get_analysis,
-            zdx_start_analysis,
-            zdx_delete_analysis,
         )
         from .tools.zdx.list_historical_alerts import zdx_list_historical_alerts
         from .tools.zdx.list_software_inventory import zdx_get_software_details, zdx_list_software
