@@ -6,12 +6,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zdx_get_application_metric(
-    app_id: Annotated[
-        str, Field(description="The unique ID for the ZDX application.")
-    ],
+    app_id: Annotated[str, Field(description="The unique ID for the ZDX application.")],
     metric_name: Annotated[
         Optional[Literal["pft", "dns", "availability"]],
-        Field(description="The name of the metric to return. Available values: 'pft' (Page Fetch Time), 'dns' (DNS Time), 'availability'.")
+        Field(
+            description="The name of the metric to return. Available values: 'pft' (Page Fetch Time), 'dns' (DNS Time), 'availability'."
+        ),
     ] = None,
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
@@ -25,9 +25,7 @@ def zdx_get_application_metric(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -104,9 +102,7 @@ def zdx_get_application_metric(
     if since:
         query_params["since"] = since
 
-    results, _, err = client.zdx.apps.get_app_metrics(
-        app_id, query_params=query_params
-    )
+    results, _, err = client.zdx.apps.get_app_metrics(app_id, query_params=query_params)
     if err:
         raise Exception(f"Application metrics retrieval failed: {err}")
 

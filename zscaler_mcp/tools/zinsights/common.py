@@ -362,9 +362,7 @@ def validate_sort_order(sort_order: Optional[str]) -> None:
         ValueError: If sort_order is provided but not valid.
     """
     if sort_order and sort_order not in VALID_SORT_ORDERS:
-        raise ValueError(
-            f"Invalid sort_order '{sort_order}'. Must be one of: {VALID_SORT_ORDERS}"
-        )
+        raise ValueError(f"Invalid sort_order '{sort_order}'. Must be one of: {VALID_SORT_ORDERS}")
 
 
 def validate_aggregation(aggregation: Optional[str]) -> None:
@@ -395,8 +393,7 @@ def validate_casb_incident_type(incident_type: Optional[str]) -> None:
     """
     if incident_type and incident_type not in VALID_CASB_INCIDENT_TYPES:
         raise ValueError(
-            f"Invalid incident_type '{incident_type}'. "
-            f"Must be one of: {VALID_CASB_INCIDENT_TYPES}"
+            f"Invalid incident_type '{incident_type}'. Must be one of: {VALID_CASB_INCIDENT_TYPES}"
         )
 
 
@@ -425,7 +422,7 @@ def check_graphql_errors(response, operation_name: str = "Z-Insights query") -> 
         return {"has_error": False}
 
     try:
-        body = response.get_body() if hasattr(response, 'get_body') else {}
+        body = response.get_body() if hasattr(response, "get_body") else {}
         if isinstance(body, dict) and body.get("errors"):
             graphql_errors = body.get("errors", [])
             error_msgs = []
@@ -663,4 +660,3 @@ def build_query_kwargs(
     kwargs.update(extra_kwargs)
 
     return kwargs
-

@@ -85,4 +85,3 @@ ehthumbs.db
 .env.production
 secrets/
 local_dev/*
-!local_dev/zscaler_sdk_python-*.tar.gz

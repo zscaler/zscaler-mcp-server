@@ -30,6 +30,25 @@ Ask the user for: username/email, affected application, error messages, when it 
 4. zdx_get_application_score_trend → Look for score drops
 5. zdx_get_application_metric    → Check DNS, TCP, SSL, PFT, server response metrics
 6. zdx_list_alerts               → Check active alerts for this app/device
+7. zdx_list_device_deep_traces   → Check for existing diagnostic sessions
+```
+
+### Step 3a — Deep Trace Diagnostics (if ZDX score is degraded/poor)
+If a deep trace session exists, analyze its data for root cause:
+```
+1. zdx_get_device_deep_trace             → Get trace summary
+2. zdx_get_deeptrace_webprobe_metrics    → DNS, TCP, SSL, HTTP times
+3. zdx_get_deeptrace_cloudpath           → Hop-by-hop network path
+4. zdx_get_deeptrace_cloudpath_metrics   → Per-hop latency, packet loss, jitter
+5. zdx_get_deeptrace_health_metrics      → CPU, memory, disk, network utilization
+6. zdx_list_deeptrace_top_processes      → Resource-heavy processes
+7. zdx_get_deeptrace_events              → Zscaler, HW, SW, network changes
+```
+If no trace exists and network issues are suspected, discover probe IDs and start a new one (requires write tools):
+```
+zdx_get_web_probes(device_id="<id>", app_id="<app_id>")
+zdx_list_cloudpath_probes(device_id="<id>", app_id="<app_id>")
+zdx_start_deeptrace(device_id="<id>", session_name="Troubleshoot-<user>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=15, probe_device=True)
 ```
 
 ### Step 4 — Check ZPA Configuration (for private applications)
@@ -73,7 +92,7 @@ Structure findings as:
 | Layer | Symptoms | Tools to Check |
 |-------|----------|----------------|
 | **ZCC Agent** | No connectivity at all | `zcc_list_devices` — check enrollment status |
-| **Network/DNS** | Slow or intermittent access | `zdx_get_application_metric` — check DNS, TCP metrics |
+| **Network/DNS** | Slow or intermittent access | `zdx_get_application_metric` — check DNS, TCP metrics; `zdx_get_deeptrace_webprobe_metrics` + `zdx_get_deeptrace_cloudpath` for detailed path analysis |
 | **ZPA Policy** | "Access denied" to private app | `zpa_list_access_policy_rules` — verify user matches allow rule |
 | **ZPA Connector** | Timeout to private app | `zpa_list_app_connector_groups` — check connector health |
 | **ZIA URL Policy** | "Blocked" page for web/SaaS | `zia_url_lookup` + `zia_list_url_filtering_rules` |

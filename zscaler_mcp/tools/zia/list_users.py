@@ -8,11 +8,15 @@ from zscaler_mcp.client import get_zscaler_client
 def zia_users_manager(
     action: Annotated[
         Literal["read"],
-        Field(description="Operation to perform. Use 'read' to paginate/filter users or fetch a single user by ID."),
+        Field(
+            description="Operation to perform. Use 'read' to paginate/filter users or fetch a single user by ID."
+        ),
     ] = "read",
     user_id: Annotated[
         Optional[Union[int, str]],
-        Field(description="User ID. When provided, returns a single user; otherwise returns a list of users."),
+        Field(
+            description="User ID. When provided, returns a single user; otherwise returns a list of users."
+        ),
     ] = None,
     dept: Annotated[
         Optional[str],
@@ -35,10 +39,12 @@ def zia_users_manager(
         Field(description="Page size for listing users. Default is 100; maximum is 1000."),
     ] = None,
     use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API."),
+        bool,
+        Field(description="Whether to use the legacy API."),
     ] = False,
     service: Annotated[
-        str, Field(description="Zscaler service name. Always 'zia' for this tool."),
+        str,
+        Field(description="Zscaler service name. Always 'zia' for this tool."),
     ] = "zia",
 ) -> Union[dict, List[dict]]:
     """
@@ -67,7 +73,7 @@ def zia_users_manager(
     - dict when user_id is provided — the user represented as a dictionary.
 
     Examples:
-    
+
     - List users filtered by department and group with pagination
       >>> zia_users_manager(
       ...     dept="Finance",
@@ -92,7 +98,7 @@ def zia_users_manager(
             if err:
                 raise Exception(f"Error retrieving user {user_id}: {err}")
             return user.as_dict()
-        
+
         # Otherwise, list users with optional filters
         query_params = {}
         if dept is not None:

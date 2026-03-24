@@ -140,7 +140,9 @@ def zia_list_cloud_app_control_actions(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     cloudappcontrol = client.zia.cloudappcontrol
 
-    actions, _, err = cloudappcontrol.list_available_actions(rule_type=rule_type, cloud_apps=cloud_apps)
+    actions, _, err = cloudappcontrol.list_available_actions(
+        rule_type=rule_type, cloud_apps=cloud_apps
+    )
     if err:
         raise Exception(f"Failed to list available Cloud App Control actions: {err}")
 

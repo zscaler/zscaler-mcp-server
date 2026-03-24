@@ -9,9 +9,7 @@ def ztw_list_admins(
     action: Annotated[
         str, Field(description="Action to perform: 'list_admins' or 'get_admin'.")
     ] = "list_admins",
-    admin_id: Annotated[
-        Optional[str], Field(description="Admin ID for get_admin action.")
-    ] = None,
+    admin_id: Annotated[Optional[str], Field(description="Admin ID for get_admin action.")] = None,
     include_auditor_users: Annotated[
         Optional[bool], Field(description="Include / exclude auditor users in the response.")
     ] = None,
@@ -21,21 +19,15 @@ def ztw_list_admins(
     include_api_roles: Annotated[
         Optional[bool], Field(description="Include / exclude API roles in the response.")
     ] = None,
-    search: Annotated[
-        Optional[str], Field(description="The search string to filter by.")
-    ] = None,
-    page: Annotated[
-        Optional[int], Field(description="The page offset to return.")
-    ] = None,
+    search: Annotated[Optional[str], Field(description="The search string to filter by.")] = None,
+    page: Annotated[Optional[int], Field(description="The page offset to return.")] = None,
     page_size: Annotated[
         Optional[int], Field(description="The number of records to return per page.")
     ] = None,
     version: Annotated[
         Optional[int], Field(description="Specifies the admins from a backup version.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Union[List[dict], dict, str]:
     """

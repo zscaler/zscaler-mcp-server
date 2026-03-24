@@ -34,7 +34,7 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "status": "Active",
                                     "user": "john.doe@company.com",
                                     "os": "Windows 11",
-                                    "last_seen": "2024-01-15T10:30:00Z"
+                                    "last_seen": "2024-01-15T10:30:00Z",
                                 },
                                 {
                                     "id": "device-002",
@@ -43,7 +43,7 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "status": "Active",
                                     "user": "jane.smith@company.com",
                                     "os": "macOS 14.0",
-                                    "last_seen": "2024-01-15T09:45:00Z"
+                                    "last_seen": "2024-01-15T09:45:00Z",
                                 },
                                 {
                                     "id": "device-003",
@@ -52,10 +52,10 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "status": "Active",
                                     "user": "bob.wilson@company.com",
                                     "os": "iOS 17.0",
-                                    "last_seen": "2024-01-15T08:20:00Z"
-                                }
+                                    "last_seen": "2024-01-15T08:20:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -80,8 +80,11 @@ class TestZCCModuleE2E(BaseE2ETest):
             # Check that the result contains information about devices
             result_lower = result.lower()
             self.assertTrue(
-                "laptop" in result_lower or "desktop" in result_lower or "mobile" in result_lower or "mock" in result_lower,
-                f"Expected device types in result: {result}"
+                "laptop" in result_lower
+                or "desktop" in result_lower
+                or "mobile" in result_lower
+                or "mock" in result_lower,
+                f"Expected device types in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -113,9 +116,9 @@ class TestZCCModuleE2E(BaseE2ETest):
                                 "ip_address": "192.168.1.100",
                                 "mac_address": "00:11:22:33:44:55",
                                 "location": "San Francisco",
-                                "department": "Engineering"
+                                "department": "Engineering",
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -140,8 +143,11 @@ class TestZCCModuleE2E(BaseE2ETest):
             # Check that the result contains information about device details
             result_lower = result.lower()
             self.assertTrue(
-                "laptop" in result_lower or "windows" in result_lower or "john.doe" in result_lower or "mock" in result_lower,
-                f"Expected device details in result: {result}"
+                "laptop" in result_lower
+                or "windows" in result_lower
+                or "john.doe" in result_lower
+                or "mock" in result_lower,
+                f"Expected device details in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -165,8 +171,8 @@ class TestZCCModuleE2E(BaseE2ETest):
                             "file_size": "2.5MB",
                             "expires_at": "2024-01-16T10:30:00Z",
                             "device_count": 500,
-                            "format": "CSV"
-                        }
+                            "format": "CSV",
+                        },
                     },
                 },
             ]
@@ -191,8 +197,11 @@ class TestZCCModuleE2E(BaseE2ETest):
             # Check that the result contains information about download
             result_lower = result.lower()
             self.assertTrue(
-                "download" in result_lower or "csv" in result_lower or "export" in result_lower or "mock" in result_lower,
-                f"Expected download information in result: {result}"
+                "download" in result_lower
+                or "csv" in result_lower
+                or "export" in result_lower
+                or "mock" in result_lower,
+                f"Expected download information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -219,7 +228,7 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "type": "Laptop",
                                     "status": "Active",
                                     "user": "john.doe@company.com",
-                                    "last_seen": "2024-01-15T10:30:00Z"
+                                    "last_seen": "2024-01-15T10:30:00Z",
                                 },
                                 {
                                     "id": "device-002",
@@ -227,10 +236,10 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "type": "Desktop",
                                     "status": "Active",
                                     "user": "jane.smith@company.com",
-                                    "last_seen": "2024-01-15T09:45:00Z"
-                                }
+                                    "last_seen": "2024-01-15T09:45:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -255,8 +264,11 @@ class TestZCCModuleE2E(BaseE2ETest):
             # Check that the result contains information about active devices
             result_lower = result.lower()
             self.assertTrue(
-                "active" in result_lower or "laptop" in result_lower or "desktop" in result_lower or "mock" in result_lower,
-                f"Expected active device information in result: {result}"
+                "active" in result_lower
+                or "laptop" in result_lower
+                or "desktop" in result_lower
+                or "mock" in result_lower,
+                f"Expected active device information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -284,7 +296,7 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "status": "Active",
                                     "user": "john.doe@company.com",
                                     "os": "Windows 11",
-                                    "last_seen": "2024-01-15T10:30:00Z"
+                                    "last_seen": "2024-01-15T10:30:00Z",
                                 },
                                 {
                                     "id": "device-004",
@@ -293,10 +305,10 @@ class TestZCCModuleE2E(BaseE2ETest):
                                     "status": "Active",
                                     "user": "john.doe@company.com",
                                     "os": "iOS 17.0",
-                                    "last_seen": "2024-01-15T08:20:00Z"
-                                }
+                                    "last_seen": "2024-01-15T08:20:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -321,8 +333,11 @@ class TestZCCModuleE2E(BaseE2ETest):
             # Check that the result contains information about user devices
             result_lower = result.lower()
             self.assertTrue(
-                "john.doe" in result_lower or "laptop" in result_lower or "mobile" in result_lower or "mock" in result_lower,
-                f"Expected user device information in result: {result}"
+                "john.doe" in result_lower
+                or "laptop" in result_lower
+                or "mobile" in result_lower
+                or "mock" in result_lower,
+                f"Expected user device information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -346,20 +361,16 @@ class TestZCCModuleE2E(BaseE2ETest):
                                 "total_devices": 500,
                                 "active_devices": 485,
                                 "inactive_devices": 15,
-                                "devices_by_type": {
-                                    "laptop": 300,
-                                    "desktop": 150,
-                                    "mobile": 50
-                                },
+                                "devices_by_type": {"laptop": 300, "desktop": 150, "mobile": 50},
                                 "devices_by_os": {
                                     "windows": 350,
                                     "macos": 100,
                                     "ios": 30,
-                                    "android": 20
+                                    "android": 20,
                                 },
-                                "last_updated": "2024-01-15T10:00:00Z"
+                                "last_updated": "2024-01-15T10:00:00Z",
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -384,8 +395,11 @@ class TestZCCModuleE2E(BaseE2ETest):
             # Check that the result contains information about statistics
             result_lower = result.lower()
             self.assertTrue(
-                "statistic" in result_lower or "device" in result_lower or "total" in result_lower or "mock" in result_lower,
-                f"Expected statistics information in result: {result}"
+                "statistic" in result_lower
+                or "device" in result_lower
+                or "total" in result_lower
+                or "mock" in result_lower,
+                f"Expected statistics information in result: {result}",
             )
 
         self.run_test_with_retries(

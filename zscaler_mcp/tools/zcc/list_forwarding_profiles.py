@@ -6,18 +6,12 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zcc_list_forwarding_profiles(
-    page: Annotated[
-        Optional[int], Field(description="Specifies the page offset.")
-    ] = None,
-    page_size: Annotated[
-        Optional[int], Field(description="Specifies the page size.")
-    ] = None,
+    page: Annotated[Optional[int], Field(description="Specifies the page offset.")] = None,
+    page_size: Annotated[Optional[int], Field(description="Specifies the page size.")] = None,
     search: Annotated[
         Optional[str], Field(description="The search string used to partially match.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> Union[List[dict], str]:
     """

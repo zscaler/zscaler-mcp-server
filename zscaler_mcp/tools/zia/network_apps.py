@@ -132,7 +132,9 @@ def zia_list_network_apps(
     if locale:
         valid_locales = {"en-US", "de-DE", "es-ES", "fr-FR", "ja-JP", "zh-CN"}
         if locale not in valid_locales:
-            raise ValueError(f"Invalid locale: {locale}. Supported values: {', '.join(sorted(valid_locales))}")
+            raise ValueError(
+                f"Invalid locale: {locale}. Supported values: {', '.join(sorted(valid_locales))}"
+            )
         query_params["locale"] = locale
 
     apps, _, err = zia.list_network_apps(query_params=query_params if query_params else None)
@@ -142,7 +144,12 @@ def zia_list_network_apps(
 
 
 def zia_get_network_app(
-    app_id: Annotated[Union[int, str], Field(description="The unique ID of the network application to retrieve (e.g., 'ICMP_ANY', 'HTTP', 'HTTPS').")],
+    app_id: Annotated[
+        Union[int, str],
+        Field(
+            description="The unique ID of the network application to retrieve (e.g., 'ICMP_ANY', 'HTTP', 'HTTPS')."
+        ),
+    ],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:

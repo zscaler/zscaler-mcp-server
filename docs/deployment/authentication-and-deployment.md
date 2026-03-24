@@ -18,6 +18,7 @@ This guide covers every deployment model for the Zscaler MCP Server, including t
   - [Option A: Docker with stdio (No Auth)](#option-a-docker-with-stdio-no-auth)
   - [Option B: Docker with HTTP (With Auth)](#option-b-docker-with-http-with-auth)
   - [Option C: Local Python (uv / pip)](#option-c-local-python-uv--pip)
+  - [Remote Deployment (EC2, VM, etc.)](#remote-deployment-ec2-vm-etc)
 - [Client Configuration](#client-configuration)
   - [Claude Desktop](#claude-desktop)
   - [Cursor](#cursor)
@@ -31,9 +32,16 @@ This guide covers every deployment model for the Zscaler MCP Server, including t
   - [How Token Validation Works](#how-token-validation-works)
   - [Token Expiry and Refresh](#token-expiry-and-refresh)
 - [Automated Setup Script (Auth0)](#automated-setup-script-auth0)
+- [HTTPS / TLS Configuration](#https--tls-configuration)
 - [Environment Variable Reference](#environment-variable-reference)
 - [Makefile Targets](#makefile-targets)
 - [Troubleshooting](#troubleshooting)
+  - [Server disconnects immediately in Claude Desktop](#server-disconnects-immediately-in-claude-desktop)
+  - [Port 8000 already allocated](#port-8000-already-allocated)
+  - [JWT mode + mcp-remote OAuth discovery failure](#jwt-mode--mcp-remote-oauth-discovery-failure)
+  - [mcp-remote: Non-HTTPS URL rejected](#mcp-remote-non-https-url-rejected)
+  - [Windows: npx path with spaces](#windows-npx-path-with-spaces)
+  - [Self-signed certificate rejected by mcp-remote](#self-signed-certificate-rejected-by-mcp-remote)
 
 ---
 
@@ -317,6 +325,11 @@ The server should start and wait for JSON-RPC input on stdin. Press `Ctrl+C` to 
 
 The server runs as a persistent HTTP service. Clients connect over the network. Authentication is strongly recommended.
 
+> **Critical: Run the container separately from Claude Desktop.**
+> Claude Desktop's `command` field communicates with spawned processes via **stdio** (stdin/stdout). If you put `--transport streamable-http` inside Claude Desktop's `command` args, the server will listen on HTTP while Claude Desktop tries to talk via stdin — neither side will receive messages, and Claude Desktop will disconnect the server after ~40 seconds. See [Server disconnects immediately in Claude Desktop](#server-disconnects-immediately-in-claude-desktop) for details.
+>
+> The correct approach: start the Docker container **independently** (in a terminal or via `docker run -d`), then configure Claude Desktop to connect to it via `mcp-remote`. Cursor, Windsurf, and VS Code can connect directly via their native `url` + `headers` config.
+
 **Prerequisites:**
 1. Docker installed and running
 2. Docker image built locally
@@ -330,18 +343,18 @@ make docker-build
 
 **Step 2: Configure authentication in `.env`**
 
-Choose one of the auth modes and add the appropriate variables. For example, with `api-key`:
+Choose one of the auth modes and add the appropriate variables.
+
+**API Key mode** (recommended for local testing — simple, no token expiry, works reliably with `mcp-remote`):
 
 ```bash
 # .env — add these lines to your existing .env file
-
-# Enable MCP client authentication
 ZSCALER_MCP_AUTH_ENABLED=true
 ZSCALER_MCP_AUTH_MODE=api-key
 ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
 ```
 
-Or with `zscaler` mode:
+**Zscaler mode:**
 
 ```bash
 # .env — add these lines
@@ -350,9 +363,26 @@ ZSCALER_MCP_AUTH_MODE=zscaler
 # ZSCALER_VANITY_DOMAIN and ZSCALER_CLOUD are reused from your API config
 ```
 
-**Step 3: Start the server**
+**JWT mode** (see [important caveat about `mcp-remote`](#jwt-mode--mcp-remote-oauth-discovery-failure)):
 
 ```bash
+# .env — add these lines
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=jwt
+ZSCALER_MCP_AUTH_JWKS_URI=https://your-idp.com/.well-known/jwks.json
+ZSCALER_MCP_AUTH_ISSUER=https://your-idp.com/
+ZSCALER_MCP_AUTH_AUDIENCE=zscaler-mcp-server
+```
+
+**Step 3: Stop any existing container, then start a new one**
+
+You must stop any existing container first to avoid port conflicts:
+
+```bash
+# Stop and remove any existing container on port 8000
+docker stop zscaler-mcp-server 2>/dev/null; docker rm zscaler-mcp-server 2>/dev/null
+
+# Start a new container
 make docker-run-http
 # or manually:
 docker run -d --restart=unless-stopped --name zscaler-mcp-server \
@@ -362,17 +392,9 @@ docker run -d --restart=unless-stopped --name zscaler-mcp-server \
 
 The server is now running at `http://localhost:8000/mcp`.
 
-**Step 4: Generate the auth token**
+> **If you see `Bind for 0.0.0.0:8000 failed: port is already allocated`**, an existing container or process is still using port 8000. See [Port 8000 already allocated](#port-8000-already-allocated) for resolution.
 
-```bash
-make docker-generate-auth-token
-# or manually:
-docker run --rm --env-file .env zscaler-mcp-server:latest --generate-auth-token
-```
-
-This prints ready-to-paste configuration snippets for Cursor, Claude Desktop, and other clients. Copy the appropriate snippet.
-
-**Step 5: Verify the server is running**
+**Step 4: Verify the server is running**
 
 ```bash
 # Check container status
@@ -381,9 +403,25 @@ docker ps | grep zscaler-mcp-server
 # Check logs
 docker logs zscaler-mcp-server
 
-# Test the endpoint (should return 401 without auth)
+# Test the endpoint (should return 401 without auth, confirming auth is active)
 curl -s http://localhost:8000/mcp
+
+# Test with your auth token (should return 200)
+curl -s http://localhost:8000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-secret-key-here" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 ```
+
+**Step 5: Generate the auth token** (optional — for Zscaler mode)
+
+```bash
+make docker-generate-auth-token
+# or manually:
+docker run --rm --env-file .env zscaler-mcp-server:latest --generate-auth-token
+```
+
+This prints ready-to-paste configuration snippets for Cursor, Claude Desktop, and other clients.
 
 **Step 6: Configure your MCP client** (see [Client Configuration](#client-configuration) below)
 
@@ -441,7 +479,143 @@ zscaler-mcp --generate-auth-token
 
 ---
 
+### Remote Deployment (EC2, VM, etc.)
+
+When running the MCP server on a **remote host** (EC2, VM, internal server) so clients on other machines connect over HTTP:
+
+#### Server requirements
+
+1. **Activate the correct virtualenv** — If you installed with `uv pip install -e .`, the package runs from the project's `.venv`. **You must activate it** before starting the server; otherwise a different (older) installation may be used and Host header handling can fail.
+
+   ```bash
+   cd /path/to/zscaler-mcp-server
+   source .venv/bin/activate
+   zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8000
+   ```
+
+2. **HTTPS is required by default** — When binding to a non-localhost interface, the server requires TLS certificates. Provide them in `.env`:
+
+   ```bash
+   ZSCALER_MCP_TLS_CERTFILE=/path/to/cert.pem
+   ZSCALER_MCP_TLS_KEYFILE=/path/to/key.pem
+   ```
+
+   If TLS is terminated upstream (reverse proxy, ALB, ZPA overlay, VPN), you may explicitly allow plaintext HTTP:
+
+   ```bash
+   ZSCALER_MCP_ALLOW_HTTP=true
+   ```
+
+3. **Use `--host 0.0.0.0`** — Binding to all interfaces requires explicit host validation configuration. Without this, clients sending the server's public IP in the `Host` header receive `421 Misdirected Request`.
+
+4. **`.env` configuration options:**
+   - `ZSCALER_MCP_ALLOWED_HOSTS=34.201.19.115:*,localhost:*` — (Recommended) Restrict to known hosts.
+   - `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` — Explicitly disable Host validation.
+   - `ZSCALER_MCP_ALLOWED_SOURCE_IPS=10.0.0.0/8,172.16.0.5` — (Optional) Restrict by client source IP. When unset, source IP filtering is deferred to upstream firewalls/security groups.
+
+5. **Firewall** — Allow inbound traffic on the chosen port (e.g. 8000).
+
+#### Client configuration (Claude Desktop)
+
+Claude Desktop expects a local process. For remote HTTP, use `mcp-remote` as a stdio-to-HTTP bridge. It supports custom authentication headers via `--header`.
+
+> **`--allow-http` flag**: `mcp-remote` enforces HTTPS for non-localhost URLs by default. When connecting to a remote server over plain HTTP, you must include `--allow-http` in the arguments. Omit this flag when using HTTPS or connecting to `localhost`.
+
+**macOS / Linux:**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ]
+    }
+  }
+}
+```
+
+**Windows:**
+
+On Windows, paths containing spaces (e.g., `C:\Program Files\nodejs\npx.cmd`) cause failures when `npx` is invoked directly as the `command`. Wrap through `cmd /c` to let Windows resolve the path:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ]
+    }
+  }
+}
+```
+
+**Using Zscaler auth mode (Basic Auth) on Windows:**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Basic BASE64_ENCODED_CREDENTIALS"
+      ]
+    }
+  }
+}
+```
+
+Generate the Base64 value:
+
+```bash
+# Linux / macOS
+echo -n "your-client-id:your-client-secret" | base64
+
+# Windows (PowerShell)
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("your-client-id:your-client-secret"))
+```
+
+Replace `YOUR_SERVER_IP` with the server's public IP or hostname and `BASE64_ENCODED_CREDENTIALS` with the output from the command above.
+
+**Client prerequisites:** [Node.js](https://nodejs.org/) (for `npx`) must be installed.
+
+See [421 Misdirected Request](#421-misdirected-request-invalid-host-header) for troubleshooting.
+
+---
+
 ## Client Configuration
+
+> **Layer 1 vs. Layer 2 — what goes where?**
+>
+> The client configurations below only handle **Layer 1** — authenticating the MCP client to the server (API key, JWT, or Zscaler credentials in the `Authorization` header).
+>
+> **Layer 2** settings — `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, `ZSCALER_VANITY_DOMAIN`, `ZSCALER_CUSTOMER_ID`, `ZSCALER_CLOUD`, `ZSCALER_MCP_WRITE_ENABLED`, `ZSCALER_MCP_WRITE_TOOLS`, and all other `ZSCALER_*` variables — are configured **on the server side** via the `.env` file. The client never sends or needs these values; the server loads them from `.env` at startup and uses them to call Zscaler APIs on behalf of the client.
+>
+> In short:
+> - **Client config** = URL + auth header (how to reach and authenticate with the MCP server)
+> - **Server `.env`** = Zscaler API credentials + service/tool/write-mode configuration (how the server talks to Zscaler)
 
 ### Claude Desktop
 
@@ -486,12 +660,39 @@ Replace `/absolute/path/to/your/.env` with the full path to your `.env` file.
 
 Claude Desktop does not natively support HTTP URLs with custom headers in its configuration file. To connect to an authenticated HTTP server, use the `mcp-remote` bridge — a Node.js package that acts as a stdio-to-HTTP proxy.
 
-**Prerequisites:**
-- Node.js and npm installed
-- The MCP server running in HTTP mode (`make docker-run-http`)
-- An auth token generated (`make docker-generate-auth-token`)
+> **Important: The Docker container must be running independently before you start Claude Desktop.**
+> Do **not** put `--transport streamable-http` inside Claude Desktop's `command` args. Claude Desktop communicates with launched processes via stdin/stdout, which is incompatible with HTTP transport. See [Server disconnects immediately in Claude Desktop](#server-disconnects-immediately-in-claude-desktop) for a detailed explanation.
 
-**With API Key auth:**
+**Prerequisites:**
+- Node.js and npm installed (`node --version && npm --version`)
+- Docker image built (`make docker-build`)
+- `.env` file configured with auth settings
+
+**Step 1: Start the MCP server container separately**
+
+Open a terminal and run:
+
+```bash
+# Stop any existing container first to avoid port conflicts
+docker stop zscaler-mcp-server 2>/dev/null; docker rm zscaler-mcp-server 2>/dev/null
+
+# Start the container
+docker run -d --restart=unless-stopped --name zscaler-mcp-server \
+  -p 8000:8000 --env-file /absolute/path/to/your/.env \
+  zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0 --port 8000
+
+# Verify it's running
+docker logs zscaler-mcp-server 2>&1 | tail -5
+```
+
+You should see `Uvicorn running on http://0.0.0.0:8000`.
+
+**Step 2: Configure Claude Desktop**
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
+
+**macOS / Linux — API Key auth** (recommended — simplest, no token expiry):
 
 ```json
 {
@@ -510,7 +711,30 @@ Claude Desktop does not natively support HTTP URLs with custom headers in its co
 }
 ```
 
-**With Zscaler auth (Basic Auth):**
+**Windows — API Key auth:**
+
+On Windows, `npx` may fail when its install path contains spaces (e.g., `C:\Program Files\nodejs\npx.cmd`). Use `cmd /c` as the command:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://localhost:8000/mcp",
+        "--header",
+        "Authorization: Bearer sk-your-secret-key-here"
+      ]
+    }
+  }
+}
+```
+
+**macOS / Linux — Zscaler auth (Basic Auth):**
 
 ```json
 {
@@ -529,9 +753,40 @@ Claude Desktop does not natively support HTTP URLs with custom headers in its co
 }
 ```
 
+**Windows — Zscaler auth (Basic Auth):**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://localhost:8000/mcp",
+        "--header",
+        "Authorization: Basic BASE64_ENCODED_CREDENTIALS"
+      ]
+    }
+  }
+}
+```
+
 Replace `BASE64_ENCODED_CREDENTIALS` with the output from `make docker-generate-auth-token`.
 
-**With Zscaler auth (Custom Headers):**
+Generate it manually:
+
+```bash
+# macOS / Linux
+echo -n "your-client-id:your-client-secret" | base64
+
+# Windows (PowerShell)
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("your-client-id:your-client-secret"))
+```
+
+**macOS / Linux — Zscaler auth (Custom Headers):**
 
 ```json
 {
@@ -552,7 +807,36 @@ Replace `BASE64_ENCODED_CREDENTIALS` with the output from `make docker-generate-
 }
 ```
 
-After editing the configuration file, restart Claude Desktop for changes to take effect.
+**Windows — Zscaler auth (Custom Headers):**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://localhost:8000/mcp",
+        "--header",
+        "X-Zscaler-Client-ID: your-client-id",
+        "--header",
+        "X-Zscaler-Client-Secret: your-client-secret"
+      ]
+    }
+  }
+}
+```
+
+> **Remote (non-localhost) servers**: When connecting to a remote server over plain HTTP, add `"--allow-http"` before `"--header"` in the `args` array. `mcp-remote` enforces HTTPS for non-localhost URLs by default. See [mcp-remote: Non-HTTPS URL rejected](#mcp-remote-non-https-url-rejected).
+
+> **JWT mode caveat:** When using JWT auth, `mcp-remote` may attempt OAuth 2.1 discovery instead of forwarding the `--header` value. If you experience 401 errors followed by 404s on `/.well-known/*` endpoints, switch to `api-key` mode for local testing or use the automated setup script (`./scripts/setup-jwt-auth.sh`). See [JWT mode + mcp-remote OAuth discovery failure](#jwt-mode--mcp-remote-oauth-discovery-failure).
+
+**Step 3: Restart Claude Desktop**
+
+Quit and reopen Claude Desktop for the configuration changes to take effect. The MCP server should connect and load all tools.
 
 ---
 
@@ -1286,6 +1570,15 @@ These are always required, regardless of Layer 1 auth settings.
 | `ZSCALER_MCP_TOOLS` | No | all | Comma-separated list of tools to enable |
 | `ZSCALER_MCP_WRITE_ENABLED` | No | `false` | Enable write operations (create, update, delete) |
 | `ZSCALER_MCP_WRITE_TOOLS` | No | — | Comma-separated allowlist of write tools (supports wildcards) |
+| `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | No | `false` | Disable Host header validation (use when exposing on EC2/public IP) |
+| `ZSCALER_MCP_ALLOWED_HOSTS` | No | — | Comma-separated allowed Host values, e.g. `34.201.19.115:*,localhost:*` |
+| `ZSCALER_MCP_TLS_CERTFILE` | No | — | Path to TLS certificate (PEM). Enables HTTPS when set with `TLS_KEYFILE`. |
+| `ZSCALER_MCP_TLS_KEYFILE` | No | — | Path to TLS private key (PEM). |
+| `ZSCALER_MCP_TLS_KEYFILE_PASSWORD` | No | — | Password for encrypted private key. |
+| `ZSCALER_MCP_TLS_CA_CERTS` | No | — | Path to CA certificate bundle for mTLS or custom CA chains. |
+| `ZSCALER_MCP_ALLOW_HTTP` | No | `false` | Allow plaintext HTTP on non-localhost. HTTPS is required by default for remote deployments. |
+| `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | No | — | Comma-separated allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). Unset = no filtering. |
+| `ZSCALER_MCP_SKIP_CONFIRMATIONS` | No | `false` | Skip cryptographic confirmation for destructive actions (testing/CI only). |
 
 ---
 
@@ -1344,6 +1637,28 @@ These are always required, regardless of Layer 1 auth settings.
 
 ---
 
+### 421 Misdirected Request (Invalid Host header)
+
+**Symptom:** Server logs show `Invalid Host header: 34.201.19.115:8000` and clients receive `421 Misdirected Request`.
+
+**Cause:** The MCP SDK validates the `Host` header to protect against DNS rebinding. By default it only accepts `127.0.0.1`, `localhost`, and `::1`. When the server is exposed publicly (e.g. on EC2), clients send the public IP in the Host header, which is rejected.
+
+**Resolution (use one):**
+
+1. **`--host 0.0.0.0`** — Host validation is auto-disabled when binding to all interfaces.
+2. **`.env`** — Add `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` or `ZSCALER_MCP_ALLOWED_HOSTS=34.201.19.115:*,localhost:*`.
+3. **Correct virtualenv** — When using `uv pip install -e .`, run from the project venv:
+   ```bash
+   cd /path/to/zscaler-mcp-server
+   source .venv/bin/activate
+   zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8000
+   ```
+   A different env (e.g. conda) may use an older installation without the fix.
+
+**Security:** Only disable host validation for servers intentionally exposed to the network. For production, prefer `ZSCALER_MCP_ALLOWED_HOSTS` to restrict to known hostnames.
+
+---
+
 ### Claude Desktop fails to launch the server
 
 **Symptom:** Claude Desktop shows "failed to launch" error.
@@ -1359,14 +1674,263 @@ These are always required, regardless of Layer 1 auth settings.
 
 ---
 
+### Server disconnects immediately in Claude Desktop
+
+**Symptom:** Claude Desktop briefly shows the server as connected, then disconnects within 30-60 seconds. Server logs show the server initialized successfully (all tools registered, Uvicorn running), but Claude Desktop logs show `Server transport closed unexpectedly`.
+
+**Cause:** Claude Desktop's `command` field launches a process and communicates with it via **stdio** (stdin/stdout). If you configure the container with `--transport streamable-http`, the server starts an HTTP listener instead of reading from stdin. Claude Desktop sends the MCP `initialize` message via stdin, the server never reads it (it's waiting for HTTP requests on port 8000), and Claude Desktop times out and kills the process.
+
+When Claude Desktop restarts the process, the previous container hasn't fully released port 8000, causing a cascade of `Bind for 0.0.0.0:8000 failed: port is already allocated` errors.
+
+**Incorrect configuration** (do NOT use this):
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm", "--pull=never",
+        "-p", "8000:8000",
+        "--env-file", "/path/to/.env",
+        "zscaler-mcp-server:latest",
+        "--transport", "streamable-http",
+        "--host", "0.0.0.0",
+        "--port", "8000"
+      ]
+    }
+  }
+}
+```
+
+**Resolution:** Run the Docker container **separately** from Claude Desktop, then use `mcp-remote` to bridge:
+
+1. Start the container in a terminal (not via Claude Desktop):
+   ```bash
+   docker stop zscaler-mcp-server 2>/dev/null; docker rm zscaler-mcp-server 2>/dev/null
+   docker run -d --restart=unless-stopped --name zscaler-mcp-server \
+     -p 8000:8000 --env-file .env zscaler-mcp-server:latest \
+     --transport streamable-http --host 0.0.0.0 --port 8000
+   ```
+
+2. Configure Claude Desktop to connect via `mcp-remote`:
+   ```json
+   {
+     "mcpServers": {
+       "zscaler-mcp-server": {
+         "command": "npx",
+         "args": [
+           "-y", "mcp-remote",
+           "http://localhost:8000/mcp",
+           "--header",
+           "Authorization: Bearer sk-your-api-key"
+         ]
+       }
+     }
+   }
+   ```
+
+Alternatively, if you don't need HTTP auth, use [Option A: Docker with stdio](#option-a-docker-with-stdio-no-auth) — it works directly with Claude Desktop's `command` field.
+
+---
+
+### Port 8000 already allocated
+
+**Symptom:** `docker: Error response from daemon: Bind for 0.0.0.0:8000 failed: port is already allocated`
+
+**Cause:** An existing Docker container or process is still using port 8000. This commonly happens when:
+- A previous `zscaler-mcp-server` container is still running or stopping
+- Claude Desktop's restart cycle launched multiple containers before the previous ones released the port
+- Another application is using port 8000
+
+**Resolution:**
+
+```bash
+# Find and stop existing containers on port 8000
+docker ps --filter "publish=8000" -q | xargs -r docker stop
+docker ps -a --filter "name=zscaler-mcp-server" -q | xargs -r docker rm
+
+# If a non-Docker process is using the port (macOS/Linux)
+lsof -ti :8000 | xargs -r kill -9
+
+# Now start fresh
+docker run -d --restart=unless-stopped --name zscaler-mcp-server \
+  -p 8000:8000 --env-file .env zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0 --port 8000
+```
+
+**Prevention:** Always stop the existing container before starting a new one:
+
+```bash
+docker stop zscaler-mcp-server 2>/dev/null; docker rm zscaler-mcp-server 2>/dev/null
+```
+
+---
+
+### JWT mode + mcp-remote OAuth discovery failure
+
+**Symptom:** Server logs show `401 Unauthorized` on `GET /mcp` or `POST /mcp`, followed by a series of `404 Not Found` on OAuth discovery endpoints:
+
+```
+GET /mcp HTTP/1.1" 401 Unauthorized
+GET /.well-known/oauth-protected-resource/mcp HTTP/1.1" 404 Not Found
+GET /.well-known/oauth-protected-resource HTTP/1.1" 404 Not Found
+GET /.well-known/oauth-authorization-server HTTP/1.1" 404 Not Found
+GET /.well-known/openid-configuration HTTP/1.1" 404 Not Found
+POST /register HTTP/1.1" 404 Not Found
+```
+
+**Cause:** When `mcp-remote` receives a `401 Unauthorized` response, some versions attempt automatic authentication via the MCP OAuth 2.1 protocol — Dynamic Client Registration (DCR) with `/.well-known/*` discovery. The Zscaler MCP Server uses direct JWT validation (bearer token in header), not the full OAuth 2.1 DCR flow, so these discovery endpoints return 404. The `--header` flag may be ignored or deprioritized in favor of the OAuth discovery attempt.
+
+**Resolution (choose one):**
+
+1. **Switch to API Key mode** (recommended for local testing):
+   ```bash
+   # .env
+   ZSCALER_MCP_AUTH_ENABLED=true
+   ZSCALER_MCP_AUTH_MODE=api-key
+   ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
+   ```
+   API Key mode returns `401` without OAuth metadata hints, so `mcp-remote` correctly falls back to sending the `--header` value. Restart the Docker container after changing `.env`.
+
+2. **Use the automated setup script** for JWT:
+   ```bash
+   ./local_dev/scripts/setup-jwt-auth.sh
+   ```
+   This script handles the full JWT flow: starts the server, fetches a token from Auth0, verifies it, and writes the client configs.
+
+3. **Use Cursor instead of Claude Desktop** — Cursor supports `url` + `headers` natively, bypassing the `mcp-remote` bridge entirely:
+   ```json
+   {
+     "mcpServers": {
+       "zscaler-mcp-server": {
+         "url": "http://localhost:8000/mcp",
+         "headers": {
+           "Authorization": "Bearer eyJhbGciOi..."
+         }
+       }
+     }
+   }
+   ```
+
+---
+
+### mcp-remote: Non-HTTPS URL rejected
+
+**Symptom:** Client logs show:
+
+```
+Error: Non-HTTPS URLs are only allowed for localhost or when --allow-http flag is provided
+```
+
+**Cause:** `mcp-remote` enforces HTTPS for all non-localhost URLs as a security measure. When connecting to a remote server over plain HTTP (e.g., `http://34.201.19.115:8000/mcp`), this check blocks the connection.
+
+**Resolution:** Add `"--allow-http"` to the `args` array in your client config, before `"--header"`:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ]
+    }
+  }
+}
+```
+
+For Windows, use `"command": "cmd"` with `"/c", "npx", ...` — see [Windows: npx path with spaces](#windows-npx-path-with-spaces).
+
+---
+
+### Windows: npx path with spaces
+
+**Symptom:** Claude Desktop logs show:
+
+```
+'C:\Program' is not recognized as an internal or external command
+```
+
+**Cause:** On Windows, if Node.js is installed in `C:\Program Files\nodejs\`, the path contains a space. When Claude Desktop invokes `npx` as the command, Windows splits on the space and tries to run `C:\Program`, which fails.
+
+**Resolution:** Use `cmd` as the command and pass `/c npx ...` as arguments:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ]
+    }
+  }
+}
+```
+
+`cmd /c` handles Windows path resolution correctly and avoids the space issue.
+
+---
+
+### Self-signed certificate rejected by mcp-remote
+
+**Symptom:** Client logs show:
+
+```
+Error: self-signed certificate
+code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+```
+
+**Cause:** When the MCP server uses a self-signed TLS certificate, Node.js (used by `mcp-remote`) rejects it because it cannot verify the certificate chain.
+
+**Resolution:** Add `NODE_TLS_REJECT_UNAUTHORIZED=0` to the `env` section of your client config:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://YOUR_SERVER_IP:8000/mcp",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  }
+}
+```
+
+> **Warning**: This disables all TLS certificate verification for this process. Only use for development/testing. For production, use CA-signed certificates.
+
+---
+
 ### mcp-remote bridge errors
 
 **Symptom:** Claude Desktop shows errors related to `npx` or `mcp-remote`.
 
 **Check:**
-1. Verify the package installs correctly: `npx -y mcp-remote --help`
-2. Verify the MCP server is running and accessible: `curl -s http://localhost:8000/mcp`
-3. Ensure the header format in the config is correct — the value after `--header` must be a single string like `"Authorization: Bearer xxx"` (header name and value separated by a colon and space)
+1. Verify Node.js and npm are installed: `node --version && npm --version`
+2. Verify the package installs correctly: `npx -y mcp-remote --help`
+3. Verify the MCP server is running and accessible: `curl -s http://localhost:8000/mcp`
+4. Ensure the header format in the config is correct — the value after `--header` must be a single string like `"Authorization: Bearer xxx"` (header name and value separated by a colon and space)
+5. Make sure the Docker container is running **independently** (not spawned by Claude Desktop) — see [Server disconnects immediately in Claude Desktop](#server-disconnects-immediately-in-claude-desktop)
+6. On Windows, use `"command": "cmd"` with `"args": ["/c", "npx", ...]` — see [Windows: npx path with spaces](#windows-npx-path-with-spaces)
 
 ---
 
@@ -1428,8 +1992,120 @@ If these paths return 401, verify the auth middleware is properly initialized (c
 | Team sharing one server | `streamable-http` | `jwt` or `api-key` | HTTP URL + auth headers |
 | Enterprise with IdP (Okta, Azure AD) | `streamable-http` | `jwt` | HTTP URL + Bearer JWT |
 | Zscaler-native organization | `streamable-http` | `zscaler` | HTTP URL + Basic Auth / custom headers |
-| Claude Desktop + auth | `streamable-http` | any | `mcp-remote` bridge |
+| Claude Desktop + auth (macOS/Linux) | `streamable-http` | any | `mcp-remote` bridge (`npx` command) |
+| Claude Desktop + auth (Windows) | `streamable-http` | any | `mcp-remote` bridge (`cmd /c npx`) |
+| Remote server (non-localhost HTTP) | `streamable-http` | any | `mcp-remote` + `--allow-http` |
+| Remote server (HTTPS with TLS) | `streamable-http` | any | `mcp-remote` (no `--allow-http` needed) |
 | Cursor + auth | `streamable-http` | any | Native `url` + `headers` |
+
+---
+
+## HTTPS / TLS Configuration
+
+When running with HTTP transports (`sse` or `streamable-http`), you can enable TLS to encrypt traffic between MCP clients and the server. This is strongly recommended for any deployment accessible over a network.
+
+### Configuration
+
+Set the following environment variables in your `.env` file:
+
+```bash
+# Required for TLS
+ZSCALER_MCP_TLS_CERTFILE=/path/to/cert.pem
+ZSCALER_MCP_TLS_KEYFILE=/path/to/key.pem
+
+# Optional
+ZSCALER_MCP_TLS_KEYFILE_PASSWORD=your-key-password     # if the private key is encrypted
+ZSCALER_MCP_TLS_CA_CERTS=/path/to/ca-bundle.pem        # for mutual TLS or custom CA chains
+```
+
+When both `ZSCALER_MCP_TLS_CERTFILE` and `ZSCALER_MCP_TLS_KEYFILE` are set and point to valid files, the server automatically starts with HTTPS. No additional flags are needed.
+
+### Generating a Self-Signed Certificate (Testing)
+
+For local testing or development, generate a self-signed certificate:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes \
+  -subj "/CN=localhost"
+```
+
+Then set the paths in your `.env`:
+
+```bash
+ZSCALER_MCP_TLS_CERTFILE=./cert.pem
+ZSCALER_MCP_TLS_KEYFILE=./key.pem
+```
+
+### Docker TLS
+
+When running in Docker, mount the certificate files and use absolute container paths:
+
+```bash
+docker run -d --name zscaler-mcp-server \
+  -p 8000:8000 \
+  -v /path/to/certs:/certs:ro \
+  --env-file .env \
+  -e ZSCALER_MCP_TLS_CERTFILE=/certs/cert.pem \
+  -e ZSCALER_MCP_TLS_KEYFILE=/certs/key.pem \
+  zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0
+```
+
+### Client Configuration for HTTPS
+
+When the server uses TLS, clients connect via `https://` instead of `http://`.
+
+**With a CA-signed certificate (production):**
+
+No additional client configuration is needed — standard TLS validation applies.
+
+**With a self-signed certificate (testing):**
+
+Clients using Node.js (e.g., `mcp-remote`) will reject self-signed certificates by default. Add `NODE_TLS_REJECT_UNAUTHORIZED=0` to the client config:
+
+**macOS / Linux:**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://YOUR_SERVER_IP:8000/mcp",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  }
+}
+```
+
+**Windows:**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c", "npx", "-y", "mcp-remote",
+        "https://YOUR_SERVER_IP:8000/mcp",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    }
+  }
+}
+```
+
+> **Warning**: `NODE_TLS_REJECT_UNAUTHORIZED=0` disables all certificate verification. Only use this for development and testing with self-signed certificates. For production, use CA-signed certificates.
 
 ---
 
@@ -1447,4 +2123,8 @@ If these paths return 401, verify the auth middleware is properly initialized (c
 
 6. **Use separate credentials per environment.** Do not reuse production Zscaler API credentials in development.
 
-7. **For cloud deployments**, see the [Amazon Bedrock AgentCore deployment guide](./amazon_bedrock_agentcore.md) and the [Secrets Manager integration guide](./secrets_manager_integration.md) for credential management best practices.
+7. **HTTPS is required by default for remote deployments.** The server blocks plaintext HTTP on non-localhost interfaces unless `ZSCALER_MCP_ALLOW_HTTP=true` is set. Provide TLS certificates or terminate TLS at a reverse proxy. See [HTTPS / TLS Configuration](#https--tls-configuration).
+
+8. **Use source IP restrictions for defense in depth.** Set `ZSCALER_MCP_ALLOWED_SOURCE_IPS` to restrict which clients can connect, complementing upstream firewall rules. When unset, source IP filtering is disabled.
+
+9. **For cloud deployments**, see the [Amazon Bedrock AgentCore deployment guide](./amazon_bedrock_agentcore.md) and the [Secrets Manager integration guide](./secrets_manager_integration.md) for credential management best practices.

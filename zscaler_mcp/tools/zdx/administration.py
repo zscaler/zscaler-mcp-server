@@ -8,6 +8,7 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_list_departments(
     search: Annotated[
         Optional[str], Field(description="Search term to filter results by name or ID.")
@@ -18,9 +19,7 @@ def zdx_list_departments(
             description="Number of hours to look back for devices (default 2 hours if not provided)."
         ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -60,9 +59,7 @@ def zdx_list_departments(
     if since:
         query_params["since"] = since
 
-    departments, _, err = client.zdx.admin.list_departments(
-        query_params=query_params
-    )
+    departments, _, err = client.zdx.admin.list_departments(query_params=query_params)
     if err:
         raise Exception(f"Error retrieving departments: {err}")
     return [d.as_dict() for d in departments]
@@ -78,9 +75,7 @@ def zdx_list_locations(
             description="Number of hours to look back for devices (default 2 hours if not provided)."
         ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """

@@ -307,14 +307,29 @@ For a specific affected device:
 zdx_list_device_deep_traces(device_id="<device_id>")
 ```
 
+If a trace exists, analyze the full diagnostics data:
+
 ```
-zdx_get_device_deep_trace(
-  device_id="<device_id>",
-  trace_id="<trace_id>"
-)
+zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
+zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
 ```
 
-Deep traces reveal hop-by-hop latency and packet loss, pinpointing the exact network segment causing the issue (local network, ISP, cloud provider, or application server).
+If no trace exists and the alert is recurring, discover probe IDs and start a proactive deep trace to capture evidence during the next occurrence (requires write tools):
+
+```
+zdx_get_web_probes(device_id="<device_id>", app_id="<affected_app_id>")
+zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<affected_app_id>")
+zdx_start_deeptrace(device_id="<device_id>", session_name="Alert-Investigation-<date>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=30, probe_device=True)
+```
+
+Deep traces reveal hop-by-hop latency and packet loss, pinpointing the exact network segment causing the issue. Web probe metrics isolate DNS vs TCP vs SSL bottlenecks, and event timelines correlate configuration changes with metric degradation.
+
+For comprehensive deep trace analysis, see the [Diagnose Deep Trace](../diagnose-deeptrace/) skill.
 
 ---
 
@@ -459,8 +474,17 @@ Some alerts may fire based on threshold violations that users haven't noticed:
 - `zdx_list_historical_alerts(since)` -- past alerts for patterns
 - `zdx_get_application_score_trend(app_id)` -- correlate with scores
 - `zdx_get_application_metric(app_id, metric_name)` -- pinpoint metric
-- `zdx_list_device_deep_traces(device_id)` -- network path data
-- `zdx_get_device_deep_trace(device_id, trace_id)` -- hop-by-hop analysis
+- `zdx_list_device_deep_traces(device_id)` -- available deep traces
+- `zdx_get_device_deep_trace(device_id, trace_id)` -- trace summary
+- `zdx_get_deeptrace_webprobe_metrics(device_id, trace_id)` -- DNS, TCP, SSL, HTTP times
+- `zdx_get_deeptrace_cloudpath(device_id, trace_id)` -- hop-by-hop network path
+- `zdx_get_deeptrace_cloudpath_metrics(device_id, trace_id)` -- per-hop latency, loss, jitter
+- `zdx_get_deeptrace_health_metrics(device_id, trace_id)` -- CPU, memory, disk, network
+- `zdx_list_deeptrace_top_processes(device_id, trace_id)` -- resource-heavy processes
+- `zdx_get_deeptrace_events(device_id, trace_id)` -- event timeline
+- `zdx_get_web_probes(device_id, app_id)` -- get web_probe_id for deep traces
+- `zdx_list_cloudpath_probes(device_id, app_id)` -- get cloudpath_probe_id for deep traces
+- `zdx_start_deeptrace(device_id, ...)` -- start a new trace (write tool)
 
 **Time windows for `since` (hours):**
 - `2` -- current issues (default)
@@ -471,5 +495,6 @@ Some alerts may fire based on threshold violations that users haven't noticed:
 
 **Related skills:**
 - [Troubleshoot User Experience](../troubleshoot-user-experience/) -- for individual user investigation
+- [Diagnose Deep Trace](../diagnose-deeptrace/) -- for comprehensive deep trace analysis
 - [Analyze Application Health](../analyze-application-health/) -- for app-level overview
 - [Compare Location Experience](../compare-location-experience/) -- for location-based analysis

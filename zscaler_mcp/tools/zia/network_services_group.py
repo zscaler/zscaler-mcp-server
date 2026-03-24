@@ -59,8 +59,7 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zia_list_network_svc_groups(
     search: Annotated[
-        Optional[str],
-        Field(description="Search string to filter by group name or description.")
+        Optional[str], Field(description="Search string to filter by group name or description.")
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -100,7 +99,9 @@ def zia_list_network_svc_groups(
     if search:
         query_params["search"] = search
 
-    groups, _, err = zia.list_network_svc_groups(query_params=query_params if query_params else None)
+    groups, _, err = zia.list_network_svc_groups(
+        query_params=query_params if query_params else None
+    )
     if err:
         raise Exception(f"Failed to list network service groups: {err}")
     return [g.as_dict() for g in groups]
@@ -109,7 +110,7 @@ def zia_list_network_svc_groups(
 def zia_get_network_svc_group(
     group_id: Annotated[
         Union[int, str],
-        Field(description="The unique ID of the network service group to retrieve.")
+        Field(description="The unique ID of the network service group to retrieve."),
     ],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -203,11 +204,10 @@ def zia_create_network_svc_group(
             - JSON: '["159143", "159144", "159145"]'
             - List: ["159143", "159144"]
             Use zia_list_network_services to find available service IDs."""
-        )
+        ),
     ],
     description: Annotated[
-        Optional[str],
-        Field(description="Description for the network service group (optional).")
+        Optional[str], Field(description="Description for the network service group (optional).")
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -287,11 +287,10 @@ def zia_create_network_svc_group(
 def zia_update_network_svc_group(
     group_id: Annotated[
         Union[int, str],
-        Field(description="The unique ID of the network service group to update (required).")
+        Field(description="The unique ID of the network service group to update (required)."),
     ],
     name: Annotated[
-        str,
-        Field(description="Updated name for the network service group (required for update).")
+        str, Field(description="Updated name for the network service group (required for update).")
     ],
     service_ids: Annotated[
         Optional[Union[List, str]],
@@ -302,11 +301,10 @@ def zia_update_network_svc_group(
             - JSON: '["159143", "159144", "159145"]'
             - List: ["159143", "159144"]
             If omitted, existing services are preserved."""
-        )
+        ),
     ] = None,
     description: Annotated[
-        Optional[str],
-        Field(description="Updated description (optional).")
+        Optional[str], Field(description="Updated description (optional).")
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -384,11 +382,11 @@ def zia_update_network_svc_group(
 def zia_delete_network_svc_group(
     group_id: Annotated[
         Union[int, str],
-        Field(description="The unique ID of the network service group to delete (required).")
+        Field(description="The unique ID of the network service group to delete (required)."),
     ],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-    kwargs: str = "{}"
+    kwargs: str = "{}",
 ) -> str:
     """
     Delete a ZIA network service group.
@@ -427,11 +425,7 @@ def zia_delete_network_svc_group(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation(
-        "zia_delete_network_svc_group",
-        confirmed,
-        {}
-    )
+    confirmation_check = check_confirmation("zia_delete_network_svc_group", confirmed, {})
     if confirmation_check:
         return confirmation_check
 

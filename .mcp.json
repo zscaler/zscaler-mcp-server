@@ -1,9 +1,16 @@
 {
   "mcpServers": {
-    "zscaler": {
-      "command": "zscaler-mcp-server",
-      "args": [],
-      "env": {}
+    "zscaler-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--pull=never",
+        "--env-file",
+        "/Users/wguilherme/go/src/github.com/zscaler/zscaler-mcp-server/.env",
+        "zscaler-mcp-server:latest"
+      ]
     }
   }
 }

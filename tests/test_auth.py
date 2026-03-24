@@ -13,7 +13,6 @@ import os
 import threading
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from unittest.mock import patch
 
 import jwt as pyjwt
 import pytest
@@ -433,22 +432,112 @@ class TestAuthMiddleware:
 
 
 class TestApplyAuthMiddleware:
+    _AUTH_ENVS = [
+        "ZSCALER_MCP_AUTH_ENABLED",
+        "ZSCALER_MCP_AUTH_MODE",
+        "ZSCALER_MCP_AUTH_API_KEY",
+        "ZSCALER_MCP_AUTH_JWKS_URI",
+        "ZSCALER_MCP_AUTH_ISSUER",
+        "ZSCALER_MCP_AUTH_AUDIENCE",
+        "ZSCALER_MCP_AUTH_ALGORITHMS",
+        "ZSCALER_VANITY_DOMAIN",
+        "ZSCALER_CLOUD",
+    ]
+
     def _clean_env(self):
-        for key in [
-            "ZSCALER_MCP_AUTH_ENABLED",
-            "ZSCALER_MCP_AUTH_MODE",
-            "ZSCALER_MCP_AUTH_API_KEY",
-            "ZSCALER_MCP_AUTH_JWKS_URI",
-            "ZSCALER_MCP_AUTH_ISSUER",
-            "ZSCALER_VANITY_DOMAIN",
-            "ZSCALER_CLOUD",
-        ]:
+        for key in self._AUTH_ENVS:
             os.environ.pop(key, None)
 
-    def test_disabled_by_default(self):
+    # -- Auth enabled by default (zero-trust) --
+
+    def test_auth_enabled_by_default(self):
+        """Auth is ON by default for HTTP transports. With no credentials
+        configured, the server defaults to jwt mode and raises SystemExit
+        because JWKS_URI is missing."""
         self._clean_env()
-        result = apply_auth_middleware("original-app", "streamable-http")
-        assert result == "original-app"
+        try:
+            with pytest.raises(SystemExit, match="Authentication is enabled"):
+                apply_auth_middleware("original-app", "streamable-http")
+        finally:
+            self._clean_env()
+
+    def test_explicit_disable_returns_original_app(self):
+        """Explicitly setting ZSCALER_MCP_AUTH_ENABLED=false bypasses auth."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "false"
+        try:
+            result = apply_auth_middleware("original-app", "streamable-http")
+            assert result == "original-app"
+        finally:
+            self._clean_env()
+
+    def test_explicit_disable_0(self):
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "0"
+        try:
+            result = apply_auth_middleware("original-app", "sse")
+            assert result == "original-app"
+        finally:
+            self._clean_env()
+
+    def test_explicit_disable_no(self):
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "no"
+        try:
+            result = apply_auth_middleware("original-app", "sse")
+            assert result == "original-app"
+        finally:
+            self._clean_env()
+
+    # -- Auto-detection --
+
+    def test_auto_detect_jwt_from_jwks_uri(self):
+        """When no explicit mode is set but JWKS_URI is present, auto-detect jwt."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_JWKS_URI"] = "https://idp.example.com/keys"
+        os.environ["ZSCALER_MCP_AUTH_ISSUER"] = "https://idp.example.com"
+        try:
+            result = apply_auth_middleware("app", "streamable-http")
+            assert isinstance(result, AuthMiddleware)
+            assert isinstance(result.provider, JWTAuthProvider)
+        finally:
+            self._clean_env()
+
+    def test_auto_detect_api_key(self):
+        """When no explicit mode is set but API_KEY is present, auto-detect api-key."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_API_KEY"] = "sk-test-key"
+        try:
+            result = apply_auth_middleware("app", "sse")
+            assert isinstance(result, AuthMiddleware)
+            assert isinstance(result.provider, APIKeyAuthProvider)
+        finally:
+            self._clean_env()
+
+    def test_auto_detect_zscaler(self):
+        """When no explicit mode is set but VANITY_DOMAIN is present, auto-detect zscaler."""
+        self._clean_env()
+        os.environ["ZSCALER_VANITY_DOMAIN"] = "acme"
+        try:
+            result = apply_auth_middleware("app", "streamable-http")
+            assert isinstance(result, AuthMiddleware)
+            assert isinstance(result.provider, ZscalerAuthProvider)
+        finally:
+            self._clean_env()
+
+    def test_auto_detect_priority_jwks_over_api_key(self):
+        """JWKS_URI takes precedence over API_KEY in auto-detection."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_JWKS_URI"] = "https://idp.example.com/keys"
+        os.environ["ZSCALER_MCP_AUTH_ISSUER"] = "https://idp.example.com"
+        os.environ["ZSCALER_MCP_AUTH_API_KEY"] = "sk-also-set"
+        try:
+            result = apply_auth_middleware("app", "streamable-http")
+            assert isinstance(result.provider, JWTAuthProvider)
+        finally:
+            self._clean_env()
+
+    # -- stdio exempt --
 
     def test_stdio_always_skips(self):
         self._clean_env()
@@ -460,6 +549,8 @@ class TestApplyAuthMiddleware:
             assert result == "original-app"
         finally:
             self._clean_env()
+
+    # -- Explicit mode tests --
 
     def test_api_key_mode_wraps(self):
         self._clean_env()
@@ -497,20 +588,51 @@ class TestApplyAuthMiddleware:
 
     def test_unknown_mode_raises(self):
         self._clean_env()
-        os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "true"
         os.environ["ZSCALER_MCP_AUTH_MODE"] = "magic"
         try:
-            with pytest.raises(ValueError, match="Unknown auth mode"):
+            with pytest.raises(SystemExit, match="Authentication is enabled"):
                 apply_auth_middleware("app", "streamable-http")
         finally:
             self._clean_env()
 
     def test_oauth_proxy_raises(self):
         self._clean_env()
-        os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "true"
         os.environ["ZSCALER_MCP_AUTH_MODE"] = "oauth-proxy"
         try:
-            with pytest.raises(NotImplementedError):
+            with pytest.raises(SystemExit):
+                apply_auth_middleware("app", "streamable-http")
+        finally:
+            self._clean_env()
+
+    # -- Invalid config raises SystemExit --
+
+    def test_jwt_mode_missing_jwks_uri_raises(self):
+        """JWT mode without JWKS_URI raises SystemExit (not ValueError)."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_MODE"] = "jwt"
+        os.environ["ZSCALER_MCP_AUTH_ISSUER"] = "https://example.com"
+        try:
+            with pytest.raises(SystemExit, match="Authentication is enabled"):
+                apply_auth_middleware("app", "streamable-http")
+        finally:
+            self._clean_env()
+
+    def test_api_key_mode_missing_key_raises(self):
+        """api-key mode without API_KEY raises SystemExit."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_MODE"] = "api-key"
+        try:
+            with pytest.raises(SystemExit, match="Authentication is enabled"):
+                apply_auth_middleware("app", "streamable-http")
+        finally:
+            self._clean_env()
+
+    def test_zscaler_mode_missing_domain_raises(self):
+        """zscaler mode without VANITY_DOMAIN raises SystemExit."""
+        self._clean_env()
+        os.environ["ZSCALER_MCP_AUTH_MODE"] = "zscaler"
+        try:
+            with pytest.raises(SystemExit, match="Authentication is enabled"):
                 apply_auth_middleware("app", "streamable-http")
         finally:
             self._clean_env()

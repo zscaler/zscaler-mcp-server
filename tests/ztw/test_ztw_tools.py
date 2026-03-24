@@ -4,7 +4,7 @@ Unit tests for ZTW (Zscaler Tenant Workload) tools.
 This module tests all 15 ZTW tools:
 Read-only operations (9):
 - ztw_list_ip_destination_groups, ztw_list_ip_destination_groups_lite
-- ztw_list_ip_groups, ztw_list_ip_groups_lite  
+- ztw_list_ip_groups, ztw_list_ip_groups_lite
 - ztw_list_ip_source_groups, ztw_list_ip_source_groups_lite
 - ztw_list_network_service_groups
 - ztw_list_admins (with action parameter)
@@ -16,6 +16,7 @@ Write operations (6):
 - ztw_create_ip_source_group, ztw_delete_ip_source_group
 """
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -46,6 +47,7 @@ from zscaler_mcp.tools.ztw.network_service_groups import ztw_list_network_servic
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_client():
     """Create a mock Zscaler client with ZTW API."""
@@ -68,7 +70,7 @@ def mock_group_list():
         group.as_dict.return_value = {
             "id": f"group{i}",
             "name": f"Test Group {i}",
-            "description": f"Description {i}"
+            "description": f"Description {i}",
         }
         groups.append(group)
     return groups
@@ -82,7 +84,7 @@ def mock_group():
         "id": "group123",
         "name": "Test Group",
         "description": "Test Description",
-        "addresses": ["192.168.1.1", "192.168.1.2"]
+        "addresses": ["192.168.1.1", "192.168.1.2"],
     }
     return group
 
@@ -91,31 +93,46 @@ def mock_group():
 # IP DESTINATION GROUPS TESTS
 # =============================================================================
 
+
 class TestZtwIpDestinationGroups:
     """Test cases for ZTW IP destination groups functions."""
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
-    def test_list_ip_destination_groups_success(self, mock_get_client, mock_client, mock_group_list):
+    def test_list_ip_destination_groups_success(
+        self, mock_get_client, mock_client, mock_group_list
+    ):
         """Test successful listing of IP destination groups."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.return_value = (mock_group_list, None, None)
+        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.return_value = (
+            mock_group_list,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_ip_destination_groups()
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
-        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.assert_called_once_with(query_params={})
+        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.assert_called_once_with(
+            query_params={}
+        )
         assert len(result) == 3
         assert result[0]["name"] == "Test Group 0"
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
-    def test_list_ip_destination_groups_with_filter(self, mock_get_client, mock_client, mock_group_list):
+    def test_list_ip_destination_groups_with_filter(
+        self, mock_get_client, mock_client, mock_group_list
+    ):
         """Test listing IP destination groups with exclude_type filter."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.return_value = (mock_group_list, None, None)
+        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.return_value = (
+            mock_group_list,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_ip_destination_groups(exclude_type="DSTN_FQDN")
@@ -131,7 +148,11 @@ class TestZtwIpDestinationGroups:
         """Test listing IP destination groups with API error."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.return_value = (None, None, "API Error")
+        mock_client.ztw.ip_destination_groups.list_ip_destination_groups.return_value = (
+            None,
+            None,
+            "API Error",
+        )
 
         # Execute & Verify
         with pytest.raises(Exception) as exc_info:
@@ -139,17 +160,25 @@ class TestZtwIpDestinationGroups:
         assert "Failed to list IP destination groups: API Error" in str(exc_info.value)
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
-    def test_list_ip_destination_groups_lite_success(self, mock_get_client, mock_client, mock_group_list):
+    def test_list_ip_destination_groups_lite_success(
+        self, mock_get_client, mock_client, mock_group_list
+    ):
         """Test successful listing of IP destination groups (lite version)."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_destination_groups.list_ip_destination_groups_lite.return_value = (mock_group_list, None, None)
+        mock_client.ztw.ip_destination_groups.list_ip_destination_groups_lite.return_value = (
+            mock_group_list,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_ip_destination_groups_lite()
 
         # Verify
-        mock_client.ztw.ip_destination_groups.list_ip_destination_groups_lite.assert_called_once_with(query_params={})
+        mock_client.ztw.ip_destination_groups.list_ip_destination_groups_lite.assert_called_once_with(
+            query_params={}
+        )
         assert len(result) == 3
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
@@ -157,13 +186,15 @@ class TestZtwIpDestinationGroups:
         """Test successful creation of IP destination group."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_destination_groups.add_ip_destination_group.return_value = (mock_group, None, None)
+        mock_client.ztw.ip_destination_groups.add_ip_destination_group.return_value = (
+            mock_group,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_create_ip_destination_group(
-            name="Test Group",
-            type="DSTN_IP",
-            addresses=["192.168.1.1", "192.168.1.2"]
+            name="Test Group", type="DSTN_IP", addresses=["192.168.1.1", "192.168.1.2"]
         )
 
         # Verify
@@ -175,18 +206,22 @@ class TestZtwIpDestinationGroups:
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.validate_and_convert_country_codes")
-    def test_create_ip_destination_group_with_countries(self, mock_validate, mock_get_client, mock_client, mock_group):
+    def test_create_ip_destination_group_with_countries(
+        self, mock_validate, mock_get_client, mock_client, mock_group
+    ):
         """Test creating IP destination group with countries."""
         # Setup
         mock_get_client.return_value = mock_client
         mock_validate.return_value = ["COUNTRY_CA", "COUNTRY_US"]
-        mock_client.ztw.ip_destination_groups.add_ip_destination_group.return_value = (mock_group, None, None)
+        mock_client.ztw.ip_destination_groups.add_ip_destination_group.return_value = (
+            mock_group,
+            None,
+            None,
+        )
 
         # Execute
         ztw_create_ip_destination_group(
-            name="Test Group",
-            type="DSTN_OTHER",
-            countries=["CA", "US"]
+            name="Test Group", type="DSTN_OTHER", countries=["CA", "US"]
         )
 
         # Verify
@@ -214,24 +249,28 @@ class TestZtwIpDestinationGroups:
         # Execute & Verify
         with pytest.raises(ValueError) as exc_info:
             ztw_create_ip_destination_group(
-                name="Test", 
+                name="Test",
                 type="DSTN_IP",  # Not DSTN_OTHER
-                countries=["US"]
+                countries=["US"],
             )
         assert "Countries are only supported when type is DSTN_OTHER" in str(exc_info.value)
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
     def test_delete_ip_destination_group_success(self, mock_get_client, mock_client):
         """Test successful deletion of IP destination group."""
-        # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_destination_groups.delete_ip_destination_group.return_value = (None, None, None)
+        mock_client.ztw.ip_destination_groups.delete_ip_destination_group.return_value = (
+            None,
+            None,
+            None,
+        )
 
-        # Execute with confirmation
-        result = ztw_delete_ip_destination_group(group_id="123", kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = ztw_delete_ip_destination_group(group_id="123")
 
-        # Verify
-        mock_client.ztw.ip_destination_groups.delete_ip_destination_group.assert_called_once_with("123")
+        mock_client.ztw.ip_destination_groups.delete_ip_destination_group.assert_called_once_with(
+            "123"
+        )
         assert "Group 123 deleted successfully" in result
 
     @patch("zscaler_mcp.tools.ztw.ip_destination_groups.get_zscaler_client")
@@ -248,6 +287,7 @@ class TestZtwIpDestinationGroups:
 # =============================================================================
 # IP GROUPS TESTS
 # =============================================================================
+
 
 class TestZtwIpGroups:
     """Test cases for ZTW IP groups functions."""
@@ -278,7 +318,9 @@ class TestZtwIpGroups:
         result = ztw_list_ip_groups(search="test")
 
         # Verify
-        mock_client.ztw.ip_groups.list_ip_groups.assert_called_once_with(query_params={"search": "test"})
+        mock_client.ztw.ip_groups.list_ip_groups.assert_called_once_with(
+            query_params={"search": "test"}
+        )
         assert len(result) == 3
 
     @patch("zscaler_mcp.tools.ztw.ip_groups.get_zscaler_client")
@@ -292,7 +334,9 @@ class TestZtwIpGroups:
         result = ztw_list_ip_groups_lite(search="test")
 
         # Verify
-        mock_client.ztw.ip_groups.list_ip_groups_lite.assert_called_once_with(query_params={"search": "test"})
+        mock_client.ztw.ip_groups.list_ip_groups_lite.assert_called_once_with(
+            query_params={"search": "test"}
+        )
         assert len(result) == 3
 
     @patch("zscaler_mcp.tools.ztw.ip_groups.get_zscaler_client")
@@ -303,10 +347,7 @@ class TestZtwIpGroups:
         mock_client.ztw.ip_groups.add_ip_group.return_value = (mock_group, None, None)
 
         # Execute
-        result = ztw_create_ip_group(
-            name="Test Group",
-            ip_addresses=["192.168.1.1", "192.168.1.2"]
-        )
+        result = ztw_create_ip_group(name="Test Group", ip_addresses=["192.168.1.1", "192.168.1.2"])
 
         # Verify
         mock_client.ztw.ip_groups.add_ip_group.assert_called_once()
@@ -322,10 +363,7 @@ class TestZtwIpGroups:
         mock_client.ztw.ip_groups.add_ip_group.return_value = (mock_group, None, None)
 
         # Execute
-        ztw_create_ip_group(
-            name="Test Group",
-            ip_addresses='["192.168.1.1", "192.168.1.2"]'
-        )
+        ztw_create_ip_group(name="Test Group", ip_addresses='["192.168.1.1", "192.168.1.2"]')
 
         # Verify
         call_kwargs = mock_client.ztw.ip_groups.add_ip_group.call_args[1]
@@ -345,14 +383,12 @@ class TestZtwIpGroups:
     @patch("zscaler_mcp.tools.ztw.ip_groups.get_zscaler_client")
     def test_delete_ip_group_success(self, mock_get_client, mock_client):
         """Test successful deletion of IP group."""
-        # Setup
         mock_get_client.return_value = mock_client
         mock_client.ztw.ip_groups.delete_ip_group.return_value = (None, None, None)
 
-        # Execute with confirmation
-        result = ztw_delete_ip_group(group_id=123, kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = ztw_delete_ip_group(group_id=123)
 
-        # Verify
         mock_client.ztw.ip_groups.delete_ip_group.assert_called_once_with(123)
         assert "Group 123 deleted successfully" in result
 
@@ -360,6 +396,7 @@ class TestZtwIpGroups:
 # =============================================================================
 # IP SOURCE GROUPS TESTS
 # =============================================================================
+
 
 class TestZtwIpSourceGroups:
     """Test cases for ZTW IP source groups functions."""
@@ -369,14 +406,20 @@ class TestZtwIpSourceGroups:
         """Test successful listing of IP source groups."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_source_groups.list_ip_source_groups.return_value = (mock_group_list, None, None)
+        mock_client.ztw.ip_source_groups.list_ip_source_groups.return_value = (
+            mock_group_list,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_ip_source_groups()
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
-        mock_client.ztw.ip_source_groups.list_ip_source_groups.assert_called_once_with(query_params={})
+        mock_client.ztw.ip_source_groups.list_ip_source_groups.assert_called_once_with(
+            query_params={}
+        )
         assert len(result) == 3
 
     @patch("zscaler_mcp.tools.ztw.ip_source_groups.get_zscaler_client")
@@ -384,27 +427,41 @@ class TestZtwIpSourceGroups:
         """Test listing IP source groups with search filter."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_source_groups.list_ip_source_groups.return_value = (mock_group_list, None, None)
+        mock_client.ztw.ip_source_groups.list_ip_source_groups.return_value = (
+            mock_group_list,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_ip_source_groups(search="prod")
 
         # Verify
-        mock_client.ztw.ip_source_groups.list_ip_source_groups.assert_called_once_with(query_params={"search": "prod"})
+        mock_client.ztw.ip_source_groups.list_ip_source_groups.assert_called_once_with(
+            query_params={"search": "prod"}
+        )
         assert len(result) == 3
 
     @patch("zscaler_mcp.tools.ztw.ip_source_groups.get_zscaler_client")
-    def test_list_ip_source_groups_lite_success(self, mock_get_client, mock_client, mock_group_list):
+    def test_list_ip_source_groups_lite_success(
+        self, mock_get_client, mock_client, mock_group_list
+    ):
         """Test successful listing of IP source groups (lite version)."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.ip_source_groups.list_ip_source_groups_lite.return_value = (mock_group_list, None, None)
+        mock_client.ztw.ip_source_groups.list_ip_source_groups_lite.return_value = (
+            mock_group_list,
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_ip_source_groups_lite()
 
         # Verify
-        mock_client.ztw.ip_source_groups.list_ip_source_groups_lite.assert_called_once_with(query_params={})
+        mock_client.ztw.ip_source_groups.list_ip_source_groups_lite.assert_called_once_with(
+            query_params={}
+        )
         assert len(result) == 3
 
     @patch("zscaler_mcp.tools.ztw.ip_source_groups.get_zscaler_client")
@@ -418,7 +475,7 @@ class TestZtwIpSourceGroups:
         result = ztw_create_ip_source_group(
             name="Source Group",
             ip_addresses=["10.0.0.1", "10.0.0.2"],
-            description="Test source group"
+            description="Test source group",
         )
 
         # Verify
@@ -430,15 +487,13 @@ class TestZtwIpSourceGroups:
 
     @patch("zscaler_mcp.tools.ztw.ip_source_groups.get_zscaler_client")
     def test_delete_ip_source_group_success(self, mock_get_client, mock_client):
-        """Test successful deletion of IP source group with confirmation."""
-        # Setup
+        """Test successful deletion of IP source group."""
         mock_get_client.return_value = mock_client
         mock_client.ztw.ip_source_groups.delete_ip_source_group.return_value = (None, None, None)
 
-        # Execute with confirmation
-        result = ztw_delete_ip_source_group(group_id="456", kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = ztw_delete_ip_source_group(group_id="456")
 
-        # Verify
         mock_client.ztw.ip_source_groups.delete_ip_source_group.assert_called_once_with("456")
         assert "Group 456 deleted successfully" in result
 
@@ -446,6 +501,7 @@ class TestZtwIpSourceGroups:
 # =============================================================================
 # ADMIN USERS TESTS
 # =============================================================================
+
 
 class TestZtwAdmins:
     """Test cases for ZTW admin users functions."""
@@ -485,7 +541,7 @@ class TestZtwAdmins:
             include_api_roles=False,
             search="admin",
             page=1,
-            page_size=10
+            page_size=10,
         )
 
         # Verify
@@ -503,7 +559,11 @@ class TestZtwAdmins:
         # Setup
         mock_get_client.return_value = mock_client
         admin = MagicMock()
-        admin.as_dict.return_value = {"id": "admin123", "username": "admin@example.com", "role": "Super Admin"}
+        admin.as_dict.return_value = {
+            "id": "admin123",
+            "username": "admin@example.com",
+            "role": "Super Admin",
+        }
         mock_client.ztw.admin_users.get_admin.return_value = (admin, None, None)
 
         # Execute
@@ -555,6 +615,7 @@ class TestZtwAdmins:
 # ADMIN ROLES TESTS
 # =============================================================================
 
+
 class TestZtwRoles:
     """Test cases for ZTW admin roles functions."""
 
@@ -590,7 +651,7 @@ class TestZtwRoles:
             include_auditor_role=True,
             include_partner_role=False,
             include_api_roles=True,
-            search="admin"
+            search="admin",
         )
 
         # Verify
@@ -631,6 +692,7 @@ class TestZtwRoles:
 # NETWORK SERVICE GROUPS TESTS
 # =============================================================================
 
+
 class TestZtwNetworkServiceGroups:
     """Test cases for ZTW network service groups functions."""
 
@@ -643,14 +705,20 @@ class TestZtwNetworkServiceGroups:
         group1.as_dict.return_value = {"id": "nsg1", "name": "HTTP Services"}
         group2 = MagicMock()
         group2.as_dict.return_value = {"id": "nsg2", "name": "HTTPS Services"}
-        mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = ([group1, group2], None, None)
+        mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = (
+            [group1, group2],
+            None,
+            None,
+        )
 
         # Execute
         result = ztw_list_network_service_groups()
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
-        mock_client.ztw.nw_service_groups.list_network_svc_groups.assert_called_once_with(query_params={})
+        mock_client.ztw.nw_service_groups.list_network_svc_groups.assert_called_once_with(
+            query_params={}
+        )
         assert len(result) == 2
         assert result[0]["name"] == "HTTP Services"
 
@@ -674,7 +742,11 @@ class TestZtwNetworkServiceGroups:
         """Test listing network service groups with API error."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = (None, None, "API Error")
+        mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = (
+            None,
+            None,
+            "API Error",
+        )
 
         # Execute & Verify
         with pytest.raises(Exception) as exc_info:
@@ -693,4 +765,3 @@ class TestZtwNetworkServiceGroups:
 
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=True, service="ztw")
-

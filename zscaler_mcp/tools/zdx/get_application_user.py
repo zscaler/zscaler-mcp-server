@@ -8,13 +8,14 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_list_application_users(
-    app_id: Annotated[
-        str, Field(description="The unique ID for the ZDX application.")
-    ],
+    app_id: Annotated[str, Field(description="The unique ID for the ZDX application.")],
     score_bucket: Annotated[
-        Optional[Literal["poor", "okay", "good"]], 
-        Field(description="The ZDX score bucket to filter by. Available values: 'poor' (0-33), 'okay' (34-65), 'good' (66-100).")
+        Optional[Literal["poor", "okay", "good"]],
+        Field(
+            description="The ZDX score bucket to filter by. Available values: 'poor' (0-33), 'okay' (34-65), 'good' (66-100)."
+        ),
     ] = None,
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
@@ -28,9 +29,7 @@ def zdx_list_application_users(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -86,25 +85,19 @@ def zdx_list_application_users(
 
     if result and len(result) > 0:
         users_obj = result[0]
-        users_list = users_obj.users if hasattr(users_obj, 'users') else []
+        users_list = users_obj.users if hasattr(users_obj, "users") else []
         return [user.as_dict() for user in users_list]
     else:
         return []
 
 
 def zdx_get_application_user(
-    app_id: Annotated[
-        str, Field(description="The unique ID for the ZDX application.")
-    ],
-    user_id: Annotated[
-        str, Field(description="The unique ID for the ZDX user.")
-    ],
+    app_id: Annotated[str, Field(description="The unique ID for the ZDX application.")],
+    user_id: Annotated[str, Field(description="The unique ID for the ZDX user.")],
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """

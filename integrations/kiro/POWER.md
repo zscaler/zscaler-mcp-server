@@ -1,7 +1,7 @@
 ---
 name: "zscaler"
 displayName: "Zscaler Zero Trust"
-description: "Manage your Zscaler Zero Trust Exchange platform — ZPA private access, ZIA internet security, ZDX digital experience monitoring, and more. 200+ tools across 8 services."
+description: "Manage your Zscaler Zero Trust Exchange platform — ZPA private access, ZIA internet security, ZDX digital experience monitoring, and more. 280+ tools across 8 services."
 keywords: ["zscaler", "zero-trust", "ztna", "zpa", "zia", "zdx", "zcc", "easm", "security", "firewall", "access-policy", "private-access", "url-filtering", "dlp", "ssl-inspection", "digital-experience", "attack-surface", "z-insights"]
 author: "Zscaler"
 ---
@@ -10,7 +10,7 @@ author: "Zscaler"
 
 ## Overview
 
-The Zscaler Power provides AI-assisted management of the Zscaler Zero Trust Exchange platform. With 200+ tools across 8 services, you can query, explore, and manage your entire Zscaler environment through natural language.
+The Zscaler Power provides AI-assisted management of the Zscaler Zero Trust Exchange platform. With 280+ tools across 8 services, you can query, explore, and manage your entire Zscaler environment through natural language.
 
 **Key capabilities:**
 
@@ -52,7 +52,7 @@ Load a steering file when the user's request matches that service. For example, 
 ### zscaler
 
 **Package:** `zscaler-mcp` via uvx or Docker
-**Connection:** Local STDIO or remote HTTP (streamable-http)
+**Connection:** Local STDIO or remote HTTP (streamable-http). For remote deployment (EC2, VM), see [Remote MCP Deployment](../../docs/deployment/authentication-and-deployment.md#remote-deployment-ec2-vm-etc).
 
 **Tool naming convention:** All tools follow `{service}_{verb}_{resource}` — e.g., `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Use the service prefix to discover tools: `zia_`, `zpa_`, `zdx_`, `zcc_`, `zeasm_`, `zinsights_`, `zidentity_`, `ztw_`.
 

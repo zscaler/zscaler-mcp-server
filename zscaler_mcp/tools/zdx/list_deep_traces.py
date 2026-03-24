@@ -9,21 +9,34 @@ from zscaler_mcp.client import get_zscaler_client
 # Helper Functions
 # ============================================================================
 
-def _convert_timestamps(data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+
+def _convert_timestamps(
+    data: Union[Dict[str, Any], List[Dict[str, Any]]],
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """
     Convert Unix epoch timestamps to ISO format in the response data.
-    
+
     Args:
         data: Dictionary or list of dictionaries containing trace data
-        
+
     Returns:
         Data with timestamps converted to ISO format
     """
+
     def convert_single_item(item):
         if isinstance(item, dict):
             converted_item = {}
             for key, value in item.items():
-                if isinstance(value, (int, str)) and key.lower() in ['created', 'started', 'ended', 'timestamp', 'time']:
+                if isinstance(value, (int, str)) and key.lower() in [
+                    "created",
+                    "started",
+                    "ended",
+                    "timestamp",
+                    "time",
+                    "created_at",
+                    "started_at",
+                    "ended_at",
+                ]:
                     try:
                         # Try to convert to int if it's a string
                         timestamp = int(value)
@@ -38,12 +51,14 @@ def _convert_timestamps(data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Un
                 elif isinstance(value, dict):
                     converted_item[key] = convert_single_item(value)
                 elif isinstance(value, list):
-                    converted_item[key] = [convert_single_item(v) if isinstance(v, dict) else v for v in value]
+                    converted_item[key] = [
+                        convert_single_item(v) if isinstance(v, dict) else v for v in value
+                    ]
                 else:
                     converted_item[key] = value
             return converted_item
         return item
-    
+
     if isinstance(data, list):
         return [convert_single_item(item) for item in data]
     else:
@@ -54,13 +69,10 @@ def _convert_timestamps(data: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Un
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_list_device_deep_traces(
-    device_id: Annotated[
-        str, Field(description="The unique ID for the ZDX device.")
-    ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -93,24 +105,16 @@ def zdx_list_device_deep_traces(
         raise Exception(f"Deep trace listing failed: {err}")
 
     if result and len(result) > 0:
-        traces_obj = result[0]
-        traces_list = traces_obj.traces if hasattr(traces_obj, 'traces') else []
-        traces_data = [trace.as_dict() for trace in traces_list]
+        traces_data = [trace.as_dict() for trace in result]
         return _convert_timestamps(traces_data)
     else:
         return []
 
 
 def zdx_get_device_deep_trace(
-    device_id: Annotated[
-        str, Field(description="The unique ID for the ZDX device.")
-    ],
-    trace_id: Annotated[
-        str, Field(description="The unique ID for the deeptrace.")
-    ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
+    trace_id: Annotated[str, Field(description="The unique ID for the deeptrace.")],
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
