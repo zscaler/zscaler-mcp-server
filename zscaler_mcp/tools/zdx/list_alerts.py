@@ -8,6 +8,7 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_list_alerts(
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
@@ -19,17 +20,17 @@ def zdx_list_alerts(
         Optional[List[str]], Field(description="Filter by geolocation ID(s).")
     ] = None,
     since: Annotated[
-        Optional[int], Field(description="Number of hours to look back (default 2h). Cannot exceed 14 days.")
+        Optional[int],
+        Field(description="Number of hours to look back (default 2h). Cannot exceed 14 days."),
     ] = None,
     offset: Annotated[
-        Optional[str], Field(description="The next_offset value from the last request for pagination.")
+        Optional[str],
+        Field(description="The next_offset value from the last request for pagination."),
     ] = None,
     limit: Annotated[
         Optional[int], Field(description="Number of items to return per request (minimum 1).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -93,19 +94,15 @@ def zdx_list_alerts(
     if result and len(result) > 0:
         alerts_obj = result[0]  # Get the first (and only) Alerts object
         # Access the alerts property which contains a list of alert objects
-        alerts_list = alerts_obj.alerts if hasattr(alerts_obj, 'alerts') else []
+        alerts_list = alerts_obj.alerts if hasattr(alerts_obj, "alerts") else []
         return [alert.as_dict() for alert in alerts_list]
     else:
         return []
 
 
 def zdx_get_alert(
-    alert_id: Annotated[
-        str, Field(description="The unique ID for the alert.")
-    ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    alert_id: Annotated[str, Field(description="The unique ID for the alert.")],
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -145,9 +142,7 @@ def zdx_get_alert(
 
 
 def zdx_list_alert_affected_devices(
-    alert_id: Annotated[
-        str, Field(description="The unique ID for the alert.")
-    ],
+    alert_id: Annotated[str, Field(description="The unique ID for the alert.")],
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
     ] = None,
@@ -161,17 +156,17 @@ def zdx_list_alert_affected_devices(
         Optional[List[int]], Field(description="Filter by location group ID(s).")
     ] = None,
     since: Annotated[
-        Optional[int], Field(description="Number of hours to look back (default 2h). Cannot exceed 14 days.")
+        Optional[int],
+        Field(description="Number of hours to look back (default 2h). Cannot exceed 14 days."),
     ] = None,
     offset: Annotated[
-        Optional[str], Field(description="The next_offset value from the last request for pagination.")
+        Optional[str],
+        Field(description="The next_offset value from the last request for pagination."),
     ] = None,
     limit: Annotated[
         Optional[int], Field(description="Number of items to return per request (minimum 1).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -241,9 +236,7 @@ def zdx_list_alert_affected_devices(
     if location_groups:
         query_params["location_groups"] = location_groups
 
-    result, _, err = client.zdx.alerts.list_affected_devices(
-        alert_id, query_params=query_params
-    )
+    result, _, err = client.zdx.alerts.list_affected_devices(alert_id, query_params=query_params)
     if err:
         raise Exception(f"Affected devices lookup failed: {err}")
 
@@ -251,7 +244,9 @@ def zdx_list_alert_affected_devices(
     if result and len(result) > 0:
         affected_devices_obj = result[0]  # Get the first (and only) AffectedDevices object
         # Access the devices property which contains a list of device objects
-        devices_list = affected_devices_obj.devices if hasattr(affected_devices_obj, 'devices') else []
+        devices_list = (
+            affected_devices_obj.devices if hasattr(affected_devices_obj, "devices") else []
+        )
         return [device.as_dict() for device in devices_list]
     else:
         return []

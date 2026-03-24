@@ -2,6 +2,7 @@
 Tests for the Zscaler Integrations MCP Server.
 """
 
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -48,6 +49,7 @@ class TestZscalerMCPServer(unittest.TestCase):
             instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
             debug=True,
             log_level="DEBUG",
+            transport_security=None,
         )
 
         # Verify services initialization
@@ -104,10 +106,7 @@ class TestZscalerMCPServer(unittest.TestCase):
         mock_fastmcp.return_value = mock_server_instance
 
         # Create server with specific tools enabled
-        server = ZscalerMCPServer(
-            enabled_services={"zpa"},
-            enabled_tools={"zpa_app_segments"}
-        )
+        server = ZscalerMCPServer(enabled_services={"zpa"}, enabled_tools={"zpa_app_segments"})
 
         # Verify that enabled_tools is set
         self.assertEqual(server.enabled_tools, {"zpa_app_segments"})
@@ -220,7 +219,7 @@ class TestZscalerMCPServer(unittest.TestCase):
             vanity_domain="test.domain.com",
             cloud="beta",
             debug=True,
-            user_agent_comment="test_comment"
+            user_agent_comment="test_comment",
         )
 
         # Verify configuration is stored
@@ -262,9 +261,12 @@ class TestZscalerMCPServer(unittest.TestCase):
         mock_fastmcp.return_value = mock_server_instance
 
         # Mock a service class that raises an exception
-        with patch.dict(services._AVAILABLE_SERVICES, {  # pylint: disable=protected-access
-            "test_service": MagicMock(side_effect=Exception("Service init failed"))
-        }):
+        with patch.dict(
+            services._AVAILABLE_SERVICES,
+            {  # pylint: disable=protected-access
+                "test_service": MagicMock(side_effect=Exception("Service init failed"))
+            },
+        ):
             # Create server with the problematic service - should raise the exception
             with self.assertRaises(Exception) as context:
                 ZscalerMCPServer(enabled_services={"test_service"})
@@ -287,18 +289,24 @@ class TestZscalerMCPServer(unittest.TestCase):
         server = ZscalerMCPServer()
 
         # Test stdio transport (default)
-        with patch.object(server.server, 'run') as mock_run:
+        with patch.object(server.server, "run") as mock_run:
             server.run("stdio")
             mock_run.assert_called_once_with("stdio")
 
-        # Test sse transport
-        with patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run:
-            server.run("sse", host="0.0.0.0", port=8080)
+        # Test sse transport (use localhost to avoid host validation guard)
+        with (
+            patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run,
+            patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}),
+        ):
+            server.run("sse", host="127.0.0.1", port=8080)
             mock_uvicorn_run.assert_called_once()
 
         # Test streamable-http transport
-        with patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run:
-            server.run("streamable-http", host="0.0.0.0", port=8080)
+        with (
+            patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run,
+            patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}),
+        ):
+            server.run("streamable-http", host="127.0.0.1", port=8080)
             mock_uvicorn_run.assert_called_once()
 
 

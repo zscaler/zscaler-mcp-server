@@ -44,6 +44,36 @@ zdx_list_alerts()
 
 Evaluate: Score > 80 = good, 50-80 = degraded, < 50 = poor. Check DNS time, TCP connect time, server response time.
 
+### Step 3a: Deep Trace Diagnostics (if score is degraded/poor)
+
+Check for existing deep trace sessions and analyze or start a new one:
+
+```
+zdx_list_device_deep_traces(device_id="<id>")
+```
+
+If a trace exists, analyze the diagnostics data:
+
+```
+zdx_get_device_deep_trace(device_id="<id>", trace_id="<trace_id>")
+zdx_get_deeptrace_webprobe_metrics(device_id="<id>", trace_id="<trace_id>")
+zdx_get_deeptrace_cloudpath(device_id="<id>", trace_id="<trace_id>")
+zdx_get_deeptrace_cloudpath_metrics(device_id="<id>", trace_id="<trace_id>")
+zdx_get_deeptrace_health_metrics(device_id="<id>", trace_id="<trace_id>")
+zdx_list_deeptrace_top_processes(device_id="<id>", trace_id="<trace_id>")
+zdx_get_deeptrace_events(device_id="<id>", trace_id="<trace_id>")
+```
+
+If no trace exists and the symptom suggests network issues, discover probe IDs and start one (requires write tools):
+
+```
+zdx_get_web_probes(device_id="<id>", app_id="<app_id>")
+zdx_list_cloudpath_probes(device_id="<id>", app_id="<app_id>")
+zdx_start_deeptrace(device_id="<id>", session_name="Cross-Product-<user>-<date>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=15, probe_device=True)
+```
+
+Use deep trace findings to narrow down: is the issue at the device (CPU/memory), network (cloud path hops), DNS, or application layer?
+
 ## Step 4: ZPA (Private Apps)
 
 ```

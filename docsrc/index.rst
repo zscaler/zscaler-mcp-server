@@ -24,6 +24,7 @@ Table of Contents
 
    getting-started
    tools/index
+   integrations/index
    guides/index
    api/index
 
@@ -235,6 +236,72 @@ ZTW Features
    * - ``ztw_list_admins``
      - List all existing admin users or get details for a specific admin user in Zscaler Cloud & Branch Connector (ZTW)
 
+EASM Features
+~~~~~~~~~~~~~
+
+.. list-table:: EASM Tools
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Tool Name
+     - Description
+   * - ``zeasm_list_organizations``
+     - List all EASM organizations configured for the tenant
+   * - ``zeasm_list_findings``
+     - List all findings for an organization's internet-facing assets
+   * - ``zeasm_get_finding_details``
+     - Get detailed information for a specific finding
+   * - ``zeasm_get_finding_evidence``
+     - Get scan evidence attributed to a specific finding
+   * - ``zeasm_get_finding_scan_output``
+     - Get complete scan output for a specific finding
+   * - ``zeasm_list_lookalike_domains``
+     - List all lookalike domains detected for an organization
+   * - ``zeasm_get_lookalike_domain``
+     - Get details for a specific lookalike domain
+
+Z-Insights Features
+~~~~~~~~~~~~~~~~~~~
+
+.. list-table:: Z-Insights Tools
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Tool Name
+     - Description
+   * - ``zinsights_get_web_traffic_by_location``
+     - Get web traffic analytics grouped by location
+   * - ``zinsights_get_web_traffic_no_grouping``
+     - Get overall web traffic volume metrics
+   * - ``zinsights_get_web_protocols``
+     - Get web traffic by protocol (HTTP, HTTPS, SSL)
+   * - ``zinsights_get_threat_super_categories``
+     - Get threat super categories (malware, phishing, spyware)
+   * - ``zinsights_get_threat_class``
+     - Get detailed threat class breakdown
+   * - ``zinsights_get_cyber_incidents``
+     - Get cybersecurity incidents by category
+   * - ``zinsights_get_cyber_incidents_by_location``
+     - Get cybersecurity incidents grouped by location
+   * - ``zinsights_get_cyber_incidents_daily``
+     - Get daily cybersecurity incident trends
+   * - ``zinsights_get_cyber_incidents_by_threat_and_app``
+     - Get incidents correlated by threat and application
+   * - ``zinsights_get_firewall_by_action``
+     - Get Zero Trust Firewall traffic by action (allow/block)
+   * - ``zinsights_get_firewall_by_location``
+     - Get firewall traffic grouped by location
+   * - ``zinsights_get_firewall_network_services``
+     - Get firewall network service usage
+   * - ``zinsights_get_casb_app_report``
+     - Get CASB SaaS application usage report
+   * - ``zinsights_get_shadow_it_apps``
+     - Get discovered shadow IT applications with risk scores
+   * - ``zinsights_get_shadow_it_summary``
+     - Get shadow IT summary statistics and groupings
+   * - ``zinsights_get_iot_device_stats``
+     - Get IoT device statistics and classifications
+
 Installation & Setup
 --------------------
 
@@ -402,9 +469,14 @@ For all available options:
 Supported Agents
 ~~~~~~~~~~~~~~~~
 
-- `Claude <https://claude.ai/>`__
-- `Cursor <https://cursor.so/>`__
-- `VS Code <https://code.visualstudio.com/download>`__ or `VS Code Insiders <https://code.visualstudio.com/insiders>`__
+- `Claude Desktop <https://claude.ai/>`__ — Extension or manual MCP configuration
+- `Claude Code <https://docs.anthropic.com/en/docs/claude-code>`__ — Native plugin (``claude plugin install zscaler``)
+- `Cursor <https://cursor.so/>`__ — Native plugin with guided skills
+- `Gemini CLI <https://github.com/google/gemini-cli>`__ — Extension with contextual tool guidance
+- `Kiro IDE <https://kiro.dev>`__ — Power with service-specific steering files
+- `VS Code <https://code.visualstudio.com/download>`__ + GitHub Copilot — MCP configuration via Agent Mode
+
+See :ref:`platform-integrations` for detailed setup instructions for each platform.
 
 Zscaler API Credentials & Authentication
 ----------------------------------------

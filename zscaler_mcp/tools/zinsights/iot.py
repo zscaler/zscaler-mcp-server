@@ -76,19 +76,22 @@ def zinsights_get_iot_device_stats(
 
     error_info = check_graphql_errors(response, "get_device_stats")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     if not stats:
-        return [create_no_data_response(
-            query_type,
-            "your network",
-            "This means no IoT devices have been detected or IoT visibility is not enabled."
-        )]
+        return [
+            create_no_data_response(
+                query_type,
+                "your network",
+                "This means no IoT devices have been detected or IoT visibility is not enabled.",
+            )
+        ]
 
     # Stats is a dict with counts and entries, wrap it in success response
     return [create_success_response([stats], query_type, record_count=1)]
-

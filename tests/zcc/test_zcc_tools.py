@@ -21,6 +21,7 @@ from zscaler_mcp.tools.zcc.list_trusted_networks import zcc_list_trusted_network
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_client():
     """Create a mock Zscaler client with ZCC API."""
@@ -39,7 +40,7 @@ def mock_device():
         "device_id": "dev123",
         "username": "jdoe@example.com",
         "os_type": "windows",
-        "device_name": "JDOE-LAPTOP"
+        "device_name": "JDOE-LAPTOP",
     }
     return device
 
@@ -54,7 +55,7 @@ def mock_device_list(mock_device):
             "device_id": f"dev{i}",
             "username": f"user{i}@example.com",
             "os_type": "windows",
-            "device_name": f"DEVICE-{i}"
+            "device_name": f"DEVICE-{i}",
         }
         devices.append(device)
     return devices
@@ -67,7 +68,7 @@ def mock_profile():
     profile.as_dict.return_value = {
         "id": "prof123",
         "name": "Test Profile",
-        "description": "Test forwarding profile"
+        "description": "Test forwarding profile",
     }
     return profile
 
@@ -81,7 +82,7 @@ def mock_profile_list():
         profile.as_dict.return_value = {
             "id": f"prof{i}",
             "name": f"Profile {i}",
-            "description": f"Description {i}"
+            "description": f"Description {i}",
         }
         profiles.append(profile)
     return profiles
@@ -94,7 +95,7 @@ def mock_network():
     network.as_dict.return_value = {
         "id": "net123",
         "name": "Corporate Network",
-        "network_range": "192.168.1.0/24"
+        "network_range": "192.168.1.0/24",
     }
     return network
 
@@ -108,7 +109,7 @@ def mock_network_list():
         network.as_dict.return_value = {
             "id": f"net{i}",
             "name": f"Network {i}",
-            "network_range": f"10.{i}.0.0/16"
+            "network_range": f"10.{i}.0.0/16",
         }
         networks.append(network)
     return networks
@@ -117,6 +118,7 @@ def mock_network_list():
 # =============================================================================
 # ZCC LIST DEVICES TESTS
 # =============================================================================
+
 
 class TestZccListDevices:
     """Test cases for zcc_list_devices function."""
@@ -139,7 +141,9 @@ class TestZccListDevices:
         assert result[1]["username"] == "user1@example.com"
 
     @patch("zscaler_mcp.tools.zcc.list_devices.get_zscaler_client")
-    def test_list_devices_with_username_filter(self, mock_get_client, mock_client, mock_device_list):
+    def test_list_devices_with_username_filter(
+        self, mock_get_client, mock_client, mock_device_list
+    ):
         """Test listing devices with username filter."""
         # Setup
         mock_get_client.return_value = mock_client
@@ -195,10 +199,7 @@ class TestZccListDevices:
 
         # Execute
         result = zcc_list_devices(
-            username="jdoe@example.com",
-            os_type="windows",
-            page=1,
-            page_size=100
+            username="jdoe@example.com", os_type="windows", page=1, page_size=100
         )
 
         # Verify
@@ -207,7 +208,7 @@ class TestZccListDevices:
                 "username": "jdoe@example.com",
                 "os_type": "windows",
                 "page": 1,
-                "page_size": 100
+                "page_size": 100,
             }
         )
         assert len(result) == 3
@@ -242,6 +243,7 @@ class TestZccListDevices:
 # =============================================================================
 # ZCC DEVICES CSV EXPORTER TESTS
 # =============================================================================
+
 
 class TestZccDevicesCsvExporter:
     """Test cases for zcc_devices_csv_exporter function."""
@@ -337,14 +339,14 @@ class TestZccDevicesCsvExporter:
             dataset="devices",
             os_type="macos",
             registration_type="unregistered",
-            filename="all_params.csv"
+            filename="all_params.csv",
         )
 
         # Verify
         call_args = mock_client.zcc.devices.download_devices.call_args
         assert call_args[1]["query_params"] == {
             "os_types": ["macos"],
-            "registration_types": ["unregistered"]
+            "registration_types": ["unregistered"],
         }
         assert call_args[1]["filename"] == "all_params.csv"
         assert result == "all_params.csv"
@@ -379,6 +381,7 @@ class TestZccDevicesCsvExporter:
 # ZCC LIST FORWARDING PROFILES TESTS
 # =============================================================================
 
+
 class TestZccListForwardingProfiles:
     """Test cases for zcc_list_forwarding_profiles function."""
 
@@ -387,7 +390,11 @@ class TestZccListForwardingProfiles:
         """Test successful listing of forwarding profiles."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.forwarding_profile.list_by_company.return_value = (mock_profile_list, None, None)
+        mock_client.zcc.forwarding_profile.list_by_company.return_value = (
+            mock_profile_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_forwarding_profiles()
@@ -404,7 +411,11 @@ class TestZccListForwardingProfiles:
         """Test listing profiles with pagination."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.forwarding_profile.list_by_company.return_value = (mock_profile_list, None, None)
+        mock_client.zcc.forwarding_profile.list_by_company.return_value = (
+            mock_profile_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_forwarding_profiles(page=1, page_size=10)
@@ -420,7 +431,11 @@ class TestZccListForwardingProfiles:
         """Test listing profiles with search filter."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.forwarding_profile.list_by_company.return_value = (mock_profile_list, None, None)
+        mock_client.zcc.forwarding_profile.list_by_company.return_value = (
+            mock_profile_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_forwarding_profiles(search="production")
@@ -436,7 +451,11 @@ class TestZccListForwardingProfiles:
         """Test listing profiles with all parameters."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.forwarding_profile.list_by_company.return_value = (mock_profile_list, None, None)
+        mock_client.zcc.forwarding_profile.list_by_company.return_value = (
+            mock_profile_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_forwarding_profiles(page=2, page_size=20, search="test")
@@ -464,7 +483,11 @@ class TestZccListForwardingProfiles:
         """Test listing profiles using legacy API."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.forwarding_profile.list_by_company.return_value = (mock_profile_list, None, None)
+        mock_client.zcc.forwarding_profile.list_by_company.return_value = (
+            mock_profile_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_forwarding_profiles(use_legacy=True)
@@ -478,6 +501,7 @@ class TestZccListForwardingProfiles:
 # ZCC LIST TRUSTED NETWORKS TESTS
 # =============================================================================
 
+
 class TestZccListTrustedNetworks:
     """Test cases for zcc_list_trusted_networks function."""
 
@@ -486,7 +510,11 @@ class TestZccListTrustedNetworks:
         """Test successful listing of trusted networks."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.trusted_networks.list_by_company.return_value = (mock_network_list, None, None)
+        mock_client.zcc.trusted_networks.list_by_company.return_value = (
+            mock_network_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_trusted_networks()
@@ -503,7 +531,11 @@ class TestZccListTrustedNetworks:
         """Test listing networks with pagination."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.trusted_networks.list_by_company.return_value = (mock_network_list, None, None)
+        mock_client.zcc.trusted_networks.list_by_company.return_value = (
+            mock_network_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_trusted_networks(page=1, page_size=10)
@@ -519,7 +551,11 @@ class TestZccListTrustedNetworks:
         """Test listing networks with search filter."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.trusted_networks.list_by_company.return_value = (mock_network_list, None, None)
+        mock_client.zcc.trusted_networks.list_by_company.return_value = (
+            mock_network_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_trusted_networks(search="office")
@@ -535,7 +571,11 @@ class TestZccListTrustedNetworks:
         """Test listing networks with all parameters."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.trusted_networks.list_by_company.return_value = (mock_network_list, None, None)
+        mock_client.zcc.trusted_networks.list_by_company.return_value = (
+            mock_network_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_trusted_networks(page=3, page_size=25, search="corp")
@@ -563,7 +603,11 @@ class TestZccListTrustedNetworks:
         """Test listing networks using legacy API."""
         # Setup
         mock_get_client.return_value = mock_client
-        mock_client.zcc.trusted_networks.list_by_company.return_value = (mock_network_list, None, None)
+        mock_client.zcc.trusted_networks.list_by_company.return_value = (
+            mock_network_list,
+            None,
+            None,
+        )
 
         # Execute
         result = zcc_list_trusted_networks(use_legacy=True)
@@ -571,4 +615,3 @@ class TestZccListTrustedNetworks:
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=True, service="zcc")
         assert len(result) == 3
-

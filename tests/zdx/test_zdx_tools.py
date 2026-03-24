@@ -2,7 +2,7 @@
 Unit tests for ZDX (Zscaler Digital Experience) tools.
 
 This module tests all 18 ZDX read-only tools across 10 files:
-- active_devices: zdx_list_devices, zdx_get_device  
+- active_devices: zdx_list_devices, zdx_get_device
 - administration: zdx_list_departments, zdx_list_locations
 - list_applications: zdx_list_applications
 - get_application_score: zdx_get_application, zdx_get_application_score_trend
@@ -50,6 +50,7 @@ from zscaler_mcp.tools.zdx.list_software_inventory import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_client():
     """Create a mock Zscaler client with ZDX API."""
@@ -79,13 +80,18 @@ def mock_devices_response():
 def mock_device_response():
     """Create a mock single device response."""
     device = MagicMock()
-    device.as_dict.return_value = {"id": "dev123", "name": "Test Device", "email": "test@example.com"}
+    device.as_dict.return_value = {
+        "id": "dev123",
+        "name": "Test Device",
+        "email": "test@example.com",
+    }
     return [device]
 
 
 # =============================================================================
 # ACTIVE DEVICES TESTS
 # =============================================================================
+
 
 class TestZdxActiveDevices:
     """Test cases for ZDX active devices functions."""
@@ -115,19 +121,11 @@ class TestZdxActiveDevices:
         mock_client.zdx.devices.list_devices.return_value = (mock_devices_response, None, None)
 
         # Execute
-        result = zdx_list_devices(
-            emails=["test@example.com"],
-            location_id=["loc123"],
-            since=24
-        )
+        result = zdx_list_devices(emails=["test@example.com"], location_id=["loc123"], since=24)
 
         # Verify
         mock_client.zdx.devices.list_devices.assert_called_once_with(
-            query_params={
-                "emails": ["test@example.com"],
-                "location_id": ["loc123"],
-                "since": 24
-            }
+            query_params={"emails": ["test@example.com"], "location_id": ["loc123"], "since": 24}
         )
         assert len(result) == 2
 
@@ -170,8 +168,7 @@ class TestZdxActiveDevices:
 
         # Verify
         mock_client.zdx.devices.get_device.assert_called_once_with(
-            "dev123",
-            query_params={"location_id": ["loc123"], "since": 48}
+            "dev123", query_params={"location_id": ["loc123"], "since": 48}
         )
         assert result["id"] == "dev123"
 
@@ -191,6 +188,7 @@ class TestZdxActiveDevices:
 # =============================================================================
 # ADMINISTRATION TESTS
 # =============================================================================
+
 
 class TestZdxAdministration:
     """Test cases for ZDX administration functions."""
@@ -301,6 +299,7 @@ class TestZdxAdministration:
 # APPLICATIONS TESTS
 # =============================================================================
 
+
 class TestZdxApplications:
     """Test cases for ZDX applications functions."""
 
@@ -359,6 +358,7 @@ class TestZdxApplications:
 # APPLICATION SCORE TESTS
 # =============================================================================
 
+
 class TestZdxApplicationScore:
     """Test cases for ZDX application score functions."""
 
@@ -410,8 +410,7 @@ class TestZdxApplicationScore:
 
         # Verify
         mock_client.zdx.apps.get_app.assert_called_once_with(
-            "app1",
-            query_params={"location_id": ["loc1"], "since": 24}
+            "app1", query_params={"location_id": ["loc1"], "since": 24}
         )
         assert result["id"] == "app1"
 
@@ -431,6 +430,7 @@ class TestZdxApplicationScore:
 # =============================================================================
 # APPLICATION USER TESTS
 # =============================================================================
+
 
 class TestZdxApplicationUser:
     """Test cases for ZDX application user functions."""
@@ -470,8 +470,7 @@ class TestZdxApplicationUser:
 
         # Verify
         mock_client.zdx.apps.list_app_users.assert_called_once_with(
-            "app1",
-            query_params={"score_bucket": "poor"}
+            "app1", query_params={"score_bucket": "poor"}
         )
 
     @patch("zscaler_mcp.tools.zdx.get_application_user.get_zscaler_client")
@@ -509,6 +508,7 @@ class TestZdxApplicationUser:
 # APPLICATION METRIC TESTS
 # =============================================================================
 
+
 class TestZdxApplicationMetric:
     """Test cases for ZDX application metric function."""
 
@@ -543,16 +543,12 @@ class TestZdxApplicationMetric:
 
         # Execute
         result = zdx_get_application_metric(
-            app_id="app1",
-            metric_name="dns",
-            location_id=["loc1"],
-            since=24
+            app_id="app1", metric_name="dns", location_id=["loc1"], since=24
         )
 
         # Verify
         mock_client.zdx.apps.get_app_metrics.assert_called_once_with(
-            "app1",
-            query_params={"metric_name": "dns", "location_id": ["loc1"], "since": 24}
+            "app1", query_params={"metric_name": "dns", "location_id": ["loc1"], "since": 24}
         )
         assert len(result) == 1
 
@@ -572,6 +568,7 @@ class TestZdxApplicationMetric:
 # =============================================================================
 # ALERTS TESTS
 # =============================================================================
+
 
 class TestZdxAlerts:
     """Test cases for ZDX alerts functions."""
@@ -622,7 +619,11 @@ class TestZdxAlerts:
         mock_get_client.return_value = mock_client
         alert = MagicMock()
         alert.as_dict.return_value = {"id": "alert1", "severity": "high", "status": "active"}
-        mock_client.zdx.alerts.get_alert.return_value = (alert, None, None)  # Returns single object, not list
+        mock_client.zdx.alerts.get_alert.return_value = (
+            alert,
+            None,
+            None,
+        )  # Returns single object, not list
 
         # Execute
         result = zdx_get_alert(alert_id="alert1")
@@ -647,7 +648,9 @@ class TestZdxAlerts:
         result = zdx_list_alert_affected_devices(alert_id="alert1")
 
         # Verify
-        mock_client.zdx.alerts.list_affected_devices.assert_called_once_with("alert1", query_params={})
+        mock_client.zdx.alerts.list_affected_devices.assert_called_once_with(
+            "alert1", query_params={}
+        )
         assert len(result) == 1
         assert result[0]["name"] == "Device 1"
 
@@ -668,6 +671,7 @@ class TestZdxAlerts:
 # DEEP TRACES TESTS
 # =============================================================================
 
+
 class TestZdxDeepTraces:
     """Test cases for ZDX deep traces functions."""
 
@@ -682,7 +686,11 @@ class TestZdxDeepTraces:
         trace2 = MagicMock()
         trace2.as_dict.return_value = {"id": "trace2", "status": "pending"}
         traces_wrapper.traces = [trace1, trace2]
-        mock_client.zdx.troubleshooting.list_deeptraces.return_value = ([traces_wrapper], None, None)
+        mock_client.zdx.troubleshooting.list_deeptraces.return_value = (
+            [traces_wrapper],
+            None,
+            None,
+        )
 
         # Execute
         result = zdx_list_device_deep_traces(device_id="dev123")
@@ -726,6 +734,7 @@ class TestZdxDeepTraces:
 # =============================================================================
 # SOFTWARE INVENTORY TESTS
 # =============================================================================
+
 
 class TestZdxSoftwareInventory:
     """Test cases for ZDX software inventory functions."""
@@ -780,7 +789,9 @@ class TestZdxSoftwareInventory:
         result = zdx_get_software_details(software_key="Chrome-120.0")
 
         # Verify
-        mock_client.zdx.inventory.list_software_keys.assert_called_once_with("Chrome-120.0", query_params={})
+        mock_client.zdx.inventory.list_software_keys.assert_called_once_with(
+            "Chrome-120.0", query_params={}
+        )
         assert len(result) == 1  # Returns list of devices
         assert result[0]["device_id"] == "dev1"
 
@@ -800,6 +811,7 @@ class TestZdxSoftwareInventory:
 # =============================================================================
 # HISTORICAL ALERTS TESTS
 # =============================================================================
+
 
 class TestZdxHistoricalAlerts:
     """Test cases for ZDX historical alerts function."""
@@ -839,7 +851,7 @@ class TestZdxHistoricalAlerts:
         zdx_list_historical_alerts(
             location_id=["loc1"],
             since=336,  # 14 days
-            limit=100
+            limit=100,
         )
 
         # Verify
@@ -864,19 +876,22 @@ class TestZdxHistoricalAlerts:
 # INTEGRATION TESTS
 # =============================================================================
 
+
 class TestZdxWorkflows:
     """Test cases for complete ZDX workflows."""
 
     @patch("zscaler_mcp.tools.zdx.active_devices.get_zscaler_client")
     @patch("zscaler_mcp.tools.zdx.list_applications.get_zscaler_client")
     @patch("zscaler_mcp.tools.zdx.get_application_score.get_zscaler_client")
-    def test_device_to_application_workflow(self, mock_app_client, mock_list_client, mock_dev_client):
+    def test_device_to_application_workflow(
+        self, mock_app_client, mock_list_client, mock_dev_client
+    ):
         """Test workflow from device discovery to application monitoring."""
         # Setup clients
         dev_client = MagicMock()
         list_client = MagicMock()
         app_client = MagicMock()
-        
+
         mock_dev_client.return_value = dev_client
         mock_list_client.return_value = list_client
         mock_app_client.return_value = app_client
@@ -907,4 +922,3 @@ class TestZdxWorkflows:
         assert len(devices) == 1
         assert len(apps) == 1
         assert app_score["score"] == 85
-

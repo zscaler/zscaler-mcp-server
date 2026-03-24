@@ -31,7 +31,9 @@ from zscaler_mcp.tools.zinsights.common import (
 def zinsights_get_casb_app_report(
     start_days_ago: Annotated[
         int,
-        Field(description="Days ago for start. Default: 9 (7-day interval). API needs 7 or 14 day intervals."),
+        Field(
+            description="Days ago for start. Default: 9 (7-day interval). API needs 7 or 14 day intervals."
+        ),
     ] = 9,
     end_days_ago: Annotated[
         int,
@@ -102,14 +104,15 @@ def zinsights_get_casb_app_report(
 
     error_info = check_graphql_errors(response, "get_casb_app_report")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     results = convert_sdk_results(entries)
     if not results:
         return [create_no_data_response(query_type, "the specified time range")]
     return [create_success_response(results, query_type)]
-

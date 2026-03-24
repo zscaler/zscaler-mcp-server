@@ -14,18 +14,18 @@ def zeasm_list_organizations(
 ) -> Dict[str, Any]:
     """
     List all organizations configured for a tenant in the ZEASM Admin Portal.
-    
+
     This is a read-only operation that retrieves all organizations configured
     for external attack surface management.
-    
+
     Args:
         service (str): The service to use (default: "zeasm").
-    
+
     Returns:
         dict: Dictionary containing:
             - results: List of organization objects
             - total_results: Total number of organizations
-    
+
     Example:
         List all organizations:
         >>> orgs = zeasm_list_organizations()
@@ -34,9 +34,9 @@ def zeasm_list_organizations(
         ...     print(f"  {org['id']}: {org['name']}")
     """
     client = get_zscaler_client(use_legacy=False, service=service)
-    
+
     orgs, _, err = client.zeasm.organizations.list_organizations()
     if err:
         raise Exception(f"Failed to list EASM organizations: {err}")
-    
+
     return orgs.as_dict()

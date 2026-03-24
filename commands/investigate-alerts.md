@@ -62,7 +62,7 @@ Include:
    - High priority: immediate actions (check service health, ISP paths, engage vendor)
    - Medium priority: investigate specific bottleneck (DNS, network path)
    - Low priority: monitor, check for transient causes (deployments, maintenance)
-   - Proactive: set up deep traces for recurring alerts to capture evidence
+   - Proactive: start a deep trace (`zdx_start_deeptrace`) for recurring alerts to capture detailed network path evidence, then analyze with `zdx_get_deeptrace_webprobe_metrics`, `zdx_get_deeptrace_cloudpath`, and `zdx_get_deeptrace_events`
 
 ## Step 7: Generate Downloadable Artifacts — MANDATORY
 

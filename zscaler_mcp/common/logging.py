@@ -56,3 +56,18 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
     """
     logger_name = name if name else "zscaler_mcp"
     return logging.getLogger(logger_name)
+
+
+def log_security_warning(title: str, details: list[str]) -> None:
+    """Log a prominent security warning banner.
+
+    Used across modules (server.py, auth.py) to display standardized
+    security warnings when protective features are disabled.
+    """
+    _logger = get_logger("zscaler_mcp.security")
+    _logger.warning("=" * 72)
+    _logger.warning("  SECURITY WARNING: %s", title)
+    _logger.warning("")
+    for line in details:
+        _logger.warning("  %s", line)
+    _logger.warning("=" * 72)

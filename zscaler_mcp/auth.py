@@ -1,10 +1,17 @@
 """
 MCP-level authentication for the Zscaler MCP Server.
 
+Authentication is ENABLED by default for HTTP transports (zero-trust posture).
+To disable, set ZSCALER_MCP_AUTH_ENABLED=false (prints security warning).
+
 Supports multiple authentication modes configured via environment variables:
 
-    ZSCALER_MCP_AUTH_ENABLED=true
     ZSCALER_MCP_AUTH_MODE=jwt|zscaler|api-key|oauth-proxy
+
+When no explicit mode is set, auto-detection selects the best available:
+    1. ZSCALER_MCP_AUTH_JWKS_URI set  -> jwt mode
+    2. ZSCALER_MCP_AUTH_API_KEY set   -> api-key mode
+    3. ZSCALER_VANITY_DOMAIN set      -> zscaler mode
 
 Modes:
     jwt         - Validate JWTs from external IdP via JWKS
@@ -13,10 +20,8 @@ Modes:
     api-key     - Simple shared secret comparison
     oauth-proxy - Full MCP-spec OAuth 2.1 proxy with DCR (Phase 2)
 
-When ZSCALER_MCP_AUTH_ENABLED is not set or false, no authentication is applied
-(backward-compatible default). Auth only applies to HTTP-based transports
-(SSE and streamable-http). The stdio transport is always unauthenticated
-(inherits OS-level process security).
+Auth only applies to HTTP-based transports (SSE and streamable-http).
+The stdio transport is always unauthenticated (inherits OS-level process security).
 """
 
 import base64
@@ -28,6 +33,8 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
+
+from zscaler_mcp.common.logging import log_security_warning
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +93,7 @@ class APIKeyAuthProvider(AuthProvider):
     def __init__(self, api_key: str):
         if not api_key or not api_key.strip():
             raise ValueError(
-                "ZSCALER_MCP_AUTH_API_KEY must be set and non-empty "
-                "when using api-key auth mode."
+                "ZSCALER_MCP_AUTH_API_KEY must be set and non-empty when using api-key auth mode."
             )
         self._api_key = api_key.strip()
         key_preview = hashlib.sha256(self._api_key.encode()).hexdigest()[:8]
@@ -263,9 +269,7 @@ class ZscalerAuthProvider(AuthProvider):
         cloud: str = "production",
     ):
         if not vanity_domain or not vanity_domain.strip():
-            raise ValueError(
-                "ZSCALER_VANITY_DOMAIN is required for Zscaler auth mode."
-            )
+            raise ValueError("ZSCALER_VANITY_DOMAIN is required for Zscaler auth mode.")
 
         self._vanity_domain = vanity_domain.strip()
         self._cloud = cloud.lower().strip() if cloud else "production"
@@ -366,15 +370,12 @@ class ZscalerAuthProvider(AuthProvider):
             return False, "Invalid Zscaler credentials"
 
         logger.error(
-            "Zscaler /token returned HTTP %d: %s",
+            "Zscaler /token returned unexpected HTTP %d",
             resp.status_code,
-            resp.text[:200],
         )
         return False, f"Zscaler authentication failed (HTTP {resp.status_code})"
 
-    def _extract_credentials_from_headers(
-        self, headers_list: list
-    ) -> Optional[Tuple[str, str]]:
+    def _extract_credentials_from_headers(self, headers_list: list) -> Optional[Tuple[str, str]]:
         """Extract credentials from X-Zscaler-Client-ID / X-Zscaler-Client-Secret headers."""
         client_id = ""
         client_secret = ""
@@ -542,14 +543,51 @@ class AuthMiddleware:
 def _read_auth_config() -> Optional[Dict[str, str]]:
     """Read auth configuration from environment variables.
 
-    Returns None if auth is disabled (the default).
+    Authentication is ENABLED by default for HTTP transports (zero-trust).
+    To disable, users must explicitly set ZSCALER_MCP_AUTH_ENABLED=false.
+
+    When auth is enabled but no explicit mode is configured, the server
+    auto-detects the best available mode:
+        1. ZSCALER_MCP_AUTH_JWKS_URI set  -> jwt mode
+        2. ZSCALER_MCP_AUTH_API_KEY set   -> api-key mode
+        3. ZSCALER_VANITY_DOMAIN set      -> zscaler mode (Layer 2 creds as Layer 1)
+        4. None of the above              -> returns config with mode for caller to handle
+
+    Returns None only if auth is explicitly disabled.
     """
     enabled = os.getenv("ZSCALER_MCP_AUTH_ENABLED", "").lower()
-    if enabled not in ("true", "1", "yes"):
+
+    if enabled in ("false", "0", "no"):
+        log_security_warning(
+            "MCP Client Authentication is DISABLED",
+            [
+                "The server will accept ALL requests without authentication.",
+                "This is NOT recommended for production or network-accessible deployments.",
+                "",
+                "To enable authentication, set one of:",
+                "  ZSCALER_MCP_AUTH_MODE=jwt     (+ JWKS_URI, ISSUER, AUDIENCE)",
+                "  ZSCALER_MCP_AUTH_MODE=api-key (+ API_KEY)",
+                "  ZSCALER_MCP_AUTH_MODE=zscaler (uses Zscaler API credentials)",
+                "",
+                "Remove ZSCALER_MCP_AUTH_ENABLED=false to re-enable.",
+            ],
+        )
         return None
 
+    explicit_mode = os.getenv("ZSCALER_MCP_AUTH_MODE", "").strip().lower()
+
+    if not explicit_mode:
+        if os.getenv("ZSCALER_MCP_AUTH_JWKS_URI", "").strip():
+            explicit_mode = "jwt"
+        elif os.getenv("ZSCALER_MCP_AUTH_API_KEY", "").strip():
+            explicit_mode = "api-key"
+        elif os.getenv("ZSCALER_VANITY_DOMAIN", "").strip():
+            explicit_mode = "zscaler"
+        else:
+            explicit_mode = "jwt"
+
     return {
-        "mode": os.getenv("ZSCALER_MCP_AUTH_MODE", "jwt"),
+        "mode": explicit_mode,
         # JWT mode
         "jwks_uri": os.getenv("ZSCALER_MCP_AUTH_JWKS_URI", ""),
         "issuer": os.getenv("ZSCALER_MCP_AUTH_ISSUER", ""),
@@ -600,17 +638,19 @@ def _create_provider(config: Dict[str, str]) -> AuthProvider:
 
     else:
         raise ValueError(
-            f"Unknown auth mode: '{mode}'. "
-            f"Supported: jwt, zscaler, api-key, oauth-proxy"
+            f"Unknown auth mode: '{mode}'. Supported: jwt, zscaler, api-key, oauth-proxy"
         )
 
 
 def apply_auth_middleware(app: Any, transport: str) -> Any:
-    """Wrap an ASGI app with authentication middleware if auth is enabled.
+    """Wrap an ASGI app with authentication middleware.
 
-    This is the main entry point called from server.py. It reads the auth
-    configuration from environment variables, creates the appropriate
-    provider, and wraps the ASGI app.
+    Authentication is ENABLED by default for HTTP transports (zero-trust).
+    Users must explicitly set ZSCALER_MCP_AUTH_ENABLED=false to disable.
+
+    This is the main entry point called from server.py / web_server.py.
+    It reads the auth configuration from environment variables, creates
+    the appropriate provider, and wraps the ASGI app.
 
     Args:
         app: The ASGI application (from FastMCP's streamable_http_app()
@@ -618,7 +658,7 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
         transport: The transport type ("stdio", "sse", "streamable-http").
 
     Returns:
-        The original app if auth is disabled or transport is stdio.
+        The original app if auth is explicitly disabled or transport is stdio.
         The wrapped app with AuthMiddleware if auth is enabled.
     """
     if transport == "stdio":
@@ -626,12 +666,31 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
 
     config = _read_auth_config()
     if config is None:
-        logger.info("MCP client authentication disabled (default)")
         return app
 
     mode = config["mode"]
+
+    try:
+        provider = _create_provider(config)
+    except (ValueError, RuntimeError, ImportError) as exc:
+        logger.error(
+            "Failed to initialize auth provider (mode=%s): %s. "
+            "Configure valid auth credentials or set ZSCALER_MCP_AUTH_ENABLED=false "
+            "to disable authentication (not recommended).",
+            mode,
+            exc,
+        )
+        raise SystemExit(
+            f"ERROR: Authentication is enabled (default) but configuration is invalid.\n"
+            f"  Mode: {mode}\n"
+            f"  Error: {exc}\n\n"
+            f"Either:\n"
+            f"  1. Configure valid auth settings for the '{mode}' mode, or\n"
+            f"  2. Set ZSCALER_MCP_AUTH_ENABLED=false to disable (not recommended)\n"
+        ) from exc
+
     logger.info("=" * 70)
-    logger.info("🔐 MCP CLIENT AUTHENTICATION ENABLED")
+    logger.info("MCP CLIENT AUTHENTICATION ENABLED")
     logger.info("   Mode: %s", mode)
     logger.info("   Transport: %s", transport)
 
@@ -647,5 +706,4 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
 
     logger.info("=" * 70)
 
-    provider = _create_provider(config)
     return AuthMiddleware(app, provider)

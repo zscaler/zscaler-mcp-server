@@ -16,9 +16,7 @@ def trusted_network_manager(
     ] = None,
     name: Annotated[
         str,
-        Field(
-            description="If provided, will be used to search for the trusted network."
-        ),
+        Field(description="If provided, will be used to search for the trusted network."),
     ] = None,
     query_params: Annotated[
         dict,

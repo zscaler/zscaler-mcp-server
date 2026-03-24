@@ -108,13 +108,12 @@ def _build_firewall_rule_payload(
 # READ OPERATIONS (Read-Only)
 # ============================================================================
 
+
 def zia_list_cloud_firewall_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -153,9 +152,7 @@ def zia_get_cloud_firewall_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the cloud firewall rule to retrieve.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -187,71 +184,80 @@ def zia_get_cloud_firewall_rule(
 # WRITE OPERATIONS (Require --enable-write-tools flag)
 # ============================================================================
 
+
 def zia_create_cloud_firewall_rule(
     name: Annotated[str, Field(description="Rule name (required).")],
     rule_action: Annotated[
         str, Field(description="Action for the rule. Values: ALLOW, BLOCK, BYPASS, INSPECT")
     ],
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = True,
-    rank: Annotated[
-        Optional[int], Field(description="Admin rank of the rule.")
-    ] = None,
+    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order, defaults to the bottom.")
     ] = None,
     src_ips: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Source IPs for the rule. Accepts IP addresses or CIDR. Accepts JSON string or list.")
+        Field(
+            description="Source IPs for the rule. Accepts IP addresses or CIDR. Accepts JSON string or list."
+        ),
     ] = None,
     dest_addresses: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Destination IPs for the rule. Accepts IP addresses, CIDR, or hostnames. Accepts JSON string or list.")
+        Field(
+            description="Destination IPs for the rule. Accepts IP addresses, CIDR, or hostnames. Accepts JSON string or list."
+        ),
     ] = None,
     source_countries: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Source countries for the rule. Accepts JSON string or list.")
+        Field(description="Source countries for the rule. Accepts JSON string or list."),
     ] = None,
     dest_countries: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Destination countries for the rule. Accepts JSON string or list.")
+        Field(description="Destination countries for the rule. Accepts JSON string or list."),
     ] = None,
     exclude_src_countries: Annotated[
         Optional[bool], Field(description="Exclude source countries from the rule.")
     ] = None,
     dest_ip_categories: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="IP address categories for the rule. Accepts JSON string or list.")
+        Field(description="IP address categories for the rule. Accepts JSON string or list."),
     ] = None,
     device_trust_levels: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Device trust levels for the rule application. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST")
+        Field(
+            description="Device trust levels for the rule application. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST"
+        ),
     ] = None,
     nw_applications: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Network service applications for the rule. Accepts JSON string or list.")
+        Field(
+            description="Network service applications for the rule. Accepts JSON string or list."
+        ),
     ] = None,
     enable_full_logging: Annotated[
         Optional[bool], Field(description="If True, enables full logging.")
     ] = None,
     predefined: Annotated[
-        Optional[bool], Field(description="Indicates that the rule is predefined by using a true value.")
+        Optional[bool],
+        Field(description="Indicates that the rule is predefined by using a true value."),
     ] = None,
     default_rule: Annotated[
-        Optional[bool], Field(description="Indicates whether the rule is the Default Cloud IPS Rule or not.")
+        Optional[bool],
+        Field(description="Indicates whether the rule is the Default Cloud IPS Rule or not."),
     ] = None,
     app_services: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for application services for the rule.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for application services for the rule."),
     ] = None,
     app_service_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for app service groups.")
     ] = None,
     departments: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for departments the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for departments the rule applies to."),
     ] = None,
     dest_ip_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for destination IP groups.")
@@ -260,10 +266,12 @@ def zia_create_cloud_firewall_rule(
         Optional[Union[List[int], str]], Field(description="IDs for destination IPV6 groups.")
     ] = None,
     devices: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for devices managed by Zscaler Client Connector.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for devices managed by Zscaler Client Connector."),
     ] = None,
     device_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for device groups managed by Zscaler Client Connector.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for device groups managed by Zscaler Client Connector."),
     ] = None,
     groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for groups the rule applies to.")
@@ -281,20 +289,20 @@ def zia_create_cloud_firewall_rule(
         Optional[Union[List[int], str]], Field(description="IDs for network application groups.")
     ] = None,
     nw_services: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for network services the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for network services the rule applies to."),
     ] = None,
     nw_service_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for network service groups.")
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for time windows the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for time windows the rule applies to."),
     ] = None,
     users: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for users the rule applies to.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -372,73 +380,79 @@ def zia_update_cloud_firewall_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the cloud firewall rule to update.")
     ],
-    name: Annotated[
-        Optional[str], Field(description="Rule name.")
-    ] = None,
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    name: Annotated[Optional[str], Field(description="Rule name.")] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     rule_action: Annotated[
         Optional[str],
-        Field(description="Action for the rule. Values: ALLOW, BLOCK, BYPASS, INSPECT")
+        Field(description="Action for the rule. Values: ALLOW, BLOCK, BYPASS, INSPECT"),
     ] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
-    rank: Annotated[
-        Optional[int], Field(description="Admin rank of the rule.")
-    ] = None,
+    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order, defaults to the bottom.")
     ] = None,
     src_ips: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Source IPs for the rule. Accepts IP addresses or CIDR. Accepts JSON string or list.")
+        Field(
+            description="Source IPs for the rule. Accepts IP addresses or CIDR. Accepts JSON string or list."
+        ),
     ] = None,
     dest_addresses: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Destination IPs for the rule. Accepts IP addresses, CIDR, or hostnames. Accepts JSON string or list.")
+        Field(
+            description="Destination IPs for the rule. Accepts IP addresses, CIDR, or hostnames. Accepts JSON string or list."
+        ),
     ] = None,
     source_countries: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Source countries for the rule. Accepts JSON string or list.")
+        Field(description="Source countries for the rule. Accepts JSON string or list."),
     ] = None,
     dest_countries: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Destination countries for the rule. Accepts JSON string or list.")
+        Field(description="Destination countries for the rule. Accepts JSON string or list."),
     ] = None,
     exclude_src_countries: Annotated[
         Optional[bool], Field(description="Exclude source countries from the rule.")
     ] = None,
     dest_ip_categories: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="IP address categories for the rule. Accepts JSON string or list.")
+        Field(description="IP address categories for the rule. Accepts JSON string or list."),
     ] = None,
     device_trust_levels: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Device trust levels for the rule application. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST")
+        Field(
+            description="Device trust levels for the rule application. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST"
+        ),
     ] = None,
     nw_applications: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Network service applications for the rule. Accepts JSON string or list.")
+        Field(
+            description="Network service applications for the rule. Accepts JSON string or list."
+        ),
     ] = None,
     enable_full_logging: Annotated[
         Optional[bool], Field(description="If True, enables full logging.")
     ] = None,
     predefined: Annotated[
-        Optional[bool], Field(description="Indicates that the rule is predefined by using a true value.")
+        Optional[bool],
+        Field(description="Indicates that the rule is predefined by using a true value."),
     ] = None,
     default_rule: Annotated[
-        Optional[bool], Field(description="Indicates whether the rule is the Default Cloud IPS Rule or not.")
+        Optional[bool],
+        Field(description="Indicates whether the rule is the Default Cloud IPS Rule or not."),
     ] = None,
     app_services: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for application services for the rule.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for application services for the rule."),
     ] = None,
     app_service_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for app service groups.")
     ] = None,
     departments: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for departments the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for departments the rule applies to."),
     ] = None,
     dest_ip_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for destination IP groups.")
@@ -447,10 +461,12 @@ def zia_update_cloud_firewall_rule(
         Optional[Union[List[int], str]], Field(description="IDs for destination IPV6 groups.")
     ] = None,
     devices: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for devices managed by Zscaler Client Connector.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for devices managed by Zscaler Client Connector."),
     ] = None,
     device_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for device groups managed by Zscaler Client Connector.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for device groups managed by Zscaler Client Connector."),
     ] = None,
     groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for groups the rule applies to.")
@@ -468,20 +484,20 @@ def zia_update_cloud_firewall_rule(
         Optional[Union[List[int], str]], Field(description="IDs for network application groups.")
     ] = None,
     nw_services: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for network services the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for network services the rule applies to."),
     ] = None,
     nw_service_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for network service groups.")
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for time windows the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for time windows the rule applies to."),
     ] = None,
     users: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for users the rule applies to.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -552,15 +568,13 @@ def zia_delete_cloud_firewall_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the cloud firewall rule to delete.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-    kwargs: str = "{}"
+    kwargs: str = "{}",
 ) -> str:
     """
     Deletes a ZIA Cloud Firewall Rule by ID.
-    
+
     🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
     This action cannot be undone.
 
@@ -577,18 +591,16 @@ def zia_delete_cloud_firewall_rule(
         >>> result = zia_delete_cloud_firewall_rule(rule_id="12345")
     """
     from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
-    
+
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
-    
+
     confirmation_check = check_confirmation(
-        "zia_delete_cloud_firewall_rule",
-        confirmed,
-        {"rule_id": str(rule_id)}
+        "zia_delete_cloud_firewall_rule", confirmed, {"rule_id": str(rule_id)}
     )
     if confirmation_check:
         return confirmation_check
-    
+
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     fw = client.zia.cloud_firewall_rules
 

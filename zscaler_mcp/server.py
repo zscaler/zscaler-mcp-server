@@ -13,19 +13,22 @@ from typing import Dict, List, Optional, Set
 import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 
 from zscaler_mcp import services
-from zscaler_mcp.common.logging import configure_logging, get_logger
+from zscaler_mcp.common.logging import configure_logging, get_logger, log_security_warning
 
 # Import version from package metadata
 try:
     from importlib.metadata import version
+
     __version__ = version("zscaler-mcp")
 except ImportError:
     # Fallback for Python < 3.8
     try:
         from importlib_metadata import version
+
         __version__ = version("zscaler-mcp")
     except ImportError:
         # Final fallback - read from pyproject.toml or use a default
@@ -35,6 +38,353 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = get_logger(__name__)
+
+
+def _get_tls_config() -> dict:
+    """Build TLS/SSL kwargs for uvicorn from environment variables.
+
+    Env vars:
+        ZSCALER_MCP_TLS_CERTFILE          - Path to PEM certificate file
+        ZSCALER_MCP_TLS_KEYFILE           - Path to PEM private key file
+        ZSCALER_MCP_TLS_KEYFILE_PASSWORD  - Password for encrypted key (optional)
+        ZSCALER_MCP_TLS_CA_CERTS          - CA bundle for client cert validation (optional)
+
+    Returns empty dict if TLS is not configured.
+    Raises SystemExit if configuration is incomplete.
+    """
+    certfile = os.environ.get("ZSCALER_MCP_TLS_CERTFILE", "").strip()
+    keyfile = os.environ.get("ZSCALER_MCP_TLS_KEYFILE", "").strip()
+
+    if not certfile and not keyfile:
+        return {}
+
+    if bool(certfile) != bool(keyfile):
+        raise SystemExit(
+            "ERROR: Incomplete TLS configuration.\n"
+            "Both ZSCALER_MCP_TLS_CERTFILE and ZSCALER_MCP_TLS_KEYFILE must be set.\n"
+            f"  ZSCALER_MCP_TLS_CERTFILE = {'(set)' if certfile else '(missing)'}\n"
+            f"  ZSCALER_MCP_TLS_KEYFILE  = {'(set)' if keyfile else '(missing)'}\n"
+        )
+
+    if not os.path.isfile(certfile):
+        raise SystemExit(f"ERROR: TLS certificate file not found: {certfile}")
+    if not os.path.isfile(keyfile):
+        raise SystemExit(f"ERROR: TLS key file not found: {keyfile}")
+
+    tls_kwargs: dict = {
+        "ssl_certfile": certfile,
+        "ssl_keyfile": keyfile,
+    }
+
+    password = os.environ.get("ZSCALER_MCP_TLS_KEYFILE_PASSWORD", "").strip()
+    if password:
+        tls_kwargs["ssl_keyfile_password"] = password
+
+    ca_certs = os.environ.get("ZSCALER_MCP_TLS_CA_CERTS", "").strip()
+    if ca_certs:
+        if not os.path.isfile(ca_certs):
+            raise SystemExit(f"ERROR: TLS CA certificate file not found: {ca_certs}")
+        tls_kwargs["ssl_ca_certs"] = ca_certs
+
+    return tls_kwargs
+
+
+def _is_http_allowed() -> bool:
+    """Check whether plaintext HTTP is explicitly permitted on non-localhost.
+
+    Returns True only when the operator has consciously opted in via
+    ZSCALER_MCP_ALLOW_HTTP=true.  All other values (missing, empty, "false")
+    mean "HTTPS required".
+    """
+    return os.environ.get("ZSCALER_MCP_ALLOW_HTTP", "").strip().lower() in ("true", "1", "yes")
+
+
+def _enforce_https_policy(host: str, port: int, tls_kwargs: dict) -> None:
+    """Block startup when running plaintext HTTP on a non-localhost interface.
+
+    The server defaults to HTTPS-required for remote deployments.  Operators
+    must set ZSCALER_MCP_ALLOW_HTTP=true to opt in to plaintext HTTP.
+    """
+    is_localhost = host in ("127.0.0.1", "localhost", "::1")
+    if tls_kwargs or is_localhost or _is_http_allowed():
+        return
+
+    raise SystemExit(
+        "ERROR: HTTPS is required for non-localhost deployments.\n"
+        f"The server is configured to listen on {host}:{port} without TLS.\n\n"
+        "Options:\n"
+        "  1. Provide TLS certificates (recommended):\n"
+        "       ZSCALER_MCP_TLS_CERTFILE=/path/to/cert.pem\n"
+        "       ZSCALER_MCP_TLS_KEYFILE=/path/to/key.pem\n\n"
+        "  2. Terminate TLS at a reverse proxy (nginx, ALB, etc.) and\n"
+        "     explicitly allow plaintext HTTP behind it:\n"
+        "       ZSCALER_MCP_ALLOW_HTTP=true\n\n"
+        "  3. If the MCP client and server share the same trusted L3 network\n"
+        "     (e.g. traffic is already encrypted by ZPA or a VPN), you may\n"
+        "     explicitly allow plaintext HTTP:\n"
+        "       ZSCALER_MCP_ALLOW_HTTP=true\n"
+    )
+
+
+def _get_allowed_source_ips() -> list[str] | None:
+    """Read ZSCALER_MCP_ALLOWED_SOURCE_IPS from the environment.
+
+    Returns a list of allowed CIDR/IP strings, or None if the variable is
+    not set (meaning "no application-level source-IP filtering — defer to
+    upstream firewall / security groups").
+    """
+    raw = os.environ.get("ZSCALER_MCP_ALLOWED_SOURCE_IPS", "").strip()
+    if not raw:
+        return None
+    return [s.strip() for s in raw.split(",") if s.strip()]
+
+
+def _ip_matches(client_ip: str, allowed: list[str]) -> bool:
+    """Check whether *client_ip* matches any entry in *allowed*.
+
+    Supports:
+        - exact IPv4/IPv6 addresses  ("10.0.0.5")
+        - CIDR notation              ("10.0.0.0/24")
+        - wildcard                   ("0.0.0.0/0" or "*")
+    """
+    import ipaddress
+
+    if "*" in allowed or "0.0.0.0/0" in allowed:
+        return True
+
+    try:
+        addr = ipaddress.ip_address(client_ip)
+    except ValueError:
+        return False
+
+    for entry in allowed:
+        try:
+            if "/" in entry:
+                if addr in ipaddress.ip_network(entry, strict=False):
+                    return True
+            else:
+                if addr == ipaddress.ip_address(entry):
+                    return True
+        except ValueError:
+            continue
+    return False
+
+
+class SourceIPMiddleware:
+    """ASGI middleware that restricts access by client source IP.
+
+    When ZSCALER_MCP_ALLOWED_SOURCE_IPS is set, only requests from those
+    IPs / CIDRs are accepted.  Everything else gets 403.
+
+    Health-check paths are exempt so load-balancer probes still work.
+    """
+
+    SKIP_PATHS = frozenset({"/health", "/healthz", "/ready"})
+
+    def __init__(self, app, allowed_ips: list[str]):
+        self.app = app
+        self.allowed_ips = allowed_ips
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        if path in self.SKIP_PATHS:
+            await self.app(scope, receive, send)
+            return
+
+        client = scope.get("client")
+        client_ip = client[0] if client else ""
+
+        if not _ip_matches(client_ip, self.allowed_ips):
+            from starlette.responses import JSONResponse
+
+            body = {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32001,
+                    "message": f"Forbidden: source IP {client_ip} is not in the allowed list",
+                },
+            }
+            response = JSONResponse(body, status_code=403)
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
+
+
+def _log_security_posture(
+    transport: str, scheme: str, host: str, port: int, tls_kwargs: dict
+) -> None:
+    """Log a consolidated security posture banner at startup."""
+    w = 72
+    bar = "=" * w
+
+    tls_status = "ENABLED (encrypted)" if tls_kwargs else "DISABLED (plaintext)"
+    if tls_kwargs:
+        tls_detail = tls_kwargs.get("ssl_certfile", "")
+        mtls = "Yes" if tls_kwargs.get("ssl_ca_certs") else "No"
+    else:
+        tls_detail = ""
+        mtls = "N/A"
+
+    auth_disabled = os.environ.get("ZSCALER_MCP_AUTH_ENABLED", "").lower() in ("false", "0", "no")
+    if auth_disabled:
+        auth_status = "DISABLED"
+        auth_mode = "N/A"
+    else:
+        auth_mode = os.environ.get("ZSCALER_MCP_AUTH_MODE", "").strip().lower()
+        if not auth_mode:
+            if os.environ.get("ZSCALER_MCP_AUTH_JWKS_URI", "").strip():
+                auth_mode = "jwt (auto-detected)"
+            elif os.environ.get("ZSCALER_MCP_AUTH_API_KEY", "").strip():
+                auth_mode = "api-key (auto-detected)"
+            elif os.environ.get("ZSCALER_VANITY_DOMAIN", "").strip():
+                auth_mode = "zscaler (auto-detected)"
+            else:
+                auth_mode = "jwt (default)"
+        auth_status = "ENABLED"
+
+    host_disabled = os.environ.get("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    allowed_hosts = os.environ.get("ZSCALER_MCP_ALLOWED_HOSTS", "").strip()
+    if host_disabled:
+        host_status = "DISABLED"
+    elif allowed_hosts:
+        host_status = f"ENABLED (allowlist: {allowed_hosts})"
+    else:
+        host_status = "ENABLED (localhost only)"
+
+    confirmation_skip = os.environ.get("ZSCALER_MCP_SKIP_CONFIRMATIONS", "").lower() == "true"
+    confirm_status = "DISABLED (skip)" if confirmation_skip else "ENABLED (HMAC-bound tokens)"
+
+    is_localhost = host in ("127.0.0.1", "localhost", "::1")
+    if tls_kwargs:
+        http_policy = "N/A (TLS active)"
+    elif is_localhost:
+        http_policy = "ALLOWED (localhost)"
+    elif _is_http_allowed():
+        http_policy = "ALLOWED (explicit opt-in)"
+    else:
+        http_policy = "BLOCKED (default)"
+
+    src_ips = _get_allowed_source_ips()
+    if src_ips is None:
+        src_ip_status = "DISABLED (defer to firewall/SG)"
+    elif "*" in src_ips or "0.0.0.0/0" in src_ips:
+        src_ip_status = "ALLOW ALL (0.0.0.0/0)"
+    else:
+        src_ip_status = f"ENABLED ({', '.join(src_ips)})"
+
+    logger.info(bar)
+    logger.info("  ZSCALER MCP SERVER — SECURITY POSTURE")
+    logger.info("")
+    logger.info("  Endpoint:       %s://%s:%d/mcp", scheme, host, port)
+    logger.info("  Transport:      %s", transport)
+    logger.info("")
+    logger.info("  TLS Encryption: %s", tls_status)
+    if tls_detail:
+        logger.info("    Certificate:  %s", tls_detail)
+        logger.info("    Mutual TLS:   %s", mtls)
+    logger.info("  HTTP Policy:    %s", http_policy)
+    logger.info("  Authentication: %s", auth_status)
+    if not auth_disabled:
+        logger.info("    Mode:         %s", auth_mode)
+    logger.info("  Host Validation:%s", host_status)
+    logger.info("  Source IP ACL:  %s", src_ip_status)
+    logger.info("  Confirmations:  %s", confirm_status)
+    logger.info(bar)
+
+
+def _validate_host_config(host: str) -> None:
+    """Ensure host validation is configured when binding to a public interface.
+
+    Called in run() to catch the edge case where __init__ received a different
+    host than run() (e.g. programmatic use).
+    """
+    if host != "0.0.0.0":
+        return
+    disable = os.environ.get("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").strip().lower()
+    allowed = os.environ.get("ZSCALER_MCP_ALLOWED_HOSTS", "").strip()
+    if disable in ("true", "1", "yes") or allowed:
+        return
+    raise SystemExit(
+        "ERROR: Cannot bind to 0.0.0.0 without host validation configuration.\n"
+        "Set one of:\n"
+        "  ZSCALER_MCP_ALLOWED_HOSTS=your-host:*,localhost:*  (recommended)\n"
+        "  ZSCALER_MCP_DISABLE_HOST_VALIDATION=true           (disables protection)\n"
+    )
+
+
+def _get_transport_security(host: str | None = None) -> TransportSecuritySettings | None:
+    """Build transport security settings for HTTP transports from environment.
+
+    Host header validation is ENABLED by default (zero-trust posture).
+    To disable, users must explicitly set ZSCALER_MCP_DISABLE_HOST_VALIDATION=true.
+
+    Configuration options:
+
+    - ZSCALER_MCP_ALLOWED_HOSTS=34.201.19.115:*,localhost:* : Comma-separated
+      list of allowed Host values (recommended for production).
+
+    - ZSCALER_MCP_DISABLE_HOST_VALIDATION=true : Disable Host header validation
+      entirely (prints security warning; use only for dev/testing).
+
+    When binding to 0.0.0.0 without ZSCALER_MCP_ALLOWED_HOSTS or an explicit
+    disable, the server will refuse to start and log an error with instructions.
+
+    Returns:
+        TransportSecuritySettings or None (use FastMCP default for localhost).
+    """
+    disable = os.environ.get("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").strip().lower()
+    if disable in ("true", "1", "yes"):
+        log_security_warning(
+            "Host Header Validation is DISABLED",
+            [
+                "The server is vulnerable to DNS rebinding attacks.",
+                "This is NOT recommended for production deployments.",
+                "",
+                "To enable, set ZSCALER_MCP_ALLOWED_HOSTS with your expected hostnames.",
+                "Remove ZSCALER_MCP_DISABLE_HOST_VALIDATION=true to re-enable.",
+            ],
+        )
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+    allowed = os.environ.get("ZSCALER_MCP_ALLOWED_HOSTS", "").strip()
+    if allowed:
+        hosts = [h.strip() for h in allowed.split(",") if h.strip()]
+        if hosts:
+            logger.info("Host header allowlist: %s", hosts)
+            tls_active = bool(_get_tls_config())
+            if tls_active:
+                origins = [f"https://{h}" for h in hosts]
+            else:
+                origins = [f"http://{h}" for h in hosts]
+            return TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=hosts,
+                allowed_origins=origins,
+            )
+
+    if host == "0.0.0.0":
+        logger.error(
+            "Binding to 0.0.0.0 requires explicit host validation configuration. "
+            "Set ZSCALER_MCP_ALLOWED_HOSTS (recommended) or "
+            "ZSCALER_MCP_DISABLE_HOST_VALIDATION=true to proceed."
+        )
+        raise SystemExit(
+            "ERROR: Cannot bind to 0.0.0.0 without host validation configuration.\n"
+            "Set one of:\n"
+            "  ZSCALER_MCP_ALLOWED_HOSTS=your-host:*,localhost:*  (recommended)\n"
+            "  ZSCALER_MCP_DISABLE_HOST_VALIDATION=true           (disables protection)\n"
+        )
+
+    return None
 
 
 class ZscalerMCPServer:
@@ -53,6 +403,7 @@ class ZscalerMCPServer:
         user_agent_comment: Optional[str] = None,
         enable_write_tools: bool = False,
         write_tools: Optional[Set[str]] = None,
+        host: Optional[str] = None,
     ):
         """Initialize the Zscaler Integrations MCP Server.
 
@@ -68,6 +419,7 @@ class ZscalerMCPServer:
             user_agent_comment: Additional information to include in the User-Agent comment section
             enable_write_tools: Enable write operations (create, update, delete). Default: False for safety.
             write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.
+            host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.
         """
         # Store configuration
         self.client_id = client_id
@@ -86,14 +438,16 @@ class ZscalerMCPServer:
         # Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol
         configure_logging(debug=self.debug, use_stderr=True)
         logger = get_logger(__name__)
-        
+
         # Log security posture
         logger.info("Initializing Zscaler Integrations MCP Server")
         if self.enable_write_tools:
             logger.warning("=" * 80)
             logger.warning("⚠️  WRITE TOOLS MODE ENABLED")
             if self.write_tools:
-                logger.warning("⚠️  Explicit allowlist provided - only listed write tools will be registered")
+                logger.warning(
+                    "⚠️  Explicit allowlist provided - only listed write tools will be registered"
+                )
                 logger.warning(f"⚠️  Allowed patterns: {', '.join(sorted(self.write_tools))}")
                 logger.warning("⚠️  Server can CREATE, MODIFY, and DELETE Zscaler resources")
                 logger.warning("⚠️  Ensure this is intentional and appropriate for your use case")
@@ -106,7 +460,9 @@ class ZscalerMCPServer:
             logger.info("=" * 80)
             logger.info("🔒 Server running in READ-ONLY mode (safe default)")
             logger.info("   Only list and get operations are available")
-            logger.info("   To enable write operations, use --enable-write-tools AND --write-tools flags")
+            logger.info(
+                "   To enable write operations, use --enable-write-tools AND --write-tools flags"
+            )
             logger.info("=" * 80)
 
         # Don't initialize the Zscaler client during server startup to avoid pickle issues
@@ -115,11 +471,13 @@ class ZscalerMCPServer:
         logger.info("Client initialization deferred to tool execution")
 
         # Initialize the MCP server
+        transport_security = _get_transport_security(host=host)
         self.server = FastMCP(
             name="Zscaler Integrations MCP Server",
             instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
             debug=self.debug,
             log_level="DEBUG" if self.debug else "INFO",
+            transport_security=transport_security,
         )
 
         # Initialize and register services
@@ -164,14 +522,14 @@ class ZscalerMCPServer:
             self.zscaler_check_connectivity,
             name="zscaler_check_connectivity",
             description="Check connectivity to the Zscaler API.",
-            annotations=ToolAnnotations(readOnlyHint=True)  # Read-only diagnostic tool
+            annotations=ToolAnnotations(readOnlyHint=True),  # Read-only diagnostic tool
         )
 
         self.server.add_tool(
             self.get_available_services,
             name="zscaler_get_available_services",
             description="Get information about available services.",
-            annotations=ToolAnnotations(readOnlyHint=True)  # Read-only informational tool
+            annotations=ToolAnnotations(readOnlyHint=True),  # Read-only informational tool
         )
 
         tool_count = 2  # the tools added above
@@ -185,15 +543,15 @@ class ZscalerMCPServer:
                         self.server,
                         enabled_tools=self.enabled_tools,
                         enable_write_tools=self.enable_write_tools,
-                        write_tools=self.write_tools
+                        write_tools=self.write_tools,
                     )
                 else:
                     service.register_tools(
                         self.server,
                         enable_write_tools=self.enable_write_tools,
-                        write_tools=self.write_tools
+                        write_tools=self.write_tools,
                     )
-                
+
                 # Count tools (read + write)
                 if hasattr(service, "read_tools"):
                     tool_count += len(service.read_tools)
@@ -223,9 +581,7 @@ class ZscalerMCPServer:
         # Register resources from services
         for service in self.services.values():
             # Check if the service has a register_resources method
-            if hasattr(service, "register_resources") and callable(
-                service.register_resources
-            ):
+            if hasattr(service, "register_resources") and callable(service.register_resources):
                 service.register_resources(self.server)
 
         # Count resources from services
@@ -267,25 +623,46 @@ class ZscalerMCPServer:
         """
         from zscaler_mcp.auth import apply_auth_middleware
 
-        if transport == "streamable-http":
-            logger.info("Starting streamable-http server on %s:%d", host, port)
-            app = self.server.streamable_http_app()
+        if transport in ("streamable-http", "sse"):
+            _validate_host_config(host)
+
+            tls_kwargs = _get_tls_config()
+            scheme = "https" if tls_kwargs else "http"
+
+            _enforce_https_policy(host, port, tls_kwargs)
+
+            if not tls_kwargs and host not in ("127.0.0.1", "localhost", "::1"):
+                log_security_warning(
+                    "Running HTTP without TLS (ZSCALER_MCP_ALLOW_HTTP=true)",
+                    [
+                        f"The server is listening on {host}:{port} without encryption.",
+                        "All traffic (including auth tokens) will be sent in plaintext.",
+                        "",
+                        "Ensure traffic is encrypted by an overlay (ZPA, VPN) or",
+                        "terminated at a reverse proxy (nginx, ALB, etc.).",
+                    ],
+                )
+
+            if transport == "streamable-http":
+                app = self.server.streamable_http_app()
+            else:
+                app = self.server.sse_app()
+
             app = apply_auth_middleware(app, transport)
+
+            allowed_ips = _get_allowed_source_ips()
+            if allowed_ips is not None:
+                logger.info("Source IP ACL active: %s", allowed_ips)
+                app = SourceIPMiddleware(app, allowed_ips)
+
+            _log_security_posture(transport, scheme, host, port, tls_kwargs)
+
             uvicorn.run(
                 app,
                 host=host,
                 port=port,
                 log_level="info" if not self.debug else "debug",
-            )
-        elif transport == "sse":
-            logger.info("Starting sse server on %s:%d", host, port)
-            app = self.server.sse_app()
-            app = apply_auth_middleware(app, transport)
-            uvicorn.run(
-                app,
-                host=host,
-                port=port,
-                log_level="info" if not self.debug else "debug",
+                **tls_kwargs,
             )
         else:
             self.server.run(transport)
@@ -297,9 +674,7 @@ def list_available_tools(selected_services=None, enabled_tools=None):
 
     available_services = svc_mod.get_available_services()
     if selected_services:
-        available_services = {
-            k: v for k, v in available_services.items() if k in selected_services
-        }
+        available_services = {k: v for k, v in available_services.items() if k in selected_services}
     logger.info("Available tools:")
     for service_name, service_class in available_services.items():
         service = service_class(None)
@@ -324,9 +699,7 @@ def list_available_tools(selected_services=None, enabled_tools=None):
             service.register_tools(mock_server, enabled_tools=enabled_tools)
 
             for tool_info in mock_server.tools:
-                logger.info(
-                    f"  [{service_name}] {tool_info['name']}: {tool_info['description']}"
-                )
+                logger.info(f"  [{service_name}] {tool_info['name']}: {tool_info['description']}")
 
 
 def generate_auth_token(fmt: str = "basic"):
@@ -358,7 +731,7 @@ def generate_auth_token(fmt: str = "basic"):
     print()
     print("--- Cursor / MCP clients with header support ---")
     print()
-    print('  {')
+    print("  {")
     print('    "mcpServers": {')
     print('      "zscaler-mcp-server": {')
     print('        "url": "http://localhost:8000/mcp",')
@@ -372,7 +745,7 @@ def generate_auth_token(fmt: str = "basic"):
     if fmt == "basic":
         print("--- Alternative: raw credential headers (no Base64 needed) ---")
         print()
-        print('  {')
+        print("  {")
         print('    "mcpServers": {')
         print('      "zscaler-mcp-server": {')
         print('        "url": "http://localhost:8000/mcp",')
@@ -386,7 +759,7 @@ def generate_auth_token(fmt: str = "basic"):
         print()
     print("--- Claude Desktop (mcp-remote bridge) ---")
     print()
-    print('  {')
+    print("  {")
     print('    "mcpServers": {')
     print('      "zscaler-mcp-server": {')
     print('        "command": "npx",')
@@ -545,17 +918,17 @@ def parse_args():
         action="store_true",
         default=os.environ.get("ZSCALER_MCP_WRITE_ENABLED", "").lower() == "true",
         help="Enable write operations (create, update, delete). "
-             "By default, only read-only operations are available for safety. "
-             "(env: ZSCALER_MCP_WRITE_ENABLED)",
+        "By default, only read-only operations are available for safety. "
+        "(env: ZSCALER_MCP_WRITE_ENABLED)",
     )
 
     parser.add_argument(
         "--write-tools",
         default=os.environ.get("ZSCALER_MCP_WRITE_TOOLS"),
         help="Comma-separated list of write tools to explicitly allow. "
-             "Supports wildcards (e.g., 'zpa_create_*,zpa_delete_*'). "
-             "Requires --enable-write-tools to be set. "
-             "(env: ZSCALER_MCP_WRITE_TOOLS)",
+        "Supports wildcards (e.g., 'zpa_create_*,zpa_delete_*'). "
+        "Requires --enable-write-tools to be set. "
+        "(env: ZSCALER_MCP_WRITE_TOOLS)",
     )
 
     # Zscaler API configuration
@@ -623,8 +996,8 @@ def parse_args():
         choices=["basic", "bearer"],
         metavar="FORMAT",
         help="Generate an auth token from ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET "
-             "and print MCP client config snippets, then exit. "
-             "Format: 'basic' (default) for Zscaler auth mode, 'bearer' for api-key mode.",
+        "and print MCP client config snippets, then exit. "
+        "Format: 'basic' (default) for Zscaler auth mode, 'bearer' for api-key mode.",
     )
 
     parser.add_argument(
@@ -638,10 +1011,64 @@ def parse_args():
     return parser.parse_args()
 
 
+def _check_env_file_security() -> None:
+    """Log an advisory if credentials are loaded from a plaintext .env file.
+
+    This is perfectly fine for local development — .env is the standard way
+    to configure MCP servers. The warning simply reminds operators to use
+    a secrets backend (Docker secrets, Kubernetes secrets, AWS Secrets Manager,
+    HashiCorp Vault, etc.) when deploying to shared or production environments.
+    """
+    secret_keys = ("ZSCALER_CLIENT_SECRET", "ZSCALER_MCP_AUTH_API_KEY", "ZSCALER_PRIVATE_KEY")
+    env_paths = [
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"),
+    ]
+
+    for env_path in env_paths:
+        try:
+            if not os.path.isfile(env_path):
+                continue
+            with open(env_path, "r") as f:
+                content = f.read()
+            found = [
+                k
+                for k in secret_keys
+                if k in content
+                and not all(
+                    line.strip().startswith("#") for line in content.splitlines() if k in line
+                )
+            ]
+            if found:
+                log_security_warning(
+                    "Credentials detected in plaintext .env file",
+                    [
+                        f"File: {env_path}",
+                        f"Keys: {', '.join(found)}",
+                        "",
+                        "This is fine for local development, but for production consider:",
+                        "  - Docker: use 'docker run -e' or Docker Secrets",
+                        "  - Kubernetes: use Kubernetes Secrets or external-secrets",
+                        "  - AWS: use Secrets Manager (ZSCALER_SECRET_NAME)",
+                        "  - Enterprise: use HashiCorp Vault or similar",
+                        "",
+                        "Ensure .env is in .gitignore and never committed to source control.",
+                    ],
+                )
+                return
+        except OSError:
+            continue
+
+
 def main():
     """Main entry point for the Zscaler Integrations MCP Server."""
-    # Load environment variables
-    load_dotenv()
+    # Load environment variables - try project root (editable install) then CWD
+    _pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    _project_root = os.path.dirname(_pkg_dir)
+    load_dotenv(os.path.join(_project_root, ".env"))
+    load_dotenv()  # CWD override
+
+    _check_env_file_security()
 
     # Parse command line arguments (includes environment variable defaults)
     args = parse_args()
@@ -662,7 +1089,7 @@ def main():
         write_tools = None
         if args.write_tools:
             write_tools = set(t.strip() for t in args.write_tools.split(","))
-        
+
         # Create and run the server
         server = ZscalerMCPServer(
             client_id=args.client_id,
@@ -676,6 +1103,7 @@ def main():
             user_agent_comment=args.user_agent_comment,
             enable_write_tools=args.enable_write_tools,
             write_tools=write_tools,
+            host=args.host,
         )
         logger.info("Starting server with %s transport", args.transport)
         server.run(args.transport, host=args.host, port=args.port)

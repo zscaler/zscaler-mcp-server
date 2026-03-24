@@ -27,9 +27,7 @@ DEFAULT_RUNS_PER_TEST = 2
 DEFAULT_SUCCESS_THRESHOLD = 0.1
 
 # Models to test against
-MODELS_TO_TEST = os.getenv("MODELS_TO_TEST", ",".join(DEFAULT_MODELS_TO_TEST)).split(
-    ","
-)
+MODELS_TO_TEST = os.getenv("MODELS_TO_TEST", ",".join(DEFAULT_MODELS_TO_TEST)).split(",")
 # Number of times to run each test
 RUNS_PER_TEST = int(os.getenv("RUNS_PER_TEST", str(DEFAULT_RUNS_PER_TEST)))
 # Success threshold for passing a test
@@ -139,9 +137,7 @@ class SharedTestServer:
 
         # Start the server in a separate thread
         server = ZscalerMCPServer(debug=False)
-        self.server_config["thread"] = threading.Thread(
-            target=server.run, args=("sse",)
-        )
+        self.server_config["thread"] = threading.Thread(target=server.run, args=("sse",))
         self.server_config["thread"].daemon = True
         self.server_config["thread"].start()
         time.sleep(2)  # Wait for the server to initialize
@@ -186,10 +182,7 @@ class SharedTestServer:
                     pass
 
             # Close event loop
-            if (
-                self.server_config["loop"]
-                and not self.server_config["loop"].is_closed()
-            ):
+            if self.server_config["loop"] and not self.server_config["loop"].is_closed():
                 try:
                     self.server_config["loop"].close()
                     asyncio.set_event_loop(None)
@@ -253,9 +246,7 @@ class BaseE2ETest(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures before each test method."""
-        self.assertTrue(
-            self._server_thread.is_alive(), "Server thread did not start correctly."
-        )
+        self.assertTrue(self._server_thread.is_alive(), "Server thread did not start correctly.")
         self._mock_api_instance.reset_mock()
 
     @classmethod
@@ -273,7 +264,7 @@ class BaseE2ETest(unittest.TestCase):
             server = ZscalerMCPServer(
                 debug=False,
                 enabled_services={"zpa"},  # Only enable one service
-                enabled_tools=set()  # No tools
+                enabled_tools=set(),  # No tools
             )
 
             # Test that the server can be created without pickle issues
@@ -318,15 +309,12 @@ class BaseE2ETest(unittest.TestCase):
             {
                 "operation": "test_operation",
                 "validator": lambda kwargs: True,
-                "response": {
-                    "status_code": 200,
-                    "body": {"test": "data"}
-                },
+                "response": {"status_code": 200, "body": {"test": "data"}},
             },
         ]
 
-        self._mock_api_instance.test_method.side_effect = (
-            self._create_mock_api_side_effect(fixtures)
+        self._mock_api_instance.test_method.side_effect = self._create_mock_api_side_effect(
+            fixtures
         )
 
         # Test the mock
@@ -360,7 +348,9 @@ class BaseE2ETest(unittest.TestCase):
             print(f"Agent stream error: {e}")
             # Return a mock response for tests that expect tool calls
             if "pickle" in str(e).lower():
-                return [{"tool": "mock_tool", "result": "mock_result"}], "Mock response due to pickle error"
+                return [
+                    {"tool": "mock_tool", "result": "mock_result"}
+                ], "Mock response due to pickle error"
             return [], f"Error: {str(e)}"
 
     def run_test_with_retries(
@@ -455,9 +445,7 @@ class BaseE2ETest(unittest.TestCase):
         class_name = self.__class__.__name__
         # Remove 'Test' prefix and 'ModuleE2E' suffix
         if class_name.startswith("Test") and class_name.endswith("ModuleE2E"):
-            module_name = class_name[
-                4:-9
-            ]  # Remove 'Test' (4 chars) and 'ModuleE2E' (9 chars)
+            module_name = class_name[4:-9]  # Remove 'Test' (4 chars) and 'ModuleE2E' (9 chars)
             return module_name
 
         # Fallback: use the class name as-is if it doesn't match the expected pattern
@@ -475,9 +463,7 @@ class BaseE2ETest(unittest.TestCase):
 
             for fixture in fixtures:
                 if fixture["operation"] == operation and fixture["validator"](kwargs):
-                    print(
-                        f"Found matching fixture for {operation}, returning mock data"
-                    )
+                    print(f"Found matching fixture for {operation}, returning mock data")
                     # Return (results, response, error) format for Zscaler SDK
                     mock_results = fixture["response"]["body"].get("resources", [])
                     return (mock_results, None, None)  # (results, response, error)

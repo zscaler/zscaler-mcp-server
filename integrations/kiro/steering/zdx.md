@@ -4,9 +4,16 @@
 
 ZDX provides end-to-end visibility into user digital experience — application health, device performance, network path analysis, and alerting. It helps IT teams proactively detect and troubleshoot issues before users report them.
 
-## Critical: ZDX Is Read-Only
+## Read/Write Operations
 
-All ZDX tools are **read-only query operations**. There are no create/update/delete operations. The only exception is deep traces, which can be started to capture detailed network path data.
+Most ZDX tools are **read-only query operations**. The following tools are **write operations** that require the `--enable-write-tools` flag:
+
+| Write Tool | Operation | Description |
+|------------|-----------|-------------|
+| `zdx_start_deeptrace` | POST | Start a diagnostics deep trace session on a device |
+| `zdx_delete_deeptrace` | DELETE | Delete a deep trace session and its data |
+| `zdx_start_analysis` | POST | Start a ZDX score analysis for a device/application |
+| `zdx_delete_analysis` | DELETE | Stop a running score analysis |
 
 ## Key Concepts
 
@@ -14,7 +21,8 @@ All ZDX tools are **read-only query operations**. There are no create/update/del
 - **Devices**: End-user devices running Zscaler Client Connector
 - **ZDX Scores**: Health indicator from 0-100. Higher is better.
 - **Alerts**: Automated notifications triggered when performance degrades
-- **Deep Traces**: Detailed hop-by-hop network path analysis for a specific device
+- **Deep Traces / Diagnostics Sessions**: Detailed hop-by-hop network path analysis, web probe metrics, cloud path data, health metrics, and events for a specific device
+- **Score Analysis**: On-demand ZDX score evaluation for a device/application pair
 - **Departments**: Organizational departments for filtering
 - **Locations**: Office/site locations for filtering
 
@@ -58,6 +66,17 @@ Use when a specific user reports issues with an application.
 7. zdx_list_alerts                → Check if there's an active alert for this app/device
 8. zdx_list_device_deep_traces    → Check for existing deep traces
 9. zdx_get_device_deep_trace      → Analyze network path if trace exists
+10. If a deep trace exists, drill into session data:
+    zdx_list_deeptrace_top_processes      → Check resource-heavy processes
+    zdx_get_deeptrace_webprobe_metrics    → Check DNS, TCP, SSL, HTTP times
+    zdx_get_deeptrace_cloudpath_metrics   → Check latency, packet loss, jitter
+    zdx_get_deeptrace_cloudpath           → View hop-by-hop network path
+    zdx_get_deeptrace_health_metrics      → Check CPU, memory, disk, network
+    zdx_get_deeptrace_events              → Check Zscaler/HW/SW/Network changes
+11. If NO deep trace exists and network issues suspected:
+    zdx_get_web_probes                    → Get web_probe_id for the app
+    zdx_list_cloudpath_probes             → Get cloudpath_probe_id for the app
+    zdx_start_deeptrace                   → Start a new diagnostic session (WRITE) with probe IDs
 ```
 
 ### Organization-Wide Application Health Analysis
@@ -90,6 +109,72 @@ Use when investigating active or historical alerts.
 7. Present: alert scope, root cause hypothesis, affected user count, historical pattern
 ```
 
+### Deep Trace Diagnostics Session
+
+Use when a user reports connectivity or performance issues and you need detailed network-level diagnostics. This follows the ZDX Diagnostics workflow.
+
+```
+1. zdx_list_devices               → Find the user's device by name/email
+2. zdx_list_device_deep_traces    → Check if there's already a trace in progress
+3. If NO trace exists, discover probe IDs then start one:
+   zdx_get_web_probes(            → Get web_probe_id for the app
+     device_id="<device_id>",
+     app_id="<app_id>"
+   )
+   zdx_list_cloudpath_probes(     → Get cloudpath_probe_id for the app
+     device_id="<device_id>",
+     app_id="<app_id>"
+   )
+   zdx_start_deeptrace(           → Start a new diagnostics session (WRITE)
+     device_id="<device_id>",
+     session_name="Troubleshoot-<user>-<date>",
+     app_id=<app_id>,              (integer, from zdx_list_applications)
+     web_probe_id=<probe_id>,      (integer, from zdx_get_web_probes)
+     cloudpath_probe_id=<probe_id>,(integer, from zdx_list_cloudpath_probes)
+     session_length_minutes=5,     (5, 15, 30, or 60 minutes)
+     probe_device=True
+   )
+4. Wait for the session to complete, then analyze results:
+   zdx_list_device_deep_traces    → Find the completed trace
+   zdx_get_device_deep_trace      → Get trace summary and status
+5. Drill into diagnostics data:
+   a. zdx_list_deeptrace_top_processes     → Identify CPU/memory-heavy processes
+   b. zdx_get_deeptrace_webprobe_metrics   → Check web performance:
+      - DNS resolution time
+      - TCP connect time
+      - SSL handshake time
+      - HTTP response time
+   c. zdx_get_deeptrace_cloudpath          → View full network path topology
+   d. zdx_get_deeptrace_cloudpath_metrics  → Check per-hop latency, packet loss, jitter
+   e. zdx_get_deeptrace_health_metrics     → Device health: CPU, memory, disk I/O
+   f. zdx_get_deeptrace_events             → Event timeline: Zscaler, HW, SW, network changes
+6. Correlate findings:
+   - High DNS time → DNS server issue or network resolution problem
+   - High TCP/SSL time → Network path congestion or firewall inspection delay
+   - Packet loss on specific hops → ISP or network segment issue
+   - High CPU/memory → Device performance bottleneck
+   - Event changes → Configuration change correlated with issue start
+7. Present diagnosis with root cause, affected hops, and remediation steps
+```
+
+### ZDX Score Analysis
+
+Use for on-demand score evaluation when you need to analyze a specific device/application pair.
+
+```
+1. zdx_list_devices              → Find the device
+2. zdx_list_applications         → Find the application
+3. zdx_start_analysis(           → Start score analysis (WRITE)
+     device_id="<device_id>",
+     app_id="<app_id>",
+     t0=<start_epoch>,           (optional: time range)
+     t1=<end_epoch>
+   )
+4. zdx_get_analysis              → Poll for analysis completion/results
+5. Present analysis findings
+6. zdx_delete_analysis           → Clean up if no longer needed (WRITE)
+```
+
 ### Software Inventory Audit
 
 Use for patch compliance, license audits, or security assessments.
@@ -119,6 +204,8 @@ Use for comparing digital experience across sites or teams.
 
 ## Available Tools
 
+### Read-Only Tools
+
 | Tool | Description |
 |------|-------------|
 | `zdx_list_applications` | List all monitored applications with scores |
@@ -139,8 +226,24 @@ Use for comparing digital experience across sites or teams.
 | `zdx_list_locations` | List locations (for filtering) |
 | `zdx_list_device_deep_traces` | List deep traces for a device |
 | `zdx_get_device_deep_trace` | Get specific deep trace results |
+| `zdx_list_deeptrace_top_processes` | Get top processes from a deep trace session |
+| `zdx_get_deeptrace_webprobe_metrics` | Get web probe metrics (DNS, TCP, SSL, HTTP times) |
+| `zdx_get_deeptrace_cloudpath_metrics` | Get cloud path metrics (latency, packet loss, jitter) |
+| `zdx_get_deeptrace_cloudpath` | Get cloud path topology (hop-by-hop network path) |
+| `zdx_get_deeptrace_health_metrics` | Get device health metrics (CPU, memory, disk, network) |
+| `zdx_get_deeptrace_events` | Get events (Zscaler, hardware, software, network changes) |
+| `zdx_get_analysis` | Get status/results of a ZDX score analysis |
+| `zdx_get_web_probes` | Get web probes for an app on a device (returns web_probe_id for deep traces) |
+| `zdx_list_cloudpath_probes` | List cloud path probes for an app on a device (returns cloudpath_probe_id for deep traces) |
 
-All tools are **read-only**.
+### Write Tools (require `--enable-write-tools`)
+
+| Tool | Description |
+|------|-------------|
+| `zdx_start_deeptrace` | Start a diagnostics deep trace session on a device |
+| `zdx_delete_deeptrace` | Delete a deep trace session and associated data |
+| `zdx_start_analysis` | Start a ZDX score analysis for a device/application |
+| `zdx_delete_analysis` | Stop a running score analysis |
 
 ## Application Metric Types
 
@@ -160,6 +263,7 @@ Write a Word document to disk with a name matching the workflow:
 - `user_experience_diagnosis_<date>.docx`
 - `application_health_report_<date>.docx`
 - `alert_investigation_report_<date>.docx`
+- `deep_trace_diagnosis_<date>.docx`
 - `software_inventory_audit_<date>.docx`
 - `location_comparison_report_<date>.docx`
 
@@ -242,5 +346,8 @@ function exportCSV(){const t=document.getElementById('dataTable'),rows=Array.fro
 3. **Filter by location/department** — Prevents overwhelming responses and helps isolate regional issues
 4. **Correlate alerts with metrics** — An alert tells you something is wrong; metrics tell you what's wrong
 5. **Check historical alerts** — Recurring alerts suggest a systemic issue, not a one-time incident
-6. **Use deep traces for network path issues** — When metrics point to network problems (high DNS, TCP errors), deep traces show the exact hop where latency or drops occur
-7. **Combine with other services** — ZDX tells you what's degraded; ZPA/ZIA steering files help you check if policy or connectivity is the cause
+6. **Use deep traces for network path issues** — When metrics point to network problems (high DNS, TCP errors), start a deep trace to capture detailed web probe metrics, cloud path data, health metrics, and event timelines
+7. **Analyze deep trace data systematically** — Start with web probe metrics (DNS/TCP/SSL/HTTP), then cloud path for hop-by-hop analysis, health metrics for device bottlenecks, and events for correlated changes
+8. **Check top processes during deep traces** — High CPU/memory from specific processes can explain device-side performance degradation
+9. **Review deep trace events** — Zscaler configuration changes, hardware/software updates, and network changes often correlate with the onset of issues
+10. **Combine with other services** — ZDX tells you what's degraded; ZPA/ZIA steering files help you check if policy or connectivity is the cause

@@ -236,19 +236,43 @@ zdx_list_historical_alerts()
 
 ---
 
-### Step 5: Review Deep Traces (if available)
+### Step 5: Deep Trace Diagnostics (if available or needed)
 
-If a deep trace has been initiated for the user's device:
+Check for existing deep trace sessions:
 
 ```
 zdx_list_device_deep_traces(device_id="<device_id>")
 ```
 
+If a trace exists, analyze all diagnostics data:
+
 ```
 zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
+zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
+zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
 ```
 
-Deep traces provide hop-by-hop network path analysis showing exactly where latency or packet loss occurs.
+**Deep trace analysis checklist:**
+- **Web probe metrics**: DNS, TCP, SSL, HTTP response times — identify connectivity bottleneck layer
+- **Cloud path topology**: Hop-by-hop path — identify hops with high latency or packet loss
+- **Cloud path metrics**: Per-hop latency, packet loss, jitter trends over the trace duration
+- **Health metrics**: CPU, memory, disk, network — detect device-side resource constraints
+- **Top processes**: Resource-heavy processes competing for CPU/memory during the trace
+- **Events**: Zscaler policy changes, hardware/software updates, network changes correlated with issue onset
+
+If NO trace exists and metrics suggest network issues, discover probe IDs then start a new diagnostics session (requires write tools):
+
+```
+zdx_get_web_probes(device_id="<device_id>", app_id="<app_id>")
+zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<app_id>")
+zdx_start_deeptrace(device_id="<device_id>", session_name="Troubleshoot-<user>-<date>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=15, probe_device=True)
+```
+
+For comprehensive deep trace analysis, see the [Diagnose Deep Trace](../diagnose-deeptrace/) skill.
 
 ---
 
@@ -366,7 +390,16 @@ the next degradation window.
 - `zdx_list_alert_affected_devices(alert_id)` -- scope of impact
 - `zdx_list_historical_alerts()` -- alert history
 - `zdx_list_device_deep_traces(device_id)` -- available deep traces
-- `zdx_get_device_deep_trace(device_id, trace_id)` -- hop-by-hop analysis
+- `zdx_get_device_deep_trace(device_id, trace_id)` -- trace summary
+- `zdx_get_deeptrace_webprobe_metrics(device_id, trace_id)` -- DNS, TCP, SSL, HTTP times
+- `zdx_get_deeptrace_cloudpath(device_id, trace_id)` -- hop-by-hop network path
+- `zdx_get_deeptrace_cloudpath_metrics(device_id, trace_id)` -- per-hop latency, loss, jitter
+- `zdx_get_deeptrace_health_metrics(device_id, trace_id)` -- CPU, memory, disk, network
+- `zdx_list_deeptrace_top_processes(device_id, trace_id)` -- resource-heavy processes
+- `zdx_get_deeptrace_events(device_id, trace_id)` -- event timeline
+- `zdx_get_web_probes(device_id, app_id)` -- get web_probe_id for deep traces
+- `zdx_list_cloudpath_probes(device_id, app_id)` -- get cloudpath_probe_id for deep traces
+- `zdx_start_deeptrace(device_id, ...)` -- start a new trace (write tool)
 
 **Score interpretation:**
 - 80-100: Good
