@@ -49,7 +49,7 @@ This guide covers every deployment model for the Zscaler MCP Server, including t
 
 The Zscaler MCP Server has two independent authentication layers:
 
-```
+```text
 ┌───────────────┐         ┌──────────────────────────────┐         ┌─────────────────┐
 │  MCP Client   │  Layer 1│   Zscaler MCP Server         │  Layer 2│  Zscaler APIs   │
 │  (Claude,     │────────>│   (Auth Middleware)           │────────>│  (OneAPI)       │
@@ -79,7 +79,7 @@ The MCP protocol supports three transport mechanisms. Your choice of transport d
 
 The client spawns the server as a child process. Communication happens over stdin/stdout. Security is inherited from OS-level process isolation — no network exposure, no authentication needed.
 
-```
+```text
 Client (Claude/Cursor) ──stdin/stdout──> Server process
 ```
 
@@ -87,7 +87,7 @@ Client (Claude/Cursor) ──stdin/stdout──> Server process
 
 The server runs as an HTTP service. Clients connect over the network. The server is exposed on a port, so authentication is strongly recommended.
 
-```
+```text
 Client (Claude/Cursor) ──HTTP──> localhost:8000/mcp ──> Server
 ```
 
@@ -127,11 +127,12 @@ ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
 
 **Client sends:**
 
-```
+```text
 Authorization: Bearer sk-your-secret-key-here
 ```
 
 **Characteristics:**
+
 - No external IdP or infrastructure required
 - Constant-time comparison prevents timing attacks
 - No token expiry — rotate the key manually when needed
@@ -176,7 +177,7 @@ ZSCALER_MCP_AUTH_ALGORITHMS=RS256,ES256
 
 **Client sends:**
 
-```
+```text
 Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
 ```
 
@@ -193,6 +194,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
 | Google | `https://www.googleapis.com/oauth2/v3/certs` |
 
 **Characteristics:**
+
 - Enterprise-grade, standards-based (OIDC / OAuth 2.0)
 - Tokens have expiry — automatically enforced
 - JWKS keys are cached and refreshed every hour (handles key rotation)
@@ -219,7 +221,7 @@ ZSCALER_CLOUD=production    # or "beta"
 
 **Client sends (Method 1 — Basic Auth):**
 
-```
+```text
 Authorization: Basic base64(client_id:client_secret)
 ```
 
@@ -233,7 +235,7 @@ echo -n "abc123:xyz789" | base64
 
 **Client sends (Method 2 — Custom Headers):**
 
-```
+```text
 X-Zscaler-Client-ID: your-client-id
 X-Zscaler-Client-Secret: your-client-secret
 ```
@@ -241,6 +243,7 @@ X-Zscaler-Client-Secret: your-client-secret
 This alternative avoids Base64 encoding. Both methods are supported; the server checks custom headers first, then falls back to Basic Auth.
 
 **Characteristics:**
+
 - Validates credentials against Zscaler's `/oauth2/v1/token` endpoint
 - Successful validations are cached for the token's lifetime (typically 1 hour)
 - No additional IdP required — uses Zscaler's own auth infrastructure
@@ -270,11 +273,12 @@ Full MCP-spec-compliant OAuth 2.1 proxy with Dynamic Client Registration (DCR). 
 The simplest deployment. The MCP client spawns the Docker container as a local process. Communication happens over stdin/stdout. No network exposure, no authentication needed.
 
 **Prerequisites:**
+
 1. Docker installed and running
 2. Docker image built locally
 3. `.env` file with Zscaler API credentials
 
-**Step 1: Build the Docker image**
+#### Step 1: Build the Docker image
 
 ```bash
 # From the project root
@@ -283,13 +287,13 @@ make docker-build
 docker build -t zscaler-mcp-server:latest .
 ```
 
-**Step 2: Verify the image**
+#### Step 2: Verify the image
 
 ```bash
 docker images | grep zscaler-mcp-server
 ```
 
-**Step 3: Create your `.env` file**
+#### Step 3: Create your `.env` file
 
 Copy `.env.example` and fill in your Zscaler API credentials:
 
@@ -307,7 +311,7 @@ ZSCALER_CUSTOMER_ID=your-customer-id
 ZSCALER_VANITY_DOMAIN=your-vanity-domain
 ```
 
-**Step 4: Test the container**
+#### Step 4: Test the container
 
 ```bash
 make docker-run
@@ -317,7 +321,7 @@ docker run -i --rm --env-file .env zscaler-mcp-server:latest
 
 The server should start and wait for JSON-RPC input on stdin. Press `Ctrl+C` to stop.
 
-**Step 5: Configure your MCP client** (see [Client Configuration](#client-configuration) below)
+#### Step 5: Configure your MCP client (see [Client Configuration](#client-configuration) below)
 
 ---
 
@@ -331,17 +335,18 @@ The server runs as a persistent HTTP service. Clients connect over the network. 
 > The correct approach: start the Docker container **independently** (in a terminal or via `docker run -d`), then configure Claude Desktop to connect to it via `mcp-remote`. Cursor, Windsurf, and VS Code can connect directly via their native `url` + `headers` config.
 
 **Prerequisites:**
+
 1. Docker installed and running
 2. Docker image built locally
 3. `.env` file with Zscaler API credentials AND auth configuration
 
-**Step 1: Build the Docker image** (same as Option A)
+#### Step 1: Build the Docker image (same as Option A)
 
 ```bash
 make docker-build
 ```
 
-**Step 2: Configure authentication in `.env`**
+#### Step 2: Configure authentication in `.env`
 
 Choose one of the auth modes and add the appropriate variables.
 
@@ -374,7 +379,7 @@ ZSCALER_MCP_AUTH_ISSUER=https://your-idp.com/
 ZSCALER_MCP_AUTH_AUDIENCE=zscaler-mcp-server
 ```
 
-**Step 3: Stop any existing container, then start a new one**
+#### Step 3: Stop any existing container, then start a new one
 
 You must stop any existing container first to avoid port conflicts:
 
@@ -394,7 +399,7 @@ The server is now running at `http://localhost:8000/mcp`.
 
 > **If you see `Bind for 0.0.0.0:8000 failed: port is already allocated`**, an existing container or process is still using port 8000. See [Port 8000 already allocated](#port-8000-already-allocated) for resolution.
 
-**Step 4: Verify the server is running**
+#### Step 4: Verify the server is running
 
 ```bash
 # Check container status
@@ -413,7 +418,7 @@ curl -s http://localhost:8000/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 ```
 
-**Step 5: Generate the auth token** (optional — for Zscaler mode)
+#### Step 5: Generate the auth token (optional — for Zscaler mode)
 
 ```bash
 make docker-generate-auth-token
@@ -423,7 +428,7 @@ docker run --rm --env-file .env zscaler-mcp-server:latest --generate-auth-token
 
 This prints ready-to-paste configuration snippets for Cursor, Claude Desktop, and other clients.
 
-**Step 6: Configure your MCP client** (see [Client Configuration](#client-configuration) below)
+#### Step 6: Configure your MCP client (see [Client Configuration](#client-configuration) below)
 
 **Stopping the server:**
 
@@ -440,10 +445,11 @@ docker stop zscaler-mcp-server && docker rm zscaler-mcp-server
 Run the server directly as a Python process without Docker.
 
 **Prerequisites:**
+
 1. Python 3.10+
 2. `uv` (recommended) or `pip`
 
-**Step 1: Install the package**
+#### Step 1: Install the package
 
 ```bash
 # With uv (recommended)
@@ -453,9 +459,9 @@ uv pip install -e .
 pip install -e .
 ```
 
-**Step 2: Create your `.env` file** (same as Option A)
+#### Step 2: Create your `.env` file (same as Option A)
 
-**Step 3: Run with stdio (no auth)**
+#### Step 3: Run with stdio (no auth)
 
 ```bash
 # Load env vars and run
@@ -463,14 +469,14 @@ export $(cat .env | xargs)
 zscaler-mcp --transport stdio
 ```
 
-**Step 4: Run with HTTP (with auth)**
+#### Step 4: Run with HTTP (with auth)
 
 ```bash
 export $(cat .env | xargs)
 zscaler-mcp --transport streamable-http --host 127.0.0.1 --port 8000
 ```
 
-**Step 5: Generate auth token**
+#### Step 5: Generate auth token
 
 ```bash
 export $(cat .env | xargs)
@@ -614,6 +620,7 @@ See [421 Misdirected Request](#421-misdirected-request-invalid-host-header) for 
 > **Layer 2** settings — `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, `ZSCALER_VANITY_DOMAIN`, `ZSCALER_CUSTOMER_ID`, `ZSCALER_CLOUD`, `ZSCALER_MCP_WRITE_ENABLED`, `ZSCALER_MCP_WRITE_TOOLS`, and all other `ZSCALER_*` variables — are configured **on the server side** via the `.env` file. The client never sends or needs these values; the server loads them from `.env` at startup and uses them to call Zscaler APIs on behalf of the client.
 >
 > In short:
+>
 > - **Client config** = URL + auth header (how to reach and authenticate with the MCP server)
 > - **Server `.env`** = Zscaler API credentials + service/tool/write-mode configuration (how the server talks to Zscaler)
 
@@ -652,6 +659,7 @@ This is the simplest setup. Claude Desktop spawns the Docker container directly.
 Replace `/absolute/path/to/your/.env` with the full path to your `.env` file.
 
 **Requirements:**
+
 - Docker image must be built locally (`make docker-build`)
 - Docker must be running
 - No additional setup needed
@@ -664,11 +672,12 @@ Claude Desktop does not natively support HTTP URLs with custom headers in its co
 > Do **not** put `--transport streamable-http` inside Claude Desktop's `command` args. Claude Desktop communicates with launched processes via stdin/stdout, which is incompatible with HTTP transport. See [Server disconnects immediately in Claude Desktop](#server-disconnects-immediately-in-claude-desktop) for a detailed explanation.
 
 **Prerequisites:**
+
 - Node.js and npm installed (`node --version && npm --version`)
 - Docker image built (`make docker-build`)
 - `.env` file configured with auth settings
 
-**Step 1: Start the MCP server container separately**
+#### Step 1: Start the MCP server container separately
 
 Open a terminal and run:
 
@@ -688,7 +697,7 @@ docker logs zscaler-mcp-server 2>&1 | tail -5
 
 You should see `Uvicorn running on http://0.0.0.0:8000`.
 
-**Step 2: Configure Claude Desktop**
+#### Step 2: Configure Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
 
@@ -831,10 +840,9 @@ echo -n "your-client-id:your-client-secret" | base64
 ```
 
 > **Remote (non-localhost) servers**: When connecting to a remote server over plain HTTP, add `"--allow-http"` before `"--header"` in the `args` array. `mcp-remote` enforces HTTPS for non-localhost URLs by default. See [mcp-remote: Non-HTTPS URL rejected](#mcp-remote-non-https-url-rejected).
-
 > **JWT mode caveat:** When using JWT auth, `mcp-remote` may attempt OAuth 2.1 discovery instead of forwarding the `--header` value. If you experience 401 errors followed by 404s on `/.well-known/*` endpoints, switch to `api-key` mode for local testing or use the automated setup script (`./scripts/setup-jwt-auth.sh`). See [JWT mode + mcp-remote OAuth discovery failure](#jwt-mode--mcp-remote-oauth-discovery-failure).
 
-**Step 3: Restart Claude Desktop**
+#### Step 3: Restart Claude Desktop
 
 Quit and reopen Claude Desktop for the configuration changes to take effect. The MCP server should connect and load all tools.
 
@@ -1172,7 +1180,7 @@ ZSCALER_MCP_AUTH_ALGORITHMS=RS256
 
 Start (or restart) the server. Check the logs to confirm:
 
-```
+```text
 MCP CLIENT AUTHENTICATION ENABLED
    Mode: jwt
    JWKS URI: https://YOUR_IDP_DOMAIN/.well-known/jwks.json
@@ -1223,6 +1231,7 @@ Below are the JWKS URI, issuer format, and token request command for common Iden
 **Issuer:** `https://{tenant}.{region}.auth0.com/` (trailing slash required)
 
 **IdP setup:**
+
 1. **Applications > APIs > Create API** — set Identifier to `zscaler-mcp-server`, Signing Algorithm to `RS256`
 2. **Applications > Applications > Create Application** — choose "Machine to Machine", authorize it for the API above
 
@@ -1260,6 +1269,7 @@ curl -s --request POST \
 **Issuer:** `https://{domain}.okta.com/oauth2/default`
 
 **IdP setup:**
+
 1. **Security > API > Authorization Servers** — use `default` or create a custom one; add an audience claim for `zscaler-mcp-server`
 2. **Applications > Applications > Create App Integration** — choose "API Services" (machine-to-machine)
 3. Assign the application to the authorization server with a scope (e.g., `mcp:access`)
@@ -1294,6 +1304,7 @@ curl -s --request POST \
 **Issuer:** `https://login.microsoftonline.com/{tenant-id}/v2.0`
 
 **IdP setup:**
+
 1. **App registrations > New registration** — register the MCP server app
 2. **Expose an API** — set Application ID URI (e.g., `api://zscaler-mcp-server`), add a scope
 3. **App registrations > New registration** — register a client app for token generation
@@ -1330,6 +1341,7 @@ curl -s --request POST \
 **Issuer:** `https://{host}/realms/{realm}`
 
 **IdP setup:**
+
 1. Create a realm (or use an existing one)
 2. **Clients > Create client** — set Client type to "OpenID Connect", enable "Client authentication" (confidential), enable "Service accounts roles"
 3. Note the Client ID and Client Secret from the Credentials tab
@@ -1363,6 +1375,7 @@ curl -s --request POST \
 **Issuer:** `https://cognito-idp.{region}.amazonaws.com/{user-pool-id}`
 
 **IdP setup:**
+
 1. Create a User Pool (or use an existing one)
 2. **App integration > Resource servers** — create a resource server with identifier `zscaler-mcp-server` and a custom scope
 3. **App integration > App clients** — create an app client with `client_credentials` grant enabled; assign the scope from step 2
@@ -1432,7 +1445,7 @@ Understanding the flow helps with troubleshooting:
 2. **Server startup (one time):** The MCP server downloads the IdP's public keys from the JWKS endpoint. Keys are cached in memory for 1 hour (handles automatic key rotation).
 3. **Every MCP request:** The client sends the JWT in the `Authorization: Bearer` header. The server validates the token **locally** — signature verification using the cached public keys, plus `exp`, `iss`, and `aud` claim checks. No network call to the IdP.
 
-```
+```text
 Token request (one time):    You → IdP /token → JWT returned
 Server startup (one time):   MCP Server → IdP JWKS → public keys cached (refreshed hourly)
 Every MCP request:           Claude/Cursor → JWT in header → MCP Server validates locally
@@ -1467,6 +1480,7 @@ The same general approach applies to other IdPs — only the token request step 
 ```
 
 The script prompts for:
+
 1. **Server mode** — Docker or Python (local process)
 2. **Auth0 Domain** — your tenant domain
 3. **Auth0 Client ID** — from the M2M application
@@ -1604,14 +1618,18 @@ These are always required, regardless of Layer 1 auth settings.
 **Symptom:** Container exits immediately or shows configuration errors.
 
 **Check:**
+
 1. Verify `.env` file exists and contains required Zscaler API credentials
 2. Check auth mode variables are correct:
+
    ```bash
    docker run --rm --env-file .env zscaler-mcp-server:latest --generate-auth-token
    ```
+
    If this fails with "ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET must be set", your `.env` file is missing credentials.
 
 3. Check container logs:
+
    ```bash
    docker logs zscaler-mcp-server
    ```
@@ -1623,14 +1641,18 @@ These are always required, regardless of Layer 1 auth settings.
 **Symptom:** The server is running but all MCP requests return 401.
 
 **Check:**
+
 1. Verify the `Authorization` header matches exactly what the server expects
 2. For Zscaler mode, ensure the Base64 encoding is correct:
+
    ```bash
    echo -n "your-client-id:your-client-secret" | base64
    ```
+
 3. For API Key mode, ensure the key matches `ZSCALER_MCP_AUTH_API_KEY` exactly
 4. For JWT mode, ensure the token is not expired and the issuer/audience match
 5. Check server logs for the specific error message:
+
    ```bash
    docker logs zscaler-mcp-server 2>&1 | grep -i "unauthorized\|auth"
    ```
@@ -1648,11 +1670,13 @@ These are always required, regardless of Layer 1 auth settings.
 1. **`--host 0.0.0.0`** — Host validation is auto-disabled when binding to all interfaces.
 2. **`.env`** — Add `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` or `ZSCALER_MCP_ALLOWED_HOSTS=34.201.19.115:*,localhost:*`.
 3. **Correct virtualenv** — When using `uv pip install -e .`, run from the project venv:
+
    ```bash
    cd /path/to/zscaler-mcp-server
    source .venv/bin/activate
    zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8000
    ```
+
    A different env (e.g. conda) may use an older installation without the fix.
 
 **Security:** Only disable host validation for servers intentionally exposed to the network. For production, prefer `ZSCALER_MCP_ALLOWED_HOSTS` to restrict to known hostnames.
@@ -1664,6 +1688,7 @@ These are always required, regardless of Layer 1 auth settings.
 **Symptom:** Claude Desktop shows "failed to launch" error.
 
 **Check:**
+
 1. Verify Docker is running: `docker ps`
 2. Verify the image exists: `docker images | grep zscaler-mcp-server`
 3. For stdio mode, verify the `.env` path in `claude_desktop_config.json` is absolute
@@ -1706,6 +1731,7 @@ When Claude Desktop restarts the process, the previous container hasn't fully re
 **Resolution:** Run the Docker container **separately** from Claude Desktop, then use `mcp-remote` to bridge:
 
 1. Start the container in a terminal (not via Claude Desktop):
+
    ```bash
    docker stop zscaler-mcp-server 2>/dev/null; docker rm zscaler-mcp-server 2>/dev/null
    docker run -d --restart=unless-stopped --name zscaler-mcp-server \
@@ -1714,6 +1740,7 @@ When Claude Desktop restarts the process, the previous container hasn't fully re
    ```
 
 2. Configure Claude Desktop to connect via `mcp-remote`:
+
    ```json
    {
      "mcpServers": {
@@ -1739,6 +1766,7 @@ Alternatively, if you don't need HTTP auth, use [Option A: Docker with stdio](#o
 **Symptom:** `docker: Error response from daemon: Bind for 0.0.0.0:8000 failed: port is already allocated`
 
 **Cause:** An existing Docker container or process is still using port 8000. This commonly happens when:
+
 - A previous `zscaler-mcp-server` container is still running or stopping
 - Claude Desktop's restart cycle launched multiple containers before the previous ones released the port
 - Another application is using port 8000
@@ -1771,7 +1799,7 @@ docker stop zscaler-mcp-server 2>/dev/null; docker rm zscaler-mcp-server 2>/dev/
 
 **Symptom:** Server logs show `401 Unauthorized` on `GET /mcp` or `POST /mcp`, followed by a series of `404 Not Found` on OAuth discovery endpoints:
 
-```
+```text
 GET /mcp HTTP/1.1" 401 Unauthorized
 GET /.well-known/oauth-protected-resource/mcp HTTP/1.1" 404 Not Found
 GET /.well-known/oauth-protected-resource HTTP/1.1" 404 Not Found
@@ -1785,21 +1813,26 @@ POST /register HTTP/1.1" 404 Not Found
 **Resolution (choose one):**
 
 1. **Switch to API Key mode** (recommended for local testing):
+
    ```bash
    # .env
    ZSCALER_MCP_AUTH_ENABLED=true
    ZSCALER_MCP_AUTH_MODE=api-key
    ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
    ```
+
    API Key mode returns `401` without OAuth metadata hints, so `mcp-remote` correctly falls back to sending the `--header` value. Restart the Docker container after changing `.env`.
 
 2. **Use the automated setup script** for JWT:
+
    ```bash
    ./local_dev/scripts/setup-jwt-auth.sh
    ```
+
    This script handles the full JWT flow: starts the server, fetches a token from Auth0, verifies it, and writes the client configs.
 
 3. **Use Cursor instead of Claude Desktop** — Cursor supports `url` + `headers` natively, bypassing the `mcp-remote` bridge entirely:
+
    ```json
    {
      "mcpServers": {
@@ -1819,7 +1852,7 @@ POST /register HTTP/1.1" 404 Not Found
 
 **Symptom:** Client logs show:
 
-```
+```text
 Error: Non-HTTPS URLs are only allowed for localhost or when --allow-http flag is provided
 ```
 
@@ -1852,7 +1885,7 @@ For Windows, use `"command": "cmd"` with `"/c", "npx", ...` — see [Windows: np
 
 **Symptom:** Claude Desktop logs show:
 
-```
+```text
 'C:\Program' is not recognized as an internal or external command
 ```
 
@@ -1888,7 +1921,7 @@ For Windows, use `"command": "cmd"` with `"/c", "npx", ...` — see [Windows: np
 
 **Symptom:** Client logs show:
 
-```
+```text
 Error: self-signed certificate
 code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
 ```
@@ -1925,6 +1958,7 @@ code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
 **Symptom:** Claude Desktop shows errors related to `npx` or `mcp-remote`.
 
 **Check:**
+
 1. Verify Node.js and npm are installed: `node --version && npm --version`
 2. Verify the package installs correctly: `npx -y mcp-remote --help`
 3. Verify the MCP server is running and accessible: `curl -s http://localhost:8000/mcp`
@@ -1958,11 +1992,14 @@ If these paths return 401, verify the auth middleware is properly initialized (c
 **Symptom:** Server logs show connection errors to the Zscaler token endpoint.
 
 **Check:**
+
 1. Verify `ZSCALER_VANITY_DOMAIN` is correct
 2. Verify network connectivity from the container:
+
    ```bash
    docker exec zscaler-mcp-server wget -qO- https://YOUR_DOMAIN.zslogin.net 2>&1 | head
    ```
+
 3. For `beta` cloud, ensure `ZSCALER_CLOUD=beta` is set
 4. Check if a firewall or proxy is blocking outbound HTTPS
 
@@ -1973,10 +2010,13 @@ If these paths return 401, verify the auth middleware is properly initialized (c
 **Symptom:** Server logs show JWKS retrieval errors.
 
 **Check:**
+
 1. Verify `ZSCALER_MCP_AUTH_JWKS_URI` is reachable:
+
    ```bash
    curl -s YOUR_JWKS_URI | head
    ```
+
 2. Verify the URL returns valid JWKS JSON (should contain a `keys` array)
 3. Check if the container can reach the IdP (DNS resolution, firewall rules)
 4. Verify the token's `kid` (Key ID) header matches a key in the JWKS endpoint

@@ -5,6 +5,7 @@
 When connecting to a **remote** MCP server (EC2, VM) from Claude Desktop or another client, you may see `421 Misdirected Request` or "Invalid Host header" in the server logs.
 
 **Common causes:**
+
 1. **Wrong virtualenv** — With `uv pip install -e .`, activate the project venv before starting: `source .venv/bin/activate`
 2. **Host binding** — Use `--host 0.0.0.0` when exposing the server; this auto-disables Host header validation
 3. **Client needs adapter** — For remote HTTP, configure an adapter (e.g. `@pyroprompts/mcp-stdio-to-streamable-http-adapter`) and ensure Node.js is installed for `npx`

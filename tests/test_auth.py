@@ -12,7 +12,7 @@ import json
 import os
 import threading
 import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import jwt as pyjwt
 import pytest
@@ -27,7 +27,6 @@ from zscaler_mcp.auth import (
     ZscalerAuthProvider,
     apply_auth_middleware,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
