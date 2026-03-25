@@ -34,7 +34,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "department": "Engineering",
                                     "status": "Active",
                                     "role": "Developer",
-                                    "last_login": "2024-01-15T10:30:00Z"
+                                    "last_login": "2024-01-15T10:30:00Z",
                                 },
                                 {
                                     "id": "user-002",
@@ -43,7 +43,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "department": "Marketing",
                                     "status": "Active",
                                     "role": "Manager",
-                                    "last_login": "2024-01-15T09:45:00Z"
+                                    "last_login": "2024-01-15T09:45:00Z",
                                 },
                                 {
                                     "id": "user-003",
@@ -52,10 +52,10 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "department": "Sales",
                                     "status": "Active",
                                     "role": "Sales Representative",
-                                    "last_login": "2024-01-15T08:20:00Z"
-                                }
+                                    "last_login": "2024-01-15T08:20:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -80,8 +80,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about users
             result_lower = result.lower()
             self.assertTrue(
-                "john.doe" in result_lower or "jane.smith" in result_lower or "bob.wilson" in result_lower or "mock" in result_lower,
-                f"Expected user names in result: {result}"
+                "john.doe" in result_lower
+                or "jane.smith" in result_lower
+                or "bob.wilson" in result_lower
+                or "mock" in result_lower,
+                f"Expected user names in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -108,7 +111,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "description": "Software engineering team",
                                     "member_count": 25,
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
+                                    "created_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "id": "group-002",
@@ -116,7 +119,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "description": "Marketing and communications team",
                                     "member_count": 15,
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
+                                    "created_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "id": "group-003",
@@ -124,10 +127,10 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "description": "Sales and business development team",
                                     "member_count": 20,
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
-                                }
+                                    "created_date": "2024-01-01T00:00:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -152,8 +155,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about groups
             result_lower = result.lower()
             self.assertTrue(
-                "engineering" in result_lower or "marketing" in result_lower or "sales" in result_lower or "mock" in result_lower,
-                f"Expected group names in result: {result}"
+                "engineering" in result_lower
+                or "marketing" in result_lower
+                or "sales" in result_lower
+                or "mock" in result_lower,
+                f"Expected group names in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -186,9 +192,9 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                 "created_date": "2023-01-15T00:00:00Z",
                                 "groups": ["Engineering Team", "Developers"],
                                 "location": "San Francisco",
-                                "phone": "+1-555-0123"
+                                "phone": "+1-555-0123",
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -213,8 +219,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about user details
             result_lower = result.lower()
             self.assertTrue(
-                "john.doe" in result_lower or "engineering" in result_lower or "developer" in result_lower or "mock" in result_lower,
-                f"Expected user details in result: {result}"
+                "john.doe" in result_lower
+                or "engineering" in result_lower
+                or "developer" in result_lower
+                or "mock" in result_lower,
+                f"Expected user details in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -244,12 +253,12 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                 "members": [
                                     "john.doe@company.com",
                                     "jane.smith@company.com",
-                                    "bob.wilson@company.com"
+                                    "bob.wilson@company.com",
                                 ],
                                 "owner": "tech.lead@company.com",
-                                "permissions": ["read", "write", "admin"]
+                                "permissions": ["read", "write", "admin"],
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -274,8 +283,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about group details
             result_lower = result.lower()
             self.assertTrue(
-                "engineering" in result_lower or "team" in result_lower or "member" in result_lower or "mock" in result_lower,
-                f"Expected group details in result: {result}"
+                "engineering" in result_lower
+                or "team" in result_lower
+                or "member" in result_lower
+                or "mock" in result_lower,
+                f"Expected group details in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -302,7 +314,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "email": "john.doe@company.com",
                                     "department": "Engineering",
                                     "status": "Active",
-                                    "role": "Developer"
+                                    "role": "Developer",
                                 },
                                 {
                                     "id": "user-004",
@@ -310,7 +322,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "email": "alice.johnson@company.com",
                                     "department": "Engineering",
                                     "status": "Active",
-                                    "role": "QA Engineer"
+                                    "role": "QA Engineer",
                                 },
                                 {
                                     "id": "user-005",
@@ -318,10 +330,10 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "email": "charlie.brown@company.com",
                                     "department": "Engineering",
                                     "status": "Active",
-                                    "role": "DevOps Engineer"
-                                }
+                                    "role": "DevOps Engineer",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -346,8 +358,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about engineering users
             result_lower = result.lower()
             self.assertTrue(
-                "engineering" in result_lower or "john.doe" in result_lower or "alice.johnson" in result_lower or "mock" in result_lower,
-                f"Expected engineering users in result: {result}"
+                "engineering" in result_lower
+                or "john.doe" in result_lower
+                or "alice.johnson" in result_lower
+                or "mock" in result_lower,
+                f"Expected engineering users in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -373,24 +388,24 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "username": "john.doe",
                                     "email": "john.doe@company.com",
                                     "role": "Member",
-                                    "joined_date": "2024-01-01T00:00:00Z"
+                                    "joined_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "user_id": "user-004",
                                     "username": "alice.johnson",
                                     "email": "alice.johnson@company.com",
                                     "role": "Member",
-                                    "joined_date": "2024-01-01T00:00:00Z"
+                                    "joined_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "user_id": "user-005",
                                     "username": "charlie.brown",
                                     "email": "charlie.brown@company.com",
                                     "role": "Admin",
-                                    "joined_date": "2024-01-01T00:00:00Z"
-                                }
+                                    "joined_date": "2024-01-01T00:00:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -415,8 +430,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about group members
             result_lower = result.lower()
             self.assertTrue(
-                "john.doe" in result_lower or "alice.johnson" in result_lower or "charlie.brown" in result_lower or "mock" in result_lower,
-                f"Expected group members in result: {result}"
+                "john.doe" in result_lower
+                or "alice.johnson" in result_lower
+                or "charlie.brown" in result_lower
+                or "mock" in result_lower,
+                f"Expected group members in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -445,15 +463,12 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                     "marketing": 25,
                                     "sales": 40,
                                     "hr": 15,
-                                    "finance": 20
+                                    "finance": 20,
                                 },
-                                "users_by_status": {
-                                    "active": 145,
-                                    "inactive": 5
-                                },
-                                "last_updated": "2024-01-15T10:00:00Z"
+                                "users_by_status": {"active": 145, "inactive": 5},
+                                "last_updated": "2024-01-15T10:00:00Z",
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -478,8 +493,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about statistics
             result_lower = result.lower()
             self.assertTrue(
-                "statistic" in result_lower or "user" in result_lower or "department" in result_lower or "mock" in result_lower,
-                f"Expected statistics information in result: {result}"
+                "statistic" in result_lower
+                or "user" in result_lower
+                or "department" in result_lower
+                or "mock" in result_lower,
+                f"Expected statistics information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -503,17 +521,13 @@ class TestZIdentityModuleE2E(BaseE2ETest):
                                 "total_groups": 25,
                                 "active_groups": 23,
                                 "inactive_groups": 2,
-                                "groups_by_type": {
-                                    "department": 15,
-                                    "project": 8,
-                                    "role": 2
-                                },
+                                "groups_by_type": {"department": 15, "project": 8, "role": 2},
                                 "average_members_per_group": 12.5,
                                 "largest_group": "Engineering Team",
                                 "largest_group_members": 50,
-                                "last_updated": "2024-01-15T10:00:00Z"
+                                "last_updated": "2024-01-15T10:00:00Z",
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -538,8 +552,11 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             # Check that the result contains information about group statistics
             result_lower = result.lower()
             self.assertTrue(
-                "statistic" in result_lower or "group" in result_lower or "member" in result_lower or "mock" in result_lower,
-                f"Expected group statistics in result: {result}"
+                "statistic" in result_lower
+                or "group" in result_lower
+                or "member" in result_lower
+                or "mock" in result_lower,
+                f"Expected group statistics in result: {result}",
             )
 
         self.run_test_with_retries(

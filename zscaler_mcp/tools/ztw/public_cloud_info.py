@@ -10,10 +10,19 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def ztw_list_public_cloud_info(
-    page: Annotated[Optional[int], Field(description="Page offset for paginated results. The default is 0.")] = None,
-    page_size: Annotated[Optional[int], Field(description="Number of results per page. Default is 100; maximum is 1000.")] = None,
-    search: Annotated[Optional[str], Field(description="Optional search filter for account name or metadata.")] = None,
-    cloud_type: Annotated[Optional[str], Field(description="Cloud provider filter (e.g., 'AWS', 'AZURE', 'GCP').")] = None,
+    page: Annotated[
+        Optional[int], Field(description="Page offset for paginated results. The default is 0.")
+    ] = None,
+    page_size: Annotated[
+        Optional[int],
+        Field(description="Number of results per page. Default is 100; maximum is 1000."),
+    ] = None,
+    search: Annotated[
+        Optional[str], Field(description="Optional search filter for account name or metadata.")
+    ] = None,
+    cloud_type: Annotated[
+        Optional[str], Field(description="Cloud provider filter (e.g., 'AWS', 'AZURE', 'GCP').")
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:

@@ -59,7 +59,7 @@ def zia_list_device_groups(
             description="Include or exclude device information in the response. "
             "When True, each device group includes its associated devices. "
             "Default is False for faster response."
-        )
+        ),
     ] = None,
     include_pseudo_groups: Annotated[
         Optional[bool],
@@ -67,7 +67,7 @@ def zia_list_device_groups(
             description="Include or exclude Zscaler Client Connector (ZCC) and "
             "Cloud Browser Isolation (CBI) related device groups. "
             "Default is True to show all groups."
-        )
+        ),
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -142,36 +142,36 @@ def zia_list_devices(
         Field(
             description="Filter devices by name prefix (starts-with match). "
             "For example, 'Windows' matches 'Windows-PC-001', 'Windows-Laptop', etc."
-        )
+        ),
     ] = None,
     user_ids: Annotated[
         Optional[Union[List[str], str]],
         Field(
             description="Filter devices by specific user IDs. Accepts a JSON array string "
-            "or Python list of user ID strings. Example: '[\"12345\", \"67890\"]' or "
-            "[\"12345\", \"67890\"]. Use zia_list_users to find user IDs."
-        )
+            'or Python list of user ID strings. Example: \'["12345", "67890"]\' or '
+            '["12345", "67890"]. Use zia_list_users to find user IDs.'
+        ),
     ] = None,
     include_all: Annotated[
         Optional[bool],
         Field(
             description="Include or exclude Cloud Browser Isolation (CBI) devices. "
             "When True, CBI devices are included in the results. Default is True."
-        )
+        ),
     ] = None,
     page: Annotated[
         Optional[int],
         Field(
             description="Page number for pagination (1-based). Use with page_size to "
             "retrieve large device lists in chunks. Default starts at page 1."
-        )
+        ),
     ] = None,
     page_size: Annotated[
         Optional[int],
         Field(
             description="Number of devices per page. Default is 100, maximum is 1000. "
             "Use smaller values for faster responses, larger for fewer API calls."
-        )
+        ),
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",

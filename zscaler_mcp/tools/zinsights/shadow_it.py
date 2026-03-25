@@ -31,7 +31,9 @@ from zscaler_mcp.tools.zinsights.common import (
 def zinsights_get_shadow_it_apps(
     start_days_ago: Annotated[
         int,
-        Field(description="Days ago for start. Default: 9 (7-day interval). API needs 7 or 14 day intervals."),
+        Field(
+            description="Days ago for start. Default: 9 (7-day interval). API needs 7 or 14 day intervals."
+        ),
     ] = 9,
     end_days_ago: Annotated[
         int,
@@ -107,26 +109,32 @@ def zinsights_get_shadow_it_apps(
 
     error_info = check_graphql_errors(response, "get_apps")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     results = convert_sdk_results(entries)
     if not results:
-        return [create_no_data_response(
-            query_type,
-            "the specified time range",
-            "This means no shadow IT applications were detected - your organization may have good app governance!"
-        )]
+        return [
+            create_no_data_response(
+                query_type,
+                "the specified time range",
+                "This means no shadow IT applications were detected - your organization may have good app governance!",
+            )
+        ]
     return [create_success_response(results, query_type)]
 
 
 def zinsights_get_shadow_it_summary(
     start_days_ago: Annotated[
         int,
-        Field(description="Days ago for start. Default: 16 (14-day interval). API needs 7 or 14 day intervals."),
+        Field(
+            description="Days ago for start. Default: 16 (14-day interval). API needs 7 or 14 day intervals."
+        ),
     ] = 16,
     end_days_ago: Annotated[
         int,
@@ -193,15 +201,16 @@ def zinsights_get_shadow_it_summary(
 
     error_info = check_graphql_errors(response, "get_shadow_it_summary")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     if not summary:
         return [create_no_data_response(query_type, "the specified time range")]
 
     # Summary is a dict, not a list, so wrap it
     return [create_success_response([summary], query_type, record_count=1)]
-

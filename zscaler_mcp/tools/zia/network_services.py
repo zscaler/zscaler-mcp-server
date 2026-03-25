@@ -56,14 +56,20 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zia_list_network_services(
-    search: Annotated[Optional[str], Field(description="Search string to filter by service name or description.")] = None,
+    search: Annotated[
+        Optional[str], Field(description="Search string to filter by service name or description.")
+    ] = None,
     protocol: Annotated[
         Optional[str],
-        Field(description="Filter by protocol. Supported values: 'ICMP', 'TCP', 'UDP', 'GRE', 'ESP', 'OTHER'.")
+        Field(
+            description="Filter by protocol. Supported values: 'ICMP', 'TCP', 'UDP', 'GRE', 'ESP', 'OTHER'."
+        ),
     ] = None,
     locale: Annotated[
         Optional[str],
-        Field(description="Locale for localized descriptions. Supported: 'en-US', 'de-DE', 'es-ES', 'fr-FR', 'ja-JP', 'zh-CN'.")
+        Field(
+            description="Locale for localized descriptions. Supported: 'en-US', 'de-DE', 'es-ES', 'fr-FR', 'ja-JP', 'zh-CN'."
+        ),
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -115,19 +121,25 @@ def zia_list_network_services(
     if protocol:
         valid_protocols = {"ICMP", "TCP", "UDP", "GRE", "ESP", "OTHER"}
         if protocol.upper() not in valid_protocols:
-            raise ValueError(f"Invalid protocol: {protocol}. Supported values: {', '.join(valid_protocols)}")
+            raise ValueError(
+                f"Invalid protocol: {protocol}. Supported values: {', '.join(valid_protocols)}"
+            )
         query_params["protocol"] = protocol.upper()
     if locale:
         query_params["locale"] = locale
 
-    services, _, err = zia.list_network_services(query_params=query_params if query_params else None)
+    services, _, err = zia.list_network_services(
+        query_params=query_params if query_params else None
+    )
     if err:
         raise Exception(f"Failed to list network services: {err}")
     return [s.as_dict() for s in services]
 
 
 def zia_get_network_service(
-    service_id: Annotated[Union[int, str], Field(description="The unique ID of the network service to retrieve.")],
+    service_id: Annotated[
+        Union[int, str], Field(description="The unique ID of the network service to retrieve.")
+    ],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
@@ -222,9 +234,11 @@ def zia_create_network_service(
             - Single port: [["dest", "tcp", "22"]]
             - Port range: [["dest", "tcp", "80", "443"]]
             - Multiple: [["dest", "tcp", "389"], ["dest", "udp", "389"], ["dest", "tcp", "636"]]"""
-        )
+        ),
     ],
-    description: Annotated[Optional[str], Field(description="Description for the network service (optional).")] = None,
+    description: Annotated[
+        Optional[str], Field(description="Description for the network service (optional).")
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
@@ -317,17 +331,24 @@ def zia_create_network_service(
 
 
 def zia_update_network_service(
-    service_id: Annotated[Union[int, str], Field(description="The unique ID of the network service to update (required).")],
-    name: Annotated[str, Field(description="Updated name for the network service (required for update).")],
+    service_id: Annotated[
+        Union[int, str],
+        Field(description="The unique ID of the network service to update (required)."),
+    ],
+    name: Annotated[
+        str, Field(description="Updated name for the network service (required for update).")
+    ],
     ports: Annotated[
         Optional[Union[List, str]],
         Field(
             description="""Port definitions as JSON array of arrays. If provided, REPLACES existing ports.
             Format: [["src"|"dest", "tcp"|"udp", "start_port", "end_port(optional)"]]
             If omitted, existing ports are preserved."""
-        )
+        ),
     ] = None,
-    description: Annotated[Optional[str], Field(description="Updated description (optional).")] = None,
+    description: Annotated[
+        Optional[str], Field(description="Updated description (optional).")
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
@@ -400,9 +421,7 @@ def zia_update_network_service(
         kwargs["description"] = description
 
     network_service, _, err = zia.update_network_service(
-        service_id=str(service_id),
-        ports=parsed_ports,
-        **kwargs
+        service_id=str(service_id), ports=parsed_ports, **kwargs
     )
     if err:
         raise Exception(f"Failed to update network service {service_id}: {err}")
@@ -410,10 +429,13 @@ def zia_update_network_service(
 
 
 def zia_delete_network_service(
-    service_id: Annotated[Union[int, str], Field(description="The unique ID of the network service to delete (required).")],
+    service_id: Annotated[
+        Union[int, str],
+        Field(description="The unique ID of the network service to delete (required)."),
+    ],
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-    kwargs: str = "{}"
+    kwargs: str = "{}",
 ) -> str:
     """
     Delete a ZIA network service.
@@ -453,11 +475,7 @@ def zia_delete_network_service(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation(
-        "zia_delete_network_service",
-        confirmed,
-        {}
-    )
+    confirmation_check = check_confirmation("zia_delete_network_service", confirmed, {})
     if confirmation_check:
         return confirmation_check
 

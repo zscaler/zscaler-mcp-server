@@ -8,6 +8,7 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # =============================================================================
 
+
 def zia_get_activation_status(
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -15,7 +16,7 @@ def zia_get_activation_status(
     """Get the current ZIA configuration activation status."""
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     config_api = client.zia.activate
-    
+
     status_obj, _, err = config_api.status()
     if err:
         raise Exception(f"Failed to retrieve activation status: {err}")
@@ -26,15 +27,16 @@ def zia_get_activation_status(
 # WRITE OPERATIONS
 # =============================================================================
 
+
 def zia_activate_configuration(
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> str:
     """
     Activate ZIA configuration changes.
-    
+
     Activates changes only if the status is PENDING.
-    
+
     Activation statuses:
     - ACTIVE: Configuration is already active.
     - PENDING: Configuration changes are pending and activation will be triggered.
@@ -42,13 +44,13 @@ def zia_activate_configuration(
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     config_api = client.zia.activate
-    
+
     status_obj, _, err = config_api.status()
     if err:
         raise Exception(f"Failed to retrieve activation status: {err}")
-    
+
     status = status_obj.status.upper()
-    
+
     if status == "ACTIVE":
         return "Configuration is already active. No action needed."
     elif status == "INPROGRESS":

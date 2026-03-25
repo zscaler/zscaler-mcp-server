@@ -113,13 +113,12 @@ def _build_web_dlp_rule_payload(
 # READ OPERATIONS (Read-Only)
 # ============================================================================
 
+
 def zia_list_web_dlp_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -158,9 +157,7 @@ def zia_list_web_dlp_rules_lite(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -193,9 +190,7 @@ def zia_get_web_dlp_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the web DLP rule to retrieve.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -227,40 +222,44 @@ def zia_get_web_dlp_rule(
 # WRITE OPERATIONS (Require --enable-write-tools flag)
 # ============================================================================
 
+
 def zia_create_web_dlp_rule(
     name: Annotated[str, Field(description="Rule name (required).")],
     rule_action: Annotated[
         str,
-        Field(description="Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT")
+        Field(
+            description="Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT"
+        ),
     ],
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = True,
-    rank: Annotated[
-        Optional[int], Field(description="Admin rank of the rule.")
-    ] = None,
+    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order, defaults to the bottom.")
     ] = None,
     file_types: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="List of file types the DLP policy rule applies to. Accepts JSON string or list.")
+        Field(
+            description="List of file types the DLP policy rule applies to. Accepts JSON string or list."
+        ),
     ] = None,
     min_size: Annotated[
-        Optional[str], Field(description="Minimum file size (in KB) for DLP policy rule evaluation.")
+        Optional[str],
+        Field(description="Minimum file size (in KB) for DLP policy rule evaluation."),
     ] = None,
     match_only: Annotated[
-        Optional[bool], Field(description="If true, matches file size for DLP policy rule evaluation.")
+        Optional[bool],
+        Field(description="If true, matches file size for DLP policy rule evaluation."),
     ] = None,
     dlp_engines: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for DLP engines this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for DLP engines this rule applies to."),
     ] = None,
     dlp_content_locations_scopes: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Specifies one or more content locations. Accepts JSON string or list.")
+        Field(description="Specifies one or more content locations. Accepts JSON string or list."),
     ] = None,
     dlp_download_scan_enabled: Annotated[
         Optional[bool], Field(description="True enables DLP scan for file downloads.")
@@ -278,13 +277,16 @@ def zia_create_web_dlp_rule(
         Optional[bool], Field(description="True enables Zscaler Client Connector notification.")
     ] = None,
     auditor: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for the auditors this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for the auditors this rule applies to."),
     ] = None,
     cloud_applications: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for cloud applications this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for cloud applications this rule applies to."),
     ] = None,
     departments: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for departments this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for departments this rule applies to."),
     ] = None,
     excluded_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for excluded groups.")
@@ -299,32 +301,35 @@ def zia_create_web_dlp_rule(
         Optional[Union[List[int], str]], Field(description="IDs for groups this rule applies to.")
     ] = None,
     icap_server: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for the ICAP server this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for the ICAP server this rule applies to."),
     ] = None,
     labels: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for labels this rule applies to.")
     ] = None,
     locations: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for locations this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for locations this rule applies to."),
     ] = None,
     location_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for location groups this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for location groups this rule applies to."),
     ] = None,
     notification_template: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for the notification template.")
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for time windows this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for time windows this rule applies to."),
     ] = None,
     users: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for users this rule applies to.")
     ] = None,
     url_categories: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for URL categories the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for URL categories the rule applies to."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -392,44 +397,43 @@ def zia_create_web_dlp_rule(
 
 
 def zia_update_web_dlp_rule(
-    rule_id: Annotated[
-        Union[int, str], Field(description="The ID of the web DLP rule to update.")
-    ],
-    name: Annotated[
-        Optional[str], Field(description="Rule name.")
-    ] = None,
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    rule_id: Annotated[Union[int, str], Field(description="The ID of the web DLP rule to update.")],
+    name: Annotated[Optional[str], Field(description="Rule name.")] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     rule_action: Annotated[
         Optional[str],
-        Field(description="Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT")
+        Field(
+            description="Action for the rule. Values: ALLOW, BLOCK, BLOCK_ICMP, BLOCK_RESET, INSPECT"
+        ),
     ] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
-    rank: Annotated[
-        Optional[int], Field(description="Admin rank of the rule.")
-    ] = None,
+    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order, defaults to the bottom.")
     ] = None,
     file_types: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="List of file types the DLP policy rule applies to. Accepts JSON string or list.")
+        Field(
+            description="List of file types the DLP policy rule applies to. Accepts JSON string or list."
+        ),
     ] = None,
     min_size: Annotated[
-        Optional[str], Field(description="Minimum file size (in KB) for DLP policy rule evaluation.")
+        Optional[str],
+        Field(description="Minimum file size (in KB) for DLP policy rule evaluation."),
     ] = None,
     match_only: Annotated[
-        Optional[bool], Field(description="If true, matches file size for DLP policy rule evaluation.")
+        Optional[bool],
+        Field(description="If true, matches file size for DLP policy rule evaluation."),
     ] = None,
     dlp_engines: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for DLP engines this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for DLP engines this rule applies to."),
     ] = None,
     dlp_content_locations_scopes: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Specifies one or more content locations. Accepts JSON string or list.")
+        Field(description="Specifies one or more content locations. Accepts JSON string or list."),
     ] = None,
     dlp_download_scan_enabled: Annotated[
         Optional[bool], Field(description="True enables DLP scan for file downloads.")
@@ -447,13 +451,16 @@ def zia_update_web_dlp_rule(
         Optional[bool], Field(description="True enables Zscaler Client Connector notification.")
     ] = None,
     auditor: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for the auditors this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for the auditors this rule applies to."),
     ] = None,
     cloud_applications: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for cloud applications this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for cloud applications this rule applies to."),
     ] = None,
     departments: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for departments this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for departments this rule applies to."),
     ] = None,
     excluded_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for excluded groups.")
@@ -468,32 +475,35 @@ def zia_update_web_dlp_rule(
         Optional[Union[List[int], str]], Field(description="IDs for groups this rule applies to.")
     ] = None,
     icap_server: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for the ICAP server this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for the ICAP server this rule applies to."),
     ] = None,
     labels: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for labels this rule applies to.")
     ] = None,
     locations: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for locations this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for locations this rule applies to."),
     ] = None,
     location_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for location groups this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for location groups this rule applies to."),
     ] = None,
     notification_template: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for the notification template.")
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for time windows this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for time windows this rule applies to."),
     ] = None,
     users: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for users this rule applies to.")
     ] = None,
     url_categories: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for URL categories the rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for URL categories the rule applies to."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -559,18 +569,14 @@ def zia_update_web_dlp_rule(
 
 
 def zia_delete_web_dlp_rule(
-    rule_id: Annotated[
-        Union[int, str], Field(description="The ID of the web DLP rule to delete.")
-    ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    rule_id: Annotated[Union[int, str], Field(description="The ID of the web DLP rule to delete.")],
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-    kwargs: str = "{}"
+    kwargs: str = "{}",
 ) -> str:
     """
     Deletes a ZIA Web DLP Rule by ID.
-    
+
     🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
     This action cannot be undone.
 
@@ -587,18 +593,16 @@ def zia_delete_web_dlp_rule(
         >>> result = zia_delete_web_dlp_rule(rule_id="12345")
     """
     from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
-    
+
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
-    
+
     confirmation_check = check_confirmation(
-        "zia_delete_web_dlp_rule",
-        confirmed,
-        {"rule_id": str(rule_id)}
+        "zia_delete_web_dlp_rule", confirmed, {"rule_id": str(rule_id)}
     )
     if confirmation_check:
         return confirmation_check
-    
+
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     dlp = client.zia.dlp_web_rules
 

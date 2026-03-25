@@ -111,9 +111,7 @@ def zia_list_ssl_inspection_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -177,9 +175,7 @@ def zia_get_ssl_inspection_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the SSL inspection rule to retrieve.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -266,6 +262,7 @@ def zia_get_ssl_inspection_rule(
 # WRITE OPERATIONS (Require --enable-write-tools flag)
 # ============================================================================
 
+
 def zia_create_ssl_inspection_rule(
     name: Annotated[str, Field(description="Rule name (required, max 31 characters).")],
     action: Annotated[
@@ -274,13 +271,11 @@ def zia_create_ssl_inspection_rule(
             description=(
                 "Action configuration for the rule (required). Can be a dictionary or JSON string. "
                 "Action types: DO_NOT_INSPECT, INSPECT, DO_NOT_DECRYPT. "
-                "Example: {\"type\": \"DO_NOT_DECRYPT\", \"do_not_decrypt_sub_actions\": {...}}"
+                'Example: {"type": "DO_NOT_DECRYPT", "do_not_decrypt_sub_actions": {...}}'
             )
         ),
     ],
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable (default: True).")
     ] = True,
@@ -292,13 +287,19 @@ def zia_create_ssl_inspection_rule(
     ] = None,
     road_warrior_for_kerberos: Annotated[
         Optional[bool],
-        Field(description="If True, the rule is applied to remote users that use PAC with Kerberos authentication.")
+        Field(
+            description="If True, the rule is applied to remote users that use PAC with Kerberos authentication."
+        ),
     ] = None,
     predefined: Annotated[
-        Optional[bool], Field(description="Indicates that the rule is predefined by using a true value.")
+        Optional[bool],
+        Field(description="Indicates that the rule is predefined by using a true value."),
     ] = None,
     default_rule: Annotated[
-        Optional[bool], Field(description="Indicates whether the rule is the Default Cloud SSL Inspection Rule or not.")
+        Optional[bool],
+        Field(
+            description="Indicates whether the rule is the Default Cloud SSL Inspection Rule or not."
+        ),
     ] = None,
     device_trust_levels: Annotated[
         Optional[Union[List[str], str]],
@@ -308,7 +309,7 @@ def zia_create_ssl_inspection_rule(
                 "Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST. "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     user_agent_types: Annotated[
         Optional[Union[List[str], str]],
@@ -318,7 +319,7 @@ def zia_create_ssl_inspection_rule(
                 "Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE. "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     platforms: Annotated[
         Optional[Union[List[str], str]],
@@ -328,7 +329,7 @@ def zia_create_ssl_inspection_rule(
                 "Values: SCAN_IOS, SCAN_ANDROID, SCAN_MACOS, SCAN_WINDOWS, NO_CLIENT_CONNECTOR, SCAN_LINUX. "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     cloud_applications: Annotated[
         Optional[Union[List[str], str]],
@@ -338,7 +339,7 @@ def zia_create_ssl_inspection_rule(
                 "Accepts cloud application names (e.g., 'CHATGPT_AI', 'ANDI'). "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     url_categories: Annotated[
         Optional[Union[List[str], str]],
@@ -347,53 +348,71 @@ def zia_create_ssl_inspection_rule(
                 "URL categories for which the rule must be applied. "
                 "Accepts URL category names. Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     dest_ip_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for destination IP groups. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for destination IP groups. Accepts JSON string or list."),
     ] = None,
     source_ip_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for source IP groups. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for source IP groups. Accepts JSON string or list."),
     ] = None,
     devices: Annotated[
         Optional[Union[List[int], str]],
-        Field(description="IDs for devices managed by Zscaler Client Connector. Accepts JSON string or list.")
+        Field(
+            description="IDs for devices managed by Zscaler Client Connector. Accepts JSON string or list."
+        ),
     ] = None,
     device_groups: Annotated[
         Optional[Union[List[int], str]],
-        Field(description="IDs for device groups managed by Zscaler Client Connector. Accepts JSON string or list.")
+        Field(
+            description="IDs for device groups managed by Zscaler Client Connector. Accepts JSON string or list."
+        ),
     ] = None,
     groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for user groups the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for user groups the rule applies to. Accepts JSON string or list."),
     ] = None,
     users: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for users the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for users the rule applies to. Accepts JSON string or list."),
     ] = None,
     labels: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for labels the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for labels the rule applies to. Accepts JSON string or list."),
     ] = None,
     locations: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for locations the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for locations the rule applies to. Accepts JSON string or list."),
     ] = None,
     location_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for location groups. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for location groups. Accepts JSON string or list."),
     ] = None,
     proxy_gateways: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for proxy chaining gateways for which this rule is applicable. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="IDs for proxy chaining gateways for which this rule is applicable. Accepts JSON string or list."
+        ),
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for time windows the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for time windows the rule applies to. Accepts JSON string or list."),
     ] = None,
     workload_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for workload groups for which this rule is applicable. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="IDs for workload groups for which this rule is applicable. Accepts JSON string or list."
+        ),
     ] = None,
     zpa_app_segments: Annotated[
         Optional[Union[List[int], str]],
-        Field(description="IDs for Source IP Anchoring-enabled ZPA Application Segments. Accepts JSON string or list.")
+        Field(
+            description="IDs for Source IP Anchoring-enabled ZPA Application Segments. Accepts JSON string or list."
+        ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -422,7 +441,7 @@ def zia_create_ssl_inspection_rule(
             - DO_NOT_INSPECT: Bypass SSL inspection for matching traffic
             - INSPECT: Decrypt and inspect SSL/TLS traffic
             - DO_NOT_DECRYPT: Do not decrypt but may apply other policies
-            
+
             Action structure example:
             {
                 "type": "DO_NOT_DECRYPT",
@@ -570,42 +589,43 @@ def zia_create_ssl_inspection_rule(
 
 def zia_update_ssl_inspection_rule(
     rule_id: Annotated[
-        Union[int, str], Field(description="The ID of the SSL inspection rule to update (required).")
+        Union[int, str],
+        Field(description="The ID of the SSL inspection rule to update (required)."),
     ],
-    name: Annotated[
-        Optional[str], Field(description="Rule name (max 31 characters).")
-    ] = None,
+    name: Annotated[Optional[str], Field(description="Rule name (max 31 characters).")] = None,
     action: Annotated[
         Optional[Union[Dict, str]],
         Field(
             description=(
                 "Action configuration for the rule. Can be a dictionary or JSON string. "
                 "Action types: DO_NOT_INSPECT, INSPECT, DO_NOT_DECRYPT. "
-                "Example: {\"type\": \"DO_NOT_DECRYPT\", \"do_not_decrypt_sub_actions\": {...}}"
+                'Example: {"type": "DO_NOT_DECRYPT", "do_not_decrypt_sub_actions": {...}}'
             )
         ),
     ] = None,
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
     rank: Annotated[
         Optional[int], Field(description="Admin rank of the rule (1-7, where 7 is the highest).")
     ] = None,
-    order: Annotated[
-        Optional[int], Field(description="Rule order/priority.")
-    ] = None,
+    order: Annotated[Optional[int], Field(description="Rule order/priority.")] = None,
     road_warrior_for_kerberos: Annotated[
         Optional[bool],
-        Field(description="If True, the rule is applied to remote users that use PAC with Kerberos authentication.")
+        Field(
+            description="If True, the rule is applied to remote users that use PAC with Kerberos authentication."
+        ),
     ] = None,
     predefined: Annotated[
-        Optional[bool], Field(description="Indicates that the rule is predefined by using a true value.")
+        Optional[bool],
+        Field(description="Indicates that the rule is predefined by using a true value."),
     ] = None,
     default_rule: Annotated[
-        Optional[bool], Field(description="Indicates whether the rule is the Default Cloud SSL Inspection Rule or not.")
+        Optional[bool],
+        Field(
+            description="Indicates whether the rule is the Default Cloud SSL Inspection Rule or not."
+        ),
     ] = None,
     device_trust_levels: Annotated[
         Optional[Union[List[str], str]],
@@ -615,7 +635,7 @@ def zia_update_ssl_inspection_rule(
                 "Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST. "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     user_agent_types: Annotated[
         Optional[Union[List[str], str]],
@@ -625,7 +645,7 @@ def zia_update_ssl_inspection_rule(
                 "Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE. "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     platforms: Annotated[
         Optional[Union[List[str], str]],
@@ -635,7 +655,7 @@ def zia_update_ssl_inspection_rule(
                 "Values: SCAN_IOS, SCAN_ANDROID, SCAN_MACOS, SCAN_WINDOWS, NO_CLIENT_CONNECTOR, SCAN_LINUX. "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     cloud_applications: Annotated[
         Optional[Union[List[str], str]],
@@ -645,7 +665,7 @@ def zia_update_ssl_inspection_rule(
                 "Accepts cloud application names (e.g., 'CHATGPT_AI', 'ANDI'). "
                 "Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     url_categories: Annotated[
         Optional[Union[List[str], str]],
@@ -654,53 +674,71 @@ def zia_update_ssl_inspection_rule(
                 "URL categories for which the rule must be applied. "
                 "Accepts URL category names. Accepts JSON string or list."
             )
-        )
+        ),
     ] = None,
     dest_ip_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for destination IP groups. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for destination IP groups. Accepts JSON string or list."),
     ] = None,
     source_ip_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for source IP groups. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for source IP groups. Accepts JSON string or list."),
     ] = None,
     devices: Annotated[
         Optional[Union[List[int], str]],
-        Field(description="IDs for devices managed by Zscaler Client Connector. Accepts JSON string or list.")
+        Field(
+            description="IDs for devices managed by Zscaler Client Connector. Accepts JSON string or list."
+        ),
     ] = None,
     device_groups: Annotated[
         Optional[Union[List[int], str]],
-        Field(description="IDs for device groups managed by Zscaler Client Connector. Accepts JSON string or list.")
+        Field(
+            description="IDs for device groups managed by Zscaler Client Connector. Accepts JSON string or list."
+        ),
     ] = None,
     groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for user groups the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for user groups the rule applies to. Accepts JSON string or list."),
     ] = None,
     users: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for users the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for users the rule applies to. Accepts JSON string or list."),
     ] = None,
     labels: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for labels the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for labels the rule applies to. Accepts JSON string or list."),
     ] = None,
     locations: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for locations the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for locations the rule applies to. Accepts JSON string or list."),
     ] = None,
     location_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for location groups. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for location groups. Accepts JSON string or list."),
     ] = None,
     proxy_gateways: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for proxy chaining gateways for which this rule is applicable. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="IDs for proxy chaining gateways for which this rule is applicable. Accepts JSON string or list."
+        ),
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for time windows the rule applies to. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(description="IDs for time windows the rule applies to. Accepts JSON string or list."),
     ] = None,
     workload_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="IDs for workload groups for which this rule is applicable. Accepts JSON string or list.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="IDs for workload groups for which this rule is applicable. Accepts JSON string or list."
+        ),
     ] = None,
     zpa_app_segments: Annotated[
         Optional[Union[List[int], str]],
-        Field(description="IDs for Source IP Anchoring-enabled ZPA Application Segments. Accepts JSON string or list.")
+        Field(
+            description="IDs for Source IP Anchoring-enabled ZPA Application Segments. Accepts JSON string or list."
+        ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -728,7 +766,7 @@ def zia_update_ssl_inspection_rule(
             - DO_NOT_INSPECT: Bypass SSL inspection for matching traffic
             - INSPECT: Decrypt and inspect SSL/TLS traffic
             - DO_NOT_DECRYPT: Do not decrypt but may apply other policies
-            
+
             Action structure example:
             {
                 "type": "DO_NOT_DECRYPT",
@@ -883,16 +921,14 @@ def zia_delete_ssl_inspection_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the SSL inspection rule to delete.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-    kwargs: str = "{}"
+    kwargs: str = "{}",
 ) -> str:
     """
     Deletes a ZIA SSL Inspection Rule by ID.
     This is a write operation that requires the --enable-write-tools flag.
-    
+
     🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
     This action cannot be undone. Once deleted, the SSL inspection rule and all its
     configuration will be permanently removed from your Zscaler organization.
@@ -937,18 +973,16 @@ def zia_delete_ssl_inspection_rule(
         ...     print(result)
     """
     from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
-    
+
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
-    
+
     confirmation_check = check_confirmation(
-        "zia_delete_ssl_inspection_rule",
-        confirmed,
-        {"rule_id": str(rule_id)}
+        "zia_delete_ssl_inspection_rule", confirmed, {"rule_id": str(rule_id)}
     )
     if confirmation_check:
         return confirmation_check
-    
+
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 

@@ -148,7 +148,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "zscalermcp", "Zscaler Integrations MCP Server Documentation", [author], 1)]
+man_pages = [
+    (master_doc, "zscalermcp", "Zscaler Integrations MCP Server Documentation", [author], 1)
+]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -258,6 +260,7 @@ myst_footnote_transition = True
 myst_dmath_double_inline = True
 
 # -- Custom setup ------------------------------------------------------------
+
 
 def skip(app, what, name, obj, would_skip, options):
     """Skip certain members from documentation."""

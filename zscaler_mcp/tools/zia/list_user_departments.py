@@ -43,10 +43,10 @@ def zia_user_department_manager(
         Optional[Literal["asc", "desc", "rule_execution"]],
         Field(description="Sort order for listing departments."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
-    service: Annotated[str, Field(description="Zscaler service name. Always 'zia' for this tool.")] = "zia",
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    service: Annotated[
+        str, Field(description="Zscaler service name. Always 'zia' for this tool.")
+    ] = "zia",
 ) -> Union[dict, List[dict]]:
     """
     ZIA User Departments manager using the Python SDK.
@@ -76,7 +76,7 @@ def zia_user_department_manager(
     - For action "get" and "get_lite": dict — the department represented as a dictionary.
 
     Examples:
-    
+
     - List departments with search and sorting
       >>> zia_user_department_manager(
       ...     action="read",
@@ -104,7 +104,7 @@ def zia_user_department_manager(
             if err:
                 raise Exception(f"Error retrieving department {department_id}: {err}")
             return department.as_dict()
-        
+
         # Otherwise, list departments with optional filters
         query_params = {}
         if limit_search is not None:

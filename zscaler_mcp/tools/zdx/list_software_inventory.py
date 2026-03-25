@@ -8,6 +8,7 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_list_software(
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
@@ -18,15 +19,9 @@ def zdx_list_software(
     geo_id: Annotated[
         Optional[List[str]], Field(description="Filter by geolocation ID(s).")
     ] = None,
-    user_ids: Annotated[
-        Optional[List[str]], Field(description="Filter by user ID(s).")
-    ] = None,
-    device_ids: Annotated[
-        Optional[List[str]], Field(description="Filter by device ID(s).")
-    ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    user_ids: Annotated[Optional[List[str]], Field(description="Filter by user ID(s).")] = None,
+    device_ids: Annotated[Optional[List[str]], Field(description="Filter by device ID(s).")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -77,21 +72,17 @@ def zdx_list_software(
     if device_ids:
         query_params["device_ids"] = device_ids
 
-    result, _, err = client.zdx.inventory.list_softwares(query_params=query_params)
+    result, response, err = client.zdx.inventory.list_softwares(query_params=query_params)
     if err:
         raise Exception(f"Software inventory listing failed: {err}")
 
-    # The SDK already returns the list of software objects directly
     if result:
         return [software.as_dict() for software in result]
-    else:
-        return []
+    return []
 
 
 def zdx_get_software_details(
-    software_key: Annotated[
-        str, Field(description="The software name and version key.")
-    ],
+    software_key: Annotated[str, Field(description="The software name and version key.")],
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
     ] = None,
@@ -101,15 +92,9 @@ def zdx_get_software_details(
     geo_id: Annotated[
         Optional[List[str]], Field(description="Filter by geolocation ID(s).")
     ] = None,
-    user_ids: Annotated[
-        Optional[List[str]], Field(description="Filter by user ID(s).")
-    ] = None,
-    device_ids: Annotated[
-        Optional[List[str]], Field(description="Filter by device ID(s).")
-    ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    user_ids: Annotated[Optional[List[str]], Field(description="Filter by user ID(s).")] = None,
+    device_ids: Annotated[Optional[List[str]], Field(description="Filter by device ID(s).")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -160,13 +145,12 @@ def zdx_get_software_details(
     if device_ids:
         query_params["device_ids"] = device_ids
 
-    # Use list_software_keys to get details for a specific software
-    result, _, err = client.zdx.inventory.list_software_keys(software_key, query_params=query_params)
+    result, response, err = client.zdx.inventory.list_software_keys(
+        software_key, query_params=query_params
+    )
     if err:
         raise Exception(f"Software details lookup failed: {err}")
 
-    # The SDK already returns the list of software/device objects directly
     if result:
         return [item.as_dict() for item in result]
-    else:
-        return []
+    return []

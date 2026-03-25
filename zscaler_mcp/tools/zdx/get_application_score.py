@@ -8,10 +8,9 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_get_application(
-    app_id: Annotated[
-        str, Field(description="The unique ID for the ZDX application.")
-    ],
+    app_id: Annotated[str, Field(description="The unique ID for the ZDX application.")],
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
     ] = None,
@@ -24,9 +23,7 @@ def zdx_get_application(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -73,9 +70,7 @@ def zdx_get_application(
     if since:
         query_params["since"] = since
 
-    result, _, err = client.zdx.apps.get_app(
-        app_id, query_params=query_params
-    )
+    result, _, err = client.zdx.apps.get_app(app_id, query_params=query_params)
     if err:
         raise Exception(f"Application score lookup failed: {err}")
 
@@ -88,9 +83,7 @@ def zdx_get_application(
 
 
 def zdx_get_application_score_trend(
-    app_id: Annotated[
-        str, Field(description="The unique ID for the ZDX application.")
-    ],
+    app_id: Annotated[str, Field(description="The unique ID for the ZDX application.")],
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
     ] = None,
@@ -103,9 +96,7 @@ def zdx_get_application_score_trend(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -152,9 +143,7 @@ def zdx_get_application_score_trend(
     if since:
         query_params["since"] = since
 
-    result, _, err = client.zdx.apps.get_app_score(
-        app_id, query_params=query_params
-    )
+    result, _, err = client.zdx.apps.get_app_score(app_id, query_params=query_params)
     if err:
         raise Exception(f"Application score trend lookup failed: {err}")
 

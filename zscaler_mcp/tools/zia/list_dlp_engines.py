@@ -17,46 +17,45 @@ def zia_dlp_engine_manager(
         Field(description="Optional engine ID to retrieve a specific engine."),
     ] = None,
     search: Annotated[
-        Optional[str], Field(description="Optional search filter for listing engines by name or description."),
+        Optional[str],
+        Field(description="Optional search filter for listing engines by name or description."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Union[dict, List[dict]]:
     """
     Manages ZIA DLP Engines for data loss prevention rule evaluation.
-    
+
     DLP Engines are logical expressions that combine DLP dictionaries using operators like AND, OR, NOT,
     and Sum to create sophisticated data loss prevention detection rules. They evaluate content against
     patterns and phrases to identify potential data breaches or policy violations.
-    
+
     Args:
         action (str): Operation to perform: read (list all or retrieve specific by engine_id), read_lite (list with minimal data).
         engine_id (int/str, optional): Optional engine ID to retrieve a specific engine.
         search (str, optional): Search string to match against engine name or description.
         use_legacy (bool, optional): Whether to use the legacy API (default: False).
         service (str, optional): The service to use (default: "zia").
-    
+
     Returns:
         dict | list[dict]: Engine object(s) depending on action.
-    
+
     Examples:
         List all DLP engines:
         >>> engines = zia_dlp_engine_manager(action="read")
-        
+
         List engines with name and ID only (faster):
         >>> engines = zia_dlp_engine_manager(action="read_lite")
-        
+
         Search for engines containing "credit card":
         >>> engines = zia_dlp_engine_manager(action="read", search="credit card")
-        
+
         Get a specific engine by ID:
         >>> engine = zia_dlp_engine_manager(action="read", engine_id="12345")
-        
+
         Search for engines containing "SSN":
         >>> engines = zia_dlp_engine_manager(action="read", search="SSN")
-    
+
     Note:
         - The read action returns full engine details including expressions and configuration.
         - When engine_id is provided with read action, it retrieves a specific engine.

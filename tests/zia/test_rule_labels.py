@@ -9,6 +9,7 @@ This module tests the verb-based rule label operations:
 - zia_delete_rule_label (write)
 """
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -25,6 +26,7 @@ from zscaler_mcp.tools.zia.rule_labels import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_client():
     """Create a mock Zscaler client with ZIA rule_labels API."""
@@ -40,7 +42,7 @@ def mock_label():
     label.as_dict.return_value = {
         "id": 12345,
         "name": "Test Label",
-        "description": "Test Description"
+        "description": "Test Description",
     }
     return label
 
@@ -54,7 +56,7 @@ def mock_label_list():
         label.as_dict.return_value = {
             "id": 10000 + i,
             "name": f"Label {i}",
-            "description": f"Description {i}"
+            "description": f"Description {i}",
         }
         labels.append(label)
     return labels
@@ -63,6 +65,7 @@ def mock_label_list():
 # =============================================================================
 # READ-ONLY OPERATIONS TESTS
 # =============================================================================
+
 
 class TestZiaListRuleLabels:
     """Test cases for zia_list_rule_labels function."""
@@ -185,6 +188,7 @@ class TestZiaGetRuleLabel:
 # WRITE OPERATIONS TESTS
 # =============================================================================
 
+
 class TestZiaCreateRuleLabel:
     """Test cases for zia_create_rule_label function."""
 
@@ -201,8 +205,7 @@ class TestZiaCreateRuleLabel:
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
         mock_client.zia.rule_labels.add_label.assert_called_once_with(
-            name="Test Label",
-            description="Test Description"
+            name="Test Label", description="Test Description"
         )
         assert result["id"] == 12345
         assert result["name"] == "Test Label"
@@ -257,8 +260,7 @@ class TestZiaUpdateRuleLabel:
         # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
         mock_client.zia.rule_labels.update_label.assert_called_once_with(
-            label_id=12345,
-            name="Updated Name"
+            label_id=12345, name="Updated Name"
         )
         assert result["id"] == 12345
 
@@ -274,8 +276,7 @@ class TestZiaUpdateRuleLabel:
 
         # Verify
         mock_client.zia.rule_labels.update_label.assert_called_once_with(
-            label_id=12345,
-            description="Updated Description"
+            label_id=12345, description="Updated Description"
         )
         assert result["id"] == 12345
 
@@ -288,16 +289,12 @@ class TestZiaUpdateRuleLabel:
 
         # Execute
         result = zia_update_rule_label(
-            label_id=12345,
-            name="Updated Name",
-            description="Updated Description"
+            label_id=12345, name="Updated Name", description="Updated Description"
         )
 
         # Verify
         mock_client.zia.rule_labels.update_label.assert_called_once_with(
-            label_id=12345,
-            name="Updated Name",
-            description="Updated Description"
+            label_id=12345, name="Updated Name", description="Updated Description"
         )
         assert result["id"] == 12345
 
@@ -313,7 +310,9 @@ class TestZiaUpdateRuleLabel:
         # Execute & Verify
         with pytest.raises(ValueError) as exc_info:
             zia_update_rule_label(label_id=12345)
-        assert "At least one field (name or description) must be provided for update" in str(exc_info.value)
+        assert "At least one field (name or description) must be provided for update" in str(
+            exc_info.value
+        )
 
     @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
     def test_update_label_with_error(self, mock_get_client, mock_client):
@@ -335,7 +334,7 @@ class TestZiaDeleteRuleLabel:
         """Test that delete requires confirmation."""
         # Execute without confirmation
         result = zia_delete_rule_label(label_id=12345)
-        
+
         # Verify confirmation is required
         assert isinstance(result, str)
         assert "DESTRUCTIVE OPERATION" in result
@@ -343,50 +342,42 @@ class TestZiaDeleteRuleLabel:
 
     @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
     def test_delete_label_success(self, mock_get_client, mock_client):
-        """Test successful deletion of a rule label with confirmation."""
-        # Setup
+        """Test successful deletion of a rule label."""
         mock_get_client.return_value = mock_client
         mock_client.zia.rule_labels.delete_label.return_value = (None, None, None)
 
-        # Execute with confirmation
-        result = zia_delete_rule_label(label_id=12345, kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = zia_delete_rule_label(label_id=12345)
 
-        # Verify
         mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
         mock_client.zia.rule_labels.delete_label.assert_called_once_with(label_id=12345)
         assert result == "Deleted rule label 12345"
 
     @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
     def test_delete_label_with_error(self, mock_get_client, mock_client):
-        """Test deleting label with API error (with confirmation)."""
-        # Setup
+        """Test deleting label with API error."""
         mock_get_client.return_value = mock_client
         mock_client.zia.rule_labels.delete_label.return_value = (None, None, "Delete Failed")
 
-        # Execute & Verify (with confirmation)
-        with pytest.raises(Exception) as exc_info:
-            zia_delete_rule_label(label_id=12345, kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            with pytest.raises(Exception) as exc_info:
+                zia_delete_rule_label(label_id=12345)
         assert "Delete failed: Delete Failed" in str(exc_info.value)
 
     def test_delete_label_missing_id(self):
-        """Test deleting label without label_id (confirmation will check ID too)."""
-        # Execute without confirmation - should return confirmation message
+        """Test deleting label without label_id — confirmation message shown first."""
         result = zia_delete_rule_label(label_id=None)
-        
-        # Even without ID, confirmation message should be shown first
         assert isinstance(result, str)
 
     @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
     def test_delete_label_legacy_mode(self, mock_get_client, mock_client):
-        """Test deleting label using legacy API with confirmation."""
-        # Setup
+        """Test deleting label using legacy API."""
         mock_get_client.return_value = mock_client
         mock_client.zia.rule_labels.delete_label.return_value = (None, None, None)
 
-        # Execute with confirmation
-        result = zia_delete_rule_label(label_id=12345, use_legacy=True, kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = zia_delete_rule_label(label_id=12345, use_legacy=True)
 
-        # Verify
         mock_get_client.assert_called_once_with(use_legacy=True, service="zia")
         assert result == "Deleted rule label 12345"
 
@@ -394,6 +385,7 @@ class TestZiaDeleteRuleLabel:
 # =============================================================================
 # INTEGRATION TESTS (Multiple Operations)
 # =============================================================================
+
 
 class TestRuleLabelWorkflow:
     """Test cases for complete CRUD workflow."""
@@ -406,7 +398,11 @@ class TestRuleLabelWorkflow:
 
         # 1. Create
         created_label = MagicMock()
-        created_label.as_dict.return_value = {"id": 12345, "name": "New Label", "description": "New Description"}
+        created_label.as_dict.return_value = {
+            "id": 12345,
+            "name": "New Label",
+            "description": "New Description",
+        }
         mock_client.zia.rule_labels.add_label.return_value = (created_label, None, None)
 
         result = zia_create_rule_label(name="New Label", description="New Description")
@@ -415,7 +411,11 @@ class TestRuleLabelWorkflow:
 
         # 2. Read
         read_label = MagicMock()
-        read_label.as_dict.return_value = {"id": 12345, "name": "New Label", "description": "New Description"}
+        read_label.as_dict.return_value = {
+            "id": 12345,
+            "name": "New Label",
+            "description": "New Description",
+        }
         mock_client.zia.rule_labels.get_label.return_value = (read_label, None, None)
 
         result = zia_get_rule_label(label_id=12345)
@@ -423,14 +423,18 @@ class TestRuleLabelWorkflow:
 
         # 3. Update
         updated_label = MagicMock()
-        updated_label.as_dict.return_value = {"id": 12345, "name": "Updated Label", "description": "Updated Description"}
+        updated_label.as_dict.return_value = {
+            "id": 12345,
+            "name": "Updated Label",
+            "description": "Updated Description",
+        }
         mock_client.zia.rule_labels.update_label.return_value = (updated_label, None, None)
 
         result = zia_update_rule_label(label_id=12345, name="Updated Label")
         assert result["name"] == "Updated Label"
 
-        # 4. Delete (with confirmation)
+        # 4. Delete
         mock_client.zia.rule_labels.delete_label.return_value = (None, None, None)
-        result = zia_delete_rule_label(label_id=12345, kwargs='{"confirmed": true}')
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = zia_delete_rule_label(label_id=12345)
         assert "Deleted" in result
-

@@ -39,4 +39,4 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture
 def verbosity_level(request):
     """Return the verbosity level from pytest config."""
-    return request.config.option.verbose 
+    return request.config.option.verbose

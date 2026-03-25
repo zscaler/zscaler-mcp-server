@@ -49,8 +49,7 @@ def zia_get_sandbox_file_hash_count(
 def zia_get_sandbox_report(
     md5_hash: Annotated[str, Field(description="MD5 hash of the file analyzed by sandbox.")],
     report_details: Annotated[
-        str,
-        Field(description="Report detail level: 'summary' (default) or 'full'.")
+        str, Field(description="Report detail level: 'summary' (default) or 'full'.")
     ] = "summary",
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -70,9 +69,7 @@ def sandbox_manager(
             description="Action to perform: 'quota', 'behavioral_analysis', or 'file_hash_count'."
         ),
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Union[dict, List, str]:
     """

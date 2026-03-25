@@ -45,8 +45,7 @@ def validate_categorize_by(categorize_by: List[str]) -> None:
     for cat in categorize_by:
         if cat not in VALID_CATEGORIZE_BY:
             raise ValueError(
-                f"Invalid categorize_by value: '{cat}'. "
-                f"Must be one of: {VALID_CATEGORIZE_BY}"
+                f"Invalid categorize_by value: '{cat}'. Must be one of: {VALID_CATEGORIZE_BY}"
             )
 
 
@@ -174,19 +173,23 @@ def zinsights_get_cyber_incidents(
     # Check for GraphQL errors in response
     error_info = check_graphql_errors(response, "get_incidents")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     results = convert_sdk_results(entries)
     if not results:
-        return [create_no_data_response(
-            query_type,
-            "the specified time range",
-            "This means no security incidents were detected - this is good news!"
-        )]
+        return [
+            create_no_data_response(
+                query_type,
+                "the specified time range",
+                "This means no security incidents were detected - this is good news!",
+            )
+        ]
     return [create_success_response(results, query_type)]
 
 
@@ -200,10 +203,7 @@ def zinsights_get_cyber_incidents_by_location(
     ] = 16,
     end_days_ago: Annotated[
         int,
-        Field(
-            description="Days ago for end. Default: 2. "
-            "Interval = start - end must be 7 or 14."
-        ),
+        Field(description="Days ago for end. Default: 2. Interval = start - end must be 7 or 14."),
     ] = 2,
     start_time: Annotated[
         Optional[int],
@@ -284,19 +284,23 @@ def zinsights_get_cyber_incidents_by_location(
     # Check for GraphQL errors in response
     error_info = check_graphql_errors(response, "get_incidents_by_location")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     results = convert_sdk_results(entries)
     if not results:
-        return [create_no_data_response(
-            query_type,
-            "the specified time range",
-            "This means no security incidents were detected at any location - this is positive!"
-        )]
+        return [
+            create_no_data_response(
+                query_type,
+                "the specified time range",
+                "This means no security incidents were detected at any location - this is positive!",
+            )
+        ]
     return [create_success_response(results, query_type)]
 
 
@@ -310,10 +314,7 @@ def zinsights_get_cyber_incidents_daily(
     ] = 16,
     end_days_ago: Annotated[
         int,
-        Field(
-            description="Days ago for end. Default: 2. "
-            "Interval = start - end must be 7 or 14."
-        ),
+        Field(description="Days ago for end. Default: 2. Interval = start - end must be 7 or 14."),
     ] = 2,
     start_time: Annotated[
         Optional[int],
@@ -385,19 +386,23 @@ def zinsights_get_cyber_incidents_daily(
     # Check for GraphQL errors in response
     error_info = check_graphql_errors(response, "get_incidents_daily")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     results = convert_sdk_results(entries)
     if not results:
-        return [create_no_data_response(
-            query_type,
-            "the specified time range",
-            "This means no security incidents were detected during this period."
-        )]
+        return [
+            create_no_data_response(
+                query_type,
+                "the specified time range",
+                "This means no security incidents were detected during this period.",
+            )
+        ]
     return [create_success_response(results, query_type)]
 
 
@@ -411,10 +416,7 @@ def zinsights_get_cyber_incidents_by_threat_and_app(
     ] = 16,
     end_days_ago: Annotated[
         int,
-        Field(
-            description="Days ago for end. Default: 2. "
-            "Interval = start - end must be 7 or 14."
-        ),
+        Field(description="Days ago for end. Default: 2. Interval = start - end must be 7 or 14."),
     ] = 2,
     start_time: Annotated[
         Optional[int],
@@ -486,18 +488,21 @@ def zinsights_get_cyber_incidents_by_threat_and_app(
     # Check for GraphQL errors in response
     error_info = check_graphql_errors(response, "get_incidents_by_threat_and_app")
     if error_info.get("has_error"):
-        return [create_error_response(
-            error_info.get("error_type", "UNKNOWN"),
-            error_info.get("message", "API error occurred"),
-            query_type
-        )]
+        return [
+            create_error_response(
+                error_info.get("error_type", "UNKNOWN"),
+                error_info.get("message", "API error occurred"),
+                query_type,
+            )
+        ]
 
     results = convert_sdk_results(entries)
     if not results:
-        return [create_no_data_response(
-            query_type,
-            "the specified time range",
-            "This means no security incidents were detected for any application."
-        )]
+        return [
+            create_no_data_response(
+                query_type,
+                "the specified time range",
+                "This means no security incidents were detected for any application.",
+            )
+        ]
     return [create_success_response(results, query_type)]
-

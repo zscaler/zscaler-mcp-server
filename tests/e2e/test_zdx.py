@@ -32,24 +32,24 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "name": "Salesforce",
                                     "category": "Business",
                                     "status": "Active",
-                                    "score": 95
+                                    "score": 95,
                                 },
                                 {
                                     "id": "app-002",
                                     "name": "Slack",
                                     "category": "Communication",
                                     "status": "Active",
-                                    "score": 88
+                                    "score": 88,
                                 },
                                 {
                                     "id": "app-003",
                                     "name": "GitHub",
                                     "category": "Development",
                                     "status": "Active",
-                                    "score": 92
-                                }
+                                    "score": 92,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -74,8 +74,11 @@ class TestZDXModuleE2E(BaseE2ETest):
             # Check that the result contains information about applications
             result_lower = result.lower()
             self.assertTrue(
-                "salesforce" in result_lower or "slack" in result_lower or "github" in result_lower or "mock" in result_lower,
-                f"Expected application names in result: {result}"
+                "salesforce" in result_lower
+                or "slack" in result_lower
+                or "github" in result_lower
+                or "mock" in result_lower,
+                f"Expected application names in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -102,7 +105,7 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "type": "Laptop",
                                     "status": "Active",
                                     "user": "john.doe@company.com",
-                                    "location": "San Francisco"
+                                    "location": "San Francisco",
                                 },
                                 {
                                     "id": "device-002",
@@ -110,10 +113,10 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "type": "Desktop",
                                     "status": "Active",
                                     "user": "jane.smith@company.com",
-                                    "location": "New York"
-                                }
+                                    "location": "New York",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -139,7 +142,7 @@ class TestZDXModuleE2E(BaseE2ETest):
             result_lower = result.lower()
             self.assertTrue(
                 "laptop" in result_lower or "desktop" in result_lower or "mock" in result_lower,
-                f"Expected device types in result: {result}"
+                f"Expected device types in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -165,17 +168,17 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "name": "High Risk Application Alert",
                                     "severity": "High",
                                     "status": "Active",
-                                    "affected_devices": 15
+                                    "affected_devices": 15,
                                 },
                                 {
                                     "id": "alert-002",
                                     "name": "Unusual Network Activity",
                                     "severity": "Medium",
                                     "status": "Active",
-                                    "affected_devices": 8
-                                }
+                                    "affected_devices": 8,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -201,7 +204,7 @@ class TestZDXModuleE2E(BaseE2ETest):
             result_lower = result.lower()
             self.assertTrue(
                 "alert" in result_lower or "severity" in result_lower or "mock" in result_lower,
-                f"Expected alert information in result: {result}"
+                f"Expected alert information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -227,17 +230,17 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "application": "Salesforce",
                                     "device_id": "device-001",
                                     "timestamp": "2024-01-15T10:30:00Z",
-                                    "status": "Completed"
+                                    "status": "Completed",
                                 },
                                 {
                                     "id": "trace-002",
                                     "application": "Slack",
                                     "device_id": "device-002",
                                     "timestamp": "2024-01-15T10:35:00Z",
-                                    "status": "Completed"
-                                }
+                                    "status": "Completed",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -263,7 +266,7 @@ class TestZDXModuleE2E(BaseE2ETest):
             result_lower = result.lower()
             self.assertTrue(
                 "trace" in result_lower or "salesforce" in result_lower or "mock" in result_lower,
-                f"Expected trace information in result: {result}"
+                f"Expected trace information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -289,17 +292,17 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "name": "Chrome Browser",
                                     "version": "120.0.6099.109",
                                     "device_count": 150,
-                                    "status": "Active"
+                                    "status": "Active",
                                 },
                                 {
                                     "id": "sw-002",
                                     "name": "Microsoft Office",
                                     "version": "16.0.17029.20132",
                                     "device_count": 200,
-                                    "status": "Active"
-                                }
+                                    "status": "Active",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -324,8 +327,11 @@ class TestZDXModuleE2E(BaseE2ETest):
             # Check that the result contains information about software
             result_lower = result.lower()
             self.assertTrue(
-                "chrome" in result_lower or "office" in result_lower or "software" in result_lower or "mock" in result_lower,
-                f"Expected software information in result: {result}"
+                "chrome" in result_lower
+                or "office" in result_lower
+                or "software" in result_lower
+                or "mock" in result_lower,
+                f"Expected software information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -350,16 +356,16 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "application": "Salesforce",
                                     "response_time": 150,
                                     "availability": 99.9,
-                                    "user_count": 45
+                                    "user_count": 45,
                                 },
                                 {
                                     "application": "Slack",
                                     "response_time": 120,
                                     "availability": 99.8,
-                                    "user_count": 78
-                                }
+                                    "user_count": 78,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -384,8 +390,11 @@ class TestZDXModuleE2E(BaseE2ETest):
             # Check that the result contains information about metrics
             result_lower = result.lower()
             self.assertTrue(
-                "salesforce" in result_lower or "slack" in result_lower or "metrics" in result_lower or "mock" in result_lower,
-                f"Expected metrics information in result: {result}"
+                "salesforce" in result_lower
+                or "slack" in result_lower
+                or "metrics" in result_lower
+                or "mock" in result_lower,
+                f"Expected metrics information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -410,16 +419,16 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "application": "Salesforce",
                                     "score": 95,
                                     "category": "Business",
-                                    "risk_level": "Low"
+                                    "risk_level": "Low",
                                 },
                                 {
                                     "application": "GitHub",
                                     "score": 88,
                                     "category": "Development",
-                                    "risk_level": "Medium"
-                                }
+                                    "risk_level": "Medium",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -444,8 +453,11 @@ class TestZDXModuleE2E(BaseE2ETest):
             # Check that the result contains information about scores
             result_lower = result.lower()
             self.assertTrue(
-                "score" in result_lower or "risk" in result_lower or "salesforce" in result_lower or "mock" in result_lower,
-                f"Expected score information in result: {result}"
+                "score" in result_lower
+                or "risk" in result_lower
+                or "salesforce" in result_lower
+                or "mock" in result_lower,
+                f"Expected score information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -471,17 +483,17 @@ class TestZDXModuleE2E(BaseE2ETest):
                                     "username": "john.doe",
                                     "application": "Salesforce",
                                     "last_access": "2024-01-15T10:30:00Z",
-                                    "access_count": 25
+                                    "access_count": 25,
                                 },
                                 {
                                     "user_id": "user-002",
                                     "username": "jane.smith",
                                     "application": "Slack",
                                     "last_access": "2024-01-15T09:45:00Z",
-                                    "access_count": 18
-                                }
+                                    "access_count": 18,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -506,8 +518,11 @@ class TestZDXModuleE2E(BaseE2ETest):
             # Check that the result contains information about users
             result_lower = result.lower()
             self.assertTrue(
-                "user" in result_lower or "john.doe" in result_lower or "jane.smith" in result_lower or "mock" in result_lower,
-                f"Expected user information in result: {result}"
+                "user" in result_lower
+                or "john.doe" in result_lower
+                or "jane.smith" in result_lower
+                or "mock" in result_lower,
+                f"Expected user information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -532,9 +547,9 @@ class TestZDXModuleE2E(BaseE2ETest):
                                 "active_devices": 485,
                                 "total_applications": 150,
                                 "active_alerts": 3,
-                                "last_updated": "2024-01-15T10:00:00Z"
+                                "last_updated": "2024-01-15T10:00:00Z",
                             }
-                        }
+                        },
                     },
                 },
             ]
@@ -559,8 +574,11 @@ class TestZDXModuleE2E(BaseE2ETest):
             # Check that the result contains information about administration
             result_lower = result.lower()
             self.assertTrue(
-                "device" in result_lower or "application" in result_lower or "alert" in result_lower or "mock" in result_lower,
-                f"Expected administration information in result: {result}"
+                "device" in result_lower
+                or "application" in result_lower
+                or "alert" in result_lower
+                or "mock" in result_lower,
+                f"Expected administration information in result: {result}",
             )
 
         self.run_test_with_retries(

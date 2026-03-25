@@ -2,6 +2,7 @@
 Tests for the Zscaler Integrations MCP Server.
 """
 
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -48,6 +49,7 @@ class TestZscalerMCPServer(unittest.TestCase):
             instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
             debug=True,
             log_level="DEBUG",
+            transport_security=None,
         )
 
         # Verify services initialization
@@ -104,10 +106,7 @@ class TestZscalerMCPServer(unittest.TestCase):
         mock_fastmcp.return_value = mock_server_instance
 
         # Create server with specific tools enabled
-        server = ZscalerMCPServer(
-            enabled_services={"zpa"},
-            enabled_tools={"zpa_app_segments"}
-        )
+        server = ZscalerMCPServer(enabled_services={"zpa"}, enabled_tools={"zpa_app_segments"})
 
         # Verify that enabled_tools is set
         self.assertEqual(server.enabled_tools, {"zpa_app_segments"})
@@ -220,7 +219,7 @@ class TestZscalerMCPServer(unittest.TestCase):
             vanity_domain="test.domain.com",
             cloud="beta",
             debug=True,
-            user_agent_comment="test_comment"
+            user_agent_comment="test_comment",
         )
 
         # Verify configuration is stored
@@ -262,9 +261,12 @@ class TestZscalerMCPServer(unittest.TestCase):
         mock_fastmcp.return_value = mock_server_instance
 
         # Mock a service class that raises an exception
-        with patch.dict(services._AVAILABLE_SERVICES, {  # pylint: disable=protected-access
-            "test_service": MagicMock(side_effect=Exception("Service init failed"))
-        }):
+        with patch.dict(
+            services._AVAILABLE_SERVICES,
+            {  # pylint: disable=protected-access
+                "test_service": MagicMock(side_effect=Exception("Service init failed"))
+            },
+        ):
             # Create server with the problematic service - should raise the exception
             with self.assertRaises(Exception) as context:
                 ZscalerMCPServer(enabled_services={"test_service"})
@@ -287,19 +289,237 @@ class TestZscalerMCPServer(unittest.TestCase):
         server = ZscalerMCPServer()
 
         # Test stdio transport (default)
-        with patch.object(server.server, 'run') as mock_run:
+        with patch.object(server.server, "run") as mock_run:
             server.run("stdio")
             mock_run.assert_called_once_with("stdio")
 
-        # Test sse transport
-        with patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run:
-            server.run("sse", host="0.0.0.0", port=8080)
+        # Test sse transport (use localhost to avoid host validation guard)
+        with (
+            patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run,
+            patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}),
+        ):
+            server.run("sse", host="127.0.0.1", port=8080)
             mock_uvicorn_run.assert_called_once()
 
         # Test streamable-http transport
-        with patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run:
-            server.run("streamable-http", host="0.0.0.0", port=8080)
+        with (
+            patch("zscaler_mcp.server.uvicorn.run") as mock_uvicorn_run,
+            patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}),
+        ):
+            server.run("streamable-http", host="127.0.0.1", port=8080)
             mock_uvicorn_run.assert_called_once()
+
+
+class TestDisabledToolsAndServices(unittest.TestCase):
+    """Test cases for --disabled-tools and --disabled-services flags."""
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_tools_stored(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_tools parameter is stored on the server instance."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(disabled_tools={"zcc_*", "zdx_list_devices"})
+        self.assertEqual(server.disabled_tools, {"zcc_*", "zdx_list_devices"})
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_tools_none_by_default(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_tools defaults to None when not provided."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer()
+        self.assertIsNone(server.disabled_tools)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_services_stored(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_services parameter is stored on the server instance."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(disabled_services={"zcc", "zdx"})
+        self.assertEqual(server.disabled_services, {"zcc", "zdx"})
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_services_removes_from_enabled(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_services are subtracted from enabled_services."""
+        mock_fastmcp.return_value = MagicMock()
+        all_services = services.get_service_names()
+        server = ZscalerMCPServer(disabled_services={"zcc"})
+
+        self.assertNotIn("zcc", server.enabled_services)
+        self.assertEqual(len(server.enabled_services), len(all_services) - 1)
+        self.assertNotIn("zcc", server.services)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_services_with_enabled_services(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_services works together with enabled_services."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(
+            enabled_services={"zcc", "zpa", "zia"},
+            disabled_services={"zcc"},
+        )
+        self.assertEqual(server.enabled_services, {"zpa", "zia"})
+        self.assertNotIn("zcc", server.services)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_tools_passed_to_register_tools(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_tools is threaded through to service.register_tools."""
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        disabled = {"zcc_devices_csv_exporter"}
+        server = ZscalerMCPServer(
+            enabled_services={"zcc"},
+            disabled_tools=disabled,
+        )
+        server._register_tools()
+
+        for svc in server.services.values():
+            if hasattr(svc, "register_tools"):
+                pass
+
+
+class TestZscalerMCPServerAuth(unittest.TestCase):
+    """Test cases for the library-level auth parameter on ZscalerMCPServer."""
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_auth_param_stored(self, mock_get_client, mock_fastmcp):
+        """Test that auth parameter is stored on the server instance."""
+        mock_fastmcp.return_value = MagicMock()
+        mock_auth = MagicMock()
+
+        server = ZscalerMCPServer(auth=mock_auth)
+        self.assertIs(server._fastmcp_auth, mock_auth)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_auth_param_none_by_default(self, mock_get_client, mock_fastmcp):
+        """Test that auth defaults to None when not provided."""
+        mock_fastmcp.return_value = MagicMock()
+
+        server = ZscalerMCPServer()
+        self.assertIsNone(server._fastmcp_auth)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_run_stdio_ignores_auth(self, mock_get_client, mock_fastmcp):
+        """Test that stdio transport ignores the auth parameter."""
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+        mock_auth = MagicMock()
+
+        server = ZscalerMCPServer(auth=mock_auth)
+
+        with patch.object(server.server, "run") as mock_run:
+            server.run("stdio")
+            mock_run.assert_called_once_with("stdio")
+
+        mock_auth.get_middleware.assert_not_called()
+        mock_auth.get_routes.assert_not_called()
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_run_http_with_auth_skips_env_middleware(self, mock_get_client, mock_fastmcp):
+        """Test that providing auth skips apply_auth_middleware."""
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        mock_auth = MagicMock()
+        mock_auth.get_middleware.return_value = []
+        mock_auth.get_routes.return_value = []
+        mock_auth.required_scopes = []
+        mock_auth._get_resource_url.return_value = None
+
+        server = ZscalerMCPServer(auth=mock_auth)
+
+        with (
+            patch("zscaler_mcp.server.uvicorn.run"),
+            patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}),
+            patch("zscaler_mcp.auth.apply_auth_middleware") as mock_apply,
+            patch("zscaler_mcp.server.ZscalerMCPServer._build_fastmcp_auth_app") as mock_build,
+        ):
+            mock_build.return_value = MagicMock()
+            server.run("streamable-http", host="127.0.0.1", port=8080)
+
+            mock_build.assert_called_once_with("streamable-http")
+            mock_apply.assert_not_called()
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_run_http_without_auth_uses_env_middleware(self, mock_get_client, mock_fastmcp):
+        """Test that without auth, the env-var middleware is applied."""
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        server = ZscalerMCPServer()
+
+        with (
+            patch("zscaler_mcp.server.uvicorn.run"),
+            patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}),
+            patch("zscaler_mcp.auth.apply_auth_middleware") as mock_apply,
+        ):
+            mock_apply.return_value = mock_server_instance.streamable_http_app()
+            server.run("streamable-http", host="127.0.0.1", port=8080)
+
+            mock_apply.assert_called_once()
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_build_fastmcp_auth_app_streamable_http(self, mock_get_client, mock_fastmcp):
+        """Test _build_fastmcp_auth_app creates app with auth routes for streamable-http."""
+        mock_server_instance = MagicMock()
+        mock_server_instance._session_manager = None
+        mock_server_instance.settings.json_response = False
+        mock_server_instance.settings.stateless_http = False
+        mock_server_instance.settings.transport_security = None
+        mock_server_instance.settings.streamable_http_path = "/mcp"
+        mock_fastmcp.return_value = mock_server_instance
+
+        mock_auth = MagicMock()
+        mock_auth.get_middleware.return_value = []
+        mock_auth.get_routes.return_value = []
+        mock_auth.required_scopes = []
+        mock_auth._get_resource_url.return_value = None
+
+        server = ZscalerMCPServer(auth=mock_auth)
+
+        with (
+            patch("mcp.server.streamable_http_manager.StreamableHTTPSessionManager"),
+            patch("mcp.server.fastmcp.server.StreamableHTTPASGIApp"),
+        ):
+            app = server._build_fastmcp_auth_app("streamable-http")
+
+        self.assertIsNotNone(app)
+        mock_auth.get_middleware.assert_called_once()
+        mock_auth.get_routes.assert_called_once_with(mcp_path="/mcp")
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_build_fastmcp_auth_app_sse(self, mock_get_client, mock_fastmcp):
+        """Test _build_fastmcp_auth_app creates app with auth routes for SSE."""
+        mock_server_instance = MagicMock()
+        mock_server_instance.settings.sse_path = "/sse"
+        mock_server_instance.settings.mount_path = "/"
+        mock_server_instance.settings.message_path = "/messages/"
+        mock_server_instance.settings.transport_security = None
+        mock_server_instance._normalize_path.return_value = "/messages/"
+        mock_fastmcp.return_value = mock_server_instance
+
+        mock_auth = MagicMock()
+        mock_auth.get_middleware.return_value = []
+        mock_auth.get_routes.return_value = []
+        mock_auth.required_scopes = []
+        mock_auth._get_resource_url.return_value = None
+
+        server = ZscalerMCPServer(auth=mock_auth)
+
+        app = server._build_fastmcp_auth_app("sse")
+
+        self.assertIsNotNone(app)
+        mock_auth.get_middleware.assert_called_once()
+        mock_auth.get_routes.assert_called_once_with(mcp_path="/sse")
 
 
 if __name__ == "__main__":

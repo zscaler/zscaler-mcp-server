@@ -10,15 +10,9 @@ def scim_attribute_manager(
     idp_name: Annotated[
         str, Field(description="Required to resolve the IdP and fetch SCIM attributes.")
     ] = None,
-    attribute_id: Annotated[
-        str, Field(description="ID of a specific SCIM attribute.")
-    ] = None,
-    query_params: Annotated[
-        dict, Field(description="Pagination or search filters.")
-    ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    attribute_id: Annotated[str, Field(description="ID of a specific SCIM attribute.")] = None,
+    query_params: Annotated[dict, Field(description="Pagination or search filters.")] = None,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], dict, str]:
     """
@@ -68,9 +62,7 @@ def scim_attribute_manager(
             raise Exception(f"Failed to fetch SCIM attribute by ID: {err}")
         return attr.as_dict()
     else:
-        attributes, _, err = scim_api.list_scim_attributes(
-            idp_id=idp_id, query_params=query_params
-        )
+        attributes, _, err = scim_api.list_scim_attributes(idp_id=idp_id, query_params=query_params)
         if err:
             raise Exception(f"Failed to list SCIM attributes for IdP {idp_name}: {err}")
         return [a.as_dict() for a in attributes]

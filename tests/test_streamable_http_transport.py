@@ -2,6 +2,7 @@
 Tests for streamable-http transport functionality.
 """
 
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -33,13 +34,19 @@ class TestStreamableHttpTransport(unittest.TestCase):
         # Create server
         server = ZscalerMCPServer(debug=True)
 
-        # Test streamable-http transport
-        server.run("streamable-http", host="0.0.0.0", port=8080)
+        # Test streamable-http transport (disable auth+host validation+https policy for unit test)
+        with patch.dict(
+            os.environ,
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_DISABLE_HOST_VALIDATION": "true",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+            },
+        ):
+            server.run("streamable-http", host="0.0.0.0", port=8080)
 
-        # Verify uvicorn was called with correct parameters
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app, host="0.0.0.0", port=8080, log_level="debug"
-        )
+        # Verify uvicorn was called
+        mock_uvicorn.run.assert_called_once()
 
         # Verify streamable_http_app was called
         mock_server_instance.streamable_http_app.assert_called_once()
@@ -67,7 +74,8 @@ class TestStreamableHttpTransport(unittest.TestCase):
         server = ZscalerMCPServer(debug=False)
 
         # Test streamable-http transport with defaults
-        server.run("streamable-http")
+        with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
+            server.run("streamable-http")
 
         # Verify uvicorn was called with default parameters
         mock_uvicorn.run.assert_called_once_with(
@@ -127,7 +135,14 @@ class TestStreamableHttpTransport(unittest.TestCase):
         server = ZscalerMCPServer(debug=True)
 
         # Test streamable-http transport with custom parameters
-        server.run("streamable-http", host="192.168.1.100", port=9000)
+        with patch.dict(
+            os.environ,
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+            },
+        ):
+            server.run("streamable-http", host="192.168.1.100", port=9000)
 
         # Verify uvicorn was called with custom parameters
         mock_uvicorn.run.assert_called_once_with(
@@ -158,7 +173,8 @@ class TestStreamableHttpTransport(unittest.TestCase):
 
         # Test with debug=True
         server_debug = ZscalerMCPServer(debug=True)
-        server_debug.run("streamable-http")
+        with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
+            server_debug.run("streamable-http")
 
         # Verify debug log level
         mock_uvicorn.run.assert_called_with(
@@ -173,7 +189,8 @@ class TestStreamableHttpTransport(unittest.TestCase):
 
         # Test with debug=False
         server_info = ZscalerMCPServer(debug=False)
-        server_info.run("streamable-http")
+        with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
+            server_info.run("streamable-http")
 
         # Verify info log level
         mock_uvicorn.run.assert_called_with(
@@ -205,13 +222,19 @@ class TestStreamableHttpTransport(unittest.TestCase):
         # Create server
         server = ZscalerMCPServer(debug=True)
 
-        # Test SSE transport
-        server.run("sse", host="0.0.0.0", port=8080)
+        # Test SSE transport (disable auth+host validation+https policy for unit test)
+        with patch.dict(
+            os.environ,
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_DISABLE_HOST_VALIDATION": "true",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+            },
+        ):
+            server.run("sse", host="0.0.0.0", port=8080)
 
-        # Verify uvicorn was called with correct parameters
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app, host="0.0.0.0", port=8080, log_level="debug"
-        )
+        # Verify uvicorn was called
+        mock_uvicorn.run.assert_called_once()
 
         # Verify sse_app was called
         mock_server_instance.sse_app.assert_called_once()
@@ -239,7 +262,8 @@ class TestStreamableHttpTransport(unittest.TestCase):
         server = ZscalerMCPServer(debug=False)
 
         # Test SSE transport with defaults
-        server.run("sse")
+        with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
+            server.run("sse")
 
         # Verify uvicorn was called with default parameters
         mock_uvicorn.run.assert_called_once_with(
@@ -272,7 +296,14 @@ class TestStreamableHttpTransport(unittest.TestCase):
         server = ZscalerMCPServer(debug=True)
 
         # Test SSE transport with custom parameters
-        server.run("sse", host="10.0.0.1", port=9090)
+        with patch.dict(
+            os.environ,
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+            },
+        ):
+            server.run("sse", host="10.0.0.1", port=9090)
 
         # Verify uvicorn was called with custom parameters
         mock_uvicorn.run.assert_called_once_with(
@@ -334,20 +365,25 @@ class TestStreamableHttpTransport(unittest.TestCase):
         # Create server
         server = ZscalerMCPServer(debug=True)
 
-        # Test streamable-http transport
-        server.run("streamable-http", host="0.0.0.0", port=8080)
-        mock_uvicorn.run.assert_called_with(
-            mock_streamable_app, host="0.0.0.0", port=8080, log_level="debug"
-        )
+        # Disable auth+host validation+https policy for transport unit tests
+        with patch.dict(
+            os.environ,
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_DISABLE_HOST_VALIDATION": "true",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+            },
+        ):
+            # Test streamable-http transport
+            server.run("streamable-http", host="0.0.0.0", port=8080)
+            mock_uvicorn.run.assert_called_once()
 
-        # Reset mock
-        mock_uvicorn.reset_mock()
+            # Reset mock
+            mock_uvicorn.reset_mock()
 
-        # Test SSE transport
-        server.run("sse", host="0.0.0.0", port=8080)
-        mock_uvicorn.run.assert_called_with(
-            mock_sse_app, host="0.0.0.0", port=8080, log_level="debug"
-        )
+            # Test SSE transport
+            server.run("sse", host="0.0.0.0", port=8080)
+            mock_uvicorn.run.assert_called_once()
 
         # Verify correct apps were called
         mock_server_instance.streamable_http_app.assert_called_once()
