@@ -55,7 +55,7 @@ Server & security env vars:
 - `ZSCALER_MCP_TRANSPORT` — Transport mode: `stdio` (default), `sse`, `streamable-http`
 - `ZSCALER_MCP_HOST`, `ZSCALER_MCP_PORT` — Bind address for HTTP transports (default `127.0.0.1:8000`)
 - `ZSCALER_MCP_AUTH_ENABLED` — Enable MCP client authentication (`true`/`false`, HTTP only)
-- `ZSCALER_MCP_AUTH_MODE` — Auth mode: `api-key`, `jwt`, or `zscaler`
+- `ZSCALER_MCP_AUTH_MODE` — Auth mode: `api-key`, `jwt`, or `zscaler` (or use `auth=` param for OAuth 2.1 with DCR)
 - `ZSCALER_MCP_TLS_CERT_FILE`, `ZSCALER_MCP_TLS_KEY_FILE` — TLS certificate and key paths
 - `ZSCALER_MCP_ALLOW_HTTP` — Allow plaintext HTTP on non-localhost (`true`/`false`)
 - `ZSCALER_MCP_ALLOWED_HOSTS` — Comma-separated allowed Host header values

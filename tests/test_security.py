@@ -470,6 +470,34 @@ class TestLogSecurityPosture:
         assert "=" * 72 in caplog.text
         assert "ZSCALER MCP SERVER" in caplog.text
 
+    def test_fastmcp_auth_overrides_env_auth(self, caplog):
+        """When fastmcp_auth is provided, the banner shows OIDCProxy mode
+        regardless of env-var auth settings."""
+        os.environ["ZSCALER_MCP_AUTH_MODE"] = "jwt"
+        os.environ["ZSCALER_MCP_AUTH_JWKS_URI"] = "https://idp.example.com/keys"
+
+        class _FakeOIDCProxy:
+            pass
+
+        with caplog.at_level(logging.INFO, logger="zscaler_mcp.server"):
+            _log_security_posture(
+                "streamable-http", "http", "127.0.0.1", 8000, {},
+                fastmcp_auth=_FakeOIDCProxy(),
+            )
+        assert "Authentication: ENABLED" in caplog.text
+        assert "OIDCProxy (_FakeOIDCProxy)" in caplog.text
+        assert "OAuth 2.1 + DCR" in caplog.text
+
+    def test_fastmcp_auth_none_falls_back_to_env(self, caplog):
+        """When fastmcp_auth is None, the banner uses env-var auth detection."""
+        os.environ["ZSCALER_MCP_AUTH_API_KEY"] = "sk-test"
+        with caplog.at_level(logging.INFO, logger="zscaler_mcp.server"):
+            _log_security_posture(
+                "streamable-http", "http", "127.0.0.1", 8000, {},
+                fastmcp_auth=None,
+            )
+        assert "api-key (auto-detected)" in caplog.text
+
 
 # ---------------------------------------------------------------------------
 # _check_env_file_security

@@ -445,14 +445,34 @@ class OAuthProxyAuthProvider(AuthProvider):
     This bridges the gap between MCP clients (which expect DCR) and
     enterprise IdPs (which require manual app registration).
 
-    Status: Phase 2 — not yet implemented.
+    **Recommended alternative:** Instead of using ``ZSCALER_MCP_AUTH_MODE=oauth-proxy``
+    (this env-var-based stub), pass a ``fastmcp.server.auth.AuthProvider`` directly
+    to the ``ZscalerMCPServer`` constructor via the ``auth=`` parameter::
+
+        from fastmcp.server.auth.oidc_proxy import OIDCProxy
+
+        auth = OIDCProxy(
+            config_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_id="YOUR_CLIENT_ID",
+            client_secret="YOUR_CLIENT_SECRET",
+            base_url="http://localhost:8000",
+        )
+        server = ZscalerMCPServer(auth=auth)
+
+    The ``auth=`` parameter provides full MCP-spec OAuth 2.1 with DCR using
+    the fastmcp library and is production-ready.
+
+    Status: This env-var stub is deprecated in favour of ``auth=``.
     """
 
     def __init__(self, **kwargs: Any):
         raise NotImplementedError(
-            "OAuth Proxy mode is planned for Phase 2. "
-            "Available modes: 'jwt' (external IdP), 'zscaler' (OneAPI credentials), "
-            "'api-key' (shared secret)."
+            "The 'oauth-proxy' env-var mode is not implemented. "
+            "Use the auth= parameter on ZscalerMCPServer instead:\n\n"
+            "  from fastmcp.server.auth.oidc_proxy import OIDCProxy\n"
+            "  auth = OIDCProxy(config_url=..., client_id=..., client_secret=..., base_url=...)\n"
+            "  server = ZscalerMCPServer(auth=auth)\n\n"
+            "Available env-var modes: 'jwt', 'zscaler', 'api-key'."
         )
 
     async def authenticate(self, authorization: str) -> Tuple[bool, Optional[str]]:

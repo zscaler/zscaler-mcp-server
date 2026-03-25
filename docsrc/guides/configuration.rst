@@ -132,7 +132,7 @@ MCP Client Authentication
 
    MCP Client Authentication applies only to HTTP transports (``sse``, ``streamable-http``). The ``stdio`` transport does not support or require client authentication.
 
-The MCP server supports three authentication modes for controlling which clients can connect:
+The MCP server supports three environment-variable-based authentication modes and a library-level ``auth=`` parameter for controlling which clients can connect:
 
 **1. API Key (Simple Shared Secret)**
 
@@ -165,6 +165,39 @@ Supports Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, and Google Cloud
    export ZSCALER_MCP_AUTH_MODE="zscaler"
 
 Clients authenticate via Basic Auth (``client_id:client_secret``) or custom headers (``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret``). The server validates against Zscaler's ``/oauth2/v1/token`` endpoint.
+
+**4. Library-Level OAuth 2.1 — OIDCProxy (auth= Parameter)**
+
+When using ``ZscalerMCPServer`` as a Python library, pass a ``fastmcp.server.auth.AuthProvider`` (e.g. ``OIDCProxy``) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR) and works with any OIDC-compliant IdP (Auth0, Okta, Azure AD, Keycloak, Google, etc.).
+
+.. code-block:: python
+
+   import os
+   from fastmcp.server.auth.oidc_proxy import OIDCProxy
+   from zscaler_mcp.server import ZscalerMCPServer
+
+   auth = OIDCProxy(
+       config_url="https://your-tenant.auth0.com/.well-known/openid-configuration",
+       client_id=os.getenv("OIDCPROXY_CLIENT_ID"),
+       client_secret=os.getenv("OIDCPROXY_CLIENT_SECRET"),
+       base_url="http://localhost:8000",
+       audience="zscaler-mcp-server",
+   )
+
+   # Allow standard OIDC scopes for Dynamic Client Registration
+   if auth.client_registration_options:
+       auth.client_registration_options.valid_scopes = [
+           "openid", "profile", "email",
+       ]
+
+   server = ZscalerMCPServer(auth=auth)
+   server.run("streamable-http", host="0.0.0.0", port=8000)
+
+When ``auth=`` is provided, the env-var-based auth middleware (``ZSCALER_MCP_AUTH_*``) is automatically skipped. The server exposes standard OAuth endpoints (``/.well-known/*``, ``/register``, ``/authorize``, ``/token``) and MCP clients handle the authorization flow automatically — no static tokens or shared secrets required.
+
+**IdP requirements:** Your Identity Provider must have a **Regular Web Application** (not M2M) with the callback URL ``http://localhost:8000/auth/callback`` registered, and an API/resource server with an identifier matching the ``audience`` value.
+
+See the `Authentication & Deployment Guide <../docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr>`_ for detailed IdP-specific setup instructions, Docker deployment, and troubleshooting.
 
 **Token Generation:**
 

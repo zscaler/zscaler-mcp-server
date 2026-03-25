@@ -296,7 +296,7 @@ The server supports four authentication modes, configured via environment variab
 | **`api-key`** | Simple shared secret — client sends `Authorization: Bearer <key>` | Quick setup, internal environments, development |
 | **`jwt`** | External Identity Provider via JWKS — tokens validated locally using public keys | Enterprise SSO, multi-tenant deployments (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google) |
 | **`zscaler`** | Zscaler OneAPI credential validation — client sends Basic Auth with `client_id:client_secret` | Environments already using Zscaler API credentials |
-| **`oauth-proxy`** | Full MCP spec OAuth 2.1 compliance (Phase 2) | Future MCP protocol-level authentication |
+| **`auth=` param** | Full MCP-spec OAuth 2.1 with DCR via fastmcp `AuthProvider` (e.g. `OIDCProxy`) | Library consumers, programmatic OAuth 2.1, any OIDC provider |
 
 ### Quick Start
 
@@ -388,7 +388,44 @@ ZSCALER_MCP_AUTH_ENABLED=false
 
 Authentication does not apply to `stdio` transport (process isolation provides security).
 
-> **📖 For detailed setup instructions, IdP-specific JWKS configuration (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google), Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting, see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
+### Library-Level OAuth 2.1 (auth= Parameter)
+
+When using `ZscalerMCPServer` as a Python library, you can pass a `fastmcp.server.auth.AuthProvider` instance (such as `OIDCProxy` or `OAuthProxy`) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR), and is the recommended approach for programmatic OAuth integration.
+
+```python
+import os
+from fastmcp.server.auth.oidc_proxy import OIDCProxy
+from zscaler_mcp.server import ZscalerMCPServer
+
+auth = OIDCProxy(
+    config_url="https://your-tenant.auth0.com/.well-known/openid-configuration",
+    client_id=os.getenv("OIDCPROXY_CLIENT_ID"),
+    client_secret=os.getenv("OIDCPROXY_CLIENT_SECRET"),
+    base_url="http://localhost:8000",
+    audience="zscaler-mcp-server",
+)
+
+# Allow standard OIDC scopes for Dynamic Client Registration
+if auth.client_registration_options:
+    auth.client_registration_options.valid_scopes = [
+        "openid", "profile", "email",
+    ]
+
+server = ZscalerMCPServer(auth=auth)
+server.run("streamable-http", host="0.0.0.0", port=8000)
+```
+
+When `auth=` is provided:
+
+- The server delegates authentication entirely to the `AuthProvider`
+- The env-var-based auth middleware (`ZSCALER_MCP_AUTH_*`) is automatically skipped
+- OAuth routes (`.well-known/oauth-protected-resource`, `/register`, `/authorize`, `/token`) are handled by the provider
+- All other security features (TLS, Source IP ACL, host validation) remain active
+- Works with any OIDC-compliant Identity Provider (Auth0, Okta, Azure AD, Keycloak, Google, AWS Cognito, PingOne, etc.)
+
+**IdP requirements:** Your Identity Provider must have a **Regular Web Application** (not M2M) with the callback URL `http://localhost:8000/auth/callback` registered, and an API/resource server with identifier matching the `audience` value.
+
+> **📖 For detailed setup instructions — including [OIDCProxy setup with Auth0/Okta/Azure AD](docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr), IdP-specific JWKS configuration, Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting — see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
 
 ## Supported Tools
 
