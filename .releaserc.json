@@ -7,7 +7,7 @@
       "@semantic-release/exec",
       {
         "prepareCmd": ".github/set-version.sh ${nextRelease.version}",
-        "publishCmd": "uv pip install build twine && python -m build && python -m twine upload dist/* --username __token__ --password $PYPI_API_TOKEN"
+        "publishCmd": "uv pip install twine && uv build && python -m twine upload dist/* --username __token__ --password $PYPI_API_TOKEN"
       }
     ],
     [
