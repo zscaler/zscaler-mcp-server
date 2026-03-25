@@ -210,8 +210,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -219,7 +222,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -275,18 +277,13 @@
 <span class="c1"># READ-ONLY OPERATIONS</span>
 <span class="c1"># ============================================================================</span>
 
+
 <div class="viewcode-block" id="zdx_list_devices">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.active_devices.zdx_list_devices">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zdx_list_devices</span><span class="p">(</span>
-    <span class="n">emails</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by email addresses.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">user_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by user IDs.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">mac_address</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by MAC address.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">emails</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by email addresses.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">user_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by user IDs.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mac_address</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by MAC address.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">private_ipv4</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by private IPv4 address.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -305,9 +302,7 @@
     <span class="n">offset</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Offset string for pagination (next_offset).&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -378,7 +373,7 @@
     <span class="k">if</span> <span class="n">results</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">devices_obj</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the first (and only) Devices object</span>
         <span class="c1"># Access the devices property which contains a list of DeviceDetail objects</span>
-        <span class="n">device_list</span> <span class="o">=</span> <span class="n">devices_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">devices_obj</span><span class="p">,</span> <span class="s1">&#39;devices&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">device_list</span> <span class="o">=</span> <span class="n">devices_obj</span><span class="o">.</span><span class="n">devices</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">devices_obj</span><span class="p">,</span> <span class="s2">&quot;devices&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">device_list</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span></div>
@@ -388,9 +383,7 @@
 <div class="viewcode-block" id="zdx_get_device">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zdx.active_devices.zdx_get_device">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zdx_get_device</span><span class="p">(</span>
-    <span class="n">device_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX device.&quot;</span><span class="p">)</span>
-    <span class="p">],</span>
+    <span class="n">device_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique ID for the ZDX device.&quot;</span><span class="p">)],</span>
     <span class="n">location_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by location ID(s).&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -403,9 +396,7 @@
     <span class="n">since</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of hours to look back (default 2h).&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zdx&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -448,9 +439,7 @@
     <span class="k">if</span> <span class="n">since</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;since&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">since</span>
 
-    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span>
-        <span class="n">device_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span>
-    <span class="p">)</span>
+    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zdx</span><span class="o">.</span><span class="n">devices</span><span class="o">.</span><span class="n">get_device</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device lookup failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -493,7 +482,7 @@
       
     </aside>
   </div>
-</div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>

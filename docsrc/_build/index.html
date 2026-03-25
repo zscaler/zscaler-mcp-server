@@ -212,8 +212,10 @@
 <li class="toctree-l2"><a class="reference internal" href="tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/examples.html">Examples</a></li>
@@ -279,10 +281,6 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p><strong>Disclaimer:</strong> Please refer to our General Support Statement before proceeding with the use of this provider. You can also refer to our troubleshooting guide for guidance on typical problems.</p>
-</div>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p><strong>🚧 Public Preview</strong>: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/issues">GitHub Issues</a> to help shape the final release.</p>
 </div>
 </section>
 <section id="table-of-contents">
@@ -617,6 +615,113 @@
 </table>
 </div>
 </section>
+<section id="easm-features">
+<h2>EASM Features<a class="headerlink" href="#easm-features" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container" id="id8">
+<table class="docutils align-default" id="id8">
+<caption><span class="caption-text">EASM Tools</span><a class="headerlink" href="#id8" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Tool Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_list_organizations</span></code></p></td>
+<td><p>List all EASM organizations configured for the tenant</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_list_findings</span></code></p></td>
+<td><p>List all findings for an organization’s internet-facing assets</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_finding_details</span></code></p></td>
+<td><p>Get detailed information for a specific finding</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_finding_evidence</span></code></p></td>
+<td><p>Get scan evidence attributed to a specific finding</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_finding_scan_output</span></code></p></td>
+<td><p>Get complete scan output for a specific finding</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_list_lookalike_domains</span></code></p></td>
+<td><p>List all lookalike domains detected for an organization</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zeasm_get_lookalike_domain</span></code></p></td>
+<td><p>Get details for a specific lookalike domain</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="z-insights-features">
+<h2>Z-Insights Features<a class="headerlink" href="#z-insights-features" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container" id="id9">
+<table class="docutils align-default" id="id9">
+<caption><span class="caption-text">Z-Insights Tools</span><a class="headerlink" href="#id9" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Tool Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_web_traffic_by_location</span></code></p></td>
+<td><p>Get web traffic analytics grouped by location</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_web_traffic_no_grouping</span></code></p></td>
+<td><p>Get overall web traffic volume metrics</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_web_protocols</span></code></p></td>
+<td><p>Get web traffic by protocol (HTTP, HTTPS, SSL)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_threat_super_categories</span></code></p></td>
+<td><p>Get threat super categories (malware, phishing, spyware)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_threat_class</span></code></p></td>
+<td><p>Get detailed threat class breakdown</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents</span></code></p></td>
+<td><p>Get cybersecurity incidents by category</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_by_location</span></code></p></td>
+<td><p>Get cybersecurity incidents grouped by location</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_daily</span></code></p></td>
+<td><p>Get daily cybersecurity incident trends</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_by_threat_and_app</span></code></p></td>
+<td><p>Get incidents correlated by threat and application</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_by_action</span></code></p></td>
+<td><p>Get Zero Trust Firewall traffic by action (allow/block)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_by_location</span></code></p></td>
+<td><p>Get firewall traffic grouped by location</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_network_services</span></code></p></td>
+<td><p>Get firewall network service usage</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_casb_app_report</span></code></p></td>
+<td><p>Get CASB SaaS application usage report</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_shadow_it_apps</span></code></p></td>
+<td><p>Get discovered shadow IT applications with risk scores</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_shadow_it_summary</span></code></p></td>
+<td><p>Get shadow IT summary statistics and groupings</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_iot_device_stats</span></code></p></td>
+<td><p>Get IoT device statistics and classifications</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="installation-setup">
 <h1>Installation &amp; Setup<a class="headerlink" href="#installation-setup" title="Link to this heading">¶</a></h1>
@@ -763,10 +868,14 @@ zscaler-mcp
 <section id="supported-agents">
 <h2>Supported Agents<a class="headerlink" href="#supported-agents" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://claude.ai/">Claude</a></p></li>
-<li><p><a class="reference external" href="https://cursor.so/">Cursor</a></p></li>
-<li><p><a class="reference external" href="https://code.visualstudio.com/download">VS Code</a> or <a class="reference external" href="https://code.visualstudio.com/insiders">VS Code Insiders</a></p></li>
+<li><p><a class="reference external" href="https://claude.ai/">Claude Desktop</a> — Extension or manual MCP configuration</p></li>
+<li><p><a class="reference external" href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> — Native plugin (<code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">plugin</span> <span class="pre">install</span> <span class="pre">zscaler</span></code>)</p></li>
+<li><p><a class="reference external" href="https://cursor.so/">Cursor</a> — Native plugin with guided skills</p></li>
+<li><p><a class="reference external" href="https://github.com/google/gemini-cli">Gemini CLI</a> — Extension with contextual tool guidance</p></li>
+<li><p><a class="reference external" href="https://kiro.dev">Kiro IDE</a> — Power with service-specific steering files</p></li>
+<li><p><a class="reference external" href="https://code.visualstudio.com/download">VS Code</a> + GitHub Copilot — MCP configuration via Agent Mode</p></li>
 </ul>
+<p>See <a class="reference internal" href="integrations/index.html#platform-integrations"><span class="std std-ref">Platform Integrations</span></a> for detailed setup instructions for each platform.</p>
 </section>
 </section>
 <section id="zscaler-api-credentials-authentication">
@@ -791,9 +900,9 @@ zscaler-mcp
 <p>Do not commit <cite>.env</cite> to source control. Add it to your <cite>.gitignore</cite>.</p>
 </div>
 <p>You can provide credentials via the <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code> environment variables, representing your Zidentity OneAPI credentials <code class="docutils literal notranslate"><span class="pre">clientId</span></code>, <code class="docutils literal notranslate"><span class="pre">clientSecret</span></code>, <code class="docutils literal notranslate"><span class="pre">vanityDomain</span></code> and <code class="docutils literal notranslate"><span class="pre">cloud</span></code> respectively.</p>
-<div class="table-wrapper colwidths-given docutils container" id="id8">
-<table class="docutils align-default" id="id8">
-<caption><span class="caption-text">OneAPI Authentication Parameters</span><a class="headerlink" href="#id8" title="Link to this table">¶</a></caption>
+<div class="table-wrapper colwidths-given docutils container" id="id10">
+<table class="docutils align-default" id="id10">
+<caption><span class="caption-text">OneAPI Authentication Parameters</span><a class="headerlink" href="#id10" title="Link to this table">¶</a></caption>
 <colgroup>
 <col style="width: 20.0%" />
 <col style="width: 40.0%" />
@@ -837,35 +946,35 @@ zscaler-mcp
 <section id="using-pre-built-image-recommended">
 <h2>Using Pre-built Image (Recommended)<a class="headerlink" href="#using-pre-built-image-recommended" title="Link to this heading">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull the latest pre-built image</span>
-docker<span class="w"> </span>pull<span class="w"> </span>quay.io/zscaler/zscaler-mcp-server:latest
+docker<span class="w"> </span>pull<span class="w"> </span>zscaler/zscaler-mcp-server:latest
 
 <span class="c1"># Run with .env file (recommended)</span>
-docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span>quay.io/zscaler/zscaler-mcp-server:latest
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span>zscaler/zscaler-mcp-server:latest
 
 <span class="c1"># Run with .env file and SSE transport</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 
 <span class="c1"># Run with .env file and streamable-http transport</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 
 <span class="c1"># Run with .env file and custom port</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
 
 <span class="c1"># Run with .env file and specific services</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--services<span class="w"> </span>zia,zpa,zdx
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--services<span class="w"> </span>zia,zpa,zdx
 
 <span class="c1"># Use a specific version instead of latest</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:1.2.3
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest:1.2.3
 
 <span class="c1"># Alternative: Individual environment variables</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span>your_client_id<span class="w"> </span>-e<span class="w"> </span><span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span>your_secret<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span>your_customer_id<span class="w"> </span>-e<span class="w"> </span><span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span>your_vanity_domain<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest
 </pre></div>
 </div>
 </section>
@@ -947,7 +1056,7 @@ docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </
 <span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--rm&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/full/path/to/.env&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;quay.io/zscaler/zscaler-mcp-server:latest&quot;</span>
+<span class="w">        </span><span class="s2">&quot;zscaler/zscaler-mcp-server:latest&quot;</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>

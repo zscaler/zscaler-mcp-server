@@ -9,13 +9,20 @@ Prerequisites
 Before you begin, ensure you have:
 
 - Python 3.11 or higher installed
+- `uv <https://docs.astral.sh/uv/>`__ installed (recommended) or pip
 - Access to Zscaler APIs (OneAPI or Legacy credentials)
 - Basic understanding of Model Context Protocol (MCP)
 
 Installation
 ------------
 
-Install the Zscaler Integrations MCP Server using pip:
+Install using uv (recommended):
+
+.. code-block:: bash
+
+   uv tool install zscaler-mcp
+
+Or install using pip:
 
 .. code-block:: bash
 
@@ -32,52 +39,41 @@ Or install from source:
 Configuration
 -------------
 
-The MCP server requires Zscaler API credentials to function. You can provide these in several ways:
+The MCP server requires Zscaler API credentials to function. Create a ``.env`` file with your credentials:
 
-Environment Variables
-~~~~~~~~~~~~~~~~~~~~~
-
-Set the following environment variables for OneAPI authentication:
+OneAPI Authentication (Recommended)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   export ZSCALER_CLIENT_ID="your_client_id"
-   export ZSCALER_CLIENT_SECRET="your_client_secret"
-   export ZSCALER_VANITY_DOMAIN="your_vanity_domain"
-   export ZSCALER_CLOUD="zscaler"  # Optional, defaults to zscaler
+   ZSCALER_CLIENT_ID="your_client_id"
+   ZSCALER_CLIENT_SECRET="your_client_secret"
+   ZSCALER_CUSTOMER_ID="your_customer_id"
+   ZSCALER_VANITY_DOMAIN="your_vanity_domain"
 
-For Legacy API authentication, set service-specific variables:
+Legacy API Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
+
+   ZSCALER_USE_LEGACY="true"
 
    # ZIA Legacy
-   export ZIA_USERNAME="your_username"
-   export ZIA_PASSWORD="your_password"
-   export ZIA_API_KEY="your_api_key"
-   export ZIA_CLOUD="zscaler"
+   ZIA_USERNAME="your_username"
+   ZIA_PASSWORD="your_password"
+   ZIA_API_KEY="your_api_key"
+   ZIA_CLOUD="zscalertwo"
 
    # ZPA Legacy
-   export ZPA_CLIENT_ID="your_client_id"
-   export ZPA_CLIENT_SECRET="your_client_secret"
-   export ZPA_CUSTOMER_ID="your_customer_id"
-   export ZPA_CLOUD="PRODUCTION"
+   ZPA_CLIENT_ID="your_client_id"
+   ZPA_CLIENT_SECRET="your_client_secret"
+   ZPA_CUSTOMER_ID="your_customer_id"
+   ZPA_CLOUD="PRODUCTION"
 
-Configuration File
-~~~~~~~~~~~~~~~~~~
+.. warning::
+   Do not commit ``.env`` to source control. Add it to your ``.gitignore``.
 
-Create a configuration file (``zscaler.yaml``) in your home directory:
-
-.. code-block:: yaml
-
-   zscaler:
-     client:
-       clientId: "your_client_id"
-       clientSecret: "your_client_secret"
-       vanityDomain: "your_vanity_domain"
-       cloud: "zscaler"
-       logging:
-         enabled: true
-         verbose: false
+For the full list of environment variables (including MCP Client Authentication and Network Security), see the :ref:`configuration-guide`.
 
 Running the Server
 ------------------
@@ -86,73 +82,102 @@ Start the MCP server using the command line:
 
 .. code-block:: bash
 
-   zscaler-mcp-server
+   # Default (stdio transport)
+   zscaler-mcp
 
-Or run it programmatically:
+   # With SSE transport
+   zscaler-mcp --transport sse
 
-.. code-block:: python
+   # With streamable-http transport
+   zscaler-mcp --transport streamable-http
 
-   from zscaler_mcp.server import ZscalerMCPServer
+   # With specific services
+   zscaler-mcp --services zia,zpa,zdx
 
-   server = ZscalerMCPServer()
-   server.run()
+   # With write operations enabled
+   zscaler-mcp --enable-write-tools --write-tools "zpa_create_*,zia_update_*"
 
-The server will start and listen for MCP protocol connections.
+For all available options:
+
+.. code-block:: bash
+
+   zscaler-mcp --help
 
 Connecting with AI Assistants
 -----------------------------
 
-Claude Desktop
-~~~~~~~~~~~~~~
+The Zscaler MCP Server integrates with multiple AI development platforms. Native plugin/extension support is available for:
 
-Add the following to your Claude Desktop configuration:
+- **Claude Code** — Native plugin with marketplace support (``claude plugin install zscaler``)
+- **Claude Desktop** — Manual MCP configuration or one-click extension install
+- **Cursor** — Native plugin with guided skills
+- **Gemini CLI** — Extension with contextual tool guidance
+- **Kiro IDE** — Power with service-specific steering files
+- **VS Code + GitHub Copilot** — MCP configuration via Agent Mode
+
+For detailed setup instructions for each platform, see the :ref:`platform-integrations` page.
+
+Quick Configuration (Any MCP Client)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Using ``uvx`` (recommended):
 
 .. code-block:: json
 
    {
      "mcpServers": {
-       "zscaler": {
-         "command": "zscaler-mcp-server",
-         "args": []
+       "zscaler-mcp-server": {
+         "command": "uvx",
+         "args": ["--env-file", "/absolute/path/to/.env", "zscaler-mcp"]
        }
      }
    }
 
-Cursor
-~~~~~~
+Using Docker:
 
-Configure Cursor to use the MCP server by adding it to your MCP configuration file.
+.. code-block:: json
+
+   {
+     "mcpServers": {
+       "zscaler-mcp-server": {
+         "command": "docker",
+         "args": [
+           "run", "-i", "--rm",
+           "--env-file", "/absolute/path/to/.env",
+           "zscaler/zscaler-mcp-server:latest"
+         ]
+       }
+     }
+   }
 
 Testing the Connection
 ----------------------
 
-Once the server is running, you can test it by asking your AI assistant to:
-
-- List available Zscaler tools
-- Get information about your Zscaler configuration
-- Execute a simple query (e.g., list users, devices, etc.)
-
-Example queries:
+Once the server is running, you can test it by asking your AI assistant:
 
 - "What Zscaler tools are available?"
-- "List all ZIA admin roles"
+- "List my ZPA application segments"
+- "List all ZIA rule labels"
 - "Show me ZCC device information"
-- "Get ZPA application segments"
+- "List my ZDX applications"
 
 Next Steps
 ----------
 
 - Explore the :doc:`tools documentation <tools/index>` to see all available tools
-- Check out the examples guide for more complex usage scenarios
-- Refer to the troubleshooting guide if you encounter issues
+- Review the :ref:`configuration-guide` for authentication, security, and advanced options
+- Check out the :doc:`examples guide <guides/examples>` for service-specific prompts
+- See :ref:`platform-integrations` for native IDE/editor integrations
+- Refer to the :doc:`troubleshooting guide <guides/troubleshooting>` if you encounter issues
 
 Troubleshooting
 ---------------
 
 Common issues and solutions:
 
-1. **Authentication errors**: Verify your credentials and cloud environment
-2. **Connection refused**: Ensure the server is running and accessible
-3. **Tool not found**: Check that the service is properly configured
+1. **"Command not found: zscaler-mcp"** — Install ``uv``: ``curl -LsSf https://astral.sh/uv/install.sh | sh`` then ``uv tool install zscaler-mcp``
+2. **Authentication errors** — Verify your credentials and cloud environment in ``.env``
+3. **Connection refused** — Ensure the server is running and accessible; check ``ZSCALER_MCP_ALLOW_HTTP`` if connecting over HTTP
+4. **Tools not appearing** — Check that the service is enabled (``ZSCALER_MCP_SERVICES``) and write tools are explicitly allowed (``--enable-write-tools`` + ``--write-tools``)
 
-For more detailed troubleshooting, see the troubleshooting guide.
+For more detailed troubleshooting, see the :doc:`troubleshooting guide <guides/troubleshooting>`.

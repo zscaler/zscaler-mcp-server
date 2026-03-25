@@ -11,9 +11,6 @@ Support Disclaimer
 .. warning::
    **Disclaimer:** Please refer to our General Support Statement before proceeding with the use of this provider. You can also refer to our troubleshooting guide for guidance on typical problems.
 
-.. important::
-   **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through `GitHub Issues <https://github.com/zscaler/zscaler-mcp-server/issues>`__ to help shape the final release.
-
 Table of Contents
 -----------------
 
@@ -539,35 +536,35 @@ Using Pre-built Image (Recommended)
 .. code-block:: bash
 
    # Pull the latest pre-built image
-   docker pull quay.io/zscaler/zscaler-mcp-server:latest
+   docker pull zscaler/zscaler-mcp-server:latest
 
    # Run with .env file (recommended)
-   docker run --rm --env-file /path/to/.env quay.io/zscaler/zscaler-mcp-server:latest
+   docker run --rm --env-file /path/to/.env zscaler/zscaler-mcp-server:latest
 
    # Run with .env file and SSE transport
    docker run --rm -p 8000:8000 --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:latest --transport sse --host 0.0.0.0
+     zscaler/zscaler-mcp-server:latest --transport sse --host 0.0.0.0
 
    # Run with .env file and streamable-http transport
    docker run --rm -p 8000:8000 --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
+     zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
 
    # Run with .env file and custom port
    docker run --rm -p 8080:8080 --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8080
+     zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8080
 
    # Run with .env file and specific services
    docker run --rm --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:latest --services zia,zpa,zdx
+     zscaler/zscaler-mcp-server:latest --services zia,zpa,zdx
 
    # Use a specific version instead of latest
    docker run --rm --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:1.2.3
+     zscaler/zscaler-mcp-server:latest:1.2.3
 
    # Alternative: Individual environment variables
    docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
      -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain \
-     quay.io/zscaler/zscaler-mcp-server:latest
+     zscaler/zscaler-mcp-server:latest
 
 Building Locally (Development)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -655,7 +652,7 @@ Docker Version
          "args": [
            "run", "-i", "--rm",
            "--env-file", "/full/path/to/.env",
-           "quay.io/zscaler/zscaler-mcp-server:latest"
+           "zscaler/zscaler-mcp-server:latest"
          ]
        }
      }

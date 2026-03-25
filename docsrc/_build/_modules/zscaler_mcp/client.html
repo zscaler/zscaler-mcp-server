@@ -211,8 +211,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
@@ -310,36 +312,22 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 
     <span class="n">load_dotenv</span><span class="p">()</span>
-    
+
     <span class="c1"># Get user agent comment from environment variable if not explicitly provided</span>
     <span class="k">if</span> <span class="n">user_agent_comment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">user_agent_comment</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_USER_AGENT_COMMENT&quot;</span><span class="p">)</span>
 
     <span class="c1"># ✅ Defensive fallback logic</span>
-    <span class="n">client_id</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">client_id</span> <span class="k">if</span> <span class="n">client_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_ID&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
+    <span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span> <span class="k">if</span> <span class="n">client_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_ID&quot;</span><span class="p">)</span>
     <span class="n">client_secret</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">client_secret</span>
-        <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
-        <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">)</span>
+        <span class="n">client_secret</span> <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">)</span>
     <span class="p">)</span>
-    <span class="n">customer_id</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">customer_id</span>
-        <span class="k">if</span> <span class="n">customer_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
-        <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CUSTOMER_ID&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
+    <span class="n">customer_id</span> <span class="o">=</span> <span class="n">customer_id</span> <span class="k">if</span> <span class="n">customer_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CUSTOMER_ID&quot;</span><span class="p">)</span>
     <span class="n">vanity_domain</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">vanity_domain</span>
-        <span class="k">if</span> <span class="n">vanity_domain</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
-        <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">)</span>
+        <span class="n">vanity_domain</span> <span class="k">if</span> <span class="n">vanity_domain</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="n">cloud</span> <span class="o">=</span> <span class="n">cloud</span> <span class="k">if</span> <span class="n">cloud</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLOUD&quot;</span><span class="p">)</span>
-    <span class="n">private_key</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">private_key</span>
-        <span class="k">if</span> <span class="n">private_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
-        <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_PRIVATE_KEY&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
+    <span class="n">private_key</span> <span class="o">=</span> <span class="n">private_key</span> <span class="k">if</span> <span class="n">private_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_PRIVATE_KEY&quot;</span><span class="p">)</span>
 
     <span class="c1"># ✅ Environment variable fallback for use_legacy</span>
     <span class="c1"># Check environment variable if use_legacy is not explicitly set to True</span>
@@ -352,7 +340,9 @@
     <span class="k">if</span> <span class="n">use_legacy</span><span class="p">:</span>
         <span class="c1"># ZPA legacy credentials</span>
         <span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span> <span class="k">if</span> <span class="n">client_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CLIENT_ID&quot;</span><span class="p">)</span>
-        <span class="n">client_secret</span> <span class="o">=</span> <span class="n">client_secret</span> <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CLIENT_SECRET&quot;</span><span class="p">)</span>
+        <span class="n">client_secret</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">client_secret</span> <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CLIENT_SECRET&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="n">customer_id</span> <span class="o">=</span> <span class="n">customer_id</span> <span class="k">if</span> <span class="n">customer_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CUSTOMER_ID&quot;</span><span class="p">)</span>
 
         <span class="c1"># ZIA legacy credentials</span>
@@ -364,10 +354,6 @@
         <span class="n">username</span> <span class="o">=</span> <span class="n">username</span> <span class="k">if</span> <span class="n">username</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_USERNAME&quot;</span><span class="p">)</span>
         <span class="n">password</span> <span class="o">=</span> <span class="n">password</span> <span class="k">if</span> <span class="n">password</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_PASSWORD&quot;</span><span class="p">)</span>
         <span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="k">if</span> <span class="n">api_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_API_KEY&quot;</span><span class="p">)</span>
-
-        <span class="c1"># ZCC legacy credentials</span>
-        <span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="k">if</span> <span class="n">api_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLIENT_ID&quot;</span><span class="p">)</span>
-        <span class="n">secret_key</span> <span class="o">=</span> <span class="n">secret_key</span> <span class="k">if</span> <span class="n">secret_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLIENT_ID&quot;</span><span class="p">)</span>
 
         <span class="c1"># ZDX legacy credentials</span>
         <span class="n">key_id</span> <span class="o">=</span> <span class="n">key_id</span> <span class="k">if</span> <span class="n">key_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZDX_CLIENT_ID&quot;</span><span class="p">)</span>
@@ -435,7 +421,7 @@
 <span class="sd">    Notes:</span>
 <span class="sd">        - If `use_legacy=True`, do **not** set or expect `vanity_domain`. It is required only for OneAPI.</span>
 <span class="sd">        - Each legacy service requires different credential parameters:</span>
-<span class="sd">            • LegacyZCCClient: key_id, secret_key, cloud</span>
+<span class="sd">            • LegacyZCCClient: api_key (ZCC_CLIENT_ID), secret_key (ZCC_CLIENT_SECRET), cloud</span>
 <span class="sd">            • LegacyZDXClient: api_key, key_secret, cloud</span>
 <span class="sd">            • LegacyZPAClient: client_id, client_secret, customer_id, cloud</span>
 <span class="sd">            • LegacyZIAClient: username, password, api_key, cloud</span>
@@ -466,6 +452,8 @@
             <span class="k">return</span> <span class="n">LegacyZPAClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zcc&quot;</span><span class="p">:</span>
+            <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLIENT_ID&quot;</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
+            <span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLIENT_SECRET&quot;</span><span class="p">,</span> <span class="n">secret_key</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">secret_key</span><span class="p">,</span> <span class="n">cloud</span><span class="p">]):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing required credentials for LegacyZCCClient.&quot;</span><span class="p">)</span>
             <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
@@ -522,14 +510,12 @@
         <span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">:</span> <span class="n">client_secret</span><span class="p">,</span>
         <span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">:</span> <span class="n">vanity_domain</span><span class="p">,</span>
     <span class="p">}</span>
-    
+
     <span class="c1"># Add customer_id requirement only for ZPA</span>
     <span class="k">if</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zpa&quot;</span><span class="p">:</span>
         <span class="n">auth_fields</span><span class="p">[</span><span class="s2">&quot;ZSCALER_CUSTOMER_ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">customer_id</span>
 
-    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">auth_fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">value</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-    <span class="p">]</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">auth_fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">value</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">())]</span>
     <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Zscaler SDK failed to initialize due to missing configuration values: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">. &quot;</span>
@@ -537,9 +523,7 @@
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">client_secret</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">private_key</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;You must provide either client_secret or private_key for OneAPI client.&quot;</span>
-        <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide either client_secret or private_key for OneAPI client.&quot;</span><span class="p">)</span>
 
     <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;clientId&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>

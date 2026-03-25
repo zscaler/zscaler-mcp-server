@@ -776,35 +776,35 @@ zscaler-mcp
 <section id="using-pre-built-image-recommended">
 <h2>Using Pre-built Image (Recommended)<a class="headerlink" href="#using-pre-built-image-recommended" title="Link to this heading">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull the latest pre-built image</span>
-docker<span class="w"> </span>pull<span class="w"> </span>quay.io/zscaler/zscaler-mcp-server:latest
+docker<span class="w"> </span>pull<span class="w"> </span>zscaler/zscaler-mcp-server:latest
 
 <span class="c1"># Run with .env file (recommended)</span>
-docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span>quay.io/zscaler/zscaler-mcp-server:latest
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span>zscaler/zscaler-mcp-server:latest
 
 <span class="c1"># Run with .env file and SSE transport</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 
 <span class="c1"># Run with .env file and streamable-http transport</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
 
 <span class="c1"># Run with .env file and custom port</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
 
 <span class="c1"># Run with .env file and specific services</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest<span class="w"> </span>--services<span class="w"> </span>zia,zpa,zdx
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--services<span class="w"> </span>zia,zpa,zdx
 
 <span class="c1"># Use a specific version instead of latest</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:1.2.3
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest:1.2.3
 
 <span class="c1"># Alternative: Individual environment variables</span>
 docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span>your_client_id<span class="w"> </span>-e<span class="w"> </span><span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span>your_secret<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span>your_customer_id<span class="w"> </span>-e<span class="w"> </span><span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span>your_vanity_domain<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>quay.io/zscaler/zscaler-mcp-server:latest
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest
 </pre></div>
 </div>
 </section>
@@ -886,7 +886,7 @@ docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </
 <span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--rm&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/full/path/to/.env&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;quay.io/zscaler/zscaler-mcp-server:latest&quot;</span>
+<span class="w">        </span><span class="s2">&quot;zscaler/zscaler-mcp-server:latest&quot;</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>

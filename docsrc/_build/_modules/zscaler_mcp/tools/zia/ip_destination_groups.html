@@ -211,8 +211,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -276,17 +278,21 @@
 <span class="c1"># READ-ONLY OPERATIONS</span>
 <span class="c1"># =============================================================================</span>
 
+
 <div class="viewcode-block" id="zia_list_ip_destination_groups">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.ip_destination_groups.zia_list_ip_destination_groups">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_list_ip_destination_groups</span><span class="p">(</span>
-    <span class="n">exclude_type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filter to exclude groups of type DSTN_IP, DSTN_FQDN, etc.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">exclude_type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional filter to exclude groups of type DSTN_IP, DSTN_FQDN, etc.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List ZIA IP destination groups with optional filtering.&quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">zia</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_firewall</span>
-    
+
     <span class="n">query_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;exclude_type&quot;</span><span class="p">:</span> <span class="n">exclude_type</span><span class="p">}</span> <span class="k">if</span> <span class="n">exclude_type</span> <span class="k">else</span> <span class="p">{}</span>
     <span class="n">groups</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">list_ip_destination_groups</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
@@ -298,17 +304,19 @@
 <div class="viewcode-block" id="zia_get_ip_destination_group">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.ip_destination_groups.zia_get_ip_destination_group">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_get_ip_destination_group</span><span class="p">(</span>
-    <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group ID for the IP destination group.&quot;</span><span class="p">)],</span>
+    <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group ID for the IP destination group.&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a specific ZIA IP destination group by ID.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">group_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;group_id is required&quot;</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">zia</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_firewall</span>
-    
+
     <span class="n">group</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">get_ip_destination_group</span><span class="p">(</span><span class="n">group_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to retrieve IP destination group </span><span class="si">{</span><span class="n">group_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -320,30 +328,43 @@
 <span class="c1"># WRITE OPERATIONS</span>
 <span class="c1"># =============================================================================</span>
 
+
 <div class="viewcode-block" id="zia_create_ip_destination_group">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.ip_destination_groups.zia_create_ip_destination_group">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_create_ip_destination_group</span><span class="p">(</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Name of the destination group (required).&quot;</span><span class="p">)],</span>
-    <span class="nb">type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group type: DSTN_IP, DSTN_FQDN, DSTN_DOMAIN, or DSTN_OTHER (required).&quot;</span><span class="p">)],</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group type: DSTN_IP, DSTN_FQDN, DSTN_DOMAIN, or DSTN_OTHER (required).&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Description of the group.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">addresses</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of IPs/FQDNs. Required for DSTN_IP or DSTN_FQDN types.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">countries</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of country codes (e.g., COUNTRY_CA). Optional for DSTN_OTHER.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">ip_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of URL categories. Optional for DSTN_OTHER.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">addresses</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of IPs/FQDNs. Required for DSTN_IP or DSTN_FQDN types.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">countries</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of country codes (e.g., COUNTRY_CA). Optional for DSTN_OTHER.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ip_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of URL categories. Optional for DSTN_OTHER.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new ZIA IP destination group.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name and type are required&quot;</span><span class="p">)</span>
-    
+
     <span class="c1"># Normalize list fields</span>
     <span class="n">addresses</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
     <span class="n">countries</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">countries</span><span class="p">)</span>
     <span class="n">ip_categories</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">ip_categories</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">zia</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_firewall</span>
-    
+
     <span class="n">group</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">add_ip_destination_group</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
@@ -363,26 +384,35 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_update_ip_destination_group</span><span class="p">(</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group ID (required).&quot;</span><span class="p">)],</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Name of the destination group (required).&quot;</span><span class="p">)],</span>
-    <span class="nb">type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group type: DSTN_IP, DSTN_FQDN, DSTN_DOMAIN, or DSTN_OTHER (required).&quot;</span><span class="p">)],</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group type: DSTN_IP, DSTN_FQDN, DSTN_DOMAIN, or DSTN_OTHER (required).&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Description of the group.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">addresses</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of IPs/FQDNs.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">countries</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of country codes.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">ip_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of URL categories.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">addresses</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of IPs/FQDNs.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">countries</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of country codes.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ip_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of URL categories.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an existing ZIA IP destination group.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">group_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;group_id, name, and type are required for update&quot;</span><span class="p">)</span>
-    
+
     <span class="c1"># Normalize list fields</span>
     <span class="n">addresses</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">addresses</span><span class="p">)</span>
     <span class="n">countries</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">countries</span><span class="p">)</span>
     <span class="n">ip_categories</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">ip_categories</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">zia</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_firewall</span>
-    
+
     <span class="n">group</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">update_ip_destination_group</span><span class="p">(</span>
         <span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
@@ -404,29 +434,24 @@
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group ID (required).&quot;</span><span class="p">)],</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
-    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a ZIA IP destination group.&quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.elicitation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_confirmation</span><span class="p">,</span> <span class="n">extract_confirmed_from_kwargs</span>
-    
+
     <span class="c1"># Extract confirmation from kwargs (hidden from tool schema)</span>
     <span class="n">confirmed</span> <span class="o">=</span> <span class="n">extract_confirmed_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-    
-    <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span>
-        <span class="s2">&quot;zia_delete_ip_destination_group&quot;</span><span class="p">,</span>
-        <span class="n">confirmed</span><span class="p">,</span>
-        <span class="p">{}</span>
-    <span class="p">)</span>
+
+    <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span><span class="s2">&quot;zia_delete_ip_destination_group&quot;</span><span class="p">,</span> <span class="n">confirmed</span><span class="p">,</span> <span class="p">{})</span>
     <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">confirmation_check</span>
-    
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">group_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;group_id is required for delete&quot;</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">zia</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_firewall</span>
-    
+
     <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">delete_ip_destination_group</span><span class="p">(</span><span class="n">group_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to delete IP destination group </span><span class="si">{</span><span class="n">group_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>

@@ -18,6 +18,7 @@ The tools are organized into the following categories:
    ztw/index
    zidentity/index
    easm/index
+   z-insights/index
 
 Tool Types
 ----------

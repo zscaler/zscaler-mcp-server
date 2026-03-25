@@ -78,7 +78,7 @@ Replace the `mcpServers` block with Docker:
       "args": [
         "run", "-i", "--rm",
         "--env-file", "${extensionPath}${pathSeparator}.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }

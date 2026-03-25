@@ -144,7 +144,7 @@ Using Docker:
          "args": [
            "run", "-i", "--rm",
            "--env-file", "/absolute/path/to/.env",
-           "quay.io/zscaler/zscaler-mcp-server:latest"
+           "zscaler/zscaler-mcp-server:latest"
          ]
        }
      }

@@ -212,8 +212,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
@@ -508,6 +510,14 @@ Also flattens malformed entryValues and ensures nothing is dropped.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.common.logging.log_security_warning">
+<span class="sig-name descname"><span class="pre">log_security_warning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/common/logging.html#log_security_warning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.common.logging.log_security_warning" title="Link to this definition">¶</a></dt>
+<dd><p>Log a prominent security warning banner.</p>
+<p>Used across modules (server.py, auth.py) to display standardized
+security warnings when protective features are disabled.</p>
+</dd></dl>
+
 </section>
 <section id="configuration-utilities">
 <h3>Configuration Utilities<a class="headerlink" href="#configuration-utilities" title="Link to this heading">¶</a></h3>
@@ -603,6 +613,7 @@ Also flattens malformed entryValues and ensures nothing is dropped.</p>
 <li><a class="reference internal" href="#module-zscaler_mcp.common.logging">Logging Utilities</a><ul>
 <li><a class="reference internal" href="#zscaler_mcp.common.logging.configure_logging"><code class="docutils literal notranslate"><span class="pre">configure_logging()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.common.logging.get_logger"><code class="docutils literal notranslate"><span class="pre">get_logger()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.common.logging.log_security_warning"><code class="docutils literal notranslate"><span class="pre">log_security_warning()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#configuration-utilities">Configuration Utilities</a></li>

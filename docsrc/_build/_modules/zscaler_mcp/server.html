@@ -210,8 +210,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
@@ -219,7 +222,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -280,19 +282,22 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.transport_security</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransportSecuritySettings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolAnnotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_logging</span><span class="p">,</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_logging</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">log_security_warning</span>
 
 <span class="c1"># Import version from package metadata</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+
     <span class="n">__version__</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">)</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="c1"># Fallback for Python &lt; 3.8</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">importlib_metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+
         <span class="n">__version__</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="c1"># Final fallback - read from pyproject.toml or use a default</span>
@@ -302,6 +307,369 @@
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))))</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_tls_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build TLS/SSL kwargs for uvicorn from environment variables.</span>
+
+<span class="sd">    Env vars:</span>
+<span class="sd">        ZSCALER_MCP_TLS_CERTFILE          - Path to PEM certificate file</span>
+<span class="sd">        ZSCALER_MCP_TLS_KEYFILE           - Path to PEM private key file</span>
+<span class="sd">        ZSCALER_MCP_TLS_KEYFILE_PASSWORD  - Password for encrypted key (optional)</span>
+<span class="sd">        ZSCALER_MCP_TLS_CA_CERTS          - CA bundle for client cert validation (optional)</span>
+
+<span class="sd">    Returns empty dict if TLS is not configured.</span>
+<span class="sd">    Raises SystemExit if configuration is incomplete.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">certfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_TLS_CERTFILE&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">keyfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_TLS_KEYFILE&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">certfile</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">keyfile</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">certfile</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">keyfile</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+            <span class="s2">&quot;ERROR: Incomplete TLS configuration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Both ZSCALER_MCP_TLS_CERTFILE and ZSCALER_MCP_TLS_KEYFILE must be set.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  ZSCALER_MCP_TLS_CERTFILE = </span><span class="si">{</span><span class="s1">&#39;(set)&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">certfile</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;(missing)&#39;</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;  ZSCALER_MCP_TLS_KEYFILE  = </span><span class="si">{</span><span class="s1">&#39;(set)&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">keyfile</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;(missing)&#39;</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">certfile</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ERROR: TLS certificate file not found: </span><span class="si">{</span><span class="n">certfile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">keyfile</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ERROR: TLS key file not found: </span><span class="si">{</span><span class="n">keyfile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">tls_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;ssl_certfile&quot;</span><span class="p">:</span> <span class="n">certfile</span><span class="p">,</span>
+        <span class="s2">&quot;ssl_keyfile&quot;</span><span class="p">:</span> <span class="n">keyfile</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">password</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_TLS_KEYFILE_PASSWORD&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+        <span class="n">tls_kwargs</span><span class="p">[</span><span class="s2">&quot;ssl_keyfile_password&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">password</span>
+
+    <span class="n">ca_certs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_TLS_CA_CERTS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ca_certs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">ca_certs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ERROR: TLS CA certificate file not found: </span><span class="si">{</span><span class="n">ca_certs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">tls_kwargs</span><span class="p">[</span><span class="s2">&quot;ssl_ca_certs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ca_certs</span>
+
+    <span class="k">return</span> <span class="n">tls_kwargs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_http_allowed</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether plaintext HTTP is explicitly permitted on non-localhost.</span>
+
+<span class="sd">    Returns True only when the operator has consciously opted in via</span>
+<span class="sd">    ZSCALER_MCP_ALLOW_HTTP=true.  All other values (missing, empty, &quot;false&quot;)</span>
+<span class="sd">    mean &quot;HTTPS required&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_ALLOW_HTTP&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_enforce_https_policy</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tls_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Block startup when running plaintext HTTP on a non-localhost interface.</span>
+
+<span class="sd">    The server defaults to HTTPS-required for remote deployments.  Operators</span>
+<span class="sd">    must set ZSCALER_MCP_ALLOW_HTTP=true to opt in to plaintext HTTP.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">is_localhost</span> <span class="o">=</span> <span class="n">host</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="s2">&quot;::1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tls_kwargs</span> <span class="ow">or</span> <span class="n">is_localhost</span> <span class="ow">or</span> <span class="n">_is_http_allowed</span><span class="p">():</span>
+        <span class="k">return</span>
+
+    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+        <span class="s2">&quot;ERROR: HTTPS is required for non-localhost deployments.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;The server is configured to listen on </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2"> without TLS.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Options:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;  1. Provide TLS certificates (recommended):</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;       ZSCALER_MCP_TLS_CERTFILE=/path/to/cert.pem</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;       ZSCALER_MCP_TLS_KEYFILE=/path/to/key.pem</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;  2. Terminate TLS at a reverse proxy (nginx, ALB, etc.) and</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;     explicitly allow plaintext HTTP behind it:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;       ZSCALER_MCP_ALLOW_HTTP=true</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;  3. If the MCP client and server share the same trusted L3 network</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;     (e.g. traffic is already encrypted by ZPA or a VPN), you may</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;     explicitly allow plaintext HTTP:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;       ZSCALER_MCP_ALLOW_HTTP=true</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_allowed_source_ips</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read ZSCALER_MCP_ALLOWED_SOURCE_IPS from the environment.</span>
+
+<span class="sd">    Returns a list of allowed CIDR/IP strings, or None if the variable is</span>
+<span class="sd">    not set (meaning &quot;no application-level source-IP filtering — defer to</span>
+<span class="sd">    upstream firewall / security groups&quot;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_ALLOWED_SOURCE_IPS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ip_matches</span><span class="p">(</span><span class="n">client_ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">allowed</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether *client_ip* matches any entry in *allowed*.</span>
+
+<span class="sd">    Supports:</span>
+<span class="sd">        - exact IPv4/IPv6 addresses  (&quot;10.0.0.5&quot;)</span>
+<span class="sd">        - CIDR notation              (&quot;10.0.0.0/24&quot;)</span>
+<span class="sd">        - wildcard                   (&quot;0.0.0.0/0&quot; or &quot;*&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
+
+    <span class="k">if</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">allowed</span> <span class="ow">or</span> <span class="s2">&quot;0.0.0.0/0&quot;</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">addr</span> <span class="o">=</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">client_ip</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">entry</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">addr</span> <span class="ow">in</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_network</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">addr</span> <span class="o">==</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">entry</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">continue</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="SourceIPMiddleware">
+<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.SourceIPMiddleware">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SourceIPMiddleware</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ASGI middleware that restricts access by client source IP.</span>
+
+<span class="sd">    When ZSCALER_MCP_ALLOWED_SOURCE_IPS is set, only requests from those</span>
+<span class="sd">    IPs / CIDRs are accepted.  Everything else gets 403.</span>
+
+<span class="sd">    Health-check paths are exempt so load-balancer probes still work.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">SKIP_PATHS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;/health&quot;</span><span class="p">,</span> <span class="s2">&quot;/healthz&quot;</span><span class="p">,</span> <span class="s2">&quot;/ready&quot;</span><span class="p">})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">allowed_ips</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowed_ips</span> <span class="o">=</span> <span class="n">allowed_ips</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">,</span> <span class="s2">&quot;websocket&quot;</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">SKIP_PATHS</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;client&quot;</span><span class="p">)</span>
+        <span class="n">client_ip</span> <span class="o">=</span> <span class="n">client</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">client</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_ip_matches</span><span class="p">(</span><span class="n">client_ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_ips</span><span class="p">):</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONResponse</span>
+
+            <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;jsonrpc&quot;</span><span class="p">:</span> <span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">32001</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Forbidden: source IP </span><span class="si">{</span><span class="n">client_ip</span><span class="si">}</span><span class="s2"> is not in the allowed list&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">JSONResponse</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">response</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_security_posture</span><span class="p">(</span>
+    <span class="n">transport</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tls_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">fastmcp_auth</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a consolidated security posture banner at startup.&quot;&quot;&quot;</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="mi">72</span>
+    <span class="n">bar</span> <span class="o">=</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="n">w</span>
+
+    <span class="n">tls_status</span> <span class="o">=</span> <span class="s2">&quot;ENABLED (encrypted)&quot;</span> <span class="k">if</span> <span class="n">tls_kwargs</span> <span class="k">else</span> <span class="s2">&quot;DISABLED (plaintext)&quot;</span>
+    <span class="k">if</span> <span class="n">tls_kwargs</span><span class="p">:</span>
+        <span class="n">tls_detail</span> <span class="o">=</span> <span class="n">tls_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ssl_certfile&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">mtls</span> <span class="o">=</span> <span class="s2">&quot;Yes&quot;</span> <span class="k">if</span> <span class="n">tls_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ssl_ca_certs&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;No&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tls_detail</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">mtls</span> <span class="o">=</span> <span class="s2">&quot;N/A&quot;</span>
+
+    <span class="k">if</span> <span class="n">fastmcp_auth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">auth_status</span> <span class="o">=</span> <span class="s2">&quot;ENABLED&quot;</span>
+        <span class="n">auth_mode</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;OIDCProxy (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">fastmcp_auth</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">) — OAuth 2.1 + DCR&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">auth_disabled</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_AUTH_ENABLED&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;no&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">auth_disabled</span><span class="p">:</span>
+            <span class="n">auth_status</span> <span class="o">=</span> <span class="s2">&quot;DISABLED&quot;</span>
+            <span class="n">auth_mode</span> <span class="o">=</span> <span class="s2">&quot;N/A&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">auth_mode</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_AUTH_MODE&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">auth_mode</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_AUTH_JWKS_URI&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                    <span class="n">auth_mode</span> <span class="o">=</span> <span class="s2">&quot;jwt (auto-detected)&quot;</span>
+                <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_AUTH_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                    <span class="n">auth_mode</span> <span class="o">=</span> <span class="s2">&quot;api-key (auto-detected)&quot;</span>
+                <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                    <span class="n">auth_mode</span> <span class="o">=</span> <span class="s2">&quot;zscaler (auto-detected)&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">auth_mode</span> <span class="o">=</span> <span class="s2">&quot;jwt (default)&quot;</span>
+            <span class="n">auth_status</span> <span class="o">=</span> <span class="s2">&quot;ENABLED&quot;</span>
+
+    <span class="n">host_disabled</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLE_HOST_VALIDATION&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;yes&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">allowed_hosts</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_ALLOWED_HOSTS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">host_disabled</span><span class="p">:</span>
+        <span class="n">host_status</span> <span class="o">=</span> <span class="s2">&quot;DISABLED&quot;</span>
+    <span class="k">elif</span> <span class="n">allowed_hosts</span><span class="p">:</span>
+        <span class="n">host_status</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;ENABLED (allowlist: </span><span class="si">{</span><span class="n">allowed_hosts</span><span class="si">}</span><span class="s2">)&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">host_status</span> <span class="o">=</span> <span class="s2">&quot;ENABLED (localhost only)&quot;</span>
+
+    <span class="n">confirmation_skip</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_SKIP_CONFIRMATIONS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span>
+    <span class="n">confirm_status</span> <span class="o">=</span> <span class="s2">&quot;DISABLED (skip)&quot;</span> <span class="k">if</span> <span class="n">confirmation_skip</span> <span class="k">else</span> <span class="s2">&quot;ENABLED (HMAC-bound tokens)&quot;</span>
+
+    <span class="n">is_localhost</span> <span class="o">=</span> <span class="n">host</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="s2">&quot;::1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tls_kwargs</span><span class="p">:</span>
+        <span class="n">http_policy</span> <span class="o">=</span> <span class="s2">&quot;N/A (TLS active)&quot;</span>
+    <span class="k">elif</span> <span class="n">is_localhost</span><span class="p">:</span>
+        <span class="n">http_policy</span> <span class="o">=</span> <span class="s2">&quot;ALLOWED (localhost)&quot;</span>
+    <span class="k">elif</span> <span class="n">_is_http_allowed</span><span class="p">():</span>
+        <span class="n">http_policy</span> <span class="o">=</span> <span class="s2">&quot;ALLOWED (explicit opt-in)&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">http_policy</span> <span class="o">=</span> <span class="s2">&quot;BLOCKED (default)&quot;</span>
+
+    <span class="n">src_ips</span> <span class="o">=</span> <span class="n">_get_allowed_source_ips</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">src_ips</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">src_ip_status</span> <span class="o">=</span> <span class="s2">&quot;DISABLED (defer to firewall/SG)&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;*&quot;</span> <span class="ow">in</span> <span class="n">src_ips</span> <span class="ow">or</span> <span class="s2">&quot;0.0.0.0/0&quot;</span> <span class="ow">in</span> <span class="n">src_ips</span><span class="p">:</span>
+        <span class="n">src_ip_status</span> <span class="o">=</span> <span class="s2">&quot;ALLOW ALL (0.0.0.0/0)&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">src_ip_status</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;ENABLED (</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_ips</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  ZSCALER MCP SERVER — SECURITY POSTURE&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Endpoint:       </span><span class="si">%s</span><span class="s2">://</span><span class="si">%s</span><span class="s2">:</span><span class="si">%d</span><span class="s2">/mcp&quot;</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Transport:      </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">transport</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  TLS Encryption: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tls_status</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tls_detail</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    Certificate:  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tls_detail</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    Mutual TLS:   </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mtls</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  HTTP Policy:    </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">http_policy</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Authentication: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">auth_status</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">auth_status</span> <span class="o">!=</span> <span class="s2">&quot;DISABLED&quot;</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    Mode:         </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">auth_mode</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Host Validation:</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host_status</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Source IP ACL:  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">src_ip_status</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Confirmations:  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">confirm_status</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_host_config</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensure host validation is configured when binding to a public interface.</span>
+
+<span class="sd">    Called in run() to catch the edge case where __init__ received a different</span>
+<span class="sd">    host than run() (e.g. programmatic use).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">host</span> <span class="o">!=</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">disable</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLE_HOST_VALIDATION&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_ALLOWED_HOSTS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">disable</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+        <span class="s2">&quot;ERROR: Cannot bind to 0.0.0.0 without host validation configuration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Set one of:</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;  ZSCALER_MCP_ALLOWED_HOSTS=your-host:*,localhost:*  (recommended)</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;  ZSCALER_MCP_DISABLE_HOST_VALIDATION=true           (disables protection)</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_transport_security</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransportSecuritySettings</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build transport security settings for HTTP transports from environment.</span>
+
+<span class="sd">    Host header validation is ENABLED by default (zero-trust posture).</span>
+<span class="sd">    To disable, users must explicitly set ZSCALER_MCP_DISABLE_HOST_VALIDATION=true.</span>
+
+<span class="sd">    Configuration options:</span>
+
+<span class="sd">    - ZSCALER_MCP_ALLOWED_HOSTS=34.201.19.115:*,localhost:* : Comma-separated</span>
+<span class="sd">      list of allowed Host values (recommended for production).</span>
+
+<span class="sd">    - ZSCALER_MCP_DISABLE_HOST_VALIDATION=true : Disable Host header validation</span>
+<span class="sd">      entirely (prints security warning; use only for dev/testing).</span>
+
+<span class="sd">    When binding to 0.0.0.0 without ZSCALER_MCP_ALLOWED_HOSTS or an explicit</span>
+<span class="sd">    disable, the server will refuse to start and log an error with instructions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        TransportSecuritySettings or None (use FastMCP default for localhost).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">disable</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLE_HOST_VALIDATION&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">disable</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">):</span>
+        <span class="n">log_security_warning</span><span class="p">(</span>
+            <span class="s2">&quot;Host Header Validation is DISABLED&quot;</span><span class="p">,</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;The server is vulnerable to DNS rebinding attacks.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;This is NOT recommended for production deployments.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;To enable, set ZSCALER_MCP_ALLOWED_HOSTS with your expected hostnames.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Remove ZSCALER_MCP_DISABLE_HOST_VALIDATION=true to re-enable.&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">TransportSecuritySettings</span><span class="p">(</span><span class="n">enable_dns_rebinding_protection</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_ALLOWED_HOSTS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="n">hosts</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">allowed</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">hosts</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Host header allowlist: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">hosts</span><span class="p">)</span>
+            <span class="n">tls_active</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_get_tls_config</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">tls_active</span><span class="p">:</span>
+                <span class="n">origins</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;https://</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">origins</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hosts</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">TransportSecuritySettings</span><span class="p">(</span>
+                <span class="n">enable_dns_rebinding_protection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">allowed_hosts</span><span class="o">=</span><span class="n">hosts</span><span class="p">,</span>
+                <span class="n">allowed_origins</span><span class="o">=</span><span class="n">origins</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">host</span> <span class="o">==</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Binding to 0.0.0.0 requires explicit host validation configuration. &quot;</span>
+            <span class="s2">&quot;Set ZSCALER_MCP_ALLOWED_HOSTS (recommended) or &quot;</span>
+            <span class="s2">&quot;ZSCALER_MCP_DISABLE_HOST_VALIDATION=true to proceed.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+            <span class="s2">&quot;ERROR: Cannot bind to 0.0.0.0 without host validation configuration.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Set one of:</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  ZSCALER_MCP_ALLOWED_HOSTS=your-host:*,localhost:*  (recommended)</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  ZSCALER_MCP_DISABLE_HOST_VALIDATION=true           (disables protection)</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">None</span>
 
 
 <div class="viewcode-block" id="ZscalerMCPServer">
@@ -322,6 +690,10 @@
         <span class="n">user_agent_comment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_write_tools</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">write_tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">disabled_tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">disabled_services</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">auth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Zscaler Integrations MCP Server.</span>
 
@@ -337,6 +709,28 @@
 <span class="sd">            user_agent_comment: Additional information to include in the User-Agent comment section</span>
 <span class="sd">            enable_write_tools: Enable write operations (create, update, delete). Default: False for safety.</span>
 <span class="sd">            write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.</span>
+<span class="sd">            disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch).</span>
+<span class="sd">            disabled_services: Set of service names to exclude from enabled services.</span>
+<span class="sd">            host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.</span>
+<span class="sd">            auth: A ``fastmcp.server.auth.AuthProvider`` instance (e.g.</span>
+<span class="sd">                ``OIDCProxy``, ``OAuthProxy``, or a custom ``AuthProvider`` subclass)</span>
+<span class="sd">                that provides MCP-spec-compliant OAuth 2.1 with Dynamic Client</span>
+<span class="sd">                Registration. When supplied, the server delegates authentication</span>
+<span class="sd">                to this provider instead of the env-var-based auth middleware</span>
+<span class="sd">                (jwt / api-key / zscaler modes). Only applies to HTTP transports.</span>
+
+<span class="sd">                Example::</span>
+
+<span class="sd">                    from fastmcp.server.auth.oidc_proxy import OIDCProxy</span>
+
+<span class="sd">                    auth = OIDCProxy(</span>
+<span class="sd">                        config_url=&quot;https://accounts.google.com/.well-known/openid-configuration&quot;,</span>
+<span class="sd">                        client_id=&quot;YOUR_CLIENT_ID&quot;,</span>
+<span class="sd">                        client_secret=&quot;YOUR_CLIENT_SECRET&quot;,</span>
+<span class="sd">                        base_url=&quot;http://localhost:8000&quot;,</span>
+<span class="sd">                    )</span>
+<span class="sd">                    server = ZscalerMCPServer(auth=auth)</span>
+<span class="sd">                    server.run(&quot;streamable-http&quot;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Store configuration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
@@ -351,18 +745,25 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span> <span class="o">=</span> <span class="n">enabled_tools</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span> <span class="o">=</span> <span class="n">enable_write_tools</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="n">write_tools</span>  <span class="c1"># Explicit allowlist for write tools</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span> <span class="o">=</span> <span class="n">disabled_tools</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disabled_services</span> <span class="o">=</span> <span class="n">disabled_services</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_services</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_services</span>
 
         <span class="c1"># Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol</span>
         <span class="n">configure_logging</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">use_stderr</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-        
+
         <span class="c1"># Log security posture</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing Zscaler Integrations MCP Server&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  WRITE TOOLS MODE ENABLED&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Explicit allowlist provided - only listed write tools will be registered&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;⚠️  Explicit allowlist provided - only listed write tools will be registered&quot;</span>
+                <span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️  Allowed patterns: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Server can CREATE, MODIFY, and DELETE Zscaler resources&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;⚠️  Ensure this is intentional and appropriate for your use case&quot;</span><span class="p">)</span>
@@ -375,8 +776,20 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;🔒 Server running in READ-ONLY mode (safe default)&quot;</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;   Only list and get operations are available&quot;</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;   To enable write operations, use --enable-write-tools AND --write-tools flags&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;   To enable write operations, use --enable-write-tools AND --write-tools flags&quot;</span>
+            <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+
+        <span class="c1"># Store fastmcp AuthProvider for library-level OAuth 2.1 / OIDC support</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fastmcp_auth</span> <span class="o">=</span> <span class="n">auth</span>
+        <span class="k">if</span> <span class="n">auth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">auth_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">auth</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Library-level auth provider configured: </span><span class="si">%s</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;(env-var auth middleware will be skipped for HTTP transports)&quot;</span><span class="p">,</span>
+                <span class="n">auth_type</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># Don&#39;t initialize the Zscaler client during server startup to avoid pickle issues</span>
         <span class="c1"># Clients will be created on-demand when tools are called</span>
@@ -384,11 +797,13 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Client initialization deferred to tool execution&quot;</span><span class="p">)</span>
 
         <span class="c1"># Initialize the MCP server</span>
+        <span class="n">transport_security</span> <span class="o">=</span> <span class="n">_get_transport_security</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Zscaler Integrations MCP Server&quot;</span><span class="p">,</span>
             <span class="n">instructions</span><span class="o">=</span><span class="s2">&quot;This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.&quot;</span><span class="p">,</span>
             <span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
             <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="k">else</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
+            <span class="n">transport_security</span><span class="o">=</span><span class="n">transport_security</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Initialize and register services</span>
@@ -433,14 +848,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">zscaler_check_connectivity</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_check_connectivity&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Check connectivity to the Zscaler API.&quot;</span><span class="p">,</span>
-            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Read-only diagnostic tool</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># Read-only diagnostic tool</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">get_available_services</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_get_available_services&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get information about available services.&quot;</span><span class="p">,</span>
-            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Read-only informational tool</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># Read-only informational tool</span>
         <span class="p">)</span>
 
         <span class="n">tool_count</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># the tools added above</span>
@@ -454,15 +869,17 @@
                         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span>
                         <span class="n">enabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span><span class="p">,</span>
                         <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
-                        <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span>
+                        <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span>
+                        <span class="n">disabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">service</span><span class="o">.</span><span class="n">register_tools</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span>
                         <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
-                        <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span>
+                        <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span>
+                        <span class="n">disabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">,</span>
                     <span class="p">)</span>
-                
+
                 <span class="c1"># Count tools (read + write)</span>
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">):</span>
                     <span class="n">tool_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">read_tools</span><span class="p">)</span>
@@ -492,9 +909,7 @@
         <span class="c1"># Register resources from services</span>
         <span class="k">for</span> <span class="n">service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="c1"># Check if the service has a register_resources method</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;register_resources&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span>
-                <span class="n">service</span><span class="o">.</span><span class="n">register_resources</span>
-            <span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;register_resources&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="n">service</span><span class="o">.</span><span class="n">register_resources</span><span class="p">):</span>
                 <span class="n">service</span><span class="o">.</span><span class="n">register_resources</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">)</span>
 
         <span class="c1"># Count resources from services</span>
@@ -532,6 +947,137 @@
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;services&quot;</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_service_names</span><span class="p">()}</span></div>
 
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_fastmcp_auth_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transport</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build an ASGI app with a fastmcp AuthProvider handling authentication.</span>
+
+<span class="sd">        When the caller supplies a ``fastmcp.server.auth.AuthProvider`` (e.g.</span>
+<span class="sd">        ``OIDCProxy``) via the ``auth=`` constructor parameter, this method</span>
+<span class="sd">        constructs the HTTP app with OAuth routes, auth middleware, and the</span>
+<span class="sd">        ``RequireAuthMiddleware`` wrapper — all provided by the auth provider.</span>
+
+<span class="sd">        This bypasses the env-var-based auth layer (``apply_auth_middleware``)</span>
+<span class="sd">        and delegates authentication entirely to the fastmcp provider.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.server.auth.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequireAuthMiddleware</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.auth.routes</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_resource_metadata_url</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.fastmcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamableHTTPASGIApp</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.streamable_http_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamableHTTPSessionManager</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.applications</span><span class="w"> </span><span class="kn">import</span> <span class="n">Starlette</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.routing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mount</span><span class="p">,</span> <span class="n">Route</span>
+
+        <span class="n">auth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fastmcp_auth</span>
+
+        <span class="k">if</span> <span class="n">transport</span> <span class="o">==</span> <span class="s2">&quot;streamable-http&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_session_manager</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_session_manager</span> <span class="o">=</span> <span class="n">StreamableHTTPSessionManager</span><span class="p">(</span>
+                    <span class="n">app</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_mcp_server</span><span class="p">,</span>
+                    <span class="n">json_response</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">json_response</span><span class="p">,</span>
+                    <span class="n">stateless</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">stateless_http</span><span class="p">,</span>
+                    <span class="n">security_settings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transport_security</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">mcp_asgi</span> <span class="o">=</span> <span class="n">StreamableHTTPASGIApp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_session_manager</span><span class="p">)</span>
+            <span class="n">mcp_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">streamable_http_path</span>
+
+            <span class="n">auth_middleware</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">get_middleware</span><span class="p">()</span>
+            <span class="n">auth_routes</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">get_routes</span><span class="p">(</span><span class="n">mcp_path</span><span class="o">=</span><span class="n">mcp_path</span><span class="p">)</span>
+
+            <span class="n">resource_url</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">_get_resource_url</span><span class="p">(</span><span class="n">mcp_path</span><span class="p">)</span>
+            <span class="n">resource_metadata_url</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">build_resource_metadata_url</span><span class="p">(</span><span class="n">resource_url</span><span class="p">)</span> <span class="k">if</span> <span class="n">resource_url</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+
+            <span class="n">routes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">auth_routes</span><span class="p">)</span>
+            <span class="n">routes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Route</span><span class="p">(</span>
+                    <span class="n">mcp_path</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="n">RequireAuthMiddleware</span><span class="p">(</span>
+                        <span class="n">mcp_asgi</span><span class="p">,</span>
+                        <span class="n">auth</span><span class="o">.</span><span class="n">required_scopes</span><span class="p">,</span>
+                        <span class="n">resource_metadata_url</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">session_mgr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_session_manager</span>
+
+            <span class="nd">@asynccontextmanager</span>
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+                <span class="k">async</span> <span class="k">with</span> <span class="n">session_mgr</span><span class="o">.</span><span class="n">run</span><span class="p">():</span>
+                    <span class="k">yield</span>
+
+            <span class="k">return</span> <span class="n">Starlette</span><span class="p">(</span>
+                <span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
+                <span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">,</span>
+                <span class="n">middleware</span><span class="o">=</span><span class="n">auth_middleware</span><span class="p">,</span>
+                <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.sse</span><span class="w"> </span><span class="kn">import</span> <span class="n">SseServerTransport</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
+
+            <span class="n">sse_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">sse_path</span>
+            <span class="n">message_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_normalize_path</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">mount_path</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">message_path</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">sse</span> <span class="o">=</span> <span class="n">SseServerTransport</span><span class="p">(</span>
+                <span class="n">message_path</span><span class="p">,</span>
+                <span class="n">security_settings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">transport_security</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">mcp_server</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">_mcp_server</span>
+
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_sse</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">):</span>
+                <span class="k">async</span> <span class="k">with</span> <span class="n">sse</span><span class="o">.</span><span class="n">connect_sse</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span> <span class="k">as</span> <span class="n">streams</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">mcp_server</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="n">streams</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">streams</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                        <span class="n">mcp_server</span><span class="o">.</span><span class="n">create_initialization_options</span><span class="p">(),</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">()</span>
+
+            <span class="n">auth_middleware</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">get_middleware</span><span class="p">()</span>
+            <span class="n">auth_routes</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">get_routes</span><span class="p">(</span><span class="n">mcp_path</span><span class="o">=</span><span class="n">sse_path</span><span class="p">)</span>
+
+            <span class="n">resource_url</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">_get_resource_url</span><span class="p">(</span><span class="n">sse_path</span><span class="p">)</span>
+            <span class="n">resource_metadata_url</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">build_resource_metadata_url</span><span class="p">(</span><span class="n">resource_url</span><span class="p">)</span> <span class="k">if</span> <span class="n">resource_url</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+
+            <span class="n">routes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">auth_routes</span><span class="p">)</span>
+            <span class="n">routes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Route</span><span class="p">(</span>
+                    <span class="n">sse_path</span><span class="p">,</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="n">RequireAuthMiddleware</span><span class="p">(</span>
+                        <span class="n">handle_sse</span><span class="p">,</span>
+                        <span class="n">auth</span><span class="o">.</span><span class="n">required_scopes</span><span class="p">,</span>
+                        <span class="n">resource_metadata_url</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">routes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Mount</span><span class="p">(</span>
+                    <span class="n">message_path</span><span class="p">,</span>
+                    <span class="n">app</span><span class="o">=</span><span class="n">RequireAuthMiddleware</span><span class="p">(</span>
+                        <span class="n">sse</span><span class="o">.</span><span class="n">handle_post_message</span><span class="p">,</span>
+                        <span class="n">auth</span><span class="o">.</span><span class="n">required_scopes</span><span class="p">,</span>
+                        <span class="n">resource_metadata_url</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">Starlette</span><span class="p">(</span>
+                <span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
+                <span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">,</span>
+                <span class="n">middleware</span><span class="o">=</span><span class="n">auth_middleware</span><span class="p">,</span>
+            <span class="p">)</span>
+
 <div class="viewcode-block" id="ZscalerMCPServer.run">
 <a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transport</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;stdio&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">):</span>
@@ -542,36 +1088,60 @@
 <span class="sd">            host: Host to bind to for HTTP transports (default: 127.0.0.1)</span>
 <span class="sd">            port: Port to listen on for HTTP transports (default: 8000)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">transport</span> <span class="o">==</span> <span class="s2">&quot;streamable-http&quot;</span><span class="p">:</span>
-            <span class="c1"># For streamable-http, use uvicorn directly for custom host/port</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting streamable-http server on </span><span class="si">%s</span><span class="s2">:</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_auth_middleware</span>
 
-            <span class="c1"># Get the ASGI app from FastMCP (handles /mcp path automatically)</span>
-            <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">streamable_http_app</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">transport</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;streamable-http&quot;</span><span class="p">,</span> <span class="s2">&quot;sse&quot;</span><span class="p">):</span>
+            <span class="n">_validate_host_config</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
 
-            <span class="c1"># Run with uvicorn for custom host/port configuration</span>
-            <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                <span class="n">app</span><span class="p">,</span>
-                <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
-                <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
-                <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="k">else</span> <span class="s2">&quot;debug&quot;</span><span class="p">,</span>
+            <span class="n">tls_kwargs</span> <span class="o">=</span> <span class="n">_get_tls_config</span><span class="p">()</span>
+            <span class="n">scheme</span> <span class="o">=</span> <span class="s2">&quot;https&quot;</span> <span class="k">if</span> <span class="n">tls_kwargs</span> <span class="k">else</span> <span class="s2">&quot;http&quot;</span>
+
+            <span class="n">_enforce_https_policy</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">tls_kwargs</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tls_kwargs</span> <span class="ow">and</span> <span class="n">host</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="s2">&quot;::1&quot;</span><span class="p">):</span>
+                <span class="n">log_security_warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Running HTTP without TLS (ZSCALER_MCP_ALLOW_HTTP=true)&quot;</span><span class="p">,</span>
+                    <span class="p">[</span>
+                        <span class="sa">f</span><span class="s2">&quot;The server is listening on </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2"> without encryption.&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;All traffic (including auth tokens) will be sent in plaintext.&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;Ensure traffic is encrypted by an overlay (ZPA, VPN) or&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;terminated at a reverse proxy (nginx, ALB, etc.).&quot;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fastmcp_auth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Using library-level auth provider (</span><span class="si">%s</span><span class="s2">) — env-var auth middleware skipped&quot;</span><span class="p">,</span>
+                    <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fastmcp_auth</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_fastmcp_auth_app</span><span class="p">(</span><span class="n">transport</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">transport</span> <span class="o">==</span> <span class="s2">&quot;streamable-http&quot;</span><span class="p">:</span>
+                    <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">streamable_http_app</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">sse_app</span><span class="p">()</span>
+
+                <span class="n">app</span> <span class="o">=</span> <span class="n">apply_auth_middleware</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">transport</span><span class="p">)</span>
+
+            <span class="n">allowed_ips</span> <span class="o">=</span> <span class="n">_get_allowed_source_ips</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">allowed_ips</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Source IP ACL active: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">allowed_ips</span><span class="p">)</span>
+                <span class="n">app</span> <span class="o">=</span> <span class="n">SourceIPMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">allowed_ips</span><span class="p">)</span>
+
+            <span class="n">_log_security_posture</span><span class="p">(</span>
+                <span class="n">transport</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">tls_kwargs</span><span class="p">,</span>
+                <span class="n">fastmcp_auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fastmcp_auth</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">transport</span> <span class="o">==</span> <span class="s2">&quot;sse&quot;</span><span class="p">:</span>
-            <span class="c1"># For sse, use uvicorn directly for custom host/port (same pattern as streamable-http)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting sse server on </span><span class="si">%s</span><span class="s2">:</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
 
-            <span class="c1"># Get the ASGI app from FastMCP</span>
-            <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">sse_app</span><span class="p">()</span>
-
-            <span class="c1"># Run with uvicorn for custom host/port configuration</span>
             <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
                 <span class="n">app</span><span class="p">,</span>
                 <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
                 <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
                 <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="k">else</span> <span class="s2">&quot;debug&quot;</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">tls_kwargs</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># For stdio, use the default FastMCP run method (no host/port needed)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transport</span><span class="p">)</span></div>
 </div>
 
@@ -585,9 +1155,7 @@
 
     <span class="n">available_services</span> <span class="o">=</span> <span class="n">svc_mod</span><span class="o">.</span><span class="n">get_available_services</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">selected_services</span><span class="p">:</span>
-        <span class="n">available_services</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">available_services</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">selected_services</span>
-        <span class="p">}</span>
+        <span class="n">available_services</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">available_services</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">selected_services</span><span class="p">}</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Available tools:&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">service_name</span><span class="p">,</span> <span class="n">service_class</span> <span class="ow">in</span> <span class="n">available_services</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">service</span> <span class="o">=</span> <span class="n">service_class</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
@@ -612,9 +1180,85 @@
             <span class="n">service</span><span class="o">.</span><span class="n">register_tools</span><span class="p">(</span><span class="n">mock_server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="n">enabled_tools</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">tool_info</span> <span class="ow">in</span> <span class="n">mock_server</span><span class="o">.</span><span class="n">tools</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">service_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">tool_info</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">tool_info</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span></div>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  [</span><span class="si">{</span><span class="n">service_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">tool_info</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">tool_info</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="generate_auth_token">
+<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.generate_auth_token">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_auth_token</span><span class="p">(</span><span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;basic&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate an auth token and print ready-to-use MCP client config snippets.&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+
+    <span class="n">client_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">client_secret</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">client_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">client_secret</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET must be set.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Set them in your .env file or as environment variables.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">&quot;basic&quot;</span><span class="p">:</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">client_secret</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="n">header_value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Basic </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">header_value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">client_secret</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">70</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Zscaler MCP Server — Auth Token Generator&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">70</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Mode:   </span><span class="si">{</span><span class="s1">&#39;zscaler (Basic Auth)&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">fmt</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;basic&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;api-key (Bearer)&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Header: Authorization: </span><span class="si">{</span><span class="n">header_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Cursor / MCP clients with header support ---&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  {&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    &quot;mcpServers&quot;: {&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      &quot;zscaler-mcp-server&quot;: {&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        &quot;url&quot;: &quot;http://localhost:8000/mcp&quot;,&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        &quot;headers&quot;: {&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;          &quot;Authorization&quot;: &quot;</span><span class="si">{</span><span class="n">header_value</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;        }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;      }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">&quot;basic&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Alternative: raw credential headers (no Base64 needed) ---&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  {&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    &quot;mcpServers&quot;: {&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      &quot;zscaler-mcp-server&quot;: {&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        &quot;url&quot;: &quot;http://localhost:8000/mcp&quot;,&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        &quot;headers&quot;: {&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;          &quot;X-Zscaler-Client-ID&quot;: &quot;</span><span class="si">{</span><span class="n">client_id</span><span class="si">}</span><span class="s1">&quot;,&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;          &quot;X-Zscaler-Client-Secret&quot;: &quot;</span><span class="si">{</span><span class="n">client_secret</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;        }&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;      }&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    }&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  }&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Claude Desktop (mcp-remote bridge) ---&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  {&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    &quot;mcpServers&quot;: {&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;      &quot;zscaler-mcp-server&quot;: {&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        &quot;command&quot;: &quot;npx&quot;,&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        &quot;args&quot;: [&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;          &quot;-y&quot;,&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;          &quot;mcp-remote&quot;,&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;          &quot;http://localhost:8000/mcp&quot;,&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;          &quot;--header&quot;,&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;          &quot;Authorization: </span><span class="si">{</span><span class="n">header_value</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;        ]&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;      }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  }&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">70</span><span class="p">)</span></div>
 
 
 
@@ -743,6 +1387,15 @@
         <span class="sa">f</span><span class="s2">&quot;(default: all services, env: ZSCALER_MCP_SERVICES)&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--disabled-services&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLED_SERVICES&quot;</span><span class="p">),</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SERVICE1,SERVICE2,...&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of services to exclude &quot;</span>
+        <span class="s2">&quot;(e.g., &#39;zcc,zdx&#39; disables ZCC and ZDX services). &quot;</span>
+        <span class="s2">&quot;(env: ZSCALER_MCP_DISABLED_SERVICES)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
     <span class="c1"># Tool selection</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--tools&quot;</span><span class="p">,</span>
@@ -750,6 +1403,15 @@
         <span class="n">default</span><span class="o">=</span><span class="n">parse_tools_list</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_TOOLS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)),</span>
         <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TOOL1,TOOL2,...&quot;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of specific tools to enable (if not specified, all tools from selected services are enabled, env: ZSCALER_MCP_TOOLS)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--disabled-tools&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLED_TOOLS&quot;</span><span class="p">),</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TOOL1,TOOL2,...&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of tools to exclude. Supports wildcards &quot;</span>
+        <span class="s2">&quot;(e.g., &#39;zcc_*&#39; excludes all ZCC tools, &#39;zcc_devices_csv_exporter&#39; excludes one tool). &quot;</span>
+        <span class="s2">&quot;(env: ZSCALER_MCP_DISABLED_TOOLS)&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Debug mode</span>
@@ -767,17 +1429,17 @@
         <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_WRITE_ENABLED&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable write operations (create, update, delete). &quot;</span>
-             <span class="s2">&quot;By default, only read-only operations are available for safety. &quot;</span>
-             <span class="s2">&quot;(env: ZSCALER_MCP_WRITE_ENABLED)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;By default, only read-only operations are available for safety. &quot;</span>
+        <span class="s2">&quot;(env: ZSCALER_MCP_WRITE_ENABLED)&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--write-tools&quot;</span><span class="p">,</span>
         <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_WRITE_TOOLS&quot;</span><span class="p">),</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of write tools to explicitly allow. &quot;</span>
-             <span class="s2">&quot;Supports wildcards (e.g., &#39;zpa_create_*,zpa_delete_*&#39;). &quot;</span>
-             <span class="s2">&quot;Requires --enable-write-tools to be set. &quot;</span>
-             <span class="s2">&quot;(env: ZSCALER_MCP_WRITE_TOOLS)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Supports wildcards (e.g., &#39;zpa_create_*,zpa_delete_*&#39;). &quot;</span>
+        <span class="s2">&quot;Requires --enable-write-tools to be set. &quot;</span>
+        <span class="s2">&quot;(env: ZSCALER_MCP_WRITE_TOOLS)&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Zscaler API configuration</span>
@@ -839,6 +1501,17 @@
     <span class="p">)</span>
 
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--generate-auth-token&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+        <span class="n">const</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;basic&quot;</span><span class="p">,</span> <span class="s2">&quot;bearer&quot;</span><span class="p">],</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;FORMAT&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Generate an auth token from ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET &quot;</span>
+        <span class="s2">&quot;and print MCP client config snippets, then exit. &quot;</span>
+        <span class="s2">&quot;Format: &#39;basic&#39; (default) for Zscaler auth mode, &#39;bearer&#39; for api-key mode.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--version&quot;</span><span class="p">,</span>
         <span class="s2">&quot;-v&quot;</span><span class="p">,</span>
         <span class="n">action</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span>
@@ -850,12 +1523,66 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_env_file_security</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log an advisory if credentials are loaded from a plaintext .env file.</span>
+
+<span class="sd">    This is perfectly fine for local development — .env is the standard way</span>
+<span class="sd">    to configure MCP servers. The warning simply reminds operators to use</span>
+<span class="sd">    a secrets backend (Docker secrets, Kubernetes secrets, AWS Secrets Manager,</span>
+<span class="sd">    HashiCorp Vault, etc.) when deploying to shared or production environments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">secret_keys</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_MCP_AUTH_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_PRIVATE_KEY&quot;</span><span class="p">)</span>
+    <span class="n">env_paths</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="s2">&quot;.env&quot;</span><span class="p">),</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))),</span> <span class="s2">&quot;.env&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">env_path</span> <span class="ow">in</span> <span class="n">env_paths</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">env_path</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">env_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">k</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">secret_keys</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">content</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">line</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                <span class="n">log_security_warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Credentials detected in plaintext .env file&quot;</span><span class="p">,</span>
+                    <span class="p">[</span>
+                        <span class="sa">f</span><span class="s2">&quot;File: </span><span class="si">{</span><span class="n">env_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="sa">f</span><span class="s2">&quot;Keys: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">found</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;This is fine for local development, but for production consider:&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;  - Docker: use &#39;docker run -e&#39; or Docker Secrets&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;  - Kubernetes: use Kubernetes Secrets or external-secrets&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;  - AWS: use Secrets Manager (ZSCALER_SECRET_NAME)&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;  - Enterprise: use HashiCorp Vault or similar&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;Ensure .env is in .gitignore and never committed to source control.&quot;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main entry point for the Zscaler Integrations MCP Server.&quot;&quot;&quot;</span>
-    <span class="c1"># Load environment variables</span>
-    <span class="n">load_dotenv</span><span class="p">()</span>
+    <span class="c1"># Load environment variables - try project root (editable install) then CWD</span>
+    <span class="n">_pkg_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+    <span class="n">_project_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">_pkg_dir</span><span class="p">)</span>
+    <span class="n">load_dotenv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_project_root</span><span class="p">,</span> <span class="s2">&quot;.env&quot;</span><span class="p">))</span>
+    <span class="n">load_dotenv</span><span class="p">()</span>  <span class="c1"># CWD override</span>
+
+    <span class="n">_check_env_file_security</span><span class="p">()</span>
 
     <span class="c1"># Parse command line arguments (includes environment variable defaults)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">()</span>
@@ -867,12 +1594,24 @@
         <span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;generate_auth_token&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">generate_auth_token</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">generate_auth_token</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Parse write_tools into a set</span>
         <span class="n">write_tools</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">write_tools</span><span class="p">:</span>
             <span class="n">write_tools</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">write_tools</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
-        
+
+        <span class="n">disabled_tools</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">:</span>
+            <span class="n">disabled_tools</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">disabled_tools</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+        <span class="n">disabled_services</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">disabled_services</span><span class="p">:</span>
+            <span class="n">disabled_services</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">disabled_services</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
         <span class="c1"># Create and run the server</span>
         <span class="n">server</span> <span class="o">=</span> <span class="n">ZscalerMCPServer</span><span class="p">(</span>
             <span class="n">client_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
@@ -886,6 +1625,9 @@
             <span class="n">user_agent_comment</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">user_agent_comment</span><span class="p">,</span>
             <span class="n">enable_write_tools</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
             <span class="n">write_tools</span><span class="o">=</span><span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span>
+            <span class="n">disabled_services</span><span class="o">=</span><span class="n">disabled_services</span><span class="p">,</span>
+            <span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting server with </span><span class="si">%s</span><span class="s2"> transport&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>
         <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">transport</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
@@ -939,7 +1681,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

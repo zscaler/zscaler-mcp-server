@@ -211,8 +211,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -283,18 +285,18 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    List all organizations configured for a tenant in the ZEASM Admin Portal.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves all organizations configured</span>
 <span class="sd">    for external attack surface management.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Dictionary containing:</span>
 <span class="sd">            - results: List of organization objects</span>
 <span class="sd">            - total_results: Total number of organizations</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        List all organizations:</span>
 <span class="sd">        &gt;&gt;&gt; orgs = zeasm_list_organizations()</span>
@@ -303,11 +305,11 @@
 <span class="sd">        ...     print(f&quot;  {org[&#39;id&#39;]}: {org[&#39;name&#39;]}&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
+
     <span class="n">orgs</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">organizations</span><span class="o">.</span><span class="n">list_organizations</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list EASM organizations: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">orgs</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 </pre></div>

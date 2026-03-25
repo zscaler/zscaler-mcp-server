@@ -211,8 +211,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -382,15 +384,14 @@
 <span class="c1"># READ OPERATIONS (Read-Only)</span>
 <span class="c1"># ============================================================================</span>
 
+
 <div class="viewcode-block" id="zia_list_url_filtering_rules">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_filtering_rules.zia_list_url_filtering_rules">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_list_url_filtering_rules</span><span class="p">(</span>
     <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional search filter for listing rules by name.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -432,9 +433,7 @@
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the URL filtering rule to retrieve.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -467,17 +466,18 @@
 <span class="c1"># WRITE OPERATIONS (Require --enable-write-tools flag)</span>
 <span class="c1"># ============================================================================</span>
 
+
 <div class="viewcode-block" id="zia_create_url_filtering_rule">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_filtering_rules.zia_create_url_filtering_rule">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_create_url_filtering_rule</span><span class="p">(</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule name (required).&quot;</span><span class="p">)],</span>
     <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE&quot;</span>
+        <span class="p">),</span>
     <span class="p">],</span>
-    <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -485,98 +485,137 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The admin rank of the user who creates the rule.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Order of execution of rule with respect to other URL Filtering rules.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Order of execution of rule with respect to other URL Filtering rules.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">protocols</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The protocol criteria for the rule. Accepts JSON string or list.&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The protocol criteria for the rule. Accepts JSON string or list.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">device_trust_levels</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">url_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The names of URL categories that this rule applies to. Accepts JSON string or list.&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The names of URL categories that this rule applies to. Accepts JSON string or list.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">url_categories2</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list.&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">request_methods</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">user_agent_types</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">block_override</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;When true, a BLOCK action triggered by the rule could be overridden.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;When true, a BLOCK action triggered by the rule could be overridden.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ciparule</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The CIPA compliance rule is enabled if this is set to True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The CIPA compliance rule is enabled if this is set to True.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">end_user_notification_url</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;URL of end user notification page to be displayed when the rule is matched.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;URL of end user notification page to be displayed when the rule is matched.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enforce_time_validity</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Enforce a set validity time period for the URL Filtering rule.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Enforce a set validity time period for the URL Filtering rule.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">size_quota</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Size quota in KB for applying the URL Filtering rule.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">time_quota</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time quota in minutes elapsed after the URL Filtering rule is applied.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time quota in minutes elapsed after the URL Filtering rule is applied.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">validity_start_time</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will be valid from. Requires enforce_time_validity=True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will be valid from. Requires enforce_time_validity=True.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">validity_end_time</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will end. Requires enforce_time_validity=True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will end. Requires enforce_time_validity=True.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">validity_time_zone_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time zone ID for validity dates. Requires enforce_time_validity=True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time zone ID for validity dates. Requires enforce_time_validity=True.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">departments</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the departments that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the departments that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">devices</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the devices that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the devices that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">device_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the device groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the device groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the labels that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the labels that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">locations</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the locations that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the locations that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">location_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the location groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the location groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">time_windows</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the time windows that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the time windows that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">users</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the users that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the users that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">workload_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the workload groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the workload groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">override_users</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">override_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -653,15 +692,13 @@
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the URL filtering rule to update.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule name.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule name.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
@@ -670,98 +707,137 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The admin rank of the user who creates the rule.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Order of execution of rule with respect to other URL Filtering rules.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Order of execution of rule with respect to other URL Filtering rules.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">protocols</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The protocol criteria for the rule. Accepts JSON string or list.&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The protocol criteria for the rule. Accepts JSON string or list.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">device_trust_levels</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">url_categories</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The names of URL categories that this rule applies to. Accepts JSON string or list.&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The names of URL categories that this rule applies to. Accepts JSON string or list.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">url_categories2</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list.&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">request_methods</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">user_agent_types</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE&quot;</span><span class="p">)</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">block_override</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;When true, a BLOCK action triggered by the rule could be overridden.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;When true, a BLOCK action triggered by the rule could be overridden.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ciparule</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The CIPA compliance rule is enabled if this is set to True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The CIPA compliance rule is enabled if this is set to True.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">end_user_notification_url</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;URL of end user notification page to be displayed when the rule is matched.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;URL of end user notification page to be displayed when the rule is matched.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enforce_time_validity</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Enforce a set validity time period for the URL Filtering rule.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Enforce a set validity time period for the URL Filtering rule.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">size_quota</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Size quota in KB for applying the URL Filtering rule.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">time_quota</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time quota in minutes elapsed after the URL Filtering rule is applied.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time quota in minutes elapsed after the URL Filtering rule is applied.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">validity_start_time</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will be valid from. Requires enforce_time_validity=True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will be valid from. Requires enforce_time_validity=True.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">validity_end_time</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will end. Requires enforce_time_validity=True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date and time the rule&#39;s effects will end. Requires enforce_time_validity=True.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">validity_time_zone_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time zone ID for validity dates. Requires enforce_time_validity=True.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time zone ID for validity dates. Requires enforce_time_validity=True.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">departments</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the departments that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the departments that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">devices</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the devices that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the devices that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">device_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the device groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the device groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the labels that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the labels that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">locations</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the locations that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the locations that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">location_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the location groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the location groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">time_windows</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the time windows that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the time windows that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">users</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the users that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the users that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">workload_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the workload groups that this rule applies to.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs for the workload groups that this rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">override_users</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">override_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -835,15 +911,13 @@
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the URL filtering rule to delete.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
-    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Deletes a ZIA URL Filtering Rule by ID.</span>
-<span class="sd">    </span>
+
 <span class="sd">    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.</span>
 <span class="sd">    This action cannot be undone.</span>
 
@@ -860,18 +934,16 @@
 <span class="sd">        &gt;&gt;&gt; result = zia_delete_url_filtering_rule(rule_id=&quot;12345&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.elicitation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_confirmation</span><span class="p">,</span> <span class="n">extract_confirmed_from_kwargs</span>
-    
+
     <span class="c1"># Extract confirmation from kwargs (hidden from tool schema)</span>
     <span class="n">confirmed</span> <span class="o">=</span> <span class="n">extract_confirmed_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-    
+
     <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span>
-        <span class="s2">&quot;zia_delete_url_filtering_rule&quot;</span><span class="p">,</span>
-        <span class="n">confirmed</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;rule_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)}</span>
+        <span class="s2">&quot;zia_delete_url_filtering_rule&quot;</span><span class="p">,</span> <span class="n">confirmed</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;rule_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)}</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">confirmation_check</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_filtering</span>
 
