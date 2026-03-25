@@ -211,8 +211,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -284,18 +286,18 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    List all findings identified and tracked for an organization&#39;s internet-facing assets.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves findings detected by EASM scanning.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        org_id (str): The unique identifier for the organization.</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Dictionary containing:</span>
 <span class="sd">            - results: List of finding objects</span>
 <span class="sd">            - total_results: Total number of findings</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        List all findings for an organization:</span>
 <span class="sd">        &gt;&gt;&gt; findings = zeasm_list_findings(org_id=&quot;3f61a446-1a0d-11f0-94e8-8a5f4d45e80c&quot;)</span>
@@ -304,11 +306,11 @@
 <span class="sd">        ...     print(f&quot;  {finding[&#39;id&#39;]}: {finding[&#39;category&#39;]}&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
+
     <span class="n">findings</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">list_findings</span><span class="p">(</span><span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list EASM findings for organization </span><span class="si">{</span><span class="n">org_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">findings</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -322,17 +324,17 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get details for a specific EASM finding by ID.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves detailed information about a specific finding.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        org_id (str): The unique identifier for the organization.</span>
 <span class="sd">        finding_id (str): The unique identifier for the finding.</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Finding details object</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        Get details for a specific finding:</span>
 <span class="sd">        &gt;&gt;&gt; details = zeasm_get_finding_details(</span>
@@ -342,11 +344,13 @@
 <span class="sd">        &gt;&gt;&gt; print(details)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
-    <span class="n">finding</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">get_finding_details</span><span class="p">(</span><span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">finding_id</span><span class="o">=</span><span class="n">finding_id</span><span class="p">)</span>
+
+    <span class="n">finding</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">get_finding_details</span><span class="p">(</span>
+        <span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">finding_id</span><span class="o">=</span><span class="n">finding_id</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get EASM finding details for </span><span class="si">{</span><span class="n">finding_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">finding</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -360,18 +364,18 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get scan evidence for a specific EASM finding.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves the scan evidence that can be</span>
 <span class="sd">    attributed to the finding. This is a subset of the scan output.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        org_id (str): The unique identifier for the organization.</span>
 <span class="sd">        finding_id (str): The unique identifier for the finding.</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Evidence object containing content and source_type</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        Get evidence for a finding:</span>
 <span class="sd">        &gt;&gt;&gt; evidence = zeasm_get_finding_evidence(</span>
@@ -381,11 +385,13 @@
 <span class="sd">        &gt;&gt;&gt; print(evidence[&#39;content&#39;])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
-    <span class="n">evidence</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">get_finding_evidence</span><span class="p">(</span><span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">finding_id</span><span class="o">=</span><span class="n">finding_id</span><span class="p">)</span>
+
+    <span class="n">evidence</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">get_finding_evidence</span><span class="p">(</span>
+        <span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">finding_id</span><span class="o">=</span><span class="n">finding_id</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get EASM finding evidence for </span><span class="si">{</span><span class="n">finding_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">evidence</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -399,17 +405,17 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get complete scan output for a specific EASM finding.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves the full scan output for a finding.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        org_id (str): The unique identifier for the organization.</span>
 <span class="sd">        finding_id (str): The unique identifier for the finding.</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Scan output object containing content and source_type</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        Get scan output for a finding:</span>
 <span class="sd">        &gt;&gt;&gt; scan_output = zeasm_get_finding_scan_output(</span>
@@ -419,11 +425,13 @@
 <span class="sd">        &gt;&gt;&gt; print(scan_output[&#39;content&#39;])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
-    <span class="n">scan_output</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">get_finding_scan_output</span><span class="p">(</span><span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">finding_id</span><span class="o">=</span><span class="n">finding_id</span><span class="p">)</span>
+
+    <span class="n">scan_output</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">findings</span><span class="o">.</span><span class="n">get_finding_scan_output</span><span class="p">(</span>
+        <span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">finding_id</span><span class="o">=</span><span class="n">finding_id</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get EASM finding scan output for </span><span class="si">{</span><span class="n">finding_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">scan_output</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 </pre></div>

@@ -210,8 +210,11 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -219,7 +222,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -282,21 +284,26 @@
 <span class="c1"># READ-ONLY OPERATIONS</span>
 <span class="c1"># =============================================================================</span>
 
+
 <div class="viewcode-block" id="zpa_list_application_segments">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zpa.app_segments.zpa_list_application_segments">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zpa_list_application_segments</span><span class="p">(</span>
-    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search term for filtering segments.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search term for filtering segments.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">page</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page number for pagination.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">page_size</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of items per page.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zpa&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    List ZPA application segments with optional filtering and pagination.</span>
-<span class="sd">    </span>
+
 <span class="sd">    🔒 READ-ONLY OPERATION - Safe for autonomous agents.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        search: Optional search term to filter segments by name</span>
 <span class="sd">        page: Page number for pagination</span>
@@ -304,17 +311,17 @@
 <span class="sd">        microtenant_id: Optional microtenant ID for scoping</span>
 <span class="sd">        use_legacy: Whether to use legacy API (default: False)</span>
 <span class="sd">        service: Service to use (default: &quot;zpa&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        List of application segment dictionaries</span>
-<span class="sd">        </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; segments = zpa_list_application_segments()</span>
 <span class="sd">        &gt;&gt;&gt; segments = zpa_list_application_segments(search=&quot;production&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">application_segment</span>
-    
+
     <span class="n">query_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;microtenant_id&quot;</span><span class="p">:</span> <span class="n">microtenant_id</span><span class="p">}</span>
     <span class="k">if</span> <span class="n">search</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;search&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search</span>
@@ -322,11 +329,11 @@
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;page&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page</span>
     <span class="k">if</span> <span class="n">page_size</span><span class="p">:</span>
         <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;page_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_size</span>
-    
+
     <span class="n">segments</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_segments</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list application segments: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="n">segments</span> <span class="ow">or</span> <span class="p">[])]</span></div>
 
 
@@ -335,40 +342,39 @@
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zpa.app_segments.zpa_get_application_segment">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zpa_get_application_segment</span><span class="p">(</span>
     <span class="n">segment_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the segment to retrieve.&quot;</span><span class="p">)],</span>
-    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zpa&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get a specific ZPA application segment by ID.</span>
-<span class="sd">    </span>
+
 <span class="sd">    🔒 READ-ONLY OPERATION - Safe for autonomous agents.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        segment_id: ID of the segment to retrieve (required)</span>
 <span class="sd">        microtenant_id: Optional microtenant ID for scoping</span>
 <span class="sd">        use_legacy: Whether to use legacy API (default: False)</span>
 <span class="sd">        service: Service to use (default: &quot;zpa&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Application segment dictionary</span>
-<span class="sd">        </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; segment = zpa_get_application_segment(segment_id=&quot;123456&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">segment_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;segment_id is required&quot;</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">application_segment</span>
-    
-    <span class="n">segment</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_segment</span><span class="p">(</span>
-        <span class="n">segment_id</span><span class="p">,</span>
-        <span class="n">query_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;microtenant_id&quot;</span><span class="p">:</span> <span class="n">microtenant_id</span><span class="p">}</span>
-    <span class="p">)</span>
+
+    <span class="n">segment</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_segment</span><span class="p">(</span><span class="n">segment_id</span><span class="p">,</span> <span class="n">query_params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;microtenant_id&quot;</span><span class="p">:</span> <span class="n">microtenant_id</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get application segment </span><span class="si">{</span><span class="n">segment_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">segment</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -376,6 +382,7 @@
 <span class="c1"># =============================================================================</span>
 <span class="c1"># WRITE OPERATIONS (Require --enable-write-tools flag)</span>
 <span class="c1"># =============================================================================</span>
+
 
 <div class="viewcode-block" id="zpa_create_application_segment">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zpa.app_segments.zpa_create_application_segment">[docs]</a>
@@ -385,26 +392,42 @@
     <span class="n">domain_names</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of domain names.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Description of the segment.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether the segment is enabled.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">server_group_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of server group IDs.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">server_group_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of server group IDs.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tcp_port_range</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;TCP port ranges.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">udp_port_range</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;UDP port ranges.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">tcp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;TCP port ranges (legacy format).&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">udp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;UDP port ranges (legacy format).&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tcp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;TCP port ranges (legacy format).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">udp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;UDP port ranges (legacy format).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">bypass_type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Bypass type for the segment.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">health_check_type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Health check type.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">health_reporting</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Health reporting configuration.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">is_cname_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether CNAME is enabled.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">passive_health_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether passive health checking is enabled.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">clientless_app_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of clientless app IDs.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">health_reporting</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Health reporting configuration.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_cname_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether CNAME is enabled.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">passive_health_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether passive health checking is enabled.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">clientless_app_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of clientless app IDs.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zpa&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a new ZPA application segment.</span>
-<span class="sd">    </span>
+
 <span class="sd">    ⚠️  WRITE OPERATION - Requires --enable-write-tools flag.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the application segment (required)</span>
 <span class="sd">        segment_group_id: ID of the segment group (required)</span>
@@ -425,10 +448,10 @@
 <span class="sd">        microtenant_id: Optional microtenant ID for scoping</span>
 <span class="sd">        use_legacy: Whether to use legacy API (default: False)</span>
 <span class="sd">        service: Service to use (default: &quot;zpa&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Created application segment dictionary</span>
-<span class="sd">        </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; segment = zpa_create_application_segment(</span>
 <span class="sd">        ...     name=&quot;Production App&quot;,</span>
@@ -442,7 +465,7 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name is required&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">segment_group_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;segment_group_id is required&quot;</span><span class="p">)</span>
-    
+
     <span class="c1"># Validate port configurations</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">tcp_port_range</span> <span class="ow">and</span> <span class="n">tcp_port_ranges</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">udp_port_range</span> <span class="ow">and</span> <span class="n">udp_port_ranges</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -451,10 +474,10 @@
         <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">tcp_port_range</span><span class="p">,</span> <span class="n">udp_port_range</span><span class="p">,</span> <span class="n">tcp_port_ranges</span><span class="p">,</span> <span class="n">udp_port_ranges</span><span class="p">]):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;At least one port configuration must be provided (TCP or UDP).&quot;</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">application_segment</span>
-    
+
     <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
         <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
@@ -469,24 +492,24 @@
         <span class="s2">&quot;passive_health_enabled&quot;</span><span class="p">:</span> <span class="n">passive_health_enabled</span><span class="p">,</span>
         <span class="s2">&quot;clientless_app_ids&quot;</span><span class="p">:</span> <span class="n">clientless_app_ids</span><span class="p">,</span>
     <span class="p">}</span>
-    
+
     <span class="k">if</span> <span class="n">tcp_port_range</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;tcp_port_range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tcp_port_range</span>
     <span class="k">elif</span> <span class="n">tcp_port_ranges</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;tcp_port_ranges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tcp_port_ranges</span>
-    
+
     <span class="k">if</span> <span class="n">udp_port_range</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;udp_port_range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">udp_port_range</span>
     <span class="k">elif</span> <span class="n">udp_port_ranges</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;udp_port_ranges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">udp_port_ranges</span>
-    
+
     <span class="k">if</span> <span class="n">microtenant_id</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;microtenant_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">microtenant_id</span>
-    
+
     <span class="n">created</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">add_segment</span><span class="p">(</span><span class="o">**</span><span class="n">body</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to create application segment: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">created</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -496,30 +519,48 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">zpa_update_application_segment</span><span class="p">(</span>
     <span class="n">segment_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the segment to update.&quot;</span><span class="p">)],</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Name of the application segment.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">segment_group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the segment group.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">segment_group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the segment group.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">domain_names</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of domain names.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Description of the segment.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether the segment is enabled.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">server_group_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of server group IDs.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">server_group_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of server group IDs.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tcp_port_range</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;TCP port ranges.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">udp_port_range</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;UDP port ranges.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">tcp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;TCP port ranges (legacy format).&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">udp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;UDP port ranges (legacy format).&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tcp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;TCP port ranges (legacy format).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">udp_port_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;UDP port ranges (legacy format).&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">bypass_type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Bypass type for the segment.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">health_check_type</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Health check type.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">health_reporting</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Health reporting configuration.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">is_cname_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether CNAME is enabled.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">passive_health_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether passive health checking is enabled.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">clientless_app_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of clientless app IDs.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">health_reporting</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Health reporting configuration.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_cname_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether CNAME is enabled.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">passive_health_enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether passive health checking is enabled.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">clientless_app_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of clientless app IDs.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zpa&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Update an existing ZPA application segment.</span>
-<span class="sd">    </span>
+
 <span class="sd">    ⚠️  WRITE OPERATION - Requires --enable-write-tools flag.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        segment_id: ID of the segment to update (required)</span>
 <span class="sd">        name: New name for the segment</span>
@@ -541,10 +582,10 @@
 <span class="sd">        microtenant_id: Optional microtenant ID for scoping</span>
 <span class="sd">        use_legacy: Whether to use legacy API (default: False)</span>
 <span class="sd">        service: Service to use (default: &quot;zpa&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Updated application segment dictionary</span>
-<span class="sd">        </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; segment = zpa_update_application_segment(</span>
 <span class="sd">        ...     segment_id=&quot;123456&quot;,</span>
@@ -553,16 +594,16 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">segment_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;segment_id is required for update&quot;</span><span class="p">)</span>
-    
+
     <span class="k">if</span> <span class="p">(</span><span class="n">tcp_port_range</span> <span class="ow">and</span> <span class="n">tcp_port_ranges</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">udp_port_range</span> <span class="ow">and</span> <span class="n">udp_port_ranges</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s2">&quot;Use either structured port ranges (tcp_port_range/udp_port_range) &quot;</span>
             <span class="s2">&quot;or legacy string ranges (tcp_port_ranges/udp_port_ranges), not both.&quot;</span>
         <span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">application_segment</span>
-    
+
     <span class="n">body</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
         <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
@@ -577,24 +618,24 @@
         <span class="s2">&quot;passive_health_enabled&quot;</span><span class="p">:</span> <span class="n">passive_health_enabled</span><span class="p">,</span>
         <span class="s2">&quot;clientless_app_ids&quot;</span><span class="p">:</span> <span class="n">clientless_app_ids</span><span class="p">,</span>
     <span class="p">}</span>
-    
+
     <span class="k">if</span> <span class="n">tcp_port_range</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;tcp_port_range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tcp_port_range</span>
     <span class="k">elif</span> <span class="n">tcp_port_ranges</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;tcp_port_ranges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tcp_port_ranges</span>
-    
+
     <span class="k">if</span> <span class="n">udp_port_range</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;udp_port_range&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">udp_port_range</span>
     <span class="k">elif</span> <span class="n">udp_port_ranges</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;udp_port_ranges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">udp_port_ranges</span>
-    
+
     <span class="k">if</span> <span class="n">microtenant_id</span><span class="p">:</span>
         <span class="n">body</span><span class="p">[</span><span class="s2">&quot;microtenant_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">microtenant_id</span>
-    
+
     <span class="n">updated</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">update_segment</span><span class="p">(</span><span class="n">segment_id</span><span class="p">,</span> <span class="o">**</span><span class="n">body</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to update application segment </span><span class="si">{</span><span class="n">segment_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">updated</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -603,52 +644,52 @@
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zpa.app_segments.zpa_delete_application_segment">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zpa_delete_application_segment</span><span class="p">(</span>
     <span class="n">segment_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the segment to delete.&quot;</span><span class="p">)],</span>
-    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">microtenant_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Microtenant ID for scoping.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zpa&quot;</span><span class="p">,</span>
-    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Delete a ZPA application segment.</span>
-<span class="sd">    </span>
+
 <span class="sd">    🚨 DESTRUCTIVE OPERATION - Requires double confirmation.</span>
 <span class="sd">    This action cannot be undone.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        segment_id: ID of the segment to delete (required)</span>
 <span class="sd">        microtenant_id: Optional microtenant ID for scoping</span>
 <span class="sd">        use_legacy: Whether to use legacy API (default: False)</span>
 <span class="sd">        service: Service to use (default: &quot;zpa&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Success message string or confirmation message</span>
-<span class="sd">        </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; result = zpa_delete_application_segment(segment_id=&quot;123456&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.elicitation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_confirmation</span><span class="p">,</span> <span class="n">extract_confirmed_from_kwargs</span>
-    
+
     <span class="c1"># Extract confirmation from kwargs (hidden from tool schema)</span>
     <span class="n">confirmed</span> <span class="o">=</span> <span class="n">extract_confirmed_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-    
+
     <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span>
-        <span class="s2">&quot;zpa_delete_application_segment&quot;</span><span class="p">,</span>
-        <span class="n">confirmed</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;segment_id&quot;</span><span class="p">:</span> <span class="n">segment_id</span><span class="p">}</span>
+        <span class="s2">&quot;zpa_delete_application_segment&quot;</span><span class="p">,</span> <span class="n">confirmed</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;segment_id&quot;</span><span class="p">:</span> <span class="n">segment_id</span><span class="p">}</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">confirmation_check</span>
-    
+
     <span class="k">if</span> <span class="ow">not</span> <span class="n">segment_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;segment_id is required for delete&quot;</span><span class="p">)</span>
-    
+
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zpa</span><span class="o">.</span><span class="n">application_segment</span>
-    
+
     <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">delete_segment</span><span class="p">(</span><span class="n">segment_id</span><span class="p">,</span> <span class="n">microtenant_id</span><span class="o">=</span><span class="n">microtenant_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to delete application segment </span><span class="si">{</span><span class="n">segment_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Successfully deleted application segment </span><span class="si">{</span><span class="n">segment_id</span><span class="si">}</span><span class="s2">&quot;</span></div>
 
 </pre></div>
@@ -683,7 +724,7 @@
       
     </aside>
   </div>
-</div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>

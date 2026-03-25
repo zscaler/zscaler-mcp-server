@@ -212,8 +212,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
@@ -358,9 +360,11 @@
 
 <span class="c1"># Service Selection</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_SERVICES</span><span class="o">=</span><span class="s2">&quot;zpa,zia,zdx&quot;</span><span class="w">       </span><span class="c1"># Comma-separated (empty = all services)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DISABLED_SERVICES</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w">          </span><span class="c1"># Comma-separated services to exclude</span>
 
 <span class="c1"># Tool Selection</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_TOOLS</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w">                     </span><span class="c1"># Comma-separated tool names (empty = all tools)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DISABLED_TOOLS</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w">            </span><span class="c1"># Comma-separated tools to exclude (supports wildcards)</span>
 
 <span class="c1"># Logging</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DEBUG</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="w">                </span><span class="c1"># Enable debug logging (true/false)</span>
@@ -373,6 +377,95 @@
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_USER_AGENT_COMMENT</span><span class="o">=</span><span class="s2">&quot;My App&quot;</span><span class="w">  </span><span class="c1"># Additional User-Agent info</span>
 </pre></div>
 </div>
+</section>
+<section id="mcp-client-authentication">
+<span id="id2"></span><h3>MCP Client Authentication<a class="headerlink" href="#mcp-client-authentication" title="Link to this heading">¶</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>MCP Client Authentication applies only to HTTP transports (<code class="docutils literal notranslate"><span class="pre">sse</span></code>, <code class="docutils literal notranslate"><span class="pre">streamable-http</span></code>). The <code class="docutils literal notranslate"><span class="pre">stdio</span></code> transport does not support or require client authentication.</p>
+</div>
+<p>The MCP server supports three environment-variable-based authentication modes and a library-level <code class="docutils literal notranslate"><span class="pre">auth=</span></code> parameter for controlling which clients can connect:</p>
+<p><strong>1. API Key (Simple Shared Secret)</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_MODE</span><span class="o">=</span><span class="s2">&quot;api-key&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_API_KEY</span><span class="o">=</span><span class="s2">&quot;sk-your-secret-key-here&quot;</span>
+</pre></div>
+</div>
+<p>Clients authenticate with <code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">sk-your-secret-key-here</span></code>.</p>
+<p><strong>2. JWT (External Identity Provider via JWKS)</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_MODE</span><span class="o">=</span><span class="s2">&quot;jwt&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_JWKS_URI</span><span class="o">=</span><span class="s2">&quot;https://your-idp.auth0.com/.well-known/jwks.json&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_ISSUER</span><span class="o">=</span><span class="s2">&quot;https://your-idp.auth0.com/&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_AUDIENCE</span><span class="o">=</span><span class="s2">&quot;zscaler-mcp-server&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_ALGORITHMS</span><span class="o">=</span><span class="s2">&quot;RS256&quot;</span><span class="w">   </span><span class="c1"># Optional, default: RS256</span>
+</pre></div>
+</div>
+<p>Supports Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, and Google Cloud Identity. Tokens are validated locally using the IdP’s public keys.</p>
+<p><strong>3. Zscaler (OneAPI Credential Validation)</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_AUTH_MODE</span><span class="o">=</span><span class="s2">&quot;zscaler&quot;</span>
+</pre></div>
+</div>
+<p>Clients authenticate via Basic Auth (<code class="docutils literal notranslate"><span class="pre">client_id:client_secret</span></code>) or custom headers (<code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-ID</span></code> / <code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-Secret</span></code>). The server validates against Zscaler’s <code class="docutils literal notranslate"><span class="pre">/oauth2/v1/token</span></code> endpoint.</p>
+<p><strong>4. Library-Level OAuth 2.1 — OIDCProxy (auth= Parameter)</strong></p>
+<p>When using <code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer</span></code> as a Python library, pass a <code class="docutils literal notranslate"><span class="pre">fastmcp.server.auth.AuthProvider</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">OIDCProxy</span></code>) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR) and works with any OIDC-compliant IdP (Auth0, Okta, Azure AD, Keycloak, Google, etc.).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.server.auth.oidc_proxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">OIDCProxy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZscalerMCPServer</span>
+
+<span class="n">auth</span> <span class="o">=</span> <span class="n">OIDCProxy</span><span class="p">(</span>
+    <span class="n">config_url</span><span class="o">=</span><span class="s2">&quot;https://your-tenant.auth0.com/.well-known/openid-configuration&quot;</span><span class="p">,</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OIDCPROXY_CLIENT_ID&quot;</span><span class="p">),</span>
+    <span class="n">client_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OIDCPROXY_CLIENT_SECRET&quot;</span><span class="p">),</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;http://localhost:8000&quot;</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;zscaler-mcp-server&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Allow standard OIDC scopes for Dynamic Client Registration</span>
+<span class="k">if</span> <span class="n">auth</span><span class="o">.</span><span class="n">client_registration_options</span><span class="p">:</span>
+    <span class="n">auth</span><span class="o">.</span><span class="n">client_registration_options</span><span class="o">.</span><span class="n">valid_scopes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;openid&quot;</span><span class="p">,</span> <span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+<span class="n">server</span> <span class="o">=</span> <span class="n">ZscalerMCPServer</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+<span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;streamable-http&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">auth=</span></code> is provided, the env-var-based auth middleware (<code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_*</span></code>) is automatically skipped. The server exposes standard OAuth endpoints (<code class="docutils literal notranslate"><span class="pre">/.well-known/*</span></code>, <code class="docutils literal notranslate"><span class="pre">/register</span></code>, <code class="docutils literal notranslate"><span class="pre">/authorize</span></code>, <code class="docutils literal notranslate"><span class="pre">/token</span></code>) and MCP clients handle the authorization flow automatically — no static tokens or shared secrets required.</p>
+<p><strong>IdP requirements:</strong> Your Identity Provider must have a <strong>Regular Web Application</strong> (not M2M) with the callback URL <code class="docutils literal notranslate"><span class="pre">http://localhost:8000/auth/callback</span></code> registered, and an API/resource server with an identifier matching the <code class="docutils literal notranslate"><span class="pre">audience</span></code> value.</p>
+<p>See the <a class="reference external" href="../docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr">Authentication &amp; Deployment Guide</a> for detailed IdP-specific setup instructions, Docker deployment, and troubleshooting.</p>
+<p><strong>Token Generation:</strong></p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">--generate-auth-token</span></code> CLI flag to generate a token for testing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp<span class="w"> </span>--generate-auth-token
+</pre></div>
+</div>
+</section>
+<section id="network-security">
+<span id="id3"></span><h3>Network Security<a class="headerlink" href="#network-security" title="Link to this heading">¶</a></h3>
+<p>The server provides defense-in-depth network security controls for HTTP transports.</p>
+<p><strong>HTTPS / TLS Configuration:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_TLS_CERT_FILE</span><span class="o">=</span><span class="s2">&quot;/path/to/cert.pem&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_TLS_KEY_FILE</span><span class="o">=</span><span class="s2">&quot;/path/to/key.pem&quot;</span>
+</pre></div>
+</div>
+<p>When both are set, the server starts with TLS enabled, serving over HTTPS.</p>
+<p><strong>HTTPS Policy Enforcement:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_ALLOW_HTTP</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="w">    </span><span class="c1"># Default: false</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">false</span></code> (default), the server blocks plaintext HTTP on non-localhost interfaces if TLS is not configured. Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> only if you have TLS termination handled upstream (e.g., a reverse proxy).</p>
+<p><strong>Host Header Validation:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_ALLOWED_HOSTS</span><span class="o">=</span><span class="s2">&quot;myhost.example.com,api.internal&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DISABLE_HOST_VALIDATION</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="w">   </span><span class="c1"># Default: false</span>
+</pre></div>
+</div>
+<p>Restricts accepted <code class="docutils literal notranslate"><span class="pre">Host</span></code> headers to prevent DNS rebinding attacks. Localhost variants (<code class="docutils literal notranslate"><span class="pre">localhost</span></code>, <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>, <code class="docutils literal notranslate"><span class="pre">::1</span></code>) are always allowed. Set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_HOST_VALIDATION=true</span></code> to disable (not recommended).</p>
+<p><strong>Source IP Access Control:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_ALLOWED_SOURCE_IPS</span><span class="o">=</span><span class="s2">&quot;10.0.0.0/8,192.168.1.0/24,203.0.113.42&quot;</span>
+</pre></div>
+</div>
+<p>Restricts which client IP addresses can connect. Supports individual IPs and CIDR notation. When unset, all source IPs are allowed.</p>
 </section>
 <section id="write-operations-configuration-security">
 <h3>Write Operations Configuration (Security)<a class="headerlink" href="#write-operations-configuration-security" title="Link to this heading">¶</a></h3>
@@ -506,37 +599,76 @@
 <h3>Complete List of All Supported Variables<a class="headerlink" href="#complete-list-of-all-supported-variables" title="Link to this heading">¶</a></h3>
 <p><strong>Server Configuration:</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TRANSPORT</span></code> - Transport protocol (stdio, sse, streamable-http)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TRANSPORT</span></code> - Transport protocol (<code class="docutils literal notranslate"><span class="pre">stdio</span></code>, <code class="docutils literal notranslate"><span class="pre">sse</span></code>, <code class="docutils literal notranslate"><span class="pre">streamable-http</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code> - Comma-separated service list (empty = all)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLS</span></code> - Comma-separated tool list (empty = all)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DEBUG</span></code> - Enable debug logging (true/false)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_HOST</span></code> - HTTP bind host (default: 127.0.0.1)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_PORT</span></code> - HTTP port (default: 8000)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_SERVICES</span></code> - Comma-separated services to exclude (e.g., <code class="docutils literal notranslate"><span class="pre">zcc,zdx</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code> - Comma-separated tools to exclude, supports wildcards (e.g., <code class="docutils literal notranslate"><span class="pre">zcc_*,zcc_devices_csv_exporter</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DEBUG</span></code> - Enable debug logging (<code class="docutils literal notranslate"><span class="pre">true</span></code>/<code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_HOST</span></code> - HTTP bind host (default: <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_PORT</span></code> - HTTP port (default: <code class="docutils literal notranslate"><span class="pre">8000</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_USER_AGENT_COMMENT</span></code> - Additional User-Agent info</p></li>
 </ul>
 <p><strong>Write Operations (Security):</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED</span></code> - Enable write mode (default: false)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED</span></code> - Enable write mode (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code> - <strong>MANDATORY</strong> allowlist when write enabled</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SKIP_CONFIRMATIONS</span></code> - Skip delete confirmations with HMAC token (advanced)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_CONFIRMATION_TTL</span></code> - Confirmation window in seconds (default: <code class="docutils literal notranslate"><span class="pre">300</span></code>)</p></li>
 </ul>
-<p><strong>OneAPI Authentication:</strong></p>
+<p><strong>MCP Client Authentication (HTTP transports only):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ENABLED</span></code> - Enable client authentication (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_MODE</span></code> - Authentication mode: <code class="docutils literal notranslate"><span class="pre">api-key</span></code>, <code class="docutils literal notranslate"><span class="pre">jwt</span></code>, or <code class="docutils literal notranslate"><span class="pre">zscaler</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_API_KEY</span></code> - Shared secret for <code class="docutils literal notranslate"><span class="pre">api-key</span></code> mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_JWKS_URI</span></code> - JWKS endpoint URL for <code class="docutils literal notranslate"><span class="pre">jwt</span></code> mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ISSUER</span></code> - Expected JWT issuer for <code class="docutils literal notranslate"><span class="pre">jwt</span></code> mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_AUDIENCE</span></code> - Expected JWT audience for <code class="docutils literal notranslate"><span class="pre">jwt</span></code> mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ALGORITHMS</span></code> - Allowed JWT algorithms (default: <code class="docutils literal notranslate"><span class="pre">RS256</span></code>)</p></li>
+</ul>
+<p><strong>Network Security (HTTP transports only):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TLS_CERT_FILE</span></code> - Path to TLS certificate file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TLS_KEY_FILE</span></code> - Path to TLS private key file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOW_HTTP</span></code> - Allow plaintext HTTP on non-localhost (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_HOSTS</span></code> - Comma-separated list of allowed Host header values</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_HOST_VALIDATION</span></code> - Disable host header validation (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_SOURCE_IPS</span></code> - Comma-separated list of allowed client IPs/CIDRs</p></li>
+</ul>
+<p><strong>OneAPI Authentication (Zscaler API credentials):</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code> - OAuth client ID (required)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code> - OAuth client secret (required)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> - Customer/tenant ID (required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> - Customer/tenant ID (required for ZPA)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code> - Vanity domain (required)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code> - Cloud environment (optional)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code> - Private key path for JWT (optional)</p></li>
 </ul>
 <p><strong>Legacy Authentication:</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY</span></code> - Enable legacy mode (default: false)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY</span></code> - Enable legacy mode (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CUSTOMER_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CLOUD</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZIA_USERNAME</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_PASSWORD</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_API_KEY</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_CLOUD</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZCC_CLOUD</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZDX_CLOUD</span></code></p></li>
 </ul>
 </section>
+</section>
+<section id="cli-flags-reference">
+<h2>CLI Flags Reference<a class="headerlink" href="#cli-flags-reference" title="Link to this heading">¶</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--transport           Transport protocol: stdio, sse, streamable-http (default: stdio)
+--host                Host to bind to for HTTP transports (default: 127.0.0.1)
+--port                Port for HTTP transports (default: 8000)
+--services            Comma-separated list of services to enable
+--enable-write-tools  Enable write (create/update/delete) tools
+--write-tools         Mandatory allowlist of write tools (supports wildcards)
+--generate-auth-token Generate an authorization token from configured credentials
+--list-tools          List all registered tools and exit
+--user-agent-comment  Additional comment appended to the User-Agent header
+--version             Show server version and exit
+--debug               Enable debug logging
+</pre></div>
+</div>
 </section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
@@ -547,17 +679,44 @@
 <li><p>Is <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code> provided with patterns?</p></li>
 <li><p>Do patterns match tool names? (use <code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span> <span class="pre">--list-tools</span></code> to see all tools)</p></li>
 </ol>
-<p><strong>Issue: Authentication fails</strong></p>
+<p><strong>Issue: Zscaler API authentication fails</strong></p>
 <p>Check:</p>
 <ol class="arabic simple">
 <li><p>For OneAPI: All 4 required variables set (CLIENT_ID, CLIENT_SECRET, CUSTOMER_ID, VANITY_DOMAIN)</p></li>
 <li><p>For Legacy: <code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY=true</span></code> + service-specific credentials</p></li>
 <li><p>Credentials are valid and not expired</p></li>
 </ol>
+<p><strong>Issue: MCP Client Authentication fails</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ENABLED=true</span></code> is set</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_MODE</span></code> matches your client’s authentication method</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">api-key</span></code>: Client sends <code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;key&gt;</span></code> with the correct key</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">jwt</span></code>: JWKS URI is reachable, issuer/audience match, token is not expired</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">zscaler</span></code>: Client sends valid Basic Auth or <code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-ID</span></code>/<code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-Secret</span></code> headers</p></li>
+</ol>
+<p><strong>Issue: Connection refused on non-localhost</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOW_HTTP</span></code> — If <code class="docutils literal notranslate"><span class="pre">false</span></code> (default) and TLS is not configured, HTTP is blocked on non-localhost</p></li>
+<li><p>Either configure TLS (<code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TLS_CERT_FILE</span></code> + <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TLS_KEY_FILE</span></code>) or set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOW_HTTP=true</span></code></p></li>
+</ol>
+<p><strong>Issue: 421 Misdirected Request (Host header rejected)</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p>Add your server’s hostname to <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_HOSTS</span></code></p></li>
+<li><p>Or set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_HOST_VALIDATION=true</span></code> (not recommended for production)</p></li>
+</ol>
+<p><strong>Issue: Client IP rejected</strong></p>
+<p>Check:</p>
+<ol class="arabic simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_SOURCE_IPS</span></code> is set, ensure the client’s IP is in the list</p></li>
+<li><p>Use CIDR notation for ranges (e.g., <code class="docutils literal notranslate"><span class="pre">10.0.0.0/8</span></code>)</p></li>
+</ol>
 <p><strong>Issue: Service not available</strong></p>
 <p>Check:</p>
 <ol class="arabic simple">
-<li><p>Service name is correct: <code class="docutils literal notranslate"><span class="pre">zpa</span></code>, <code class="docutils literal notranslate"><span class="pre">zia</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx</span></code>, <code class="docutils literal notranslate"><span class="pre">zcc</span></code>, <code class="docutils literal notranslate"><span class="pre">zidentity</span></code></p></li>
+<li><p>Service name is correct: <code class="docutils literal notranslate"><span class="pre">zpa</span></code>, <code class="docutils literal notranslate"><span class="pre">zia</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx</span></code>, <code class="docutils literal notranslate"><span class="pre">zcc</span></code>, <code class="docutils literal notranslate"><span class="pre">zidentity</span></code>, <code class="docutils literal notranslate"><span class="pre">ztw</span></code>, <code class="docutils literal notranslate"><span class="pre">zeasm</span></code>, <code class="docutils literal notranslate"><span class="pre">zinsights</span></code></p></li>
 <li><p>If using <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code>, service is included in the list</p></li>
 </ol>
 </section>
@@ -626,6 +785,8 @@
 </li>
 <li><a class="reference internal" href="#server-configuration">Server Configuration</a><ul>
 <li><a class="reference internal" href="#general-server-settings">General Server Settings</a></li>
+<li><a class="reference internal" href="#mcp-client-authentication">MCP Client Authentication</a></li>
+<li><a class="reference internal" href="#network-security">Network Security</a></li>
 <li><a class="reference internal" href="#write-operations-configuration-security">Write Operations Configuration (Security)</a></li>
 </ul>
 </li>
@@ -640,6 +801,7 @@
 <li><a class="reference internal" href="#complete-list-of-all-supported-variables">Complete List of All Supported Variables</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#cli-flags-reference">CLI Flags Reference</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>

@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write          # Required for provenance attestation signing
 
 jobs:
   docker-build-push:
@@ -54,6 +55,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          sbom: true
+          provenance: mode=max
 
       - name: Generate image summary
         run: |
@@ -77,6 +80,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Attestations:** SBOM + Provenance (max)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Pull Command:**" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY

@@ -212,8 +212,10 @@
 <li class="toctree-l2"><a class="reference internal" href="tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/examples.html">Examples</a></li>
@@ -279,13 +281,18 @@
 <p>Before you begin, ensure you have:</p>
 <ul class="simple">
 <li><p>Python 3.11 or higher installed</p></li>
+<li><p><a class="reference external" href="https://docs.astral.sh/uv/">uv</a> installed (recommended) or pip</p></li>
 <li><p>Access to Zscaler APIs (OneAPI or Legacy credentials)</p></li>
 <li><p>Basic understanding of Model Context Protocol (MCP)</p></li>
 </ul>
 </section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
-<p>Install the Zscaler Integrations MCP Server using pip:</p>
+<p>Install using uv (recommended):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>zscaler-mcp
+</pre></div>
+</div>
+<p>Or install using pip:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>zscaler-mcp
 </pre></div>
 </div>
@@ -298,116 +305,137 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </section>
 <section id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
-<p>The MCP server requires Zscaler API credentials to function. You can provide these in several ways:</p>
-<section id="environment-variables">
-<h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">¶</a></h3>
-<p>Set the following environment variables for OneAPI authentication:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscaler&quot;</span><span class="w">  </span><span class="c1"># Optional, defaults to zscaler</span>
-</pre></div>
-</div>
-<p>For Legacy API authentication, set service-specific variables:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ZIA Legacy</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;your_username&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscaler&quot;</span>
-
-<span class="c1"># ZPA Legacy</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;PRODUCTION&quot;</span>
+<p>The MCP server requires Zscaler API credentials to function. Create a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file with your credentials:</p>
+<section id="oneapi-authentication-recommended">
+<h3>OneAPI Authentication (Recommended)<a class="headerlink" href="#oneapi-authentication-recommended" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
+<span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
+<span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
+<span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span>
 </pre></div>
 </div>
 </section>
-<section id="configuration-file">
-<h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading">¶</a></h3>
-<p>Create a configuration file (<code class="docutils literal notranslate"><span class="pre">zscaler.yaml</span></code>) in your home directory:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">zscaler</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">client</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_client_id&quot;</span>
-<span class="w">    </span><span class="nt">clientSecret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_client_secret&quot;</span>
-<span class="w">    </span><span class="nt">vanityDomain</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your_vanity_domain&quot;</span>
-<span class="w">    </span><span class="nt">cloud</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;zscaler&quot;</span>
-<span class="w">    </span><span class="nt">logging</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">      </span><span class="nt">verbose</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<section id="legacy-api-authentication">
+<h3>Legacy API Authentication<a class="headerlink" href="#legacy-api-authentication" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+
+<span class="c1"># ZIA Legacy</span>
+<span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;your_username&quot;</span>
+<span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span>
+<span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span>
+<span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo&quot;</span>
+
+<span class="c1"># ZPA Legacy</span>
+<span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
+<span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
+<span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
+<span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;PRODUCTION&quot;</span>
 </pre></div>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not commit <code class="docutils literal notranslate"><span class="pre">.env</span></code> to source control. Add it to your <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code>.</p>
+</div>
+<p>For the full list of environment variables (including MCP Client Authentication and Network Security), see the <a class="reference internal" href="guides/configuration.html#configuration-guide"><span class="std std-ref">Configuration Guide</span></a>.</p>
 </section>
 </section>
 <section id="running-the-server">
 <h2>Running the Server<a class="headerlink" href="#running-the-server" title="Link to this heading">¶</a></h2>
 <p>Start the MCP server using the command line:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp-server
-</pre></div>
-</div>
-<p>Or run it programmatically:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZscalerMCPServer</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Default (stdio transport)</span>
+zscaler-mcp
 
-<span class="n">server</span> <span class="o">=</span> <span class="n">ZscalerMCPServer</span><span class="p">()</span>
-<span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c1"># With SSE transport</span>
+zscaler-mcp<span class="w"> </span>--transport<span class="w"> </span>sse
+
+<span class="c1"># With streamable-http transport</span>
+zscaler-mcp<span class="w"> </span>--transport<span class="w"> </span>streamable-http
+
+<span class="c1"># With specific services</span>
+zscaler-mcp<span class="w"> </span>--services<span class="w"> </span>zia,zpa,zdx
+
+<span class="c1"># With write operations enabled</span>
+zscaler-mcp<span class="w"> </span>--enable-write-tools<span class="w"> </span>--write-tools<span class="w"> </span><span class="s2">&quot;zpa_create_*,zia_update_*&quot;</span>
 </pre></div>
 </div>
-<p>The server will start and listen for MCP protocol connections.</p>
+<p>For all available options:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp<span class="w"> </span>--help
+</pre></div>
+</div>
 </section>
 <section id="connecting-with-ai-assistants">
 <h2>Connecting with AI Assistants<a class="headerlink" href="#connecting-with-ai-assistants" title="Link to this heading">¶</a></h2>
-<section id="claude-desktop">
-<h3>Claude Desktop<a class="headerlink" href="#claude-desktop" title="Link to this heading">¶</a></h3>
-<p>Add the following to your Claude Desktop configuration:</p>
+<p>The Zscaler MCP Server integrates with multiple AI development platforms. Native plugin/extension support is available for:</p>
+<ul class="simple">
+<li><p><strong>Claude Code</strong> — Native plugin with marketplace support (<code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">plugin</span> <span class="pre">install</span> <span class="pre">zscaler</span></code>)</p></li>
+<li><p><strong>Claude Desktop</strong> — Manual MCP configuration or one-click extension install</p></li>
+<li><p><strong>Cursor</strong> — Native plugin with guided skills</p></li>
+<li><p><strong>Gemini CLI</strong> — Extension with contextual tool guidance</p></li>
+<li><p><strong>Kiro IDE</strong> — Power with service-specific steering files</p></li>
+<li><p><strong>VS Code + GitHub Copilot</strong> — MCP configuration via Agent Mode</p></li>
+</ul>
+<p>For detailed setup instructions for each platform, see the <a class="reference internal" href="integrations/index.html#platform-integrations"><span class="std std-ref">Platform Integrations</span></a> page.</p>
+<section id="quick-configuration-any-mcp-client">
+<h3>Quick Configuration (Any MCP Client)<a class="headerlink" href="#quick-configuration-any-mcp-client" title="Link to this heading">¶</a></h3>
+<p>Using <code class="docutils literal notranslate"><span class="pre">uvx</span></code> (recommended):</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;zscaler&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;zscaler-mcp-server&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/absolute/path/to/.env&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Using Docker:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;docker&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--rm&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/absolute/path/to/.env&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;zscaler/zscaler-mcp-server:latest&quot;</span>
+<span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 </section>
-<section id="cursor">
-<h3>Cursor<a class="headerlink" href="#cursor" title="Link to this heading">¶</a></h3>
-<p>Configure Cursor to use the MCP server by adding it to your MCP configuration file.</p>
-</section>
 </section>
 <section id="testing-the-connection">
 <h2>Testing the Connection<a class="headerlink" href="#testing-the-connection" title="Link to this heading">¶</a></h2>
-<p>Once the server is running, you can test it by asking your AI assistant to:</p>
-<ul class="simple">
-<li><p>List available Zscaler tools</p></li>
-<li><p>Get information about your Zscaler configuration</p></li>
-<li><p>Execute a simple query (e.g., list users, devices, etc.)</p></li>
-</ul>
-<p>Example queries:</p>
+<p>Once the server is running, you can test it by asking your AI assistant:</p>
 <ul class="simple">
 <li><p>“What Zscaler tools are available?”</p></li>
-<li><p>“List all ZIA admin roles”</p></li>
+<li><p>“List my ZPA application segments”</p></li>
+<li><p>“List all ZIA rule labels”</p></li>
 <li><p>“Show me ZCC device information”</p></li>
-<li><p>“Get ZPA application segments”</p></li>
+<li><p>“List my ZDX applications”</p></li>
 </ul>
 </section>
 <section id="next-steps">
 <h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Explore the <a class="reference internal" href="tools/index.html"><span class="doc">tools documentation</span></a> to see all available tools</p></li>
-<li><p>Check out the examples guide for more complex usage scenarios</p></li>
-<li><p>Refer to the troubleshooting guide if you encounter issues</p></li>
+<li><p>Review the <a class="reference internal" href="guides/configuration.html#configuration-guide"><span class="std std-ref">Configuration Guide</span></a> for authentication, security, and advanced options</p></li>
+<li><p>Check out the <a class="reference internal" href="guides/examples.html"><span class="doc">examples guide</span></a> for service-specific prompts</p></li>
+<li><p>See <a class="reference internal" href="integrations/index.html#platform-integrations"><span class="std std-ref">Platform Integrations</span></a> for native IDE/editor integrations</p></li>
+<li><p>Refer to the <a class="reference internal" href="guides/troubleshooting.html"><span class="doc">troubleshooting guide</span></a> if you encounter issues</p></li>
 </ul>
 </section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
 <p>Common issues and solutions:</p>
 <ol class="arabic simple">
-<li><p><strong>Authentication errors</strong>: Verify your credentials and cloud environment</p></li>
-<li><p><strong>Connection refused</strong>: Ensure the server is running and accessible</p></li>
-<li><p><strong>Tool not found</strong>: Check that the service is properly configured</p></li>
+<li><p><strong>“Command not found: zscaler-mcp”</strong> — Install <code class="docutils literal notranslate"><span class="pre">uv</span></code>: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">-LsSf</span> <span class="pre">https://astral.sh/uv/install.sh</span> <span class="pre">|</span> <span class="pre">sh</span></code> then <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">zscaler-mcp</span></code></p></li>
+<li><p><strong>Authentication errors</strong> — Verify your credentials and cloud environment in <code class="docutils literal notranslate"><span class="pre">.env</span></code></p></li>
+<li><p><strong>Connection refused</strong> — Ensure the server is running and accessible; check <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOW_HTTP</span></code> if connecting over HTTP</p></li>
+<li><p><strong>Tools not appearing</strong> — Check that the service is enabled (<code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code>) and write tools are explicitly allowed (<code class="docutils literal notranslate"><span class="pre">--enable-write-tools</span></code> + <code class="docutils literal notranslate"><span class="pre">--write-tools</span></code>)</p></li>
 </ol>
-<p>For more detailed troubleshooting, see the troubleshooting guide.</p>
+<p>For more detailed troubleshooting, see the <a class="reference internal" href="guides/troubleshooting.html"><span class="doc">troubleshooting guide</span></a>.</p>
 </section>
 </section>
 
@@ -470,14 +498,13 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#configuration">Configuration</a><ul>
-<li><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
-<li><a class="reference internal" href="#configuration-file">Configuration File</a></li>
+<li><a class="reference internal" href="#oneapi-authentication-recommended">OneAPI Authentication (Recommended)</a></li>
+<li><a class="reference internal" href="#legacy-api-authentication">Legacy API Authentication</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#running-the-server">Running the Server</a></li>
 <li><a class="reference internal" href="#connecting-with-ai-assistants">Connecting with AI Assistants</a><ul>
-<li><a class="reference internal" href="#claude-desktop">Claude Desktop</a></li>
-<li><a class="reference internal" href="#cursor">Cursor</a></li>
+<li><a class="reference internal" href="#quick-configuration-any-mcp-client">Quick Configuration (Any MCP Client)</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#testing-the-connection">Testing the Connection</a></li>

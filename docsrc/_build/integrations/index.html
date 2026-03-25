@@ -1,0 +1,696 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Guides" href="../guides/index.html" /><link rel="prev" title="Zscaler Z-Insights Analytics Tools" href="../tools/z-insights/index.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Platform Integrations</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Platform Integrations</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/integrations/index.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="platform-integrations">
+<span id="id1"></span><h1>Platform Integrations<a class="headerlink" href="#platform-integrations" title="Link to this heading">¶</a></h1>
+<p>The Zscaler MCP Server ships with native integrations for several AI development platforms. Each integration includes platform-specific configuration files, 19 guided skills, and setup instructions.</p>
+<div class="table-wrapper colwidths-given docutils container" id="id6">
+<table class="docutils align-default" id="id6">
+<caption><span class="caption-text">Available Integrations</span><a class="headerlink" href="#id6" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 15.0%" />
+<col style="width: 35.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Platform</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Quick Start</p></th>
+<th class="head"><p>Details</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Claude Code</strong></p></td>
+<td><p>Plugin</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">plugin</span> <span class="pre">install</span> <span class="pre">zscaler</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/claude-code-plugin">integrations/claude-code-plugin/</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Cursor</strong></p></td>
+<td><p>Plugin</p></td>
+<td><p>Settings → Tools &amp; MCP → New MCP Server</p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/cursor-plugin">integrations/cursor-plugin/</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Gemini CLI</strong></p></td>
+<td><p>Extension</p></td>
+<td><p>Register <code class="docutils literal notranslate"><span class="pre">gemini-extension.json</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/gemini-extension">integrations/gemini-extension/</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Kiro IDE</strong></p></td>
+<td><p>Power</p></td>
+<td><p>Powers panel → Add Custom Power</p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/kiro">integrations/kiro/</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Google ADK</strong></p></td>
+<td><p>Agent</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">run</span> <span class="pre">zscaler_agent</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/adk">integrations/adk/</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>All integrations share the same MCP server, tools, and skills — they differ only in how they connect the AI platform to the server.</p>
+<section id="claude-code-plugin">
+<span id="id2"></span><h2>Claude Code Plugin<a class="headerlink" href="#claude-code-plugin" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is available as a native <strong>Claude Code Plugin</strong>, providing AI-assisted management of the Zscaler Zero Trust Exchange platform directly within <a class="reference external" href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Plugin manifest (<code class="docutils literal notranslate"><span class="pre">.claude-plugin/plugin.json</span></code>) — Plugin metadata, MCP entry point, skills, and slash commands</p></li>
+<li><p>Marketplace manifest (<code class="docutils literal notranslate"><span class="pre">.claude-plugin/marketplace.json</span></code>) — Claude Code marketplace listing and versioning</p></li>
+<li><p>Skills (<code class="docutils literal notranslate"><span class="pre">skills/</span></code>) — 19 guided multi-step workflows for common Zscaler operations</p></li>
+<li><p>MCP config (<code class="docutils literal notranslate"><span class="pre">.mcp.json</span></code>) — MCP server connection configuration</p></li>
+</ul>
+<p><strong>Installation:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># From the Claude Code marketplace</span>
+claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>zscaler
+
+<span class="c1"># Or from a local clone</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/zscaler/zscaler-mcp-server.git
+<span class="nb">cd</span><span class="w"> </span>zscaler-mcp-server
+claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>.
+</pre></div>
+</div>
+<p><strong>Manual MCP configuration:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/absolute/path/to/.env&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="cursor-plugin">
+<span id="id3"></span><h2>Cursor Plugin<a class="headerlink" href="#cursor-plugin" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is available as a native <strong>Cursor Plugin</strong> with 19 guided skills for ZPA, ZIA, ZDX, EASM, Z-Insights, and cross-product workflows.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Plugin manifest (<code class="docutils literal notranslate"><span class="pre">.cursor-plugin/plugin.json</span></code>) — Plugin metadata, version, and entry points</p></li>
+<li><p>Skills (<code class="docutils literal notranslate"><span class="pre">skills/</span></code>) — 19 guided multi-step workflows</p></li>
+<li><p>MCP config (<code class="docutils literal notranslate"><span class="pre">mcp.json</span></code>) — MCP server connection configuration</p></li>
+</ul>
+<p><strong>Installation:</strong></p>
+<ol class="arabic simple">
+<li><p>Open Cursor</p></li>
+<li><p>Go to <strong>Settings</strong> → <strong>Cursor Settings</strong> → <strong>Tools &amp; MCP</strong> → <strong>New MCP Server</strong></p></li>
+<li><p>Add the configuration:</p></li>
+</ol>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/absolute/path/to/.env&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Or edit <code class="docutils literal notranslate"><span class="pre">~/.cursor/mcp.json</span></code> (macOS/Linux) / <code class="docutils literal notranslate"><span class="pre">%USERPROFILE%\.cursor\mcp.json</span></code> (Windows) directly.</p>
+</section>
+<section id="gemini-extension">
+<span id="id4"></span><h2>Gemini Extension<a class="headerlink" href="#gemini-extension" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is available as a <strong>Gemini Extension</strong> for the <a class="reference external" href="https://github.com/google/gemini-cli">Google Gemini CLI</a>.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Extension manifest (<code class="docutils literal notranslate"><span class="pre">gemini-extension.json</span></code>) — Extension metadata, MCP config, and version info</p></li>
+<li><p>Extension README (<code class="docutils literal notranslate"><span class="pre">GEMINI.md</span></code>) — Tool discovery guide, critical gotchas, write-safety rules, and skill descriptions</p></li>
+</ul>
+<p><strong>Installation:</strong></p>
+<p>Clone the repository and register the extension with Gemini CLI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/zscaler/zscaler-mcp-server.git
+<span class="nb">cd</span><span class="w"> </span>zscaler-mcp-server
+</pre></div>
+</div>
+<p>The extension manifest configures the MCP server automatically using <code class="docutils literal notranslate"><span class="pre">${extensionPath}</span></code> variables resolved by Gemini CLI at runtime.</p>
+</section>
+<section id="kiro-power">
+<span id="id5"></span><h2>Kiro Power<a class="headerlink" href="#kiro-power" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is available as a <strong>Kiro Power</strong> for the <a class="reference external" href="https://kiro.dev">AWS Kiro IDE</a>.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Power manifest (<code class="docutils literal notranslate"><span class="pre">integrations/kiro/POWER.md</span></code>) — Power metadata, tool reference, workflows, and best practices</p></li>
+<li><p>MCP config (<code class="docutils literal notranslate"><span class="pre">integrations/kiro/mcp.json</span></code>) — MCP server connection configuration</p></li>
+<li><p>Steering files (<code class="docutils literal notranslate"><span class="pre">integrations/kiro/steering/</span></code>) — 9 service-specific context files for on-demand loading</p></li>
+</ul>
+<p><strong>Steering Files:</strong></p>
+<p>Unlike skills (which are guided workflows), Kiro uses <strong>steering files</strong> — service-specific knowledge documents that the AI loads on demand:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 30.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Service</p></th>
+<th class="head"><p>Tools</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zpa.md</span></code></p></td>
+<td><p>ZPA (Private Access)</p></td>
+<td><p>59 — app segments, access/forwarding/timeout/isolation policies, connectors, PRA</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia.md</span></code></p></td>
+<td><p>ZIA (Internet Access)</p></td>
+<td><p>76 — cloud firewall, URL filtering, SSL inspection, DLP, locations, sandbox</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zdx.md</span></code></p></td>
+<td><p>ZDX (Digital Experience)</p></td>
+<td><p>18 — app scores, device health, alerts, deep traces (read-only)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">z-insights.md</span></code></p></td>
+<td><p>Z-Insights (Analytics)</p></td>
+<td><p>16 — web traffic, cyber incidents, shadow IT, firewall analytics (read-only)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc.md</span></code></p></td>
+<td><p>ZCC (Client Connector)</p></td>
+<td><p>4 — device enrollment, forwarding profiles (read-only)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ztw.md</span></code></p></td>
+<td><p>ZTW (Workload Segmentation)</p></td>
+<td><p>19 — IP groups, network services, cloud accounts</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">easm.md</span></code></p></td>
+<td><p>EASM (Attack Surface)</p></td>
+<td><p>7 — findings, lookalike domains, scan evidence (read-only)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zidentity.md</span></code></p></td>
+<td><p>ZIdentity</p></td>
+<td><p>10 — users, groups, identity management (read-only)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cross-product.md</span></code></p></td>
+<td><p>Cross-product</p></td>
+<td><p>ZCC + ZDX + ZPA + ZIA correlation workflow</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Installation:</strong></p>
+<ol class="arabic simple">
+<li><p>Open <a class="reference external" href="https://kiro.dev">Kiro IDE</a></p></li>
+<li><p>Go to the <strong>Powers</strong> panel → <strong>Add Custom Power</strong></p></li>
+<li><p>Select <strong>Local Directory</strong> or provide the GitHub URL</p></li>
+<li><p>Point to <code class="docutils literal notranslate"><span class="pre">integrations/kiro/</span></code></p></li>
+</ol>
+</section>
+<section id="google-adk-agent-development-kit">
+<span id="google-adk"></span><h2>Google ADK (Agent Development Kit)<a class="headerlink" href="#google-adk-agent-development-kit" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server integrates with <a class="reference external" href="https://google.github.io/adk-docs/">Google ADK</a> to build autonomous Zscaler security agents powered by Gemini models.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Root <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">integrations/adk/.env</span></code>) — Zscaler API credentials and write-tool configuration</p></li>
+<li><p>Agent <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">integrations/adk/zscaler_agent/.env</span></code>) — Google ADK config (model, API key, agent prompt, Cloud Run settings)</p></li>
+</ul>
+<p><strong>How It Works:</strong></p>
+<p>The Google ADK agent connects to the Zscaler MCP Server as an MCP tool provider. The agent starts the MCP server, discovers all 280+ tools, and uses a Gemini model to interpret user requests and invoke the appropriate Zscaler tools.</p>
+<p><strong>Configuration:</strong></p>
+<ol class="arabic simple">
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">integrations/adk/.env</span></code> with your Zscaler OneAPI credentials</p></li>
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">integrations/adk/zscaler_agent/.env</span></code> with your Google API key and agent settings</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Google ADK Configuration</span>
+<span class="nv">GOOGLE_GENAI_USE_VERTEXAI</span><span class="o">=</span>False
+<span class="nv">GOOGLE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-google-api-key&quot;</span>
+<span class="nv">GOOGLE_MODEL</span><span class="o">=</span>gemini-2.0-flash
+
+<span class="c1"># Agent Configuration</span>
+<span class="nv">ZSCALER_AGENT_PROMPT</span><span class="o">=</span><span class="s1">&#39;You are a helpful Zscaler security assistant...&#39;</span>
+</pre></div>
+</div>
+<p><strong>Local Development:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/adk
+adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
+</pre></div>
+</div>
+<p><strong>Cloud Run Deployment:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>adk<span class="w"> </span>deploy<span class="w"> </span>cloud_run<span class="w"> </span>--project<span class="w"> </span>your-gcp-project<span class="w"> </span>--region<span class="w"> </span>us-central1<span class="w"> </span>zscaler_agent
+</pre></div>
+</div>
+<p><strong>Prerequisites:</strong></p>
+<ul class="simple">
+<li><p>Python 3.11+</p></li>
+<li><p><a class="reference external" href="https://google.github.io/adk-docs/">Google ADK</a> installed (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">google-adk</span></code>)</p></li>
+<li><p>A Google API key or Vertex AI access</p></li>
+<li><p>Zscaler OneAPI credentials</p></li>
+</ul>
+</section>
+<section id="shared-components">
+<h2>Shared Components<a class="headerlink" href="#shared-components" title="Link to this heading">¶</a></h2>
+<p>All integrations leverage common resources from the repository root:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 30.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Location</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Skills</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">skills/</span></code></p></td>
+<td><p>19 guided multi-step workflows (ZPA, ZIA, ZDX, EASM, Z-Insights, Cross-product)</p></td>
+</tr>
+<tr class="row-odd"><td><p>MCP Server</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zscaler_mcp/</span></code></p></td>
+<td><p>The MCP server implementation (280+ tools)</p></td>
+</tr>
+<tr class="row-even"><td><p>Docs</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docs/</span></code></p></td>
+<td><p>Deployment guides, tool references, troubleshooting</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="skills-overview">
+<h3>Skills Overview<a class="headerlink" href="#skills-overview" title="Link to this heading">¶</a></h3>
+<p>All plugin/extension integrations include 19 guided multi-step skills:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 10.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Service</p></th>
+<th class="head"><p>Count</p></th>
+<th class="head"><p>Skills</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>ZPA</strong></p></td>
+<td><p>6</p></td>
+<td><p>Onboard application, create access/forwarding/timeout policy rules, create server group, troubleshoot connector</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>ZIA</strong></p></td>
+<td><p>5</p></td>
+<td><p>Onboard location, audit SSL inspection, investigate URL category, check user access, investigate sandbox</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>ZDX</strong></p></td>
+<td><p>5</p></td>
+<td><p>Troubleshoot user experience, analyze app health, investigate alerts, diagnose deep trace, audit software</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>EASM</strong></p></td>
+<td><p>1</p></td>
+<td><p>Review attack surface</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Z-Insights</strong></p></td>
+<td><p>1</p></td>
+<td><p>Investigate security incident</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Cross-product</strong></p></td>
+<td><p>1</p></td>
+<td><p>Troubleshoot user connectivity (ZCC + ZDX + ZPA + ZIA)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<p>All integrations require:</p>
+<ul class="simple">
+<li><p>The respective AI platform installed (Claude Code, Cursor, Gemini CLI, Kiro IDE, or Google ADK)</p></li>
+<li><p><a class="reference external" href="https://docs.astral.sh/uv/">uv</a> installed (for <code class="docutils literal notranslate"><span class="pre">uvx</span></code> method) or Docker</p></li>
+<li><p>Zscaler OneAPI credentials configured in <code class="docutils literal notranslate"><span class="pre">.env</span></code></p></li>
+</ul>
+</section>
+<section id="verification">
+<h2>Verification<a class="headerlink" href="#verification" title="Link to this heading">¶</a></h2>
+<p>After installing any integration, verify by asking:</p>
+<blockquote>
+<div><p>“What Zscaler tools are available?”</p>
+</div></blockquote>
+<p>or</p>
+<blockquote>
+<div><p>“List my ZPA application segments”</p>
+</div></blockquote>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../guides/index.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Guides</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../tools/z-insights/index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Zscaler Z-Insights Analytics Tools</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Platform Integrations</a><ul>
+<li><a class="reference internal" href="#claude-code-plugin">Claude Code Plugin</a></li>
+<li><a class="reference internal" href="#cursor-plugin">Cursor Plugin</a></li>
+<li><a class="reference internal" href="#gemini-extension">Gemini Extension</a></li>
+<li><a class="reference internal" href="#kiro-power">Kiro Power</a></li>
+<li><a class="reference internal" href="#google-adk-agent-development-kit">Google ADK (Agent Development Kit)</a></li>
+<li><a class="reference internal" href="#shared-components">Shared Components</a><ul>
+<li><a class="reference internal" href="#skills-overview">Skills Overview</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#verification">Verification</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

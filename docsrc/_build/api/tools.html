@@ -212,8 +212,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
@@ -521,6 +523,64 @@ This action cannot be undone.</p>
 <dt class="sig sig-object py" id="zscaler_mcp.tools.zia.url_categories.zia_update_url_category">
 <span class="sig-name descname"><span class="pre">zia_update_url_category</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">category_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">configured_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">urls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keywords</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ip_ranges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_categorized_urls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keywords_retaining_parent_category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ip_ranges_retaining_parent_category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/url_categories.html#zia_update_url_category"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.url_categories.zia_update_url_category" title="Link to this definition">¶</a></dt>
 <dd><p>Update an existing ZIA URL category (full replacement of all fields).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.tools.zia.url_categories.zia_url_lookup">
+<span class="sig-name descname"><span class="pre">zia_url_lookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">urls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/url_categories.html#zia_url_lookup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.url_categories.zia_url_lookup" title="Link to this definition">¶</a></dt>
+<dd><p>Look up the URL category for the provided URLs.</p>
+<p>Performs a bulk category lookup against the Zscaler URL categorization database.
+Each URL is matched to a category (e.g., SEARCH_ENGINES, BUSINESS_AND_ECONOMY,
+COMPUTER_AND_INTERNET_SECURITY). URLs are processed in batches of 100 with
+a short delay between batches to respect API limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>urls</strong> – List of URLs or domains to look up (e.g., “google.com”, “acme.com”).
+Accepts a list or JSON string. Maximum 100 URLs per batch; larger
+lists are processed in multiple batches automatically.</p></li>
+<li><p><strong>use_legacy</strong> – Whether to use the legacy API (default: False).</p></li>
+<li><p><strong>service</strong> – The service identifier (default: “zia”).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>url: The URL or domain that was looked up</p></li>
+<li><p>urlCategories: List of category IDs/names the URL belongs to</p></li>
+<li><p>Other categorization metadata from the ZIA URL Lookup API</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of URL category report entries. Each entry typically includes</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Look up category for a single URL</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="n">zia_url_lookup</span><span class="p">(</span><span class="n">urls</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;google.com&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;URL: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, Categories: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;urlCategories&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Look up categories for multiple URLs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="n">zia_url_lookup</span><span class="p">(</span><span class="n">urls</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;google.com&quot;</span><span class="p">,</span> <span class="s2">&quot;acme.com&quot;</span><span class="p">,</span> <span class="s2">&quot;github.com&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Looked up </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> URLs&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;urlCategories&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Look up category for a domain</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="n">zia_url_lookup</span><span class="p">(</span><span class="n">urls</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;finance.yahoo.com&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Yahoo Finance category: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Pass URLs as JSON string</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">results</span> <span class="o">=</span> <span class="n">zia_url_lookup</span><span class="p">(</span><span class="n">urls</span><span class="o">=</span><span class="s1">&#39;[&quot;example.com&quot;, &quot;microsoft.com&quot;]&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function" id="module-zscaler_mcp.tools.zia.url_filtering_rules">
@@ -2616,6 +2676,7 @@ attributed to the finding. This is a subset of the scan output.</p>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_categories.zia_list_url_categories"><code class="docutils literal notranslate"><span class="pre">zia_list_url_categories()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_categories.zia_remove_urls_from_category"><code class="docutils literal notranslate"><span class="pre">zia_remove_urls_from_category()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_categories.zia_update_url_category"><code class="docutils literal notranslate"><span class="pre">zia_update_url_category()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_categories.zia_url_lookup"><code class="docutils literal notranslate"><span class="pre">zia_url_lookup()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_filtering_rules.zia_create_url_filtering_rule"><code class="docutils literal notranslate"><span class="pre">zia_create_url_filtering_rule()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_filtering_rules.zia_delete_url_filtering_rule"><code class="docutils literal notranslate"><span class="pre">zia_delete_url_filtering_rule()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.url_filtering_rules.zia_get_url_filtering_rule"><code class="docutils literal notranslate"><span class="pre">zia_get_url_filtering_rule()</span></code></a></li>

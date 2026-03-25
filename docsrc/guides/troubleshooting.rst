@@ -199,7 +199,7 @@ When using HTTP transports in Docker, always bind to ``0.0.0.0``:
 .. code-block:: bash
 
    docker run --rm -p 8000:8000 --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
+     zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
 
 **Port conflicts**
 
@@ -208,7 +208,7 @@ Change the port with ``--port``:
 .. code-block:: bash
 
    docker run --rm -p 8001:8001 --env-file /path/to/.env \
-     quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8001
+     zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8001
 
 Debugging
 ----------

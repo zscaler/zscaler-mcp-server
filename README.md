@@ -1057,35 +1057,35 @@ The Zscaler Integrations MCP Server is available as a pre-built container image 
 
 ```bash
 # Pull the latest pre-built image
-docker pull quay.io/zscaler/zscaler-mcp-server:latest
+docker pull zscaler/zscaler-mcp-server:latest
 
 # Run with .env file (recommended)
-docker run --rm --env-file /path/to/.env quay.io/zscaler/zscaler-mcp-server:latest
+docker run --rm --env-file /path/to/.env zscaler/zscaler-mcp-server:latest
 
 # Run with .env file and SSE transport
 docker run --rm -p 8000:8000 --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp-server:latest --transport sse --host 0.0.0.0
+  zscaler/zscaler-mcp-server:latest --transport sse --host 0.0.0.0
 
 # Run with .env file and streamable-http transport
 docker run --rm -p 8000:8000 --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
+  zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0
 
 # Run with .env file and custom port
 docker run --rm -p 8080:8080 --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8080
+  zscaler/zscaler-mcp-server:latest --transport streamable-http --host 0.0.0.0 --port 8080
 
 # Run with .env file and specific services
 docker run --rm --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp-server:latest --services zia,zpa,zdx
+  zscaler/zscaler-mcp-server:latest --services zia,zpa,zdx
 
 # Use a specific version instead of latest
 docker run --rm --env-file /path/to/.env \
-  quay.io/zscaler/zscaler-mcp-server:1.2.3
+  zscaler/zscaler-mcp-server:latest:1.2.3
 
 # Alternative: Individual environment variables
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
   -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain \
-  quay.io/zscaler/zscaler-mcp-server:latest
+  zscaler/zscaler-mcp-server:latest
 ```
 
 ### Building Locally (Development)
@@ -1326,7 +1326,7 @@ The easiest way to get started—one-click install with a user-friendly UI in Cl
 >         "--rm",
 >         "--env-file",
 >         "/absolute/path/to/your/.env",
->         "quay.io/zscaler/zscaler-mcp-server:latest"
+>         "zscaler/zscaler-mcp-server:latest"
 >       ]
 >     }
 >   }
@@ -1363,7 +1363,7 @@ For full documentation on all integrations, see the [Platform Integrations Guide
 
 1. **"Command not found: uvx"**
    - Install `uv`: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-   - Or use Docker: Replace `uvx` with `docker run --rm --env-file /path/to/.env quay.io/zscaler/zscaler-mcp-server:latest`
+   - Or use Docker: Replace `uvx` with `docker run --rm --env-file /path/to/.env zscaler/zscaler-mcp-server:latest`
 
 2. **".env file not found"**
    - Use absolute paths, not relative paths

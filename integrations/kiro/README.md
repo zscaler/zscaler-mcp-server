@@ -72,7 +72,7 @@ The MCP server is configured via `integrations/kiro/mcp.json`:
       "args": [
         "run", "-i", "--rm",
         "--env-file", "/path/to/your/.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }

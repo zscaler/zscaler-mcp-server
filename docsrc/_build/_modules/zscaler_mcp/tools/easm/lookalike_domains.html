@@ -211,8 +211,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
@@ -284,18 +286,18 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    List all lookalike domains detected for an organization&#39;s assets.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves lookalike domains identified by EASM.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        org_id (str): The unique identifier for the organization.</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Dictionary containing:</span>
 <span class="sd">            - results: List of lookalike domain objects</span>
 <span class="sd">            - total_results: Total number of lookalike domains</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        List all lookalike domains for an organization:</span>
 <span class="sd">        &gt;&gt;&gt; domains = zeasm_list_lookalike_domains(org_id=&quot;3f61a446-1a0d-11f0-94e8-8a5f4d45e80c&quot;)</span>
@@ -304,11 +306,11 @@
 <span class="sd">        ...     print(f&quot;  {domain[&#39;domain_name&#39;]}&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
+
     <span class="n">domains</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">lookalike_domains</span><span class="o">.</span><span class="n">list_lookalike_domains</span><span class="p">(</span><span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list EASM lookalike domains for organization </span><span class="si">{</span><span class="n">org_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">domains</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 
@@ -317,22 +319,24 @@
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.easm.lookalike_domains.zeasm_get_lookalike_domain">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zeasm_get_lookalike_domain</span><span class="p">(</span>
     <span class="n">org_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The unique identifier for the organization.&quot;</span><span class="p">)],</span>
-    <span class="n">lookalike_raw</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The lookalike domain name (e.g., &#39;example-domain.com&#39;).&quot;</span><span class="p">)],</span>
+    <span class="n">lookalike_raw</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The lookalike domain name (e.g., &#39;example-domain.com&#39;).&quot;</span><span class="p">)</span>
+    <span class="p">],</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zeasm&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get details for a specific lookalike domain by domain name.</span>
-<span class="sd">    </span>
+
 <span class="sd">    This is a read-only operation that retrieves detailed information about a specific lookalike domain.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        org_id (str): The unique identifier for the organization.</span>
 <span class="sd">        lookalike_raw (str): The lookalike domain name (e.g., &quot;assuredartners.com&quot;).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zeasm&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: Lookalike domain details object</span>
-<span class="sd">    </span>
+
 <span class="sd">    Example:</span>
 <span class="sd">        Get details for a specific lookalike domain:</span>
 <span class="sd">        &gt;&gt;&gt; details = zeasm_get_lookalike_domain(</span>
@@ -342,11 +346,13 @@
 <span class="sd">        &gt;&gt;&gt; print(details)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    
-    <span class="n">domain</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">lookalike_domains</span><span class="o">.</span><span class="n">get_lookalike_domain</span><span class="p">(</span><span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">lookalike_raw</span><span class="o">=</span><span class="n">lookalike_raw</span><span class="p">)</span>
+
+    <span class="n">domain</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zeasm</span><span class="o">.</span><span class="n">lookalike_domains</span><span class="o">.</span><span class="n">get_lookalike_domain</span><span class="p">(</span>
+        <span class="n">org_id</span><span class="o">=</span><span class="n">org_id</span><span class="p">,</span> <span class="n">lookalike_raw</span><span class="o">=</span><span class="n">lookalike_raw</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get EASM lookalike domain details for </span><span class="si">{</span><span class="n">lookalike_raw</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
+
     <span class="k">return</span> <span class="n">domain</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
 
 </pre></div>

@@ -209,7 +209,7 @@ Load steering: easm
       "args": [
         "run", "-i", "--rm",
         "--env-file", "/path/to/your/.env",
-        "quay.io/zscaler/zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }
@@ -231,7 +231,7 @@ Load steering: easm
 - **Documentation**: https://zscaler-mcp-server.readthedocs.io/
 - **GitHub**: https://github.com/zscaler/zscaler-mcp-server
 - **PyPI**: https://pypi.org/project/zscaler-mcp/
-- **Docker**: https://quay.io/repository/zscaler/zscaler-mcp-server
+- **Docker**: hhttps://hub.docker.com/r/zscaler/zscaler-mcp-server
 - **AWS Marketplace**: Available on Amazon Bedrock AgentCore
 
 ## License and support
