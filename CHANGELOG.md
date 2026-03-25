@@ -15,12 +15,14 @@
 - **`api-key`** — Simple shared secret. Client sends `Authorization: Bearer <key>`. Best for quick setup and internal environments.
 - **`jwt`** — External Identity Provider via JWKS. Tokens are validated locally using the IdP's public keys. Supports Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, and Google Cloud Identity.
 - **`zscaler`** — Zscaler OneAPI credential validation. Client sends Basic Auth (`client_id:client_secret`) or custom headers (`X-Zscaler-Client-ID` / `X-Zscaler-Client-Secret`). Server validates against Zscaler's `/oauth2/v1/token` endpoint.
+- **`auth=` parameter** — Library-level OAuth 2.1 with Dynamic Client Registration. Pass a `fastmcp.server.auth.AuthProvider` (e.g. `OIDCProxy`, `OAuthProxy`) directly to `ZscalerMCPServer(auth=...)`. Works with any OIDC-compliant IdP. Addresses [#33](https://github.com/zscaler/zscaler-mcp-server/issues/33).
 
 **Architecture:**
 
 - Implemented as ASGI middleware (`zscaler_mcp/auth.py`) that wraps HTTP transport apps before they reach FastMCP
 - Two independent security layers: Layer 1 (MCP Client Auth) controls who can connect; Layer 2 (Zscaler API Auth) controls how the server authenticates to Zscaler APIs
 - Zero overhead when authentication is disabled — middleware returns the app unchanged
+- When `auth=` is provided, the server integrates the auth provider's OAuth routes and middleware directly into the HTTP app, bypassing the env-var-based auth layer
 
 ### 🌐 Network Security
 

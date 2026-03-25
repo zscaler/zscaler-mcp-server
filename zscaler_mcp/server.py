@@ -216,7 +216,12 @@ class SourceIPMiddleware:
 
 
 def _log_security_posture(
-    transport: str, scheme: str, host: str, port: int, tls_kwargs: dict
+    transport: str,
+    scheme: str,
+    host: str,
+    port: int,
+    tls_kwargs: dict,
+    fastmcp_auth: object = None,
 ) -> None:
     """Log a consolidated security posture banner at startup."""
     w = 72
@@ -230,22 +235,30 @@ def _log_security_posture(
         tls_detail = ""
         mtls = "N/A"
 
-    auth_disabled = os.environ.get("ZSCALER_MCP_AUTH_ENABLED", "").lower() in ("false", "0", "no")
-    if auth_disabled:
-        auth_status = "DISABLED"
-        auth_mode = "N/A"
-    else:
-        auth_mode = os.environ.get("ZSCALER_MCP_AUTH_MODE", "").strip().lower()
-        if not auth_mode:
-            if os.environ.get("ZSCALER_MCP_AUTH_JWKS_URI", "").strip():
-                auth_mode = "jwt (auto-detected)"
-            elif os.environ.get("ZSCALER_MCP_AUTH_API_KEY", "").strip():
-                auth_mode = "api-key (auto-detected)"
-            elif os.environ.get("ZSCALER_VANITY_DOMAIN", "").strip():
-                auth_mode = "zscaler (auto-detected)"
-            else:
-                auth_mode = "jwt (default)"
+    if fastmcp_auth is not None:
         auth_status = "ENABLED"
+        auth_mode = f"OIDCProxy ({type(fastmcp_auth).__name__}) — OAuth 2.1 + DCR"
+    else:
+        auth_disabled = os.environ.get("ZSCALER_MCP_AUTH_ENABLED", "").lower() in (
+            "false",
+            "0",
+            "no",
+        )
+        if auth_disabled:
+            auth_status = "DISABLED"
+            auth_mode = "N/A"
+        else:
+            auth_mode = os.environ.get("ZSCALER_MCP_AUTH_MODE", "").strip().lower()
+            if not auth_mode:
+                if os.environ.get("ZSCALER_MCP_AUTH_JWKS_URI", "").strip():
+                    auth_mode = "jwt (auto-detected)"
+                elif os.environ.get("ZSCALER_MCP_AUTH_API_KEY", "").strip():
+                    auth_mode = "api-key (auto-detected)"
+                elif os.environ.get("ZSCALER_VANITY_DOMAIN", "").strip():
+                    auth_mode = "zscaler (auto-detected)"
+                else:
+                    auth_mode = "jwt (default)"
+            auth_status = "ENABLED"
 
     host_disabled = os.environ.get("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").lower() in (
         "true",
@@ -293,7 +306,7 @@ def _log_security_posture(
         logger.info("    Mutual TLS:   %s", mtls)
     logger.info("  HTTP Policy:    %s", http_policy)
     logger.info("  Authentication: %s", auth_status)
-    if not auth_disabled:
+    if auth_status != "DISABLED":
         logger.info("    Mode:         %s", auth_mode)
     logger.info("  Host Validation:%s", host_status)
     logger.info("  Source IP ACL:  %s", src_ip_status)
@@ -404,6 +417,7 @@ class ZscalerMCPServer:
         enable_write_tools: bool = False,
         write_tools: Optional[Set[str]] = None,
         host: Optional[str] = None,
+        auth: Optional[object] = None,
     ):
         """Initialize the Zscaler Integrations MCP Server.
 
@@ -420,6 +434,25 @@ class ZscalerMCPServer:
             enable_write_tools: Enable write operations (create, update, delete). Default: False for safety.
             write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.
             host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.
+            auth: A ``fastmcp.server.auth.AuthProvider`` instance (e.g.
+                ``OIDCProxy``, ``OAuthProxy``, or a custom ``AuthProvider`` subclass)
+                that provides MCP-spec-compliant OAuth 2.1 with Dynamic Client
+                Registration. When supplied, the server delegates authentication
+                to this provider instead of the env-var-based auth middleware
+                (jwt / api-key / zscaler modes). Only applies to HTTP transports.
+
+                Example::
+
+                    from fastmcp.server.auth.oidc_proxy import OIDCProxy
+
+                    auth = OIDCProxy(
+                        config_url="https://accounts.google.com/.well-known/openid-configuration",
+                        client_id="YOUR_CLIENT_ID",
+                        client_secret="YOUR_CLIENT_SECRET",
+                        base_url="http://localhost:8000",
+                    )
+                    server = ZscalerMCPServer(auth=auth)
+                    server.run("streamable-http")
         """
         # Store configuration
         self.client_id = client_id
@@ -464,6 +497,16 @@ class ZscalerMCPServer:
                 "   To enable write operations, use --enable-write-tools AND --write-tools flags"
             )
             logger.info("=" * 80)
+
+        # Store fastmcp AuthProvider for library-level OAuth 2.1 / OIDC support
+        self._fastmcp_auth = auth
+        if auth is not None:
+            auth_type = type(auth).__name__
+            logger.info(
+                "Library-level auth provider configured: %s "
+                "(env-var auth middleware will be skipped for HTTP transports)",
+                auth_type,
+            )
 
         # Don't initialize the Zscaler client during server startup to avoid pickle issues
         # Clients will be created on-demand when tools are called
@@ -613,6 +656,137 @@ class ZscalerMCPServer:
         """
         return {"services": services.get_service_names()}
 
+    def _build_fastmcp_auth_app(self, transport: str):
+        """Build an ASGI app with a fastmcp AuthProvider handling authentication.
+
+        When the caller supplies a ``fastmcp.server.auth.AuthProvider`` (e.g.
+        ``OIDCProxy``) via the ``auth=`` constructor parameter, this method
+        constructs the HTTP app with OAuth routes, auth middleware, and the
+        ``RequireAuthMiddleware`` wrapper — all provided by the auth provider.
+
+        This bypasses the env-var-based auth layer (``apply_auth_middleware``)
+        and delegates authentication entirely to the fastmcp provider.
+        """
+        from contextlib import asynccontextmanager
+
+        from fastmcp.server.auth.middleware import RequireAuthMiddleware
+        from mcp.server.auth.routes import build_resource_metadata_url
+        from mcp.server.fastmcp.server import StreamableHTTPASGIApp
+        from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+        from starlette.applications import Starlette
+        from starlette.routing import Mount, Route
+
+        auth = self._fastmcp_auth
+
+        if transport == "streamable-http":
+            if self.server._session_manager is None:
+                self.server._session_manager = StreamableHTTPSessionManager(
+                    app=self.server._mcp_server,
+                    json_response=self.server.settings.json_response,
+                    stateless=self.server.settings.stateless_http,
+                    security_settings=self.server.settings.transport_security,
+                )
+
+            mcp_asgi = StreamableHTTPASGIApp(self.server._session_manager)
+            mcp_path = self.server.settings.streamable_http_path
+
+            auth_middleware = auth.get_middleware()
+            auth_routes = auth.get_routes(mcp_path=mcp_path)
+
+            resource_url = auth._get_resource_url(mcp_path)
+            resource_metadata_url = (
+                build_resource_metadata_url(resource_url) if resource_url else None
+            )
+
+            routes = list(auth_routes)
+            routes.append(
+                Route(
+                    mcp_path,
+                    endpoint=RequireAuthMiddleware(
+                        mcp_asgi,
+                        auth.required_scopes,
+                        resource_metadata_url,
+                    ),
+                )
+            )
+
+            session_mgr = self.server._session_manager
+
+            @asynccontextmanager
+            async def lifespan(app):
+                async with session_mgr.run():
+                    yield
+
+            return Starlette(
+                debug=self.debug,
+                routes=routes,
+                middleware=auth_middleware,
+                lifespan=lifespan,
+            )
+
+        else:
+            from mcp.server.sse import SseServerTransport
+            from starlette.responses import Response
+
+            sse_path = self.server.settings.sse_path
+            message_path = self.server._normalize_path(
+                self.server.settings.mount_path,
+                self.server.settings.message_path,
+            )
+
+            sse = SseServerTransport(
+                message_path,
+                security_settings=self.server.settings.transport_security,
+            )
+
+            mcp_server = self.server._mcp_server
+
+            async def handle_sse(scope, receive, send):
+                async with sse.connect_sse(scope, receive, send) as streams:
+                    await mcp_server.run(
+                        streams[0],
+                        streams[1],
+                        mcp_server.create_initialization_options(),
+                    )
+                return Response()
+
+            auth_middleware = auth.get_middleware()
+            auth_routes = auth.get_routes(mcp_path=sse_path)
+
+            resource_url = auth._get_resource_url(sse_path)
+            resource_metadata_url = (
+                build_resource_metadata_url(resource_url) if resource_url else None
+            )
+
+            routes = list(auth_routes)
+            routes.append(
+                Route(
+                    sse_path,
+                    endpoint=RequireAuthMiddleware(
+                        handle_sse,
+                        auth.required_scopes,
+                        resource_metadata_url,
+                    ),
+                    methods=["GET"],
+                )
+            )
+            routes.append(
+                Mount(
+                    message_path,
+                    app=RequireAuthMiddleware(
+                        sse.handle_post_message,
+                        auth.required_scopes,
+                        resource_metadata_url,
+                    ),
+                )
+            )
+
+            return Starlette(
+                debug=self.debug,
+                routes=routes,
+                middleware=auth_middleware,
+            )
+
     def run(self, transport: str = "stdio", host: str = "127.0.0.1", port: int = 8000):
         """Run the MCP server.
 
@@ -643,19 +817,29 @@ class ZscalerMCPServer:
                     ],
                 )
 
-            if transport == "streamable-http":
-                app = self.server.streamable_http_app()
+            if self._fastmcp_auth is not None:
+                logger.info(
+                    "Using library-level auth provider (%s) — env-var auth middleware skipped",
+                    type(self._fastmcp_auth).__name__,
+                )
+                app = self._build_fastmcp_auth_app(transport)
             else:
-                app = self.server.sse_app()
+                if transport == "streamable-http":
+                    app = self.server.streamable_http_app()
+                else:
+                    app = self.server.sse_app()
 
-            app = apply_auth_middleware(app, transport)
+                app = apply_auth_middleware(app, transport)
 
             allowed_ips = _get_allowed_source_ips()
             if allowed_ips is not None:
                 logger.info("Source IP ACL active: %s", allowed_ips)
                 app = SourceIPMiddleware(app, allowed_ips)
 
-            _log_security_posture(transport, scheme, host, port, tls_kwargs)
+            _log_security_posture(
+                transport, scheme, host, port, tls_kwargs,
+                fastmcp_auth=self._fastmcp_auth,
+            )
 
             uvicorn.run(
                 app,
