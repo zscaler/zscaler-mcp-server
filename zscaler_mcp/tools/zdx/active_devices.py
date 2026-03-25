@@ -8,16 +8,11 @@ from zscaler_mcp.client import get_zscaler_client
 # READ-ONLY OPERATIONS
 # ============================================================================
 
+
 def zdx_list_devices(
-    emails: Annotated[
-        Optional[List[str]], Field(description="Filter by email addresses.")
-    ] = None,
-    user_ids: Annotated[
-        Optional[List[str]], Field(description="Filter by user IDs.")
-    ] = None,
-    mac_address: Annotated[
-        Optional[str], Field(description="Filter by MAC address.")
-    ] = None,
+    emails: Annotated[Optional[List[str]], Field(description="Filter by email addresses.")] = None,
+    user_ids: Annotated[Optional[List[str]], Field(description="Filter by user IDs.")] = None,
+    mac_address: Annotated[Optional[str], Field(description="Filter by MAC address.")] = None,
     private_ipv4: Annotated[
         Optional[str], Field(description="Filter by private IPv4 address.")
     ] = None,
@@ -36,9 +31,7 @@ def zdx_list_devices(
     offset: Annotated[
         Optional[str], Field(description="Offset string for pagination (next_offset).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -109,16 +102,14 @@ def zdx_list_devices(
     if results and len(results) > 0:
         devices_obj = results[0]  # Get the first (and only) Devices object
         # Access the devices property which contains a list of DeviceDetail objects
-        device_list = devices_obj.devices if hasattr(devices_obj, 'devices') else []
+        device_list = devices_obj.devices if hasattr(devices_obj, "devices") else []
         return [d.as_dict() for d in device_list]
     else:
         return []
 
 
 def zdx_get_device(
-    device_id: Annotated[
-        str, Field(description="The unique ID for the ZDX device.")
-    ],
+    device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
     location_id: Annotated[
         Optional[List[str]], Field(description="Filter by location ID(s).")
     ] = None,
@@ -131,9 +122,7 @@ def zdx_get_device(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -176,9 +165,7 @@ def zdx_get_device(
     if since:
         query_params["since"] = since
 
-    result, _, err = client.zdx.devices.get_device(
-        device_id, query_params=query_params
-    )
+    result, _, err = client.zdx.devices.get_device(device_id, query_params=query_params)
     if err:
         raise Exception(f"Device lookup failed: {err}")
 

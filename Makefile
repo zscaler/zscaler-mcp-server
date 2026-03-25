@@ -48,7 +48,10 @@ help:
 	@echo "$(COLOR_WARNING)docker$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-build                  Build Docker image$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-rebuild                Clean and rebuild Docker image$(COLOR_NONE)"
-	@echo "$(COLOR_OK)  docker-run                    Run Docker container$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docker-run                    Run Docker container (stdio, no auth)$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docker-run-http               Run Docker container (HTTP, with auth)$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docker-stop                   Stop the running HTTP container$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docker-generate-auth-token    Generate auth token for MCP clients$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-save                   Export Docker image to tarball$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docker-clean                  Clean Docker images and containers$(COLOR_NONE)"
 	@echo "$(COLOR_WARNING)documentation$(COLOR_NONE)"
@@ -136,6 +139,22 @@ docker-rebuild: docker-clean docker-build
 docker-run:
 	$(DOCKER) run -i --rm --env-file .env $(BINARY_NAME):$(VERSION)
 
+docker-run-http:
+	@echo "$(COLOR_WARNING)Starting MCP server with HTTP transport + auth...$(COLOR_NONE)"
+	$(DOCKER) run -d --restart=unless-stopped --name $(BINARY_NAME) \
+		-p 8000:8000 --env-file .env $(BINARY_NAME):$(VERSION) \
+		--transport streamable-http --host 0.0.0.0 --port 8000
+	@echo "$(COLOR_OK)Server running at http://localhost:8000/mcp$(COLOR_NONE)"
+	@echo "$(COLOR_OK)Run 'make docker-generate-auth-token' to get client config$(COLOR_NONE)"
+
+docker-stop:
+	-$(DOCKER) stop $(BINARY_NAME) 2>/dev/null
+	-$(DOCKER) rm $(BINARY_NAME) 2>/dev/null
+	@echo "$(COLOR_OK)Container stopped$(COLOR_NONE)"
+
+docker-generate-auth-token:
+	@$(DOCKER) run --rm --env-file .env $(BINARY_NAME):$(VERSION) --generate-auth-token
+
 docker-save:
 	@echo "$(COLOR_WARNING)Exporting Docker image to tarball...$(COLOR_NONE)"
 	$(DOCKER) save $(BINARY_NAME):$(VERSION) -o $(BINARY_NAME)-$(VERSION).tar
@@ -155,4 +174,4 @@ docs-install-deps:
 docs-github:
 	cd docsrc && python -m sphinx -b html . _build && cp -a _build/. ../docs
 
-.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-save docs-build docs-clean docs-install-deps docs-github
+.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-github

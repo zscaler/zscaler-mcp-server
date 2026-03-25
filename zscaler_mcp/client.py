@@ -41,36 +41,22 @@ def get_zscaler_client(
     from dotenv import load_dotenv
 
     load_dotenv()
-    
+
     # Get user agent comment from environment variable if not explicitly provided
     if user_agent_comment is None:
         user_agent_comment = os.getenv("ZSCALER_MCP_USER_AGENT_COMMENT")
 
     # ✅ Defensive fallback logic
-    client_id = (
-        client_id if client_id not in [None, ""] else os.getenv("ZSCALER_CLIENT_ID")
-    )
+    client_id = client_id if client_id not in [None, ""] else os.getenv("ZSCALER_CLIENT_ID")
     client_secret = (
-        client_secret
-        if client_secret not in [None, ""]
-        else os.getenv("ZSCALER_CLIENT_SECRET")
+        client_secret if client_secret not in [None, ""] else os.getenv("ZSCALER_CLIENT_SECRET")
     )
-    customer_id = (
-        customer_id
-        if customer_id not in [None, ""]
-        else os.getenv("ZSCALER_CUSTOMER_ID")
-    )
+    customer_id = customer_id if customer_id not in [None, ""] else os.getenv("ZSCALER_CUSTOMER_ID")
     vanity_domain = (
-        vanity_domain
-        if vanity_domain not in [None, ""]
-        else os.getenv("ZSCALER_VANITY_DOMAIN")
+        vanity_domain if vanity_domain not in [None, ""] else os.getenv("ZSCALER_VANITY_DOMAIN")
     )
     cloud = cloud if cloud not in [None, ""] else os.getenv("ZSCALER_CLOUD")
-    private_key = (
-        private_key
-        if private_key not in [None, ""]
-        else os.getenv("ZSCALER_PRIVATE_KEY")
-    )
+    private_key = private_key if private_key not in [None, ""] else os.getenv("ZSCALER_PRIVATE_KEY")
 
     # ✅ Environment variable fallback for use_legacy
     # Check environment variable if use_legacy is not explicitly set to True
@@ -83,7 +69,9 @@ def get_zscaler_client(
     if use_legacy:
         # ZPA legacy credentials
         client_id = client_id if client_id not in [None, ""] else os.getenv("ZPA_CLIENT_ID")
-        client_secret = client_secret if client_secret not in [None, ""] else os.getenv("ZPA_CLIENT_SECRET")
+        client_secret = (
+            client_secret if client_secret not in [None, ""] else os.getenv("ZPA_CLIENT_SECRET")
+        )
         customer_id = customer_id if customer_id not in [None, ""] else os.getenv("ZPA_CUSTOMER_ID")
 
         # ZIA legacy credentials
@@ -95,10 +83,6 @@ def get_zscaler_client(
         username = username if username not in [None, ""] else os.getenv("ZTW_USERNAME")
         password = password if password not in [None, ""] else os.getenv("ZTW_PASSWORD")
         api_key = api_key if api_key not in [None, ""] else os.getenv("ZTW_API_KEY")
-
-        # ZCC legacy credentials
-        api_key = api_key if api_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
-        secret_key = secret_key if secret_key not in [None, ""] else os.getenv("ZCC_CLIENT_ID")
 
         # ZDX legacy credentials
         key_id = key_id if key_id not in [None, ""] else os.getenv("ZDX_CLIENT_ID")
@@ -166,7 +150,7 @@ def get_zscaler_client(
     Notes:
         - If `use_legacy=True`, do **not** set or expect `vanity_domain`. It is required only for OneAPI.
         - Each legacy service requires different credential parameters:
-            • LegacyZCCClient: key_id, secret_key, cloud
+            • LegacyZCCClient: api_key (ZCC_CLIENT_ID), secret_key (ZCC_CLIENT_SECRET), cloud
             • LegacyZDXClient: api_key, key_secret, cloud
             • LegacyZPAClient: client_id, client_secret, customer_id, cloud
             • LegacyZIAClient: username, password, api_key, cloud
@@ -197,6 +181,8 @@ def get_zscaler_client(
             return LegacyZPAClient(config)
 
         elif service == "zcc":
+            api_key = os.getenv("ZCC_CLIENT_ID", api_key)
+            secret_key = os.getenv("ZCC_CLIENT_SECRET", secret_key)
             if not all([api_key, secret_key, cloud]):
                 raise ValueError("Missing required credentials for LegacyZCCClient.")
             config = {
@@ -253,14 +239,12 @@ def get_zscaler_client(
         "ZSCALER_CLIENT_SECRET": client_secret,
         "ZSCALER_VANITY_DOMAIN": vanity_domain,
     }
-    
+
     # Add customer_id requirement only for ZPA
     if service == "zpa":
         auth_fields["ZSCALER_CUSTOMER_ID"] = customer_id
 
-    missing = [
-        key for key, value in auth_fields.items() if not (value and value.strip())
-    ]
+    missing = [key for key, value in auth_fields.items() if not (value and value.strip())]
     if missing:
         raise RuntimeError(
             f"Zscaler SDK failed to initialize due to missing configuration values: {missing}. "
@@ -268,9 +252,7 @@ def get_zscaler_client(
         )
 
     if not client_secret and not private_key:
-        raise ValueError(
-            "You must provide either client_secret or private_key for OneAPI client."
-        )
+        raise ValueError("You must provide either client_secret or private_key for OneAPI client.")
 
     config = {
         "clientId": client_id,

@@ -376,4 +376,3 @@ class TestZInsightsServiceRegistration:
 
         for name in expected_names:
             assert name in tool_names
-

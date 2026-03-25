@@ -12,18 +12,12 @@ def app_segments_by_type_manager(
             description="Application type to filter by. Must be one of 'BROWSER_ACCESS', 'INSPECT', or 'SECURE_REMOTE_ACCESS'."
         ),
     ],
-    expand_all: Annotated[
-        bool, Field(description="Whether to expand all related data.")
-    ] = False,
+    expand_all: Annotated[bool, Field(description="Whether to expand all related data.")] = False,
     query_params: Annotated[
         dict,
-        Field(
-            description="Optional filters like 'search', 'page_size', or 'microtenant_id'."
-        ),
+        Field(description="Optional filters like 'search', 'page_size', or 'microtenant_id'."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], str]:
     """

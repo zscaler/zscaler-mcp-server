@@ -16,9 +16,7 @@ def enrollment_certificate_manager(
         dict,
         Field(description="Optional query parameters for filtering via search key."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[dict, List[dict], str]:
     """

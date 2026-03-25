@@ -10,6 +10,7 @@ This guide provides complete instructions for deploying the Zscaler MCP Server t
 - [Method 1: CloudFormation Deployment (Recommended)](#method-1-cloudformation-deployment-recommended)
 - [Method 2: Manual AWS CLI Deployment](#method-2-manual-aws-cli-deployment)
 - [Testing Your Deployment](#testing-your-deployment)
+- [Configuring OAuth (Auth0) for AgentCore Identity](#configuring-oauth-auth0-for-agentcore-identity)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -643,6 +644,100 @@ INFO:zscaler_mcp.config:ZSCALER_SECRET_NAME not set - using credentials from env
 ```
 
 ✅ **Success!** Real data from Zscaler API.
+
+---
+
+## Configuring OAuth (Auth0) for AgentCore Identity
+
+When the Zscaler MCP Server is deployed with **JWT authentication** (Layer 1), the Bedrock AgentCore Test Sandbox cannot send `Authorization: Bearer <token>` headers by default. Configuring Auth0 as an identity provider in AgentCore enables the sandbox and agent to obtain tokens and forward them to your MCP runtime.
+
+### Prerequisites
+
+- MCP runtime deployed with JWT auth (e.g. via `deploy_with_jwt.sh`)
+- Auth0 tenant with a Machine-to-Machine (M2M) application
+- Client ID and Client Secret from the Auth0 app
+- API audience configured (e.g. `zscaler-mcp-server`)
+
+### Step-by-Step: Add Auth0 OAuth Client
+
+1. **Open the Identity menu**
+   - In the AWS console, go to **Amazon Bedrock AgentCore**
+   - In the left sidebar under **Build**, select **Identity**
+
+2. **Add OAuth Client**
+   - Click **Add OAuth Client**
+   - You will see the "Add OAuth Client" form
+
+3. **Name**
+   - Enter a name (e.g. `auth0-zscaler-mcp` or accept the auto-generated one)
+   - Valid characters: `a-z`, `A-Z`, `0-9`, `_` (underscore), `-` (hyphen)
+   - Max 50 characters
+
+4. **Provider**
+   - Select **Included provider** (not Custom provider)
+   - From the dropdown, choose **Auth0 by Okta**
+
+5. **Provider configurations**
+   Fill in the fields with values from your Auth0 tenant. Example for **securitygeekio.ca.auth0.com**:
+
+   | Field | Value |
+   |-------|-------|
+   | **Client ID** | `x7hEmN5MikTZXhZkOnTMRlQlbtiiPCce` |
+   | **Client secret** | *(Use the value from Auth0 Dashboard → Applications, or from `AUTH0_CLIENT_SECRET` in your env)* |
+   | **Issuer** | `https://securitygeekio.ca.auth0.com/` |
+   | **Authorization endpoint** | `https://securitygeekio.ca.auth0.com/authorize` |
+   | **Token endpoint** | `https://securitygeekio.ca.auth0.com/oauth/token` |
+
+   For a different Auth0 tenant, use these URL patterns (replace `YOUR_TENANT` with your domain):
+
+   - **Issuer:** `https://YOUR_TENANT/` (trailing slash required)
+   - **Authorization endpoint:** `https://YOUR_TENANT/authorize`
+   - **Token endpoint:** `https://YOUR_TENANT/oauth/token`
+
+6. **Save**
+   - Click **Add** (or equivalent) to create the OAuth client
+
+### Step 2: Add the Callback URL to Auth0 (Required)
+
+After creating the OAuth client, Bedrock displays a **Callback URL** on the provider details page. You must add this URL to your Auth0 application.
+
+1. In the provider details (e.g. for `SGIO-Auth0-Provider`), locate the **Callback URL** (e.g. `https://bedrock-agentcore.us-east-1.amazonaws.com/identities/oauth2/callback/76ae34e8-117e-4a20-989e-b8b0b27216fa`).
+2. Copy the full URL.
+3. In **Auth0 Dashboard** → **Applications** → your application → **Settings**.
+4. In **Allowed Callback URLs**, add the Bedrock callback URL (comma-separated if you have others).
+5. Click **Save Changes**.
+
+Without this step, the OAuth flow will fail when the sandbox or agent tries to obtain tokens.
+
+### Step 3: Associate the OAuth Client for Sandbox Testing
+
+The success message says: *"Associate it within your local agent code or in a Gateway target."*
+
+**For Agent Sandbox testing:**
+
+1. **If using Agent Sandbox with a Runtime** – When you open the sandbox and select your Zscaler MCP runtime, look for:
+   - A **Sign in** or **Connect** option that lets you authenticate with an identity provider.
+   - A dropdown or settings to select **SGIO-Auth0-Provider** (or your provider name).
+   - After signing in, the sandbox should obtain tokens and include them in `Authorization: Bearer` headers when invoking the runtime.
+
+2. **If using a Gateway** – When the Zscaler MCP runtime is exposed through a Gateway (as a target), add the OAuth credential provider when creating or editing the Gateway target:
+   - In the Gateway target configuration, set the **credentials** / **credential provider** to the ARN of your Auth0 provider (e.g. `arn:aws:bedrock-agentcore:us-east-1:202719523534:token-vault/default/oauth2credentialprovider/SGIO-Auth0-Provider`).
+
+3. **If using local agent code** – Use the identity provider ARN in your agent’s configuration when it connects to the MCP runtime, so the agent can fetch tokens and attach them to MCP requests.
+
+The provider ARN is shown on the provider details page (e.g. `arn:aws:bedrock-agentcore:us-east-1:202719523534:token-vault/default/oauth2credentialprovider/SGIO-Auth0-Provider`).
+
+### Step 4: Verify Auth0 API and Audience
+
+- Ensure your Auth0 API has an identifier (e.g. `zscaler-mcp-server`) that matches the `AUDIENCE` in your MCP deployment.
+- The `audience` parameter is required for Auth0 to return JWT (not opaque) tokens.
+
+### Troubleshooting Identity Configuration
+
+- **401 Unauthorized from MCP** – Ensure the OAuth client’s issuer and endpoints match the values used by your MCP server’s JWT validation (`ZSCALER_MCP_AUTH_ISSUER`, JWKS URI, etc.).
+- **Token not sent** – Confirm the OAuth client is associated with the runtime/gateway used for testing.
+- **Audience mismatch** – Ensure your Auth0 API has the same audience (e.g. `zscaler-mcp-server`) as configured in `AUDIENCE` in your deployment.
+- **OAuth redirect/callback errors** – Add the Bedrock callback URL (from the provider details page) to Auth0 **Allowed Callback URLs**.
 
 ---
 

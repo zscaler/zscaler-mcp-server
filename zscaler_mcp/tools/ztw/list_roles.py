@@ -7,23 +7,27 @@ from zscaler_mcp.client import get_zscaler_client
 
 def ztw_list_roles(
     include_auditor_role: Annotated[
-        Optional[bool], Field(description="Include or exclude auditor user information in the list.")
+        Optional[bool],
+        Field(description="Include or exclude auditor user information in the list."),
     ] = None,
     include_partner_role: Annotated[
-        Optional[bool], Field(description="Include or exclude admin user information in the list. Default is True.")
+        Optional[bool],
+        Field(
+            description="Include or exclude admin user information in the list. Default is True."
+        ),
     ] = None,
     include_api_roles: Annotated[
-        Optional[bool], Field(description="Include or exclude API role information in the list. Default is True.")
+        Optional[bool],
+        Field(description="Include or exclude API role information in the list. Default is True."),
     ] = None,
     role_ids: Annotated[
-        Optional[List[str]], Field(description="Include or exclude role ID information in the list.")
+        Optional[List[str]],
+        Field(description="Include or exclude role ID information in the list."),
     ] = None,
     search: Annotated[
         Optional[str], Field(description="Search string to filter roles by name.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Union[List[dict], str]:
     """

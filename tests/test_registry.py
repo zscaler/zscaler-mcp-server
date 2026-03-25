@@ -70,7 +70,7 @@ class TestRegistry(unittest.TestCase):
         for service_name, service_class in available_services.items():
             self.assertTrue(
                 issubclass(service_class, BaseService),
-                f"Service {service_name} does not inherit from BaseService"
+                f"Service {service_name} does not inherit from BaseService",
             )
 
     def test_service_instantiation(self):
@@ -99,14 +99,18 @@ class TestRegistry(unittest.TestCase):
                 service_instance = service_class(mock_client)
 
                 # Verify that the service has tools (read or write)
-                self.assertIsInstance(service_instance.tools, list)  # Deprecated but kept for compatibility
+                self.assertIsInstance(
+                    service_instance.tools, list
+                )  # Deprecated but kept for compatibility
                 self.assertIsInstance(service_instance.read_tools, list)
                 self.assertIsInstance(service_instance.write_tools, list)
                 # Services should have at least read tools
-                self.assertGreater(len(service_instance.read_tools) + len(service_instance.write_tools), 0)
+                self.assertGreater(
+                    len(service_instance.read_tools) + len(service_instance.write_tools), 0
+                )
 
                 # Verify that register_tools method exists and can be called
-                self.assertTrue(hasattr(service_instance, 'register_tools'))
+                self.assertTrue(hasattr(service_instance, "register_tools"))
                 service_instance.register_tools(mock_server)
 
             except Exception as e:  # pylint: disable=broad-exception-caught

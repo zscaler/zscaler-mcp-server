@@ -10,15 +10,11 @@ def scim_group_manager(
     scim_group_id: Annotated[
         str, Field(description="If provided, fetch a specific SCIM group.")
     ] = None,
-    idp_name: Annotated[
-        str, Field(description="Required for listing SCIM groups.")
-    ] = None,
+    idp_name: Annotated[str, Field(description="Required for listing SCIM groups.")] = None,
     query_params: Annotated[
         dict, Field(description="Optional filters like search, page, page_size, etc.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[dict, List[dict], str]:
     """
@@ -45,9 +41,7 @@ def scim_group_manager(
 
         # Fetch a specific SCIM group
         if scim_group_id:
-            result, _, err = scim_api.get_scim_group(
-                scim_group_id, query_params=query_params
-            )
+            result, _, err = scim_api.get_scim_group(scim_group_id, query_params=query_params)
             if err:
                 raise Exception(f"Failed to fetch SCIM group {scim_group_id}: {err}")
             return result.as_dict()

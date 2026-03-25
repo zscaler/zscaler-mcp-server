@@ -13,9 +13,7 @@ def app_protection_profile_manager(
             description="Name of the profile to match. If provided, only profiles with matching name will be returned."
         ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], dict]:
     """
@@ -38,9 +36,7 @@ def app_protection_profile_manager(
 
     query_params = {"search": name} if name else {}
 
-    profiles, _, err = client.zpa.app_protection.list_profiles(
-        query_params=query_params
-    )
+    profiles, _, err = client.zpa.app_protection.list_profiles(query_params=query_params)
     if err:
         raise Exception(f"Failed to list app protection profiles: {err}")
 

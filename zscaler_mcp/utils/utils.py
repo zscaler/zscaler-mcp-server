@@ -10,16 +10,16 @@ import pycountry
 def parse_list(val: Union[str, List, Any]) -> Union[List, Any]:
     """
     Helper function to parse list parameters that can be JSON strings or lists.
-    
+
     Args:
         val: Either a JSON string representation of a list, or an actual list/other type.
-    
+
     Returns:
         Parsed list if input was a JSON string, otherwise returns the value as-is.
-    
+
     Raises:
         ValueError: If the input is a string but not valid JSON.
-    
+
     Examples:
         >>> parse_list('["item1", "item2"]')
         ['item1', 'item2']
@@ -72,9 +72,7 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
                     if (
                         obj_type_lower == "platform"
                         and isinstance(values, list)
-                        and all(
-                            isinstance(t, (list, tuple)) and len(t) == 2 for t in values
-                        )
+                        and all(isinstance(t, (list, tuple)) and len(t) == 2 for t in values)
                     ):
                         normalized_conditions.append((obj_type, values))  # no op
                         continue
@@ -84,10 +82,7 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
                         isinstance(values, list)
                         and len(values) == 1
                         and isinstance(values[0], list)
-                        and all(
-                            isinstance(t, (list, tuple)) and len(t) == 2
-                            for t in values[0]
-                        )
+                        and all(isinstance(t, (list, tuple)) and len(t) == 2 for t in values[0])
                     ):
                         values = values[0]
 
@@ -102,9 +97,7 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
                     isinstance(values, list)
                     and len(values) == 1
                     and isinstance(values[0], list)
-                    and all(
-                        isinstance(t, (list, tuple)) and len(t) == 2 for t in values[0]
-                    )
+                    and all(isinstance(t, (list, tuple)) and len(t) == 2 for t in values[0])
                 ):
                     values = values[0]
 
@@ -123,29 +116,21 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
             operands = cond.get("operands", [])
 
             for operand in operands:
-                obj_type = (
-                    operand.get("objectType") or operand.get("object_type") or ""
-                ).lower()
+                obj_type = (operand.get("objectType") or operand.get("object_type") or "").lower()
                 values = operand.get("values", [])
-                entry_values = operand.get(
-                    "entryValues", operand.get("entry_values", [])
-                )
+                entry_values = operand.get("entryValues", operand.get("entry_values", []))
 
                 if not obj_type:
                     continue
 
                 if values:
-                    converted.append(
-                        (obj_type, values if isinstance(values, list) else [values])
-                    )
+                    converted.append((obj_type, values if isinstance(values, list) else [values]))
 
                 elif entry_values:
                     if isinstance(entry_values, dict):
                         entry_values = [entry_values]
                     flattened = [
-                        (ev["lhs"], ev["rhs"])
-                        for ev in entry_values
-                        if "lhs" in ev and "rhs" in ev
+                        (ev["lhs"], ev["rhs"]) for ev in entry_values if "lhs" in ev and "rhs" in ev
                     ]
                     (
                         converted.append((obj_type, flattened))
@@ -188,9 +173,7 @@ def convert_v1_to_v2_response(conditions: List[Dict]) -> List[Dict]:
         cond_op = (condition.get("operator") or "OR").upper()
 
         for operand in condition.get("operands", []):
-            obj_type = (
-                operand.get("objectType") or operand.get("object_type") or ""
-            ).upper()
+            obj_type = (operand.get("objectType") or operand.get("object_type") or "").upper()
             if not obj_type:
                 continue
 
@@ -203,18 +186,14 @@ def convert_v1_to_v2_response(conditions: List[Dict]) -> List[Dict]:
                 lhs = str(operand.get("lhs", ""))
                 rhs = str(operand.get("rhs", ""))
                 if lhs and rhs:
-                    grouped_entries[(cond_op, obj_type)].append(
-                        {"lhs": lhs, "rhs": rhs}
-                    )
+                    grouped_entries[(cond_op, obj_type)].append({"lhs": lhs, "rhs": rhs})
 
     # Group value-based conditions
     for (op, obj_type), values in grouped_values.items():
         v2_conditions.append(
             {
                 "operator": op,
-                "operands": [
-                    {"object_type": obj_type, "values": sorted(list(set(values)))}
-                ],
+                "operands": [{"object_type": obj_type, "values": sorted(list(set(values)))}],
             }
         )
 

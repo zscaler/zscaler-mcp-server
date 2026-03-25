@@ -10,15 +10,11 @@ def posture_profile_manager(
     profile_id: Annotated[
         str, Field(description="Optional posture profile ID for direct lookup.")
     ] = None,
-    name: Annotated[
-        str, Field(description="Optional posture profile name to search for.")
-    ] = None,
+    name: Annotated[str, Field(description="Optional posture profile name to search for.")] = None,
     query_params: Annotated[
         dict, Field(description="Optional filters (e.g., search, pagination).")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[dict, List[dict], str]:
     """

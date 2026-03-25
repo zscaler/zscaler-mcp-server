@@ -115,13 +115,12 @@ def _build_url_filtering_rule_payload(
 # READ OPERATIONS (Read-Only)
 # ============================================================================
 
+
 def zia_list_url_filtering_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -160,9 +159,7 @@ def zia_get_url_filtering_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the URL filtering rule to retrieve.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -194,15 +191,16 @@ def zia_get_url_filtering_rule(
 # WRITE OPERATIONS (Require --enable-write-tools flag)
 # ============================================================================
 
+
 def zia_create_url_filtering_rule(
     name: Annotated[str, Field(description="Rule name (required).")],
     rule_action: Annotated[
         str,
-        Field(description="Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE")
+        Field(
+            description="Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE"
+        ),
     ],
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = True,
@@ -210,98 +208,137 @@ def zia_create_url_filtering_rule(
         Optional[int], Field(description="The admin rank of the user who creates the rule.")
     ] = None,
     order: Annotated[
-        Optional[int], Field(description="Order of execution of rule with respect to other URL Filtering rules.")
+        Optional[int],
+        Field(description="Order of execution of rule with respect to other URL Filtering rules."),
     ] = None,
     protocols: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="The protocol criteria for the rule. Accepts JSON string or list.")
+        Field(description="The protocol criteria for the rule. Accepts JSON string or list."),
     ] = None,
     device_trust_levels: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST")
+        Field(
+            description="Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST"
+        ),
     ] = None,
     url_categories: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="The names of URL categories that this rule applies to. Accepts JSON string or list.")
+        Field(
+            description="The names of URL categories that this rule applies to. Accepts JSON string or list."
+        ),
     ] = None,
     url_categories2: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list.")
+        Field(
+            description="Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list."
+        ),
     ] = None,
     request_methods: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE")
+        Field(
+            description="Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE"
+        ),
     ] = None,
     user_agent_types: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE")
+        Field(
+            description="User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE"
+        ),
     ] = None,
     block_override: Annotated[
-        Optional[bool], Field(description="When true, a BLOCK action triggered by the rule could be overridden.")
+        Optional[bool],
+        Field(description="When true, a BLOCK action triggered by the rule could be overridden."),
     ] = None,
     ciparule: Annotated[
-        Optional[bool], Field(description="The CIPA compliance rule is enabled if this is set to True.")
+        Optional[bool],
+        Field(description="The CIPA compliance rule is enabled if this is set to True."),
     ] = None,
     end_user_notification_url: Annotated[
-        Optional[str], Field(description="URL of end user notification page to be displayed when the rule is matched.")
+        Optional[str],
+        Field(
+            description="URL of end user notification page to be displayed when the rule is matched."
+        ),
     ] = None,
     enforce_time_validity: Annotated[
-        Optional[bool], Field(description="Enforce a set validity time period for the URL Filtering rule.")
+        Optional[bool],
+        Field(description="Enforce a set validity time period for the URL Filtering rule."),
     ] = None,
     size_quota: Annotated[
         Optional[str], Field(description="Size quota in KB for applying the URL Filtering rule.")
     ] = None,
     time_quota: Annotated[
-        Optional[str], Field(description="Time quota in minutes elapsed after the URL Filtering rule is applied.")
+        Optional[str],
+        Field(description="Time quota in minutes elapsed after the URL Filtering rule is applied."),
     ] = None,
     validity_start_time: Annotated[
-        Optional[str], Field(description="Date and time the rule's effects will be valid from. Requires enforce_time_validity=True.")
+        Optional[str],
+        Field(
+            description="Date and time the rule's effects will be valid from. Requires enforce_time_validity=True."
+        ),
     ] = None,
     validity_end_time: Annotated[
-        Optional[str], Field(description="Date and time the rule's effects will end. Requires enforce_time_validity=True.")
+        Optional[str],
+        Field(
+            description="Date and time the rule's effects will end. Requires enforce_time_validity=True."
+        ),
     ] = None,
     validity_time_zone_id: Annotated[
-        Optional[str], Field(description="Time zone ID for validity dates. Requires enforce_time_validity=True.")
+        Optional[str],
+        Field(description="Time zone ID for validity dates. Requires enforce_time_validity=True."),
     ] = None,
     departments: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the departments that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the departments that this rule applies to."),
     ] = None,
     devices: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the devices that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the devices that this rule applies to."),
     ] = None,
     device_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the device groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the device groups that this rule applies to."),
     ] = None,
     groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the groups that this rule applies to."),
     ] = None,
     labels: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the labels that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the labels that this rule applies to."),
     ] = None,
     locations: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the locations that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the locations that this rule applies to."),
     ] = None,
     location_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the location groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the location groups that this rule applies to."),
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the time windows that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the time windows that this rule applies to."),
     ] = None,
     users: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the users that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the users that this rule applies to."),
     ] = None,
     workload_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the workload groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the workload groups that this rule applies to."),
     ] = None,
     override_users: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK."
+        ),
     ] = None,
     override_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK."
+        ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -375,15 +412,13 @@ def zia_update_url_filtering_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the URL filtering rule to update.")
     ],
-    name: Annotated[
-        Optional[str], Field(description="Rule name.")
-    ] = None,
-    description: Annotated[
-        Optional[str], Field(description="Optional rule description.")
-    ] = None,
+    name: Annotated[Optional[str], Field(description="Rule name.")] = None,
+    description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     rule_action: Annotated[
         Optional[str],
-        Field(description="Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE")
+        Field(
+            description="Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE"
+        ),
     ] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
@@ -392,98 +427,137 @@ def zia_update_url_filtering_rule(
         Optional[int], Field(description="The admin rank of the user who creates the rule.")
     ] = None,
     order: Annotated[
-        Optional[int], Field(description="Order of execution of rule with respect to other URL Filtering rules.")
+        Optional[int],
+        Field(description="Order of execution of rule with respect to other URL Filtering rules."),
     ] = None,
     protocols: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="The protocol criteria for the rule. Accepts JSON string or list.")
+        Field(description="The protocol criteria for the rule. Accepts JSON string or list."),
     ] = None,
     device_trust_levels: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST")
+        Field(
+            description="Device trust levels for which the rule must be applied. Values: ANY, UNKNOWN_DEVICETRUSTLEVEL, LOW_TRUST, MEDIUM_TRUST, HIGH_TRUST"
+        ),
     ] = None,
     url_categories: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="The names of URL categories that this rule applies to. Accepts JSON string or list.")
+        Field(
+            description="The names of URL categories that this rule applies to. Accepts JSON string or list."
+        ),
     ] = None,
     url_categories2: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list.")
+        Field(
+            description="Additional URL categories (connected with AND operator to url_categories). Accepts JSON string or list."
+        ),
     ] = None,
     request_methods: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE")
+        Field(
+            description="Request methods that this rule will apply to. Values: CONNECT, DELETE, GET, HEAD, OPTIONS, OTHER, POST, PUT, TRACE"
+        ),
     ] = None,
     user_agent_types: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE")
+        Field(
+            description="User Agent types on which this rule will be applied. Values: OPERA, FIREFOX, MSIE, MSEDGE, CHROME, SAFARI, OTHER, MSCHREDGE"
+        ),
     ] = None,
     block_override: Annotated[
-        Optional[bool], Field(description="When true, a BLOCK action triggered by the rule could be overridden.")
+        Optional[bool],
+        Field(description="When true, a BLOCK action triggered by the rule could be overridden."),
     ] = None,
     ciparule: Annotated[
-        Optional[bool], Field(description="The CIPA compliance rule is enabled if this is set to True.")
+        Optional[bool],
+        Field(description="The CIPA compliance rule is enabled if this is set to True."),
     ] = None,
     end_user_notification_url: Annotated[
-        Optional[str], Field(description="URL of end user notification page to be displayed when the rule is matched.")
+        Optional[str],
+        Field(
+            description="URL of end user notification page to be displayed when the rule is matched."
+        ),
     ] = None,
     enforce_time_validity: Annotated[
-        Optional[bool], Field(description="Enforce a set validity time period for the URL Filtering rule.")
+        Optional[bool],
+        Field(description="Enforce a set validity time period for the URL Filtering rule."),
     ] = None,
     size_quota: Annotated[
         Optional[str], Field(description="Size quota in KB for applying the URL Filtering rule.")
     ] = None,
     time_quota: Annotated[
-        Optional[str], Field(description="Time quota in minutes elapsed after the URL Filtering rule is applied.")
+        Optional[str],
+        Field(description="Time quota in minutes elapsed after the URL Filtering rule is applied."),
     ] = None,
     validity_start_time: Annotated[
-        Optional[str], Field(description="Date and time the rule's effects will be valid from. Requires enforce_time_validity=True.")
+        Optional[str],
+        Field(
+            description="Date and time the rule's effects will be valid from. Requires enforce_time_validity=True."
+        ),
     ] = None,
     validity_end_time: Annotated[
-        Optional[str], Field(description="Date and time the rule's effects will end. Requires enforce_time_validity=True.")
+        Optional[str],
+        Field(
+            description="Date and time the rule's effects will end. Requires enforce_time_validity=True."
+        ),
     ] = None,
     validity_time_zone_id: Annotated[
-        Optional[str], Field(description="Time zone ID for validity dates. Requires enforce_time_validity=True.")
+        Optional[str],
+        Field(description="Time zone ID for validity dates. Requires enforce_time_validity=True."),
     ] = None,
     departments: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the departments that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the departments that this rule applies to."),
     ] = None,
     devices: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the devices that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the devices that this rule applies to."),
     ] = None,
     device_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the device groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the device groups that this rule applies to."),
     ] = None,
     groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the groups that this rule applies to."),
     ] = None,
     labels: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the labels that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the labels that this rule applies to."),
     ] = None,
     locations: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the locations that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the locations that this rule applies to."),
     ] = None,
     location_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the location groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the location groups that this rule applies to."),
     ] = None,
     time_windows: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the time windows that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the time windows that this rule applies to."),
     ] = None,
     users: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the users that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the users that this rule applies to."),
     ] = None,
     workload_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs for the workload groups that this rule applies to.")
+        Optional[Union[List[int], str]],
+        Field(description="The IDs for the workload groups that this rule applies to."),
     ] = None,
     override_users: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="The IDs of users that this rule can be overridden for. Only applies if block_override=True, action=BLOCK."
+        ),
     ] = None,
     override_groups: Annotated[
-        Optional[Union[List[int], str]], Field(description="The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.")
+        Optional[Union[List[int], str]],
+        Field(
+            description="The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK."
+        ),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -554,15 +628,13 @@ def zia_delete_url_filtering_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the URL filtering rule to delete.")
     ],
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
-    kwargs: str = "{}"
+    kwargs: str = "{}",
 ) -> str:
     """
     Deletes a ZIA URL Filtering Rule by ID.
-    
+
     🚨 DESTRUCTIVE OPERATION - Requires double confirmation.
     This action cannot be undone.
 
@@ -579,18 +651,16 @@ def zia_delete_url_filtering_rule(
         >>> result = zia_delete_url_filtering_rule(rule_id="12345")
     """
     from zscaler_mcp.common.elicitation import check_confirmation, extract_confirmed_from_kwargs
-    
+
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
-    
+
     confirmation_check = check_confirmation(
-        "zia_delete_url_filtering_rule",
-        confirmed,
-        {"rule_id": str(rule_id)}
+        "zia_delete_url_filtering_rule", confirmed, {"rule_id": str(rule_id)}
     )
     if confirmation_check:
         return confirmation_check
-    
+
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     url = client.zia.url_filtering
 

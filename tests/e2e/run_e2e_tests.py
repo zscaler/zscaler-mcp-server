@@ -146,48 +146,31 @@ def main():
     parser = argparse.ArgumentParser(
         description="Run E2E tests for Zscaler Integrations MCP Server",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
+        epilog=__doc__,
     )
 
     parser.add_argument(
-        "--test-path",
-        help="Path to specific test file or directory (default: all E2E tests)"
+        "--test-path", help="Path to specific test file or directory (default: all E2E tests)"
     )
 
     parser.add_argument(
         "--models",
-        help="Comma-separated list of models to test against (default: gpt-4o-mini,gpt-4o)"
+        help="Comma-separated list of models to test against (default: gpt-4o-mini,gpt-4o)",
     )
 
-    parser.add_argument(
-        "--runs",
-        type=int,
-        help="Number of runs per test (default: 2)"
-    )
+    parser.add_argument("--runs", type=int, help="Number of runs per test (default: 2)")
 
     parser.add_argument(
-        "--threshold",
-        type=float,
-        help="Success threshold for tests (default: 0.1)"
+        "--threshold", type=float, help="Success threshold for tests (default: 0.1)"
     )
 
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
     parser.add_argument(
-        "--quick",
-        action="store_true",
-        help="Quick test mode (fewer runs, lower threshold)"
+        "--quick", action="store_true", help="Quick test mode (fewer runs, lower threshold)"
     )
 
-    parser.add_argument(
-        "--list-tests",
-        action="store_true",
-        help="List available test modules"
-    )
+    parser.add_argument("--list-tests", action="store_true", help="List available test modules")
 
     args = parser.parse_args()
 
@@ -201,7 +184,7 @@ def main():
             "tests/e2e/test_zpa.py",
             "tests/e2e/test_zdx.py",
             "tests/e2e/test_zcc.py",
-            "tests/e2e/test_zidentity.py"
+            "tests/e2e/test_zidentity.py",
         ]
 
         print("📋 Available E2E test modules:")

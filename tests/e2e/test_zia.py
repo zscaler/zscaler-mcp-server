@@ -33,7 +33,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "category": "Business",
                                     "risk_level": "Low",
                                     "status": "Active",
-                                    "usage_count": 150
+                                    "usage_count": 150,
                                 },
                                 {
                                     "id": "app-002",
@@ -41,7 +41,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "category": "Communication",
                                     "risk_level": "Medium",
                                     "status": "Active",
-                                    "usage_count": 200
+                                    "usage_count": 200,
                                 },
                                 {
                                     "id": "app-003",
@@ -49,10 +49,10 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "category": "Development",
                                     "risk_level": "Medium",
                                     "status": "Active",
-                                    "usage_count": 75
-                                }
+                                    "usage_count": 75,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -77,8 +77,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about cloud applications
             result_lower = result.lower()
             self.assertTrue(
-                "salesforce" in result_lower or "slack" in result_lower or "github" in result_lower or "mock" in result_lower,
-                f"Expected cloud application names in result: {result}"
+                "salesforce" in result_lower
+                or "slack" in result_lower
+                or "github" in result_lower
+                or "mock" in result_lower,
+                f"Expected cloud application names in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -104,24 +107,24 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "name": "Social Media",
                                     "description": "Social networking and media sharing sites",
                                     "status": "Active",
-                                    "url_count": 5000
+                                    "url_count": 5000,
                                 },
                                 {
                                     "id": "cat-002",
                                     "name": "Business",
                                     "description": "Business and productivity applications",
                                     "status": "Active",
-                                    "url_count": 3000
+                                    "url_count": 3000,
                                 },
                                 {
                                     "id": "cat-003",
                                     "name": "Technology",
                                     "description": "Technology and software development sites",
                                     "status": "Active",
-                                    "url_count": 2000
-                                }
+                                    "url_count": 2000,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -146,8 +149,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about URL categories
             result_lower = result.lower()
             self.assertTrue(
-                "social media" in result_lower or "business" in result_lower or "technology" in result_lower or "mock" in result_lower,
-                f"Expected URL category names in result: {result}"
+                "social media" in result_lower
+                or "business" in result_lower
+                or "technology" in result_lower
+                or "mock" in result_lower,
+                f"Expected URL category names in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -173,24 +179,24 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "ip_address": "192.168.1.100",
                                     "description": "Web Server 1",
                                     "status": "Active",
-                                    "location": "Data Center 1"
+                                    "location": "Data Center 1",
                                 },
                                 {
                                     "id": "ip-002",
                                     "ip_address": "192.168.1.101",
                                     "description": "Database Server",
                                     "status": "Active",
-                                    "location": "Data Center 1"
+                                    "location": "Data Center 1",
                                 },
                                 {
                                     "id": "ip-003",
                                     "ip_address": "192.168.1.102",
                                     "description": "Load Balancer",
                                     "status": "Active",
-                                    "location": "Data Center 2"
-                                }
+                                    "location": "Data Center 2",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -215,8 +221,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about static IPs
             result_lower = result.lower()
             self.assertTrue(
-                "192.168.1" in result_lower or "server" in result_lower or "ip" in result_lower or "mock" in result_lower,
-                f"Expected static IP information in result: {result}"
+                "192.168.1" in result_lower
+                or "server" in result_lower
+                or "ip" in result_lower
+                or "mock" in result_lower,
+                f"Expected static IP information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -242,17 +251,17 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "username": "vpn_user_1",
                                     "description": "Remote worker VPN access",
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
+                                    "created_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "id": "vpn-002",
                                     "username": "vpn_user_2",
                                     "description": "Contractor VPN access",
                                     "status": "Active",
-                                    "created_date": "2024-01-15T00:00:00Z"
-                                }
+                                    "created_date": "2024-01-15T00:00:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -277,8 +286,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about VPN credentials
             result_lower = result.lower()
             self.assertTrue(
-                "vpn" in result_lower or "remote" in result_lower or "contractor" in result_lower or "mock" in result_lower,
-                f"Expected VPN credential information in result: {result}"
+                "vpn" in result_lower
+                or "remote" in result_lower
+                or "contractor" in result_lower
+                or "mock" in result_lower,
+                f"Expected VPN credential information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -305,7 +317,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "country": "United States",
                                     "state": "California",
                                     "city": "San Francisco",
-                                    "status": "Active"
+                                    "status": "Active",
                                 },
                                 {
                                     "id": "loc-002",
@@ -313,7 +325,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "country": "United States",
                                     "state": "New York",
                                     "city": "New York",
-                                    "status": "Active"
+                                    "status": "Active",
                                 },
                                 {
                                     "id": "loc-003",
@@ -321,10 +333,10 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "country": "United Kingdom",
                                     "state": "England",
                                     "city": "London",
-                                    "status": "Active"
-                                }
+                                    "status": "Active",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -349,8 +361,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about locations
             result_lower = result.lower()
             self.assertTrue(
-                "san francisco" in result_lower or "new york" in result_lower or "london" in result_lower or "mock" in result_lower,
-                f"Expected location information in result: {result}"
+                "san francisco" in result_lower
+                or "new york" in result_lower
+                or "london" in result_lower
+                or "mock" in result_lower,
+                f"Expected location information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -376,24 +391,24 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "name": "Web Applications",
                                     "description": "Common web applications",
                                     "status": "Active",
-                                    "app_count": 25
+                                    "app_count": 25,
                                 },
                                 {
                                     "id": "group-002",
                                     "name": "Database Applications",
                                     "description": "Database and data management apps",
                                     "status": "Active",
-                                    "app_count": 15
+                                    "app_count": 15,
                                 },
                                 {
                                     "id": "group-003",
                                     "name": "Development Tools",
                                     "description": "Software development tools",
                                     "status": "Active",
-                                    "app_count": 20
-                                }
+                                    "app_count": 20,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -418,8 +433,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about app groups
             result_lower = result.lower()
             self.assertTrue(
-                "web application" in result_lower or "database" in result_lower or "development" in result_lower or "mock" in result_lower,
-                f"Expected app group information in result: {result}"
+                "web application" in result_lower
+                or "database" in result_lower
+                or "development" in result_lower
+                or "mock" in result_lower,
+                f"Expected app group information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -445,31 +463,31 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "name": "Cloud Services",
                                     "description": "Major cloud service providers",
                                     "status": "Active",
-                                    "ip_count": 50
+                                    "ip_count": 50,
                                 },
                                 {
                                     "id": "dest-002",
                                     "name": "Partner Networks",
                                     "description": "Partner and vendor networks",
                                     "status": "Active",
-                                    "ip_count": 30
+                                    "ip_count": 30,
                                 },
                                 {
                                     "id": "dest-003",
                                     "name": "Data Centers",
                                     "description": "Internal data center networks",
                                     "status": "Active",
-                                    "ip_count": 20
-                                }
+                                    "ip_count": 20,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zia.ip_destination_groups.list_ip_destination_groups.side_effect = (
-                self._create_mock_api_side_effect(fixtures)
+            self._mock_api_instance.zia.ip_destination_groups.list_ip_destination_groups.side_effect = self._create_mock_api_side_effect(
+                fixtures
             )
 
             prompt = "List all IP destination groups and their descriptions"
@@ -487,8 +505,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about destination groups
             result_lower = result.lower()
             self.assertTrue(
-                "cloud service" in result_lower or "partner" in result_lower or "data center" in result_lower or "mock" in result_lower,
-                f"Expected destination group information in result: {result}"
+                "cloud service" in result_lower
+                or "partner" in result_lower
+                or "data center" in result_lower
+                or "mock" in result_lower,
+                f"Expected destination group information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -514,24 +535,24 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "name": "Office Networks",
                                     "description": "Corporate office networks",
                                     "status": "Active",
-                                    "ip_count": 100
+                                    "ip_count": 100,
                                 },
                                 {
                                     "id": "src-002",
                                     "name": "Remote Workers",
                                     "description": "Remote worker IP ranges",
                                     "status": "Active",
-                                    "ip_count": 200
+                                    "ip_count": 200,
                                 },
                                 {
                                     "id": "src-003",
                                     "name": "Data Centers",
                                     "description": "Internal data center networks",
                                     "status": "Active",
-                                    "ip_count": 50
-                                }
+                                    "ip_count": 50,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -556,8 +577,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about source groups
             result_lower = result.lower()
             self.assertTrue(
-                "office network" in result_lower or "remote worker" in result_lower or "data center" in result_lower or "mock" in result_lower,
-                f"Expected source group information in result: {result}"
+                "office network" in result_lower
+                or "remote worker" in result_lower
+                or "data center" in result_lower
+                or "mock" in result_lower,
+                f"Expected source group information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -584,7 +608,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "description": "Allow HTTP and HTTPS traffic",
                                     "status": "Active",
                                     "action": "Allow",
-                                    "priority": 1
+                                    "priority": 1,
                                 },
                                 {
                                     "id": "rule-002",
@@ -592,7 +616,7 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "description": "Block known malicious IP addresses",
                                     "status": "Active",
                                     "action": "Block",
-                                    "priority": 2
+                                    "priority": 2,
                                 },
                                 {
                                     "id": "rule-003",
@@ -600,17 +624,17 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "description": "Allow database connections from trusted sources",
                                     "status": "Active",
                                     "action": "Allow",
-                                    "priority": 3
-                                }
+                                    "priority": 3,
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zia.cloud_firewall_rules.list_cloud_firewall_rules.side_effect = (
-                self._create_mock_api_side_effect(fixtures)
+            self._mock_api_instance.zia.cloud_firewall_rules.list_cloud_firewall_rules.side_effect = self._create_mock_api_side_effect(
+                fixtures
             )
 
             prompt = "List all cloud firewall rules and their actions"
@@ -628,8 +652,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about firewall rules
             result_lower = result.lower()
             self.assertTrue(
-                "firewall" in result_lower or "allow" in result_lower or "block" in result_lower or "mock" in result_lower,
-                f"Expected firewall rule information in result: {result}"
+                "firewall" in result_lower
+                or "allow" in result_lower
+                or "block" in result_lower
+                or "mock" in result_lower,
+                f"Expected firewall rule information in result: {result}",
             )
 
         self.run_test_with_retries(
@@ -655,24 +682,24 @@ class TestZIAModuleE2E(BaseE2ETest):
                                     "url": "*.google.com",
                                     "description": "Google services exemption",
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
+                                    "created_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "id": "exempt-002",
                                     "url": "*.microsoft.com",
                                     "description": "Microsoft services exemption",
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
+                                    "created_date": "2024-01-01T00:00:00Z",
                                 },
                                 {
                                     "id": "exempt-003",
                                     "url": "*.apple.com",
                                     "description": "Apple services exemption",
                                     "status": "Active",
-                                    "created_date": "2024-01-01T00:00:00Z"
-                                }
+                                    "created_date": "2024-01-01T00:00:00Z",
+                                },
                             ]
-                        }
+                        },
                     },
                 },
             ]
@@ -697,8 +724,11 @@ class TestZIAModuleE2E(BaseE2ETest):
             # Check that the result contains information about exempt URLs
             result_lower = result.lower()
             self.assertTrue(
-                "google" in result_lower or "microsoft" in result_lower or "apple" in result_lower or "mock" in result_lower,
-                f"Expected exempt URL information in result: {result}"
+                "google" in result_lower
+                or "microsoft" in result_lower
+                or "apple" in result_lower
+                or "mock" in result_lower,
+                f"Expected exempt URL information in result: {result}",
             )
 
         self.run_test_with_retries(

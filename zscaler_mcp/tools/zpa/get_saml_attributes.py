@@ -13,9 +13,7 @@ def saml_attribute_manager(
     query_params: Annotated[
         dict, Field(description="Optional filters like search, page, page_size.")
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], str]:
     """

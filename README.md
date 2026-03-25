@@ -13,13 +13,11 @@
 
 -> **Disclaimer:** Please refer to our [General Support Statement](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/support.md) before proceeding with the use of this provider. You can also refer to our [troubleshooting guide](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/TROUBLESHOOTING.md) for guidance on typical problems.
 
-> [!IMPORTANT]
-> **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/zscaler/zscaler-mcp-server/issues) to help shape the final release.
-
 ## 📄 Table of contents
 
 - [📺 Overview](#overview)
 - [🔒 Security & Permissions](#security-permissions)
+- [🔐 MCP Client Authentication](#mcp-client-authentication)
 - [Supported Tools](#supported-tools)
 - [Installation & Setup](#installation--setup)
   - [Prerequisites](#prerequisites)
@@ -45,11 +43,13 @@
   - [Using Individual Environment Variables](#using-individual-environment-variables)
   - [Docker Version](#docker-version)
 - [Additional Deployment Options](#additional-deployment-options)
+  - [Remote MCP Deployment (EC2, VM, etc.)](#remote-mcp-deployment-ec2-vm-etc)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
 - [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
   - [Claude Desktop](#claude-desktop)
   - [Cursor](#cursor)
   - [Visual Studio Code + GitHub Copilot](#visual-studio-code-github-copilot)
+- [Platform Integrations](#platform-integrations)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -202,11 +202,68 @@ The server implements multiple layers of security (defense-in-depth):
 
 This multi-layered approach ensures that even if one security control is bypassed, others remain in place to prevent unauthorized operations.
 
+### Cryptographic Confirmation for Destructive Actions
+
+Delete operations use a **cryptographic confirmation token** (HMAC-SHA256) instead of a simple `confirmed=true` boolean. This prevents prompt injection attacks where a malicious prompt could trick the AI agent into confirming a destructive action. The token is bound to the specific operation parameters and expires after 5 minutes.
+
+This mechanism is transparent to end users — the AI agent handles the confirmation flow automatically through its standard permission dialog.
+
+To bypass confirmations in automated testing or CI/CD environments:
+
+```bash
+export ZSCALER_MCP_SKIP_CONFIRMATIONS=true
+```
+
+### HTTPS/TLS Support
+
+**HTTPS is required by default** for non-localhost deployments. The server will refuse to start on a non-localhost interface without TLS certificates unless you explicitly set `ZSCALER_MCP_ALLOW_HTTP=true`.
+
+When running with HTTP transports (`sse` or `streamable-http`), provide TLS certificates:
+
+```env
+ZSCALER_MCP_TLS_CERTFILE=/path/to/cert.pem
+ZSCALER_MCP_TLS_KEYFILE=/path/to/key.pem
+
+# Optional: private key password and CA bundle
+ZSCALER_MCP_TLS_KEYFILE_PASSWORD=your-key-password
+ZSCALER_MCP_TLS_CA_CERTS=/path/to/ca-bundle.pem
+```
+
+When TLS is configured, the server automatically starts with HTTPS. This works with both public (CA-signed) and private (self-signed) certificates. Generate a self-signed certificate for testing:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes \
+  -subj "/CN=localhost"
+```
+
+### Source IP Access Control
+
+You can restrict which client IPs are allowed to connect using `ZSCALER_MCP_ALLOWED_SOURCE_IPS`. When unset (the default), source IP filtering is disabled and deferred to upstream controls (firewall rules, AWS Security Groups, etc.).
+
+```env
+# Allow only specific IPs/subnets
+ZSCALER_MCP_ALLOWED_SOURCE_IPS=10.0.0.0/8,172.16.0.5
+
+# Allow all (effectively disable — same as not setting the variable)
+ZSCALER_MCP_ALLOWED_SOURCE_IPS=0.0.0.0/0
+```
+
+Supports individual IPv4/IPv6 addresses, CIDR notation, and the wildcard `0.0.0.0/0`. Health-check endpoints (`/health`, `/healthz`, `/ready`) are exempt so load-balancer probes continue to work. Requests from disallowed IPs receive `403 Forbidden`.
+
+### .env File Security Warning
+
+When starting with HTTP transports, the server automatically scans any `.env` file in the working directory for plaintext secrets (values containing `SECRET`, `PASSWORD`, `KEY`, or `TOKEN`). If detected, a security warning is logged recommending the use of a secrets manager or environment variables instead.
+
+### Security Posture Banner
+
+On startup, the server logs a consolidated **Security Posture Banner** summarizing the active security configuration — transport mode, host validation status, authentication mode, TLS status, and any active warnings. This makes it easy to verify the security state at a glance.
+
 **Key Security Principles**:
 
 - No "enable all write tools" backdoor exists - allowlist is **mandatory**
 - AI agents must request permission before executing any write operation (`destructiveHint`)
 - Every destructive action requires explicit user approval through the AI agent's permission framework
+- Destructive confirmations are cryptographically bound to prevent prompt injection bypass
 
 ### Best Practices
 
@@ -219,19 +276,168 @@ This multi-layered approach ensures that even if one security control is bypasse
 - **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
 - **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
 
+## 🔐 MCP Client Authentication
+
+> **📖 Full Documentation: [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md)**
+
+When running the MCP server over HTTP (`sse` or `streamable-http` transports), you can enable authentication to control **who is allowed to connect** to the server. This is independent from the [Zscaler API credentials](#zscaler-api-credentials-authentication), which control how the server authenticates to Zscaler APIs.
+
+For HTTP transports, the server **auto-detects and enables authentication** when auth-related environment variables are present. For `stdio` transport, authentication is not applicable (the operating system's process isolation provides security).
+
+### Authentication Modes
+
+The server supports four authentication modes, configured via environment variables:
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **`api-key`** | Simple shared secret — client sends `Authorization: Bearer <key>` | Quick setup, internal environments, development |
+| **`jwt`** | External Identity Provider via JWKS — tokens validated locally using public keys | Enterprise SSO, multi-tenant deployments (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google) |
+| **`zscaler`** | Zscaler OneAPI credential validation — client sends Basic Auth with `client_id:client_secret` | Environments already using Zscaler API credentials |
+| **`auth=` param** | Full MCP-spec OAuth 2.1 with DCR via fastmcp `AuthProvider` (e.g. `OIDCProxy`) | Library consumers, programmatic OAuth 2.1, any OIDC provider |
+
+### Quick Start
+
+Enable authentication by setting these environment variables in your `.env` file:
+
+```env
+# Enable authentication
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=api-key
+
+# For api-key mode: set a shared secret
+ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
+```
+
+Then start the server with an HTTP transport:
+
+```bash
+zscaler-mcp --transport streamable-http
+```
+
+Clients must include the key in the `Authorization` header:
+
+```text
+Authorization: Bearer sk-your-secret-key-here
+```
+
+### How It Works
+
+Authentication is implemented as ASGI middleware that wraps the HTTP transport layer:
+
+```text
+MCP Client Request
+      │
+      ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Auth         │────▶│  FastMCP      │────▶│  Zscaler     │
+│  Middleware   │     │  Server       │     │  APIs        │
+└──────────────┘     └──────────────┘     └──────────────┘
+ Layer 1: WHO          MCP Protocol        Layer 2: HOW
+ can connect?          Processing          server talks
+                                           to Zscaler
+```
+
+- **Layer 1 (MCP Client Auth)**: Controlled by `ZSCALER_MCP_AUTH_*` variables — validates the incoming request
+- **Layer 2 (Zscaler API Auth)**: Controlled by `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc. — authenticates the server to Zscaler APIs
+
+These two layers are completely independent. You can enable one, both, or neither.
+
+### Configuration by Mode
+
+#### API Key
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=api-key
+ZSCALER_MCP_AUTH_API_KEY=sk-your-secret-key-here
+```
+
+#### JWT (External IdP via JWKS)
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=jwt
+ZSCALER_MCP_AUTH_JWKS_URI=https://your-idp.com/.well-known/jwks.json
+ZSCALER_MCP_AUTH_ISSUER=https://your-idp.com
+ZSCALER_MCP_AUTH_AUDIENCE=zscaler-mcp-server
+ZSCALER_MCP_AUTH_ALGORITHMS=RS256,ES256   # Optional (default: RS256,ES256)
+```
+
+#### Zscaler OneAPI Credentials
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=zscaler
+# Uses ZSCALER_VANITY_DOMAIN and ZSCALER_CLOUD from your existing config
+```
+
+Clients authenticate with Basic Auth (`client_id:client_secret`) or custom headers (`X-Zscaler-Client-ID` / `X-Zscaler-Client-Secret`).
+
+### Authentication Defaults
+
+For HTTP transports (`sse`, `streamable-http`), the server **auto-detects and enables authentication** if auth-related environment variables are present (e.g., `ZSCALER_MCP_AUTH_JWKS_URI`, `ZSCALER_MCP_AUTH_API_KEY`, or `ZSCALER_VANITY_DOMAIN`). If no auth configuration is detected and `ZSCALER_MCP_AUTH_ENABLED` is not explicitly set, the server logs a security warning but continues without authentication.
+
+To explicitly disable authentication, set:
+
+```env
+ZSCALER_MCP_AUTH_ENABLED=false
+```
+
+Authentication does not apply to `stdio` transport (process isolation provides security).
+
+### Library-Level OAuth 2.1 (auth= Parameter)
+
+When using `ZscalerMCPServer` as a Python library, you can pass a `fastmcp.server.auth.AuthProvider` instance (such as `OIDCProxy` or `OAuthProxy`) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR), and is the recommended approach for programmatic OAuth integration.
+
+```python
+import os
+from fastmcp.server.auth.oidc_proxy import OIDCProxy
+from zscaler_mcp.server import ZscalerMCPServer
+
+auth = OIDCProxy(
+    config_url="https://your-tenant.auth0.com/.well-known/openid-configuration",
+    client_id=os.getenv("OIDCPROXY_CLIENT_ID"),
+    client_secret=os.getenv("OIDCPROXY_CLIENT_SECRET"),
+    base_url="http://localhost:8000",
+    audience="zscaler-mcp-server",
+)
+
+# Allow standard OIDC scopes for Dynamic Client Registration
+if auth.client_registration_options:
+    auth.client_registration_options.valid_scopes = [
+        "openid", "profile", "email",
+    ]
+
+server = ZscalerMCPServer(auth=auth)
+server.run("streamable-http", host="0.0.0.0", port=8000)
+```
+
+When `auth=` is provided:
+
+- The server delegates authentication entirely to the `AuthProvider`
+- The env-var-based auth middleware (`ZSCALER_MCP_AUTH_*`) is automatically skipped
+- OAuth routes (`.well-known/oauth-protected-resource`, `/register`, `/authorize`, `/token`) are handled by the provider
+- All other security features (TLS, Source IP ACL, host validation) remain active
+- Works with any OIDC-compliant Identity Provider (Auth0, Okta, Azure AD, Keycloak, Google, AWS Cognito, PingOne, etc.)
+
+**IdP requirements:** Your Identity Provider must have a **Regular Web Application** (not M2M) with the callback URL `http://localhost:8000/auth/callback` registered, and an API/resource server with identifier matching the `audience` value.
+
+> **📖 For detailed setup instructions — including [OIDCProxy setup with Auth0/Okta/Azure AD](docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr), IdP-specific JWKS configuration, Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting — see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
+
 ## Supported Tools
 
-The Zscaler Integrations MCP Server provides **150+ tools** for all major Zscaler services:
+The Zscaler Integrations MCP Server provides **280+ tools** for all major Zscaler services:
 
 | Service | Description | Tools |
 |---------|-------------|-------|
-| **ZCC** | Zscaler Client Connector - Device management | 4 read-only |
-| **ZDX** | Zscaler Digital Experience - Monitoring & analytics | 18 read-only |
-| **ZIdentity** | Identity & access management | 3 read-only |
-| **ZIA** | Zscaler Internet Access - Security policies | 60+ read/write |
-| **ZPA** | Zscaler Private Access - Application access | 60+ read/write |
-| **ZTW** | Zscaler Workload Segmentation | 20+ read/write |
+| **ZIA** | Zscaler Internet Access - Security policies | 106 read/write |
+| **ZPA** | Zscaler Private Access - Application access | 88 read/write |
+| **ZDX** | Zscaler Digital Experience - Monitoring & analytics | 31 read-only |
+| **ZTW** | Zscaler Workload Segmentation | 19 read/write |
+| **Z-Insights** | Analytics - Web traffic, cyber incidents, shadow IT | 16 read-only |
+| **ZIdentity** | Identity & access management | 10 read-only |
 | **EASM** | External Attack Surface Management | 7 read-only |
+| **ZCC** | Zscaler Client Connector - Device management | 4 read-only |
 
 📖 **[View Complete Tools Reference →](docs/guides/supported-tools.md)**
 
@@ -295,6 +501,8 @@ uv tool install zscaler-mcp
 ```bash
 uv pip install -e .
 ```
+
+> **Remote deployment:** When running on EC2/VM, activate the project venv before starting: `source .venv/bin/activate`. See [Remote MCP Deployment](#remote-mcp-deployment-ec2-vm-etc).
 
 #### Install from source using pip
 
@@ -389,6 +597,38 @@ If no services are specified via command line or environment variable, all avail
 2. `ZSCALER_MCP_SERVICES` environment variable (fallback)
 3. All services (default when none specified)
 
+### Excluding Services and Tools
+
+When you want to keep most tools available but exclude a few, use `--disabled-tools` or `--disabled-services` instead of listing every tool you want to include.
+
+Both flags support **wildcards** via [fnmatch](https://docs.python.org/3/library/fnmatch.html) patterns.
+
+```bash
+# Exclude a single tool (e.g., rate-limited CSV export)
+zscaler-mcp --disabled-tools zcc_devices_csv_exporter
+
+# Exclude all tools from a service prefix
+zscaler-mcp --disabled-tools "zcc_*"
+
+# Exclude multiple patterns
+zscaler-mcp --disabled-tools "zcc_*,zdx_list_devices"
+
+# Exclude entire services
+zscaler-mcp --disabled-services zcc,zdx
+
+# Combine: keep all services but exclude specific tools
+zscaler-mcp --disabled-tools "zcc_devices_csv_exporter,zdx_*_analysis"
+```
+
+Environment variables:
+
+```bash
+export ZSCALER_MCP_DISABLED_TOOLS="zcc_devices_csv_exporter,zdx_*"
+export ZSCALER_MCP_DISABLED_SERVICES="zcc"
+```
+
+**Precedence:** `--disabled-tools` takes precedence over `--tools` (include list). A tool that matches both the include list and the exclude list will be excluded.
+
 ### Additional Command Line Options
 
 ```bash
@@ -412,11 +652,18 @@ Available command-line flags:
 
 - `--transport`: Transport protocol (`stdio`, `sse`, `streamable-http`)
 - `--services`: Comma-separated list of services to enable
+- `--disabled-services`: Comma-separated list of services to exclude (e.g., `zcc,zdx`)
 - `--tools`: Comma-separated list of specific tools to enable
+- `--disabled-tools`: Comma-separated list of tools to exclude, supports wildcards (e.g., `zcc_*,zdx_list_devices`)
 - `--enable-write-tools`: Enable write operations (disabled by default for safety)
+- `--write-tools`: Mandatory allowlist of write tool patterns (e.g., `"zpa_create_*,zpa_delete_*"`)
 - `--debug`: Enable debug logging
 - `--host`: Host for HTTP transports (default: `127.0.0.1`)
 - `--port`: Port for HTTP transports (default: `8000`)
+- `--user-agent-comment`: Additional text appended to User-Agent header
+- `--generate-auth-token`: Generate a client auth token snippet and exit
+- `--list-tools`: List all available tools and exit
+- `--version`: Show server version and exit
 
 ### Supported Agents
 
@@ -500,7 +747,7 @@ ZSCALER_CLOUD=beta
 | `ZSCALER_CLIENT_SECRET` | Yes | Zscaler OAuth client secret from Zidentity console |
 | `ZSCALER_CUSTOMER_ID` | Yes | Zscaler customer ID |
 | `ZSCALER_VANITY_DOMAIN` | Yes | Your organization's vanity domain (e.g., `acme`) |
-| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`, `zscalertwo`). **Only required for Beta tenants** |
+| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`). **Only required for Beta tenants** |
 | `ZSCALER_PRIVATE_KEY` | No | OAuth private key for JWT-based authentication (alternative to client secret) |
 
 #### Verification
@@ -671,11 +918,23 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_TRANSPORT` | `stdio` | Transport protocol to use (`stdio`, `sse`, or `streamable-http`) |
 | `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
+| `ZSCALER_MCP_DISABLED_SERVICES` | `""` | Comma-separated list of services to exclude (e.g., `zcc,zdx`). Takes precedence over `ZSCALER_MCP_SERVICES`. |
+| `ZSCALER_MCP_DISABLED_TOOLS` | `""` | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zcc_devices_csv_exporter`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
 | `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
 | `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
 | `ZSCALER_MCP_DEBUG` | `false` | Enable debug logging (`true`/`false`) |
 | `ZSCALER_MCP_HOST` | `127.0.0.1` | Host to bind to for HTTP transports |
 | `ZSCALER_MCP_PORT` | `8000` | Port to listen on for HTTP transports |
+| `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | `false` | Disable Host header validation when exposing on EC2/public IP (`true`/`false`). Alternatively, use `--host 0.0.0.0` which auto-disables. |
+| `ZSCALER_MCP_ALLOWED_HOSTS` | `""` | Comma-separated allowed Host values for remote deployment (e.g. `34.201.19.115:*,localhost:*`). Preferred over disable for production. |
+| `ZSCALER_MCP_TLS_CERTFILE` | `""` | Path to TLS certificate file (PEM format) for HTTPS. |
+| `ZSCALER_MCP_TLS_KEYFILE` | `""` | Path to TLS private key file (PEM format) for HTTPS. |
+| `ZSCALER_MCP_TLS_KEYFILE_PASSWORD` | `""` | Password for encrypted TLS private key (if applicable). |
+| `ZSCALER_MCP_TLS_CA_CERTS` | `""` | Path to CA certificate bundle for mutual TLS or custom CA chains. |
+| `ZSCALER_MCP_ALLOW_HTTP` | `false` | Allow plaintext HTTP on non-localhost interfaces. HTTPS is required by default for remote deployments. Set to `true` only when TLS is terminated upstream (reverse proxy, ZPA, VPN). |
+| `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | `""` | Comma-separated list of allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). When unset, source IP filtering is disabled (defer to firewall/security groups). Set to `0.0.0.0/0` to allow all. |
+| `ZSCALER_MCP_SKIP_CONFIRMATIONS` | `false` | Skip cryptographic confirmation for destructive actions (testing/CI only). |
+| `ZSCALER_MCP_CONFIRMATION_TTL` | `300` | HMAC confirmation token lifetime in seconds (default: 5 minutes). |
 | `ZSCALER_MCP_USER_AGENT_COMMENT` | `""` | Additional information to include in User-Agent comment section |
 
 #### User-Agent Header
@@ -724,6 +983,8 @@ server = ZscalerMCPServer(
     debug=True,  # Optional, enable debug logging
     enabled_services={"zia", "zpa", "zdx"},  # Optional, defaults to all services
     enabled_tools={"zia_list_rule_labels", "zpa_list_application_segments"},  # Optional, defaults to all tools
+    disabled_services={"zcc"},  # Optional, exclude entire services
+    disabled_tools={"zcc_*", "zdx_list_devices"},  # Optional, exclude tools by name or wildcard
     user_agent_comment="My Custom App",  # Optional, additional User-Agent info
     enable_write_tools=False  # Optional, defaults to False (read-only mode)
 )
@@ -860,6 +1121,89 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
 ```
 
 ## Additional Deployment Options
+
+### Remote MCP Deployment (EC2, VM, etc.)
+
+When deploying the MCP server on a **remote host** (EC2, VM, internal server) so clients connect over HTTP from another machine:
+
+**Server setup:**
+
+1. Install and configure credentials (see [Installation](#installation) and [Environment Configuration](#environment-configuration)).
+2. If using an **editable install** (`uv pip install -e .`), you **must activate the project venv** before running—otherwise an older or different installation may run:
+
+   ```bash
+   cd /path/to/zscaler-mcp-server
+   source .venv/bin/activate
+   zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8000
+   ```
+
+3. Use `--host 0.0.0.0` to bind on all interfaces. This **automatically disables Host header validation** (required when clients send the server's public IP in the Host header). For production, consider `ZSCALER_MCP_ALLOWED_HOSTS` in `.env` to restrict to known hostnames.
+4. Ensure the firewall allows inbound traffic on the chosen port (e.g. 8000).
+
+**Client configuration (Claude Desktop):**
+
+Claude Desktop expects a `command` that spawns a process. For remote HTTP, use `mcp-remote` which supports custom authentication headers.
+
+**macOS / Linux:**
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ]
+    }
+  }
+}
+```
+
+**Windows:**
+
+On Windows, paths with spaces (e.g., `C:\Program Files\...`) cause `npx` to fail when invoked directly. Wrap the call through `cmd /c`:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "mcp-remote",
+        "http://YOUR_SERVER_IP:8000/mcp",
+        "--allow-http",
+        "--header",
+        "Authorization: Bearer sk-your-api-key"
+      ]
+    }
+  }
+}
+```
+
+> **`--allow-http`**: Required when connecting to a non-localhost HTTP endpoint. `mcp-remote` enforces HTTPS by default for non-localhost URLs. Omit this flag when connecting over HTTPS or to `localhost`.
+
+**Using Zscaler auth mode (Basic Auth):**
+
+Replace the `Authorization` header with Basic Auth credentials. The value is the Base64 encoding of `client_id:client_secret`:
+
+```bash
+# Generate the Base64 value
+echo -n "your-client-id:your-client-secret" | base64
+```
+
+Then use `"Authorization: Basic <base64_value>"` in place of the Bearer header above.
+
+**Prerequisites on the client:** Node.js (for `npx`) must be installed.
+
+> **📖 Full remote deployment details** (venv usage, 421 troubleshooting, security, TLS): [Remote Deployment](docs/deployment/authentication-and-deployment.md#remote-deployment-ec2-vm-etc) · [421 Misdirected Request](docs/deployment/authentication-and-deployment.md#421-misdirected-request-invalid-host-header) · [Troubleshooting](docs/guides/TROUBLESHOOTING.md#remote-mcp-421-misdirected-request)
 
 ### Amazon Bedrock AgentCore
 
@@ -999,6 +1343,20 @@ The easiest way to get started—one-click install with a user-friendly UI in Cl
 - Verify the `.env` file path is absolute and credentials are correct
 - The configuration file is located at `~/.cursor/mcp.json` (or `%USERPROFILE%\.cursor\mcp.json` on Windows)
 
+## Platform Integrations
+
+The Zscaler MCP Server ships with native integrations for several AI development platforms. Each integration includes platform-specific configuration files, 19 guided skills, and setup instructions.
+
+| Platform | Type | Quick Start | Details |
+|----------|------|------------|---------|
+| **Claude Code** | Plugin | `claude plugin install zscaler` | [integrations/claude-code-plugin/](integrations/claude-code-plugin/README.md) |
+| **Cursor** | Plugin | Settings → Tools & MCP → New MCP Server | [integrations/cursor-plugin/](integrations/cursor-plugin/README.md) |
+| **Gemini CLI** | Extension | Register `gemini-extension.json` | [integrations/gemini-extension/](integrations/gemini-extension/README.md) |
+| **Kiro IDE** | Power | Powers panel → Add Custom Power | [integrations/kiro/](integrations/kiro/README.md) |
+| **Google ADK** | Agent | `adk run zscaler_agent` | [integrations/adk/](integrations/adk/README.md) |
+
+For full documentation on all integrations, see the [Platform Integrations Guide](integrations/README.md).
+
 ### General Troubleshooting for All Agents
 
 **Common Issues:**
@@ -1030,6 +1388,18 @@ The easiest way to get started—one-click install with a user-friendly UI in Cl
 6. **Windows: `ModuleNotFoundError: No module named 'rpds.rpds'`** (Claude Desktop extension)
    - The extension bundles macOS/Linux binaries. Use manual configuration with `uvx zscaler-mcp` instead.
    - See [Troubleshooting: Windows](docs/guides/TROUBLESHOOTING.md#windows-claude-desktop-extension-fails-to-start).
+
+7. **Windows: `'C:\Program' is not recognized`** (Remote MCP with `npx`)
+   - Paths with spaces break `npx` when called directly. Use `"command": "cmd"` with `"args": ["/c", "npx", ...]` instead.
+   - See [Troubleshooting: Windows npx path issues](docs/guides/TROUBLESHOOTING.md#windows-npx-path-with-spaces).
+
+8. **`Non-HTTPS URLs are only allowed for localhost`** (mcp-remote)
+   - `mcp-remote` enforces HTTPS for non-localhost URLs by default. Add `"--allow-http"` to the `args` array before `--header`.
+   - See [Troubleshooting: mcp-remote HTTPS enforcement](docs/guides/TROUBLESHOOTING.md#mcp-remote-non-https-url-rejected).
+
+9. **`self-signed certificate` / `DEPTH_ZERO_SELF_SIGNED_CERT`** (mcp-remote with TLS)
+   - When using self-signed certificates, add `"env": { "NODE_TLS_REJECT_UNAUTHORIZED": "0" }` to the MCP server entry in your client config.
+   - See [Troubleshooting: Self-signed certificates](docs/guides/TROUBLESHOOTING.md#self-signed-certificate-rejected-by-mcp-remote).
 
 **Getting Help:**
 

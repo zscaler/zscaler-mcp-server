@@ -9,9 +9,7 @@ from zscaler_mcp.client import get_zscaler_client
 def zcc_devices_csv_exporter(
     dataset: Annotated[
         str,
-        Field(
-            description="Type of report to download. Valid values: 'devices', 'service_status'."
-        ),
+        Field(description="Type of report to download. Valid values: 'devices', 'service_status'."),
     ] = "devices",
     os_type: Annotated[
         Optional[str],
@@ -29,9 +27,7 @@ def zcc_devices_csv_exporter(
         Optional[str],
         Field(description="Custom filename for the CSV. Defaults to timestamped file."),
     ] = None,
-    use_legacy: Annotated[
-        bool, Field(description="Whether to use the legacy API.")
-    ] = False,
+    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> str:
     """
@@ -54,8 +50,6 @@ def zcc_devices_csv_exporter(
             query_params=query_params, filename=filename
         )
     elif dataset == "devices":
-        return client.zcc.devices.download_devices(
-            query_params=query_params, filename=filename
-        )
+        return client.zcc.devices.download_devices(query_params=query_params, filename=filename)
     else:
         raise ValueError("Invalid dataset type. Must be 'devices' or 'service_status'.")
