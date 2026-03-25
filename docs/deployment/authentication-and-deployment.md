@@ -446,6 +446,35 @@ docker run -d --restart=unless-stopped --name zscaler-mcp-server \
 
 The server is now running at `http://localhost:8000/mcp`.
 
+**Excluding specific tools or services** — use `--disabled-tools` or `--disabled-services` to exclude tools/services without listing every tool you want to keep:
+
+```bash
+# Exclude a rate-limited tool
+docker run -d --restart=unless-stopped --name zscaler-mcp-server \
+  -p 8000:8000 --env-file .env zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0 --port 8000 \
+  --disabled-tools "zcc_devices_csv_exporter"
+
+# Exclude all tools from a service prefix (wildcards supported)
+docker run -d --restart=unless-stopped --name zscaler-mcp-server \
+  -p 8000:8000 --env-file .env zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0 --port 8000 \
+  --disabled-tools "zcc_*,zdx_*"
+
+# Or exclude entire services
+docker run -d --restart=unless-stopped --name zscaler-mcp-server \
+  -p 8000:8000 --env-file .env zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0 --port 8000 \
+  --disabled-services "zcc,zdx"
+```
+
+You can also set these via environment variables in your `.env` file:
+
+```text
+ZSCALER_MCP_DISABLED_TOOLS=zcc_devices_csv_exporter
+ZSCALER_MCP_DISABLED_SERVICES=zcc
+```
+
 > **If you see `Bind for 0.0.0.0:8000 failed: port is already allocated`**, an existing container or process is still using port 8000. See [Port 8000 already allocated](#port-8000-already-allocated) for resolution.
 
 #### Step 4: Verify the server is running
@@ -1643,6 +1672,8 @@ These are always required, regardless of Layer 1 auth settings.
 | `ZSCALER_MCP_DEBUG` | No | `false` | Enable debug logging |
 | `ZSCALER_MCP_SERVICES` | No | all | Comma-separated list of services to enable |
 | `ZSCALER_MCP_TOOLS` | No | all | Comma-separated list of tools to enable |
+| `ZSCALER_MCP_DISABLED_SERVICES` | No | — | Comma-separated list of services to exclude (e.g., `zcc,zdx`). Takes precedence over `ZSCALER_MCP_SERVICES`. |
+| `ZSCALER_MCP_DISABLED_TOOLS` | No | — | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zcc_devices_csv_exporter`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
 | `ZSCALER_MCP_WRITE_ENABLED` | No | `false` | Enable write operations (create, update, delete) |
 | `ZSCALER_MCP_WRITE_TOOLS` | No | — | Comma-separated allowlist of write tools (supports wildcards) |
 | `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | No | `false` | Disable Host header validation (use when exposing on EC2/public IP) |

@@ -109,9 +109,11 @@ General Server Settings
 
    # Service Selection
    export ZSCALER_MCP_SERVICES="zpa,zia,zdx"       # Comma-separated (empty = all services)
+   export ZSCALER_MCP_DISABLED_SERVICES=""          # Comma-separated services to exclude
 
    # Tool Selection
    export ZSCALER_MCP_TOOLS=""                     # Comma-separated tool names (empty = all tools)
+   export ZSCALER_MCP_DISABLED_TOOLS=""            # Comma-separated tools to exclude (supports wildcards)
 
    # Logging
    export ZSCALER_MCP_DEBUG="false"                # Enable debug logging (true/false)
@@ -397,6 +399,8 @@ Complete List of All Supported Variables
 - ``ZSCALER_MCP_TRANSPORT`` - Transport protocol (``stdio``, ``sse``, ``streamable-http``)
 - ``ZSCALER_MCP_SERVICES`` - Comma-separated service list (empty = all)
 - ``ZSCALER_MCP_TOOLS`` - Comma-separated tool list (empty = all)
+- ``ZSCALER_MCP_DISABLED_SERVICES`` - Comma-separated services to exclude (e.g., ``zcc,zdx``)
+- ``ZSCALER_MCP_DISABLED_TOOLS`` - Comma-separated tools to exclude, supports wildcards (e.g., ``zcc_*,zcc_devices_csv_exporter``)
 - ``ZSCALER_MCP_DEBUG`` - Enable debug logging (``true``/``false``)
 - ``ZSCALER_MCP_HOST`` - HTTP bind host (default: ``127.0.0.1``)
 - ``ZSCALER_MCP_PORT`` - HTTP port (default: ``8000``)
