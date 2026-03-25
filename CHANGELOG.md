@@ -8,7 +8,7 @@
 
 ### 🔐 MCP Client Authentication
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added multi-mode authentication for MCP clients connecting over HTTP transports (`sse`, `streamable-http`). Authentication is disabled by default for backward compatibility and does not apply to `stdio` transport.
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added multi-mode authentication for MCP clients connecting over HTTP transports (`sse`, `streamable-http`). Authentication is disabled by default for backward compatibility and does not apply to `stdio` transport.
 
 **Four authentication modes:**
 
@@ -26,7 +26,7 @@
 
 ### 🌐 Network Security
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added defense-in-depth network security controls for HTTP transports:
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added defense-in-depth network security controls for HTTP transports:
 
 - **HTTPS / TLS Configuration** — Optional TLS termination at the server with `ZSCALER_MCP_TLS_CERT_FILE` and `ZSCALER_MCP_TLS_KEY_FILE`
 - **HTTPS Policy Enforcement** — `ZSCALER_MCP_ALLOW_HTTP=false` (default) blocks plaintext HTTP on non-localhost interfaces when TLS is not configured
@@ -35,7 +35,7 @@
 
 ### 🔌 Platform Integrations
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added native platform integrations for AI development environments:
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added native platform integrations for AI development environments:
 
 - **Claude Code Plugin** (`.claude-plugin/`) — Plugin manifest with marketplace support, 19 guided skills, and slash commands
 - **Cursor Plugin** (`.cursor-plugin/`) — Plugin manifest with 19 guided skills for Cursor IDE
@@ -45,23 +45,23 @@
 
 ### Enhancements
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added `--generate-auth-token` CLI argument for generating authorization tokens from configured credentials
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added `--generate-auth-token` CLI argument for generating authorization tokens from configured credentials
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added `--write-tools`, `--user-agent-comment`, `--list-tools`, and `--version` CLI flags
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added `--write-tools`, `--user-agent-comment`, `--list-tools`, and `--version` CLI flags
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added `ZSCALER_MCP_CONFIRMATION_TTL` environment variable for configurable confirmation window on destructive operations
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added `ZSCALER_MCP_CONFIRMATION_TTL` environment variable for configurable confirmation window on destructive operations
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added `ZSCALER_MCP_AUTH_ALGORITHMS` environment variable for restricting JWT validation algorithms
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added `ZSCALER_MCP_AUTH_ALGORITHMS` environment variable for restricting JWT validation algorithms
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added `docker-run-http`, `docker-stop`, and `docker-generate-auth-token` Makefile targets for HTTP transport and authentication workflows
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added `docker-run-http`, `docker-stop`, and `docker-generate-auth-token` Makefile targets for HTTP transport and authentication workflows
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Added `PyJWT[crypto]>=2.8.0` dependency for JWT token validation
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Added `PyJWT[crypto]>=2.8.0` dependency for JWT token validation
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Updated `.env.example` with MCP Client Authentication and network security environment variables
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Updated `.env.example` with MCP Client Authentication and network security environment variables
 
 ### Documentation
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Created comprehensive [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md) covering:
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Created comprehensive [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md) covering:
 
 - Transport modes and authentication architecture
 - Detailed configuration for all four authentication modes
@@ -71,13 +71,13 @@
 - Token generation, expiry, and refresh workflows
 - Environment variable reference and troubleshooting
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Updated `README.md` with MCP Client Authentication section, network security features, and Platform Integrations reference
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Updated `README.md` with MCP Client Authentication section, network security features, and Platform Integrations reference
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Created `integrations/README.md` as central index for all platform integrations
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Created `integrations/README.md` as central index for all platform integrations
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Created dedicated integration READMEs: `integrations/claude-code-plugin/README.md`, `integrations/cursor-plugin/README.md`, `integrations/gemini-extension/README.md`, `integrations/kiro/README.md`
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Created dedicated integration READMEs: `integrations/claude-code-plugin/README.md`, `integrations/cursor-plugin/README.md`, `integrations/gemini-extension/README.md`, `integrations/kiro/README.md`
 
-[PR #36](https://github.com/zscaler/zscaler-mcp-server/pull/36) - Updated Sphinx documentation portal (`docsrc/`) with platform integrations page and release notes for v0.7.0
+[PR #37](https://github.com/zscaler/zscaler-mcp-server/pull/37) - Updated Sphinx documentation portal (`docsrc/`) with platform integrations page and release notes for v0.7.0
 
 ## 0.6.2 (February 18, 2026)
 
