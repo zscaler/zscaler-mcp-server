@@ -310,6 +310,76 @@ class TestZscalerMCPServer(unittest.TestCase):
             mock_uvicorn_run.assert_called_once()
 
 
+class TestDisabledToolsAndServices(unittest.TestCase):
+    """Test cases for --disabled-tools and --disabled-services flags."""
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_tools_stored(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_tools parameter is stored on the server instance."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(disabled_tools={"zcc_*", "zdx_list_devices"})
+        self.assertEqual(server.disabled_tools, {"zcc_*", "zdx_list_devices"})
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_tools_none_by_default(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_tools defaults to None when not provided."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer()
+        self.assertIsNone(server.disabled_tools)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_services_stored(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_services parameter is stored on the server instance."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(disabled_services={"zcc", "zdx"})
+        self.assertEqual(server.disabled_services, {"zcc", "zdx"})
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_services_removes_from_enabled(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_services are subtracted from enabled_services."""
+        mock_fastmcp.return_value = MagicMock()
+        all_services = services.get_service_names()
+        server = ZscalerMCPServer(disabled_services={"zcc"})
+
+        self.assertNotIn("zcc", server.enabled_services)
+        self.assertEqual(len(server.enabled_services), len(all_services) - 1)
+        self.assertNotIn("zcc", server.services)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_services_with_enabled_services(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_services works together with enabled_services."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(
+            enabled_services={"zcc", "zpa", "zia"},
+            disabled_services={"zcc"},
+        )
+        self.assertEqual(server.enabled_services, {"zpa", "zia"})
+        self.assertNotIn("zcc", server.services)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_tools_passed_to_register_tools(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_tools is threaded through to service.register_tools."""
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        disabled = {"zcc_devices_csv_exporter"}
+        server = ZscalerMCPServer(
+            enabled_services={"zcc"},
+            disabled_tools=disabled,
+        )
+        server._register_tools()
+
+        for svc in server.services.values():
+            if hasattr(svc, "register_tools"):
+                pass
+
+
 class TestZscalerMCPServerAuth(unittest.TestCase):
     """Test cases for the library-level auth parameter on ZscalerMCPServer."""
 

@@ -416,6 +416,8 @@ class ZscalerMCPServer:
         user_agent_comment: Optional[str] = None,
         enable_write_tools: bool = False,
         write_tools: Optional[Set[str]] = None,
+        disabled_tools: Optional[Set[str]] = None,
+        disabled_services: Optional[Set[str]] = None,
         host: Optional[str] = None,
         auth: Optional[object] = None,
     ):
@@ -433,6 +435,8 @@ class ZscalerMCPServer:
             user_agent_comment: Additional information to include in the User-Agent comment section
             enable_write_tools: Enable write operations (create, update, delete). Default: False for safety.
             write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.
+            disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch).
+            disabled_services: Set of service names to exclude from enabled services.
             host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.
             auth: A ``fastmcp.server.auth.AuthProvider`` instance (e.g.
                 ``OIDCProxy``, ``OAuthProxy``, or a custom ``AuthProvider`` subclass)
@@ -467,6 +471,11 @@ class ZscalerMCPServer:
         self.enabled_tools = enabled_tools or set()
         self.enable_write_tools = enable_write_tools
         self.write_tools = write_tools  # Explicit allowlist for write tools
+        self.disabled_tools = disabled_tools
+        self.disabled_services = disabled_services
+
+        if self.disabled_services:
+            self.enabled_services -= self.disabled_services
 
         # Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol
         configure_logging(debug=self.debug, use_stderr=True)
@@ -587,12 +596,14 @@ class ZscalerMCPServer:
                         enabled_tools=self.enabled_tools,
                         enable_write_tools=self.enable_write_tools,
                         write_tools=self.write_tools,
+                        disabled_tools=self.disabled_tools,
                     )
                 else:
                     service.register_tools(
                         self.server,
                         enable_write_tools=self.enable_write_tools,
                         write_tools=self.write_tools,
+                        disabled_tools=self.disabled_tools,
                     )
 
                 # Count tools (read + write)
@@ -1078,6 +1089,15 @@ def parse_args():
         f"(default: all services, env: ZSCALER_MCP_SERVICES)",
     )
 
+    parser.add_argument(
+        "--disabled-services",
+        default=os.environ.get("ZSCALER_MCP_DISABLED_SERVICES"),
+        metavar="SERVICE1,SERVICE2,...",
+        help="Comma-separated list of services to exclude "
+        "(e.g., 'zcc,zdx' disables ZCC and ZDX services). "
+        "(env: ZSCALER_MCP_DISABLED_SERVICES)",
+    )
+
     # Tool selection
     parser.add_argument(
         "--tools",
@@ -1085,6 +1105,15 @@ def parse_args():
         default=parse_tools_list(os.environ.get("ZSCALER_MCP_TOOLS", "")),
         metavar="TOOL1,TOOL2,...",
         help="Comma-separated list of specific tools to enable (if not specified, all tools from selected services are enabled, env: ZSCALER_MCP_TOOLS)",
+    )
+
+    parser.add_argument(
+        "--disabled-tools",
+        default=os.environ.get("ZSCALER_MCP_DISABLED_TOOLS"),
+        metavar="TOOL1,TOOL2,...",
+        help="Comma-separated list of tools to exclude. Supports wildcards "
+        "(e.g., 'zcc_*' excludes all ZCC tools, 'zcc_devices_csv_exporter' excludes one tool). "
+        "(env: ZSCALER_MCP_DISABLED_TOOLS)",
     )
 
     # Debug mode
@@ -1274,6 +1303,14 @@ def main():
         if args.write_tools:
             write_tools = set(t.strip() for t in args.write_tools.split(","))
 
+        disabled_tools = None
+        if args.disabled_tools:
+            disabled_tools = set(t.strip() for t in args.disabled_tools.split(",") if t.strip())
+
+        disabled_services = None
+        if args.disabled_services:
+            disabled_services = set(s.strip() for s in args.disabled_services.split(",") if s.strip())
+
         # Create and run the server
         server = ZscalerMCPServer(
             client_id=args.client_id,
@@ -1287,6 +1324,8 @@ def main():
             user_agent_comment=args.user_agent_comment,
             enable_write_tools=args.enable_write_tools,
             write_tools=write_tools,
+            disabled_tools=disabled_tools,
+            disabled_services=disabled_services,
             host=args.host,
         )
         logger.info("Starting server with %s transport", args.transport)

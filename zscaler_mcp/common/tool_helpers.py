@@ -11,7 +11,10 @@ logger = get_logger(__name__)
 
 
 def register_read_tools(
-    server, tools: List[Dict[str, any]], enabled_tools: Optional[Set[str]] = None
+    server,
+    tools: List[Dict[str, any]],
+    enabled_tools: Optional[Set[str]] = None,
+    disabled_tools: Optional[Set[str]] = None,
 ) -> int:
     """Register read-only tools.
 
@@ -22,6 +25,7 @@ def register_read_tools(
         server: The MCP server instance
         tools: List of tool definitions with 'func', 'name', 'description'
         enabled_tools: Set of enabled tool names (if None, all tools are enabled)
+        disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch)
 
     Returns:
         Number of tools registered
@@ -45,6 +49,12 @@ def register_read_tools(
             logger.debug(f"Skipping read tool (not enabled): {tool_name}")
             continue
 
+        if disabled_tools and any(
+            fnmatch.fnmatch(tool_name, pattern) for pattern in disabled_tools
+        ):
+            logger.debug(f"Skipping read tool (excluded by --disabled-tools): {tool_name}")
+            continue
+
         server.add_tool(
             tool_def["func"],
             name=tool_name,
@@ -65,6 +75,7 @@ def register_write_tools(
     enabled_tools: Optional[Set[str]] = None,
     enable_write_tools: bool = False,
     write_tools: Optional[Set[str]] = None,
+    disabled_tools: Optional[Set[str]] = None,
 ) -> int:
     """Register write tools (only if enable_write_tools is True).
 
@@ -79,6 +90,7 @@ def register_write_tools(
         enabled_tools: Set of enabled tool names (if None, all tools are enabled)
         enable_write_tools: Enable write operations (default: False)
         write_tools: Explicit allowlist of write tools (supports wildcards like 'zpa_create_*')
+        disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch)
 
     Returns:
         Number of tools registered
@@ -126,6 +138,12 @@ def register_write_tools(
         # Skip if not in enabled_tools (when enabled_tools is specified)
         if enabled_tools and tool_name not in enabled_tools:
             logger.debug(f"Skipping write tool (not in enabled_tools): {tool_name}")
+            continue
+
+        if disabled_tools and any(
+            fnmatch.fnmatch(tool_name, pattern) for pattern in disabled_tools
+        ):
+            logger.debug(f"Skipping write tool (excluded by --disabled-tools): {tool_name}")
             continue
 
         # Check write_tools allowlist (supports wildcards)

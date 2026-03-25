@@ -600,6 +600,38 @@ If no services are specified via command line or environment variable, all avail
 2. `ZSCALER_MCP_SERVICES` environment variable (fallback)
 3. All services (default when none specified)
 
+### Excluding Services and Tools
+
+When you want to keep most tools available but exclude a few, use `--disabled-tools` or `--disabled-services` instead of listing every tool you want to include.
+
+Both flags support **wildcards** via [fnmatch](https://docs.python.org/3/library/fnmatch.html) patterns.
+
+```bash
+# Exclude a single tool (e.g., rate-limited CSV export)
+zscaler-mcp --disabled-tools zcc_devices_csv_exporter
+
+# Exclude all tools from a service prefix
+zscaler-mcp --disabled-tools "zcc_*"
+
+# Exclude multiple patterns
+zscaler-mcp --disabled-tools "zcc_*,zdx_list_devices"
+
+# Exclude entire services
+zscaler-mcp --disabled-services zcc,zdx
+
+# Combine: keep all services but exclude specific tools
+zscaler-mcp --disabled-tools "zcc_devices_csv_exporter,zdx_*_analysis"
+```
+
+Environment variables:
+
+```bash
+export ZSCALER_MCP_DISABLED_TOOLS="zcc_devices_csv_exporter,zdx_*"
+export ZSCALER_MCP_DISABLED_SERVICES="zcc"
+```
+
+**Precedence:** `--disabled-tools` takes precedence over `--tools` (include list). A tool that matches both the include list and the exclude list will be excluded.
+
 ### Additional Command Line Options
 
 ```bash
@@ -623,7 +655,9 @@ Available command-line flags:
 
 - `--transport`: Transport protocol (`stdio`, `sse`, `streamable-http`)
 - `--services`: Comma-separated list of services to enable
+- `--disabled-services`: Comma-separated list of services to exclude (e.g., `zcc,zdx`)
 - `--tools`: Comma-separated list of specific tools to enable
+- `--disabled-tools`: Comma-separated list of tools to exclude, supports wildcards (e.g., `zcc_*,zdx_list_devices`)
 - `--enable-write-tools`: Enable write operations (disabled by default for safety)
 - `--write-tools`: Mandatory allowlist of write tool patterns (e.g., `"zpa_create_*,zpa_delete_*"`)
 - `--debug`: Enable debug logging
@@ -887,6 +921,8 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_TRANSPORT` | `stdio` | Transport protocol to use (`stdio`, `sse`, or `streamable-http`) |
 | `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
+| `ZSCALER_MCP_DISABLED_SERVICES` | `""` | Comma-separated list of services to exclude (e.g., `zcc,zdx`). Takes precedence over `ZSCALER_MCP_SERVICES`. |
+| `ZSCALER_MCP_DISABLED_TOOLS` | `""` | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zcc_devices_csv_exporter`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
 | `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
 | `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
 | `ZSCALER_MCP_DEBUG` | `false` | Enable debug logging (`true`/`false`) |
@@ -950,6 +986,8 @@ server = ZscalerMCPServer(
     debug=True,  # Optional, enable debug logging
     enabled_services={"zia", "zpa", "zdx"},  # Optional, defaults to all services
     enabled_tools={"zia_list_rule_labels", "zpa_list_application_segments"},  # Optional, defaults to all tools
+    disabled_services={"zcc"},  # Optional, exclude entire services
+    disabled_tools={"zcc_*", "zdx_list_devices"},  # Optional, exclude tools by name or wildcard
     user_agent_comment="My Custom App",  # Optional, additional User-Agent info
     enable_write_tools=False  # Optional, defaults to False (read-only mode)
 )
