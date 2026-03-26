@@ -8,7 +8,7 @@ and serves as the entry point for the application.
 import argparse
 import os
 import sys
-from typing import Dict, List, Optional, Set
+from typing import Dict, Optional, Set
 
 import uvicorn
 from dotenv import load_dotenv

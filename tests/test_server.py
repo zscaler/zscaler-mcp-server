@@ -152,8 +152,8 @@ class TestZscalerMCPServer(unittest.TestCase):
         # Get the actual service names from the registry
         expected_services = services.get_service_names()
 
-        # Verify result matches registry
-        self.assertEqual(set(result["services"]), set(expected_services))
+        # Verify result contains enabled services matching the registry
+        self.assertEqual(set(result["enabled_services"].keys()), set(expected_services))
 
     @patch("zscaler_mcp.server.FastMCP")
     @patch("zscaler_mcp.client.get_zscaler_client")

@@ -64,6 +64,8 @@ The Zscaler Integrations MCP Server brings context to your agents. Try prompts l
 > [!WARNING]
 > **🔒 READ-ONLY BY DEFAULT**: For security, this MCP server operates in **read-only mode** by default. Only `list_*` and `get_*` operations are available. To enable tools that can **CREATE, UPDATE, or DELETE** Zscaler resources, you must explicitly enable write mode using the `--enable-write-tools` flag or by setting `ZSCALER_MCP_WRITE_ENABLED=true`. See the [Security & Permissions](#-security--permissions) section for details.
 
+<!-- markdownlint-disable MD028 -->
+
 > [!TIP]
 > **Writing effective prompts**: This server exposes **280+ tools** across multiple Zscaler services. Most MCP clients (Claude Desktop, Cursor, etc.) use deferred tool loading and will search for relevant tools based on your prompt. For best results, **be specific about the service and action** in your prompts:
 >
