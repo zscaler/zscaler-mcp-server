@@ -193,7 +193,7 @@ class TestZscalerMCPServer(unittest.TestCase):
         result = server.get_available_services()
 
         self.assertIn("disabled_tool_patterns", result)
-        self.assertEqual(sorted(result["disabled_tool_patterns"]), ["zia_delete_*", "zcc_list_*"])
+        self.assertEqual(result["disabled_tool_patterns"], ["zcc_list_*", "zia_delete_*"])
         self.assertIn("note", result)
         self.assertIn("fnmatch wildcards", result["note"])
 
