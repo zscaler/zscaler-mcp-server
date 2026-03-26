@@ -64,6 +64,17 @@ The Zscaler Integrations MCP Server brings context to your agents. Try prompts l
 > [!WARNING]
 > **🔒 READ-ONLY BY DEFAULT**: For security, this MCP server operates in **read-only mode** by default. Only `list_*` and `get_*` operations are available. To enable tools that can **CREATE, UPDATE, or DELETE** Zscaler resources, you must explicitly enable write mode using the `--enable-write-tools` flag or by setting `ZSCALER_MCP_WRITE_ENABLED=true`. See the [Security & Permissions](#-security--permissions) section for details.
 
+<!-- markdownlint-disable MD028 -->
+
+> [!TIP]
+> **Writing effective prompts**: This server exposes **280+ tools** across multiple Zscaler services. Most MCP clients (Claude Desktop, Cursor, etc.) use deferred tool loading and will search for relevant tools based on your prompt. For best results, **be specific about the service and action** in your prompts:
+>
+> - **Good**: *"List my ZPA application segments"* — targets the right service and tool directly
+> - **Good**: *"Show ZIA firewall rules"* — clear service (`zia`) and action (`list`)
+> - **Less effective**: *"Show me my devices"* — ambiguous; multiple services expose device-related tools
+>
+> When a service is [disabled](#additional-command-line-options), its tools are fully removed from the server. However, the AI agent may still attempt to find related tools in other services. If you get unexpected results, refine your prompt with the specific service name (e.g. `zpa`, `zia`, `zdx`, `zcc`).
+
 ## 🔒 Security & Permissions
 
 The Zscaler MCP Server implements a **security-first design** with granular permission controls and safe defaults:
@@ -275,6 +286,7 @@ On startup, the server logs a consolidated **Security Posture Banner** summarizi
 - **Least Privilege**: Use narrowest possible allowlist patterns for your use case
 - **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
 - **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
+- **Specific Prompts**: With 280+ tools and deferred loading, AI agents match prompts to tools by relevance. Use service-specific prompts (e.g., *"List ZPA segments"* instead of *"Show my segments"*) for accurate tool selection
 
 ## 🔐 MCP Client Authentication
 
