@@ -8,7 +8,7 @@ and serves as the entry point for the application.
 import argparse
 import os
 import sys
-from typing import Dict, List, Optional, Set
+from typing import Dict, Optional, Set
 
 import uvicorn
 from dotenv import load_dotenv
@@ -580,8 +580,12 @@ class ZscalerMCPServer:
         self.server.add_tool(
             self.get_available_services,
             name="zscaler_get_available_services",
-            description="Get information about available services.",
-            annotations=ToolAnnotations(readOnlyHint=True),  # Read-only informational tool
+            description=(
+                "List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, etc.) "
+                "and their tool counts. Call this FIRST when unsure which services or tools "
+                "are available, or when a tool search returns no relevant results."
+            ),
+            annotations=ToolAnnotations(readOnlyHint=True),
         )
 
         tool_count = 2  # the tools added above
@@ -659,13 +663,48 @@ class ZscalerMCPServer:
             logger.error("Connectivity check failed: %s", e)
             return {"connected": False}
 
-    def get_available_services(self) -> Dict[str, List[str]]:
-        """Get information about available services.
+    def get_available_services(self) -> Dict[str, object]:
+        """Get information about available and disabled services/tools.
 
-        Returns:
-            Dict[str, List[str]]: Available services
+        Returns a dict with enabled services (and their registered tool
+        count), any explicitly disabled services, and any disabled tool
+        patterns so the AI agent can inform the user instead of searching
+        for tools that don't exist.
         """
-        return {"services": services.get_service_names()}
+        all_names = set(services.get_service_names())
+        enabled = {}
+        for name in sorted(self.enabled_services):
+            svc = self.services.get(name)
+            tool_count = len(svc.read_tools) + len(svc.write_tools) if svc else 0
+            enabled[name] = {"tool_count": tool_count}
+
+        disabled_svc = sorted(all_names - self.enabled_services)
+
+        result: Dict[str, object] = {"enabled_services": enabled}
+
+        notes = []
+        if disabled_svc:
+            result["disabled_services"] = disabled_svc
+            notes.append(
+                "Disabled services have been explicitly excluded. "
+                "Their tools are not registered and cannot be called. "
+                "If a user asks about a disabled service, inform them "
+                "that it has been disabled by the server administrator."
+            )
+
+        if self.disabled_tools:
+            result["disabled_tool_patterns"] = sorted(self.disabled_tools)
+            notes.append(
+                "Disabled tool patterns use fnmatch wildcards. "
+                "Any tool whose name matches a pattern is excluded and cannot be called. "
+                "For example, 'zcc_list_device*' blocks zcc_list_devices and zcc_list_devices_lite. "
+                "If a user asks for a disabled tool, inform them it has been "
+                "disabled by the server administrator."
+            )
+
+        if notes:
+            result["note"] = " ".join(notes)
+        return result
 
     def _build_fastmcp_auth_app(self, transport: str):
         """Build an ASGI app with a fastmcp AuthProvider handling authentication.
