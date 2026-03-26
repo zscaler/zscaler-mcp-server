@@ -1,5 +1,30 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.7.1 (March 26, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+- Added `--disabled-tools` CLI flag and `ZSCALER_MCP_DISABLED_TOOLS` environment variable to exclude specific tools from registration. Supports `fnmatch` wildcard patterns (e.g., `zcc_list_*` disables all ZCC list tools).
+- Added `--disabled-services` CLI flag and `ZSCALER_MCP_DISABLED_SERVICES` environment variable to exclude entire services from loading. Accepts service names: `zcc`, `zdx`, `zia`, `zpa`, `ztw`, `zidentity`.
+- Combined `--disabled-tools` and `--disabled-services` for fine-grained control: disable an entire service to prevent loading, or selectively exclude individual tools while keeping the rest of the service active.
+
+### Enhancements
+
+- Removed `zcc_devices_csv_exporter` tool — `zcc_list_devices` already returns equivalent data without file I/O overhead.
+- Added `verify_id_token=True` to OIDCProxy setup for cross-platform compatibility. Auth0 may return opaque access tokens that fail JWT validation on certain platforms (e.g., Windows Docker). Verifying the OIDC `id_token` instead ensures consistent behavior across macOS and Windows.
+- Added `--debug` CLI flag to `setup-oidcproxy-auth.py` for verbose token validation diagnostics (`FASTMCP_DEBUG=true`).
+- Added Step 2b to `setup-oidcproxy-auth.py` to clear stale `mcp-remote` OAuth caches and orphaned processes before server start, preventing `EADDRINUSE` and `invalid_token` errors after container restarts.
+
+### Documentation
+
+- Updated README with "Excluding Services and Tools" section documenting `fnmatch` wildcard syntax and combined usage examples.
+- Updated Authentication & Deployment Guide with troubleshooting entry for persistent 401 `invalid_token` on Windows Docker.
+- Added tip about prompt specificity for large tool catalogs.
+
 ## 0.7.0 (March 25, 2026)
 
 ### Notes

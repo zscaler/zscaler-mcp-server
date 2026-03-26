@@ -2238,9 +2238,17 @@ export ZSCALER_MCP_ALLOW_HTTP=true  # Only for local dev without TLS
 python run_server.py
 ```
 
-#### Option B: Docker with custom entrypoint
+#### Option B: Docker with setup script (recommended)
 
-The Docker image's CLI entrypoint does not expose the `auth=` parameter. Use a custom entrypoint script that is mounted into the container. See `local_dev/scripts/oidcproxy_entrypoint.py` for a reference implementation.
+The easiest way is to use the all-in-one setup script, which builds the image, starts the container, verifies OAuth endpoints, and updates client configs:
+
+```bash
+python local_dev/scripts/setup-oidcproxy-auth.py --server-mode docker
+```
+
+The script embeds the entrypoint code inline and passes it to the container via `python -c`, so no separate entrypoint file is needed. Auth0 credentials are loaded from `.env` automatically.
+
+For manual Docker usage, pass the entrypoint code directly:
 
 ```bash
 docker run -d --name zscaler-mcp-server \
@@ -2252,9 +2260,9 @@ docker run -d --name zscaler-mcp-server \
   -e OIDCPROXY_BASE_URL="http://localhost:8000" \
   -e OIDCPROXY_AUDIENCE="zscaler-mcp-server" \
   -e ZSCALER_MCP_ALLOW_HTTP=true \
-  -v /path/to/oidcproxy_entrypoint.py:/app/oidcproxy_entrypoint.py:ro \
+  --entrypoint python \
   zscaler-mcp-server:latest \
-  python /app/oidcproxy_entrypoint.py
+  -c "import os; from fastmcp.server.auth.oidc_proxy import OIDCProxy; from zscaler_mcp.server import ZscalerMCPServer; auth=OIDCProxy(config_url=os.environ['OIDCPROXY_CONFIG_URL'],client_id=os.environ['OIDCPROXY_CLIENT_ID'],client_secret=os.environ['OIDCPROXY_CLIENT_SECRET'],base_url=os.environ['OIDCPROXY_BASE_URL'],audience=os.environ.get('OIDCPROXY_AUDIENCE','zscaler-mcp-server')); ZscalerMCPServer(auth=auth).run('streamable-http',host='0.0.0.0',port=8000)"
 ```
 
 ### Step 4: Configure Your MCP Client
@@ -2415,6 +2423,35 @@ if auth.client_registration_options:
         "openid", "profile", "email",
     ]
 ```
+
+#### Persistent 401 `invalid_token` after successful OAuth flow (Windows + Docker)
+
+**Symptom:** The browser shows "Authorization successful!", `POST /token` returns `200 OK`, but the very next `POST /mcp` returns `401 Unauthorized` with `invalid_token`. This occurs consistently on Windows Docker Desktop but works on macOS.
+
+**Cause:** Some Auth0 configurations return **opaque access tokens** (not JWTs) depending on the API audience configuration or token dialect. OIDCProxy's default token verifier attempts to decode the access token as a JWT using Auth0's JWKS — if the token is opaque, this silently fails and returns `invalid_token`. On macOS the flow may succeed due to differences in Cloudflare tunneling, network path, or cached client state.
+
+**Fix:** Use `verify_id_token=True` when instantiating OIDCProxy. This verifies the OIDC `id_token` (which is always a standard JWT from any OIDC-compliant provider) instead of the access token:
+
+```python
+auth = OIDCProxy(
+    config_url=config_url,
+    client_id=client_id,
+    client_secret=client_secret,
+    base_url=base_url,
+    audience=audience,
+    verify_id_token=True,  # Verify id_token instead of access_token
+)
+```
+
+The `setup-oidcproxy-auth.py` script includes this by default.
+
+**Debugging:** Run the setup script with `--debug` to enable verbose logging that shows exactly which token validation step fails:
+
+```bash
+python setup-oidcproxy-auth.py --debug
+```
+
+Then check `docker logs zscaler-mcp-server` for detailed token verification output.
 
 ---
 
