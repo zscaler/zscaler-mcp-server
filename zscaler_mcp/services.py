@@ -56,7 +56,6 @@ class ZCCService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import ZCC tools (all read-only)
-        from .tools.zcc.download_devices import zcc_devices_csv_exporter
         from .tools.zcc.list_devices import zcc_list_devices
         from .tools.zcc.list_forwarding_profiles import zcc_list_forwarding_profiles
         from .tools.zcc.list_trusted_networks import zcc_list_trusted_networks
@@ -67,11 +66,6 @@ class ZCCService(BaseService):
                 "func": zcc_list_devices,
                 "name": "zcc_list_devices",
                 "description": "Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal (read-only)",
-            },
-            {
-                "func": zcc_devices_csv_exporter,
-                "name": "zcc_devices_csv_exporter",
-                "description": "Downloads ZCC device information or service status as a CSV file (read-only)",
             },
             {
                 "func": zcc_list_trusted_networks,

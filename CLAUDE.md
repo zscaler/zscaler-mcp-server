@@ -2,9 +2,85 @@
 
 280+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation).
 
+## Architecture Overview
+
+### Core Components
+
+```
+zscaler_mcp/
+├── server.py          # ZscalerMCPServer class, CLI entrypoint, security posture logging
+├── services.py        # Service registry + 8 concrete service classes (ZPA, ZIA, ZDX, ZCC, ZTW, ZIdentity, ZEASM, ZInsights)
+├── auth.py            # Auth middleware factory (JWT, API-key, Zscaler, OAuthProxy stub)
+├── client.py          # Zscaler SDK client factory (OneAPI + legacy credential flows)
+├── security.py        # HTTP security warnings (TLS, plaintext)
+├── common/
+│   ├── tool_helpers.py   # register_read_tools / register_write_tools with disabled_tools filtering
+│   ├── elicitation.py    # HMAC-SHA256 confirmation tokens for destructive actions
+│   └── logging.py        # log_security_warning helper
+└── tools/                # 103 tool modules organized by service (zia/, zpa/, zdx/, zcc/, ztw/, zidentity/, easm/, zinsights/)
+```
+
+### Request Flow
+
+1. **Client connects** via transport (stdio, SSE, or streamable-http)
+2. **Auth middleware** validates credentials (JWT/API-key/Zscaler/OIDCProxy) — HTTP transports only
+3. **Host header validation** checks against `ZSCALER_MCP_ALLOWED_HOSTS` allowlist
+4. **Source IP ACL** filters by `ZSCALER_MCP_ALLOWED_SOURCE_IPS` (if configured)
+5. **Tool dispatch** routes to the appropriate service tool function
+6. **Zscaler SDK client** is created on-demand (lazy initialization per tool call, not at startup)
+7. **Response** returned to client; write operations may require HMAC confirmation first
+
+### Service Architecture
+
+Each service follows the same pattern:
+
+- **Service class** in `services.py` (e.g., `ZPAService`) — defines `read_tools` and `write_tools` lists
+- **Tool modules** in `tools/{service}/` — each module exports one or more tool functions
+- **Tool registration** via `register_read_tools()` / `register_write_tools()` in `tool_helpers.py`
+
+Tool registration respects three layers of filtering:
+1. `enabled_tools` — positive allowlist (only register these tools)
+2. `disabled_tools` — negative blocklist with fnmatch wildcards (exclude matching tools)
+3. `write_tools` — write-specific allowlist with wildcards (only these write tools are allowed)
+
+### Authentication Layers
+
+The server has two independent auth systems:
+
+1. **MCP Client Authentication** (`auth.py`) — controls WHO can connect to the server
+   - Modes: `jwt`, `api-key`, `zscaler`, or programmatic `auth=` parameter (OIDCProxy)
+   - Auto-detection: if `ZSCALER_MCP_AUTH_JWKS_URI` is set, uses JWT; if `ZSCALER_MCP_AUTH_API_KEY`, uses api-key; etc.
+   - Enabled by default for HTTP transports; not applicable for stdio
+   - The `auth=` parameter on `ZscalerMCPServer` takes a `fastmcp.server.auth.AuthProvider` (e.g., `OIDCProxy`) and bypasses the env-var middleware entirely
+
+2. **Zscaler API Authentication** (`client.py`) — controls how the server talks to Zscaler APIs
+   - OneAPI credentials (`ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc.)
+   - Legacy per-service credentials (ZPA, ZIA, ZCC, ZDX, ZTW)
+   - Client is created lazily on first tool call, not at server startup
+
 ## Tool Naming & Discovery
 
 All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Service prefixes: `zia_`, `zpa_`, `zdx_`, `zcc_`, `easm_`, `zinsights_`, `zidentity_`, `ztw_`. Use the prefix to discover tools for a given service.
+
+### Deferred Tool Loading & AI Agent Behavior
+
+Most MCP clients (Claude Desktop, Cursor) use **deferred tool loading** — they don't load all 280+ tools upfront. Instead, they search for relevant tools based on the user's prompt. This has important implications:
+
+- **Tool search returns "closest N" results**, even if none are relevant. If a service is disabled, the search will return unrelated tools from other services rather than saying "not found."
+- **The `zscaler_get_available_services` tool** was designed to solve this. It returns enabled services with tool counts AND explicitly lists disabled services with a note instructing the agent to inform the user. Its description mentions all service names (ZCC, ZDX, ZPA, ZIA, ZTW, etc.) so it surfaces in tool search when someone asks about any service.
+- **Design principle**: When the server can't fulfill a request (disabled service, missing tool), it should give the agent enough information to explain WHY rather than leaving the agent to hallucinate with unrelated tools.
+
+### Disabled Tools & Services
+
+Two independent exclusion mechanisms, applied at registration time (not runtime):
+
+- **`--disabled-services` / `ZSCALER_MCP_DISABLED_SERVICES`** — removes entire services. Values are service names: `zcc`, `zdx`, `zpa`, `zia`, `ztw`, `zidentity`, `zeasm`, `zinsights`. The service class is never instantiated and its tools are never registered. Does NOT support wildcards (exact service names only).
+
+- **`--disabled-tools` / `ZSCALER_MCP_DISABLED_TOOLS`** — removes individual tools by name pattern. Supports `fnmatch` wildcards (e.g., `zcc_*`, `zia_list_device*`). Applied in `register_read_tools()` and `register_write_tools()` via `fnmatch.fnmatch()`.
+
+**Cross-service overlap**: Some Zscaler APIs expose overlapping data. For example, ZIA has device management tools (`zia_list_devices`) that return the same data as ZCC's tools. Disabling the `zcc` service removes all `zcc_*` tools but does NOT remove ZIA's device tools. Use `--disabled-tools` to also block the ZIA overlap if needed.
+
+The `zscaler_get_available_services` tool exposes disabled services to the AI agent so it can inform users instead of searching for workarounds.
 
 ## Critical Gotchas
 
@@ -24,6 +100,17 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 4. **Always list/get first** to understand current state before creating or modifying resources.
 5. **Pagination:** List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.
 6. **ZPA policy rule ordering:** New rules are appended at the end by default. Policy rules are evaluated top-to-bottom — order matters for access control.
+
+### Confirmation Token Flow (Elicitation)
+
+Destructive write operations (delete, bulk update) use cryptographic confirmation:
+
+1. Tool returns `{"confirmation_required": true, "token": "<HMAC-SHA256>", "expires_at": "..."}` instead of executing
+2. The token is bound to: tool name, resource ID, action, and timestamp
+3. Agent must present the token back to confirm execution within the TTL (default 5 minutes)
+4. Tokens are single-use and tamper-proof — prompt injection cannot forge or replay them
+
+Implementation: `zscaler_mcp/common/elicitation.py` — `generate_confirmation_token()` and `verify_confirmation_token()`.
 
 ## ZDX Filtering
 
@@ -56,19 +143,30 @@ Server & security env vars:
 - `ZSCALER_MCP_HOST`, `ZSCALER_MCP_PORT` — Bind address for HTTP transports (default `127.0.0.1:8000`)
 - `ZSCALER_MCP_AUTH_ENABLED` — Enable MCP client authentication (`true`/`false`, HTTP only)
 - `ZSCALER_MCP_AUTH_MODE` — Auth mode: `api-key`, `jwt`, or `zscaler` (or use `auth=` param for OAuth 2.1 with DCR)
-- `ZSCALER_MCP_TLS_CERT_FILE`, `ZSCALER_MCP_TLS_KEY_FILE` — TLS certificate and key paths
+- `ZSCALER_MCP_TLS_CERTFILE`, `ZSCALER_MCP_TLS_KEYFILE` — TLS certificate and key paths
 - `ZSCALER_MCP_ALLOW_HTTP` — Allow plaintext HTTP on non-localhost (`true`/`false`)
-- `ZSCALER_MCP_ALLOWED_HOSTS` — Comma-separated allowed Host header values
+- `ZSCALER_MCP_ALLOWED_HOSTS` — Comma-separated allowed Host header values (supports wildcards)
 - `ZSCALER_MCP_ALLOWED_SOURCE_IPS` — Comma-separated allowed client IPs/CIDRs
+- `ZSCALER_MCP_DISABLED_TOOLS` — Comma-separated tool patterns to exclude (wildcards via fnmatch)
+- `ZSCALER_MCP_DISABLED_SERVICES` — Comma-separated service names to exclude
+- `ZSCALER_MCP_WRITE_ENABLED` — Enable write tools (`true`/`false`)
+- `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
+- `ZSCALER_MCP_SKIP_CONFIRMATIONS` — Skip HMAC confirmation for destructive ops (`true`/`false`)
+- `ZSCALER_MCP_CONFIRMATION_TTL` — Confirmation token TTL in seconds (default 300)
+- `ZSCALER_MCP_DISABLE_HOST_VALIDATION` — Disable host header checks (`true`/`false`)
 
 ## CLI Flags
 
 - `--transport` — Transport mode (`stdio`, `sse`, `streamable-http`)
 - `--services` — Comma-separated services to enable (e.g., `zia,zpa,zdx`)
+- `--disabled-services` — Comma-separated services to exclude (e.g., `zcc,zdx`)
+- `--disabled-tools` — Comma-separated tool patterns to exclude (wildcards: `"zcc_*,zia_list_device*"`)
 - `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
 - `--generate-auth-token` — Generate an API key for MCP client authentication
 - `--list-tools` — List all available tools and exit
 - `--user-agent-comment` — Custom User-Agent suffix for API calls
+- `--host` — HTTP bind address (default `127.0.0.1`)
+- `--port` — HTTP listen port (default `8000`)
 - `--version` — Print version and exit
 
 ## Development
@@ -79,7 +177,40 @@ Server & security env vars:
 - Run locally: `uvx zscaler-mcp` (requires `.env` in working directory)
 - Docker: `make docker-build && make docker-run` (stdio) or `make docker-run-http` (HTTP + auth)
 - Lint: `ruff check .` and `ruff format .`
+- Tests: `pytest tests/ --ignore=tests/e2e -v`
 - Clean: `make clean`
+
+### Adding a New Tool
+
+1. Create module in `zscaler_mcp/tools/{service}/` with the tool function
+2. Add the tool definition to the service class in `services.py` (in `read_tools` or `write_tools` list)
+3. Import the tool function in the service class's `register_tools` method
+4. The tool is automatically picked up by `register_read_tools()` / `register_write_tools()` and respects all filtering (enabled_tools, disabled_tools, write_tools)
+
+### Adding a New Service
+
+1. Create a new service class in `services.py` extending `BaseService`
+2. Define `read_tools` and `write_tools` lists
+3. Implement `register_tools()` method
+4. Add the service to `_AVAILABLE_SERVICES` registry at the bottom of `services.py`
+5. Create tool modules under `zscaler_mcp/tools/{service_name}/`
+
+### Key Design Decisions
+
+- **Lazy client initialization**: Zscaler SDK clients are created on first tool call, not at server startup. This avoids authentication failures blocking startup and allows credential rotation without restart.
+- **Security-first defaults**: Read-only mode, auth enabled by default for HTTP, TLS enforced unless explicitly opted out, HMAC confirmations for destructive actions.
+- **No runtime tool filtering**: `disabled_tools` and `disabled_services` are applied at registration time. Once the server is running, the tool list is fixed. This prevents race conditions and ensures consistent behavior.
+- **Agent-aware metadata**: The `zscaler_get_available_services` tool exists specifically to help AI agents understand what's available and what's not. Its description is written to surface in tool searches for any service name.
+- **Cross-service data overlap**: Zscaler's APIs have intentional overlap (e.g., ZIA and ZCC both expose device data). The server maps tools to API product boundaries, not conceptual categories. Users need `--disabled-tools` in addition to `--disabled-services` to block cross-service data access.
+
+## AWS Version
+
+A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS/zscaler-mcp-server` for Amazon Bedrock AgentCore. Key differences:
+
+- **No TLS handling** — AWS infrastructure (ALB, API Gateway) handles TLS termination
+- **`web_server.py`** — FastAPI wrapper that bypasses MCP session initialization for Bedrock's stateless HTTP
+- **`_log_security_posture_aws()`** — AWS-specific security banner (no TLS fields)
+- **Same tool/service/auth architecture** — disabled_tools, disabled_services, OIDCProxy, HMAC confirmations all work identically
 
 ## Skills
 
@@ -88,3 +219,9 @@ Server & security env vars:
 ## Platform Integrations
 
 Native integrations available in `integrations/`: Claude Code plugin, Cursor plugin, Gemini CLI extension, Kiro IDE power, Google ADK agent. See `integrations/README.md` for details.
+
+### Docker + OIDCProxy Setup
+
+One self-contained script in `local_dev/scripts/` for OIDCProxy (OAuth 2.1 + DCR):
+
+- **`setup-oidcproxy-auth.py`** — End-to-end orchestration script. Loads Auth0 credentials from `.env`, builds the Docker image, starts the container with an inline entrypoint (passed via `python -c`), verifies OAuth endpoints, and updates Claude Desktop / Cursor configs. The entrypoint code is embedded directly in the script — no separate file needed. Run from the project root.
