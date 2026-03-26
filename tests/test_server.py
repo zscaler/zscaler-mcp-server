@@ -154,6 +154,69 @@ class TestZscalerMCPServer(unittest.TestCase):
 
         # Verify result contains enabled services matching the registry
         self.assertEqual(set(result["enabled_services"].keys()), set(expected_services))
+        self.assertNotIn("disabled_services", result)
+        self.assertNotIn("disabled_tool_patterns", result)
+        self.assertNotIn("note", result)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_get_available_services_with_disabled_services(self, mock_get_client, mock_fastmcp):
+        """Test get_available_services when some services are disabled."""
+        mock_client_instance = MagicMock()
+        mock_get_client.return_value = mock_client_instance
+
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        server = ZscalerMCPServer(disabled_services={"zcc", "zdx"})
+        result = server.get_available_services()
+
+        self.assertNotIn("zcc", result["enabled_services"])
+        self.assertNotIn("zdx", result["enabled_services"])
+        self.assertIn("disabled_services", result)
+        self.assertIn("zcc", result["disabled_services"])
+        self.assertIn("zdx", result["disabled_services"])
+        self.assertIn("note", result)
+        self.assertIn("Disabled services", result["note"])
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_get_available_services_with_disabled_tools(self, mock_get_client, mock_fastmcp):
+        """Test get_available_services when tool patterns are disabled."""
+        mock_client_instance = MagicMock()
+        mock_get_client.return_value = mock_client_instance
+
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        server = ZscalerMCPServer(disabled_tools={"zcc_list_*", "zia_delete_*"})
+        result = server.get_available_services()
+
+        self.assertIn("disabled_tool_patterns", result)
+        self.assertEqual(sorted(result["disabled_tool_patterns"]), ["zia_delete_*", "zcc_list_*"])
+        self.assertIn("note", result)
+        self.assertIn("fnmatch wildcards", result["note"])
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_get_available_services_with_both_disabled(self, mock_get_client, mock_fastmcp):
+        """Test get_available_services with both disabled services and tools."""
+        mock_client_instance = MagicMock()
+        mock_get_client.return_value = mock_client_instance
+
+        mock_server_instance = MagicMock()
+        mock_fastmcp.return_value = mock_server_instance
+
+        server = ZscalerMCPServer(disabled_services={"zcc"}, disabled_tools={"zia_delete_*"})
+        result = server.get_available_services()
+
+        self.assertIn("disabled_services", result)
+        self.assertIn("zcc", result["disabled_services"])
+        self.assertIn("disabled_tool_patterns", result)
+        self.assertEqual(result["disabled_tool_patterns"], ["zia_delete_*"])
+        self.assertIn("note", result)
+        self.assertIn("Disabled services", result["note"])
+        self.assertIn("fnmatch wildcards", result["note"])
 
     @patch("zscaler_mcp.server.FastMCP")
     @patch("zscaler_mcp.client.get_zscaler_client")
