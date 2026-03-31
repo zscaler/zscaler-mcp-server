@@ -42,7 +42,7 @@ This power has the following steering files for on-demand context loading:
 - **zcc** — ZCC client connector: device inventory, forwarding profiles, 4 tools
 - **ztw** — ZTW workload segmentation: IP groups, network services, cloud discovery, 19 tools
 - **easm** — EASM attack surface: finding investigation, lookalike domains, 7 tools
-- **zidentity** — ZIdentity: user/group management, cross-service correlation, 10 tools
+- **zid** — ZIdentity: user/group management, cross-service correlation, 10 tools
 - **cross-product** — Cross-product troubleshooting: ZCC + ZDX + ZPA + ZIA correlation workflow
 
 Load a steering file when the user's request matches that service. For example, load **zpa** when the user mentions private access, application segments, or access policies. Load **cross-product** when the issue spans multiple services.
@@ -54,7 +54,7 @@ Load a steering file when the user's request matches that service. For example, 
 **Package:** `zscaler-mcp` via uvx or Docker
 **Connection:** Local STDIO or remote HTTP (streamable-http). For remote deployment (EC2, VM), see [Remote MCP Deployment](../../docs/deployment/authentication-and-deployment.md#remote-deployment-ec2-vm-etc).
 
-**Tool naming convention:** All tools follow `{service}_{verb}_{resource}` — e.g., `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Use the service prefix to discover tools: `zia_`, `zpa_`, `zdx_`, `zcc_`, `zeasm_`, `zinsights_`, `zidentity_`, `ztw_`.
+**Tool naming convention:** All tools follow `{service}_{verb}_{resource}` — e.g., `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Use the service prefix to discover tools: `zia_`, `zpa_`, `zdx_`, `zcc_`, `zeasm_`, `zins_`, `zid_`, `ztw_`.
 
 **Tool categories by service:**
 
@@ -117,10 +117,10 @@ Load steering: cross-product
 ### Security Incident Investigation (Z-Insights)
 ```
 Load steering: z-insights
-1. zinsights_get_cyber_incidents → Incident overview
-2. zinsights_get_cyber_incidents_by_location → Affected locations
-3. zinsights_get_cyber_incidents_daily → Timeline
-4. zinsights_get_threat_super_categories → Threat breakdown
+1. zins_get_cyber_incidents → Incident overview
+2. zins_get_cyber_incidents_by_location → Affected locations
+3. zins_get_cyber_incidents_daily → Timeline
+4. zins_get_threat_super_categories → Threat breakdown
 ```
 
 ### Attack Surface Review (EASM)

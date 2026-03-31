@@ -8,11 +8,12 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 - [ZCC Features](#zcc-features)
 - [ZDX Features](#zdx-features)
-- [ZIdentity Features](#zidentity-features)
+- [ZID Features](#zid-features)
 - [ZIA Features](#zia-features)
 - [ZPA Features](#zpa-features)
 - [ZTW Features](#ztw-features)
 - [EASM Features](#easm---external-attack-surface-management)
+- [ZMS Features](#zms---zscaler-microsegmentation)
 
 ---
 
@@ -56,15 +57,15 @@ All ZDX tools are **read-only** operations:
 
 ---
 
-## ZIdentity Features
+## ZID Features
 
 All ZIdentity tools are **read-only** operations:
 
 | Tool Name | Description | Type |
 |-----------|-------------|------|
-| `zidentity_get_groups` | Retrieves Zidentity group information | Read-only |
-| `zidentity_get_users` | Retrieves Zidentity user information | Read-only |
-| `zidentity_search` | Search across Zidentity resources | Read-only |
+| `zid_get_groups` | Retrieves Zidentity group information | Read-only |
+| `zid_get_users` | Retrieves Zidentity user information | Read-only |
+| `zid_search` | Search across Zidentity resources | Read-only |
 
 ---
 
@@ -523,3 +524,74 @@ EASM provides **read-only** tools for monitoring your organization's external at
 |-----------|-------------|------|
 | `zeasm_list_lookalike_domains` | List all lookalike domains detected for an organization | Read-only |
 | `zeasm_get_lookalike_domain` | Get details for a specific lookalike domain | Read-only |
+
+---
+
+## ZMS - Zscaler Microsegmentation
+
+ZMS provides **read-only** tools for querying Zscaler Microsegmentation data through the ZMS GraphQL API. All tools require `ZSCALER_CUSTOMER_ID` to be set.
+
+### Agents
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_agents` | List microsegmentation agents with pagination and search | Read-only |
+| `zms_get_agent_connection_status_statistics` | Get aggregated agent connection status statistics | Read-only |
+| `zms_get_agent_version_statistics` | Get aggregated agent version distribution | Read-only |
+
+### Agent Groups
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_agent_groups` | List agent groups with pagination and search | Read-only |
+| `zms_get_agent_group_totp_secrets` | Get TOTP secrets for agent group enrollment | Read-only |
+
+### Resources
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_resources` | List managed workloads (VMs, containers, servers) | Read-only |
+| `zms_get_resource_protection_status` | Get resource protection coverage summary | Read-only |
+| `zms_get_metadata` | Get event metadata for resources | Read-only |
+
+### Resource Groups
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_resource_groups` | List resource groups (managed and unmanaged) | Read-only |
+| `zms_get_resource_group_members` | Get members of a specific resource group | Read-only |
+| `zms_get_resource_group_protection_status` | Get resource group protection coverage | Read-only |
+
+### Policy Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_policy_rules` | List microsegmentation policy rules | Read-only |
+| `zms_list_default_policy_rules` | List system-defined default policy rules | Read-only |
+
+### App Zones
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_app_zones` | List application zones | Read-only |
+
+### App Catalog
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_app_catalog` | List discovered application catalog entries | Read-only |
+
+### Nonces (Provisioning Keys)
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_nonces` | List provisioning keys with pagination and search | Read-only |
+| `zms_get_nonce` | Get a specific provisioning key by eyez ID | Read-only |
+
+### Tags
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zms_list_tag_namespaces` | List tag namespaces (CUSTOM, EXTERNAL, ML) | Read-only |
+| `zms_list_tag_keys` | List tag keys within a namespace | Read-only |
+| `zms_list_tag_values` | List tag values for a specific tag key | Read-only |

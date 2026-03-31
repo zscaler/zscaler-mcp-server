@@ -252,7 +252,7 @@ def zpa_delete_app_connector_group(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zpa_delete_app_connector_group", confirmed, {})
+    confirmation_check = check_confirmation("zpa_delete_app_connector_group", confirmed, {"group_id": str(group_id)})
     if confirmation_check:
         return confirmation_check
 

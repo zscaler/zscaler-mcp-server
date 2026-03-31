@@ -27,7 +27,7 @@ tests/
     ├── zdx/                 # ZDX unit tests
     ├── zcc/                 # ZCC unit tests
     ├── ztw/                 # ZTW unit tests
-    └── zidentity/           # ZIdentity unit tests
+    └── zid/                 # ZID unit tests
 ```
 
 ## 🧪 Test Layers
@@ -44,7 +44,7 @@ Following the test pyramid approach:
 
 ```bash
 # Run all unit tests
-pytest tests/zia tests/zpa tests/zdx tests/zcc tests/ztw tests/zidentity -v
+pytest tests/zia tests/zpa tests/zdx tests/zcc tests/ztw tests/zid -v
 
 # Run specific service unit tests
 pytest tests/zia/ -v

@@ -64,17 +64,21 @@ flags:
     paths:
       - zscaler_mcp/tools/ztw/
     carryforward: true
-  zidentity-tools:
+  zid-tools:
     paths:
-      - zscaler_mcp/tools/zidentity/
+      - zscaler_mcp/tools/zid/
     carryforward: true
-  zinsights-tools:
+  zins-tools:
     paths:
-      - zscaler_mcp/tools/zinsights/
+      - zscaler_mcp/tools/zins/
     carryforward: true
   zeasm-tools:
     paths:
       - zscaler_mcp/tools/easm/
+    carryforward: true
+  zms-tools:
+    paths:
+      - zscaler_mcp/tools/zms/
     carryforward: true
   core:
     paths:
@@ -115,15 +119,19 @@ component_management:
     - component_id: zscaler-identity
       name: ZIdentity (Identity Management)
       paths:
-        - zscaler_mcp/tools/zidentity/**
+        - zscaler_mcp/tools/zid/**
     - component_id: zscaler-insights
       name: Z-Insights (Analytics)
       paths:
-        - zscaler_mcp/tools/zinsights/**
+        - zscaler_mcp/tools/zins/**
     - component_id: zscaler-easm
       name: ZEASM (External Attack Surface Management)
       paths:
         - zscaler_mcp/tools/easm/**
+    - component_id: zscaler-microsegmentation
+      name: ZMS (Zscaler Microsegmentation)
+      paths:
+        - zscaler_mcp/tools/zms/**
     - component_id: core-server
       name: Core Server & Services
       paths:

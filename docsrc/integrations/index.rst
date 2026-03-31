@@ -175,7 +175,7 @@ Unlike skills (which are guided workflows), Kiro uses **steering files** — ser
    * - ``easm.md``
      - EASM (Attack Surface)
      - 7 — findings, lookalike domains, scan evidence (read-only)
-   * - ``zidentity.md``
+   * - ``zid.md``
      - ZIdentity
      - 10 — users, groups, identity management (read-only)
    * - ``cross-product.md``
