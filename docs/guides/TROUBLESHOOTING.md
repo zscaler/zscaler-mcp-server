@@ -26,7 +26,7 @@ When connecting to a **remote** MCP server (EC2, VM) from Claude Desktop or anot
    Ensure that the `mcp.json` file is correctly configured and includes the appropriate server definitions. Restart your MCP server and reload the VS Code window.
 
 3. **Tools Not Loading in Agent Mode**
-   If tools are not appearing, click "Add Context" in Agent Mode and ensure all tools starting with `zcc_`, `zdx_`, `zia_`, `zpa_`, `ztw_`, `zidentity_`are selected.
+   If tools are not appearing, click "Add Context" in Agent Mode and ensure all tools starting with `zcc_`, `zdx_`, `zia_`, `zpa_`, `ztw_`, `zid_`are selected.
 
 ## Windows: Claude Desktop Extension Fails to Start
 

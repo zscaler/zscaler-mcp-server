@@ -1811,77 +1811,77 @@ class ZTWService(BaseService):
         logger.info(f"ZTW Service: Registered {read_count} read tools, {write_count} write tools")
 
 
-class ZIdentityService(BaseService):
+class ZIDService(BaseService):
     """Zscaler ZIdentity service."""
 
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import verb-based ZIdentity tools
-        from .tools.zidentity.groups import (
-            zidentity_get_group,
-            zidentity_get_group_users,
-            zidentity_get_group_users_by_name,
-            zidentity_list_groups,
-            zidentity_search_groups,
+        from .tools.zid.groups import (
+            zid_get_group,
+            zid_get_group_users,
+            zid_get_group_users_by_name,
+            zid_list_groups,
+            zid_search_groups,
         )
-        from .tools.zidentity.users import (
-            zidentity_get_user,
-            zidentity_get_user_groups,
-            zidentity_get_user_groups_by_name,
-            zidentity_list_users,
-            zidentity_search_users,
+        from .tools.zid.users import (
+            zid_get_user,
+            zid_get_user_groups,
+            zid_get_user_groups_by_name,
+            zid_list_users,
+            zid_search_users,
         )
 
         # All ZIdentity tools are read-only
         self.read_tools = [
             {
-                "func": zidentity_list_groups,
-                "name": "zidentity_list_groups",
+                "func": zid_list_groups,
+                "name": "zid_list_groups",
                 "description": "List ZIdentity groups (read-only)",
             },
             {
-                "func": zidentity_get_group,
-                "name": "zidentity_get_group",
+                "func": zid_get_group,
+                "name": "zid_get_group",
                 "description": "Get a specific ZIdentity group by ID (read-only)",
             },
             {
-                "func": zidentity_search_groups,
-                "name": "zidentity_search_groups",
+                "func": zid_search_groups,
+                "name": "zid_search_groups",
                 "description": "Search ZIdentity groups (read-only)",
             },
             {
-                "func": zidentity_get_group_users,
-                "name": "zidentity_get_group_users",
+                "func": zid_get_group_users,
+                "name": "zid_get_group_users",
                 "description": "Get users in a ZIdentity group (read-only)",
             },
             {
-                "func": zidentity_get_group_users_by_name,
-                "name": "zidentity_get_group_users_by_name",
+                "func": zid_get_group_users_by_name,
+                "name": "zid_get_group_users_by_name",
                 "description": "Get users in a ZIdentity group by group name (read-only)",
             },
             {
-                "func": zidentity_list_users,
-                "name": "zidentity_list_users",
+                "func": zid_list_users,
+                "name": "zid_list_users",
                 "description": "List ZIdentity users (read-only)",
             },
             {
-                "func": zidentity_get_user,
-                "name": "zidentity_get_user",
+                "func": zid_get_user,
+                "name": "zid_get_user",
                 "description": "Get a specific ZIdentity user by ID (read-only)",
             },
             {
-                "func": zidentity_search_users,
-                "name": "zidentity_search_users",
+                "func": zid_search_users,
+                "name": "zid_search_users",
                 "description": "Search ZIdentity users (read-only)",
             },
             {
-                "func": zidentity_get_user_groups,
-                "name": "zidentity_get_user_groups",
+                "func": zid_get_user_groups,
+                "name": "zid_get_user_groups",
                 "description": "Get groups for a ZIdentity user (read-only)",
             },
             {
-                "func": zidentity_get_user_groups_by_name,
-                "name": "zidentity_get_user_groups_by_name",
+                "func": zid_get_user_groups_by_name,
+                "name": "zid_get_user_groups_by_name",
                 "description": "Get groups for a ZIdentity user by username (read-only)",
             },
         ]
@@ -1982,7 +1982,7 @@ class ZEASMService(BaseService):
         logger.info(f"EASM Service: Registered {read_count} read tools, {write_count} write tools")
 
 
-class ZInsightsService(BaseService):
+class ZINSService(BaseService):
     """Zscaler Z-Insights Analytics service.
 
     Provides analytics and reporting capabilities through the Z-Insights GraphQL API.
@@ -2001,41 +2001,41 @@ class ZInsightsService(BaseService):
         super().__init__(zscaler_client)
         # Import Z-Insights Web Traffic tools
         # Import Z-Insights Cyber Security tools
-        from .tools.zinsights.cyber_security import (
-            zinsights_get_cyber_incidents,
-            zinsights_get_cyber_incidents_by_location,
-            zinsights_get_cyber_incidents_by_threat_and_app,
-            zinsights_get_cyber_incidents_daily,
+        from .tools.zins.cyber_security import (
+            zins_get_cyber_incidents,
+            zins_get_cyber_incidents_by_location,
+            zins_get_cyber_incidents_by_threat_and_app,
+            zins_get_cyber_incidents_daily,
         )
 
         # Import Z-Insights Firewall tools
-        from .tools.zinsights.firewall import (
-            zinsights_get_firewall_by_action,
-            zinsights_get_firewall_by_location,
-            zinsights_get_firewall_network_services,
+        from .tools.zins.firewall import (
+            zins_get_firewall_by_action,
+            zins_get_firewall_by_location,
+            zins_get_firewall_network_services,
         )
 
         # Import Z-Insights IoT tools
-        from .tools.zinsights.iot import (
-            zinsights_get_iot_device_stats,
+        from .tools.zins.iot import (
+            zins_get_iot_device_stats,
         )
 
         # Import Z-Insights SaaS Security / CASB tools
-        from .tools.zinsights.saas_security import (
-            zinsights_get_casb_app_report,
+        from .tools.zins.saas_security import (
+            zins_get_casb_app_report,
         )
 
         # Import Z-Insights Shadow IT tools
-        from .tools.zinsights.shadow_it import (
-            zinsights_get_shadow_it_apps,
-            zinsights_get_shadow_it_summary,
+        from .tools.zins.shadow_it import (
+            zins_get_shadow_it_apps,
+            zins_get_shadow_it_summary,
         )
-        from .tools.zinsights.web_traffic import (
-            zinsights_get_threat_class,
-            zinsights_get_threat_super_categories,
-            zinsights_get_web_protocols,
-            zinsights_get_web_traffic_by_location,
-            zinsights_get_web_traffic_no_grouping,
+        from .tools.zins.web_traffic import (
+            zins_get_threat_class,
+            zins_get_threat_super_categories,
+            zins_get_web_protocols,
+            zins_get_web_traffic_by_location,
+            zins_get_web_traffic_no_grouping,
         )
 
         # All Z-Insights tools are read-only (analytics)
@@ -2043,8 +2043,8 @@ class ZInsightsService(BaseService):
         self.read_tools = [
             # Web Traffic Analytics
             {
-                "func": zinsights_get_web_traffic_by_location,
-                "name": "zinsights_get_web_traffic_by_location",
+                "func": zins_get_web_traffic_by_location,
+                "name": "zins_get_web_traffic_by_location",
                 "description": (
                     "AUTHORITATIVE SOURCE for web traffic analytics by location. "
                     "Use for questions about: traffic volume, bandwidth usage, location traffic, "
@@ -2052,8 +2052,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_web_traffic_no_grouping,
-                "name": "zinsights_get_web_traffic_no_grouping",
+                "func": zins_get_web_traffic_no_grouping,
+                "name": "zins_get_web_traffic_no_grouping",
                 "description": (
                     "AUTHORITATIVE SOURCE for total/overall web traffic volume. "
                     "Use for questions about: total traffic, overall bandwidth, aggregate web usage. "
@@ -2061,8 +2061,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_web_protocols,
-                "name": "zinsights_get_web_protocols",
+                "func": zins_get_web_protocols,
+                "name": "zins_get_web_protocols",
                 "description": (
                     "AUTHORITATIVE SOURCE for web protocol distribution (HTTP, HTTPS, etc.). "
                     "Use for questions about: protocol usage, HTTPS adoption, protocol breakdown. "
@@ -2070,8 +2070,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_threat_super_categories,
-                "name": "zinsights_get_threat_super_categories",
+                "func": zins_get_threat_super_categories,
+                "name": "zins_get_threat_super_categories",
                 "description": (
                     "AUTHORITATIVE SOURCE for threat category analytics (malware, phishing, spyware, etc.). "
                     "Use for questions about: what threats we're seeing, threat types, threat categories, "
@@ -2079,8 +2079,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_threat_class,
-                "name": "zinsights_get_threat_class",
+                "func": zins_get_threat_class,
+                "name": "zins_get_threat_class",
                 "description": (
                     "AUTHORITATIVE SOURCE for threat classification analytics (virus, trojan, ransomware, etc.). "
                     "Use for questions about: threat classes, types of malware, threat classifications. "
@@ -2089,8 +2089,8 @@ class ZInsightsService(BaseService):
             },
             # Cyber Security Analytics
             {
-                "func": zinsights_get_cyber_incidents,
-                "name": "zinsights_get_cyber_incidents",
+                "func": zins_get_cyber_incidents,
+                "name": "zins_get_cyber_incidents",
                 "description": (
                     "AUTHORITATIVE SOURCE for cybersecurity incidents by category. "
                     "Use for questions about: security incidents, cyber attacks, incident breakdown, "
@@ -2098,8 +2098,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_cyber_incidents_by_location,
-                "name": "zinsights_get_cyber_incidents_by_location",
+                "func": zins_get_cyber_incidents_by_location,
+                "name": "zins_get_cyber_incidents_by_location",
                 "description": (
                     "AUTHORITATIVE SOURCE for cybersecurity incidents by location. "
                     "Use for questions about: which locations have incidents, security by office, "
@@ -2107,8 +2107,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_cyber_incidents_daily,
-                "name": "zinsights_get_cyber_incidents_daily",
+                "func": zins_get_cyber_incidents_daily,
+                "name": "zins_get_cyber_incidents_daily",
                 "description": (
                     "AUTHORITATIVE SOURCE for daily cybersecurity incident trends. "
                     "Use for questions about: incident trends over time, daily security stats, "
@@ -2116,8 +2116,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_cyber_incidents_by_threat_and_app,
-                "name": "zinsights_get_cyber_incidents_by_threat_and_app",
+                "func": zins_get_cyber_incidents_by_threat_and_app,
+                "name": "zins_get_cyber_incidents_by_threat_and_app",
                 "description": (
                     "AUTHORITATIVE SOURCE for incidents correlated by threat and application. "
                     "Use for questions about: which apps are targeted, threat/app correlation, "
@@ -2126,8 +2126,8 @@ class ZInsightsService(BaseService):
             },
             # Firewall Analytics
             {
-                "func": zinsights_get_firewall_by_action,
-                "name": "zinsights_get_firewall_by_action",
+                "func": zins_get_firewall_by_action,
+                "name": "zins_get_firewall_by_action",
                 "description": (
                     "AUTHORITATIVE SOURCE for firewall traffic by action (allow/block). "
                     "Use for questions about: blocked traffic, allowed traffic, firewall actions, "
@@ -2135,8 +2135,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_firewall_by_location,
-                "name": "zinsights_get_firewall_by_location",
+                "func": zins_get_firewall_by_location,
+                "name": "zins_get_firewall_by_location",
                 "description": (
                     "AUTHORITATIVE SOURCE for firewall traffic by location. "
                     "Use for questions about: firewall activity by office, location firewall stats, "
@@ -2144,8 +2144,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_firewall_network_services,
-                "name": "zinsights_get_firewall_network_services",
+                "func": zins_get_firewall_network_services,
+                "name": "zins_get_firewall_network_services",
                 "description": (
                     "AUTHORITATIVE SOURCE for firewall network service usage. "
                     "Use for questions about: network services, port usage, protocol/port activity, "
@@ -2154,8 +2154,8 @@ class ZInsightsService(BaseService):
             },
             # SaaS Security / CASB Analytics
             {
-                "func": zinsights_get_casb_app_report,
-                "name": "zinsights_get_casb_app_report",
+                "func": zins_get_casb_app_report,
+                "name": "zins_get_casb_app_report",
                 "description": (
                     "AUTHORITATIVE SOURCE for CASB SaaS application usage. "
                     "Use for questions about: cloud app usage, SaaS applications, CASB data, "
@@ -2164,8 +2164,8 @@ class ZInsightsService(BaseService):
             },
             # Shadow IT Analytics
             {
-                "func": zinsights_get_shadow_it_apps,
-                "name": "zinsights_get_shadow_it_apps",
+                "func": zins_get_shadow_it_apps,
+                "name": "zins_get_shadow_it_apps",
                 "description": (
                     "AUTHORITATIVE SOURCE for discovered shadow IT applications. "
                     "Use for questions about: unsanctioned apps, shadow IT, unauthorized applications, "
@@ -2173,8 +2173,8 @@ class ZInsightsService(BaseService):
                 ),
             },
             {
-                "func": zinsights_get_shadow_it_summary,
-                "name": "zinsights_get_shadow_it_summary",
+                "func": zins_get_shadow_it_summary,
+                "name": "zins_get_shadow_it_summary",
                 "description": (
                     "AUTHORITATIVE SOURCE for shadow IT summary and statistics. "
                     "Use for questions about: shadow IT overview, total shadow apps, shadow IT dashboard, "
@@ -2183,8 +2183,8 @@ class ZInsightsService(BaseService):
             },
             # IoT Analytics
             {
-                "func": zinsights_get_iot_device_stats,
-                "name": "zinsights_get_iot_device_stats",
+                "func": zins_get_iot_device_stats,
+                "name": "zins_get_iot_device_stats",
                 "description": (
                     "AUTHORITATIVE SOURCE for IoT device statistics and classifications. "
                     "Use for questions about: IoT devices, device inventory, connected devices, "
@@ -2213,6 +2213,253 @@ class ZInsightsService(BaseService):
         )
 
 
+class ZMSService(BaseService):
+    """Zscaler Microsegmentation (ZMS) service.
+
+    Provides read-only tools for managing and inspecting microsegmentation
+    deployments through the ZMS GraphQL API.
+
+    Available domains in the ZMS API:
+    - AGENTS: Agent inventory, connection status, and version statistics
+    - AGENT_GROUPS: Agent group management and TOTP secrets
+    - RESOURCES: Workload inventory and protection status
+    - RESOURCE_GROUPS: Resource group membership and protection status
+    - POLICY_RULES: Microsegmentation policy rules and defaults
+    - APP_ZONES: Application zone definitions
+    - APP_CATALOG: Discovered application catalog
+    - NONCES: Provisioning key management
+    - TAGS: Tag namespace, key, and value hierarchy
+    """
+
+    def __init__(self, zscaler_client):
+        super().__init__(zscaler_client)
+
+        from .tools.zms.agent_groups import (
+            zms_get_agent_group_totp_secrets,
+            zms_list_agent_groups,
+        )
+        from .tools.zms.agents import (
+            zms_get_agent_connection_status_statistics,
+            zms_get_agent_version_statistics,
+            zms_list_agents,
+        )
+        from .tools.zms.app_catalog import zms_list_app_catalog
+        from .tools.zms.app_zones import zms_list_app_zones
+        from .tools.zms.nonces import (
+            zms_get_nonce,
+            zms_list_nonces,
+        )
+        from .tools.zms.policy_rules import (
+            zms_list_default_policy_rules,
+            zms_list_policy_rules,
+        )
+        from .tools.zms.resource_groups import (
+            zms_get_resource_group_members,
+            zms_get_resource_group_protection_status,
+            zms_list_resource_groups,
+        )
+        from .tools.zms.resources import (
+            zms_get_metadata,
+            zms_get_resource_protection_status,
+            zms_list_resources,
+        )
+        from .tools.zms.tags import (
+            zms_list_tag_keys,
+            zms_list_tag_namespaces,
+            zms_list_tag_values,
+        )
+
+        self.read_tools = [
+            # Agents
+            {
+                "func": zms_list_agents,
+                "name": "zms_list_agents",
+                "description": (
+                    "List Zscaler Microsegmentation agents with pagination and search. "
+                    "Returns agent name, connection status, OS, version, IPs, and group membership."
+                ),
+            },
+            {
+                "func": zms_get_agent_connection_status_statistics,
+                "name": "zms_get_agent_connection_status_statistics",
+                "description": (
+                    "Get aggregated connection status statistics for ZMS agents. "
+                    "Returns connected/disconnected counts and percentages."
+                ),
+            },
+            {
+                "func": zms_get_agent_version_statistics,
+                "name": "zms_get_agent_version_statistics",
+                "description": (
+                    "Get aggregated version statistics for ZMS agents. "
+                    "Returns software version distribution across the agent fleet."
+                ),
+            },
+            # Agent Groups
+            {
+                "func": zms_list_agent_groups,
+                "name": "zms_list_agent_groups",
+                "description": (
+                    "List ZMS agent groups with pagination and search. "
+                    "Returns group name, type, agent count, policy status, and upgrade settings."
+                ),
+            },
+            {
+                "func": zms_get_agent_group_totp_secrets,
+                "name": "zms_get_agent_group_totp_secrets",
+                "description": (
+                    "Get TOTP secrets for a specific ZMS agent group. "
+                    "Returns TOTP secret, QR code, and generation timestamp for agent enrollment."
+                ),
+            },
+            # Resources
+            {
+                "func": zms_list_resources,
+                "name": "zms_list_resources",
+                "description": (
+                    "List ZMS resources (workloads) with pagination. "
+                    "Returns resource type, status, cloud provider, region, hostname, OS, IPs, and app zones."
+                ),
+            },
+            {
+                "func": zms_get_resource_protection_status,
+                "name": "zms_get_resource_protection_status",
+                "description": (
+                    "Get protection status summary for ZMS resources. "
+                    "Returns protected/unprotected counts and protection coverage percentage."
+                ),
+            },
+            {
+                "func": zms_get_metadata,
+                "name": "zms_get_metadata",
+                "description": (
+                    "Get event metadata for ZMS resources. "
+                    "Returns metadata about available resource events."
+                ),
+            },
+            # Resource Groups
+            {
+                "func": zms_list_resource_groups,
+                "name": "zms_list_resource_groups",
+                "description": (
+                    "List ZMS resource groups with pagination. "
+                    "Returns managed and unmanaged groups with member counts, CIDRs, and FQDNs."
+                ),
+            },
+            {
+                "func": zms_get_resource_group_members,
+                "name": "zms_get_resource_group_members",
+                "description": (
+                    "Get members of a specific ZMS resource group. "
+                    "Returns workloads in the group with resource type, status, cloud info, and OS."
+                ),
+            },
+            {
+                "func": zms_get_resource_group_protection_status,
+                "name": "zms_get_resource_group_protection_status",
+                "description": (
+                    "Get protection status summary for ZMS resource groups. "
+                    "Returns protected/unprotected group counts and coverage percentage."
+                ),
+            },
+            # Policy Rules
+            {
+                "func": zms_list_policy_rules,
+                "name": "zms_list_policy_rules",
+                "description": (
+                    "List ZMS microsegmentation policy rules with pagination. "
+                    "Returns rule name, action, priority, source/destination targets, and port/protocol specs."
+                ),
+            },
+            {
+                "func": zms_list_default_policy_rules,
+                "name": "zms_list_default_policy_rules",
+                "description": (
+                    "List default microsegmentation policy rules. "
+                    "Returns system-defined baseline rules with action, direction, and scope type."
+                ),
+            },
+            # App Zones
+            {
+                "func": zms_list_app_zones,
+                "name": "zms_list_app_zones",
+                "description": (
+                    "List ZMS app zones with pagination. "
+                    "Returns zone name, description, member count, and VPC/subnet settings."
+                ),
+            },
+            # App Catalog
+            {
+                "func": zms_list_app_catalog,
+                "name": "zms_list_app_catalog",
+                "description": (
+                    "List ZMS application catalog entries with pagination. "
+                    "Returns discovered apps with name, category, port/protocol specs, and processes."
+                ),
+            },
+            # Nonces (Provisioning Keys)
+            {
+                "func": zms_list_nonces,
+                "name": "zms_list_nonces",
+                "description": (
+                    "List ZMS nonces (provisioning keys) with pagination and search. "
+                    "Returns key name, value, max usage, current usage, and agent group association."
+                ),
+            },
+            {
+                "func": zms_get_nonce,
+                "name": "zms_get_nonce",
+                "description": (
+                    "Get a specific ZMS nonce (provisioning key) by eyez ID. "
+                    "Returns detailed key information including usage counts."
+                ),
+            },
+            # Tags
+            {
+                "func": zms_list_tag_namespaces,
+                "name": "zms_list_tag_namespaces",
+                "description": (
+                    "List ZMS tag namespaces with pagination. "
+                    "Returns namespace name, description, and origin (CUSTOM, EXTERNAL, ML)."
+                ),
+            },
+            {
+                "func": zms_list_tag_keys,
+                "name": "zms_list_tag_keys",
+                "description": (
+                    "List tag keys within a ZMS tag namespace. "
+                    "Returns tag key name and description."
+                ),
+            },
+            {
+                "func": zms_list_tag_values,
+                "name": "zms_list_tag_values",
+                "description": (
+                    "List tag values for a specific ZMS tag key. "
+                    "Returns available values for filtering resources."
+                ),
+            },
+        ]
+
+        # ZMS tools are read-only (query-only GraphQL API)
+        self.write_tools = []
+
+    def register_tools(
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+    ):
+        """Register ZMS tools with the server."""
+        from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
+
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        write_count = register_write_tools(
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+        )
+
+        logger.info(
+            f"ZMS Service: Registered {read_count} read tools, {write_count} write tools"
+        )
+
+
 # Service registry
 _AVAILABLE_SERVICES = {
     "zcc": ZCCService,
@@ -2220,9 +2467,10 @@ _AVAILABLE_SERVICES = {
     "zpa": ZPAService,
     "zia": ZIAService,
     "ztw": ZTWService,
-    "zidentity": ZIdentityService,
+    "zid": ZIDService,
     "zeasm": ZEASMService,
-    "zinsights": ZInsightsService,
+    "zins": ZINSService,
+    "zms": ZMSService,
 }
 
 

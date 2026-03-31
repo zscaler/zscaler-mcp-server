@@ -16,7 +16,7 @@ The Gemini extension uses the same MCP server and tools as other integrations. T
 ### Key Features in GEMINI.md
 
 - **Tool naming convention** — All tools follow `{service}_{verb}_{resource}` pattern
-- **Service prefixes** — `zia_`, `zpa_`, `zdx_`, `zcc_`, `easm_`, `zinsights_`, `zidentity_`, `ztw_`
+- **Service prefixes** — `zia_`, `zpa_`, `zdx_`, `zcc_`, `easm_`, `zins_`, `zid_`, `ztw_`
 - **Critical gotchas** — ZIA activation requirement, ZPA dependency chains, ZDX read-only behavior
 - **Write-safety rules** — Confirm before mutating, list before creating, pagination guidance
 - **19 skills reference** — Descriptions of all guided workflows organized by service

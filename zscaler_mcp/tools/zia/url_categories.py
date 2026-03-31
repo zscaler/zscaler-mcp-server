@@ -294,7 +294,7 @@ def zia_remove_urls_from_category(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_remove_urls_from_category", confirmed, {})
+    confirmation_check = check_confirmation("zia_remove_urls_from_category", confirmed, {"category_id": str(category_id)})
     if confirmation_check:
         return confirmation_check
 
@@ -323,7 +323,7 @@ def zia_delete_url_category(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_delete_url_category", confirmed, {})
+    confirmation_check = check_confirmation("zia_delete_url_category", confirmed, {"category_id": str(category_id)})
     if confirmation_check:
         return confirmation_check
 

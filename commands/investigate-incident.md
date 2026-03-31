@@ -17,7 +17,7 @@ Extract:
 ## Step 2: Check Threat Categories
 
 ```
-zinsights_get_threat_categories()
+zins_get_threat_categories()
 ```
 
 Identify the most active threat categories in the environment.
@@ -25,7 +25,7 @@ Identify the most active threat categories in the environment.
 ## Step 3: Get Cyber Incident Data
 
 ```
-zinsights_get_cyber_incidents()
+zins_get_cyber_incidents()
 ```
 
 Look for incidents matching the threat type or keyword.
@@ -33,8 +33,8 @@ Look for incidents matching the threat type or keyword.
 ## Step 4: Analyze Firewall Actions
 
 ```
-zinsights_get_firewall_actions()
-zinsights_get_firewall_insights()
+zins_get_firewall_actions()
+zins_get_firewall_insights()
 ```
 
 Check for blocks, allows, and suspicious connection patterns.
@@ -42,8 +42,8 @@ Check for blocks, allows, and suspicious connection patterns.
 ## Step 5: Review Web Traffic Patterns
 
 ```
-zinsights_get_web_traffic_overview()
-zinsights_get_web_application_usage()
+zins_get_web_traffic_overview()
+zins_get_web_application_usage()
 ```
 
 Look for unusual traffic spikes or suspicious application usage.
@@ -51,8 +51,8 @@ Look for unusual traffic spikes or suspicious application usage.
 ## Step 6: Check Shadow IT
 
 ```
-zinsights_get_shadow_it_summary()
-zinsights_get_saas_security_posture()
+zins_get_shadow_it_summary()
+zins_get_saas_security_posture()
 ```
 
 Identify unsanctioned applications that may have been used in the incident.

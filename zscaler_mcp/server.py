@@ -581,7 +581,7 @@ class ZscalerMCPServer:
             self.get_available_services,
             name="zscaler_get_available_services",
             description=(
-                "List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, etc.) "
+                "List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, ZMS, etc.) "
                 "and their tool counts. Call this FIRST when unsure which services or tools "
                 "are available, or when a tool search returns no relevant results."
             ),

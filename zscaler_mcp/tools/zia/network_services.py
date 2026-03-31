@@ -475,7 +475,7 @@ def zia_delete_network_service(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_delete_network_service", confirmed, {})
+    confirmation_check = check_confirmation("zia_delete_network_service", confirmed, {"service_id": str(service_id)})
     if confirmation_check:
         return confirmation_check
 
