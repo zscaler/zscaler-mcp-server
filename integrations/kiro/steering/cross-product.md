@@ -73,8 +73,8 @@ zdx_start_deeptrace(device_id="<id>", session_name="Troubleshoot-<user>", app_id
 ```
 1. zdx_list_alerts                    → Look for org-wide alerts (not just this user)
 2. zdx_list_alert_affected_devices    → See how many devices are affected
-3. zinsights_get_cyber_incidents      → Check for active security incidents
-4. zinsights_get_web_traffic_by_location → Check traffic anomalies at user's location
+3. zins_get_cyber_incidents      → Check for active security incidents
+4. zins_get_web_traffic_by_location → Check traffic anomalies at user's location
 ```
 
 ### Step 7 — Present Diagnosis

@@ -127,7 +127,7 @@ def zpa_delete_app_connector(
 
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zpa_delete_app_connector", confirmed, {})
+    confirmation_check = check_confirmation("zpa_delete_app_connector", confirmed, {"connector_id": str(connector_id)})
     if confirmation_check:
         return confirmation_check
 
@@ -157,7 +157,7 @@ def zpa_bulk_delete_app_connectors(
 
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zpa_bulk_delete_app_connectors", confirmed, {})
+    confirmation_check = check_confirmation("zpa_bulk_delete_app_connectors", confirmed, {"connector_ids": str(connector_ids)})
     if confirmation_check:
         return confirmation_check
 

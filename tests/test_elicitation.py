@@ -3,11 +3,13 @@ Tests for zscaler_mcp.common.elicitation — cryptographic confirmation tokens.
 
 Covers HMAC token generation/validation, canonical payload construction,
 legacy confirmed=true handling, token expiry, parameter tampering detection,
-and the skip-confirmations escape hatch.
+the skip-confirmations escape hatch, and CWE-345 resource-binding regression.
 """
 
+import ast
 import os
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 from zscaler_mcp.common.elicitation import (
@@ -318,3 +320,121 @@ class TestCheckConfirmation:
         with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
             result = check_confirmation("tool", None, {"id": "1"})
             assert result is None
+
+
+# ---------------------------------------------------------------------------
+# CWE-345 — HMAC token must be bound to the specific resource ID
+# Regression tests to prevent token replay across different resources.
+# ---------------------------------------------------------------------------
+
+
+class TestCWE345TokenReplayPrevention:
+    """Verify that HMAC tokens cannot be replayed for different resource IDs.
+
+    Ref: CWE-345 (Insufficient Verification of Data Authenticity).
+    All delete operations must bind the resource identifier in the HMAC.
+    A token approved for resource A must NOT validate for resource B.
+    """
+
+    def test_token_replay_rejected_different_resource_id(self):
+        params_a = {"group_id": "decoy_99999"}
+        params_b = {"group_id": "PRODUCTION_FW_GROUP"}
+        token = _generate_token("zia_delete_ip_destination_group", params_a)
+        valid, _ = _validate_token(token, "zia_delete_ip_destination_group", params_b)
+        assert valid is False, "Token for resource A must not validate for resource B"
+
+    def test_token_valid_for_same_resource_id(self):
+        params = {"group_id": "12345"}
+        token = _generate_token("zia_delete_ip_destination_group", params)
+        valid, _ = _validate_token(token, "zia_delete_ip_destination_group", params)
+        assert valid is True
+
+    def test_empty_params_produces_fungible_token(self):
+        """Proves WHY empty {} is dangerous: tokens become interchangeable."""
+        token = _generate_token("tool", {})
+        valid, _ = _validate_token(token, "tool", {})
+        assert valid is True, "Empty params token validates for empty params (fungible)"
+
+    def test_bound_params_prevent_replay(self):
+        """Proves the fix: binding resource ID prevents cross-resource replay."""
+        token = _generate_token("tool", {"id": "AAA"})
+        valid_same, _ = _validate_token(token, "tool", {"id": "AAA"})
+        valid_diff, _ = _validate_token(token, "tool", {"id": "BBB"})
+        assert valid_same is True, "Token must validate for the same resource"
+        assert valid_diff is False, "Token must NOT validate for a different resource"
+
+    def test_replay_rejected_across_all_delete_tool_patterns(self):
+        """Exhaustive check: every delete tool pattern rejects cross-resource tokens."""
+        tool_params = [
+            ("zpa_delete_access_policy_rule", "rule_id"),
+            ("zpa_delete_app_connector", "connector_id"),
+            ("zpa_delete_app_connector_group", "group_id"),
+            ("zpa_delete_application_server", "server_id"),
+            ("zpa_delete_application_segment", "segment_id"),
+            ("zpa_delete_ba_certificate", "certificate_id"),
+            ("zpa_delete_pra_credential", "credential_id"),
+            ("zpa_delete_pra_portal", "portal_id"),
+            ("zpa_delete_provisioning_key", "key_id"),
+            ("zpa_delete_segment_group", "group_id"),
+            ("zpa_delete_server_group", "group_id"),
+            ("zpa_delete_service_edge_group", "group_id"),
+            ("zia_delete_ip_destination_group", "group_id"),
+            ("zia_delete_ip_source_group", "group_id"),
+            ("zia_delete_location", "location_id"),
+            ("zia_delete_static_ip", "static_ip_id"),
+            ("zia_delete_vpn_credential", "credential_id"),
+            ("zia_delete_url_category", "category_id"),
+            ("zia_delete_gre_tunnel", "tunnel_id"),
+            ("zia_delete_cloud_firewall_rule", "rule_id"),
+            ("ztw_delete_ip_destination_group", "group_id"),
+            ("ztw_delete_ip_source_group", "group_id"),
+            ("ztw_delete_ip_group", "group_id"),
+        ]
+        for tool_name, param_name in tool_params:
+            token = _generate_token(tool_name, {param_name: "DECOY"})
+            valid, _ = _validate_token(token, tool_name, {param_name: "TARGET"})
+            assert valid is False, (
+                f"{tool_name}: token for {param_name}=DECOY must not validate for TARGET"
+            )
+
+
+class TestCWE345SourceCodeRegression:
+    """Static analysis: ensure no check_confirmation() call passes empty {}.
+
+    Parses every Python file under zscaler_mcp/tools/ and verifies that
+    no call to check_confirmation uses an empty dict literal as the third
+    argument. This prevents future regressions of the CWE-345 fix.
+    """
+
+    def test_no_empty_params_in_check_confirmation_calls(self):
+        tools_dir = Path(__file__).parent.parent / "zscaler_mcp" / "tools"
+        assert tools_dir.exists(), f"Tools directory not found: {tools_dir}"
+
+        violations = []
+        for py_file in tools_dir.rglob("*.py"):
+            try:
+                tree = ast.parse(py_file.read_text(), filename=str(py_file))
+            except SyntaxError:
+                continue
+
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                name = None
+                if isinstance(func, ast.Name):
+                    name = func.id
+                elif isinstance(func, ast.Attribute):
+                    name = func.attr
+                if name != "check_confirmation":
+                    continue
+                if len(node.args) >= 3:
+                    third_arg = node.args[2]
+                    if isinstance(third_arg, ast.Dict) and len(third_arg.keys) == 0:
+                        rel = py_file.relative_to(tools_dir.parent.parent)
+                        violations.append(f"{rel}:{node.lineno}")
+
+        assert violations == [], (
+            f"CWE-345 regression: check_confirmation() called with empty {{}} "
+            f"in {len(violations)} location(s):\n" + "\n".join(f"  - {v}" for v in violations)
+        )

@@ -67,13 +67,13 @@ The Zscaler Integrations MCP Server brings context to your agents. Try prompts l
 <!-- markdownlint-disable MD028 -->
 
 > [!TIP]
-> **Writing effective prompts**: This server exposes **280+ tools** across multiple Zscaler services. Most MCP clients (Claude Desktop, Cursor, etc.) use deferred tool loading and will search for relevant tools based on your prompt. For best results, **be specific about the service and action** in your prompts:
+> **Writing effective prompts**: This server exposes **300+ tools** across multiple Zscaler services. Most MCP clients (Claude Desktop, Cursor, etc.) use deferred tool loading and will search for relevant tools based on your prompt. For best results, **be specific about the service and action** in your prompts:
 >
 > - **Good**: *"List my ZPA application segments"* — targets the right service and tool directly
 > - **Good**: *"Show ZIA firewall rules"* — clear service (`zia`) and action (`list`)
 > - **Less effective**: *"Show me my devices"* — ambiguous; multiple services expose device-related tools
 >
-> When a service is [disabled](#additional-command-line-options), its tools are fully removed from the server. However, the AI agent may still attempt to find related tools in other services. If you get unexpected results, refine your prompt with the specific service name (e.g. `zpa`, `zia`, `zdx`, `zcc`).
+> When a service is [disabled](#additional-command-line-options), its tools are fully removed from the server. However, the AI agent may still attempt to find related tools in other services. If you get unexpected results, refine your prompt with the specific service name (e.g. `zpa`, `zia`, `zdx`, `zcc`, `zms`).
 
 ## 🔒 Security & Permissions
 
@@ -286,7 +286,7 @@ On startup, the server logs a consolidated **Security Posture Banner** summarizi
 - **Least Privilege**: Use narrowest possible allowlist patterns for your use case
 - **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
 - **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
-- **Specific Prompts**: With 280+ tools and deferred loading, AI agents match prompts to tools by relevance. Use service-specific prompts (e.g., *"List ZPA segments"* instead of *"Show my segments"*) for accurate tool selection
+- **Specific Prompts**: With 300+ tools and deferred loading, AI agents match prompts to tools by relevance. Use service-specific prompts (e.g., *"List ZPA segments"* instead of *"Show my segments"*) for accurate tool selection
 
 ## 🔐 MCP Client Authentication
 
@@ -438,13 +438,14 @@ When `auth=` is provided:
 
 ## Supported Tools
 
-The Zscaler Integrations MCP Server provides **280+ tools** for all major Zscaler services:
+The Zscaler Integrations MCP Server provides **300+ tools** for all major Zscaler services:
 
 | Service | Description | Tools |
 |---------|-------------|-------|
 | **ZIA** | Zscaler Internet Access - Security policies | 106 read/write |
 | **ZPA** | Zscaler Private Access - Application access | 88 read/write |
 | **ZDX** | Zscaler Digital Experience - Monitoring & analytics | 31 read-only |
+| **ZMS** | Zscaler Microsegmentation - Agents, resources, policies | 20 read-only |
 | **ZTW** | Zscaler Workload Segmentation | 19 read/write |
 | **Z-Insights** | Analytics - Web traffic, cyber incidents, shadow IT | 16 read-only |
 | **ZIdentity** | Identity & access management | 10 read-only |
@@ -928,7 +929,7 @@ The following environment variables control MCP server behavior (not authenticat
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
 | `ZSCALER_MCP_TRANSPORT` | `stdio` | Transport protocol to use (`stdio`, `sse`, or `streamable-http`) |
-| `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`, `ztw` |
+| `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zid`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
 | `ZSCALER_MCP_DISABLED_SERVICES` | `""` | Comma-separated list of services to exclude (e.g., `zcc,zdx`). Takes precedence over `ZSCALER_MCP_SERVICES`. |
 | `ZSCALER_MCP_DISABLED_TOOLS` | `""` | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zcc_devices_csv_exporter`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
@@ -1030,7 +1031,7 @@ server = ZscalerMCPServer(
 server.run("stdio")
 ```
 
-**Available Services**: `zcc`, `zdx`, `zia`, `zidentity`, `zpa`
+**Available Services**: `zcc`, `zdx`, `zia`, `zid`, `zms`, `zpa`
 
 **Example with Environment Variables**:
 

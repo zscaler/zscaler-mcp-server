@@ -23,7 +23,7 @@ Unlike skills (which are guided workflows), Kiro uses **steering files** — ser
 | `zcc.md` | ZCC (Client Connector) | 4 — device enrollment, forwarding profiles (read-only) |
 | `ztw.md` | ZTW (Workload Segmentation) | 19 — IP groups, network services, cloud accounts |
 | `easm.md` | EASM (Attack Surface) | 7 — findings, lookalike domains, scan evidence (read-only) |
-| `zidentity.md` | ZIdentity | 10 — users, groups, identity management (read-only) |
+| `zid.md` | ZIdentity | 10 — users, groups, identity management (read-only) |
 | `cross-product.md` | Cross-product | ZCC + ZDX + ZPA + ZIA correlation workflow |
 
 ## Installation

@@ -16,7 +16,7 @@ The tools are organized into the following categories:
    zpa/index
    zdx/index
    ztw/index
-   zidentity/index
+   zid/index
    easm/index
    z-insights/index
 
@@ -59,7 +59,7 @@ Tool Parameters
 Most tools accept the following common parameters:
 
 - **use_legacy**: Whether to use legacy API authentication (default: False). Note: EASM does not support legacy authentication.
-- **service**: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zidentity, zeasm)
+- **service**: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zid, zeasm)
 - **page**: Page number for paginated results
 - **page_size**: Number of results per page
 - **search**: Search string for filtering results

@@ -196,7 +196,7 @@ def zpa_delete_isolation_policy_rule(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zpa_delete_isolation_policy_rule", confirmed, {})
+    confirmation_check = check_confirmation("zpa_delete_isolation_policy_rule", confirmed, {"rule_id": str(rule_id)})
     if confirmation_check:
         return confirmation_check
 

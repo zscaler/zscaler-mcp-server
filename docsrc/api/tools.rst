@@ -263,12 +263,12 @@ ZTW Tools
 ZIdentity Tools
 ~~~~~~~~~~~~~~~
 
-.. automodule:: zscaler_mcp.tools.zidentity.groups
+.. automodule:: zscaler_mcp.tools.zid.groups
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: zscaler_mcp.tools.zidentity.users
+.. automodule:: zscaler_mcp.tools.zid.users
    :members:
    :undoc-members:
    :show-inheritance:

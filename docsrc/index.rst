@@ -96,9 +96,9 @@ ZIdentity Features
 
    * - Tool Name
      - Description
-   * - ``zidentity_groups``
+   * - ``zid_groups``
      - Retrieves Zidentity group information
-   * - ``zidentity_users``
+   * - ``zid_users``
      - Retrieves Zidentity user information
 
 ZIA Features
@@ -266,37 +266,37 @@ Z-Insights Features
 
    * - Tool Name
      - Description
-   * - ``zinsights_get_web_traffic_by_location``
+   * - ``zins_get_web_traffic_by_location``
      - Get web traffic analytics grouped by location
-   * - ``zinsights_get_web_traffic_no_grouping``
+   * - ``zins_get_web_traffic_no_grouping``
      - Get overall web traffic volume metrics
-   * - ``zinsights_get_web_protocols``
+   * - ``zins_get_web_protocols``
      - Get web traffic by protocol (HTTP, HTTPS, SSL)
-   * - ``zinsights_get_threat_super_categories``
+   * - ``zins_get_threat_super_categories``
      - Get threat super categories (malware, phishing, spyware)
-   * - ``zinsights_get_threat_class``
+   * - ``zins_get_threat_class``
      - Get detailed threat class breakdown
-   * - ``zinsights_get_cyber_incidents``
+   * - ``zins_get_cyber_incidents``
      - Get cybersecurity incidents by category
-   * - ``zinsights_get_cyber_incidents_by_location``
+   * - ``zins_get_cyber_incidents_by_location``
      - Get cybersecurity incidents grouped by location
-   * - ``zinsights_get_cyber_incidents_daily``
+   * - ``zins_get_cyber_incidents_daily``
      - Get daily cybersecurity incident trends
-   * - ``zinsights_get_cyber_incidents_by_threat_and_app``
+   * - ``zins_get_cyber_incidents_by_threat_and_app``
      - Get incidents correlated by threat and application
-   * - ``zinsights_get_firewall_by_action``
+   * - ``zins_get_firewall_by_action``
      - Get Zero Trust Firewall traffic by action (allow/block)
-   * - ``zinsights_get_firewall_by_location``
+   * - ``zins_get_firewall_by_location``
      - Get firewall traffic grouped by location
-   * - ``zinsights_get_firewall_network_services``
+   * - ``zins_get_firewall_network_services``
      - Get firewall network service usage
-   * - ``zinsights_get_casb_app_report``
+   * - ``zins_get_casb_app_report``
      - Get CASB SaaS application usage report
-   * - ``zinsights_get_shadow_it_apps``
+   * - ``zins_get_shadow_it_apps``
      - Get discovered shadow IT applications with risk scores
-   * - ``zinsights_get_shadow_it_summary``
+   * - ``zins_get_shadow_it_summary``
      - Get shadow IT summary statistics and groupings
-   * - ``zinsights_get_iot_device_stats``
+   * - ``zins_get_iot_device_stats``
      - Get IoT device statistics and classifications
 
 Installation & Setup

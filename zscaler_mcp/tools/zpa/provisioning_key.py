@@ -182,7 +182,7 @@ def zpa_delete_provisioning_key(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zpa_delete_provisioning_key", confirmed, {})
+    confirmation_check = check_confirmation("zpa_delete_provisioning_key", confirmed, {"key_id": str(key_id)})
     if confirmation_check:
         return confirmation_check
 

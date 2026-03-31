@@ -81,7 +81,7 @@ def zia_delete_atp_malicious_urls(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_delete_atp_malicious_urls", confirmed, {})
+    confirmation_check = check_confirmation("zia_delete_atp_malicious_urls", confirmed, {"malicious_urls": str(malicious_urls)})
     if confirmation_check:
         return confirmation_check
 

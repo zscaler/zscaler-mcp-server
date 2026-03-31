@@ -132,7 +132,7 @@ def zia_delete_gre_tunnel(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_delete_gre_tunnel", confirmed, {})
+    confirmation_check = check_confirmation("zia_delete_gre_tunnel", confirmed, {"tunnel_id": str(tunnel_id)})
     if confirmation_check:
         return confirmation_check
 
