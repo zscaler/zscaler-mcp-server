@@ -155,7 +155,7 @@ def zpa_delete_application_server(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zpa_delete_application_server", confirmed, {})
+    confirmation_check = check_confirmation("zpa_delete_application_server", confirmed, {"server_id": str(server_id)})
     if confirmation_check:
         return confirmation_check
 

@@ -131,7 +131,7 @@ def zia_delete_vpn_credential(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_delete_vpn_credential", confirmed, {})
+    confirmation_check = check_confirmation("zia_delete_vpn_credential", confirmed, {"credential_id": str(credential_id)})
     if confirmation_check:
         return confirmation_check
 

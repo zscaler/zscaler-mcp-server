@@ -148,7 +148,7 @@ def zia_delete_location(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("zia_delete_location", confirmed, {})
+    confirmation_check = check_confirmation("zia_delete_location", confirmed, {"location_id": str(location_id)})
     if confirmation_check:
         return confirmation_check
 

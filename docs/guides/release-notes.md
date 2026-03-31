@@ -12,11 +12,39 @@ description: |-
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
 ---
-``Last updated: v0.7.1``
+``Last updated: v0.7.2``
 
 ---
 
 ## Changelog
+
+## 0.7.2 (March 27, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - Added **ZMS (Zscaler Microsegmentation)** service with read-only GraphQL-backed tools: agents, agent groups, resources, resource groups, policy rules (including default rules), app zones, app catalog, nonces (provisioning keys), and tags. Requires `ZSCALER_CUSTOMER_ID` and OneAPI credentials.
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - Renamed **ZIdentity** service to **ZID** and **Z-Insights** service to **ZINS** to align with `zscaler-sdk-python` (`client.zid`, `client.zins`). Tool prefixes are now `zid_*` and `zins_*`; registry keys are `zid` and `zins`.
+
+### Enhancements
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - Added guided **skills** for ZINS (`analyze-web-traffic`, `audit-shadow-it`, `assess-network-security`) and ZMS (`audit-microsegmentation-posture`, `troubleshoot-agent-deployment`), plus expanded ZMS skill content using the Microsegmentation API GraphQL schema reference (Query vs Mutation, managed/unmanaged/recommended resource groups, error handling).
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - **Dockerfile** (temporary dev path): optional install of a local `zscaler_sdk_python` tarball after `uv sync` to test against an unpublished SDK build; **`.dockerignore`** exception so `local_dev/zscaler_sdk_python-*.tar.gz` is included in the build context.
+
+### Fixes
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - **CWE-345 — HMAC confirmation token replay vulnerability.** Fixed 31 delete operations across ZPA, ZIA, and ZTW that passed empty parameters (`{}`) to `check_confirmation()`, producing fungible HMAC-SHA256 tokens that could be replayed across different resources of the same type. All delete operations now bind the specific resource identifier into the HMAC payload, preventing cross-resource token replay. Added 6 regression tests including AST-based static analysis to prevent future occurrences.
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - Resolved **ruff** `I001` import-sorting issues in ZMS tool modules, `services.py` (ZMSService imports), and ZMS tests.
+
+### Documentation
+
+[PR #41](https://github.com/zscaler/zscaler-mcp-server/pull/41) - Updated `CLAUDE.md`, `README.md`, `docs/guides/supported-tools.md`, `codecov.yml`, Sphinx `docsrc/`, integrations, and tests for ZMS, ZID, and ZINS naming.
 
 ## 0.7.1 (March 26, 2026)
 
@@ -27,7 +55,7 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 ### Features
 
 [PR #38](https://github.com/zscaler/zscaler-mcp-server/pull/38) - Added `--disabled-tools` CLI flag and `ZSCALER_MCP_DISABLED_TOOLS` environment variable to exclude specific tools from registration. Supports `fnmatch` wildcard patterns (e.g., `zcc_list_*` disables all ZCC list tools).
-[PR #38](https://github.com/zscaler/zscaler-mcp-server/pull/38) - Added `--disabled-services` CLI flag and `ZSCALER_MCP_DISABLED_SERVICES` environment variable to exclude entire services from loading. Accepts service names: `zcc`, `zdx`, `zia`, `zpa`, `ztw`, `zidentity`.
+[PR #38](https://github.com/zscaler/zscaler-mcp-server/pull/38) - Added `--disabled-services` CLI flag and `ZSCALER_MCP_DISABLED_SERVICES` environment variable to exclude entire services from loading. Accepts service names: `zcc`, `zdx`, `zia`, `zpa`, `ztw`, `zid`.
 [PR #38](https://github.com/zscaler/zscaler-mcp-server/pull/38) - Combined `--disabled-tools` and `--disabled-services` for fine-grained control: disable an entire service to prevent loading, or selectively exclude individual tools while keeping the rest of the service active.
 
 ### Enhancements
@@ -151,22 +179,22 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 ### Enhancements
 
 [PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - ✨ Added Z-Insights Analytics service with 16 read-only tools for Zscaler analytics via GraphQL API
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_web_traffic_by_location` - Get web traffic analytics grouped by location
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_web_traffic_no_grouping` - Get overall web traffic volume metrics
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_web_protocols` - Get web traffic by protocol (HTTP, HTTPS, SSL)
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_threat_super_categories` - Get threat super categories (malware, phishing, spyware)
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_threat_class` - Get detailed threat class breakdown
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_cyber_incidents` - Get cybersecurity incidents by category
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_cyber_incidents_by_location` - Get cybersecurity incidents grouped by location
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_cyber_incidents_daily` - Get daily cybersecurity incident trends
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_cyber_incidents_by_threat_and_app` - Get incidents correlated by threat and application
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_firewall_by_action` - Get Zero Trust Firewall traffic by action (allow/block)
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_firewall_by_location` - Get firewall traffic grouped by location
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_firewall_network_services` - Get firewall network service usage
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_casb_app_report` - Get CASB SaaS application usage report
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_shadow_it_apps` - Get discovered shadow IT applications with risk scores
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_shadow_it_summary` - Get shadow IT summary statistics and groupings
-[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zinsights_get_iot_device_stats` - Get IoT device statistics and classifications
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_web_traffic_by_location` - Get web traffic analytics grouped by location
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_web_traffic_no_grouping` - Get overall web traffic volume metrics
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_web_protocols` - Get web traffic by protocol (HTTP, HTTPS, SSL)
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_threat_super_categories` - Get threat super categories (malware, phishing, spyware)
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_threat_class` - Get detailed threat class breakdown
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_cyber_incidents` - Get cybersecurity incidents by category
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_cyber_incidents_by_location` - Get cybersecurity incidents grouped by location
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_cyber_incidents_daily` - Get daily cybersecurity incident trends
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_cyber_incidents_by_threat_and_app` - Get incidents correlated by threat and application
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_firewall_by_action` - Get Zero Trust Firewall traffic by action (allow/block)
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_firewall_by_location` - Get firewall traffic grouped by location
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_firewall_network_services` - Get firewall network service usage
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_casb_app_report` - Get CASB SaaS application usage report
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_shadow_it_apps` - Get discovered shadow IT applications with risk scores
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_shadow_it_summary` - Get shadow IT summary statistics and groupings
+[PR #22](https://github.com/zscaler/zscaler-mcp-server/pull/22) - Added `zins_get_iot_device_stats` - Get IoT device statistics and classifications
 
 ### Bug Fixes
 
@@ -422,7 +450,7 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 ### Added
 
 - Initial implementation for the zscaler-mcp server ([#1](https://github.com/zscaler/zscaler-mcp/issues/1))
-- Support for Zscaler services: `zcc`, `zdx`, `zia`, `zpa`, `zidentity` ([#1](https://github.com/zscaler/zscaler-mcp/issues/1))
+- Support for Zscaler services: `zcc`, `zdx`, `zia`, `zpa`, `zid` ([#1](https://github.com/zscaler/zscaler-mcp/issues/1))
 - Flexible per service initialization ([#1](https://github.com/zscaler/zscaler-mcp/issues/1))
 - Streamable-http transport with Docker support ([#1](https://github.com/zscaler/zscaler-mcp/issues/1))
 - Debug option ([#1](https://github.com/zscaler/zscaler-mcp/issues/1))

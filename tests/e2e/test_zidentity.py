@@ -61,7 +61,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.users.list_users.side_effect = (
+            self._mock_api_instance.zid.users.list_users.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -136,7 +136,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.groups.list_groups.side_effect = (
+            self._mock_api_instance.zid.groups.list_groups.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -200,7 +200,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.users.get_user_details.side_effect = (
+            self._mock_api_instance.zid.users.get_user_details.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -264,7 +264,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.groups.get_group_details.side_effect = (
+            self._mock_api_instance.zid.groups.get_group_details.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -339,7 +339,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.users.list_users_by_department.side_effect = (
+            self._mock_api_instance.zid.users.list_users_by_department.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -411,7 +411,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.groups.list_group_members.side_effect = (
+            self._mock_api_instance.zid.groups.list_group_members.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -474,7 +474,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.users.get_user_statistics.side_effect = (
+            self._mock_api_instance.zid.users.get_user_statistics.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -533,7 +533,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             ]
 
             # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zidentity.groups.get_group_statistics.side_effect = (
+            self._mock_api_instance.zid.groups.get_group_statistics.side_effect = (
                 self._create_mock_api_side_effect(fixtures)
             )
 
@@ -565,7 +565,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             assertions,
         )
 
-    def test_simple_zidentity_tools(self):
+    def test_simple_zid_tools(self):
         """Verify basic ZIdentity tools functionality."""
 
         async def test_logic():
@@ -579,7 +579,7 @@ class TestZIdentityModuleE2E(BaseE2ETest):
             self.assertGreater(len(result), 0, "Expected non-empty result")
 
         self.run_test_with_retries(
-            "test_simple_zidentity_tools",
+            "test_simple_zid_tools",
             test_logic,
             assertions,
         )

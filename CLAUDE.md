@@ -1,6 +1,6 @@
 # Zscaler MCP Server
 
-280+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation).
+300+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
 
 ## Architecture Overview
 
@@ -9,7 +9,7 @@
 ```
 zscaler_mcp/
 ├── server.py          # ZscalerMCPServer class, CLI entrypoint, security posture logging
-├── services.py        # Service registry + 8 concrete service classes (ZPA, ZIA, ZDX, ZCC, ZTW, ZIdentity, ZEASM, ZInsights)
+├── services.py        # Service registry + 9 concrete service classes (ZPA, ZIA, ZDX, ZCC, ZTW, ZIdentity, ZEASM, ZInsights, ZMS)
 ├── auth.py            # Auth middleware factory (JWT, API-key, Zscaler, OAuthProxy stub)
 ├── client.py          # Zscaler SDK client factory (OneAPI + legacy credential flows)
 ├── security.py        # HTTP security warnings (TLS, plaintext)
@@ -17,7 +17,7 @@ zscaler_mcp/
 │   ├── tool_helpers.py   # register_read_tools / register_write_tools with disabled_tools filtering
 │   ├── elicitation.py    # HMAC-SHA256 confirmation tokens for destructive actions
 │   └── logging.py        # log_security_warning helper
-└── tools/                # 103 tool modules organized by service (zia/, zpa/, zdx/, zcc/, ztw/, zidentity/, easm/, zinsights/)
+└── tools/                # 112 tool modules organized by service (zia/, zpa/, zdx/, zcc/, ztw/, zid/, easm/, zins/, zms/)
 ```
 
 ### Request Flow
@@ -60,7 +60,7 @@ The server has two independent auth systems:
 
 ## Tool Naming & Discovery
 
-All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Service prefixes: `zia_`, `zpa_`, `zdx_`, `zcc_`, `easm_`, `zinsights_`, `zidentity_`, `ztw_`. Use the prefix to discover tools for a given service.
+All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zpa_create_access_policy_rule`, `zdx_get_application`. Service prefixes: `zia_`, `zpa_`, `zdx_`, `zcc_`, `easm_`, `zins_`, `zid_`, `ztw_`, `zms_`. Use the prefix to discover tools for a given service.
 
 ### Deferred Tool Loading & AI Agent Behavior
 
@@ -74,7 +74,7 @@ Most MCP clients (Claude Desktop, Cursor) use **deferred tool loading** — they
 
 Two independent exclusion mechanisms, applied at registration time (not runtime):
 
-- **`--disabled-services` / `ZSCALER_MCP_DISABLED_SERVICES`** — removes entire services. Values are service names: `zcc`, `zdx`, `zpa`, `zia`, `ztw`, `zidentity`, `zeasm`, `zinsights`. The service class is never instantiated and its tools are never registered. Does NOT support wildcards (exact service names only).
+- **`--disabled-services` / `ZSCALER_MCP_DISABLED_SERVICES`** — removes entire services. Values are service names: `zcc`, `zdx`, `zpa`, `zia`, `ztw`, `zid`, `zeasm`, `zins`, `zms`. The service class is never instantiated and its tools are never registered. Does NOT support wildcards (exact service names only).
 
 - **`--disabled-tools` / `ZSCALER_MCP_DISABLED_TOOLS`** — removes individual tools by name pattern. Supports `fnmatch` wildcards (e.g., `zcc_*`, `zia_list_device*`). Applied in `register_read_tools()` and `register_write_tools()` via `fnmatch.fnmatch()`.
 
@@ -91,6 +91,41 @@ The `zscaler_get_available_services` tool exposes disabled services to the AI ag
 - **IDs are strings**, even when they look numeric. Always pass IDs as strings.
 - **ZPA dependency chain matters.** To onboard an application: create app connector group -> create server group (references connector group) -> create segment group -> create application segment (references server and segment groups) -> create access policy rule. Skipping dependencies causes cryptic 400 errors.
 - **ZIA dependency chain for locations.** To onboard a location: create static IP -> create VPN credential (references static IP) -> create location (references VPN credential and static IP). The location won't work without the traffic forwarding prerequisites.
+
+## ZMS (Zscaler Microsegmentation)
+
+ZMS tools use the ZMS GraphQL API (`/zms/graphql`) for querying microsegmentation data. All ZMS tools are **read-only** (queries only — no mutations).
+
+### ZMS Architecture
+
+- **GraphQL-based**: All ZMS operations use GraphQL queries via `POST /zms/graphql`
+- **Customer-scoped**: Every query requires `ZSCALER_CUSTOMER_ID` (automatically resolved from env)
+- **Paginated responses**: Results use `nodes[]` + `pageInfo { pageNumber, pageSize, totalCount, totalPages }`
+- **Two pagination patterns**: Some domains use `page`/`pageSize` (agents, agent_groups, nonces); others use `pageNum`/`pageSize` (resources, resource_groups, policy_rules, app_zones, app_catalog, tags)
+- **No legacy mode**: ZMS only works with OneAPI credentials — the `use_legacy` parameter has no effect
+
+### ZMS Domains (9 domains, 20 tools)
+
+| Domain | Tools | SDK path |
+|--------|-------|----------|
+| Agents | `zms_list_agents`, `zms_get_agent_connection_status_statistics`, `zms_get_agent_version_statistics` | `client.zms.agents` |
+| Agent Groups | `zms_list_agent_groups`, `zms_get_agent_group_totp_secrets` | `client.zms.agent_groups` |
+| Resources | `zms_list_resources`, `zms_get_resource_protection_status`, `zms_get_metadata` | `client.zms.resources` |
+| Resource Groups | `zms_list_resource_groups`, `zms_get_resource_group_members`, `zms_get_resource_group_protection_status` | `client.zms.resource_groups` |
+| Policy Rules | `zms_list_policy_rules`, `zms_list_default_policy_rules` | `client.zms.policy_rules` |
+| App Zones | `zms_list_app_zones` | `client.zms.app_zones` |
+| App Catalog | `zms_list_app_catalog` | `client.zms.app_catalog` |
+| Nonces | `zms_list_nonces`, `zms_get_nonce` | `client.zms.nonces` |
+| Tags | `zms_list_tag_namespaces`, `zms_list_tag_keys`, `zms_list_tag_values` | `client.zms.tags` |
+
+### ZMS Gotchas
+
+- **`customer_id` is always required.** Resolved automatically from `ZSCALER_CUSTOMER_ID` env var. If missing, tools return an error.
+- **Tag hierarchy is three levels**: namespace → key → value. To list tag values, you need the namespace origin and tag key ID (navigate top-down).
+- **Resource groups have two types**: `ManagedResourceGroup` (tag-based membership) and `UnmanagedResourceGroup` (CIDR/FQDN-based). The GraphQL uses inline fragments.
+- **`eyez_id`** is the unique identifier for agents, agent groups, and nonces — not a numeric ID.
+- **`namespace_origin`** for tag values must be one of: `CUSTOM`, `EXTERNAL`, `ML`, `UNKNOWN`.
+- **Policy rules have `fetchAll` flag** which bypasses pagination. Use sparingly on large tenants.
 
 ## Write Operations — Safety Rules
 
@@ -214,7 +249,7 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 ## Skills
 
-20 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by description match. Organized by service: `skills/zpa/` (6), `skills/zia/` (5), `skills/zdx/` (6), `skills/easm/` (1), `skills/z-insights/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
+20 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by description match. Organized by service: `skills/zpa/` (6), `skills/zia/` (5), `skills/zdx/` (6), `skills/easm/` (1), `skills/zins/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
 
 ## Platform Integrations
 

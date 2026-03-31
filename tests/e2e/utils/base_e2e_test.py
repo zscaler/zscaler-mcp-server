@@ -111,7 +111,7 @@ class SharedTestServer:
         self.patchers["mock_api_instance"].zpa = MagicMock()
         self.patchers["mock_api_instance"].zdx = MagicMock()
         self.patchers["mock_api_instance"].zcc = MagicMock()
-        self.patchers["mock_api_instance"].zidentity = MagicMock()
+        self.patchers["mock_api_instance"].zid = MagicMock()
 
         # Set up nested structure for ZIA
         self.patchers["mock_api_instance"].zia.cloud_applications = MagicMock()
@@ -132,8 +132,8 @@ class SharedTestServer:
         self.patchers["mock_api_instance"].zdx.alerts = MagicMock()
 
         # Set up nested structure for ZIdentity
-        self.patchers["mock_api_instance"].zidentity.users = MagicMock()
-        self.patchers["mock_api_instance"].zidentity.groups = MagicMock()
+        self.patchers["mock_api_instance"].zid.users = MagicMock()
+        self.patchers["mock_api_instance"].zid.groups = MagicMock()
 
         # Start the server in a separate thread
         server = ZscalerMCPServer(debug=False)
