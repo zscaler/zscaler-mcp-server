@@ -1,7 +1,5 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "zscaler",
-  "description": "Zscaler cloud security platform plugin for Claude",
   "owner": {
     "name": "Zscaler",
     "email": "devrel@zscaler.com"
