@@ -40,6 +40,18 @@ echo "Updating zscaler_mcp/__init__.py"
 grep -E '^__version__ = ".+"$' "$ROOT/zscaler_mcp/__init__.py" >/dev/null
 sed -i.bak -E "s/^__version__ = \".+\"$/__version__ = \"$NEW_VERSION\"/" "$ROOT/zscaler_mcp/__init__.py" && rm "$ROOT/zscaler_mcp/__init__.py.bak"
 
+# Set version in .claude-plugin/marketplace.json
+echo "Updating .claude-plugin/marketplace.json"
+sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/.claude-plugin/marketplace.json" && rm "$ROOT/.claude-plugin/marketplace.json.bak"
+
+# Set version in .cursor-plugin/plugin.json
+echo "Updating .cursor-plugin/plugin.json"
+sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/.cursor-plugin/plugin.json" && rm "$ROOT/.cursor-plugin/plugin.json.bak"
+
+# Set version in gemini-extension.json
+echo "Updating gemini-extension.json"
+sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/gemini-extension.json" && rm "$ROOT/gemini-extension.json.bak"
+
 # Generate requirements.txt from pyproject.toml
 echo "Updating requirements.txt"
 uv pip compile pyproject.toml --output-file requirements.txt
