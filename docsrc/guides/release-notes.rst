@@ -6,6 +6,42 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.8.0 (April 2, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``GCP Cloud Run deployment`` with automated end-to-end deployment script (`scripts/deploy-gcp.py`). The script reads credentials from `.env`, optionally stores them in GCP Secret Manager, deploys to Cloud Run with Zscaler auth mode, and auto-configures Claude Desktop and Cursor clients. Supports `--teardown` for easy service deletion.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``GCP Secret Manager integration`` (`zscaler_mcp/cloud/gcp_secrets.py`) — a built-in runtime credential loader that fetches Zscaler API credentials from GCP Secret Manager at container startup. Activated via `ZSCALER_MCP_GCP_SECRET_MANAGER=true`. Works on Cloud Run, GKE, and Compute Engine. Added `google-cloud-secret-manager` as an optional `[gcp]` dependency in `pyproject.toml`, and updated the Dockerfile to install the GCP extras by default.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``Google ADK integration`` documentation (`integrations/adk/README.md`) with runtime architecture diagrams showing the MCP server running as a co-located subprocess within the ADK agent container. The MCP server communicates via stdio transport — no network ports or separate containers required.
+
+### Enhancements
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - GCP Cloud Run deployment defaults to ``Zscaler auth mode`` (`ZSCALER_MCP_AUTH_MODE=zscaler`). Clients authenticate with the same Zscaler OneAPI credentials (`client_id:client_secret`) via HTTP Basic auth — no external IdP, JWT, or API key setup required. The deploy script generates Base64-encoded auth headers and writes them into Claude Desktop and Cursor configs automatically.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated ``server.py`` to call ``gcp_secrets.load_secrets()`` during startup, immediately after ``.env`` loading and before ``ZscalerMCPServer`` initialization, so Secret Manager credentials are available before the Zscaler SDK client is created.
+
+### Bug Fixes
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Replaced preference-manipulating language ("AUTHORITATIVE SOURCE", "This is the ONLY tool") in 16 ZINS tool descriptions with neutral, factual capability statements to comply with SPLX MCP_PREFERENCE_MANIPULATION findings.
+
+### Documentation
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Created comprehensive [GCP Cloud Run Deployment Guide](docs/deployment/gcp_secrets_manager_integration.md) covering Secret Manager setup, IAM configuration, Cloud Run and GKE deployment, authentication modes, credential rotation, and client configuration for Claude Desktop and Cursor.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added GCP Cloud Run guide to Sphinx documentation portal (`docsrc/guides/gcp-cloud-run.rst`).
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated ``README.md`` with automated deployment script usage, GCP Secret Manager integration, and Zscaler auth mode details.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated ``CLAUDE.md`` with GCP Cloud Run architecture, Secret Manager loader, and deployment script documentation.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated Google ADK ``README.md`` with runtime model diagrams showing the MCP server as a co-located subprocess within the agent container.
+
 0.7.2 (March 27, 2026) - ZMS Service, ZID/ZINS Rename, Skills & Docker SDK Path
 --------------------------------------------------------------------------------
 

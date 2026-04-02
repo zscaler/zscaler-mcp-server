@@ -8,6 +8,7 @@ This section contains comprehensive guides for using the Zscaler Integrations MC
 
    configuration
    examples
+   gcp-cloud-run
    amazon-bedrock-agentcore
    troubleshooting
    support
@@ -22,6 +23,11 @@ Examples
 --------
 
 See practical examples of using the MCP server with various Zscaler services.
+
+GCP Cloud Run Deployment
+------------------------
+
+Deploy the Zscaler Integrations MCP Server to Google Cloud Run with optional GCP Secret Manager integration, automated deployment script, and Zscaler auth mode for client authentication.
 
 Amazon Bedrock AgentCore Deployment
 -----------------------------------
