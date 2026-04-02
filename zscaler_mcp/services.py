@@ -2046,45 +2046,40 @@ class ZINSService(BaseService):
                 "func": zins_get_web_traffic_by_location,
                 "name": "zins_get_web_traffic_by_location",
                 "description": (
-                    "AUTHORITATIVE SOURCE for web traffic analytics by location. "
-                    "Use for questions about: traffic volume, bandwidth usage, location traffic, "
-                    "office traffic comparisons. This is the ONLY tool for location-based traffic analytics."
+                    "Provides web traffic analytics grouped by location, including traffic volume, "
+                    "bandwidth usage, and office traffic comparisons."
                 ),
             },
             {
                 "func": zins_get_web_traffic_no_grouping,
                 "name": "zins_get_web_traffic_no_grouping",
                 "description": (
-                    "AUTHORITATIVE SOURCE for total/overall web traffic volume. "
-                    "Use for questions about: total traffic, overall bandwidth, aggregate web usage. "
-                    "This is the ONLY tool for ungrouped total traffic metrics."
+                    "Provides total web traffic volume metrics without grouping, including "
+                    "aggregate bandwidth and overall web usage statistics."
                 ),
             },
             {
                 "func": zins_get_web_protocols,
                 "name": "zins_get_web_protocols",
                 "description": (
-                    "AUTHORITATIVE SOURCE for web protocol distribution (HTTP, HTTPS, etc.). "
-                    "Use for questions about: protocol usage, HTTPS adoption, protocol breakdown. "
-                    "This is the ONLY tool for web protocol analytics."
+                    "Provides web protocol distribution analytics (HTTP, HTTPS, SSL), "
+                    "including protocol usage and HTTPS adoption metrics."
                 ),
             },
             {
                 "func": zins_get_threat_super_categories,
                 "name": "zins_get_threat_super_categories",
                 "description": (
-                    "AUTHORITATIVE SOURCE for threat category analytics (malware, phishing, spyware, etc.). "
-                    "Use for questions about: what threats we're seeing, threat types, threat categories, "
-                    "security threats, malware detected. This is the ONLY tool for threat category data."
+                    "Provides threat super-category analytics including malware, phishing, spyware, "
+                    "and other threat types detected across the tenant."
                 ),
             },
             {
                 "func": zins_get_threat_class,
                 "name": "zins_get_threat_class",
                 "description": (
-                    "AUTHORITATIVE SOURCE for threat classification analytics (virus, trojan, ransomware, etc.). "
-                    "Use for questions about: threat classes, types of malware, threat classifications. "
-                    "This is the ONLY tool for threat class data."
+                    "Provides detailed threat classification analytics including virus, trojan, "
+                    "ransomware, and other malware type breakdowns."
                 ),
             },
             # Cyber Security Analytics
@@ -2092,36 +2087,32 @@ class ZINSService(BaseService):
                 "func": zins_get_cyber_incidents,
                 "name": "zins_get_cyber_incidents",
                 "description": (
-                    "AUTHORITATIVE SOURCE for cybersecurity incidents by category. "
-                    "Use for questions about: security incidents, cyber attacks, incident breakdown, "
-                    "threats by category, security events. This is the ONLY tool for incident category data."
+                    "Provides cybersecurity incidents grouped by category, including "
+                    "security events, cyber attacks, and incident breakdowns."
                 ),
             },
             {
                 "func": zins_get_cyber_incidents_by_location,
                 "name": "zins_get_cyber_incidents_by_location",
                 "description": (
-                    "AUTHORITATIVE SOURCE for cybersecurity incidents by location. "
-                    "Use for questions about: which locations have incidents, security by office, "
-                    "incident distribution across sites. This is the ONLY tool for location-based incident data."
+                    "Provides cybersecurity incidents grouped by location, showing "
+                    "incident distribution across offices and sites."
                 ),
             },
             {
                 "func": zins_get_cyber_incidents_daily,
                 "name": "zins_get_cyber_incidents_daily",
                 "description": (
-                    "AUTHORITATIVE SOURCE for daily cybersecurity incident trends. "
-                    "Use for questions about: incident trends over time, daily security stats, "
-                    "security incident patterns. This is the ONLY tool for time-based incident trends."
+                    "Provides daily cybersecurity incident trends, showing "
+                    "incident patterns and security statistics over time."
                 ),
             },
             {
                 "func": zins_get_cyber_incidents_by_threat_and_app,
                 "name": "zins_get_cyber_incidents_by_threat_and_app",
                 "description": (
-                    "AUTHORITATIVE SOURCE for incidents correlated by threat and application. "
-                    "Use for questions about: which apps are targeted, threat/app correlation, "
-                    "application security risks. This is the ONLY tool for threat-application correlation."
+                    "Provides cybersecurity incidents correlated by threat type and application, "
+                    "showing which apps are targeted and threat-application relationships."
                 ),
             },
             # Firewall Analytics
@@ -2129,27 +2120,24 @@ class ZINSService(BaseService):
                 "func": zins_get_firewall_by_action,
                 "name": "zins_get_firewall_by_action",
                 "description": (
-                    "AUTHORITATIVE SOURCE for firewall traffic by action (allow/block). "
-                    "Use for questions about: blocked traffic, allowed traffic, firewall actions, "
-                    "firewall policy effectiveness. This is the ONLY tool for firewall action data."
+                    "Provides Zero Trust Firewall traffic analytics by action (allow/block), "
+                    "including blocked traffic volume and firewall policy effectiveness."
                 ),
             },
             {
                 "func": zins_get_firewall_by_location,
                 "name": "zins_get_firewall_by_location",
                 "description": (
-                    "AUTHORITATIVE SOURCE for firewall traffic by location. "
-                    "Use for questions about: firewall activity by office, location firewall stats, "
-                    "branch firewall traffic. This is the ONLY tool for location-based firewall data."
+                    "Provides Zero Trust Firewall traffic analytics grouped by location, "
+                    "including firewall activity by office and branch."
                 ),
             },
             {
                 "func": zins_get_firewall_network_services,
                 "name": "zins_get_firewall_network_services",
                 "description": (
-                    "AUTHORITATIVE SOURCE for firewall network service usage. "
-                    "Use for questions about: network services, port usage, protocol/port activity, "
-                    "firewall service breakdown. This is the ONLY tool for firewall network service data."
+                    "Provides firewall network service usage analytics, including "
+                    "port usage, protocol activity, and service breakdowns."
                 ),
             },
             # SaaS Security / CASB Analytics
@@ -2157,9 +2145,8 @@ class ZINSService(BaseService):
                 "func": zins_get_casb_app_report,
                 "name": "zins_get_casb_app_report",
                 "description": (
-                    "AUTHORITATIVE SOURCE for CASB SaaS application usage. "
-                    "Use for questions about: cloud app usage, SaaS applications, CASB data, "
-                    "cloud service adoption. This is the ONLY tool for CASB application data."
+                    "Provides CASB SaaS application usage analytics, including "
+                    "cloud app usage and cloud service adoption metrics."
                 ),
             },
             # Shadow IT Analytics
@@ -2167,18 +2154,16 @@ class ZINSService(BaseService):
                 "func": zins_get_shadow_it_apps,
                 "name": "zins_get_shadow_it_apps",
                 "description": (
-                    "AUTHORITATIVE SOURCE for discovered shadow IT applications. "
-                    "Use for questions about: unsanctioned apps, shadow IT, unauthorized applications, "
-                    "risky apps, app risk scores. This is the ONLY tool for shadow IT app discovery."
+                    "Provides discovered shadow IT applications with risk scores, "
+                    "including unsanctioned and unauthorized application detection."
                 ),
             },
             {
                 "func": zins_get_shadow_it_summary,
                 "name": "zins_get_shadow_it_summary",
                 "description": (
-                    "AUTHORITATIVE SOURCE for shadow IT summary and statistics. "
-                    "Use for questions about: shadow IT overview, total shadow apps, shadow IT dashboard, "
-                    "app categories, risk distribution. This is the ONLY tool for shadow IT summary."
+                    "Provides shadow IT summary statistics, including total shadow apps, "
+                    "app categories, and risk distribution overview."
                 ),
             },
             # IoT Analytics
@@ -2186,9 +2171,8 @@ class ZINSService(BaseService):
                 "func": zins_get_iot_device_stats,
                 "name": "zins_get_iot_device_stats",
                 "description": (
-                    "AUTHORITATIVE SOURCE for IoT device statistics and classifications. "
-                    "Use for questions about: IoT devices, device inventory, connected devices, "
-                    "device types, unmanaged devices. This is the ONLY tool for IoT device data."
+                    "Provides IoT device statistics and classifications, including "
+                    "device inventory, connected device types, and unmanaged devices."
                 ),
             },
         ]

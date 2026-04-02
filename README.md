@@ -44,6 +44,7 @@
   - [Docker Version](#docker-version)
 - [Additional Deployment Options](#additional-deployment-options)
   - [Remote MCP Deployment (EC2, VM, etc.)](#remote-mcp-deployment-ec2-vm-etc)
+  - [GCP Cloud Run](#gcp-cloud-run)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
 - [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
   - [Claude Desktop](#claude-desktop)
@@ -1217,6 +1218,54 @@ Then use `"Authorization: Basic <base64_value>"` in place of the Bearer header a
 **Prerequisites on the client:** Node.js (for `npx`) must be installed.
 
 > **📖 Full remote deployment details** (venv usage, 421 troubleshooting, security, TLS): [Remote Deployment](docs/deployment/authentication-and-deployment.md#remote-deployment-ec2-vm-etc) · [421 Misdirected Request](docs/deployment/authentication-and-deployment.md#421-misdirected-request-invalid-host-header) · [Troubleshooting](docs/guides/TROUBLESHOOTING.md#remote-mcp-421-misdirected-request)
+
+### GCP Cloud Run
+
+Deploy the Zscaler MCP Server container to Google Cloud Run with optional GCP Secret Manager integration for secure credential storage.
+
+**Automated Deployment (Recommended):**
+
+The `scripts/deploy-gcp.py` script provides an end-to-end deployment experience — it reads credentials from your `.env` file, optionally stores them in GCP Secret Manager, deploys to Cloud Run with Zscaler auth mode enabled, and automatically configures Claude Desktop and Cursor:
+
+```bash
+python scripts/deploy-gcp.py
+```
+
+The script:
+
+- Prompts for GCP project/region (or reads from `.env`)
+- Optionally stores credentials in GCP Secret Manager
+- Deploys the container to Cloud Run with `zscaler` authentication mode
+- Generates `Authorization: Basic` headers from your Zscaler OneAPI credentials
+- Auto-configures Claude Desktop (`claude_desktop_config.json`) and Cursor (`~/.cursor/mcp.json`)
+- Supports `--teardown` flag for easy service deletion
+
+**Manual Deployment:**
+
+```bash
+# Deploy with credentials as env vars
+gcloud run deploy zscaler-mcp-server \
+  --image=zscaler/zscaler-mcp-server:latest \
+  --set-env-vars="ZSCALER_CLIENT_ID=...,ZSCALER_CLIENT_SECRET=...,ZSCALER_VANITY_DOMAIN=...,ZSCALER_CUSTOMER_ID=...,ZSCALER_CLOUD=production,ZSCALER_MCP_ALLOW_HTTP=true,ZSCALER_MCP_DISABLE_HOST_VALIDATION=true,ZSCALER_MCP_AUTH_ENABLED=true,ZSCALER_MCP_AUTH_MODE=zscaler" \
+  --args="--transport,streamable-http,--host,0.0.0.0,--port,8000" \
+  --port=8000 --region=us-central1 --allow-unauthenticated
+```
+
+**With GCP Secret Manager (recommended for production):**
+
+The Docker image includes a built-in GCP Secret Manager loader. Store credentials as individual secrets (e.g., `zscaler-client-id`, `zscaler-client-secret`) and enable with a single env var:
+
+```bash
+gcloud run deploy zscaler-mcp-server \
+  --image=zscaler/zscaler-mcp-server:latest \
+  --set-env-vars="ZSCALER_MCP_GCP_SECRET_MANAGER=true,GCP_PROJECT_ID=your-project,ZSCALER_MCP_ALLOW_HTTP=true,ZSCALER_MCP_DISABLE_HOST_VALIDATION=true,ZSCALER_MCP_AUTH_ENABLED=true,ZSCALER_MCP_AUTH_MODE=zscaler" \
+  --args="--transport,streamable-http,--host,0.0.0.0,--port,8000" \
+  --port=8000 --region=us-central1 --allow-unauthenticated
+```
+
+The loader also works on GKE and Compute Engine — anywhere GCP Application Default Credentials are available.
+
+> **📖 Full GCP deployment guide** (Secret Manager setup, IAM, authentication modes, GKE manifests, credential rotation): [GCP Secret Manager Integration](docs/deployment/gcp_secrets_manager_integration.md)
 
 ### Amazon Bedrock AgentCore
 

@@ -238,4 +238,4 @@ Load steering: easm
 
 This power integrates with [Zscaler MCP Server](https://github.com/zscaler/zscaler-mcp-server) (MIT).
 - [Privacy Policy](https://www.zscaler.com/privacy)
-- [Support](https://community.zscaler.com/)
+- [Support](https://help.zscaler.com/contact-support)

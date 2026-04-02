@@ -16,7 +16,10 @@
         "assets": [
           "pyproject.toml",
           "README.md",
-          "zscaler_mcp/__init__.py"
+          "zscaler_mcp/__init__.py",
+          ".claude-plugin/marketplace.json",
+          ".cursor-plugin/plugin.json",
+          "gemini-extension.json"
         ],
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }

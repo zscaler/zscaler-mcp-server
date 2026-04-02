@@ -13,6 +13,8 @@ zscaler_mcp/
 ├── auth.py            # Auth middleware factory (JWT, API-key, Zscaler, OAuthProxy stub)
 ├── client.py          # Zscaler SDK client factory (OneAPI + legacy credential flows)
 ├── security.py        # HTTP security warnings (TLS, plaintext)
+├── cloud/
+│   └── gcp_secrets.py   # GCP Secret Manager credential loader (opt-in via ZSCALER_MCP_GCP_SECRET_MANAGER=true)
 ├── common/
 │   ├── tool_helpers.py   # register_read_tools / register_write_tools with disabled_tools filtering
 │   ├── elicitation.py    # HMAC-SHA256 confirmation tokens for destructive actions
@@ -237,6 +239,49 @@ Server & security env vars:
 - **No runtime tool filtering**: `disabled_tools` and `disabled_services` are applied at registration time. Once the server is running, the tool list is fixed. This prevents race conditions and ensures consistent behavior.
 - **Agent-aware metadata**: The `zscaler_get_available_services` tool exists specifically to help AI agents understand what's available and what's not. Its description is written to surface in tool searches for any service name.
 - **Cross-service data overlap**: Zscaler's APIs have intentional overlap (e.g., ZIA and ZCC both expose device data). The server maps tools to API product boundaries, not conceptual categories. Users need `--disabled-tools` in addition to `--disabled-services` to block cross-service data access.
+
+## GCP Cloud Run Deployment
+
+The server can be deployed to Google Cloud Run as a managed container with optional GCP Secret Manager integration.
+
+### Architecture
+
+```
+┌─ Cloud Run ─────────────────────────────────────────────┐
+│  zscaler-mcp-server container                           │
+│                                                         │
+│  1. gcp_secrets.load_secrets()  ← GCP Secret Manager   │
+│  2. ZscalerMCPServer starts    ← streamable-http       │
+│  3. AuthMiddleware (zscaler)   ← Basic auth validation  │
+│  4. Tool dispatch              ← Zscaler SDK calls      │
+└─────────────────────────────────────────────────────────┘
+          ▲                              │
+          │ POST /mcp                    │ HTTPS
+          │ Authorization: Basic ...     ▼
+   Claude / Cursor              Zscaler OneAPI
+```
+
+### Key Files
+
+- **`zscaler_mcp/cloud/gcp_secrets.py`** — Runtime Secret Manager loader. Fetches credentials at startup using Application Default Credentials. Activated by `ZSCALER_MCP_GCP_SECRET_MANAGER=true`. Maps env var names to secret IDs by lowercasing and replacing `_` with `-` (e.g., `ZSCALER_CLIENT_ID` → `zscaler-client-id`). Only `ZSCALER_CLIENT_ID` and `ZSCALER_CLIENT_SECRET` are required; other secrets are silently skipped if missing.
+
+- **`scripts/deploy-gcp.py`** — Customer-facing deployment script. Reads `.env`, optionally stores creds in Secret Manager, deploys to Cloud Run with `zscaler` auth mode, generates Base64 auth headers, auto-configures Claude Desktop and Cursor. Supports `--teardown`.
+
+### Default Auth: Zscaler Mode
+
+GCP deployments default to `ZSCALER_MCP_AUTH_MODE=zscaler`. Clients authenticate with `Authorization: Basic base64(client_id:client_secret)` — the same Zscaler OneAPI credentials used for API access. The server validates them against Zscaler's `/oauth2/v1/token` endpoint and caches the result for the token's lifetime (~1 hour).
+
+### Environment Variables (GCP-specific)
+
+- `ZSCALER_MCP_GCP_SECRET_MANAGER` — Enable runtime Secret Manager loader (`true`/`false`)
+- `GCP_PROJECT_ID` — GCP project for Secret Manager API calls
+
+### Gotchas
+
+- **Secret Manager is optional.** Credentials can be passed as direct env vars instead. Secret Manager is recommended for production but not required.
+- **`--allow-unauthenticated` at Cloud Run level** is required even when MCP auth is enabled. Cloud Run IAM controls infrastructure-level access; MCP auth (`zscaler` mode) controls application-level access. These are independent layers.
+- **`ZSCALER_MCP_ALLOW_HTTP=true`** is required on Cloud Run because TLS is terminated by Google's infrastructure before reaching the container.
+- **Both URL formats are valid.** Cloud Run assigns two URLs to each service: `https://SERVICE-HASH.a.run.app` (old) and `https://SERVICE-PROJECT_NUM.REGION.run.app` (new). Both resolve to the same service.
 
 ## AWS Version
 
