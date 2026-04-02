@@ -1322,6 +1322,12 @@ def main():
 
     _check_env_file_security()
 
+    # Cloud secret managers — fetch credentials before server init
+    from zscaler_mcp.cloud import gcp_secrets
+
+    if gcp_secrets.is_enabled():
+        gcp_secrets.load_secrets()
+
     # Parse command line arguments (includes environment variable defaults)
     args = parse_args()
 
