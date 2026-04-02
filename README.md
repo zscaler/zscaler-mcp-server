@@ -1232,6 +1232,7 @@ python scripts/deploy-gcp.py
 ```
 
 The script:
+
 - Prompts for GCP project/region (or reads from `.env`)
 - Optionally stores credentials in GCP Secret Manager
 - Deploys the container to Cloud Run with `zscaler` authentication mode

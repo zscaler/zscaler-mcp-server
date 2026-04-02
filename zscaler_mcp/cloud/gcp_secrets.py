@@ -73,8 +73,8 @@ def load_secrets() -> None:
         )
 
     try:
-        from google.cloud import secretmanager  # type: ignore[import-untyped]
         from google.api_core import exceptions as gcp_exceptions  # type: ignore[import-untyped]
+        from google.cloud import secretmanager  # type: ignore[import-untyped]
     except ImportError:
         raise SystemExit(
             "GCP Secret Manager is enabled but google-cloud-secret-manager is not installed.\n"
