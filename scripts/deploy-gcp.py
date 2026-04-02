@@ -37,7 +37,11 @@ N = "\033[0m" if _TTY else ""
 def info(msg):  print(f"{B}[INFO]{N}  {msg}")
 def ok(msg):    print(f"{G}[OK]{N}    {msg}")
 def warn(msg):  print(f"{Y}[WARN]{N}  {msg}")
-def die(msg):   print(f"{R}[ERROR]{N} {msg}"); sys.exit(1)
+
+
+def die(msg):
+    print(f"{R}[ERROR]{N} {msg}")
+    sys.exit(1)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -162,7 +166,7 @@ def main():
         client_id = ask("Zscaler Client ID")
 
     if client_secret:
-        ok(f"  Client Secret:  ******** (from .env)")
+        ok("  Client Secret:  ******** (from .env)")
     else:
         client_secret = ask_secret("Zscaler Client Secret")
 
@@ -287,7 +291,7 @@ def main():
 
     if use_sm:
         base_env.extend([
-            f"ZSCALER_MCP_GCP_SECRET_MANAGER=true",
+            "ZSCALER_MCP_GCP_SECRET_MANAGER=true",
             f"GCP_PROJECT_ID={project}",
         ])
     else:
@@ -400,7 +404,7 @@ def main():
     print("=" * 64)
     print()
     print(f"  MCP Endpoint:    {mcp_url}")
-    print(f"  Auth Mode:       zscaler (Zscaler OneAPI credentials)")
+    print("  Auth Mode:       zscaler (Zscaler OneAPI credentials)")
     print(f"  Secret Manager:  {'Yes' if use_sm else 'No'}")
     print()
     print("  Next steps:")
