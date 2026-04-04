@@ -1,6 +1,8 @@
 """Helper functions for tool registration."""
 
 import fnmatch
+import functools
+import time
 from typing import Dict, List, Optional, Set
 
 from mcp.types import ToolAnnotations
@@ -8,6 +10,83 @@ from mcp.types import ToolAnnotations
 from zscaler_mcp.common.logging import get_logger
 
 logger = get_logger(__name__)
+audit_logger = get_logger("zscaler_mcp.audit")
+
+_SENSITIVE_PARAMS = frozenset({
+    "password", "secret", "token", "key", "credential",
+    "client_secret", "api_key", "private_key", "confirmation_token",
+})
+
+_log_tool_calls_enabled = False
+
+
+def enable_tool_call_logging():
+    """Enable audit logging for all tool invocations."""
+    global _log_tool_calls_enabled
+    _log_tool_calls_enabled = True
+    audit_logger.info("Tool-call audit logging enabled")
+
+
+def _sanitize_args(kwargs: dict) -> dict:
+    """Redact sensitive parameter values for safe logging."""
+    sanitized = {}
+    for k, v in kwargs.items():
+        if k.lower() in _SENSITIVE_PARAMS or any(s in k.lower() for s in ("secret", "password", "token", "key")):
+            sanitized[k] = "***REDACTED***"
+        elif v is None:
+            continue
+        else:
+            sanitized[k] = v
+    return sanitized
+
+
+def _summarize_result(result) -> str:
+    """Produce a compact summary of a tool result for logging."""
+    if isinstance(result, list):
+        if len(result) == 1 and isinstance(result[0], dict):
+            inner = result[0]
+            if "error" in inner:
+                return f"error: {inner['error'][:120]}"
+            if "nodes" in inner and isinstance(inner["nodes"], list):
+                return f"{len(inner['nodes'])} nodes"
+            if "status" in inner and inner.get("status") == "no_data":
+                return "no data"
+        return f"{len(result)} items"
+    if isinstance(result, dict):
+        if "error" in result:
+            return f"error: {result['error'][:120]}"
+        return f"dict ({len(result)} keys)"
+    return str(type(result).__name__)
+
+
+def _wrap_with_audit(func, tool_name: str):
+    """Wrap a tool function with audit logging."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if not _log_tool_calls_enabled:
+            return func(*args, **kwargs)
+
+        safe_args = _sanitize_args(kwargs)
+        audit_logger.info("[TOOL CALL] %s | args: %s", tool_name, safe_args)
+
+        t0 = time.monotonic()
+        try:
+            result = func(*args, **kwargs)
+            elapsed_ms = (time.monotonic() - t0) * 1000
+            summary = _summarize_result(result)
+            audit_logger.info(
+                "[TOOL OK]   %s | %dms | %s", tool_name, elapsed_ms, summary
+            )
+            return result
+        except Exception as exc:
+            elapsed_ms = (time.monotonic() - t0) * 1000
+            audit_logger.error(
+                "[TOOL ERR]  %s | %dms | %s: %s",
+                tool_name, elapsed_ms, type(exc).__name__, exc,
+            )
+            raise
+
+    return wrapper
 
 
 def register_read_tools(
@@ -55,8 +134,9 @@ def register_read_tools(
             logger.debug(f"Skipping read tool (excluded by --disabled-tools): {tool_name}")
             continue
 
+        fn = _wrap_with_audit(tool_def["func"], tool_name)
         server.add_tool(
-            tool_def["func"],
+            fn,
             name=tool_name,
             description=tool_def["description"],
             annotations=ToolAnnotations(
@@ -158,8 +238,9 @@ def register_write_tools(
             else:
                 logger.debug(f"✅ Tool matches allowlist: {tool_name}")
 
+        fn = _wrap_with_audit(tool_def["func"], tool_name)
         server.add_tool(
-            tool_def["func"],
+            fn,
             name=tool_name,
             description=tool_def["description"],
             annotations=ToolAnnotations(

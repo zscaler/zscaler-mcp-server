@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -16,10 +17,17 @@ def zpa_list_application_servers(
     query_params: Annotated[
         Optional[Dict], Field(description="Optional query parameters for filtering.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
-    """List ZPA application servers with optional filtering."""
+    """List ZPA application servers with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.servers
 
@@ -30,7 +38,8 @@ def zpa_list_application_servers(
     servers, _, err = api.list_servers(query_params=qp)
     if err:
         raise Exception(f"Failed to list application servers: {err}")
-    return [s.as_dict() for s in servers]
+    results = [s.as_dict() for s in servers]
+    return apply_jmespath(results, query)
 
 
 def zpa_get_application_server(

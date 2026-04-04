@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -10,17 +11,25 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zia_list_gre_tunnels(
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
-    """List all ZIA GRE tunnels."""
+    """List all ZIA GRE tunnels.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     gre_api = client.zia.gre_tunnel
 
     tunnels, _, err = gre_api.list_gre_tunnels()
     if err:
         raise Exception(f"Failed to list GRE tunnels: {err}")
-    return [t.as_dict() for t in tunnels]
+    results = [t.as_dict() for t in tunnels]
+    return apply_jmespath(results, query)
 
 
 def zia_get_gre_tunnel(

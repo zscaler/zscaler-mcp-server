@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zcc_list_forwarding_profiles(
@@ -11,11 +12,16 @@ def zcc_list_forwarding_profiles(
     search: Annotated[
         Optional[str], Field(description="The search string used to partially match.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> Union[List[dict], str]:
     """
     Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         page (int, optional): Specifies the page offset.
@@ -58,4 +64,5 @@ def zcc_list_forwarding_profiles(
     profiles, _, err = client.zcc.forwarding_profile.list_by_company(query_params=query_params)
     if err:
         raise Exception(f"Error listing ZCC forwarding profiles: {err}")
-    return [p.as_dict() for p in profiles]
+    results = [p.as_dict() for p in profiles]
+    return apply_jmespath(results, query)

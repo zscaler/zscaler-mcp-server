@@ -46,6 +46,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -69,11 +70,17 @@ def zia_list_device_groups(
             "Default is True to show all groups."
         ),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
     List ZIA device groups with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Device groups are logical containers for organizing devices in ZIA.
     They can be used in policies to apply rules to specific sets of devices.
@@ -133,7 +140,8 @@ def zia_list_device_groups(
     groups, _, err = zia.list_device_groups(query_params=query_params if query_params else None)
     if err:
         raise Exception(f"Failed to list device groups: {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 def zia_list_devices(
@@ -173,11 +181,17 @@ def zia_list_devices(
             "Use smaller values for faster responses, larger for fewer API calls."
         ),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
     List ZIA devices with comprehensive filtering and pagination options.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Retrieves devices registered with Zscaler Internet Access. Supports filtering
     by device name, user ownership, and device type, with pagination for large
@@ -275,15 +289,22 @@ def zia_list_devices(
     devices, _, err = zia.list_devices(query_params=query_params if query_params else None)
     if err:
         raise Exception(f"Failed to list devices: {err}")
-    return [d.as_dict() for d in devices]
+    results = [d.as_dict() for d in devices]
+    return apply_jmespath(results, query)
 
 
 def zia_list_devices_lite(
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
     List ZIA devices in lightweight format (ID, name, owner only).
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a simplified list of devices containing only essential fields.
     This is faster than the full device list and ideal for:
@@ -330,4 +351,5 @@ def zia_list_devices_lite(
     devices, _, err = zia.list_device_lite()
     if err:
         raise Exception(f"Failed to list devices (lite): {err}")
-    return [d.as_dict() for d in devices]
+    results = [d.as_dict() for d in devices]
+    return apply_jmespath(results, query)

@@ -65,17 +65,17 @@ class ZCCService(BaseService):
             {
                 "func": zcc_list_devices,
                 "name": "zcc_list_devices",
-                "description": "Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal (read-only)",
+                "description": "Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zcc_list_trusted_networks,
                 "name": "zcc_list_trusted_networks",
-                "description": "Returns the list of Trusted Networks By Company ID in the Client Connector Portal (read-only)",
+                "description": "Returns the list of Trusted Networks By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zcc_list_forwarding_profiles,
                 "name": "zcc_list_forwarding_profiles",
-                "description": "Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal (read-only)",
+                "description": "Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
         ]
 
@@ -144,7 +144,7 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_devices,
                 "name": "zdx_list_devices",
-                "description": "List ZDX devices with optional filtering (read-only)",
+                "description": "List ZDX devices with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_device,
@@ -154,12 +154,12 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_departments,
                 "name": "zdx_list_departments",
-                "description": "List ZDX departments (read-only)",
+                "description": "List ZDX departments (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_list_locations,
                 "name": "zdx_list_locations",
-                "description": "List ZDX locations (read-only)",
+                "description": "List ZDX locations (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_application_metric,
@@ -179,7 +179,7 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_application_users,
                 "name": "zdx_list_application_users",
-                "description": "List users for a ZDX application (read-only)",
+                "description": "List users for a ZDX application (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_application_user,
@@ -189,7 +189,7 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_alerts,
                 "name": "zdx_list_alerts",
-                "description": "List ZDX alerts (read-only)",
+                "description": "List ZDX alerts (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_alert,
@@ -199,17 +199,17 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_alert_affected_devices,
                 "name": "zdx_list_alert_affected_devices",
-                "description": "List devices affected by a ZDX alert (read-only)",
+                "description": "List devices affected by a ZDX alert (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_list_applications,
                 "name": "zdx_list_applications",
-                "description": "List ZDX applications (read-only)",
+                "description": "List ZDX applications (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_list_device_deep_traces,
                 "name": "zdx_list_device_deep_traces",
-                "description": "List ZDX deep traces for a device (read-only)",
+                "description": "List ZDX deep traces for a device (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_device_deep_trace,
@@ -219,7 +219,7 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_deeptrace_top_processes,
                 "name": "zdx_list_deeptrace_top_processes",
-                "description": "Get top processes from a ZDX deep trace session (read-only)",
+                "description": "Get top processes from a ZDX deep trace session (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_deeptrace_webprobe_metrics,
@@ -259,17 +259,17 @@ class ZDXService(BaseService):
             {
                 "func": zdx_list_cloudpath_probes,
                 "name": "zdx_list_cloudpath_probes",
-                "description": "List cloud path probes for an app on a device - returns cloudpath_probe_id needed for zdx_start_deeptrace (read-only)",
+                "description": "List cloud path probes for an app on a device - returns cloudpath_probe_id needed for zdx_start_deeptrace (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_list_historical_alerts,
                 "name": "zdx_list_historical_alerts",
-                "description": "List ZDX historical alerts (read-only)",
+                "description": "List ZDX historical alerts (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_list_software,
                 "name": "zdx_list_software",
-                "description": "List ZDX software inventory (read-only)",
+                "description": "List ZDX software inventory (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zdx_get_software_details,
@@ -448,7 +448,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_application_segments,
                 "name": "zpa_list_application_segments",
-                "description": "List ZPA application segments with optional filtering (read-only)",
+                "description": "List ZPA application segments with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_application_segment,
@@ -458,7 +458,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_app_connector_groups,
                 "name": "zpa_list_app_connector_groups",
-                "description": "List ZPA app connector groups (read-only)",
+                "description": "List ZPA app connector groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_app_connector_group,
@@ -468,7 +468,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_app_connectors,
                 "name": "zpa_list_app_connectors",
-                "description": "List ZPA app connectors with status, version, and health information (read-only)",
+                "description": "List ZPA app connectors with status, version, and health information (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_app_connector,
@@ -478,7 +478,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_server_groups,
                 "name": "zpa_list_server_groups",
-                "description": "List ZPA server groups (read-only)",
+                "description": "List ZPA server groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_server_group,
@@ -488,7 +488,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_segment_groups,
                 "name": "zpa_list_segment_groups",
-                "description": "List ZPA segment groups (read-only)",
+                "description": "List ZPA segment groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_segment_group,
@@ -498,7 +498,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_application_servers,
                 "name": "zpa_list_application_servers",
-                "description": "List ZPA application servers (read-only)",
+                "description": "List ZPA application servers (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_application_server,
@@ -508,7 +508,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_service_edge_groups,
                 "name": "zpa_list_service_edge_groups",
-                "description": "List ZPA service edge groups (read-only)",
+                "description": "List ZPA service edge groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_service_edge_group,
@@ -518,7 +518,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_ba_certificates,
                 "name": "zpa_list_ba_certificates",
-                "description": "List ZPA browser access certificates (read-only)",
+                "description": "List ZPA browser access certificates (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_ba_certificate,
@@ -528,7 +528,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_access_policy_rules,
                 "name": "zpa_list_access_policy_rules",
-                "description": "List ZPA access policy rules (read-only)",
+                "description": "List ZPA access policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_access_policy_rule,
@@ -538,7 +538,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_forwarding_policy_rules,
                 "name": "zpa_list_forwarding_policy_rules",
-                "description": "List ZPA forwarding policy rules (read-only)",
+                "description": "List ZPA forwarding policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_forwarding_policy_rule,
@@ -548,7 +548,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_timeout_policy_rules,
                 "name": "zpa_list_timeout_policy_rules",
-                "description": "List ZPA timeout policy rules (read-only)",
+                "description": "List ZPA timeout policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_timeout_policy_rule,
@@ -558,7 +558,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_isolation_policy_rules,
                 "name": "zpa_list_isolation_policy_rules",
-                "description": "List ZPA isolation policy rules (read-only)",
+                "description": "List ZPA isolation policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_isolation_policy_rule,
@@ -568,7 +568,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_app_protection_rules,
                 "name": "zpa_list_app_protection_rules",
-                "description": "List ZPA app protection rules (read-only)",
+                "description": "List ZPA app protection rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_app_protection_rule,
@@ -578,7 +578,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_provisioning_keys,
                 "name": "zpa_list_provisioning_keys",
-                "description": "List ZPA provisioning keys (read-only)",
+                "description": "List ZPA provisioning keys (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_provisioning_key,
@@ -588,7 +588,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_pra_portals,
                 "name": "zpa_list_pra_portals",
-                "description": "List ZPA PRA portals (read-only)",
+                "description": "List ZPA PRA portals (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_pra_portal,
@@ -598,7 +598,7 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_pra_credentials,
                 "name": "zpa_list_pra_credentials",
-                "description": "List ZPA PRA credentials (read-only)",
+                "description": "List ZPA PRA credentials (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_pra_credential,
@@ -1069,7 +1069,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_cloud_firewall_rules,
                 "name": "zia_list_cloud_firewall_rules",
-                "description": "List ZIA cloud firewall rules with optional filtering (read-only)",
+                "description": "List ZIA cloud firewall rules with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_cloud_firewall_rule,
@@ -1080,7 +1080,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_url_filtering_rules,
                 "name": "zia_list_url_filtering_rules",
-                "description": "List ZIA URL filtering rules (read-only)",
+                "description": "List ZIA URL filtering rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_url_filtering_rule,
@@ -1091,12 +1091,12 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_web_dlp_rules,
                 "name": "zia_list_web_dlp_rules",
-                "description": "List ZIA web DLP rules (read-only)",
+                "description": "List ZIA web DLP rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_list_web_dlp_rules_lite,
                 "name": "zia_list_web_dlp_rules_lite",
-                "description": "List ZIA web DLP rules in lite format (read-only)",
+                "description": "List ZIA web DLP rules in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_web_dlp_rule,
@@ -1107,7 +1107,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_ssl_inspection_rules,
                 "name": "zia_list_ssl_inspection_rules",
-                "description": "List ZIA SSL inspection rules (read-only)",
+                "description": "List ZIA SSL inspection rules (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_ssl_inspection_rule,
@@ -1146,7 +1146,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_ip_source_groups,
                 "name": "zia_list_ip_source_groups",
-                "description": "List ZIA IP source groups (read-only)",
+                "description": "List ZIA IP source groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_ip_source_group,
@@ -1157,7 +1157,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_ip_destination_groups,
                 "name": "zia_list_ip_destination_groups",
-                "description": "List ZIA IP destination groups (read-only)",
+                "description": "List ZIA IP destination groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_ip_destination_group,
@@ -1168,7 +1168,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_network_app_groups,
                 "name": "zia_list_network_app_groups",
-                "description": "List ZIA network application groups (read-only)",
+                "description": "List ZIA network application groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_network_app_group,
@@ -1179,7 +1179,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_network_apps,
                 "name": "zia_list_network_apps",
-                "description": "List ZIA network applications with optional filtering by search or locale (read-only)",
+                "description": "List ZIA network applications with optional filtering by search or locale (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_network_app,
@@ -1190,7 +1190,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_network_services,
                 "name": "zia_list_network_services",
-                "description": "List ZIA network services with optional filtering by protocol or search (read-only)",
+                "description": "List ZIA network services with optional filtering by protocol or search (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_network_service,
@@ -1201,7 +1201,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_network_svc_groups,
                 "name": "zia_list_network_svc_groups",
-                "description": "List ZIA network service groups with optional filtering (read-only)",
+                "description": "List ZIA network service groups with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_network_svc_group,
@@ -1212,7 +1212,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_url_categories,
                 "name": "zia_list_url_categories",
-                "description": "List ZIA URL categories (read-only)",
+                "description": "List ZIA URL categories (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_url_category,
@@ -1228,7 +1228,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_rule_labels,
                 "name": "zia_list_rule_labels",
-                "description": "List ZIA rule labels (read-only)",
+                "description": "List ZIA rule labels (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_rule_label,
@@ -1239,7 +1239,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_locations,
                 "name": "zia_list_locations",
-                "description": "List ZIA locations (read-only)",
+                "description": "List ZIA locations (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_location,
@@ -1250,7 +1250,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_vpn_credentials,
                 "name": "zia_list_vpn_credentials",
-                "description": "List ZIA VPN credentials (read-only)",
+                "description": "List ZIA VPN credentials (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_vpn_credential,
@@ -1261,7 +1261,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_static_ips,
                 "name": "zia_list_static_ips",
-                "description": "List ZIA static IPs (read-only)",
+                "description": "List ZIA static IPs (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_static_ip,
@@ -1272,7 +1272,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_gre_tunnels,
                 "name": "zia_list_gre_tunnels",
-                "description": "List ZIA GRE tunnels (read-only)",
+                "description": "List ZIA GRE tunnels (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_get_gre_tunnel,
@@ -1282,7 +1282,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_gre_ranges,
                 "name": "zia_list_gre_ranges",
-                "description": "List available ZIA GRE IP ranges (read-only)",
+                "description": "List available ZIA GRE IP ranges (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Activation
             {
@@ -1294,46 +1294,46 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_atp_malicious_urls,
                 "name": "zia_list_atp_malicious_urls",
-                "description": "List ZIA ATP malicious URLs (read-only)",
+                "description": "List ZIA ATP malicious URLs (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Auth Exempt URLs
             {
                 "func": zia_list_auth_exempt_urls,
                 "name": "zia_list_auth_exempt_urls",
-                "description": "List ZIA authentication exempt URLs (read-only)",
+                "description": "List ZIA authentication exempt URLs (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Cloud Applications
             {
                 "func": zia_list_cloud_applications,
                 "name": "zia_list_cloud_applications",
-                "description": "List ZIA cloud applications (read-only)",
+                "description": "List ZIA cloud applications (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_list_cloud_application_custom_tags,
                 "name": "zia_list_cloud_application_custom_tags",
-                "description": "List ZIA cloud application custom tags (read-only)",
+                "description": "List ZIA cloud application custom tags (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Cloud App Control
             {
                 "func": zia_list_cloud_app_control_actions,
                 "name": "zia_list_cloud_app_control_actions",
-                "description": "List granular actions supported for a Cloud App Control rule type (read-only)",
+                "description": "List granular actions supported for a Cloud App Control rule type (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Device Management
             {
                 "func": zia_list_device_groups,
                 "name": "zia_list_device_groups",
-                "description": "List ZIA device groups with optional device info and pseudo group filtering (read-only)",
+                "description": "List ZIA device groups with optional device info and pseudo group filtering (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_list_devices,
                 "name": "zia_list_devices",
-                "description": "List ZIA devices with filtering by name, user, pagination support (read-only)",
+                "description": "List ZIA devices with filtering by name, user, pagination support (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zia_list_devices_lite,
                 "name": "zia_list_devices_lite",
-                "description": "List ZIA devices in lightweight format (ID, name, owner only) (read-only)",
+                "description": "List ZIA devices in lightweight format (ID, name, owner only) (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Utilities
             {
@@ -1698,62 +1698,62 @@ class ZTWService(BaseService):
             {
                 "func": ztw_list_ip_destination_groups,
                 "name": "ztw_list_ip_destination_groups",
-                "description": "List ZTW IP destination groups (read-only)",
+                "description": "List ZTW IP destination groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_ip_destination_groups_lite,
                 "name": "ztw_list_ip_destination_groups_lite",
-                "description": "List ZTW IP destination groups in lite format (read-only)",
+                "description": "List ZTW IP destination groups in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_ip_groups,
                 "name": "ztw_list_ip_groups",
-                "description": "List ZTW IP groups (read-only)",
+                "description": "List ZTW IP groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_ip_groups_lite,
                 "name": "ztw_list_ip_groups_lite",
-                "description": "List ZTW IP groups in lite format (read-only)",
+                "description": "List ZTW IP groups in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_ip_source_groups,
                 "name": "ztw_list_ip_source_groups",
-                "description": "List ZTW IP source groups (read-only)",
+                "description": "List ZTW IP source groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_ip_source_groups_lite,
                 "name": "ztw_list_ip_source_groups_lite",
-                "description": "List ZTW IP source groups in lite format (read-only)",
+                "description": "List ZTW IP source groups in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_network_service_groups,
                 "name": "ztw_list_network_service_groups",
-                "description": "List ZTW network service groups (read-only)",
+                "description": "List ZTW network service groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_roles,
                 "name": "ztw_list_roles",
-                "description": "List all existing admin roles in ZTW (read-only)",
+                "description": "List all existing admin roles in ZTW (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_admins,
                 "name": "ztw_list_admins",
-                "description": "List all existing admin users in ZTW (read-only)",
+                "description": "List all existing admin users in ZTW (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_public_cloud_info,
                 "name": "ztw_list_public_cloud_info",
-                "description": "List ZTW public cloud accounts with metadata (read-only)",
+                "description": "List ZTW public cloud accounts with metadata (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_network_services,
                 "name": "ztw_list_network_services",
-                "description": "List ZTW network services (read-only)",
+                "description": "List ZTW network services (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_list_public_account_details,
                 "name": "ztw_list_public_account_details",
-                "description": "List detailed ZTW public cloud account information (read-only)",
+                "description": "List detailed ZTW public cloud account information (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": ztw_get_discovery_settings,
@@ -1837,7 +1837,7 @@ class ZIDService(BaseService):
             {
                 "func": zid_list_groups,
                 "name": "zid_list_groups",
-                "description": "List ZIdentity groups (read-only)",
+                "description": "List ZIdentity groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zid_get_group,
@@ -1862,7 +1862,7 @@ class ZIDService(BaseService):
             {
                 "func": zid_list_users,
                 "name": "zid_list_users",
-                "description": "List ZIdentity users (read-only)",
+                "description": "List ZIdentity users (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zid_get_user,
@@ -1929,13 +1929,13 @@ class ZEASMService(BaseService):
             {
                 "func": zeasm_list_organizations,
                 "name": "zeasm_list_organizations",
-                "description": "List all EASM organizations configured for the tenant (read-only)",
+                "description": "List all EASM organizations configured for the tenant (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             # Findings
             {
                 "func": zeasm_list_findings,
                 "name": "zeasm_list_findings",
-                "description": "List all EASM findings for an organization (read-only)",
+                "description": "List all EASM findings for an organization (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zeasm_get_finding_details,
@@ -1956,7 +1956,7 @@ class ZEASMService(BaseService):
             {
                 "func": zeasm_list_lookalike_domains,
                 "name": "zeasm_list_lookalike_domains",
-                "description": "List all lookalike domains detected for an organization (read-only)",
+                "description": "List all lookalike domains detected for an organization (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zeasm_get_lookalike_domain,
@@ -2260,7 +2260,8 @@ class ZMSService(BaseService):
                 "name": "zms_list_agents",
                 "description": (
                     "List Zscaler Microsegmentation agents with pagination and search. "
-                    "Returns agent name, connection status, OS, version, IPs, and group membership."
+                    "Returns agent name, connection status, OS, version, IPs, and group membership. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
@@ -2285,7 +2286,8 @@ class ZMSService(BaseService):
                 "name": "zms_list_agent_groups",
                 "description": (
                     "List ZMS agent groups with pagination and search. "
-                    "Returns group name, type, agent count, policy status, and upgrade settings."
+                    "Returns group name, type, agent count, policy status, and upgrade settings. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
@@ -2301,8 +2303,10 @@ class ZMSService(BaseService):
                 "func": zms_list_resources,
                 "name": "zms_list_resources",
                 "description": (
-                    "List ZMS resources (workloads) with pagination. "
-                    "Returns resource type, status, cloud provider, region, hostname, OS, IPs, and app zones."
+                    "List ZMS resources (workloads) with pagination and filtering. "
+                    "Filter by name, status, resource_type, cloud_provider, cloud_region, or platform_os. "
+                    "Returns resource type, status, cloud provider, region, hostname, OS, IPs, and app zones. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
@@ -2326,8 +2330,10 @@ class ZMSService(BaseService):
                 "func": zms_list_resource_groups,
                 "name": "zms_list_resource_groups",
                 "description": (
-                    "List ZMS resource groups with pagination. "
-                    "Returns managed and unmanaged groups with member counts, CIDRs, and FQDNs."
+                    "List ZMS resource groups with pagination and filtering. "
+                    "Filter by name or resource_hostname. "
+                    "Returns managed and unmanaged groups with member counts, CIDRs, and FQDNs. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
@@ -2351,8 +2357,10 @@ class ZMSService(BaseService):
                 "func": zms_list_policy_rules,
                 "name": "zms_list_policy_rules",
                 "description": (
-                    "List ZMS microsegmentation policy rules with pagination. "
-                    "Returns rule name, action, priority, source/destination targets, and port/protocol specs."
+                    "List ZMS microsegmentation policy rules with pagination and filtering. "
+                    "Filter by name or action (ALLOW/BLOCK). "
+                    "Returns rule name, action, priority, source/destination targets, and port/protocol specs. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
@@ -2360,7 +2368,8 @@ class ZMSService(BaseService):
                 "name": "zms_list_default_policy_rules",
                 "description": (
                     "List default microsegmentation policy rules. "
-                    "Returns system-defined baseline rules with action, direction, and scope type."
+                    "Returns system-defined baseline rules with action, direction, and scope type. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             # App Zones
@@ -2368,8 +2377,10 @@ class ZMSService(BaseService):
                 "func": zms_list_app_zones,
                 "name": "zms_list_app_zones",
                 "description": (
-                    "List ZMS app zones with pagination. "
-                    "Returns zone name, description, member count, and VPC/subnet settings."
+                    "List ZMS app zones with pagination and filtering. "
+                    "Filter by name and sort by zone name. "
+                    "Returns zone name, description, member count, and VPC/subnet settings. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             # App Catalog
@@ -2377,8 +2388,10 @@ class ZMSService(BaseService):
                 "func": zms_list_app_catalog,
                 "name": "zms_list_app_catalog",
                 "description": (
-                    "List ZMS application catalog entries with pagination. "
-                    "Returns discovered apps with name, category, port/protocol specs, and processes."
+                    "List ZMS application catalog entries with pagination and filtering. "
+                    "Filter by name or category. Sort by name, category, creation_time, or modified_time. "
+                    "Returns discovered apps with name, category, port/protocol specs, and processes. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             # Nonces (Provisioning Keys)
@@ -2387,7 +2400,8 @@ class ZMSService(BaseService):
                 "name": "zms_list_nonces",
                 "description": (
                     "List ZMS nonces (provisioning keys) with pagination and search. "
-                    "Returns key name, value, max usage, current usage, and agent group association."
+                    "Returns key name, value, max usage, current usage, and agent group association. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
@@ -2403,24 +2417,28 @@ class ZMSService(BaseService):
                 "func": zms_list_tag_namespaces,
                 "name": "zms_list_tag_namespaces",
                 "description": (
-                    "List ZMS tag namespaces with pagination. "
-                    "Returns namespace name, description, and origin (CUSTOM, EXTERNAL, ML)."
+                    "List ZMS tag namespaces with pagination and filtering. "
+                    "Filter by name or origin (CUSTOM, EXTERNAL, ML, UNKNOWN). "
+                    "Returns namespace name, description, and origin. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
                 "func": zms_list_tag_keys,
                 "name": "zms_list_tag_keys",
                 "description": (
-                    "List tag keys within a ZMS tag namespace. "
-                    "Returns tag key name and description."
+                    "List tag keys within a ZMS tag namespace with filtering. "
+                    "Filter by key_name. Returns tag key name and description. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
             {
                 "func": zms_list_tag_values,
                 "name": "zms_list_tag_values",
                 "description": (
-                    "List tag values for a specific ZMS tag key. "
-                    "Returns available values for filtering resources."
+                    "List tag values for a specific ZMS tag key with filtering. "
+                    "Filter by value name. Returns available values for filtering resources. "
+                    "Supports JMESPath client-side filtering via the query parameter."
                 ),
             },
         ]

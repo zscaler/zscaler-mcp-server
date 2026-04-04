@@ -37,6 +37,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -54,11 +55,17 @@ def zia_list_network_apps(
             description="Locale for localized descriptions. Supported values: 'en-US', 'de-DE', 'es-ES', 'fr-FR', 'ja-JP', 'zh-CN'."
         ),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
     List ZIA network applications with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Network applications define application-level protocols and services that can be
     used in Cloud Firewall policies. This includes predefined applications like ICMP,
@@ -140,7 +147,8 @@ def zia_list_network_apps(
     apps, _, err = zia.list_network_apps(query_params=query_params if query_params else None)
     if err:
         raise Exception(f"Failed to list network applications: {err}")
-    return [app.as_dict() for app in apps]
+    results = [app.as_dict() for app in apps]
+    return apply_jmespath(results, query)
 
 
 def zia_get_network_app(

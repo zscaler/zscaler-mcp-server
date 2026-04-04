@@ -4,6 +4,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -14,10 +15,17 @@ def zia_list_ip_source_groups(
     search: Annotated[
         Optional[str], Field(description="Optional search string for filtering list results.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
-    """List ZIA IP source groups with optional filtering."""
+    """List ZIA IP source groups with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     zia = client.zia.cloud_firewall
 
@@ -25,7 +33,8 @@ def zia_list_ip_source_groups(
     groups, _, err = zia.list_ip_source_groups(query_params=query_params)
     if err:
         raise Exception(f"Error listing IP source groups: {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 def zia_get_ip_source_group(

@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zdx_list_cloudpath_probes(
@@ -11,12 +12,17 @@ def zdx_list_cloudpath_probes(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     List cloud path probes for a specific application on a device.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns cloud path probe IDs and details for the specified device and application.
     The cloudpath_probe_id returned by this tool is required when starting a deep trace
@@ -55,5 +61,6 @@ def zdx_list_cloudpath_probes(
         raise Exception(f"Cloud path probe retrieval failed: {err}")
 
     if result and len(result) > 0:
-        return [item.as_dict() if hasattr(item, "as_dict") else item for item in result]
+        results_list = [item.as_dict() if hasattr(item, "as_dict") else item for item in result]
+        return apply_jmespath(results_list, query)
     return []

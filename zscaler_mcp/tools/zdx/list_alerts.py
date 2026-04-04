@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -30,12 +31,17 @@ def zdx_list_alerts(
     limit: Annotated[
         Optional[int], Field(description="Number of items to return per request (minimum 1).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists all ongoing ZDX alert rules across an organization.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of all ongoing alert rules. This is the default operation for getting
     an overview of all alerts in the organization. Supports filtering by location, department,
@@ -95,7 +101,8 @@ def zdx_list_alerts(
         alerts_obj = result[0]  # Get the first (and only) Alerts object
         # Access the alerts property which contains a list of alert objects
         alerts_list = alerts_obj.alerts if hasattr(alerts_obj, "alerts") else []
-        return [alert.as_dict() for alert in alerts_list]
+        results_list = [alert.as_dict() for alert in alerts_list]
+        return apply_jmespath(results_list, query)
     else:
         return []
 
@@ -166,12 +173,17 @@ def zdx_list_alert_affected_devices(
     limit: Annotated[
         Optional[int], Field(description="Number of items to return per request (minimum 1).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists all devices affected by a specific ZDX alert.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of all affected devices associated with an alert rule.
     Use this when you need to analyze the impact of a specific alert on devices.
@@ -247,6 +259,7 @@ def zdx_list_alert_affected_devices(
         devices_list = (
             affected_devices_obj.devices if hasattr(affected_devices_obj, "devices") else []
         )
-        return [device.as_dict() for device in devices_list]
+        results_list = [device.as_dict() for device in devices_list]
+        return apply_jmespath(results_list, query)
     else:
         return []

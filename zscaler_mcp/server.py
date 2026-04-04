@@ -569,16 +569,18 @@ class ZscalerMCPServer:
         Returns:
             int: Number of tools registered
         """
+        from zscaler_mcp.common.tool_helpers import _wrap_with_audit
+
         # Register core tools directly
         self.server.add_tool(
-            self.zscaler_check_connectivity,
+            _wrap_with_audit(self.zscaler_check_connectivity, "zscaler_check_connectivity"),
             name="zscaler_check_connectivity",
             description="Check connectivity to the Zscaler API.",
-            annotations=ToolAnnotations(readOnlyHint=True),  # Read-only diagnostic tool
+            annotations=ToolAnnotations(readOnlyHint=True),
         )
 
         self.server.add_tool(
-            self.get_available_services,
+            _wrap_with_audit(self.get_available_services, "zscaler_get_available_services"),
             name="zscaler_get_available_services",
             description=(
                 "List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, ZMS, etc.) "
@@ -588,7 +590,22 @@ class ZscalerMCPServer:
             annotations=ToolAnnotations(readOnlyHint=True),
         )
 
-        tool_count = 2  # the tools added above
+        self.server.add_tool(
+            _wrap_with_audit(self.search_tools, "zscaler_search_tools"),
+            name="zscaler_search_tools",
+            description=(
+                "Search the Zscaler MCP tool registry by name, description, or service. "
+                "Use this to find specific tools or capabilities across all Zscaler services "
+                "(ZIA, ZPA, ZDX, ZCC, ZTW, ZMS, ZIdentity, EASM, Z-Insights). "
+                "Accepts a JMESPath query for advanced filtering/projection. "
+                "Call this when you need to find the right tool for a task, discover "
+                "available capabilities, or when fuzzy tool search returns irrelevant results. "
+                "Examples: find firewall tools, list device tools, discover policy capabilities."
+            ),
+            annotations=ToolAnnotations(readOnlyHint=True),
+        )
+
+        tool_count = 3  # the tools added above
 
         # Register tools from services
         for service in self.services.values():
@@ -705,6 +722,67 @@ class ZscalerMCPServer:
         if notes:
             result["note"] = " ".join(notes)
         return result
+
+    def search_tools(
+        self,
+        name_contains: Optional[str] = None,
+        description_contains: Optional[str] = None,
+        service: Optional[str] = None,
+        query: Optional[str] = None,
+    ) -> list:
+        """Search the tool registry for tools matching the given criteria.
+
+        Builds a searchable catalog of all registered tools and applies
+        optional filters. Supports JMESPath for advanced queries.
+
+        Args:
+            name_contains: Substring filter on tool name (case-insensitive).
+            description_contains: Substring filter on tool description (case-insensitive).
+            service: Filter by service prefix (e.g., 'zia', 'zpa', 'zms').
+            query: JMESPath expression for advanced filtering/projection.
+                Applied after name/description/service filters.
+
+        Returns:
+            List of matching tools with name, description, service, and type.
+        """
+        catalog = []
+        for svc_name, svc in sorted(self.services.items()):
+            for tool_def in getattr(svc, "read_tools", []):
+                catalog.append({
+                    "name": tool_def["name"],
+                    "description": tool_def["description"],
+                    "service": svc_name,
+                    "type": "read",
+                })
+            for tool_def in getattr(svc, "write_tools", []):
+                catalog.append({
+                    "name": tool_def["name"],
+                    "description": tool_def["description"],
+                    "service": svc_name,
+                    "type": "write",
+                })
+
+        if service:
+            svc_lower = service.lower()
+            catalog = [t for t in catalog if t["service"] == svc_lower]
+
+        if name_contains:
+            needle = name_contains.lower()
+            catalog = [t for t in catalog if needle in t["name"].lower()]
+
+        if description_contains:
+            needle = description_contains.lower()
+            catalog = [t for t in catalog if needle in t["description"].lower()]
+
+        if query:
+            from zscaler_mcp.common.jmespath_utils import apply_jmespath
+
+            catalog = apply_jmespath(catalog, query)
+
+        if not catalog:
+            return [{"status": "no_results", "message": "No tools matched the search criteria."}]
+
+        return catalog
 
     def _build_fastmcp_auth_app(self, transport: str):
         """Build an ASGI app with a fastmcp AuthProvider handling authentication.
@@ -1253,6 +1331,15 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--log-tool-calls",
+        action="store_true",
+        default=os.environ.get("ZSCALER_MCP_LOG_TOOL_CALLS", "").lower() == "true",
+        help="Enable audit logging for every tool invocation. "
+        "Logs tool name, sanitized arguments, duration, and result summary. "
+        "(env: ZSCALER_MCP_LOG_TOOL_CALLS)",
+    )
+
+    parser.add_argument(
         "--version",
         "-v",
         action="version",
@@ -1330,6 +1417,11 @@ def main():
 
     # Parse command line arguments (includes environment variable defaults)
     args = parse_args()
+
+    if getattr(args, "log_tool_calls", False):
+        from zscaler_mcp.common.tool_helpers import enable_tool_call_logging
+
+        enable_tool_call_logging()
 
     if getattr(args, "list_tools", False):
         list_available_tools(

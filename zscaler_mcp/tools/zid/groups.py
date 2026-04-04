@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -14,9 +15,16 @@ def zid_list_groups(
         Optional[Dict],
         Field(description="Optional filters: offset, limit, name[like], exclude_dynamic_groups."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zid",
 ) -> List[Dict]:
-    """List Zidentity groups with optional filtering and pagination."""
+    """List Zidentity groups with optional filtering and pagination.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(service=service)
     api = client.zid.groups
 
@@ -26,7 +34,8 @@ def zid_list_groups(
         raise Exception(f"Failed to list groups: {err}")
 
     groups = groups_response.records if hasattr(groups_response, "records") else []
-    return [group.as_dict() for group in groups]
+    results = [group.as_dict() for group in groups]
+    return apply_jmespath(results, query)
 
 
 def zid_get_group(

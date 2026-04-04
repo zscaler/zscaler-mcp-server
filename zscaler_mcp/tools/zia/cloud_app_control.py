@@ -25,11 +25,12 @@ Example Usage:
     )
 """
 
-from typing import Annotated, List, Union
+from typing import Annotated, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -54,11 +55,17 @@ def zia_list_cloud_app_control_actions(
             "Examples: ['DROPBOX'], ['GOOGLE_WEBMAIL', 'YAHOO_WEBMAIL']. Accepts JSON string or list."
         ),
     ],
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
     """
     List granular actions supported for a specific Cloud App Control rule type.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Retrieves the list of actions (e.g., ALLOW_STREAMING_VIEW_LISTEN, BLOCK_WEBMAIL_SEND)
     that can be used when creating or updating Cloud App Control rules for the given
@@ -146,4 +153,5 @@ def zia_list_cloud_app_control_actions(
     if err:
         raise Exception(f"Failed to list available Cloud App Control actions: {err}")
 
-    return actions or []
+    results = actions or []
+    return apply_jmespath(results, query)

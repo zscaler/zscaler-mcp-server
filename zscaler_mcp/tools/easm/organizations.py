@@ -1,8 +1,9 @@
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, Optional
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -10,6 +11,10 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zeasm_list_organizations(
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zeasm",
 ) -> Dict[str, Any]:
     """
@@ -17,6 +22,7 @@ def zeasm_list_organizations(
 
     This is a read-only operation that retrieves all organizations configured
     for external attack surface management.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         service (str): The service to use (default: "zeasm").
@@ -39,4 +45,5 @@ def zeasm_list_organizations(
     if err:
         raise Exception(f"Failed to list EASM organizations: {err}")
 
-    return orgs.as_dict()
+    result = orgs.as_dict()
+    return apply_jmespath(result, query)

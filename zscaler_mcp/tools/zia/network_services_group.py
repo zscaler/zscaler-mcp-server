@@ -51,6 +51,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -61,11 +62,17 @@ def zia_list_network_svc_groups(
     search: Annotated[
         Optional[str], Field(description="Search string to filter by group name or description.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
     List ZIA network service groups with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Network service groups organize multiple network services into logical
     collections that can be referenced in Cloud Firewall policies.
@@ -104,7 +111,8 @@ def zia_list_network_svc_groups(
     )
     if err:
         raise Exception(f"Failed to list network service groups: {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 def zia_get_network_svc_group(

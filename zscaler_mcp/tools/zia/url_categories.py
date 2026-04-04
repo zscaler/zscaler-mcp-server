@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -13,17 +14,25 @@ def zia_list_url_categories(
     query_params: Annotated[
         Optional[Dict], Field(description="Optional filters for pagination and filtering.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
-    """List all ZIA URL categories with optional filtering."""
+    """List all ZIA URL categories with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zia.url_categories
 
     results, _, err = api.list_categories(query_params=query_params or {})
     if err:
         raise Exception(f"List failed: {err}")
-    return [r.as_dict() for r in results]
+    results = [r.as_dict() for r in results]
+    return apply_jmespath(results, query)
 
 
 def zia_url_lookup(

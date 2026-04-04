@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -21,6 +22,10 @@ def zcc_list_devices(
     page_size: Annotated[
         Optional[int], Field(description="Number of results per page. Default is 50. Max is 5000.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> List[dict]:
@@ -28,6 +33,7 @@ def zcc_list_devices(
     List ZCC device enrollment information from the Zscaler Client Connector Portal.
 
     This is a read-only operation to retrieve device information.
+    Supports JMESPath client-side filtering via the query parameter.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
@@ -44,4 +50,5 @@ def zcc_list_devices(
     devices, _, err = client.zcc.devices.list_devices(query_params=query_params)
     if err:
         raise Exception(f"Error listing ZCC devices: {err}")
-    return [d.as_dict() for d in devices]
+    results = [d.as_dict() for d in devices]
+    return apply_jmespath(results, query)

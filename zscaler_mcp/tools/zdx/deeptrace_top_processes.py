@@ -1,19 +1,25 @@
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any, Dict, List, Optional
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zdx_list_deeptrace_top_processes(
     device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
     trace_id: Annotated[str, Field(description="The unique ID for the deeptrace session.")],
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Get top processes from a ZDX deep trace session.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns the list of top processes captured during the deep trace session
     for the specified device. Useful for identifying resource-intensive processes
@@ -45,5 +51,6 @@ def zdx_list_deeptrace_top_processes(
         raise Exception(f"Top processes retrieval failed: {err}")
 
     if result and len(result) > 0:
-        return [item.as_dict() if hasattr(item, "as_dict") else item for item in result]
+        results_list = [item.as_dict() if hasattr(item, "as_dict") else item for item in result]
+        return apply_jmespath(results_list, query)
     return []

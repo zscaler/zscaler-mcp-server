@@ -4,6 +4,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -14,10 +15,17 @@ def ztw_list_ip_source_groups(
     search: Annotated[
         Optional[str], Field(description="Optional search string for filtering list results.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
-    """List ZTW IP source groups with optional search filtering."""
+    """List ZTW IP source groups with optional search filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     ztw = client.ztw.ip_source_groups
 
@@ -25,17 +33,25 @@ def ztw_list_ip_source_groups(
     groups, _, err = ztw.list_ip_source_groups(query_params=query_params)
     if err:
         raise Exception(f"Error listing IP source groups: {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 def ztw_list_ip_source_groups_lite(
     search: Annotated[
         Optional[str], Field(description="Optional search string for filtering list results.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
-    """List ZTW IP source groups (lightweight version) with optional search filtering."""
+    """List ZTW IP source groups (lightweight version) with optional search filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     ztw = client.ztw.ip_source_groups
 
@@ -43,7 +59,8 @@ def ztw_list_ip_source_groups_lite(
     groups, _, err = ztw.list_ip_source_groups_lite(query_params=query_params)
     if err:
         raise Exception(f"Error listing IP source groups (lite): {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 # =============================================================================
@@ -101,7 +118,9 @@ def ztw_delete_ip_source_group(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("ztw_delete_ip_source_group", confirmed, {"group_id": str(group_id)})
+    confirmation_check = check_confirmation(
+        "ztw_delete_ip_source_group", confirmed, {"group_id": str(group_id)}
+    )
     if confirmation_check:
         return confirmation_check
 
