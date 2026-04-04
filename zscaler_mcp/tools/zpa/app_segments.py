@@ -10,6 +10,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -25,11 +26,17 @@ def zpa_list_application_segments(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """
     List ZPA application segments with optional filtering and pagination.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     🔒 READ-ONLY OPERATION - Safe for autonomous agents.
 
@@ -38,6 +45,7 @@ def zpa_list_application_segments(
         page: Page number for pagination
         page_size: Number of items per page
         microtenant_id: Optional microtenant ID for scoping
+        query: JMESPath expression for client-side filtering/projection
         use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
@@ -63,7 +71,8 @@ def zpa_list_application_segments(
     if err:
         raise Exception(f"Failed to list application segments: {err}")
 
-    return [s.as_dict() for s in (segments or [])]
+    results = [s.as_dict() for s in (segments or [])]
+    return apply_jmespath(results, query)
 
 
 def zpa_get_application_segment(

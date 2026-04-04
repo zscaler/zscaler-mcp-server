@@ -1,9 +1,10 @@
 import json
-from typing import Annotated, List, Union
+from typing import Annotated, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -11,16 +12,24 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zia_list_atp_malicious_urls(
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
-    """Retrieve the current malicious URL denylist from ZIA Advanced Threat Protection (ATP) policy."""
+    """Retrieve the current malicious URL denylist from ZIA Advanced Threat Protection (ATP) policy.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     url_list, _, err = client.zia.atp_policy.get_atp_malicious_urls()
     if err:
         raise Exception(f"ATP URL list retrieval failed: {err}")
-    return getattr(url_list, "malicious_urls", url_list or [])
+    results = getattr(url_list, "malicious_urls", url_list or [])
+    return apply_jmespath(results, query)
 
 
 # =============================================================================

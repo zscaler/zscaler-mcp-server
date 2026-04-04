@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Annotated, Any, Dict, List, Union
+from typing import Annotated, Any, Dict, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # Helper Functions
@@ -72,12 +73,17 @@ def _convert_timestamps(
 
 def zdx_list_device_deep_traces(
     device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists all deep traces for a specific ZDX device.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of all deep traces for the specified device. Deep traces are used
     for troubleshooting device connectivity and performance issues. Timestamps are
@@ -111,7 +117,8 @@ def zdx_list_device_deep_traces(
                 all_traces.extend([trace.as_dict() for trace in wrapper.traces])
             else:
                 all_traces.append(wrapper.as_dict())
-        return _convert_timestamps(all_traces)
+        results_list = _convert_timestamps(all_traces)
+        return apply_jmespath(results_list, query)
     else:
         return []
 

@@ -10,6 +10,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.tools.zms import apply_jmespath_query
 
 
 def zms_list_agents(
@@ -33,6 +34,10 @@ def zms_list_agents(
         Optional[str],
         Field(description="Sort direction: ASC or DESC."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection on the result. Example: \"nodes[?connection_status=='CONNECTED']\"."),
+    ] = None,
     service: Annotated[
         Optional[str],
         Field(description="The service to use."),
@@ -46,13 +51,14 @@ def zms_list_agents(
     List Zscaler Microsegmentation (ZMS) agents with pagination and search.
 
     Returns agents with connection status, OS info, version, IP addresses,
-    and agent group membership.
+    and agent group membership. Supports JMESPath client-side filtering via the query parameter.
 
     Use this tool to:
     - View all deployed microsegmentation agents
     - Check agent connection status across your environment
     - Search for specific agents by name or IP
     - Monitor agent software versions
+    - Use JMESPath queries for advanced filtering (e.g., nodes[?connection_status=='CONNECTED'])
     """
     customer_id = os.environ.get("ZSCALER_CUSTOMER_ID", "")
     if not customer_id:
@@ -78,7 +84,7 @@ def zms_list_agents(
         return [{"error": f"SDK error: {err}"}]
     if not result:
         return [{"status": "no_data", "message": "No agents found."}]
-    return [result]
+    return apply_jmespath_query(result, query)
 
 
 def zms_get_agent_connection_status_statistics(

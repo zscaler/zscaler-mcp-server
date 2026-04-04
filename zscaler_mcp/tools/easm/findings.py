@@ -1,8 +1,9 @@
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, Optional
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -11,12 +12,17 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zeasm_list_findings(
     org_id: Annotated[str, Field(description="The unique identifier for the organization.")],
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zeasm",
 ) -> Dict[str, Any]:
     """
     List all findings identified and tracked for an organization's internet-facing assets.
 
     This is a read-only operation that retrieves findings detected by EASM scanning.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         org_id (str): The unique identifier for the organization.
@@ -40,7 +46,8 @@ def zeasm_list_findings(
     if err:
         raise Exception(f"Failed to list EASM findings for organization {org_id}: {err}")
 
-    return findings.as_dict()
+    result = findings.as_dict()
+    return apply_jmespath(result, query)
 
 
 def zeasm_get_finding_details(

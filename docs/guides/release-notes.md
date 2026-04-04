@@ -12,11 +12,43 @@ description: |-
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
 ---
-``Last updated: v0.7.2``
+``Last updated: v0.8.1``
 
 ---
 
 ## Changelog
+
+## 0.8.1 (April 6, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Added **JMESPath client-side filtering** across all 88 list tools spanning 9 services (ZIA, ZPA, ZDX, ZCC, ZTW, ZID, EASM, ZINS, ZMS). Every list tool now accepts an optional `query` parameter for server-side filtering and projection of API results before they reach the AI agent.
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Added `zscaler_search_tools` meta-tool for AI agent tool discovery. Supports filtering by `service`, `name_contains`, `description_contains`, and advanced JMESPath queries against the full tool registry. Returns tool name, description, service, and type (read/write) for each match.
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Added **tool-call audit logging** via `--log-tool-calls` CLI flag or `ZSCALER_MCP_LOG_TOOL_CALLS` environment variable. Logs tool name, sanitized arguments, execution duration, and result summary for every tool invocation. Sensitive parameters (passwords, secrets, tokens) are automatically redacted.
+
+### Enhancements
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Added **ZMS GraphQL filtering and ordering** to 6 tool domains: resources, resource groups, policy rules, app zones, app catalog, and tags. Tools now accept `filter_by` parameters (name, status, resource_type, cloud_provider, cloud_region, platform_os) and `sort_order` for server-side query refinement.
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Added 3 new ZMS guided skills: `review-tag-classification` (tag namespace hierarchy analysis), `analyze-policy-rules` (policy rule optimization and conflict detection), and `assess-workload-protection` (workload coverage and agent health assessment).
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Created centralized JMESPath utility module (`zscaler_mcp/common/jmespath_utils.py`) shared across all services, with graceful error handling for invalid expressions and consistent return normalization.
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Added `jmespath>=1.0.0` as an explicit dependency in `pyproject.toml`.
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Updated all 88 list tool descriptions in `services.py` to advertise JMESPath `query` parameter support for AI agent discoverability.
+
+### Documentation
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Updated `CLAUDE.md` with JMESPath client-side filtering architecture, syntax reference, cross-service examples, and `zscaler_search_tools` usage patterns.
+
+[PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45) - Updated `CLAUDE.md` with tool-call audit logging section covering CLI flag, environment variable, log format, sensitive parameter redaction, and result summarization.
 
 ## 0.7.2 (March 27, 2026)
 

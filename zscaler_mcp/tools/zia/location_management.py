@@ -4,6 +4,7 @@ from typing import Annotated, Any, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -15,17 +16,25 @@ def zia_list_locations(
         Optional[Dict[str, Any]],
         Field(description="Optional query parameters for filtering (e.g., search, xff_enabled)."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict[str, Any]]:
-    """List all ZIA locations with optional filtering."""
+    """List all ZIA locations with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     locations_api = client.zia.locations
 
     result, _, err = locations_api.list_locations(query_params=query_params or {})
     if err:
         raise Exception(f"Failed to list locations: {err}")
-    return [loc.as_dict() for loc in result or []]
+    results = [loc.as_dict() for loc in result or []]
+    return apply_jmespath(results, query)
 
 
 def zia_get_location(

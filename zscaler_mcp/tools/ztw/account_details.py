@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -15,10 +16,15 @@ def ztw_list_public_account_details(
         Optional[int],
         Field(description="Number of results per page. Default 250; maximum 1000."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """List public cloud account details from Zscaler Cloud & Branch Connector (ZTW).
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         page: Optional page offset for paginated results.
@@ -46,4 +52,4 @@ def ztw_list_public_account_details(
     if err:
         raise Exception(f"Failed to list ZTW public account details: {err}")
 
-    return details
+    return apply_jmespath(details, query)

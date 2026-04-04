@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -113,12 +114,18 @@ def zia_list_cloud_firewall_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
     Lists all ZIA Cloud Firewall Rules with optional search filtering.
     This is a read-only operation.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Cloud Firewall Rules control network traffic based on source/destination IPs, countries,
     network applications, device trust levels, and other attributes.
@@ -141,11 +148,12 @@ def zia_list_cloud_firewall_rules(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     fw = client.zia.cloud_firewall_rules
 
-    query = {"search": search} if search else {}
-    rules, _, err = fw.list_rules(query_params=query)
+    query_params = {"search": search} if search else {}
+    rules, _, err = fw.list_rules(query_params=query_params)
     if err:
         raise Exception(f"Failed to list cloud firewall rules: {err}")
-    return [r.as_dict() for r in rules]
+    results = [r.as_dict() for r in rules]
+    return apply_jmespath(results, query)
 
 
 def zia_get_cloud_firewall_rule(

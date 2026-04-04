@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -21,12 +22,17 @@ def zdx_list_software(
     ] = None,
     user_ids: Annotated[Optional[List[str]], Field(description="Filter by user ID(s).")] = None,
     device_ids: Annotated[Optional[List[str]], Field(description="Filter by device ID(s).")] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists all software in the ZDX inventory with optional filtering.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of all software in ZDX with optional filtering by location,
     department, geolocation, users, or devices. Use this for getting an overview
@@ -77,7 +83,8 @@ def zdx_list_software(
         raise Exception(f"Software inventory listing failed: {err}")
 
     if result:
-        return [software.as_dict() for software in result]
+        results_list = [software.as_dict() for software in result]
+        return apply_jmespath(results_list, query)
     return []
 
 

@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -17,10 +18,17 @@ def zpa_list_provisioning_keys(
     query_params: Annotated[
         Optional[Dict], Field(description="Optional query parameters for filtering.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
-    """List ZPA provisioning keys by type."""
+    """List ZPA provisioning keys by type.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     VALID_TYPES = {"connector", "service_edge"}
     if key_type not in VALID_TYPES:
         raise ValueError(f"Invalid key_type '{key_type}'. Must be 'connector' or 'service_edge'.")
@@ -35,7 +43,8 @@ def zpa_list_provisioning_keys(
     results, _, err = api.list_provisioning_keys(key_type=key_type, query_params=qp)
     if err:
         raise Exception(f"Failed to list provisioning keys: {err}")
-    return [r.as_dict() for r in results]
+    results = [r.as_dict() for r in results]
+    return apply_jmespath(results, query)
 
 
 def zpa_get_provisioning_key(

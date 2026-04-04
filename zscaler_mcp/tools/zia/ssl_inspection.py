@@ -4,6 +4,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -111,12 +112,18 @@ def zia_list_ssl_inspection_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
     Lists all ZIA SSL Inspection Rules with optional search filtering.
     This is a read-only operation.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     SSL Inspection Rules control how Zscaler handles SSL/TLS encrypted traffic by determining
     which connections should be decrypted and inspected. These rules help balance security
@@ -168,7 +175,8 @@ def zia_list_ssl_inspection_rules(
     rules, _, err = ssl_inspection.list_rules(query_params=query)
     if err:
         raise Exception(f"Failed to list SSL inspection rules: {err}")
-    return [r.as_dict() for r in rules]
+    results = [r.as_dict() for r in rules]
+    return apply_jmespath(results, query)
 
 
 def zia_get_ssl_inspection_rule(
