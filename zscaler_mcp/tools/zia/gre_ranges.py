@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -17,11 +18,17 @@ def zia_list_gre_ranges(
         Optional[str], Field(description="Filter by the associated static IP address.")
     ] = None,
     limit: Annotated[Optional[int], Field(description="Max number of ranges to return.")] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List:
     """
     Discover available GRE internal IP ranges in ZIA.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     This is a read-only operation that returns available GRE ranges.
     If no filters are provided, returns all available ranges.
@@ -41,4 +48,4 @@ def zia_list_gre_ranges(
     if err:
         raise Exception(f"Failed to retrieve GRE ranges: {err}")
 
-    return ranges
+    return apply_jmespath(ranges, query)

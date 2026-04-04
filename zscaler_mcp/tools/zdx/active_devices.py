@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -31,12 +32,17 @@ def zdx_list_devices(
     offset: Annotated[
         Optional[str], Field(description="Offset string for pagination (next_offset).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists active ZDX devices using various filters.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of active ZDX devices matching the specified query filters.
     Supports filtering by email, user ID, MAC address, IP address, location,
@@ -103,7 +109,8 @@ def zdx_list_devices(
         devices_obj = results[0]  # Get the first (and only) Devices object
         # Access the devices property which contains a list of DeviceDetail objects
         device_list = devices_obj.devices if hasattr(devices_obj, "devices") else []
-        return [d.as_dict() for d in device_list]
+        results_list = [d.as_dict() for d in device_list]
+        return apply_jmespath(results_list, query)
     else:
         return []
 

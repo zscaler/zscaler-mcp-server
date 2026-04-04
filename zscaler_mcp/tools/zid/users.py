@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -16,9 +17,16 @@ def zid_list_users(
             description="Optional filters: offset, limit, login_name, login_name[like], display_name[like], primary_email[like], domain_name, idp_name."
         ),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zid",
 ) -> List[Dict]:
-    """List Zidentity users with optional filtering and pagination."""
+    """List Zidentity users with optional filtering and pagination.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(service=service)
     api = client.zid.users
 
@@ -28,7 +36,8 @@ def zid_list_users(
         raise Exception(f"Failed to list users: {err}")
 
     users = users_response.records if hasattr(users_response, "records") else []
-    return [user.as_dict() for user in users]
+    results = [user.as_dict() for user in users]
+    return apply_jmespath(results, query)
 
 
 def zid_get_user(

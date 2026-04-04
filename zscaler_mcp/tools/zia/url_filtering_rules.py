@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -120,12 +121,18 @@ def zia_list_url_filtering_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
     Lists all ZIA URL Filtering Rules with optional search filtering.
     This is a read-only operation.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     URL Filtering Rules control access to websites based on their categories, protocols,
     request methods, user agents, and other attributes.
@@ -148,11 +155,12 @@ def zia_list_url_filtering_rules(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     url = client.zia.url_filtering
 
-    query = {"search": search} if search else {}
-    rules, _, err = url.list_rules(query_params=query)
+    query_params = {"search": search} if search else {}
+    rules, _, err = url.list_rules(query_params=query_params)
     if err:
         raise Exception(f"Failed to list URL filtering rules: {err}")
-    return [r.as_dict() for r in rules]
+    results = [r.as_dict() for r in rules]
+    return apply_jmespath(results, query)
 
 
 def zia_get_url_filtering_rule(

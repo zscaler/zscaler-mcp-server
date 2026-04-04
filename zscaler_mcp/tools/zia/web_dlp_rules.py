@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -118,12 +119,18 @@ def zia_list_web_dlp_rules(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
     Lists all ZIA Web DLP Rules with optional search filtering.
     This is a read-only operation.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Web DLP Rules control and monitor data transmission based on file types,
     content patterns, DLP engines, and other criteria.
@@ -146,16 +153,21 @@ def zia_list_web_dlp_rules(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     dlp = client.zia.dlp_web_rules
 
-    query = {"search": search} if search else {}
-    rules, _, err = dlp.list_rules(query_params=query)
+    query_params = {"search": search} if search else {}
+    rules, _, err = dlp.list_rules(query_params=query_params)
     if err:
         raise Exception(f"Failed to list web DLP rules: {err}")
-    return [r.as_dict() for r in rules]
+    results = [r.as_dict() for r in rules]
+    return apply_jmespath(results, query)
 
 
 def zia_list_web_dlp_rules_lite(
     search: Annotated[
         Optional[str], Field(description="Optional search filter for listing rules by name.")
+    ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
@@ -163,6 +175,8 @@ def zia_list_web_dlp_rules_lite(
     """
     Lists all ZIA Web DLP Rules with only name and ID (lite version for faster retrieval).
     This is a read-only operation.
+
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         search (str, optional): Search string for filtering rules by name.
@@ -179,11 +193,12 @@ def zia_list_web_dlp_rules_lite(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     dlp = client.zia.dlp_web_rules
 
-    query = {"search": search} if search else {}
-    rules, _, err = dlp.list_rules_lite(query_params=query)
+    query_params = {"search": search} if search else {}
+    rules, _, err = dlp.list_rules_lite(query_params=query_params)
     if err:
         raise Exception(f"Failed to list web DLP rules (lite): {err}")
-    return [r.as_dict() for r in rules]
+    results = [r.as_dict() for r in rules]
+    return apply_jmespath(results, query)
 
 
 def zia_get_web_dlp_rule(

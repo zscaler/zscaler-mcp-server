@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import parse_list, validate_and_convert_country_codes
 
 # =============================================================================
@@ -15,10 +16,17 @@ def ztw_list_ip_destination_groups(
         Optional[str],
         Field(description="Optional filter to exclude groups of type DSTN_IP, DSTN_FQDN, etc."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
-    """List ZTW IP destination groups with optional filtering."""
+    """List ZTW IP destination groups with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     ztw = client.ztw.ip_destination_groups
 
@@ -26,7 +34,8 @@ def ztw_list_ip_destination_groups(
     groups, _, err = ztw.list_ip_destination_groups(query_params=query_params)
     if err:
         raise Exception(f"Failed to list IP destination groups: {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 def ztw_list_ip_destination_groups_lite(
@@ -34,10 +43,17 @@ def ztw_list_ip_destination_groups_lite(
         Optional[str],
         Field(description="Optional filter to exclude groups of type DSTN_IP, DSTN_FQDN, etc."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
-    """List ZTW IP destination groups (lightweight version) with optional filtering."""
+    """List ZTW IP destination groups (lightweight version) with optional filtering.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     ztw = client.ztw.ip_destination_groups
 
@@ -45,7 +61,8 @@ def ztw_list_ip_destination_groups_lite(
     groups, _, err = ztw.list_ip_destination_groups_lite(query_params=query_params)
     if err:
         raise Exception(f"Failed to list IP destination groups (lite): {err}")
-    return [g.as_dict() for g in groups]
+    results = [g.as_dict() for g in groups]
+    return apply_jmespath(results, query)
 
 
 # =============================================================================
@@ -122,7 +139,9 @@ def ztw_delete_ip_destination_group(
     # Extract confirmation from kwargs (hidden from tool schema)
     confirmed = extract_confirmed_from_kwargs(kwargs)
 
-    confirmation_check = check_confirmation("ztw_delete_ip_destination_group", confirmed, {"group_id": str(group_id)})
+    confirmation_check = check_confirmation(
+        "ztw_delete_ip_destination_group", confirmed, {"group_id": str(group_id)}
+    )
     if confirmation_check:
         return confirmation_check
 

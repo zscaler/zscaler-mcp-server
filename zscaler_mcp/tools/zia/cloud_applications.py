@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -17,10 +18,17 @@ def zia_list_cloud_applications(
         Optional[int],
         Field(description="Optional result limit. Use 1000 as the maximum limit for efficiency."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
-    """List ZIA Shadow IT cloud applications with optional pagination."""
+    """List ZIA Shadow IT cloud applications with optional pagination.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     shadow_it = client.zia.shadow_it_report
 
@@ -33,21 +41,30 @@ def zia_list_cloud_applications(
     apps, _, err = shadow_it.list_apps(query_params=query_params or None)
     if err:
         raise Exception(f"Failed to list applications: {err}")
-    return [app.as_dict() for app in apps]
+    results = [app.as_dict() for app in apps]
+    return apply_jmespath(results, query)
 
 
 def zia_list_cloud_application_custom_tags(
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
-    """List ZIA Shadow IT custom tags."""
+    """List ZIA Shadow IT custom tags.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     shadow_it = client.zia.shadow_it_report
 
     tags, _, err = shadow_it.list_custom_tags()
     if err:
         raise Exception(f"Failed to list custom tags: {err}")
-    return [tag.as_dict() for tag in tags]
+    results = [tag.as_dict() for tag in tags]
+    return apply_jmespath(results, query)
 
 
 # =============================================================================

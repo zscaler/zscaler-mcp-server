@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zdx_list_historical_alerts(
@@ -26,11 +27,16 @@ def zdx_list_historical_alerts(
     limit: Annotated[
         Optional[int], Field(description="Number of items to return per request (minimum 1).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Tool for retrieving ZDX historical alert information.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of alert history rules defined across an organization.
     All alert history rules are returned if the search filter is not specified.
@@ -117,6 +123,7 @@ def zdx_list_historical_alerts(
         alerts_obj = result[0]  # Get the first (and only) Alerts object
         # Access the alerts property which contains a list of alert objects
         alerts_list = alerts_obj.alerts if hasattr(alerts_obj, "alerts") else []
-        return [alert.as_dict() for alert in alerts_list]
+        results_list = [alert.as_dict() for alert in alerts_list]
+        return apply_jmespath(results_list, query)
     else:
         return []

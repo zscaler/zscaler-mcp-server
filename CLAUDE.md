@@ -16,9 +16,10 @@ zscaler_mcp/
 ├── cloud/
 │   └── gcp_secrets.py   # GCP Secret Manager credential loader (opt-in via ZSCALER_MCP_GCP_SECRET_MANAGER=true)
 ├── common/
-│   ├── tool_helpers.py   # register_read_tools / register_write_tools with disabled_tools filtering
-│   ├── elicitation.py    # HMAC-SHA256 confirmation tokens for destructive actions
-│   └── logging.py        # log_security_warning helper
+│   ├── tool_helpers.py    # register_read_tools / register_write_tools with disabled_tools filtering
+│   ├── jmespath_utils.py  # apply_jmespath() — shared JMESPath client-side filtering for all list tools
+│   ├── elicitation.py     # HMAC-SHA256 confirmation tokens for destructive actions
+│   └── logging.py         # log_security_warning helper
 └── tools/                # 112 tool modules organized by service (zia/, zpa/, zdx/, zcc/, ztw/, zid/, easm/, zins/, zms/)
 ```
 
@@ -129,6 +130,60 @@ ZMS tools use the ZMS GraphQL API (`/zms/graphql`) for querying microsegmentatio
 - **`namespace_origin`** for tag values must be one of: `CUSTOM`, `EXTERNAL`, `ML`, `UNKNOWN`.
 - **Policy rules have `fetchAll` flag** which bypasses pagination. Use sparingly on large tenants.
 
+## JMESPath Client-Side Filtering
+
+All list tools across every service support JMESPath client-side filtering via an optional `query` parameter. This leverages the `jmespath` library (already a dependency of `zscaler-sdk-python`) to filter and project results after the API call returns.
+
+### Architecture
+
+- **`zscaler_mcp/common/jmespath_utils.py`** — shared `apply_jmespath(data, expression)` helper used by all services
+- **`zscaler_mcp/tools/zms/__init__.py`** — ZMS-specific wrapper that preserves the `[result]` envelope for GraphQL responses
+- When `query` is `None`, results pass through unchanged (full backward compatibility)
+- Invalid expressions return `[{"error": "Invalid JMESPath expression: ..."}]` instead of crashing
+
+### How It Works
+
+Every `*_list_*` tool (88 total across ZIA, ZPA, ZDX, ZCC, ZTW, ZID, EASM, ZMS) accepts an optional `query` parameter. The JMESPath expression is applied to the tool's result data **after** the API call completes:
+
+```python
+# Non-ZMS tools: result is a list of dicts
+results = [x.as_dict() for x in items]
+return apply_jmespath(results, query)  # filters the list
+
+# ZMS tools: result is a GraphQL connection dict {"nodes": [...], "page_info": {...}}
+return apply_jmespath_query(result, query)  # filters within the envelope
+```
+
+### Expression Syntax
+
+Standard [JMESPath](https://jmespath.org/) syntax. Field names are **snake_case** (the SDK converts camelCase API responses). Examples:
+
+| Service | Expression | What it does |
+|---------|-----------|--------------|
+| ZIA | `[?name=='HQ'].{name: name, id: id}` | Find location named "HQ", project name+id |
+| ZPA | `[?enabled==\`true\`]` | Filter to enabled application segments |
+| ZDX | `[?platform=='Windows'].{user_name: user_name}` | Windows devices, project usernames |
+| ZCC | `[*].{name: name, os_type: os_type}` | Project name and OS for all devices |
+| ZMS | `nodes[?cloud_provider=='AWS']` | Filter resources to AWS workloads |
+| EASM | `results[?severity=='critical']` | Filter findings to critical severity |
+
+### Adding JMESPath to a New List Tool
+
+1. Import: `from zscaler_mcp.common.jmespath_utils import apply_jmespath`
+2. Add `query` parameter before `service`/`use_legacy` in the signature
+3. Wrap the success return: `return apply_jmespath(results, query)`
+4. Update the tool description in `services.py` to mention JMESPath support
+
+### Tool Discovery via JMESPath
+
+The `zscaler_search_tools` meta-tool exposes the full tool registry as a searchable list with JMESPath filtering. This is designed for AI agents working with deferred tool loading (Claude Desktop, Cursor) where fuzzy search returns irrelevant results. Examples:
+
+```
+zscaler_search_tools(query="[?contains(description, 'firewall')]")
+zscaler_search_tools(query="[?starts_with(name, 'zms_')]")
+zscaler_search_tools(query="[?contains(name, 'list') && contains(description, 'device')]")
+```
+
 ## Write Operations — Safety Rules
 
 1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
@@ -191,6 +246,7 @@ Server & security env vars:
 - `ZSCALER_MCP_SKIP_CONFIRMATIONS` — Skip HMAC confirmation for destructive ops (`true`/`false`)
 - `ZSCALER_MCP_CONFIRMATION_TTL` — Confirmation token TTL in seconds (default 300)
 - `ZSCALER_MCP_DISABLE_HOST_VALIDATION` — Disable host header checks (`true`/`false`)
+- `ZSCALER_MCP_LOG_TOOL_CALLS` — Enable tool-call audit logging (`true`/`false`)
 
 ## CLI Flags
 
@@ -204,7 +260,37 @@ Server & security env vars:
 - `--user-agent-comment` — Custom User-Agent suffix for API calls
 - `--host` — HTTP bind address (default `127.0.0.1`)
 - `--port` — HTTP listen port (default `8000`)
+- `--log-tool-calls` — Enable tool-call audit logging (logs tool name, args, duration, result summary)
 - `--version` — Print version and exit
+
+## Tool-Call Audit Logging
+
+Opt-in logging of every tool invocation for troubleshooting and observability. Controlled by `--log-tool-calls` or `ZSCALER_MCP_LOG_TOOL_CALLS=true`. This is intentionally separate from `--debug` to avoid excessive verbosity during normal debugging.
+
+### What It Logs
+
+Every tool call produces two log lines via the `zscaler_mcp.audit` logger:
+
+```
+[TOOL CALL] zia_list_locations | args: {page: 1, page_size: 50, name: "HQ"}
+[TOOL OK]   zia_list_locations | 342ms | 15 items
+```
+
+On error:
+```
+[TOOL CALL] zms_list_resources | args: {page_num: 1}
+[TOOL ERR]  zms_list_resources | 1204ms | ConnectionError: timeout
+```
+
+### Security
+
+Sensitive parameters (password, secret, token, key, credential, and any parameter name containing these substrings) are automatically redacted to `***REDACTED***`. Full response data is never logged — only a summary (item count, error message).
+
+### Implementation
+
+- **`zscaler_mcp/common/tool_helpers.py`** — `_wrap_with_audit()` wraps every tool function at registration time. The wrapper is a no-op when logging is disabled (zero overhead).
+- The audit wrapper covers all tools: service tools (via `register_read_tools`/`register_write_tools`) and core meta-tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, `zscaler_search_tools`).
+- Uses a dedicated logger (`zscaler_mcp.audit`) so log output can be filtered independently.
 
 ## Development
 

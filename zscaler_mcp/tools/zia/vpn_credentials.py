@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -13,17 +14,25 @@ def zia_list_vpn_credentials(
     query_params: Annotated[
         Optional[Dict], Field(description="Optional query parameters for filtering.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
-    """List ZIA VPN credentials."""
+    """List ZIA VPN credentials.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zia.traffic_vpn_credentials
 
     credentials, _, err = api.list_vpn_credentials(query_params=query_params)
     if err:
         raise Exception(f"List failed: {err}")
-    return [c.as_dict() for c in credentials]
+    results = [c.as_dict() for c in credentials]
+    return apply_jmespath(results, query)
 
 
 def zia_get_vpn_credential(

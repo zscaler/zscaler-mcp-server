@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -20,10 +21,17 @@ def zpa_list_app_connectors(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
-    """List ZPA app connectors with optional filtering and pagination. Returns connector status, version, group membership, and health information."""
+    """List ZPA app connectors with optional filtering and pagination. Returns connector status, version, group membership, and health information.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.app_connectors
 
@@ -40,7 +48,8 @@ def zpa_list_app_connectors(
     connectors, _, err = api.list_connectors(query_params=qp)
     if err:
         raise Exception(f"Failed to list app connectors: {err}")
-    return [c.as_dict() for c in (connectors or [])]
+    results = [c.as_dict() for c in (connectors or [])]
+    return apply_jmespath(results, query)
 
 
 def zpa_get_app_connector(

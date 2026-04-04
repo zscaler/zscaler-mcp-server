@@ -585,5 +585,98 @@ class TestZscalerMCPServerAuth(unittest.TestCase):
         mock_auth.get_routes.assert_called_once_with(mcp_path="/sse")
 
 
+class TestSearchTools(unittest.TestCase):
+    """Test cases for the search_tools method."""
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def _make_server(self, mock_get_client, mock_fastmcp, **kwargs):
+        mock_fastmcp.return_value = MagicMock()
+        return ZscalerMCPServer(**kwargs)
+
+    def test_search_by_service(self):
+        server = self._make_server(enabled_services={"zia", "zpa"})
+        result = server.search_tools(service="zia")
+        self.assertTrue(all(t["service"] == "zia" for t in result))
+        self.assertGreater(len(result), 0)
+
+    def test_search_by_name_contains(self):
+        server = self._make_server()
+        result = server.search_tools(name_contains="list")
+        for t in result:
+            self.assertIn("list", t["name"].lower())
+
+    def test_search_by_description_contains(self):
+        server = self._make_server()
+        result = server.search_tools(description_contains="firewall")
+        for t in result:
+            self.assertIn("firewall", t["description"].lower())
+
+    def test_search_no_results(self):
+        server = self._make_server()
+        result = server.search_tools(name_contains="zzz_nonexistent_tool_xyz")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["status"], "no_results")
+
+    def test_search_combined_filters(self):
+        server = self._make_server(enabled_services={"zia"})
+        result = server.search_tools(service="zia", name_contains="list")
+        for t in result:
+            self.assertEqual(t["service"], "zia")
+            self.assertIn("list", t["name"].lower())
+
+    def test_search_with_jmespath_query(self):
+        server = self._make_server()
+        result = server.search_tools(query="[?type == 'read'].name")
+        self.assertIsInstance(result, list)
+        if result:
+            self.assertIsInstance(result[0], str)
+
+    def test_search_with_jmespath_type_filter(self):
+        server = self._make_server()
+        result = server.search_tools(query="[?type == 'write']")
+        for t in result:
+            if isinstance(t, dict) and "type" in t:
+                self.assertEqual(t["type"], "write")
+
+    def test_search_with_invalid_jmespath(self):
+        server = self._make_server()
+        result = server.search_tools(query="[???invalid")
+        self.assertEqual(len(result), 1)
+        self.assertIn("error", result[0])
+
+    def test_search_no_filters_returns_full_catalog(self):
+        server = self._make_server()
+        result = server.search_tools()
+        self.assertGreater(len(result), 0)
+        for t in result:
+            self.assertIn("name", t)
+            self.assertIn("description", t)
+            self.assertIn("service", t)
+            self.assertIn("type", t)
+
+    def test_search_case_insensitive_name(self):
+        server = self._make_server(enabled_services={"zia"})
+        upper = server.search_tools(name_contains="LIST")
+        lower = server.search_tools(name_contains="list")
+        upper_names = {t["name"] for t in upper if isinstance(t, dict) and "name" in t}
+        lower_names = {t["name"] for t in lower if isinstance(t, dict) and "name" in t}
+        self.assertEqual(upper_names, lower_names)
+
+    def test_search_case_insensitive_description(self):
+        server = self._make_server(enabled_services={"zia"})
+        upper = server.search_tools(description_contains="LOCATION")
+        lower = server.search_tools(description_contains="location")
+        upper_names = {t["name"] for t in upper if isinstance(t, dict) and "name" in t}
+        lower_names = {t["name"] for t in lower if isinstance(t, dict) and "name" in t}
+        self.assertEqual(upper_names, lower_names)
+
+    def test_search_service_filter_unknown_service_returns_no_results(self):
+        server = self._make_server()
+        result = server.search_tools(service="nonexistent_service")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["status"], "no_results")
+
+
 if __name__ == "__main__":
     unittest.main()
