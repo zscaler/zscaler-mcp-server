@@ -1267,6 +1267,418 @@ class TestTransportSecurityOrigins(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertIn("http://example.com", result.allowed_origins)
 
+    @patch.dict(
+        os.environ,
+        {"ZSCALER_MCP_ALLOWED_HOSTS": " , , "},
+        clear=True,
+    )
+    def test_allowed_hosts_empty_after_filtering(self):
+        result = _get_transport_security(host="127.0.0.1")
+        self.assertIsNone(result)
+
+    @patch.dict(
+        os.environ,
+        {"ZSCALER_MCP_ALLOWED_HOSTS": " , , "},
+        clear=True,
+    )
+    def test_allowed_hosts_empty_after_filtering_wildcard_host_raises(self):
+        with self.assertRaises(SystemExit):
+            _get_transport_security(host="0.0.0.0")
+
+
+# ============================================================================
+# OLD-STYLE SERVICE FALLBACK (`.tools` without `.read_tools`)
+# ============================================================================
+class _OldStyleService:
+    """Mimics a service that hasn't migrated to read_tools/write_tools split."""
+
+    def __init__(self):
+        self.tools = [{"name": "old_tool_1"}, {"name": "old_tool_2"}]
+
+    def register_tools(self, server, **kwargs):
+        pass
+
+
+class _OldStyleServiceFailing:
+    """Old-style service whose registration always fails."""
+
+    def __init__(self):
+        self.tools = [{"name": "fail_t1"}, {"name": "fail_t2"}, {"name": "fail_t3"}]
+
+    def register_tools(self, server, **kwargs):
+        raise RuntimeError("registration blew up")
+
+
+class _ModernServiceNoToolsAttr:
+    """Service with read_tools/write_tools but no .tools fallback attribute."""
+
+    def __init__(self):
+        self.read_tools = [{"name": "m_r1"}]
+        self.write_tools = [{"name": "m_w1"}]
+
+    def register_tools(self, server, **kwargs):
+        pass
+
+
+class _ModernServiceNoToolsAttrFailing:
+    """Same as above but registration always fails."""
+
+    def __init__(self):
+        self.read_tools = [{"name": "mf_r1"}]
+        self.write_tools = [{"name": "mf_w1"}]
+
+    def register_tools(self, server, **kwargs):
+        raise RuntimeError("modern service blew up")
+
+
+class _ReadOnlyServiceFailing:
+    """Service with only read_tools, no write_tools or .tools — fails on register."""
+
+    def __init__(self):
+        self.read_tools = [{"name": "ro_r1"}]
+
+    def register_tools(self, server, **kwargs):
+        raise RuntimeError("read-only service failed")
+
+
+class TestRegisterToolsOldStyleService(unittest.TestCase):
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_old_style_service_tools_counted(self, mock_get_client, mock_fastmcp):
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia"})
+        server.services = {"zia": _OldStyleService()}
+        count = server._register_tools()
+        self.assertGreaterEqual(count, 5)  # 3 base tools + 2 from old-style
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_old_style_service_exception_tools_counted(self, mock_get_client, mock_fastmcp):
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia"})
+        server.services = {"zia": _OldStyleServiceFailing()}
+        count = server._register_tools()
+        self.assertGreaterEqual(count, 6)  # 3 base + 3 from failing old-style
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_modern_service_no_tools_attr(self, mock_get_client, mock_fastmcp):
+        """Cover elif False branch (635->611): service has write_tools but no .tools."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia"})
+        server.services = {"zia": _ModernServiceNoToolsAttr()}
+        count = server._register_tools()
+        self.assertGreaterEqual(count, 4)  # 3 base + 1 read_tools
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_modern_service_no_tools_attr_exception(self, mock_get_client, mock_fastmcp):
+        """Cover elif False branch in exception handler — service with both attrs."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia"})
+        server.services = {"zia": _ModernServiceNoToolsAttrFailing()}
+        count = server._register_tools()
+        self.assertGreaterEqual(count, 5)  # 3 base + 1 read + 1 write
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_readonly_service_exception_no_write_no_tools(self, mock_get_client, mock_fastmcp):
+        """Cover elif False branch (645->611): no write_tools and no .tools in exception handler."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia"})
+        server.services = {"zia": _ReadOnlyServiceFailing()}
+        count = server._register_tools()
+        self.assertGreaterEqual(count, 4)  # 3 base + 1 read
+
+
+# ============================================================================
+# SERVICE NAME NOT IN AVAILABLE SERVICES (line 539 branch)
+# ============================================================================
+class TestInitServiceNotAvailable(unittest.TestCase):
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_unknown_service_skipped_silently(self, mock_get_client, mock_fastmcp):
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia", "nonexistent_svc_xyz"})
+        self.assertNotIn("nonexistent_svc_xyz", server.services)
+        self.assertIn("zia", server.services)
+
+
+# ============================================================================
+# REGISTER TOOLS — exception handler WITHOUT read_tools (lines 641-643)
+# ============================================================================
+class TestRegisterToolsExceptionNoReadTools(unittest.TestCase):
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_exception_handler_without_read_tools(self, mock_get_client, mock_fastmcp):
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(enabled_services={"zia"})
+
+        bad = MagicMock(spec=[])
+        bad.register_tools = MagicMock(side_effect=Exception("boom"))
+        bad.write_tools = [{"name": "w1"}]
+        server.services = {"zia": bad}
+
+        count = server._register_tools()
+        self.assertGreaterEqual(count, 4)  # 3 base + 1 write
+
+
+# ============================================================================
+# list_available_tools — service without .tools attr (line 994 branch)
+# ============================================================================
+class TestListAvailableToolsNoToolsAttr(unittest.TestCase):
+    @patch("zscaler_mcp.server.logger")
+    def test_service_without_tools_attr(self, mock_logger):
+        bare_cls = MagicMock()
+        bare_instance = MagicMock(spec=[])
+        bare_cls.return_value = bare_instance
+
+        with patch("zscaler_mcp.server.services.get_available_services", return_value={"bare": bare_cls}):
+            list_available_tools(selected_services={"bare"})
+        self.assertTrue(mock_logger.info.called)
+
+
+# ============================================================================
+# parse_tools_list — valid tools (line 1180)
+# ============================================================================
+class TestParseToolsListValid(unittest.TestCase):
+    def test_valid_tool_returns_list(self):
+        result = parse_tools_list("zcc_list_devices")
+        self.assertEqual(result, ["zcc_list_devices"])
+
+    def test_multiple_valid_tools(self):
+        result = parse_tools_list("zcc_list_devices,zcc_list_devices")
+        self.assertEqual(result, ["zcc_list_devices", "zcc_list_devices"])
+
+
+# ============================================================================
+# parse_args() — comprehensive coverage (lines 1185–1350)
+# ============================================================================
+class TestParseArgs(unittest.TestCase):
+    @patch("sys.argv", ["zscaler-mcp"])
+    def test_defaults(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.transport, "stdio")
+        self.assertEqual(args.host, "127.0.0.1")
+        self.assertEqual(args.port, 8000)
+        self.assertFalse(args.debug)
+        self.assertFalse(args.enable_write_tools)
+        self.assertFalse(args.list_tools)
+        self.assertIsNone(args.generate_auth_token)
+        self.assertFalse(args.log_tool_calls)
+
+    @patch("sys.argv", ["zscaler-mcp", "--transport", "sse"])
+    def test_transport_sse(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.transport, "sse")
+
+    @patch("sys.argv", ["zscaler-mcp", "-t", "streamable-http"])
+    def test_transport_short_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.transport, "streamable-http")
+
+    @patch("sys.argv", ["zscaler-mcp", "--debug"])
+    def test_debug_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.debug)
+
+    @patch("sys.argv", ["zscaler-mcp"])
+    def test_debug_from_env(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {"ZSCALER_MCP_DEBUG": "true"}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.debug)
+
+    @patch("sys.argv", ["zscaler-mcp", "--enable-write-tools"])
+    def test_enable_write_tools(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.enable_write_tools)
+
+    @patch("sys.argv", ["zscaler-mcp", "--write-tools", "zpa_create_*,zia_update_*"])
+    def test_write_tools_argument(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.write_tools, "zpa_create_*,zia_update_*")
+
+    @patch("sys.argv", ["zscaler-mcp", "--disabled-tools", "zcc_*"])
+    def test_disabled_tools_argument(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.disabled_tools, "zcc_*")
+
+    @patch("sys.argv", ["zscaler-mcp", "--disabled-services", "zcc,zdx"])
+    def test_disabled_services_argument(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.disabled_services, "zcc,zdx")
+
+    @patch("sys.argv", ["zscaler-mcp", "--client-id", "myid", "--client-secret", "mysecret"])
+    def test_api_credentials(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.client_id, "myid")
+        self.assertEqual(args.client_secret, "mysecret")
+
+    @patch(
+        "sys.argv",
+        ["zscaler-mcp", "--customer-id", "cust123", "--vanity-domain", "acme.zscaler.com"],
+    )
+    def test_customer_and_vanity(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.customer_id, "cust123")
+        self.assertEqual(args.vanity_domain, "acme.zscaler.com")
+
+    @patch("sys.argv", ["zscaler-mcp", "--cloud", "beta"])
+    def test_cloud_argument(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.cloud, "beta")
+
+    @patch("sys.argv", ["zscaler-mcp", "--host", "10.0.0.1", "--port", "9090"])
+    def test_host_port(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.host, "10.0.0.1")
+        self.assertEqual(args.port, 9090)
+
+    @patch("sys.argv", ["zscaler-mcp", "-p", "3000"])
+    def test_port_short_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.port, 3000)
+
+    @patch("sys.argv", ["zscaler-mcp", "--user-agent-comment", "my-agent"])
+    def test_user_agent_comment(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.user_agent_comment, "my-agent")
+
+    @patch("sys.argv", ["zscaler-mcp", "--list-tools"])
+    def test_list_tools_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.list_tools)
+
+    @patch("sys.argv", ["zscaler-mcp", "--generate-auth-token"])
+    def test_generate_auth_token_default(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.generate_auth_token, "basic")
+
+    @patch("sys.argv", ["zscaler-mcp", "--generate-auth-token", "bearer"])
+    def test_generate_auth_token_bearer(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.generate_auth_token, "bearer")
+
+    @patch("sys.argv", ["zscaler-mcp", "--log-tool-calls"])
+    def test_log_tool_calls_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.log_tool_calls)
+
+    @patch("sys.argv", ["zscaler-mcp"])
+    def test_log_tool_calls_from_env(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {"ZSCALER_MCP_LOG_TOOL_CALLS": "true"}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.log_tool_calls)
+
+    @patch("sys.argv", ["zscaler-mcp"])
+    def test_env_var_defaults(self):
+        from zscaler_mcp.server import parse_args
+
+        env = {
+            "ZSCALER_MCP_TRANSPORT": "sse",
+            "ZSCALER_MCP_HOST": "10.0.0.5",
+            "ZSCALER_MCP_PORT": "9999",
+            "ZSCALER_CLIENT_ID": "env_id",
+            "ZSCALER_CLIENT_SECRET": "env_secret",
+            "ZSCALER_CUSTOMER_ID": "env_cust",
+            "ZSCALER_VANITY_DOMAIN": "env.zscaler.com",
+            "ZSCALER_CLOUD": "production",
+            "ZSCALER_MCP_USER_AGENT_COMMENT": "env-agent",
+            "ZSCALER_MCP_WRITE_ENABLED": "true",
+            "ZSCALER_MCP_WRITE_TOOLS": "zpa_*",
+            "ZSCALER_MCP_DISABLED_TOOLS": "zcc_*",
+            "ZSCALER_MCP_DISABLED_SERVICES": "zdx",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            args = parse_args()
+        self.assertEqual(args.transport, "sse")
+        self.assertEqual(args.host, "10.0.0.5")
+        self.assertEqual(args.port, 9999)
+        self.assertEqual(args.client_id, "env_id")
+        self.assertEqual(args.client_secret, "env_secret")
+        self.assertEqual(args.customer_id, "env_cust")
+        self.assertEqual(args.vanity_domain, "env.zscaler.com")
+        self.assertEqual(args.cloud, "production")
+        self.assertEqual(args.user_agent_comment, "env-agent")
+        self.assertTrue(args.enable_write_tools)
+        self.assertEqual(args.write_tools, "zpa_*")
+        self.assertEqual(args.disabled_tools, "zcc_*")
+        self.assertEqual(args.disabled_services, "zdx")
+
+    @patch("sys.argv", ["zscaler-mcp", "-s", "zia,zpa"])
+    def test_services_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertEqual(args.services, ["zia", "zpa"])
+
+    @patch("sys.argv", ["zscaler-mcp", "-d"])
+    def test_debug_short_flag(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.dict(os.environ, {}, clear=True):
+            args = parse_args()
+        self.assertTrue(args.debug)
+
 
 if __name__ == "__main__":
     unittest.main()
