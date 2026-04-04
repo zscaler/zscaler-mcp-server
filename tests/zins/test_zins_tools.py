@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ============================================================================
 # COMMON UTILITIES
 # ============================================================================
@@ -128,9 +127,9 @@ class TestZinsCommonValidation:
             validate_casb_incident_type("PHISHING")
 
     def test_validate_time_range_valid(self):
-        from zscaler_mcp.tools.zins.common import validate_time_range
-
         import time
+
+        from zscaler_mcp.tools.zins.common import validate_time_range
         now_ms = int(time.time() * 1000)
         two_days_ms = 2 * 24 * 60 * 60 * 1000
         validate_time_range(
@@ -260,9 +259,9 @@ class TestZinsCommonTimeResolution:
         assert start < end
 
     def test_calculate_epoch_ms(self):
-        from zscaler_mcp.tools.zins.common import calculate_epoch_ms
-
         import time
+
+        from zscaler_mcp.tools.zins.common import calculate_epoch_ms
         now_ms = int(time.time() * 1000)
         result = calculate_epoch_ms(7)
         expected = now_ms - (7 * 24 * 60 * 60 * 1000)
