@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zdx_list_applications(
@@ -18,11 +19,16 @@ def zdx_list_applications(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Tool for listing all active applications configured within the ZDX tenant.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of all active applications with their details, supporting various
     filtering options including location, department, geolocation, and time range.
@@ -69,6 +75,7 @@ def zdx_list_applications(
 
     # The ZDX SDK returns a list of ActiveApplications objects
     if results:
-        return [app.as_dict() for app in results]
+        results_list = [app.as_dict() for app in results]
+        return apply_jmespath(results_list, query)
     else:
         return []

@@ -10,6 +10,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.tools.zms import apply_jmespath_query
 
 
 def zms_list_agent_groups(
@@ -33,6 +34,10 @@ def zms_list_agent_groups(
         Optional[str],
         Field(description="Sort direction: ASC or DESC."),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection on the result. Example: \"nodes[?agent_group_type=='LINUX']\"."),
+    ] = None,
     service: Annotated[
         Optional[str],
         Field(description="The service to use."),
@@ -47,11 +52,13 @@ def zms_list_agent_groups(
 
     Returns agent groups with their type, cloud provider, agent count,
     policy status, upgrade settings, and tamper protection status.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Use this tool to:
     - View all configured agent groups
     - Check upgrade schedules and auto-upgrade settings
     - Monitor policy and tamper protection status per group
+    - Use JMESPath queries for advanced filtering (e.g., nodes[?agent_group_type=='LINUX'])
     """
     customer_id = os.environ.get("ZSCALER_CUSTOMER_ID", "")
     if not customer_id:
@@ -77,7 +84,7 @@ def zms_list_agent_groups(
         return [{"error": f"SDK error: {err}"}]
     if not result:
         return [{"status": "no_data", "message": "No agent groups found."}]
-    return [result]
+    return apply_jmespath_query(result, query)
 
 
 def zms_get_agent_group_totp_secrets(

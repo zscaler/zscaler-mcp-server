@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def ztw_list_roles(
@@ -27,11 +28,16 @@ def ztw_list_roles(
     search: Annotated[
         Optional[str], Field(description="Search string to filter roles by name.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Union[List[dict], str]:
     """
     List all existing admin roles in Zscaler Cloud & Branch Connector (ZTW).
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         include_auditor_role (bool, optional): Include or exclude auditor user information in the list.
@@ -89,4 +95,5 @@ def ztw_list_roles(
     roles, _, err = client.ztw.admin_roles.list_roles(query_params=query_params)
     if err:
         raise Exception(f"Error listing ZTW admin roles: {err}")
-    return [r.as_dict() for r in roles]
+    results = [r.as_dict() for r in roles]
+    return apply_jmespath(results, query)

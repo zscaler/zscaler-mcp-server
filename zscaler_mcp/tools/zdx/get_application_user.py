@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -29,12 +30,17 @@ def zdx_list_application_users(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists users and devices that accessed a specific ZDX application.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of users and devices that were used to access the specified application.
     Supports filtering by performance score bucket, location, department, and time range.
@@ -86,7 +92,8 @@ def zdx_list_application_users(
     if result and len(result) > 0:
         users_obj = result[0]
         users_list = users_obj.users if hasattr(users_obj, "users") else []
-        return [user.as_dict() for user in users_list]
+        results_list = [user.as_dict() for user in users_list]
+        return apply_jmespath(results_list, query)
     else:
         return []
 

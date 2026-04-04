@@ -3,6 +3,7 @@ from typing import Annotated, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -16,10 +17,17 @@ def zpa_list_segment_groups(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
-    """List ZPA segment groups with optional filtering and pagination."""
+    """List ZPA segment groups with optional filtering and pagination.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     sg = client.zpa.segment_groups
 
@@ -34,7 +42,8 @@ def zpa_list_segment_groups(
     groups, _, err = sg.list_groups(query_params=qp)
     if err:
         raise Exception(f"Failed to list segment groups: {err}")
-    return [g.as_dict() for g in (groups or [])]
+    results = [g.as_dict() for g in (groups or [])]
+    return apply_jmespath(results, query)
 
 
 def zpa_get_segment_group(

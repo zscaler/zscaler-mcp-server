@@ -1,9 +1,10 @@
 import json
-from typing import Annotated, List, Union
+from typing import Annotated, List, Optional, Union
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -11,16 +12,24 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zia_list_auth_exempt_urls(
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
-    """Retrieve the current list of cookie authentication exempt URLs in ZIA."""
+    """Retrieve the current list of cookie authentication exempt URLs in ZIA.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
 
     url_list, _, err = client.zia.authentication_settings.get_exempted_urls()
     if err:
         raise Exception(f"Exempt URL list retrieval failed: {err}")
-    return url_list or []
+    results = url_list or []
+    return apply_jmespath(results, query)
 
 
 # =============================================================================

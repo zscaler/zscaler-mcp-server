@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional, Union
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def ztw_list_admins(
@@ -27,11 +28,16 @@ def ztw_list_admins(
     version: Annotated[
         Optional[int], Field(description="Specifies the admins from a backup version.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Union[List[dict], dict, str]:
     """
     List all existing admin users or get details for a specific admin user in Zscaler Cloud & Branch Connector (ZTW).
+    Supports JMESPath client-side filtering via the query parameter.
 
     Args:
         action (str): Action to perform: 'list_admins' or 'get_admin'. Defaults to 'list_admins'.
@@ -95,7 +101,8 @@ def ztw_list_admins(
         admin, _, err = client.ztw.admin_users.get_admin(admin_id)
         if err:
             raise Exception(f"Error getting ZTW admin {admin_id}: {err}")
-        return admin.as_dict()
+        result = admin.as_dict()
+        return apply_jmespath(result, query)
 
     elif action == "list_admins":
         query_params = {}
@@ -117,7 +124,8 @@ def ztw_list_admins(
         admins, _, err = client.ztw.admin_users.list_admins(query_params=query_params)
         if err:
             raise Exception(f"Error listing ZTW admins: {err}")
-        return [a.as_dict() for a in admins]
+        results = [a.as_dict() for a in admins]
+        return apply_jmespath(results, query)
 
     else:
         raise ValueError(f"Invalid action '{action}'. Must be 'list_admins' or 'get_admin'")

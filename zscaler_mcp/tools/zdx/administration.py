@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 # ============================================================================
 # READ-ONLY OPERATIONS
@@ -19,12 +20,17 @@ def zdx_list_departments(
             description="Number of hours to look back for devices (default 2 hours if not provided)."
         ),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists ZDX departments with optional filtering.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of departments (e.g., IT, Finance) configured within the ZDX tenant.
     Supports optional filtering by search term and time range.
@@ -62,7 +68,8 @@ def zdx_list_departments(
     departments, _, err = client.zdx.admin.list_departments(query_params=query_params)
     if err:
         raise Exception(f"Error retrieving departments: {err}")
-    return [d.as_dict() for d in departments]
+    results_list = [d.as_dict() for d in departments]
+    return apply_jmespath(results_list, query)
 
 
 def zdx_list_locations(
@@ -75,12 +82,17 @@ def zdx_list_locations(
             description="Number of hours to look back for devices (default 2 hours if not provided)."
         ),
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
     Lists ZDX locations with optional filtering.
     This is a read-only operation.
+    Supports JMESPath client-side filtering via the query parameter.
 
     Returns a list of locations (e.g., San Francisco, London) configured within the ZDX tenant.
     Supports optional filtering by search term and time range.
@@ -118,4 +130,5 @@ def zdx_list_locations(
     locations, _, err = client.zdx.admin.list_locations(query_params=query_params)
     if err:
         raise Exception(f"Error retrieving locations: {err}")
-    return [location.as_dict() for location in locations]
+    results_list = [location.as_dict() for location in locations]
+    return apply_jmespath(results_list, query)

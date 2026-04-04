@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import convert_v1_to_v2_response, convert_v2_to_sdk_format
 
 # =============================================================================
@@ -17,10 +18,17 @@ def zpa_list_access_policy_rules(
     query_params: Annotated[
         Optional[Dict[str, Any]], Field(description="Optional query parameters for filtering.")
     ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection of results."),
+    ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict[str, Any]]:
-    """List ZPA access policy rules."""
+    """List ZPA access policy rules.
+
+    Supports JMESPath client-side filtering via the query parameter.
+    """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     api = client.zpa.policies
     policy_type = "access"
@@ -32,7 +40,8 @@ def zpa_list_access_policy_rules(
     rules, _, err = api.list_rules(policy_type, query_params=qp)
     if err:
         raise Exception(f"Failed to list access policy rules: {err}")
-    return [r.as_dict() for r in (rules or [])]
+    results = [r.as_dict() for r in (rules or [])]
+    return apply_jmespath(results, query)
 
 
 def zpa_get_access_policy_rule(
