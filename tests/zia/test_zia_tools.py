@@ -8,7 +8,6 @@ list_users, list_user_groups, list_user_departments,
 static_ips, vpn_credentials, gre_tunnels, get_sandbox_info.
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -8,7 +8,6 @@ forwarding rules, timeout rules, isolation rules, app protection rules,
 and getter/manager tools.
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
