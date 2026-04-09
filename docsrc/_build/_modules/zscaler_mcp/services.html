@@ -209,15 +209,17 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -336,7 +338,6 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import ZCC tools (all read-only)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zcc.download_devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">zcc_devices_csv_exporter</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zcc.list_devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">zcc_list_devices</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zcc.list_forwarding_profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">zcc_list_forwarding_profiles</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zcc.list_trusted_networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">zcc_list_trusted_networks</span>
@@ -346,22 +347,17 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zcc_list_devices</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zcc_list_devices&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal (read-only)&quot;</span><span class="p">,</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zcc_devices_csv_exporter</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zcc_devices_csv_exporter&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Downloads ZCC device information or service status as a CSV file (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zcc_list_trusted_networks</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zcc_list_trusted_networks&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Returns the list of Trusted Networks By Company ID in the Client Connector Portal (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Returns the list of Trusted Networks By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zcc_list_forwarding_profiles</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zcc_list_forwarding_profiles&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
 
@@ -436,7 +432,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_devices</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_devices&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX devices with optional filtering (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX devices with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_device</span><span class="p">,</span>
@@ -446,12 +442,12 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_departments</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_departments&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX departments (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX departments (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_locations</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_locations&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX locations (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX locations (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_application_metric</span><span class="p">,</span>
@@ -471,7 +467,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_application_users</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_application_users&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List users for a ZDX application (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List users for a ZDX application (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_application_user</span><span class="p">,</span>
@@ -481,7 +477,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_alerts</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_alerts&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX alerts (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX alerts (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_alert</span><span class="p">,</span>
@@ -491,17 +487,17 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_alert_affected_devices</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_alert_affected_devices&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List devices affected by a ZDX alert (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List devices affected by a ZDX alert (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_applications</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_applications&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX applications (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX applications (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_device_deep_traces</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_device_deep_traces&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX deep traces for a device (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX deep traces for a device (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_device_deep_trace</span><span class="p">,</span>
@@ -511,7 +507,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_deeptrace_top_processes</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_deeptrace_top_processes&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get top processes from a ZDX deep trace session (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get top processes from a ZDX deep trace session (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_deeptrace_webprobe_metrics</span><span class="p">,</span>
@@ -551,17 +547,17 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_cloudpath_probes</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_cloudpath_probes&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List cloud path probes for an app on a device - returns cloudpath_probe_id needed for zdx_start_deeptrace (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List cloud path probes for an app on a device - returns cloudpath_probe_id needed for zdx_start_deeptrace (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_historical_alerts</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_historical_alerts&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX historical alerts (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX historical alerts (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_list_software</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zdx_list_software&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX software inventory (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZDX software inventory (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zdx_get_software_details</span><span class="p">,</span>
@@ -746,7 +742,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_application_segments</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_application_segments&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA application segments with optional filtering (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA application segments with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_application_segment</span><span class="p">,</span>
@@ -756,7 +752,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_app_connector_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_app_connector_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app connector groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app connector groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_app_connector_group</span><span class="p">,</span>
@@ -766,7 +762,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_app_connectors</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_app_connectors&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app connectors with status, version, and health information (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app connectors with status, version, and health information (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_app_connector</span><span class="p">,</span>
@@ -776,7 +772,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_server_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_server_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA server groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA server groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_server_group</span><span class="p">,</span>
@@ -786,7 +782,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_segment_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_segment_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA segment groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA segment groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_segment_group</span><span class="p">,</span>
@@ -796,7 +792,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_application_servers</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_application_servers&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA application servers (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA application servers (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_application_server</span><span class="p">,</span>
@@ -806,7 +802,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_service_edge_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_service_edge_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA service edge groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA service edge groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_service_edge_group</span><span class="p">,</span>
@@ -816,7 +812,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_ba_certificates</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_ba_certificates&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA browser access certificates (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA browser access certificates (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_ba_certificate</span><span class="p">,</span>
@@ -826,7 +822,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_access_policy_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_access_policy_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA access policy rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA access policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_access_policy_rule</span><span class="p">,</span>
@@ -836,7 +832,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_forwarding_policy_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_forwarding_policy_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA forwarding policy rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA forwarding policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_forwarding_policy_rule</span><span class="p">,</span>
@@ -846,7 +842,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_timeout_policy_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_timeout_policy_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA timeout policy rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA timeout policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_timeout_policy_rule</span><span class="p">,</span>
@@ -856,7 +852,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_isolation_policy_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_isolation_policy_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA isolation policy rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA isolation policy rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_isolation_policy_rule</span><span class="p">,</span>
@@ -866,7 +862,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_app_protection_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_app_protection_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app protection rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app protection rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_app_protection_rule</span><span class="p">,</span>
@@ -876,7 +872,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_provisioning_keys</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_provisioning_keys&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA provisioning keys (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA provisioning keys (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_provisioning_key</span><span class="p">,</span>
@@ -886,7 +882,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_pra_portals</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_pra_portals&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA PRA portals (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA PRA portals (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_pra_portal</span><span class="p">,</span>
@@ -896,7 +892,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_pra_credentials</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_pra_credentials&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA PRA credentials (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA PRA credentials (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_pra_credential</span><span class="p">,</span>
@@ -1373,7 +1369,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_firewall_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_firewall_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud firewall rules with optional filtering (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud firewall rules with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_cloud_firewall_rule</span><span class="p">,</span>
@@ -1384,7 +1380,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_url_filtering_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_url_filtering_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA URL filtering rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA URL filtering rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_url_filtering_rule</span><span class="p">,</span>
@@ -1395,12 +1391,12 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_web_dlp_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_web_dlp_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA web DLP rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA web DLP rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_web_dlp_rules_lite</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_web_dlp_rules_lite&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA web DLP rules in lite format (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA web DLP rules in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_web_dlp_rule</span><span class="p">,</span>
@@ -1411,7 +1407,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_ssl_inspection_rules</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_ssl_inspection_rules&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA SSL inspection rules (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA SSL inspection rules (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_ssl_inspection_rule</span><span class="p">,</span>
@@ -1450,7 +1446,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_ip_source_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_ip_source_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA IP source groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA IP source groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_ip_source_group</span><span class="p">,</span>
@@ -1461,7 +1457,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_ip_destination_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_ip_destination_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA IP destination groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA IP destination groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_ip_destination_group</span><span class="p">,</span>
@@ -1472,7 +1468,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_app_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_app_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network application groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network application groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_app_group</span><span class="p">,</span>
@@ -1483,7 +1479,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_apps</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_apps&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network applications with optional filtering by search or locale (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network applications with optional filtering by search or locale (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_app</span><span class="p">,</span>
@@ -1494,7 +1490,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_services</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_services&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network services with optional filtering by protocol or search (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network services with optional filtering by protocol or search (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_service</span><span class="p">,</span>
@@ -1505,7 +1501,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_svc_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_svc_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network service groups with optional filtering (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network service groups with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_svc_group</span><span class="p">,</span>
@@ -1516,7 +1512,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_url_categories</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_url_categories&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA URL categories (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA URL categories (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_url_category</span><span class="p">,</span>
@@ -1532,7 +1528,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_rule_labels</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_rule_labels&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA rule labels (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA rule labels (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_rule_label</span><span class="p">,</span>
@@ -1543,7 +1539,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_locations</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_locations&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA locations (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA locations (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_location</span><span class="p">,</span>
@@ -1554,7 +1550,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_vpn_credentials</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_vpn_credentials&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA VPN credentials (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA VPN credentials (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_vpn_credential</span><span class="p">,</span>
@@ -1565,7 +1561,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_static_ips</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_static_ips&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA static IPs (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA static IPs (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_static_ip</span><span class="p">,</span>
@@ -1576,7 +1572,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_gre_tunnels</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_gre_tunnels&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA GRE tunnels (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA GRE tunnels (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_gre_tunnel</span><span class="p">,</span>
@@ -1586,7 +1582,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_gre_ranges</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_gre_ranges&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List available ZIA GRE IP ranges (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List available ZIA GRE IP ranges (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Activation</span>
             <span class="p">{</span>
@@ -1598,46 +1594,46 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_atp_malicious_urls</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_atp_malicious_urls&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA ATP malicious URLs (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA ATP malicious URLs (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Auth Exempt URLs</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_auth_exempt_urls</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_auth_exempt_urls&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA authentication exempt URLs (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA authentication exempt URLs (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Cloud Applications</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_applications</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_applications&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud applications (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud applications (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_application_custom_tags&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud application custom tags (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud application custom tags (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Cloud App Control</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_control_actions</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_control_actions&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List granular actions supported for a Cloud App Control rule type (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List granular actions supported for a Cloud App Control rule type (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Device Management</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_device_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_device_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA device groups with optional device info and pseudo group filtering (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA device groups with optional device info and pseudo group filtering (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_devices</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_devices&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA devices with filtering by name, user, pagination support (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA devices with filtering by name, user, pagination support (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_devices_lite</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_devices_lite&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA devices in lightweight format (ID, name, owner only) (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA devices in lightweight format (ID, name, owner only) (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Utilities</span>
             <span class="p">{</span>
@@ -2008,62 +2004,62 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_ip_destination_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_ip_destination_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP destination groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP destination groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_ip_destination_groups_lite</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_ip_destination_groups_lite&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP destination groups in lite format (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP destination groups in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_ip_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_ip_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_ip_groups_lite</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_ip_groups_lite&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP groups in lite format (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP groups in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_ip_source_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_ip_source_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP source groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP source groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_ip_source_groups_lite</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_ip_source_groups_lite&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP source groups in lite format (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW IP source groups in lite format (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_network_service_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_network_service_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW network service groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW network service groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_roles</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_roles&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all existing admin roles in ZTW (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all existing admin roles in ZTW (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_admins</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_admins&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all existing admin users in ZTW (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all existing admin users in ZTW (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_public_cloud_info</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_public_cloud_info&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW public cloud accounts with metadata (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW public cloud accounts with metadata (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_network_services</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_network_services&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW network services (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZTW network services (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_list_public_account_details</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ztw_list_public_account_details&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List detailed ZTW public cloud account information (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List detailed ZTW public cloud account information (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">ztw_get_discovery_settings</span><span class="p">,</span>
@@ -2125,87 +2121,87 @@
 
 
 
-<div class="viewcode-block" id="ZIdentityService">
-<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZIdentityService">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ZIdentityService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+<div class="viewcode-block" id="ZIDService">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZIDService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ZIDService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Zscaler ZIdentity service.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import verb-based ZIdentity tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zidentity.groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zidentity_get_group</span><span class="p">,</span>
-            <span class="n">zidentity_get_group_users</span><span class="p">,</span>
-            <span class="n">zidentity_get_group_users_by_name</span><span class="p">,</span>
-            <span class="n">zidentity_list_groups</span><span class="p">,</span>
-            <span class="n">zidentity_search_groups</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zid.groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zid_get_group</span><span class="p">,</span>
+            <span class="n">zid_get_group_users</span><span class="p">,</span>
+            <span class="n">zid_get_group_users_by_name</span><span class="p">,</span>
+            <span class="n">zid_list_groups</span><span class="p">,</span>
+            <span class="n">zid_search_groups</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zidentity.users</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zidentity_get_user</span><span class="p">,</span>
-            <span class="n">zidentity_get_user_groups</span><span class="p">,</span>
-            <span class="n">zidentity_get_user_groups_by_name</span><span class="p">,</span>
-            <span class="n">zidentity_list_users</span><span class="p">,</span>
-            <span class="n">zidentity_search_users</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zid.users</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zid_get_user</span><span class="p">,</span>
+            <span class="n">zid_get_user_groups</span><span class="p">,</span>
+            <span class="n">zid_get_user_groups_by_name</span><span class="p">,</span>
+            <span class="n">zid_list_users</span><span class="p">,</span>
+            <span class="n">zid_search_users</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># All ZIdentity tools are read-only</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_list_groups</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_list_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIdentity groups (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_list_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_list_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIdentity groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_get_group</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_get_group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_get_group</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_get_group&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIdentity group by ID (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_search_groups</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_search_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_search_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_search_groups&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Search ZIdentity groups (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_get_group_users</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_get_group_users&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_get_group_users</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_get_group_users&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get users in a ZIdentity group (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_get_group_users_by_name</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_get_group_users_by_name&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_get_group_users_by_name</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_get_group_users_by_name&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get users in a ZIdentity group by group name (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_list_users</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_list_users&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIdentity users (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_list_users</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_list_users&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIdentity users (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_get_user</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_get_user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_get_user</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_get_user&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIdentity user by ID (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_search_users</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_search_users&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_search_users</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_search_users&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Search ZIdentity users (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_get_user_groups</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_get_user_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_get_user_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_get_user_groups&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get groups for a ZIdentity user (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zidentity_get_user_groups_by_name</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zidentity_get_user_groups_by_name&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zid_get_user_groups_by_name</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zid_get_user_groups_by_name&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get groups for a ZIdentity user by username (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># ZIdentity has no write operations</span>
 
-<div class="viewcode-block" id="ZIdentityService.register_tools">
-<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZIdentityService.register_tools">[docs]</a>
+<div class="viewcode-block" id="ZIDService.register_tools">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZIDService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
@@ -2251,13 +2247,13 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_list_organizations</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_list_organizations&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all EASM organizations configured for the tenant (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all EASM organizations configured for the tenant (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Findings</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_list_findings</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_list_findings&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all EASM findings for an organization (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all EASM findings for an organization (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_get_finding_details</span><span class="p">,</span>
@@ -2278,7 +2274,7 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_list_lookalike_domains</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zeasm_list_lookalike_domains&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all lookalike domains detected for an organization (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List all lookalike domains detected for an organization (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zeasm_get_lookalike_domain</span><span class="p">,</span>
@@ -2308,9 +2304,9 @@
 
 
 
-<div class="viewcode-block" id="ZInsightsService">
-<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZInsightsService">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ZInsightsService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+<div class="viewcode-block" id="ZINSService">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZINSService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ZINSService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Zscaler Z-Insights Analytics service.</span>
 
 <span class="sd">    Provides analytics and reporting capabilities through the Z-Insights GraphQL API.</span>
@@ -2329,41 +2325,41 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
         <span class="c1"># Import Z-Insights Web Traffic tools</span>
         <span class="c1"># Import Z-Insights Cyber Security tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.cyber_security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zinsights_get_cyber_incidents</span><span class="p">,</span>
-            <span class="n">zinsights_get_cyber_incidents_by_location</span><span class="p">,</span>
-            <span class="n">zinsights_get_cyber_incidents_by_threat_and_app</span><span class="p">,</span>
-            <span class="n">zinsights_get_cyber_incidents_daily</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zins.cyber_security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zins_get_cyber_incidents</span><span class="p">,</span>
+            <span class="n">zins_get_cyber_incidents_by_location</span><span class="p">,</span>
+            <span class="n">zins_get_cyber_incidents_by_threat_and_app</span><span class="p">,</span>
+            <span class="n">zins_get_cyber_incidents_daily</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Import Z-Insights Firewall tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.firewall</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zinsights_get_firewall_by_action</span><span class="p">,</span>
-            <span class="n">zinsights_get_firewall_by_location</span><span class="p">,</span>
-            <span class="n">zinsights_get_firewall_network_services</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zins.firewall</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zins_get_firewall_by_action</span><span class="p">,</span>
+            <span class="n">zins_get_firewall_by_location</span><span class="p">,</span>
+            <span class="n">zins_get_firewall_network_services</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Import Z-Insights IoT tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.iot</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zinsights_get_iot_device_stats</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zins.iot</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zins_get_iot_device_stats</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Import Z-Insights SaaS Security / CASB tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.saas_security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zinsights_get_casb_app_report</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zins.saas_security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zins_get_casb_app_report</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Import Z-Insights Shadow IT tools</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.shadow_it</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zinsights_get_shadow_it_apps</span><span class="p">,</span>
-            <span class="n">zinsights_get_shadow_it_summary</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zins.shadow_it</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zins_get_shadow_it_apps</span><span class="p">,</span>
+            <span class="n">zins_get_shadow_it_summary</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zinsights.web_traffic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zinsights_get_threat_class</span><span class="p">,</span>
-            <span class="n">zinsights_get_threat_super_categories</span><span class="p">,</span>
-            <span class="n">zinsights_get_web_protocols</span><span class="p">,</span>
-            <span class="n">zinsights_get_web_traffic_by_location</span><span class="p">,</span>
-            <span class="n">zinsights_get_web_traffic_no_grouping</span><span class="p">,</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zins.web_traffic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zins_get_threat_class</span><span class="p">,</span>
+            <span class="n">zins_get_threat_super_categories</span><span class="p">,</span>
+            <span class="n">zins_get_web_protocols</span><span class="p">,</span>
+            <span class="n">zins_get_web_traffic_by_location</span><span class="p">,</span>
+            <span class="n">zins_get_web_traffic_no_grouping</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># All Z-Insights tools are read-only (analytics)</span>
@@ -2371,152 +2367,136 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
             <span class="c1"># Web Traffic Analytics</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_web_traffic_by_location</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_web_traffic_by_location&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_web_traffic_by_location</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_web_traffic_by_location&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for web traffic analytics by location. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: traffic volume, bandwidth usage, location traffic, &quot;</span>
-                    <span class="s2">&quot;office traffic comparisons. This is the ONLY tool for location-based traffic analytics.&quot;</span>
+                    <span class="s2">&quot;Provides web traffic analytics grouped by location, including traffic volume, &quot;</span>
+                    <span class="s2">&quot;bandwidth usage, and office traffic comparisons.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_web_traffic_no_grouping</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_web_traffic_no_grouping&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_web_traffic_no_grouping</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_web_traffic_no_grouping&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for total/overall web traffic volume. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: total traffic, overall bandwidth, aggregate web usage. &quot;</span>
-                    <span class="s2">&quot;This is the ONLY tool for ungrouped total traffic metrics.&quot;</span>
+                    <span class="s2">&quot;Provides total web traffic volume metrics without grouping, including &quot;</span>
+                    <span class="s2">&quot;aggregate bandwidth and overall web usage statistics.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_web_protocols</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_web_protocols&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_web_protocols</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_web_protocols&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for web protocol distribution (HTTP, HTTPS, etc.). &quot;</span>
-                    <span class="s2">&quot;Use for questions about: protocol usage, HTTPS adoption, protocol breakdown. &quot;</span>
-                    <span class="s2">&quot;This is the ONLY tool for web protocol analytics.&quot;</span>
+                    <span class="s2">&quot;Provides web protocol distribution analytics (HTTP, HTTPS, SSL), &quot;</span>
+                    <span class="s2">&quot;including protocol usage and HTTPS adoption metrics.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_threat_super_categories</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_threat_super_categories&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_threat_super_categories</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_threat_super_categories&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for threat category analytics (malware, phishing, spyware, etc.). &quot;</span>
-                    <span class="s2">&quot;Use for questions about: what threats we&#39;re seeing, threat types, threat categories, &quot;</span>
-                    <span class="s2">&quot;security threats, malware detected. This is the ONLY tool for threat category data.&quot;</span>
+                    <span class="s2">&quot;Provides threat super-category analytics including malware, phishing, spyware, &quot;</span>
+                    <span class="s2">&quot;and other threat types detected across the tenant.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_threat_class</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_threat_class&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_threat_class</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_threat_class&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for threat classification analytics (virus, trojan, ransomware, etc.). &quot;</span>
-                    <span class="s2">&quot;Use for questions about: threat classes, types of malware, threat classifications. &quot;</span>
-                    <span class="s2">&quot;This is the ONLY tool for threat class data.&quot;</span>
+                    <span class="s2">&quot;Provides detailed threat classification analytics including virus, trojan, &quot;</span>
+                    <span class="s2">&quot;ransomware, and other malware type breakdowns.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="c1"># Cyber Security Analytics</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_cyber_incidents</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_cyber_incidents&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for cybersecurity incidents by category. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: security incidents, cyber attacks, incident breakdown, &quot;</span>
-                    <span class="s2">&quot;threats by category, security events. This is the ONLY tool for incident category data.&quot;</span>
+                    <span class="s2">&quot;Provides cybersecurity incidents grouped by category, including &quot;</span>
+                    <span class="s2">&quot;security events, cyber attacks, and incident breakdowns.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents_by_location</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents_by_location&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_cyber_incidents_by_location</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_cyber_incidents_by_location&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for cybersecurity incidents by location. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: which locations have incidents, security by office, &quot;</span>
-                    <span class="s2">&quot;incident distribution across sites. This is the ONLY tool for location-based incident data.&quot;</span>
+                    <span class="s2">&quot;Provides cybersecurity incidents grouped by location, showing &quot;</span>
+                    <span class="s2">&quot;incident distribution across offices and sites.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents_daily</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents_daily&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_cyber_incidents_daily</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_cyber_incidents_daily&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for daily cybersecurity incident trends. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: incident trends over time, daily security stats, &quot;</span>
-                    <span class="s2">&quot;security incident patterns. This is the ONLY tool for time-based incident trends.&quot;</span>
+                    <span class="s2">&quot;Provides daily cybersecurity incident trends, showing &quot;</span>
+                    <span class="s2">&quot;incident patterns and security statistics over time.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_cyber_incidents_by_threat_and_app</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_cyber_incidents_by_threat_and_app&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_cyber_incidents_by_threat_and_app</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_cyber_incidents_by_threat_and_app&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for incidents correlated by threat and application. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: which apps are targeted, threat/app correlation, &quot;</span>
-                    <span class="s2">&quot;application security risks. This is the ONLY tool for threat-application correlation.&quot;</span>
+                    <span class="s2">&quot;Provides cybersecurity incidents correlated by threat type and application, &quot;</span>
+                    <span class="s2">&quot;showing which apps are targeted and threat-application relationships.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="c1"># Firewall Analytics</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_firewall_by_action</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_firewall_by_action&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_firewall_by_action</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_firewall_by_action&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for firewall traffic by action (allow/block). &quot;</span>
-                    <span class="s2">&quot;Use for questions about: blocked traffic, allowed traffic, firewall actions, &quot;</span>
-                    <span class="s2">&quot;firewall policy effectiveness. This is the ONLY tool for firewall action data.&quot;</span>
+                    <span class="s2">&quot;Provides Zero Trust Firewall traffic analytics by action (allow/block), &quot;</span>
+                    <span class="s2">&quot;including blocked traffic volume and firewall policy effectiveness.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_firewall_by_location</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_firewall_by_location&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_firewall_by_location</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_firewall_by_location&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for firewall traffic by location. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: firewall activity by office, location firewall stats, &quot;</span>
-                    <span class="s2">&quot;branch firewall traffic. This is the ONLY tool for location-based firewall data.&quot;</span>
+                    <span class="s2">&quot;Provides Zero Trust Firewall traffic analytics grouped by location, &quot;</span>
+                    <span class="s2">&quot;including firewall activity by office and branch.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_firewall_network_services</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_firewall_network_services&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_firewall_network_services</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_firewall_network_services&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for firewall network service usage. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: network services, port usage, protocol/port activity, &quot;</span>
-                    <span class="s2">&quot;firewall service breakdown. This is the ONLY tool for firewall network service data.&quot;</span>
+                    <span class="s2">&quot;Provides firewall network service usage analytics, including &quot;</span>
+                    <span class="s2">&quot;port usage, protocol activity, and service breakdowns.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="c1"># SaaS Security / CASB Analytics</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_casb_app_report</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_casb_app_report&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_casb_app_report</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_casb_app_report&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for CASB SaaS application usage. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: cloud app usage, SaaS applications, CASB data, &quot;</span>
-                    <span class="s2">&quot;cloud service adoption. This is the ONLY tool for CASB application data.&quot;</span>
+                    <span class="s2">&quot;Provides CASB SaaS application usage analytics, including &quot;</span>
+                    <span class="s2">&quot;cloud app usage and cloud service adoption metrics.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="c1"># Shadow IT Analytics</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_shadow_it_apps</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_shadow_it_apps&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_shadow_it_apps</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_shadow_it_apps&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for discovered shadow IT applications. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: unsanctioned apps, shadow IT, unauthorized applications, &quot;</span>
-                    <span class="s2">&quot;risky apps, app risk scores. This is the ONLY tool for shadow IT app discovery.&quot;</span>
+                    <span class="s2">&quot;Provides discovered shadow IT applications with risk scores, &quot;</span>
+                    <span class="s2">&quot;including unsanctioned and unauthorized application detection.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_shadow_it_summary</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_shadow_it_summary&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_shadow_it_summary</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_shadow_it_summary&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for shadow IT summary and statistics. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: shadow IT overview, total shadow apps, shadow IT dashboard, &quot;</span>
-                    <span class="s2">&quot;app categories, risk distribution. This is the ONLY tool for shadow IT summary.&quot;</span>
+                    <span class="s2">&quot;Provides shadow IT summary statistics, including total shadow apps, &quot;</span>
+                    <span class="s2">&quot;app categories, and risk distribution overview.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
             <span class="c1"># IoT Analytics</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zinsights_get_iot_device_stats</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zinsights_get_iot_device_stats&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zins_get_iot_device_stats</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zins_get_iot_device_stats&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                    <span class="s2">&quot;AUTHORITATIVE SOURCE for IoT device statistics and classifications. &quot;</span>
-                    <span class="s2">&quot;Use for questions about: IoT devices, device inventory, connected devices, &quot;</span>
-                    <span class="s2">&quot;device types, unmanaged devices. This is the ONLY tool for IoT device data.&quot;</span>
+                    <span class="s2">&quot;Provides IoT device statistics and classifications, including &quot;</span>
+                    <span class="s2">&quot;device inventory, connected device types, and unmanaged devices.&quot;</span>
                 <span class="p">),</span>
             <span class="p">},</span>
         <span class="p">]</span>
@@ -2524,8 +2504,8 @@
         <span class="c1"># Z-Insights is analytics-only - no write operations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="p">[]</span>
 
-<div class="viewcode-block" id="ZInsightsService.register_tools">
-<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZInsightsService.register_tools">[docs]</a>
+<div class="viewcode-block" id="ZINSService.register_tools">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZINSService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
@@ -2545,6 +2525,277 @@
 
 
 
+<div class="viewcode-block" id="ZMSService">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZMSService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ZMSService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Zscaler Microsegmentation (ZMS) service.</span>
+
+<span class="sd">    Provides read-only tools for managing and inspecting microsegmentation</span>
+<span class="sd">    deployments through the ZMS GraphQL API.</span>
+
+<span class="sd">    Available domains in the ZMS API:</span>
+<span class="sd">    - AGENTS: Agent inventory, connection status, and version statistics</span>
+<span class="sd">    - AGENT_GROUPS: Agent group management and TOTP secrets</span>
+<span class="sd">    - RESOURCES: Workload inventory and protection status</span>
+<span class="sd">    - RESOURCE_GROUPS: Resource group membership and protection status</span>
+<span class="sd">    - POLICY_RULES: Microsegmentation policy rules and defaults</span>
+<span class="sd">    - APP_ZONES: Application zone definitions</span>
+<span class="sd">    - APP_CATALOG: Discovered application catalog</span>
+<span class="sd">    - NONCES: Provisioning key management</span>
+<span class="sd">    - TAGS: Tag namespace, key, and value hierarchy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zscaler_client</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">zscaler_client</span><span class="p">)</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.agent_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_get_agent_group_totp_secrets</span><span class="p">,</span>
+            <span class="n">zms_list_agent_groups</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.agents</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_get_agent_connection_status_statistics</span><span class="p">,</span>
+            <span class="n">zms_get_agent_version_statistics</span><span class="p">,</span>
+            <span class="n">zms_list_agents</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.app_catalog</span><span class="w"> </span><span class="kn">import</span> <span class="n">zms_list_app_catalog</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.app_zones</span><span class="w"> </span><span class="kn">import</span> <span class="n">zms_list_app_zones</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.nonces</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_get_nonce</span><span class="p">,</span>
+            <span class="n">zms_list_nonces</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.policy_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_list_default_policy_rules</span><span class="p">,</span>
+            <span class="n">zms_list_policy_rules</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.resource_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_get_resource_group_members</span><span class="p">,</span>
+            <span class="n">zms_get_resource_group_protection_status</span><span class="p">,</span>
+            <span class="n">zms_list_resource_groups</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.resources</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_get_metadata</span><span class="p">,</span>
+            <span class="n">zms_get_resource_protection_status</span><span class="p">,</span>
+            <span class="n">zms_list_resources</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zms.tags</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zms_list_tag_keys</span><span class="p">,</span>
+            <span class="n">zms_list_tag_namespaces</span><span class="p">,</span>
+            <span class="n">zms_list_tag_values</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="c1"># Agents</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_agents</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_agents&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List Zscaler Microsegmentation agents with pagination and search. &quot;</span>
+                    <span class="s2">&quot;Returns agent name, connection status, OS, version, IPs, and group membership. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_agent_connection_status_statistics</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_agent_connection_status_statistics&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get aggregated connection status statistics for ZMS agents. &quot;</span>
+                    <span class="s2">&quot;Returns connected/disconnected counts and percentages.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_agent_version_statistics</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_agent_version_statistics&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get aggregated version statistics for ZMS agents. &quot;</span>
+                    <span class="s2">&quot;Returns software version distribution across the agent fleet.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Agent Groups</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_agent_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_agent_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS agent groups with pagination and search. &quot;</span>
+                    <span class="s2">&quot;Returns group name, type, agent count, policy status, and upgrade settings. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_agent_group_totp_secrets</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_agent_group_totp_secrets&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get TOTP secrets for a specific ZMS agent group. &quot;</span>
+                    <span class="s2">&quot;Returns TOTP secret, QR code, and generation timestamp for agent enrollment.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Resources</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_resources</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_resources&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS resources (workloads) with pagination and filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by name, status, resource_type, cloud_provider, cloud_region, or platform_os. &quot;</span>
+                    <span class="s2">&quot;Returns resource type, status, cloud provider, region, hostname, OS, IPs, and app zones. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_resource_protection_status</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_resource_protection_status&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get protection status summary for ZMS resources. &quot;</span>
+                    <span class="s2">&quot;Returns protected/unprotected counts and protection coverage percentage.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_metadata</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_metadata&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get event metadata for ZMS resources. &quot;</span>
+                    <span class="s2">&quot;Returns metadata about available resource events.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Resource Groups</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_resource_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_resource_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS resource groups with pagination and filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by name or resource_hostname. &quot;</span>
+                    <span class="s2">&quot;Returns managed and unmanaged groups with member counts, CIDRs, and FQDNs. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_resource_group_members</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_resource_group_members&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get members of a specific ZMS resource group. &quot;</span>
+                    <span class="s2">&quot;Returns workloads in the group with resource type, status, cloud info, and OS.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_resource_group_protection_status</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_resource_group_protection_status&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get protection status summary for ZMS resource groups. &quot;</span>
+                    <span class="s2">&quot;Returns protected/unprotected group counts and coverage percentage.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Policy Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_policy_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_policy_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS microsegmentation policy rules with pagination and filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by name or action (ALLOW/BLOCK). &quot;</span>
+                    <span class="s2">&quot;Returns rule name, action, priority, source/destination targets, and port/protocol specs. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_default_policy_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_default_policy_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List default microsegmentation policy rules. &quot;</span>
+                    <span class="s2">&quot;Returns system-defined baseline rules with action, direction, and scope type. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># App Zones</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_app_zones</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_app_zones&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS app zones with pagination and filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by name and sort by zone name. &quot;</span>
+                    <span class="s2">&quot;Returns zone name, description, member count, and VPC/subnet settings. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># App Catalog</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_app_catalog</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_app_catalog&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS application catalog entries with pagination and filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by name or category. Sort by name, category, creation_time, or modified_time. &quot;</span>
+                    <span class="s2">&quot;Returns discovered apps with name, category, port/protocol specs, and processes. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Nonces (Provisioning Keys)</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_nonces</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_nonces&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS nonces (provisioning keys) with pagination and search. &quot;</span>
+                    <span class="s2">&quot;Returns key name, value, max usage, current usage, and agent group association. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_get_nonce</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_get_nonce&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get a specific ZMS nonce (provisioning key) by eyez ID. &quot;</span>
+                    <span class="s2">&quot;Returns detailed key information including usage counts.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="c1"># Tags</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_tag_namespaces</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_tag_namespaces&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZMS tag namespaces with pagination and filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by name or origin (CUSTOM, EXTERNAL, ML, UNKNOWN). &quot;</span>
+                    <span class="s2">&quot;Returns namespace name, description, and origin. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_tag_keys</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_tag_keys&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List tag keys within a ZMS tag namespace with filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by key_name. Returns tag key name and description. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zms_list_tag_values</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zms_list_tag_values&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List tag values for a specific ZMS tag key with filtering. &quot;</span>
+                    <span class="s2">&quot;Filter by value name. Returns available values for filtering resources. &quot;</span>
+                    <span class="s2">&quot;Supports JMESPath client-side filtering via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">]</span>
+
+        <span class="c1"># ZMS tools are read-only (query-only GraphQL API)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="ZMSService.register_tools">
+<a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZMSService.register_tools">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZMS tools with the server.&quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
+
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+        <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ZMS Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
 <span class="c1"># Service registry</span>
 <span class="n">_AVAILABLE_SERVICES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;zcc&quot;</span><span class="p">:</span> <span class="n">ZCCService</span><span class="p">,</span>
@@ -2552,9 +2803,10 @@
     <span class="s2">&quot;zpa&quot;</span><span class="p">:</span> <span class="n">ZPAService</span><span class="p">,</span>
     <span class="s2">&quot;zia&quot;</span><span class="p">:</span> <span class="n">ZIAService</span><span class="p">,</span>
     <span class="s2">&quot;ztw&quot;</span><span class="p">:</span> <span class="n">ZTWService</span><span class="p">,</span>
-    <span class="s2">&quot;zidentity&quot;</span><span class="p">:</span> <span class="n">ZIdentityService</span><span class="p">,</span>
+    <span class="s2">&quot;zid&quot;</span><span class="p">:</span> <span class="n">ZIDService</span><span class="p">,</span>
     <span class="s2">&quot;zeasm&quot;</span><span class="p">:</span> <span class="n">ZEASMService</span><span class="p">,</span>
-    <span class="s2">&quot;zinsights&quot;</span><span class="p">:</span> <span class="n">ZInsightsService</span><span class="p">,</span>
+    <span class="s2">&quot;zins&quot;</span><span class="p">:</span> <span class="n">ZINSService</span><span class="p">,</span>
+    <span class="s2">&quot;zms&quot;</span><span class="p">:</span> <span class="n">ZMSService</span><span class="p">,</span>
 <span class="p">}</span>
 
 
