@@ -13,7 +13,7 @@ Both methods result in the same Foundry agent — they differ only in how you cr
 
 ## Architecture
 
-```
+```text
 ┌─────────────┐     ┌──────────────────────┐     ┌─────────────────────┐     ┌───────────────────┐
 │  User / CLI │────▶│  Azure AI Foundry     │────▶│  Zscaler MCP Server │────▶│  Zscaler APIs     │
 │  or Portal  │     │  (GPT-4o Agent)       │     │  (Container App/VM) │     │  (ZPA/ZIA/ZDX...) │
@@ -23,6 +23,7 @@ Both methods result in the same Foundry agent — they differ only in how you cr
 ```
 
 **Data flow:**
+
 1. You send a natural language request (e.g., "List my ZPA application segments")
 2. Azure AI Foundry's GPT-4o interprets the request and selects the right MCP tool
 3. Foundry calls your deployed MCP server via the `MCPTool` integration
@@ -34,26 +35,30 @@ Both methods result in the same Foundry agent — they differ only in how you cr
 Before setting up the Foundry agent, you need:
 
 1. **A deployed Zscaler MCP Server** — Deploy via Container Apps or VM first:
-   ```bash
-   cd integrations/azure
-   python azure_mcp_operations.py deploy
-   ```
-   This gives you a public MCP URL (e.g., `https://zscaler-mcp-xxx.azurecontainerapps.io/mcp`).
+
+    ```bash
+    cd integrations/azure
+    python azure_mcp_operations.py deploy
+    ```
+
+    This gives you a public MCP URL (e.g., `https://zscaler-mcp-xxx.azurecontainerapps.io/mcp`).
 
 2. **An Azure AI Foundry project** — See [Creating a Foundry Project](#creating-a-foundry-project) below.
 
 3. **Azure CLI authenticated** — `az login`
 
 4. **Python packages** — Installed automatically when needed, or manually:
-   ```bash
-   pip install azure-ai-projects azure-identity
-   ```
+
+    ```bash
+    pip install azure-ai-projects azure-identity
+    ```
 
 5. **Environment variables** (in your `integrations/azure/.env` file):
-   ```env
-   AZURE_AI_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
-   AZURE_OPENAI_MODEL=gpt-4o
-   ```
+
+    ```env
+    AZURE_AI_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project>
+    AZURE_OPENAI_MODEL=gpt-4o
+    ```
 
 ## Creating a Foundry Project
 
@@ -100,7 +105,8 @@ The project overview page displays three key values:
 - **Azure OpenAI endpoint** — Used for direct OpenAI API access
 
 Copy the **Project endpoint** URL. It looks like:
-```
+
+```text
 https://<resource>.services.ai.azure.com/api/projects/<project>
 ```
 
@@ -139,6 +145,7 @@ python azure_mcp_operations.py agent_create
 ```
 
 This command:
+
 1. Reads the deployed MCP server URL and auth mode from the deployment state
 2. Prompts for your Foundry project endpoint and model name (or reads from `.env`)
 3. Builds authentication headers based on your MCP auth mode
@@ -146,7 +153,7 @@ This command:
 
 The script will prompt for Foundry configuration. You can load it from a `.env` file (option 1) or enter manually (option 2):
 
-```
+```text
 Azure AI Foundry Configuration
 ----------------------------------------
 
@@ -164,7 +171,7 @@ Once complete, the script displays a summary:
 
 ![Agent Created](images/foundry/foundry-06-agent-created.png)
 
-```
+```text
 ============================================================
   Foundry Agent Created
 ============================================================
@@ -185,16 +192,19 @@ Once complete, the script displays a summary:
 ### Step 3: Chat with the Agent
 
 **Interactive session:**
+
 ```bash
 python azure_mcp_operations.py agent_chat
 ```
 
 **Single query:**
+
 ```bash
 python azure_mcp_operations.py agent_chat -m "List all ZPA application segments"
 ```
 
 The chat session features:
+
 - Interactive multi-turn conversation
 - MCP tool approval prompts (approve/deny each tool call)
 - Per-response token usage tracking
@@ -264,6 +274,7 @@ Same as Method 1 — you need a running MCP server with a public URL.
 ### Step 4: Test in the Portal
 
 Use the built-in chat interface in the Foundry portal to test the agent. Ask questions like:
+
 - "What Zscaler services are available?"
 - "List my ZPA application segments"
 - "Show me ZIA firewall rules"
@@ -274,7 +285,7 @@ Use the built-in chat interface in the Foundry portal to test the agent. Ask que
 
 Use these instructions when creating the agent via the portal:
 
-```
+```text
 You are a Zscaler security assistant powered by the Zscaler MCP Server.
 
 You have access to 300+ tools for managing the Zscaler Zero Trust Exchange:
@@ -328,6 +339,7 @@ When asked to perform operations:
 ### "No deployment found" when running agent_create
 
 The Foundry agent requires a deployed MCP server. Run `deploy` first:
+
 ```bash
 python azure_mcp_operations.py deploy
 ```
@@ -335,6 +347,7 @@ python azure_mcp_operations.py deploy
 ### Agent can't reach the MCP server
 
 Verify the MCP server is running and accessible:
+
 ```bash
 python azure_mcp_operations.py status
 curl -s https://<your-mcp-url>/mcp | head -1
@@ -347,5 +360,6 @@ This happens when tool approval responses aren't properly chained. The CLI handl
 ### JWT/OIDCProxy auth modes with Foundry
 
 Azure AI Foundry blocks the standard `Authorization` header in `MCPTool.headers`. If your MCP server uses JWT or OIDCProxy auth, consider:
+
 1. Redeploying with `api-key` or `zscaler` auth mode
 2. Or adding a reverse proxy that injects the auth token
