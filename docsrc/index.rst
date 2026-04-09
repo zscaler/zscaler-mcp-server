@@ -299,6 +299,56 @@ Z-Insights Features
    * - ``zins_get_iot_device_stats``
      - Get IoT device statistics and classifications
 
+ZMS Features
+~~~~~~~~~~~~
+
+.. list-table:: ZMS Tools
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Tool Name
+     - Description
+   * - ``zms_list_agents``
+     - List ZMS agents with pagination and search
+   * - ``zms_get_agent_connection_status_statistics``
+     - Get aggregated connection status statistics for ZMS agents
+   * - ``zms_get_agent_version_statistics``
+     - Get aggregated version statistics for ZMS agents
+   * - ``zms_list_agent_groups``
+     - List ZMS agent groups with pagination and search
+   * - ``zms_get_agent_group_totp_secrets``
+     - Get TOTP secrets for a specific ZMS agent group
+   * - ``zms_list_resources``
+     - List ZMS resources with pagination and filtering
+   * - ``zms_get_resource_protection_status``
+     - Get protection status summary for ZMS resources
+   * - ``zms_get_metadata``
+     - Get event metadata for ZMS resources
+   * - ``zms_list_resource_groups``
+     - List ZMS resource groups with pagination and filtering
+   * - ``zms_get_resource_group_members``
+     - Get members of a specific ZMS resource group
+   * - ``zms_get_resource_group_protection_status``
+     - Get protection status summary for ZMS resource groups
+   * - ``zms_list_policy_rules``
+     - List ZMS policy rules with pagination and filtering
+   * - ``zms_list_default_policy_rules``
+     - List default policy rules for ZMS
+   * - ``zms_list_app_zones``
+     - List ZMS app zones with pagination and filtering
+   * - ``zms_list_app_catalog``
+     - List ZMS application catalog entries with pagination and filtering
+   * - ``zms_list_nonces``
+     - List ZMS nonces (provisioning keys) with pagination
+   * - ``zms_get_nonce``
+     - Get a specific ZMS nonce by its eyez ID
+   * - ``zms_list_tag_namespaces``
+     - List ZMS tag namespaces with pagination and filtering
+   * - ``zms_list_tag_keys``
+     - List tag keys within a specific ZMS tag namespace
+   * - ``zms_list_tag_values``
+     - List tag values for a specific ZMS tag key
+
 Installation & Setup
 --------------------
 
