@@ -10,7 +10,6 @@ import json
 import os
 import sys
 import tempfile
-import textwrap
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -19,7 +18,7 @@ from unittest.mock import MagicMock, patch
 AZURE_DIR = Path(__file__).resolve().parent.parent.parent / "integrations" / "azure"
 sys.path.insert(0, str(AZURE_DIR))
 
-import azure_mcp_operations as ops
+import azure_mcp_operations as ops  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +39,7 @@ class TestLoadEnv(unittest.TestCase):
 
     def test_quoted_values_stripped(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
-            f.write('SINGLE=\'hello\'\nDOUBLE="world"\n')
+            f.write("SINGLE='hello'\nDOUBLE=\"world\"\n")
             f.flush()
             env = ops.load_env(Path(f.name))
         self.assertEqual(env["SINGLE"], "hello")
@@ -137,8 +136,15 @@ class TestBuildParser(unittest.TestCase):
 
     def test_all_operations_registered(self):
         expected = {
-            "deploy", "destroy", "status", "logs", "ssh",
-            "agent_create", "agent_status", "agent_chat", "agent_destroy",
+            "deploy",
+            "destroy",
+            "status",
+            "logs",
+            "ssh",
+            "agent_create",
+            "agent_status",
+            "agent_chat",
+            "agent_destroy",
         }
         self.assertEqual(set(ops.OPERATIONS.keys()), expected)
 
@@ -216,7 +222,7 @@ class TestGenerateVMSetupScript(unittest.TestCase):
     def test_basic_none_auth(self):
         script = self._generate()
         self.assertIn("ZSCALER_CLIENT_ID=", script)
-        self.assertIn("ZSCALER_MCP_AUTH_ENABLED=\"false\"", script)
+        self.assertIn('ZSCALER_MCP_AUTH_ENABLED="false"', script)
         self.assertIn("zscaler-mcp", script)
         self.assertIn("#!/bin/bash", script)
 
@@ -241,17 +247,17 @@ class TestGenerateVMSetupScript(unittest.TestCase):
             jwt_issuer="https://idp/",
             jwt_audience="my-api",
         )
-        self.assertIn("ZSCALER_MCP_AUTH_MODE=\"jwt\"", script)
+        self.assertIn('ZSCALER_MCP_AUTH_MODE="jwt"', script)
         self.assertIn("ZSCALER_MCP_AUTH_JWKS_URI=", script)
 
     def test_api_key_auth(self):
         script = self._generate(auth_mode="api-key", api_key="test-key-123")
-        self.assertIn("ZSCALER_MCP_AUTH_MODE=\"api-key\"", script)
+        self.assertIn('ZSCALER_MCP_AUTH_MODE="api-key"', script)
         self.assertIn("ZSCALER_MCP_AUTH_API_KEY=", script)
 
     def test_zscaler_auth(self):
         script = self._generate(auth_mode="zscaler")
-        self.assertIn("ZSCALER_MCP_AUTH_MODE=\"zscaler\"", script)
+        self.assertIn('ZSCALER_MCP_AUTH_MODE="zscaler"', script)
 
     def test_write_tools_included(self):
         script = self._generate(write_enabled="true", write_tools="zpa_*,zia_*")
@@ -296,9 +302,7 @@ class TestUpsertJsonConfig(unittest.TestCase):
     def test_creates_new_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "subdir" / "config.json"
-            ops.upsert_json_config(
-                path, lambda c: c.update({"mcpServers": {"test": True}})
-            )
+            ops.upsert_json_config(path, lambda c: c.update({"mcpServers": {"test": True}}))
             data = json.loads(path.read_text())
             self.assertTrue(data["mcpServers"]["test"])
 
@@ -323,7 +327,7 @@ class TestRunAz(unittest.TestCase):
     @patch("subprocess.run")
     def test_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
-        result = ops.run_az(["account", "show"], capture=True)
+        ops.run_az(["account", "show"], capture=True)
         mock_run.assert_called_once()
         cmd = mock_run.call_args[0][0]
         self.assertEqual(cmd[0], "az")
@@ -331,9 +335,7 @@ class TestRunAz(unittest.TestCase):
 
     @patch("subprocess.run")
     def test_failure_exits(self, mock_run):
-        mock_run.return_value = MagicMock(
-            returncode=1, stdout="", stderr="auth failed"
-        )
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="auth failed")
         with self.assertRaises(SystemExit):
             ops.run_az(["login"], capture=True, check=True)
 

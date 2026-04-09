@@ -20,7 +20,7 @@ Zscaler Integrations MCP Server Changelog
 
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Azure AI Foundry Agent integration** (``foundry_agent.py``). Creates a managed GPT-4o agent that wraps the deployed MCP server as a tool via ``MCPTool``, with ``require_approval="always"`` for human oversight.
 
-`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Foundry Agent interactive CLI chat** (``agent_chat``) with animated braille spinner, per-response token tracking, wall-clock timing, and end-of-session summary.
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Foundry Agent interactive CLI chat** (``agent_chat``) with animated braille spinner, per-response token tracking, wall-clock timing, in-chat commands (``help``, ``status``, ``clear``, ``reset``), and end-of-session summary.
 
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **OIDCProxy support for Microsoft Entra ID** as an identity provider. Entra ID works as a drop-in replacement for Auth0/Okta with ``audience`` set to the Application (client) ID.
 
@@ -32,17 +32,29 @@ Zscaler Integrations MCP Server Changelog
 
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Foundry Agent chat displays Zscaler ASCII logo banner on startup with agent name and version.
 
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Foundry Agent chat includes **graceful API error handling** for common failures (DeploymentNotFound, authentication errors, rate limits, connection issues) with actionable remediation steps instead of raw tracebacks.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Azure deployment script uses **provider-neutral OIDC variable names** (``OIDCPROXY_DOMAIN``, ``OIDCPROXY_CLIENT_ID``, etc.) with backward-compatible fallbacks to ``AUTH0_*`` variables.
+
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Azure deployment script auto-configures Claude Desktop and Cursor client configs with correct auth headers and MCP endpoint URL.
 
+### Tests
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **81 unit tests** for Azure deployment (``test_azure_mcp_operations.py``) and Foundry agent (``test_foundry_agent.py``) covering .env parsing, credential resolution, CLI parser, state management, VM setup script generation, MCP header building, error handling, agent lifecycle, and in-chat commands.
+
 ### Documentation
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Azure AI Foundry deployment guide** (``docs/deployment/azure-ai-foundry.md``) with end-to-end walkthrough covering both CLI and portal methods, Foundry project creation with screenshots, model deployment prerequisites, in-chat commands, environment variables, and troubleshooting.
 
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added Azure integration README (``integrations/azure/README.md``) with architecture diagrams for Container Apps, VM, and Foundry Agent deployments, all CLI commands, client configuration examples, and troubleshooting guide.
 
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added Microsoft Entra ID OIDCProxy step-by-step guide (``docs/deployment/entra-id-oidcproxy.md``) with 7 portal screenshots covering app registration, client secret, ID tokens, API permissions, and endpoints.
 
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``docsrc/integrations/index.rst`` with Azure Deployment, Azure AI Foundry Agent sections, quick start commands, and link to the Foundry deployment guide.
+
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated root ``README.md`` with Azure deployment section including Foundry agent commands and platform integrations table.
 
-`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``CLAUDE.md`` with Azure deployment architecture, Foundry Agent command reference with flags, chat UX features, and Entra ID guide reference.
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``CLAUDE.md`` with Azure deployment architecture, Foundry Agent command reference with flags, in-chat commands, graceful error handling, deployment guide reference, and Entra ID guide reference.
 
 `PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``authentication-and-deployment.md`` with expanded Entra ID app registration instructions and link to the dedicated Entra ID guide.
 

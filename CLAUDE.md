@@ -6,7 +6,7 @@
 
 ### Core Components
 
-```
+```text
 zscaler_mcp/
 ├── server.py          # ZscalerMCPServer class, CLI entrypoint, security posture logging
 ├── services.py        # Service registry + 9 concrete service classes (ZPA, ZIA, ZDX, ZCC, ZTW, ZIdentity, ZEASM, ZInsights, ZMS)
@@ -42,6 +42,7 @@ Each service follows the same pattern:
 - **Tool registration** via `register_read_tools()` / `register_write_tools()` in `tool_helpers.py`
 
 Tool registration respects three layers of filtering:
+
 1. `enabled_tools` — positive allowlist (only register these tools)
 2. `disabled_tools` — negative blocklist with fnmatch wildcards (exclude matching tools)
 3. `write_tools` — write-specific allowlist with wildcards (only these write tools are allowed)
@@ -180,7 +181,7 @@ Standard [JMESPath](https://jmespath.org/) syntax. Field names are **snake_case*
 
 The `zscaler_search_tools` meta-tool exposes the full tool registry as a searchable list with JMESPath filtering. This is designed for AI agents working with deferred tool loading (Claude Desktop, Cursor) where fuzzy search returns irrelevant results. Examples:
 
-```
+```text
 zscaler_search_tools(query="[?contains(description, 'firewall')]")
 zscaler_search_tools(query="[?starts_with(name, 'zms_')]")
 zscaler_search_tools(query="[?contains(name, 'list') && contains(description, 'device')]")
@@ -273,13 +274,14 @@ Opt-in logging of every tool invocation for troubleshooting and observability. C
 
 Every tool call produces two log lines via the `zscaler_mcp.audit` logger:
 
-```
+```text
 [TOOL CALL] zia_list_locations | args: {page: 1, page_size: 50, name: "HQ"}
 [TOOL OK]   zia_list_locations | 342ms | 15 items
 ```
 
 On error:
-```
+
+```text
 [TOOL CALL] zms_list_resources | args: {page_num: 1}
 [TOOL ERR]  zms_list_resources | 1204ms | ConnectionError: timeout
 ```
@@ -334,7 +336,7 @@ The server can be deployed to Google Cloud Run as a managed container with optio
 
 ### Architecture
 
-```
+```text
 ┌─ Cloud Run ─────────────────────────────────────────────┐
 │  zscaler-mcp-server container                           │
 │                                                         │
@@ -422,6 +424,7 @@ Interactive deployment to Azure via `integrations/azure/azure_mcp_operations.py`
 ### VM cloud-init
 
 The VM deployment uses cloud-init to:
+
 1. Install Python 3.11 and create a venv at `/opt/zscaler-mcp/venv`
 2. Install `zscaler-mcp-server` from PyPI
 3. Write environment variables to `/opt/zscaler-mcp/env`
@@ -442,6 +445,7 @@ python azure_mcp_operations.py agent_destroy -y  # skip confirmation prompt
 ```
 
 **What it does:**
+
 - Creates a Foundry agent (`zscaler-mcp-agent`) with `MCPTool` pointing to your deployed MCP server
 - Uses GPT-4o (configurable) for reasoning
 - Configures `require_approval="always"` for human oversight on tool calls
@@ -449,6 +453,7 @@ python azure_mcp_operations.py agent_destroy -y  # skip confirmation prompt
 - Stores agent state in `.azure-agent-state.json`
 
 **Chat UX features (`agent_chat`):**
+
 - Animated braille spinner with live elapsed-time counter while waiting for responses
 - Per-response stats: wall-clock time, token usage (input/output/total)
 - End-of-session summary: total session duration, messages sent, cumulative token count
@@ -469,7 +474,8 @@ python azure_mcp_operations.py agent_destroy -y  # skip confirmation prompt
 **Foundry portal:** After `agent_create`, view and test the agent at [ai.azure.com](https://ai.azure.com) → your project → Agents → `zscaler-mcp-agent` → Playground.
 
 **Prerequisites:**
-- Azure AI Foundry project (https://ai.azure.com)
+
+- Azure AI Foundry project ([ai.azure.com](https://ai.azure.com))
 - Azure OpenAI model deployment (GPT-4o or GPT-4) — must be deployed in the project, not just selected
 - Python packages: `azure-ai-projects`, `azure-identity`
 - Azure CLI: `az login`

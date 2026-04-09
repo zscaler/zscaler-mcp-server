@@ -1249,6 +1249,7 @@ python azure_mcp_operations.py agent_destroy   # delete agent
 ```
 
 The script will prompt you for:
+
 - **Deployment target**: Container Apps or Virtual Machine
 - **Credential source**: `.env` file path or manual entry
 - **Auth mode**: OIDCProxy (OAuth 2.1), JWT, API Key, Zscaler, or None

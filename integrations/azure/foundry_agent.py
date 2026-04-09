@@ -121,10 +121,7 @@ class Spinner:
         while not self._stop.is_set():
             elapsed = time.time() - self._start_time
             frame = self._FRAMES[idx % len(self._FRAMES)]
-            sys.stdout.write(
-                f"\r{CYAN}{frame}{NC} {self._message}"
-                f" {DIM}({elapsed:.0f}s){NC}   "
-            )
+            sys.stdout.write(f"\r{CYAN}{frame}{NC} {self._message} {DIM}({elapsed:.0f}s){NC}   ")
             sys.stdout.flush()
             idx += 1
             self._stop.wait(0.08)
@@ -232,10 +229,7 @@ def _build_mcp_headers(
 
     if auth_mode == "zscaler":
         if not client_id or not client_secret:
-            die(
-                "Zscaler auth requires ZSCALER_CLIENT_ID and "
-                "ZSCALER_CLIENT_SECRET."
-            )
+            die("Zscaler auth requires ZSCALER_CLIENT_ID and ZSCALER_CLIENT_SECRET.")
         headers["X-Zscaler-Client-ID"] = client_id
         headers["X-Zscaler-Client-Secret"] = client_secret
 
@@ -376,9 +370,7 @@ def delete_agent(project_endpoint: str, version: str | None = None) -> bool:
             # Delete all versions
             versions = list(project.agents.list_versions(agent_name=AGENT_NAME))
             for v in versions:
-                project.agents.delete_version(
-                    agent_name=AGENT_NAME, agent_version=v.version
-                )
+                project.agents.delete_version(agent_name=AGENT_NAME, agent_version=v.version)
                 info(f"Deleted version {v.version}")
             ok(f"Deleted all versions of agent: {AGENT_NAME}")
         return True
@@ -516,8 +508,7 @@ def chat_session(
         usage = getattr(response, "usage", None)
         if usage:
             total_tokens += getattr(usage, "total_tokens", 0) or (
-                getattr(usage, "input_tokens", 0)
-                + getattr(usage, "output_tokens", 0)
+                getattr(usage, "input_tokens", 0) + getattr(usage, "output_tokens", 0)
             )
 
         approval_requests = []

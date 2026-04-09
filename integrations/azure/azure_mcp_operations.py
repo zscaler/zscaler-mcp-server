@@ -372,7 +372,9 @@ def _generate_vm_setup_script(
 
     if auth_mode == "oidcproxy":
         config_url = f"https://{oidc_domain}/.well-known/openid-configuration"
-        base_url = f"http://{vm_public_ip}:{mcp_port}" if vm_public_ip else f"http://localhost:{mcp_port}"
+        base_url = (
+            f"http://{vm_public_ip}:{mcp_port}" if vm_public_ip else f"http://localhost:{mcp_port}"
+        )
         env_lines += [
             'ZSCALER_MCP_AUTH_ENABLED="false"',
             f'OIDCPROXY_CONFIG_URL="{config_url}"',
@@ -406,7 +408,7 @@ def _generate_vm_setup_script(
     env_content = "\n".join(env_lines)
 
     if auth_mode == "oidcproxy":
-        exec_start = "/opt/zscaler-mcp/venv/bin/python -c 'exec(__import__(\"base64\").b64decode(__import__(\"os\").environ[\"ENTRYPOINT_B64\"]).decode())'"
+        exec_start = '/opt/zscaler-mcp/venv/bin/python -c \'exec(__import__("base64").b64decode(__import__("os").environ["ENTRYPOINT_B64"]).decode())\''
         env_lines.append(f'ENTRYPOINT_B64="{_ENTRYPOINT_B64}"')
         env_content = "\n".join(env_lines)
     else:
@@ -567,7 +569,9 @@ def _collect_credentials(account: dict) -> dict:
         oidc_audience = resolve(env, "OIDCPROXY_AUDIENCE", "AUTH0_AUDIENCE") or "zscaler-mcp-server"
 
         if not oidc_domain:
-            oidc_domain = _prompt("OIDC Domain (e.g. login.microsoftonline.com/<tenant>/v2.0 or tenant.auth0.com)")
+            oidc_domain = _prompt(
+                "OIDC Domain (e.g. login.microsoftonline.com/<tenant>/v2.0 or tenant.auth0.com)"
+            )
         else:
             ok(f"OIDC Domain: {oidc_domain}")
         if not oidc_client_id:
@@ -688,12 +692,18 @@ def _setup_keyvault(
 
             run_az(
                 [
-                    "keyvault", "create",
-                    "--name", keyvault_name,
-                    "--resource-group", resource_group,
-                    "--location", location,
-                    "--enable-rbac-authorization", "true",
-                    "--output", "none",
+                    "keyvault",
+                    "create",
+                    "--name",
+                    keyvault_name,
+                    "--resource-group",
+                    resource_group,
+                    "--location",
+                    location,
+                    "--enable-rbac-authorization",
+                    "true",
+                    "--output",
+                    "none",
                 ]
             )
             ok(f"Key Vault '{keyvault_name}' created")
@@ -724,11 +734,17 @@ def _setup_keyvault(
         )
         run_az(
             [
-                "role", "assignment", "create",
-                "--role", "Key Vault Secrets Officer",
-                "--assignee", user_oid,
-                "--scope", kv_scope,
-                "--output", "none",
+                "role",
+                "assignment",
+                "create",
+                "--role",
+                "Key Vault Secrets Officer",
+                "--assignee",
+                user_oid,
+                "--scope",
+                kv_scope,
+                "--output",
+                "none",
             ],
             check=False,
             capture=True,
@@ -757,11 +773,17 @@ def _setup_keyvault(
     for name, value in kv_secrets.items():
         run_az(
             [
-                "keyvault", "secret", "set",
-                "--vault-name", keyvault_name,
-                "--name", name,
-                "--value", value,
-                "--output", "none",
+                "keyvault",
+                "secret",
+                "set",
+                "--vault-name",
+                keyvault_name,
+                "--name",
+                name,
+                "--value",
+                value,
+                "--output",
+                "none",
             ],
             capture=True,
         )
@@ -908,10 +930,15 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     info("Creating Container Apps environment")
     r = run_az(
         [
-            "containerapp", "env", "show",
-            "--name", container_app_env_name,
-            "--resource-group", resource_group,
-            "--output", "none",
+            "containerapp",
+            "env",
+            "show",
+            "--name",
+            container_app_env_name,
+            "--resource-group",
+            resource_group,
+            "--output",
+            "none",
         ],
         check=False,
         capture=True,
@@ -919,11 +946,17 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     if r.returncode != 0:
         run_az(
             [
-                "containerapp", "env", "create",
-                "--name", container_app_env_name,
-                "--resource-group", resource_group,
-                "--location", location,
-                "--output", "none",
+                "containerapp",
+                "env",
+                "create",
+                "--name",
+                container_app_env_name,
+                "--resource-group",
+                resource_group,
+                "--location",
+                location,
+                "--output",
+                "none",
             ]
         )
         ok(f"Container Apps environment '{container_app_env_name}' created")
@@ -936,10 +969,14 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
 
     r = run_az(
         [
-            "containerapp", "show",
-            "--name", container_app_name,
-            "--resource-group", resource_group,
-            "--output", "none",
+            "containerapp",
+            "show",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            resource_group,
+            "--output",
+            "none",
         ],
         check=False,
         capture=True,
@@ -972,7 +1009,11 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     ]
 
     use_inline_entrypoint = auth_mode == "oidcproxy"
-    config_url = f"https://{creds['oidc_domain']}/.well-known/openid-configuration" if auth_mode == "oidcproxy" else ""
+    config_url = (
+        f"https://{creds['oidc_domain']}/.well-known/openid-configuration"
+        if auth_mode == "oidcproxy"
+        else ""
+    )
 
     if auth_mode == "oidcproxy":
         placeholder_base_url = "https://placeholder.azurecontainerapps.io"
@@ -1011,31 +1052,50 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
         info("  Container App exists — updating...")
         run_az(
             [
-                "containerapp", "update",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--image", DOCKER_HUB_IMAGE,
-                "--set-env-vars", *env_vars_list,
-                "--output", "none",
+                "containerapp",
+                "update",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--image",
+                DOCKER_HUB_IMAGE,
+                "--set-env-vars",
+                *env_vars_list,
+                "--output",
+                "none",
             ]
         )
     else:
         info("  Creating new Container App...")
         run_az(
             [
-                "containerapp", "create",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--environment", container_app_env_name,
-                "--image", DOCKER_HUB_IMAGE,
-                "--target-port", mcp_port,
-                "--ingress", "external",
-                "--min-replicas", "1",
-                "--max-replicas", "3",
-                "--cpu", "0.5",
-                "--memory", "1Gi",
-                "--env-vars", *env_vars_list,
-                "--output", "none",
+                "containerapp",
+                "create",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--environment",
+                container_app_env_name,
+                "--image",
+                DOCKER_HUB_IMAGE,
+                "--target-port",
+                mcp_port,
+                "--ingress",
+                "external",
+                "--min-replicas",
+                "1",
+                "--max-replicas",
+                "3",
+                "--cpu",
+                "0.5",
+                "--memory",
+                "1Gi",
+                "--env-vars",
+                *env_vars_list,
+                "--output",
+                "none",
             ]
         )
 
@@ -1043,10 +1103,14 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     info("  Applying command override...")
     r = run_az(
         [
-            "containerapp", "show",
-            "--name", container_app_name,
-            "--resource-group", resource_group,
-            "--output", "json",
+            "containerapp",
+            "show",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            resource_group,
+            "--output",
+            "json",
         ],
         capture=True,
     )
@@ -1063,7 +1127,14 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
         ]
     else:
         containers[0]["command"] = ["/app/.venv/bin/zscaler-mcp"]
-        containers[0]["args"] = ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", mcp_port]
+        containers[0]["args"] = [
+            "--transport",
+            "streamable-http",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            mcp_port,
+        ]
 
     yaml_path = os.path.join(tempfile.gettempdir(), f"containerapp-{container_app_name}.json")
     try:
@@ -1071,11 +1142,16 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
             json.dump(app_spec, f)
         run_az(
             [
-                "containerapp", "update",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--yaml", yaml_path,
-                "--output", "none",
+                "containerapp",
+                "update",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--yaml",
+                yaml_path,
+                "--output",
+                "none",
             ]
         )
     finally:
@@ -1089,11 +1165,16 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     info("Getting Container App URL")
     r = run_az(
         [
-            "containerapp", "show",
-            "--name", container_app_name,
-            "--resource-group", resource_group,
-            "--query", "properties.configuration.ingress.fqdn",
-            "--output", "tsv",
+            "containerapp",
+            "show",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            resource_group,
+            "--query",
+            "properties.configuration.ingress.fqdn",
+            "--output",
+            "tsv",
         ],
         capture=True,
     )
@@ -1110,11 +1191,16 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
         info("  Updating OIDCPROXY_BASE_URL...")
         run_az(
             [
-                "containerapp", "update",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--set-env-vars", f"OIDCPROXY_BASE_URL={real_base_url}",
-                "--output", "none",
+                "containerapp",
+                "update",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--set-env-vars",
+                f"OIDCPROXY_BASE_URL={real_base_url}",
+                "--output",
+                "none",
             ],
             capture=True,
         )
@@ -1122,34 +1208,43 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
 
         azure_callback = f"https://{fqdn}/auth/callback"
         print()
-        warn(f"{BOLD}ACTION REQUIRED:{NC}{YELLOW} Add this callback URL to your identity provider:{NC}")
+        warn(
+            f"{BOLD}ACTION REQUIRED:{NC}{YELLOW} Add this callback URL to your identity provider:{NC}"
+        )
         warn(f"  {BOLD}{azure_callback}{NC}")
     print()
 
     # Save state
-    _save_state({
-        "deployment_type": "container_app",
-        "resource_group": resource_group,
-        "location": location,
-        "keyvault_name": keyvault_name,
-        "container_app_env": container_app_env_name,
-        "container_app": container_app_name,
-        "fqdn": fqdn,
-        "mcp_url": mcp_url,
-        "auth_mode": auth_mode,
-        "suffix": suffix,
-    })
+    _save_state(
+        {
+            "deployment_type": "container_app",
+            "resource_group": resource_group,
+            "location": location,
+            "keyvault_name": keyvault_name,
+            "container_app_env": container_app_env_name,
+            "container_app": container_app_name,
+            "fqdn": fqdn,
+            "mcp_url": mcp_url,
+            "auth_mode": auth_mode,
+            "suffix": suffix,
+        }
+    )
 
     # Wait for healthy
     info("Waiting for container to become healthy")
     for attempt in range(12):
         r = run_az(
             [
-                "containerapp", "show",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--query", "properties.runningStatus",
-                "--output", "tsv",
+                "containerapp",
+                "show",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--query",
+                "properties.runningStatus",
+                "--output",
+                "tsv",
             ],
             capture=True,
             check=False,
@@ -1262,7 +1357,19 @@ def _deploy_vm(account: dict, creds: dict) -> None:
         generate_key = _prompt_yes_no("Generate a new SSH key pair?")
         if generate_key:
             info("Generating SSH key pair...")
-            run_cmd(["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_key_path.with_suffix("")), "-N", ""])
+            run_cmd(
+                [
+                    "ssh-keygen",
+                    "-t",
+                    "rsa",
+                    "-b",
+                    "4096",
+                    "-f",
+                    str(ssh_key_path.with_suffix("")),
+                    "-N",
+                    "",
+                ]
+            )
             ssh_public_key = ssh_key_path.read_text().strip()
             ok(f"SSH key generated: {ssh_key_path}")
         else:
@@ -1313,11 +1420,17 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     info(f"Creating Network Security Group '{nsg_name}'")
     run_az(
         [
-            "network", "nsg", "create",
-            "--name", nsg_name,
-            "--resource-group", resource_group,
-            "--location", location,
-            "--output", "none",
+            "network",
+            "nsg",
+            "create",
+            "--name",
+            nsg_name,
+            "--resource-group",
+            resource_group,
+            "--location",
+            location,
+            "--output",
+            "none",
         ]
     )
     ok(f"NSG '{nsg_name}' created")
@@ -1326,16 +1439,28 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     info("  Adding SSH rule (port 22)...")
     run_az(
         [
-            "network", "nsg", "rule", "create",
-            "--nsg-name", nsg_name,
-            "--resource-group", resource_group,
-            "--name", "AllowSSH",
-            "--priority", "1000",
-            "--destination-port-ranges", "22",
-            "--access", "Allow",
-            "--protocol", "Tcp",
-            "--direction", "Inbound",
-            "--output", "none",
+            "network",
+            "nsg",
+            "rule",
+            "create",
+            "--nsg-name",
+            nsg_name,
+            "--resource-group",
+            resource_group,
+            "--name",
+            "AllowSSH",
+            "--priority",
+            "1000",
+            "--destination-port-ranges",
+            "22",
+            "--access",
+            "Allow",
+            "--protocol",
+            "Tcp",
+            "--direction",
+            "Inbound",
+            "--output",
+            "none",
         ]
     )
     ok("  SSH rule added")
@@ -1343,16 +1468,28 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     info(f"  Adding MCP rule (port {mcp_port})...")
     run_az(
         [
-            "network", "nsg", "rule", "create",
-            "--nsg-name", nsg_name,
-            "--resource-group", resource_group,
-            "--name", "AllowMCP",
-            "--priority", "1010",
-            "--destination-port-ranges", mcp_port,
-            "--access", "Allow",
-            "--protocol", "Tcp",
-            "--direction", "Inbound",
-            "--output", "none",
+            "network",
+            "nsg",
+            "rule",
+            "create",
+            "--nsg-name",
+            nsg_name,
+            "--resource-group",
+            resource_group,
+            "--name",
+            "AllowMCP",
+            "--priority",
+            "1010",
+            "--destination-port-ranges",
+            mcp_port,
+            "--access",
+            "Allow",
+            "--protocol",
+            "Tcp",
+            "--direction",
+            "Inbound",
+            "--output",
+            "none",
         ]
     )
     ok(f"  MCP rule added (port {mcp_port})")
@@ -1363,22 +1500,36 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     info(f"Creating public IP '{public_ip_name}'")
     run_az(
         [
-            "network", "public-ip", "create",
-            "--name", public_ip_name,
-            "--resource-group", resource_group,
-            "--location", location,
-            "--allocation-method", "Static",
-            "--sku", "Standard",
-            "--output", "none",
+            "network",
+            "public-ip",
+            "create",
+            "--name",
+            public_ip_name,
+            "--resource-group",
+            resource_group,
+            "--location",
+            location,
+            "--allocation-method",
+            "Static",
+            "--sku",
+            "Standard",
+            "--output",
+            "none",
         ]
     )
     r = run_az(
         [
-            "network", "public-ip", "show",
-            "--name", public_ip_name,
-            "--resource-group", resource_group,
-            "--query", "ipAddress",
-            "--output", "tsv",
+            "network",
+            "public-ip",
+            "show",
+            "--name",
+            public_ip_name,
+            "--resource-group",
+            resource_group,
+            "--query",
+            "ipAddress",
+            "--output",
+            "tsv",
         ],
         capture=True,
     )
@@ -1390,17 +1541,28 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     info(f"Creating VM '{vm_name}' (this may take a few minutes)")
     run_az(
         [
-            "vm", "create",
-            "--name", vm_name,
-            "--resource-group", resource_group,
-            "--location", location,
-            "--image", VM_IMAGE,
-            "--size", vm_size,
-            "--admin-username", VM_ADMIN_USER,
-            "--ssh-key-values", ssh_public_key,
-            "--public-ip-address", public_ip_name,
-            "--nsg", nsg_name,
-            "--output", "none",
+            "vm",
+            "create",
+            "--name",
+            vm_name,
+            "--resource-group",
+            resource_group,
+            "--location",
+            location,
+            "--image",
+            VM_IMAGE,
+            "--size",
+            vm_size,
+            "--admin-username",
+            VM_ADMIN_USER,
+            "--ssh-key-values",
+            ssh_public_key,
+            "--public-ip-address",
+            public_ip_name,
+            "--nsg",
+            nsg_name,
+            "--output",
+            "none",
         ]
     )
     ok(f"VM '{vm_name}' created")
@@ -1409,18 +1571,20 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     mcp_url = f"http://{public_ip}:{mcp_port}/mcp"
 
     # Save state early so we can destroy if setup fails
-    _save_state({
-        "deployment_type": "vm",
-        "resource_group": resource_group,
-        "location": location,
-        "keyvault_name": keyvault_name,
-        "vm_name": vm_name,
-        "public_ip": public_ip,
-        "mcp_url": mcp_url,
-        "auth_mode": auth_mode,
-        "mcp_port": mcp_port,
-        "suffix": suffix,
-    })
+    _save_state(
+        {
+            "deployment_type": "vm",
+            "resource_group": resource_group,
+            "location": location,
+            "keyvault_name": keyvault_name,
+            "vm_name": vm_name,
+            "public_ip": public_ip,
+            "mcp_url": mcp_url,
+            "auth_mode": auth_mode,
+            "mcp_port": mcp_port,
+            "suffix": suffix,
+        }
+    )
 
     # Generate setup script
     info("Running setup script on VM (this takes 2-4 minutes)...")
@@ -1457,11 +1621,17 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     try:
         r = run_az(
             [
-                "vm", "run-command", "invoke",
-                "--name", vm_name,
-                "--resource-group", resource_group,
-                "--command-id", "RunShellScript",
-                "--scripts", f"@{script_path}",
+                "vm",
+                "run-command",
+                "invoke",
+                "--name",
+                vm_name,
+                "--resource-group",
+                resource_group,
+                "--command-id",
+                "RunShellScript",
+                "--scripts",
+                f"@{script_path}",
             ],
             capture=True,
             check=False,
@@ -1476,7 +1646,9 @@ def _deploy_vm(account: dict, creds: dict) -> None:
                 if "Active: active" in stdout_msg or "active (running)" in stdout_msg:
                     ok("MCP server is running")
                 else:
-                    warn("Service may not be running yet. Check with: python azure_mcp_operations.py logs")
+                    warn(
+                        "Service may not be running yet. Check with: python azure_mcp_operations.py logs"
+                    )
             else:
                 warn("Setup script output:")
                 print(stdout_msg[:2000] if len(stdout_msg) > 2000 else stdout_msg)
@@ -1497,7 +1669,9 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     if auth_mode == "oidcproxy":
         callback_url = f"http://{public_ip}:{mcp_port}/auth/callback"
         print()
-        warn(f"{BOLD}ACTION REQUIRED:{NC}{YELLOW} Add this callback URL to your identity provider:{NC}")
+        warn(
+            f"{BOLD}ACTION REQUIRED:{NC}{YELLOW} Add this callback URL to your identity provider:{NC}"
+        )
         warn(f"  {BOLD}{callback_url}{NC}")
         warn("  NOTE: HTTP callback URLs may need to be explicitly allowed in your IdP settings.")
         print()
@@ -1693,11 +1867,15 @@ def op_status(args: argparse.Namespace) -> None:
 
         r = run_az(
             [
-                "vm", "show",
-                "--name", vm_name,
-                "--resource-group", resource_group,
+                "vm",
+                "show",
+                "--name",
+                vm_name,
+                "--resource-group",
+                resource_group,
                 "--show-details",
-                "--output", "json",
+                "--output",
+                "json",
             ],
             capture=True,
             check=False,
@@ -1717,11 +1895,17 @@ def op_status(args: argparse.Namespace) -> None:
         info("Checking MCP service status...")
         r = run_az(
             [
-                "vm", "run-command", "invoke",
-                "--name", vm_name,
-                "--resource-group", resource_group,
-                "--command-id", "RunShellScript",
-                "--scripts", "systemctl status zscaler-mcp --no-pager",
+                "vm",
+                "run-command",
+                "invoke",
+                "--name",
+                vm_name,
+                "--resource-group",
+                resource_group,
+                "--command-id",
+                "RunShellScript",
+                "--scripts",
+                "systemctl status zscaler-mcp --no-pager",
             ],
             capture=True,
             check=False,
@@ -1741,10 +1925,14 @@ def op_status(args: argparse.Namespace) -> None:
 
         r = run_az(
             [
-                "containerapp", "show",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--output", "json",
+                "containerapp",
+                "show",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--output",
+                "json",
             ],
             capture=True,
             check=False,
@@ -1754,7 +1942,9 @@ def op_status(args: argparse.Namespace) -> None:
             return
 
         app = json.loads(r.stdout)
-        fqdn = app.get("properties", {}).get("configuration", {}).get("ingress", {}).get("fqdn", "?")
+        fqdn = (
+            app.get("properties", {}).get("configuration", {}).get("ingress", {}).get("fqdn", "?")
+        )
         running = app.get("properties", {}).get("runningStatus", "?")
         replicas = app.get("properties", {}).get("template", {}).get("scale", {})
 
@@ -1770,10 +1960,15 @@ def op_status(args: argparse.Namespace) -> None:
         info("Active revisions:")
         run_az(
             [
-                "containerapp", "revision", "list",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
-                "--output", "table",
+                "containerapp",
+                "revision",
+                "list",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--output",
+                "table",
             ]
         )
     print()
@@ -1803,11 +1998,17 @@ def op_logs(args: argparse.Namespace) -> None:
 
         r = run_az(
             [
-                "vm", "run-command", "invoke",
-                "--name", vm_name,
-                "--resource-group", resource_group,
-                "--command-id", "RunShellScript",
-                "--scripts", "journalctl -u zscaler-mcp -n 100 --no-pager",
+                "vm",
+                "run-command",
+                "invoke",
+                "--name",
+                vm_name,
+                "--resource-group",
+                resource_group,
+                "--command-id",
+                "RunShellScript",
+                "--scripts",
+                "journalctl -u zscaler-mcp -n 100 --no-pager",
             ],
             capture=True,
             check=False,
@@ -1829,9 +2030,13 @@ def op_logs(args: argparse.Namespace) -> None:
 
         run_az(
             [
-                "containerapp", "logs", "show",
-                "--name", container_app_name,
-                "--resource-group", resource_group,
+                "containerapp",
+                "logs",
+                "show",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
                 "--follow",
             ],
             check=False,
@@ -1869,9 +2074,7 @@ def _load_foundry_module():
     """Load the foundry_agent module from the same directory."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location(
-        "foundry_agent", SCRIPT_DIR / "foundry_agent.py"
-    )
+    spec = importlib.util.spec_from_file_location("foundry_agent", SCRIPT_DIR / "foundry_agent.py")
     if spec and spec.loader:
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -1907,9 +2110,7 @@ def op_agent_create(args: argparse.Namespace) -> None:
         choice = input("Select [1/2]: ").strip()
 
         if choice == "1":
-            env_path_str = _prompt(
-                "Path to .env file", default=str(PROJECT_ROOT / ".env")
-            )
+            env_path_str = _prompt("Path to .env file", default=str(PROJECT_ROOT / ".env"))
             env_path = Path(env_path_str).expanduser().resolve()
             if not env_path.is_file():
                 die(f".env file not found: {env_path}")
@@ -1924,22 +2125,14 @@ def op_agent_create(args: argparse.Namespace) -> None:
     if auth_mode == "api-key":
         api_key_value = env.get("ZSCALER_MCP_AUTH_API_KEY", "")
         if not api_key_value:
-            api_key_value = getpass.getpass(
-                "Enter the MCP server API key: "
-            ).strip()
+            api_key_value = getpass.getpass("Enter the MCP server API key: ").strip()
     elif auth_mode == "zscaler":
-        client_id = env.get(
-            "ZSCALER_CLIENT_ID", env.get("ZSCALER_MCP_CLIENT_ID", "")
-        )
-        client_secret = env.get(
-            "ZSCALER_CLIENT_SECRET", env.get("ZSCALER_MCP_CLIENT_SECRET", "")
-        )
+        client_id = env.get("ZSCALER_CLIENT_ID", env.get("ZSCALER_MCP_CLIENT_ID", ""))
+        client_secret = env.get("ZSCALER_CLIENT_SECRET", env.get("ZSCALER_MCP_CLIENT_SECRET", ""))
         if not client_id:
             client_id = input("Enter Zscaler client ID for MCP auth: ").strip()
         if not client_secret:
-            client_secret = getpass.getpass(
-                "Enter Zscaler client secret: "
-            ).strip()
+            client_secret = getpass.getpass("Enter Zscaler client secret: ").strip()
     elif auth_mode in ("jwt", "oidcproxy"):
         warn(
             f"Auth mode '{auth_mode}' requires token-based auth.\n"
