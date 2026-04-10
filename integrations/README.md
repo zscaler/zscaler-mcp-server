@@ -11,6 +11,7 @@ This directory contains official integrations for the Zscaler MCP Server with va
 | [Gemini Extension](#gemini-extension) | [`integrations/gemini-extension/`](./gemini-extension/) | `gemini-extension.json`, `GEMINI.md` | Available |
 | [Kiro Power](#kiro-power) | [`integrations/kiro/`](./kiro/) | `integrations/kiro/mcp.json`, `integrations/kiro/POWER.md` | Available |
 | [Google ADK](#google-adk) | [`integrations/adk/`](./adk/) | `integrations/adk/.env`, `integrations/adk/zscaler_agent/.env` | Available |
+| [Azure (Container Apps / VM)](#azure-container-apps--vm) | [`integrations/azure/`](./azure/) | `integrations/azure/env.properties` | Available |
 
 All integrations share the same MCP server, tools, and skills — they differ only in how they connect the AI platform to the server.
 
@@ -94,6 +95,32 @@ adk run zscaler_agent
 ```
 
 **Config files:** `integrations/adk/.env`, `integrations/adk/zscaler_agent/.env`
+
+---
+
+### Azure (Container Apps / VM)
+
+**[Full documentation →](./azure/README.md)**
+
+Interactive deployment to Azure with two deployment targets:
+- **Container Apps** — managed, serverless (Docker Hub image)
+- **Virtual Machine** — Ubuntu 22.04, self-managed (Python library from PyPI)
+
+**Features:**
+- Fully interactive — prompts for deployment target, credentials, auth mode, and Azure options
+- Azure Key Vault integration (mandatory) — create new or use existing
+- Five authentication modes (OIDCProxy, JWT, API Key, Zscaler, None)
+- VM includes systemd service, SSH access, and NSG configuration
+- Management commands: `status`, `logs`, `ssh` (VM only), `destroy`
+
+**Quick start:**
+
+```bash
+cd integrations/azure
+python azure_mcp_operations.py deploy
+```
+
+**Config files:** `integrations/azure/env.properties`
 
 ---
 

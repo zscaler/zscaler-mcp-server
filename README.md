@@ -44,6 +44,7 @@
   - [Docker Version](#docker-version)
 - [Additional Deployment Options](#additional-deployment-options)
   - [Remote MCP Deployment (EC2, VM, etc.)](#remote-mcp-deployment-ec2-vm-etc)
+  - [Azure Container Apps / Virtual Machine](#azure-container-apps--virtual-machine)
   - [GCP Cloud Run](#gcp-cloud-run)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
 - [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
@@ -435,7 +436,7 @@ When `auth=` is provided:
 
 **IdP requirements:** Your Identity Provider must have a **Regular Web Application** (not M2M) with the callback URL `http://localhost:8000/auth/callback` registered, and an API/resource server with identifier matching the `audience` value.
 
-> **📖 For detailed setup instructions — including [OIDCProxy setup with Auth0/Okta/Azure AD](docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr), IdP-specific JWKS configuration, Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting — see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
+> **📖 For detailed setup instructions — including [OIDCProxy setup with Auth0/Okta/Azure AD](docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr), [Microsoft Entra ID step-by-step guide](docs/deployment/entra-id-oidcproxy.md), IdP-specific JWKS configuration, Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting — see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
 
 ## Supported Tools
 
@@ -1219,6 +1220,47 @@ Then use `"Authorization: Basic <base64_value>"` in place of the Bearer header a
 
 > **📖 Full remote deployment details** (venv usage, 421 troubleshooting, security, TLS): [Remote Deployment](docs/deployment/authentication-and-deployment.md#remote-deployment-ec2-vm-etc) · [421 Misdirected Request](docs/deployment/authentication-and-deployment.md#421-misdirected-request-invalid-host-header) · [Troubleshooting](docs/guides/TROUBLESHOOTING.md#remote-mcp-421-misdirected-request)
 
+### Azure Container Apps / Virtual Machine
+
+Deploy the Zscaler MCP Server to Azure with your choice of deployment target:
+
+| Target | Description | Runtime |
+|--------|-------------|---------|
+| **Container Apps** | Managed, serverless | Docker Hub image |
+| **Virtual Machine** | Ubuntu 22.04, self-managed | Python library (PyPI) |
+
+```bash
+# Interactive guided deployment — no .env file required
+cd integrations/azure
+python azure_mcp_operations.py deploy
+
+# MCP Server management
+python azure_mcp_operations.py status     # check health
+python azure_mcp_operations.py logs       # stream logs
+python azure_mcp_operations.py ssh        # SSH into VM (VM only)
+python azure_mcp_operations.py destroy    # tear down all resources
+
+# Azure AI Foundry Agent (optional — wraps MCP server as an AI agent)
+pip install azure-ai-projects azure-identity
+python azure_mcp_operations.py agent_create    # create Foundry agent
+python azure_mcp_operations.py agent_chat      # interactive CLI chat
+python azure_mcp_operations.py agent_status    # show agent info
+python azure_mcp_operations.py agent_destroy   # delete agent
+```
+
+The script will prompt you for:
+
+- **Deployment target**: Container Apps or Virtual Machine
+- **Credential source**: `.env` file path or manual entry
+- **Auth mode**: OIDCProxy (OAuth 2.1), JWT, API Key, Zscaler, or None
+- **Azure options**: resource group, region, Key Vault (new or existing)
+
+Both options store all secrets in Azure Key Vault (mandatory) and auto-configure Claude Desktop / Cursor.
+
+**Foundry Agent**: Optionally create an Azure-hosted AI agent that wraps the MCP server. The agent is accessible via CLI chat (with spinner, token tracking, and timing), the [Azure AI Foundry portal](https://ai.azure.com) playground, REST APIs, or Microsoft 365 Copilot integrations.
+
+> **📖 Full Azure deployment guide**: [integrations/azure/README.md](integrations/azure/README.md)
+
 ### GCP Cloud Run
 
 Deploy the Zscaler MCP Server container to Google Cloud Run with optional GCP Secret Manager integration for secure credential storage.
@@ -1415,6 +1457,7 @@ The Zscaler MCP Server ships with native integrations for several AI development
 | **Cursor** | Plugin | Settings → Tools & MCP → New MCP Server | [integrations/cursor-plugin/](integrations/cursor-plugin/README.md) |
 | **Gemini CLI** | Extension | Register `gemini-extension.json` | [integrations/gemini-extension/](integrations/gemini-extension/README.md) |
 | **Kiro IDE** | Power | Powers panel → Add Custom Power | [integrations/kiro/](integrations/kiro/README.md) |
+| **Azure (Container Apps / VM)** | Deployment + Agent | `python azure_mcp_operations.py deploy` | [integrations/azure/](integrations/azure/README.md) |
 | **Google ADK** | Agent | `adk run zscaler_agent` | [integrations/adk/](integrations/adk/README.md) |
 
 For full documentation on all integrations, see the [Platform Integrations Guide](integrations/README.md).

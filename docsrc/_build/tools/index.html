@@ -210,15 +210,17 @@
 <li class="toctree-l2"><a class="reference internal" href="zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -286,9 +288,10 @@
 <li class="toctree-l1"><a class="reference internal" href="zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </div>
 </section>
@@ -329,7 +332,7 @@
 <p>Most tools accept the following common parameters:</p>
 <ul class="simple">
 <li><p><strong>use_legacy</strong>: Whether to use legacy API authentication (default: False). Note: EASM does not support legacy authentication.</p></li>
-<li><p><strong>service</strong>: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zidentity, zeasm)</p></li>
+<li><p><strong>service</strong>: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zid, zeasm, zins, zms)</p></li>
 <li><p><strong>page</strong>: Page number for paginated results</p></li>
 <li><p><strong>page_size</strong>: Number of results per page</p></li>
 <li><p><strong>search</strong>: Search string for filtering results</p></li>

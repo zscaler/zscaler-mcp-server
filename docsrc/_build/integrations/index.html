@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Guides" href="../guides/index.html" /><link rel="prev" title="Zscaler Z-Insights Analytics Tools" href="../tools/z-insights/index.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Guides" href="../guides/index.html" /><link rel="prev" title="Zscaler Microsegmentation (ZMS) Tools" href="../tools/zms/index.html" />
         <link rel="prefetch" href="../_static/logo.svg" as="image" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
@@ -210,15 +210,17 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -276,9 +278,9 @@
           <section id="platform-integrations">
 <span id="id1"></span><h1>Platform Integrations<a class="headerlink" href="#platform-integrations" title="Link to this heading">¶</a></h1>
 <p>The Zscaler MCP Server ships with native integrations for several AI development platforms. Each integration includes platform-specific configuration files, 19 guided skills, and setup instructions.</p>
-<div class="table-wrapper colwidths-given docutils container" id="id6">
-<table class="docutils align-default" id="id6">
-<caption><span class="caption-text">Available Integrations</span><a class="headerlink" href="#id6" title="Link to this table">¶</a></caption>
+<div class="table-wrapper colwidths-given docutils container" id="id7">
+<table class="docutils align-default" id="id7">
+<caption><span class="caption-text">Available Integrations</span><a class="headerlink" href="#id7" title="Link to this table">¶</a></caption>
 <colgroup>
 <col style="width: 15.0%" />
 <col style="width: 15.0%" />
@@ -317,6 +319,16 @@
 <td><p>Agent</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">run</span> <span class="pre">zscaler_agent</span></code></p></td>
 <td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/adk">integrations/adk/</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Azure</strong></p></td>
+<td><p>Deployment</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">deploy</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure">integrations/azure/</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Azure AI Foundry</strong></p></td>
+<td><p>Agent</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_create</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md">Deployment Guide</a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py">Source</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -450,7 +462,7 @@ claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="
 <td><p>EASM (Attack Surface)</p></td>
 <td><p>7 — findings, lookalike domains, scan evidence (read-only)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zidentity.md</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zid.md</span></code></p></td>
 <td><p>ZIdentity</p></td>
 <td><p>10 — users, groups, identity management (read-only)</p></td>
 </tr>
@@ -509,6 +521,130 @@ adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
 <li><p>A Google API key or Vertex AI access</p></li>
 <li><p>Zscaler OneAPI credentials</p></li>
 </ul>
+</section>
+<section id="azure-deployment">
+<span id="id6"></span><h2>Azure Deployment<a class="headerlink" href="#azure-deployment" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server can be deployed to <strong>Azure Container Apps</strong> (managed, serverless) or an <strong>Azure Virtual Machine</strong> (Ubuntu 22.04) using the interactive <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> script.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Deployment script (<code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code>) — Interactive guided deployment with <code class="docutils literal notranslate"><span class="pre">deploy</span></code>, <code class="docutils literal notranslate"><span class="pre">destroy</span></code>, <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">logs</span></code>, and <code class="docutils literal notranslate"><span class="pre">ssh</span></code> commands</p></li>
+<li><p>Foundry agent (<code class="docutils literal notranslate"><span class="pre">foundry_agent.py</span></code>) — Azure AI Foundry integration for creating GPT-4o agents backed by Zscaler MCP tools</p></li>
+<li><p>Environment template (<code class="docutils literal notranslate"><span class="pre">.env</span></code>) — Pre-configured credential templates for all authentication modes</p></li>
+</ul>
+<p><strong>Deployment Targets:</strong></p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 35.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Image / Package</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Container Apps</strong></p></td>
+<td><p>Managed serverless containers</p></td>
+<td><p>Docker Hub: <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Virtual Machine</strong></p></td>
+<td><p>Ubuntu 22.04, self-managed</p></td>
+<td><p>PyPI: <code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Authentication Modes:</strong></p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Client Auth Header</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>OIDCProxy</strong></p></td>
+<td><p>OAuth 2.1 + DCR via OIDC provider (Entra ID, Okta, etc.)</p></td>
+<td><p>Handled automatically by <code class="docutils literal notranslate"><span class="pre">mcp-remote</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>JWT</strong></p></td>
+<td><p>Validate JWTs against a JWKS endpoint</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;JWT&gt;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>API Key</strong></p></td>
+<td><p>Shared secret (auto-generated if not provided)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;api-key&gt;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Zscaler</strong></p></td>
+<td><p>Validate via OneAPI client credentials</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Basic</span> <span class="pre">base64(id:secret)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>None</strong></p></td>
+<td><p>No authentication (development only)</p></td>
+<td><p>No header</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Quick Start:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/azure
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+<p>The script prompts for deployment target, credential source (<code class="docutils literal notranslate"><span class="pre">.env</span></code> file or manual entry), Zscaler API credentials, MCP auth mode, and Azure options. All secrets are stored in Azure Key Vault.</p>
+</section>
+<section id="azure-ai-foundry-agent">
+<span id="azure-foundry"></span><h2>Azure AI Foundry Agent<a class="headerlink" href="#azure-ai-foundry-agent" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server integrates with <a class="reference external" href="https://ai.azure.com">Azure AI Foundry</a> to create autonomous security agents powered by GPT-4o that use Zscaler MCP tools.</p>
+<p>There are two ways to configure the Foundry agent:</p>
+<ul class="simple">
+<li><p><strong>API (CLI):</strong> Create and manage the agent via <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> commands — ideal for automation and scripted deployments.</p></li>
+<li><p><strong>UI (Portal):</strong> Configure the agent through the Azure AI Foundry portal at <a class="reference external" href="https://ai.azure.com">ai.azure.com</a> — ideal for visual setup and exploration.</p></li>
+</ul>
+<p>For the complete end-to-end walkthrough (both methods), see the <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md">Azure AI Foundry Deployment Guide</a>.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Agent lifecycle commands (<code class="docutils literal notranslate"><span class="pre">agent_create</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_chat</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_status</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_destroy</span></code>)</p></li>
+<li><p>Interactive chat session with tool approval handling and in-chat commands (<code class="docutils literal notranslate"><span class="pre">help</span></code>, <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">clear</span></code>, <code class="docutils literal notranslate"><span class="pre">reset</span></code>)</p></li>
+<li><p>Multi-turn response chaining for conversation continuity</p></li>
+<li><p>Per-response token usage tracking and end-of-session summary</p></li>
+<li><p>Graceful API error handling with actionable remediation steps</p></li>
+</ul>
+<p><strong>Prerequisites:</strong></p>
+<ul class="simple">
+<li><p>Azure AI Foundry project (<a class="reference external" href="https://ai.azure.com">https://ai.azure.com</a>)</p></li>
+<li><p>Azure OpenAI deployment (GPT-4o or GPT-4)</p></li>
+<li><p>Deployed Zscaler MCP Server (Container Apps or VM)</p></li>
+<li><p>Python packages: <code class="docutils literal notranslate"><span class="pre">azure-ai-projects</span></code>, <code class="docutils literal notranslate"><span class="pre">azure-identity</span></code></p></li>
+</ul>
+<p><strong>Quick Start (CLI):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Step 1: Deploy the MCP server</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+
+<span class="c1"># Step 2: Create the Foundry agent</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_create
+
+<span class="c1"># Step 3: Start chatting</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat
+</pre></div>
+</div>
+<p><strong>All Agent Commands:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_create<span class="w">    </span><span class="c1"># create agent</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat<span class="w">      </span><span class="c1"># interactive chat</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;query&quot;</span><span class="w">  </span><span class="c1"># single query</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_status<span class="w">    </span><span class="c1"># show agent info</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_destroy<span class="w">   </span><span class="c1"># delete agent</span>
+</pre></div>
+</div>
 </section>
 <section id="shared-components">
 <h2>Shared Components<a class="headerlink" href="#shared-components" title="Link to this heading">¶</a></h2>
@@ -624,14 +760,14 @@ adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../tools/z-insights/index.html">
+          <a class="prev-page" href="../tools/zms/index.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Zscaler Z-Insights Analytics Tools</div>
+                <div class="title">Zscaler Microsegmentation (ZMS) Tools</div>
                 
               </div>
             </a>
@@ -671,6 +807,8 @@ adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
 <li><a class="reference internal" href="#gemini-extension">Gemini Extension</a></li>
 <li><a class="reference internal" href="#kiro-power">Kiro Power</a></li>
 <li><a class="reference internal" href="#google-adk-agent-development-kit">Google ADK (Agent Development Kit)</a></li>
+<li><a class="reference internal" href="#azure-deployment">Azure Deployment</a></li>
+<li><a class="reference internal" href="#azure-ai-foundry-agent">Azure AI Foundry Agent</a></li>
 <li><a class="reference internal" href="#shared-components">Shared Components</a><ul>
 <li><a class="reference internal" href="#skills-overview">Skills Overview</a></li>
 </ul>

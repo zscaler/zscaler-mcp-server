@@ -210,15 +210,17 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -302,15 +304,11 @@ IPs / CIDRs are accepted.  Everything else gets 403.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.get_available_services">
 <span class="sig-name descname"><span class="pre">get_available_services</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer.get_available_services"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer.get_available_services" title="Link to this definition">¶</a></dt>
-<dd><p>Get information about available services.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Available services</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]]</p>
-</dd>
-</dl>
+<dd><p>Get information about available and disabled services/tools.</p>
+<p>Returns a dict with enabled services (and their registered tool
+count), any explicitly disabled services, and any disabled tool
+patterns so the AI agent can inform the user instead of searching
+for tools that don’t exist.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -324,6 +322,28 @@ IPs / CIDRs are accepted.  Everything else gets 403.</p>
 <li><p><strong>host</strong> – Host to bind to for HTTP transports (default: 127.0.0.1)</p></li>
 <li><p><strong>port</strong> – Port to listen on for HTTP transports (default: 8000)</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.search_tools">
+<span class="sig-name descname"><span class="pre">search_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name_contains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description_contains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer.search_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer.search_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Search the tool registry for tools matching the given criteria.</p>
+<p>Builds a searchable catalog of all registered tools and applies
+optional filters. Supports JMESPath for advanced queries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name_contains</strong> – Substring filter on tool name (case-insensitive).</p></li>
+<li><p><strong>description_contains</strong> – Substring filter on tool description (case-insensitive).</p></li>
+<li><p><strong>service</strong> – Filter by service prefix (e.g., ‘zia’, ‘zpa’, ‘zms’).</p></li>
+<li><p><strong>query</strong> – JMESPath expression for advanced filtering/projection.
+Applied after name/description/service filters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of matching tools with name, description, service, and type.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -581,6 +601,7 @@ IPs / CIDRs are accepted.  Everything else gets 403.</p>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer</span></code></a><ul>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.get_available_services"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.get_available_services()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.run"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.run()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.search_tools"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.search_tools()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_check_connectivity"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.zscaler_check_connectivity()</span></code></a></li>
 </ul>
 </li>

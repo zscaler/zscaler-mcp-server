@@ -6,7 +6,7 @@
 
 ### Core Components
 
-```
+```text
 zscaler_mcp/
 ├── server.py          # ZscalerMCPServer class, CLI entrypoint, security posture logging
 ├── services.py        # Service registry + 9 concrete service classes (ZPA, ZIA, ZDX, ZCC, ZTW, ZIdentity, ZEASM, ZInsights, ZMS)
@@ -42,6 +42,7 @@ Each service follows the same pattern:
 - **Tool registration** via `register_read_tools()` / `register_write_tools()` in `tool_helpers.py`
 
 Tool registration respects three layers of filtering:
+
 1. `enabled_tools` — positive allowlist (only register these tools)
 2. `disabled_tools` — negative blocklist with fnmatch wildcards (exclude matching tools)
 3. `write_tools` — write-specific allowlist with wildcards (only these write tools are allowed)
@@ -55,6 +56,8 @@ The server has two independent auth systems:
    - Auto-detection: if `ZSCALER_MCP_AUTH_JWKS_URI` is set, uses JWT; if `ZSCALER_MCP_AUTH_API_KEY`, uses api-key; etc.
    - Enabled by default for HTTP transports; not applicable for stdio
    - The `auth=` parameter on `ZscalerMCPServer` takes a `fastmcp.server.auth.AuthProvider` (e.g., `OIDCProxy`) and bypasses the env-var middleware entirely
+   - Compatible with any OIDC provider: Auth0, Okta, Microsoft Entra ID, Keycloak, Google, AWS Cognito, PingOne
+   - **Entra ID guide**: `docs/deployment/entra-id-oidcproxy.md` — step-by-step with screenshots. Key difference: `audience` must be the client ID (Entra sets `aud` to client_id in ID tokens, unlike Auth0 which uses an API identifier)
 
 2. **Zscaler API Authentication** (`client.py`) — controls how the server talks to Zscaler APIs
    - OneAPI credentials (`ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc.)
@@ -178,7 +181,7 @@ Standard [JMESPath](https://jmespath.org/) syntax. Field names are **snake_case*
 
 The `zscaler_search_tools` meta-tool exposes the full tool registry as a searchable list with JMESPath filtering. This is designed for AI agents working with deferred tool loading (Claude Desktop, Cursor) where fuzzy search returns irrelevant results. Examples:
 
-```
+```text
 zscaler_search_tools(query="[?contains(description, 'firewall')]")
 zscaler_search_tools(query="[?starts_with(name, 'zms_')]")
 zscaler_search_tools(query="[?contains(name, 'list') && contains(description, 'device')]")
@@ -271,13 +274,14 @@ Opt-in logging of every tool invocation for troubleshooting and observability. C
 
 Every tool call produces two log lines via the `zscaler_mcp.audit` logger:
 
-```
+```text
 [TOOL CALL] zia_list_locations | args: {page: 1, page_size: 50, name: "HQ"}
 [TOOL OK]   zia_list_locations | 342ms | 15 items
 ```
 
 On error:
-```
+
+```text
 [TOOL CALL] zms_list_resources | args: {page_num: 1}
 [TOOL ERR]  zms_list_resources | 1204ms | ConnectionError: timeout
 ```
@@ -332,7 +336,7 @@ The server can be deployed to Google Cloud Run as a managed container with optio
 
 ### Architecture
 
-```
+```text
 ┌─ Cloud Run ─────────────────────────────────────────────┐
 │  zscaler-mcp-server container                           │
 │                                                         │
@@ -369,6 +373,137 @@ GCP deployments default to `ZSCALER_MCP_AUTH_MODE=zscaler`. Clients authenticate
 - **`ZSCALER_MCP_ALLOW_HTTP=true`** is required on Cloud Run because TLS is terminated by Google's infrastructure before reaching the container.
 - **Both URL formats are valid.** Cloud Run assigns two URLs to each service: `https://SERVICE-HASH.a.run.app` (old) and `https://SERVICE-PROJECT_NUM.REGION.run.app` (new). Both resolve to the same service.
 
+## Azure Deployment
+
+Interactive deployment to Azure via `integrations/azure/azure_mcp_operations.py`. Supports two deployment targets:
+
+### Deployment Targets
+
+| Target | Runtime | Image/Package |
+|--------|---------|---------------|
+| **Container Apps** | Managed, serverless | Docker Hub: `zscaler/zscaler-mcp-server:latest` |
+| **Virtual Machine** | Ubuntu 22.04, self-managed | PyPI: `zscaler-mcp-server` |
+
+### Common Features
+
+- **Fully interactive** — prompts for deployment target, credential source (`.env` path or manual entry), auth mode, Azure options
+- **Azure Key Vault mandatory** — all secrets stored in Key Vault (create new or use existing)
+- **Five auth modes** — OIDCProxy, JWT, API Key, Zscaler, None
+- **State file** — `.azure-deploy-state.json` persists resource names for `status`/`logs`/`destroy`/`ssh`
+- **Client config** — auto-updates Claude Desktop (`claude_desktop_config.json`) and Cursor (`mcp.json`) with correct auth headers
+
+### Container Apps Specifics
+
+- Pulls image directly from Docker Hub (no local build, no ACR)
+- TLS terminated by Azure Container Apps ingress
+- Scales 1-3 replicas automatically
+
+### VM Specifics
+
+- Provisions Ubuntu 22.04 VM (`Standard_B2s` by default)
+- Creates NSG with SSH (22) and MCP port rules
+- Installs Python 3.11, creates venv, installs `zscaler-mcp-server` from PyPI
+- Configures systemd service (`zscaler-mcp.service`) for auto-start and restart on failure
+- SSH access via `python azure_mcp_operations.py ssh`
+
+### Auth Mode Differences
+
+| Mode | Container command | MCP env vars | Client auth |
+|------|-------------------|--------------|-------------|
+| OIDCProxy | Inline Python entrypoint (base64-encoded) | `OIDCPROXY_*` env vars, `ZSCALER_MCP_AUTH_ENABLED=false` | `mcp-remote` handles OAuth flow |
+| JWT / API Key / Zscaler | `/app/.venv/bin/zscaler-mcp --transport streamable-http` (Container) or systemd service (VM) | `ZSCALER_MCP_AUTH_MODE=jwt\|api-key\|zscaler` | Auth header via `mcp-remote --header` (Claude) or `headers` (Cursor) |
+| None | Same CLI entrypoint | `ZSCALER_MCP_AUTH_ENABLED=false` | No header |
+
+### Key Vault Flow
+
+1. Script creates Key Vault (or uses existing) with RBAC authorization enabled
+2. Assigns "Key Vault Secrets Officer" role to the signed-in user
+3. Stores Zscaler API creds + auth-mode-specific secrets
+4. For Container Apps: values passed as env vars; for VM: values written to `/opt/zscaler-mcp/env`
+
+### VM cloud-init
+
+The VM deployment uses cloud-init to:
+
+1. Install Python 3.11 and create a venv at `/opt/zscaler-mcp/venv`
+2. Install `zscaler-mcp-server` from PyPI
+3. Write environment variables to `/opt/zscaler-mcp/env`
+4. Create and enable `zscaler-mcp.service` systemd unit
+5. Start the service
+
+### Foundry Agent Integration
+
+After deploying the MCP server, you can optionally create an Azure AI Foundry agent that uses it as a tool:
+
+```bash
+python azure_mcp_operations.py agent_create   # creates agent in Foundry
+python azure_mcp_operations.py agent_chat     # interactive chat session
+python azure_mcp_operations.py agent_chat -m "list all zpa segment groups"  # one-shot with initial message
+python azure_mcp_operations.py agent_status   # check agent status
+python azure_mcp_operations.py agent_destroy  # delete agent
+python azure_mcp_operations.py agent_destroy -y  # skip confirmation prompt
+```
+
+**What it does:**
+
+- Creates a Foundry agent (`zscaler-mcp-agent`) with `MCPTool` pointing to your deployed MCP server
+- Uses GPT-4o (configurable) for reasoning
+- Configures `require_approval="always"` for human oversight on tool calls
+- Authenticates to MCP server via `X-Zscaler-Client-ID` / `X-Zscaler-Client-Secret` headers (NOT `Authorization` or `project_connection_id` — both are blocked/buggy in Foundry)
+- Stores agent state in `.azure-agent-state.json`
+
+**Chat UX features (`agent_chat`):**
+
+- Animated braille spinner with live elapsed-time counter while waiting for responses
+- Per-response stats: wall-clock time, token usage (input/output/total)
+- End-of-session summary: total session duration, messages sent, cumulative token count
+- Proper response chaining for multi-turn conversations with tool approvals
+- Zscaler ASCII logo banner on chat start
+- Graceful error handling for API errors (DeploymentNotFound, auth failures, rate limits, connection issues) with actionable remediation steps instead of raw tracebacks
+
+**In-chat commands:**
+
+| Command | Description |
+|---------|-------------|
+| `help` | Show available commands, usage tips, and example prompts |
+| `status` | Show agent info, project endpoint, session duration, tokens, and messages sent |
+| `clear` | Clear the terminal screen |
+| `reset` | Reset conversation context (clears response chain, token count, message count) |
+| `quit` / `exit` / `q` | End the chat session and display a summary |
+
+**Foundry portal:** After `agent_create`, view and test the agent at [ai.azure.com](https://ai.azure.com) → your project → Agents → `zscaler-mcp-agent` → Playground.
+
+**Prerequisites:**
+
+- Azure AI Foundry project ([ai.azure.com](https://ai.azure.com))
+- Azure OpenAI model deployment (GPT-4o or GPT-4) — must be deployed in the project, not just selected
+- Python packages: `azure-ai-projects`, `azure-identity`
+- Azure CLI: `az login`
+- `AZURE_AI_PROJECT_ENDPOINT` and `AZURE_OPENAI_MODEL` in `integrations/azure/.env`
+
+**Deployment guide:** `docs/deployment/azure-ai-foundry.md` — end-to-end walkthrough with screenshots covering both CLI and portal methods, Foundry project creation, model deployment, and troubleshooting.
+
+**Publication:** Self-service — no Microsoft involvement. Publish to Individual (testing) or Organization (production) scope through Foundry portal or SDK.
+
+**Command reference:**
+
+| Command | Flag | Description |
+|---------|------|-------------|
+| `agent_create` | | Create Foundry agent with MCP tool and auth headers |
+| `agent_status` | | Show agent name, version, model, and MCP URL |
+| `agent_chat` | | Interactive multi-turn chat with tool approval |
+| `agent_chat` | `--message "..."` / `-m "..."` | Send an initial message on start |
+| `agent_destroy` | | Delete agent from Foundry (prompts for confirmation) |
+| `agent_destroy` | `--yes` / `-y` | Delete agent without confirmation prompt |
+
+### Files
+
+- **`integrations/azure/azure_mcp_operations.py`** — Main script. MCP operations: `deploy`, `destroy`, `status`, `logs`, `ssh`. Foundry operations: `agent_create`, `agent_status`, `agent_chat`, `agent_destroy`
+- **`integrations/azure/foundry_agent.py`** — Foundry agent module with MCPTool, chat session, approval handling
+- **`integrations/azure/env.properties`** — Template `.env` file with all supported variables
+- **`integrations/azure/.azure-deploy-state.json`** — Created during deploy, stores resource names/FQDN/public IP
+- **`integrations/azure/.azure-agent-state.json`** — Created during agent_create, stores Foundry project/agent info
+
 ## AWS Version
 
 A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS/zscaler-mcp-server` for Amazon Bedrock AgentCore. Key differences:
@@ -384,7 +519,7 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 ## Platform Integrations
 
-Native integrations available in `integrations/`: Claude Code plugin, Cursor plugin, Gemini CLI extension, Kiro IDE power, Google ADK agent. See `integrations/README.md` for details.
+Native integrations available in `integrations/`: Claude Code plugin, Cursor plugin, Gemini CLI extension, Kiro IDE power, Google ADK agent, Azure deployment (Container Apps / VM), Azure AI Foundry agent. See `integrations/README.md` and `docs/deployment/azure-ai-foundry.md` for details.
 
 ### Docker + OIDCProxy Setup
 
