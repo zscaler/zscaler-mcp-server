@@ -210,15 +210,17 @@
 <li class="toctree-l2"><a class="reference internal" href="tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/support.html">Support Guide</a></li>
@@ -395,10 +397,10 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zidentity_groups</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zid_groups</span></code></p></td>
 <td><p>Retrieves Zidentity group information</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zidentity_users</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zid_users</span></code></p></td>
 <td><p>Retrieves Zidentity user information</p></td>
 </tr>
 </tbody>
@@ -670,53 +672,132 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_web_traffic_by_location</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_web_traffic_by_location</span></code></p></td>
 <td><p>Get web traffic analytics grouped by location</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_web_traffic_no_grouping</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_web_traffic_no_grouping</span></code></p></td>
 <td><p>Get overall web traffic volume metrics</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_web_protocols</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_web_protocols</span></code></p></td>
 <td><p>Get web traffic by protocol (HTTP, HTTPS, SSL)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_threat_super_categories</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_threat_super_categories</span></code></p></td>
 <td><p>Get threat super categories (malware, phishing, spyware)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_threat_class</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_threat_class</span></code></p></td>
 <td><p>Get detailed threat class breakdown</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_cyber_incidents</span></code></p></td>
 <td><p>Get cybersecurity incidents by category</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_by_location</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_cyber_incidents_by_location</span></code></p></td>
 <td><p>Get cybersecurity incidents grouped by location</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_daily</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_cyber_incidents_daily</span></code></p></td>
 <td><p>Get daily cybersecurity incident trends</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_cyber_incidents_by_threat_and_app</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_cyber_incidents_by_threat_and_app</span></code></p></td>
 <td><p>Get incidents correlated by threat and application</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_by_action</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_firewall_by_action</span></code></p></td>
 <td><p>Get Zero Trust Firewall traffic by action (allow/block)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_by_location</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_firewall_by_location</span></code></p></td>
 <td><p>Get firewall traffic grouped by location</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_firewall_network_services</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_firewall_network_services</span></code></p></td>
 <td><p>Get firewall network service usage</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_casb_app_report</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_casb_app_report</span></code></p></td>
 <td><p>Get CASB SaaS application usage report</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_shadow_it_apps</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_shadow_it_apps</span></code></p></td>
 <td><p>Get discovered shadow IT applications with risk scores</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_shadow_it_summary</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_shadow_it_summary</span></code></p></td>
 <td><p>Get shadow IT summary statistics and groupings</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zinsights_get_iot_device_stats</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zins_get_iot_device_stats</span></code></p></td>
 <td><p>Get IoT device statistics and classifications</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="zms-features">
+<h2>ZMS Features<a class="headerlink" href="#zms-features" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container" id="id10">
+<table class="docutils align-default" id="id10">
+<caption><span class="caption-text">ZMS Tools</span><a class="headerlink" href="#id10" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Tool Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_agents</span></code></p></td>
+<td><p>List ZMS agents with pagination and search</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_agent_connection_status_statistics</span></code></p></td>
+<td><p>Get aggregated connection status statistics for ZMS agents</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_agent_version_statistics</span></code></p></td>
+<td><p>Get aggregated version statistics for ZMS agents</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_agent_groups</span></code></p></td>
+<td><p>List ZMS agent groups with pagination and search</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_agent_group_totp_secrets</span></code></p></td>
+<td><p>Get TOTP secrets for a specific ZMS agent group</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_resources</span></code></p></td>
+<td><p>List ZMS resources with pagination and filtering</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_resource_protection_status</span></code></p></td>
+<td><p>Get protection status summary for ZMS resources</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_metadata</span></code></p></td>
+<td><p>Get event metadata for ZMS resources</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_resource_groups</span></code></p></td>
+<td><p>List ZMS resource groups with pagination and filtering</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_resource_group_members</span></code></p></td>
+<td><p>Get members of a specific ZMS resource group</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_resource_group_protection_status</span></code></p></td>
+<td><p>Get protection status summary for ZMS resource groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_policy_rules</span></code></p></td>
+<td><p>List ZMS policy rules with pagination and filtering</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_default_policy_rules</span></code></p></td>
+<td><p>List default policy rules for ZMS</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_app_zones</span></code></p></td>
+<td><p>List ZMS app zones with pagination and filtering</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_app_catalog</span></code></p></td>
+<td><p>List ZMS application catalog entries with pagination and filtering</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_nonces</span></code></p></td>
+<td><p>List ZMS nonces (provisioning keys) with pagination</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_get_nonce</span></code></p></td>
+<td><p>Get a specific ZMS nonce by its eyez ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_tag_namespaces</span></code></p></td>
+<td><p>List ZMS tag namespaces with pagination and filtering</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_tag_keys</span></code></p></td>
+<td><p>List tag keys within a specific ZMS tag namespace</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zms_list_tag_values</span></code></p></td>
+<td><p>List tag values for a specific ZMS tag key</p></td>
 </tr>
 </tbody>
 </table>
@@ -900,9 +981,9 @@ zscaler-mcp
 <p>Do not commit <cite>.env</cite> to source control. Add it to your <cite>.gitignore</cite>.</p>
 </div>
 <p>You can provide credentials via the <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code> environment variables, representing your Zidentity OneAPI credentials <code class="docutils literal notranslate"><span class="pre">clientId</span></code>, <code class="docutils literal notranslate"><span class="pre">clientSecret</span></code>, <code class="docutils literal notranslate"><span class="pre">vanityDomain</span></code> and <code class="docutils literal notranslate"><span class="pre">cloud</span></code> respectively.</p>
-<div class="table-wrapper colwidths-given docutils container" id="id10">
-<table class="docutils align-default" id="id10">
-<caption><span class="caption-text">OneAPI Authentication Parameters</span><a class="headerlink" href="#id10" title="Link to this table">¶</a></caption>
+<div class="table-wrapper colwidths-given docutils container" id="id11">
+<table class="docutils align-default" id="id11">
+<caption><span class="caption-text">OneAPI Authentication Parameters</span><a class="headerlink" href="#id11" title="Link to this table">¶</a></caption>
 <colgroup>
 <col style="width: 20.0%" />
 <col style="width: 40.0%" />

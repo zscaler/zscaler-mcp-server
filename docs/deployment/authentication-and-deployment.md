@@ -2170,12 +2170,18 @@ OIDCProxy acts as an OAuth proxy between MCP clients and your Identity Provider.
 3. Set the **Sign-in redirect URI** to `http://localhost:8000/auth/callback`
 4. Note the **Client ID** and **Client Secret**
 
-**Azure AD example:**
+**Azure AD / Microsoft Entra ID example:**
 
 1. Go to **Azure Portal > App registrations > New registration**
 2. Set the **Redirect URI** to `http://localhost:8000/auth/callback` (type: Web)
 3. Under **Certificates & secrets**, create a **Client secret**
-4. Note the **Application (client) ID** and secret value
+4. Under **Authentication > Settings**, enable **ID tokens**
+5. Under **API permissions**, add `openid`, `profile`, `email` and grant admin consent
+6. Note the **Application (client) ID** and secret value
+
+> **Important:** For Entra ID, set the `audience` parameter to the **Application (client) ID** (not an API identifier). Entra ID uses the client ID as the `aud` claim in ID tokens.
+>
+> **📖 Full step-by-step guide with screenshots:** [OIDCProxy Setup with Microsoft Entra ID](entra-id-oidcproxy.md)
 
 ### Step 2: Create an API / Resource Server in Your IdP
 

@@ -209,15 +209,17 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -277,7 +279,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
@@ -843,22 +845,43 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            int: Number of tools registered</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_wrap_with_audit</span>
+
         <span class="c1"># Register core tools directly</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">zscaler_check_connectivity</span><span class="p">,</span>
+            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zscaler_check_connectivity</span><span class="p">,</span> <span class="s2">&quot;zscaler_check_connectivity&quot;</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_check_connectivity&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Check connectivity to the Zscaler API.&quot;</span><span class="p">,</span>
-            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># Read-only diagnostic tool</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">get_available_services</span><span class="p">,</span>
+            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_available_services</span><span class="p">,</span> <span class="s2">&quot;zscaler_get_available_services&quot;</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_get_available_services&quot;</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get information about available services.&quot;</span><span class="p">,</span>
-            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># Read-only informational tool</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, ZMS, etc.) &quot;</span>
+                <span class="s2">&quot;and their tool counts. Call this FIRST when unsure which services or tools &quot;</span>
+                <span class="s2">&quot;are available, or when a tool search returns no relevant results.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span>
 
-        <span class="n">tool_count</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># the tools added above</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
+            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">search_tools</span><span class="p">,</span> <span class="s2">&quot;zscaler_search_tools&quot;</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_search_tools&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Search the Zscaler MCP tool registry by name, description, or service. &quot;</span>
+                <span class="s2">&quot;Use this to find specific tools or capabilities across all Zscaler services &quot;</span>
+                <span class="s2">&quot;(ZIA, ZPA, ZDX, ZCC, ZTW, ZMS, ZIdentity, EASM, Z-Insights). &quot;</span>
+                <span class="s2">&quot;Accepts a JMESPath query for advanced filtering/projection. &quot;</span>
+                <span class="s2">&quot;Call this when you need to find the right tool for a task, discover &quot;</span>
+                <span class="s2">&quot;available capabilities, or when fuzzy tool search returns irrelevant results. &quot;</span>
+                <span class="s2">&quot;Examples: find firewall tools, list device tools, discover policy capabilities.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">tool_count</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># the tools added above</span>
 
         <span class="c1"># Register tools from services</span>
         <span class="k">for</span> <span class="n">service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -938,13 +961,112 @@
 
 <div class="viewcode-block" id="ZscalerMCPServer.get_available_services">
 <a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.get_available_services">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_available_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get information about available services.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_available_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get information about available and disabled services/tools.</span>
+
+<span class="sd">        Returns a dict with enabled services (and their registered tool</span>
+<span class="sd">        count), any explicitly disabled services, and any disabled tool</span>
+<span class="sd">        patterns so the AI agent can inform the user instead of searching</span>
+<span class="sd">        for tools that don&#39;t exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">services</span><span class="o">.</span><span class="n">get_service_names</span><span class="p">())</span>
+        <span class="n">enabled</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span><span class="p">):</span>
+            <span class="n">svc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">tool_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">svc</span><span class="o">.</span><span class="n">read_tools</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">svc</span><span class="o">.</span><span class="n">write_tools</span><span class="p">)</span> <span class="k">if</span> <span class="n">svc</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">enabled</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tool_count&quot;</span><span class="p">:</span> <span class="n">tool_count</span><span class="p">}</span>
+
+        <span class="n">disabled_svc</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">all_names</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span><span class="p">)</span>
+
+        <span class="n">result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled_services&quot;</span><span class="p">:</span> <span class="n">enabled</span><span class="p">}</span>
+
+        <span class="n">notes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">disabled_svc</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;disabled_services&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">disabled_svc</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Disabled services have been explicitly excluded. &quot;</span>
+                <span class="s2">&quot;Their tools are not registered and cannot be called. &quot;</span>
+                <span class="s2">&quot;If a user asks about a disabled service, inform them &quot;</span>
+                <span class="s2">&quot;that it has been disabled by the server administrator.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;disabled_tool_patterns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">)</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Disabled tool patterns use fnmatch wildcards. &quot;</span>
+                <span class="s2">&quot;Any tool whose name matches a pattern is excluded and cannot be called. &quot;</span>
+                <span class="s2">&quot;For example, &#39;zcc_list_device*&#39; blocks zcc_list_devices and zcc_list_devices_lite. &quot;</span>
+                <span class="s2">&quot;If a user asks for a disabled tool, inform them it has been &quot;</span>
+                <span class="s2">&quot;disabled by the server administrator.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">notes</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;note&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">notes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ZscalerMCPServer.search_tools">
+<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.search_tools">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search_tools</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search the tool registry for tools matching the given criteria.</span>
+
+<span class="sd">        Builds a searchable catalog of all registered tools and applies</span>
+<span class="sd">        optional filters. Supports JMESPath for advanced queries.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name_contains: Substring filter on tool name (case-insensitive).</span>
+<span class="sd">            description_contains: Substring filter on tool description (case-insensitive).</span>
+<span class="sd">            service: Filter by service prefix (e.g., &#39;zia&#39;, &#39;zpa&#39;, &#39;zms&#39;).</span>
+<span class="sd">            query: JMESPath expression for advanced filtering/projection.</span>
+<span class="sd">                Applied after name/description/service filters.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            Dict[str, List[str]]: Available services</span>
+<span class="sd">            List of matching tools with name, description, service, and type.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;services&quot;</span><span class="p">:</span> <span class="n">services</span><span class="o">.</span><span class="n">get_service_names</span><span class="p">()}</span></div>
+        <span class="n">catalog</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">svc_name</span><span class="p">,</span> <span class="n">svc</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">catalog</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="n">svc_name</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span>
+                <span class="p">})</span>
+            <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">catalog</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="n">svc_name</span><span class="p">,</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;write&quot;</span><span class="p">,</span>
+                <span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">service</span><span class="p">:</span>
+            <span class="n">svc_lower</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">catalog</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">catalog</span> <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;service&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">svc_lower</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">name_contains</span><span class="p">:</span>
+            <span class="n">needle</span> <span class="o">=</span> <span class="n">name_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">catalog</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">catalog</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="n">description_contains</span><span class="p">:</span>
+            <span class="n">needle</span> <span class="o">=</span> <span class="n">description_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">catalog</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">catalog</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="n">query</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.jmespath_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_jmespath</span>
+
+            <span class="n">catalog</span> <span class="o">=</span> <span class="n">apply_jmespath</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">catalog</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;no_results&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;No tools matched the search criteria.&quot;</span><span class="p">}]</span>
+
+        <span class="k">return</span> <span class="n">catalog</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_fastmcp_auth_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transport</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -1512,6 +1634,15 @@
     <span class="p">)</span>
 
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--log-tool-calls&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_LOG_TOOL_CALLS&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Enable audit logging for every tool invocation. &quot;</span>
+        <span class="s2">&quot;Logs tool name, sanitized arguments, duration, and result summary. &quot;</span>
+        <span class="s2">&quot;(env: ZSCALER_MCP_LOG_TOOL_CALLS)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s2">&quot;--version&quot;</span><span class="p">,</span>
         <span class="s2">&quot;-v&quot;</span><span class="p">,</span>
         <span class="n">action</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span>
@@ -1584,8 +1715,19 @@
 
     <span class="n">_check_env_file_security</span><span class="p">()</span>
 
+    <span class="c1"># Cloud secret managers — fetch credentials before server init</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.cloud</span><span class="w"> </span><span class="kn">import</span> <span class="n">gcp_secrets</span>
+
+    <span class="k">if</span> <span class="n">gcp_secrets</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">():</span>
+        <span class="n">gcp_secrets</span><span class="o">.</span><span class="n">load_secrets</span><span class="p">()</span>
+
     <span class="c1"># Parse command line arguments (includes environment variable defaults)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;log_tool_calls&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">enable_tool_call_logging</span>
+
+        <span class="n">enable_tool_call_logging</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;list_tools&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
         <span class="n">list_available_tools</span><span class="p">(</span>

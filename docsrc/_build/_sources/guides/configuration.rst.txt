@@ -520,5 +520,5 @@ Check:
 
 Check:
 
-1. Service name is correct: ``zpa``, ``zia``, ``zdx``, ``zcc``, ``zidentity``, ``ztw``, ``zeasm``, ``zinsights``
+1. Service name is correct: ``zpa``, ``zia``, ``zdx``, ``zcc``, ``zid``, ``ztw``, ``zeasm``, ``zins``
 2. If using ``ZSCALER_MCP_SERVICES``, service is included in the list

@@ -208,15 +208,17 @@
 <li class="toctree-l2"><a class="reference internal" href="tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/support.html">Support Guide</a></li>
@@ -406,9 +408,9 @@
 </li>
           <li><a href="api/tools.html#module-zscaler_mcp.tools.zia.web_dlp_rules">zscaler_mcp.tools.zia.web_dlp_rules</a>
 </li>
-          <li><a href="api/tools.html#module-zscaler_mcp.tools.zidentity.groups">zscaler_mcp.tools.zidentity.groups</a>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.zid.groups">zscaler_mcp.tools.zid.groups</a>
 </li>
-          <li><a href="api/tools.html#module-zscaler_mcp.tools.zidentity.users">zscaler_mcp.tools.zidentity.users</a>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.zid.users">zscaler_mcp.tools.zid.users</a>
 </li>
           <li><a href="api/tools.html#module-zscaler_mcp.tools.zpa.access_app_protection_rules">zscaler_mcp.tools.zpa.access_app_protection_rules</a>
 </li>
@@ -480,9 +482,11 @@
 </li>
           <li><a href="api/services.html#zscaler_mcp.services.ZIAService.register_tools">(ZIAService method)</a>
 </li>
-          <li><a href="api/services.html#zscaler_mcp.services.ZIdentityService.register_tools">(ZIdentityService method)</a>
+          <li><a href="api/services.html#zscaler_mcp.services.ZIDService.register_tools">(ZIDService method)</a>
 </li>
-          <li><a href="api/services.html#zscaler_mcp.services.ZInsightsService.register_tools">(ZInsightsService method)</a>
+          <li><a href="api/services.html#zscaler_mcp.services.ZINSService.register_tools">(ZINSService method)</a>
+</li>
+          <li><a href="api/services.html#zscaler_mcp.services.ZMSService.register_tools">(ZMSService method)</a>
 </li>
           <li><a href="api/services.html#zscaler_mcp.services.ZPAService.register_tools">(ZPAService method)</a>
 </li>
@@ -501,10 +505,12 @@
   <h2>S</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/server.html#zscaler_mcp.server.SourceIPMiddleware.SKIP_PATHS">SKIP_PATHS (SourceIPMiddleware attribute)</a>
+        <li><a href="api/server.html#zscaler_mcp.server.ZscalerMCPServer.search_tools">search_tools() (ZscalerMCPServer method)</a>
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/server.html#zscaler_mcp.server.SourceIPMiddleware.SKIP_PATHS">SKIP_PATHS (SourceIPMiddleware attribute)</a>
+</li>
         <li><a href="api/server.html#zscaler_mcp.server.SourceIPMiddleware">SourceIPMiddleware (class in zscaler_mcp.server)</a>
 </li>
     </ul></td>
@@ -693,29 +699,31 @@
 </li>
         <li><a href="api/services.html#zscaler_mcp.services.ZIAService">ZIAService (class in zscaler_mcp.services)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.groups.zidentity_get_group">zidentity_get_group() (in module zscaler_mcp.tools.zidentity.groups)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.groups.zid_get_group">zid_get_group() (in module zscaler_mcp.tools.zid.groups)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.groups.zidentity_get_group_users">zidentity_get_group_users() (in module zscaler_mcp.tools.zidentity.groups)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.groups.zid_get_group_users">zid_get_group_users() (in module zscaler_mcp.tools.zid.groups)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.groups.zidentity_get_group_users_by_name">zidentity_get_group_users_by_name() (in module zscaler_mcp.tools.zidentity.groups)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.groups.zid_get_group_users_by_name">zid_get_group_users_by_name() (in module zscaler_mcp.tools.zid.groups)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_get_user">zidentity_get_user() (in module zscaler_mcp.tools.zidentity.users)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.users.zid_get_user">zid_get_user() (in module zscaler_mcp.tools.zid.users)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_get_user_groups">zidentity_get_user_groups() (in module zscaler_mcp.tools.zidentity.users)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.users.zid_get_user_groups">zid_get_user_groups() (in module zscaler_mcp.tools.zid.users)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_get_user_groups_by_name">zidentity_get_user_groups_by_name() (in module zscaler_mcp.tools.zidentity.users)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.users.zid_get_user_groups_by_name">zid_get_user_groups_by_name() (in module zscaler_mcp.tools.zid.users)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.groups.zidentity_list_groups">zidentity_list_groups() (in module zscaler_mcp.tools.zidentity.groups)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.groups.zid_list_groups">zid_list_groups() (in module zscaler_mcp.tools.zid.groups)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_list_users">zidentity_list_users() (in module zscaler_mcp.tools.zidentity.users)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.users.zid_list_users">zid_list_users() (in module zscaler_mcp.tools.zid.users)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.groups.zidentity_search_groups">zidentity_search_groups() (in module zscaler_mcp.tools.zidentity.groups)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.groups.zid_search_groups">zid_search_groups() (in module zscaler_mcp.tools.zid.groups)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zidentity.users.zidentity_search_users">zidentity_search_users() (in module zscaler_mcp.tools.zidentity.users)</a>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zid.users.zid_search_users">zid_search_users() (in module zscaler_mcp.tools.zid.users)</a>
 </li>
-        <li><a href="api/services.html#zscaler_mcp.services.ZIdentityService">ZIdentityService (class in zscaler_mcp.services)</a>
+        <li><a href="api/services.html#zscaler_mcp.services.ZIDService">ZIDService (class in zscaler_mcp.services)</a>
 </li>
-        <li><a href="api/services.html#zscaler_mcp.services.ZInsightsService">ZInsightsService (class in zscaler_mcp.services)</a>
+        <li><a href="api/services.html#zscaler_mcp.services.ZINSService">ZINSService (class in zscaler_mcp.services)</a>
+</li>
+        <li><a href="api/services.html#zscaler_mcp.services.ZMSService">ZMSService (class in zscaler_mcp.services)</a>
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_policy_rules.zpa_create_access_policy_rule">zpa_create_access_policy_rule() (in module zscaler_mcp.tools.zpa.access_policy_rules)</a>
 </li>
@@ -781,10 +789,10 @@
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.app_connector_groups.zpa_list_app_connector_groups">zpa_list_app_connector_groups() (in module zscaler_mcp.tools.zpa.app_connector_groups)</a>
 </li>
-        <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_app_protection_rules.zpa_list_app_protection_rules">zpa_list_app_protection_rules() (in module zscaler_mcp.tools.zpa.access_app_protection_rules)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_app_protection_rules.zpa_list_app_protection_rules">zpa_list_app_protection_rules() (in module zscaler_mcp.tools.zpa.access_app_protection_rules)</a>
+</li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.app_segments.zpa_list_application_segments">zpa_list_application_segments() (in module zscaler_mcp.tools.zpa.app_segments)</a>
 </li>
         <li><a href="api/tools.html#zscaler_mcp.tools.zpa.access_forwarding_rules.zpa_list_forwarding_policy_rules">zpa_list_forwarding_policy_rules() (in module zscaler_mcp.tools.zpa.access_forwarding_rules)</a>
@@ -1027,17 +1035,17 @@
 </li>
         </ul></li>
         <li>
-    zscaler_mcp.tools.zidentity.groups
+    zscaler_mcp.tools.zid.groups
 
         <ul>
-          <li><a href="api/tools.html#module-zscaler_mcp.tools.zidentity.groups">module</a>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.zid.groups">module</a>
 </li>
         </ul></li>
         <li>
-    zscaler_mcp.tools.zidentity.users
+    zscaler_mcp.tools.zid.users
 
         <ul>
-          <li><a href="api/tools.html#module-zscaler_mcp.tools.zidentity.users">module</a>
+          <li><a href="api/tools.html#module-zscaler_mcp.tools.zid.users">module</a>
 </li>
         </ul></li>
         <li>

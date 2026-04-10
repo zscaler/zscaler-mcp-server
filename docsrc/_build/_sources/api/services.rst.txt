@@ -350,7 +350,7 @@ Accessing Services
    ztw_service = client.ztw
 
    # Access ZIdentity service
-   zidentity_service = client.zidentity
+   zid_service = client.zid
 
 Service Methods
 ~~~~~~~~~~~~~~~
@@ -384,7 +384,7 @@ Z-Insights Analytics
    from zscaler_mcp.client import get_zscaler_client
 
    # Get client with OneAPI (not legacy)
-   client = get_zscaler_client(use_legacy=False, service="zinsights")
+   client = get_zscaler_client(use_legacy=False, service="zins")
 
    # Get web traffic by location for the past week
    # Using days_ago approach (recommended)
@@ -396,7 +396,7 @@ Z-Insights Analytics
    start_time = current_time_ms - (7 * 24 * 60 * 60 * 1000)  # 7 days ago
 
    # Get traffic by location
-   entries, response, err = client.zinsights.web_traffic.get_traffic_by_location(
+   entries, response, err = client.zins.web_traffic.get_traffic_by_location(
        start_time=start_time,
        end_time=end_time,
        traffic_unit="TRANSACTIONS",
@@ -404,7 +404,7 @@ Z-Insights Analytics
    )
 
    # Get threat categories
-   entries, response, err = client.zinsights.web_traffic.get_threat_super_categories(
+   entries, response, err = client.zins.web_traffic.get_threat_super_categories(
        start_time=start_time,
        end_time=end_time,
        traffic_unit="TRANSACTIONS",
@@ -412,7 +412,7 @@ Z-Insights Analytics
    )
 
    # Get web protocols distribution
-   entries, response, err = client.zinsights.web_traffic.get_protocols(
+   entries, response, err = client.zins.web_traffic.get_protocols(
        start_time=start_time,
        end_time=end_time,
        traffic_unit="BYTES",
