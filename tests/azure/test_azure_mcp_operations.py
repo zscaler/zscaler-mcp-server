@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 AZURE_DIR = Path(__file__).resolve().parent.parent.parent / "integrations" / "azure"
 sys.path.insert(0, str(AZURE_DIR))
 
-import azure_mcp_operations as ops  # noqa: E402
+import azure_mcp_operations as ops  # noqa: E402, I001
 
 
 # ---------------------------------------------------------------------------

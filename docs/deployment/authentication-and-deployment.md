@@ -2180,7 +2180,7 @@ OIDCProxy acts as an OAuth proxy between MCP clients and your Identity Provider.
 6. Note the **Application (client) ID** and secret value
 
 > **Important:** For Entra ID, set the `audience` parameter to the **Application (client) ID** (not an API identifier). Entra ID uses the client ID as the `aud` claim in ID tokens.
-
+>
 > **📖 Full step-by-step guide with screenshots:** [OIDCProxy Setup with Microsoft Entra ID](entra-id-oidcproxy.md)
 
 ### Step 2: Create an API / Resource Server in Your IdP
