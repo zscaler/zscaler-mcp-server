@@ -194,7 +194,15 @@ class TestLoadEnvFile(unittest.TestCase):
 class TestCheckSDKInstalled(unittest.TestCase):
     """Tests for check_sdk_installed()."""
 
-    @patch.dict(sys.modules, {"azure.ai.projects": MagicMock(), "azure.identity": MagicMock()})
+    @patch.dict(
+        sys.modules,
+        {
+            "azure": MagicMock(),
+            "azure.ai": MagicMock(),
+            "azure.ai.projects": MagicMock(),
+            "azure.identity": MagicMock(),
+        },
+    )
     def test_returns_true_when_installed(self):
         self.assertTrue(fa.check_sdk_installed())
 
