@@ -6,6 +6,7 @@ description: "Investigate active and historical ZDX alerts to understand their s
 # ZDX: Investigate Alerts
 
 ## Keywords
+
 alerts, incidents, zdx alerts, active alerts, historical alerts, affected devices, alert investigation, ongoing alert, ISP issue, blackout, degradation, alert scope, impacted users, alert history
 
 ## Overview
@@ -23,11 +24,13 @@ Investigate active and historical ZDX alerts to determine their scope, affected 
 **ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
 
 After each table, provide:
+
 1. **Detailed analysis** explaining the alert severity, scope, and correlation between alerts
 2. **Root cause identification** based on metric correlation and affected scope
 3. **Next steps / resolution** with specific remediation actions, escalation paths, and monitoring recommendations
 
 Use color-coded rows by alert priority:
+
 - Red: High priority alerts (many affected devices, critical applications, long duration)
 - Yellow: Medium priority alerts (moderate impact, localized scope)
 - Green: Low priority or resolved alerts
@@ -39,6 +42,7 @@ Use color-coded rows by alert priority:
 ### 1. Word Document (.docx) — REQUIRED
 
 Write a Word document to disk named `alert_investigation_report_<date>.docx` containing:
+
 - Executive summary with active alert count, severity breakdown, and scope
 - Active alerts table (priority, alert name, application, duration, affected devices, locations, bottleneck)
 - Metric correlation per alert (PFT, DNS, availability, root cause indicator)
@@ -129,9 +133,10 @@ function exportCSV(){const t=document.getElementById('alertTable'),rows=Array.fr
 </script>
 </body>
 </html>
-```
+```text
 
 **MANDATORY STEPS:**
+
 1. Copy this template exactly
 2. Replace the `{{...}}` placeholders in the summary cards with real values
 3. Add one `<tr>` row inside `<tbody>` for every alert
@@ -148,31 +153,34 @@ function exportCSV(){const t=document.getElementById('alertTable'),rows=Array.fr
 
 Retrieve all currently active alerts.
 
-```
+```text
 zdx_list_alerts()
-```
+```text
 
 For a broader time window (e.g., last 48 hours):
-```
+
+```text
 zdx_list_alerts(since=48)
-```
+```text
 
 Filter by location or department for scoped investigation:
-```
+
+```text
 zdx_list_alerts(
   location_id=["<location_id>"],
   since=24
 )
-```
+```text
 
-```
+```text
 zdx_list_alerts(
   department_id=["<department_id>"],
   since=24
 )
-```
+```text
 
 **Triage by severity and scope:**
+
 - How many alerts are active?
 - Which applications are affected?
 - How long have they been active?
@@ -184,11 +192,12 @@ zdx_list_alerts(
 
 For each alert that warrants investigation:
 
-```
+```text
 zdx_get_alert(alert_id="<alert_id>")
-```
+```text
 
 **Key information to extract:**
+
 - Alert type (performance degradation, availability, etc.)
 - Triggered application and threshold
 - Impacted departments and locations
@@ -202,27 +211,30 @@ zdx_get_alert(alert_id="<alert_id>")
 
 List all devices affected by the alert:
 
-```
+```text
 zdx_list_alert_affected_devices(alert_id="<alert_id>")
-```
+```text
 
 Filter by location to understand geographic scope:
-```
+
+```text
 zdx_list_alert_affected_devices(
   alert_id="<alert_id>",
   location_id=["<location_id>"]
 )
-```
+```text
 
 Filter by department for business impact:
-```
+
+```text
 zdx_list_alert_affected_devices(
   alert_id="<alert_id>",
   department_id=["<department_id>"]
 )
-```
+```text
 
 **Scope determination:**
+
 - **Single user:** Likely a device or local network issue
 - **Single location:** Office-specific issue (local ISP, WiFi, LAN)
 - **Multiple locations, same geo:** Regional ISP or cloud region issue
@@ -234,35 +246,36 @@ zdx_list_alert_affected_devices(
 
 Cross-reference the alert with application performance data to confirm the bottleneck.
 
-```
+```text
 zdx_get_application_score_trend(
   app_id="<affected_app_id>",
   since=24
 )
-```
+```text
 
-```
+```text
 zdx_get_application_metric(
   app_id="<affected_app_id>",
   metric_name="pft"
 )
-```
+```text
 
-```
+```text
 zdx_get_application_metric(
   app_id="<affected_app_id>",
   metric_name="dns"
 )
-```
+```text
 
-```
+```text
 zdx_get_application_metric(
   app_id="<affected_app_id>",
   metric_name="availability"
 )
-```
+```text
 
 **Correlation mapping:**
+
 - Alert + high PFT + normal DNS → Application or CDN issue
 - Alert + high DNS → DNS infrastructure problem
 - Alert + low availability → Network or application unreachable
@@ -274,19 +287,21 @@ zdx_get_application_metric(
 
 Look for recurring patterns in past alerts.
 
-```
+```text
 zdx_list_historical_alerts(since=336)
-```
+```text
 
 Filter by location or department:
-```
+
+```text
 zdx_list_historical_alerts(
   location_id=["<location_id>"],
   since=168
 )
-```
+```text
 
 **Pattern analysis:**
+
 - Same alert recurring daily at specific times? → Scheduled load or maintenance window
 - Same alert recurring weekly? → Periodic resource constraints
 - Same location repeatedly affected? → Infrastructure issue at that site
@@ -298,18 +313,19 @@ zdx_list_historical_alerts(
 
 If the alert suggests a network issue, check if deep traces exist for affected devices.
 
-```
+```text
 zdx_list_devices(location_id=["<affected_location_id>"])
-```
+```text
 
 For a specific affected device:
-```
+
+```text
 zdx_list_device_deep_traces(device_id="<device_id>")
-```
+```text
 
 If a trace exists, analyze the full diagnostics data:
 
-```
+```text
 zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
@@ -317,15 +333,15 @@ zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id
 zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
 zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 If no trace exists and the alert is recurring, discover probe IDs and start a proactive deep trace to capture evidence during the next occurrence (requires write tools):
 
-```
+```text
 zdx_get_web_probes(device_id="<device_id>", app_id="<affected_app_id>")
 zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<affected_app_id>")
 zdx_start_deeptrace(device_id="<device_id>", session_name="Alert-Investigation-<date>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=30, probe_device=True)
-```
+```text
 
 Deep traces reveal hop-by-hop latency and packet loss, pinpointing the exact network segment causing the issue. Web probe metrics isolate DNS vs TCP vs SSL bottlenecks, and event timelines correlate configuration changes with metric degradation.
 
@@ -355,7 +371,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr style="background:#fff3cd"><td style="padding:8px;font-weight:bold;color:orange">MEDIUM</td><td style="padding:8px">Salesforce - DNS Degraded</td><td style="padding:8px">Salesforce</td><td style="padding:8px">2 hours</td><td style="padding:8px">12</td><td style="padding:8px">Dallas</td><td style="padding:8px">DNS: 180ms</td></tr>
   <tr style="background:#d4edda"><td style="padding:8px;font-weight:bold;color:gray">LOW</td><td style="padding:8px">Internal CRM - Availability Drop</td><td style="padding:8px">Internal CRM</td><td style="padding:8px">30 min</td><td style="padding:8px">3</td><td style="padding:8px">San Jose</td><td style="padding:8px">Availability: 92%</td></tr>
 </tbody></table>
-```
+```text
 
 **Metric Correlation per Alert (HTML table):**
 
@@ -373,7 +389,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr><td style="padding:8px;border:1px solid #ddd">Salesforce - DNS</td><td style="padding:8px;color:orange">4.2s</td><td style="padding:8px;color:red;font-weight:bold">180ms</td><td style="padding:8px;color:green">99%</td><td style="padding:8px">Local DNS resolver (Dallas)</td></tr>
   <tr><td style="padding:8px;border:1px solid #ddd">CRM - Availability</td><td style="padding:8px;color:orange">Variable</td><td style="padding:8px;color:green">15ms</td><td style="padding:8px;color:red;font-weight:bold">92%</td><td style="padding:8px">Application server instability</td></tr>
 </tbody></table>
-```
+```text
 
 **After the tables, ALWAYS provide:**
 
@@ -399,7 +415,7 @@ When an alert suggests ISP problems:
 2. Use deep traces to identify the specific ISP hop with high latency/loss
 3. Compile the evidence (deep trace data, affected users, time range) for the ISP
 
-```
+```text
 ISP Issue Detected:
   ISP: <ISP_Name>
   Hop: <hop_number> (<ip_address>)
@@ -412,7 +428,7 @@ ISP Issue Detected:
   1. Contact ISP with compiled cloud path evidence
   2. Consider rerouting traffic through alternate ISP if available
   3. Set up a recurring deep trace to monitor resolution
-```
+```text
 
 ### WiFi Quality Issues
 
@@ -436,7 +452,7 @@ When metrics point to the application itself:
 
 ### No Active Alerts
 
-```
+```text
 No active alerts in the requested time window.
 
 All monitored applications are within normal thresholds.
@@ -445,11 +461,12 @@ Consider:
 - Checking historical alerts for recent resolved issues
 - Reviewing alert configuration to ensure thresholds are appropriate
 - Using the Analyze Application Health skill for a proactive review
-```
+```text
 
 ### Too Many Alerts (Alert Fatigue)
 
 If there are many active alerts:
+
 1. Group by application -- multiple alerts for the same app may be one root cause
 2. Group by location -- many alerts in one location suggest a local issue
 3. Prioritize by affected device count -- highest impact first
@@ -457,6 +474,7 @@ If there are many active alerts:
 ### Alert Without Visible User Impact
 
 Some alerts may fire based on threshold violations that users haven't noticed:
+
 - Check actual user scores with `zdx_list_application_users`
 - If scores are still "good", the threshold may be too sensitive
 - Document for alert tuning
@@ -468,6 +486,7 @@ Some alerts may fire based on threshold violations that users haven't noticed:
 **Primary workflow:** List Alerts → Get Details → Determine Scope → Correlate Metrics → Check History → Deep Trace → Report
 
 **Tools used:**
+
 - `zdx_list_alerts(since)` -- list active alerts
 - `zdx_get_alert(alert_id)` -- alert details
 - `zdx_list_alert_affected_devices(alert_id)` -- impacted devices
@@ -487,6 +506,7 @@ Some alerts may fire based on threshold violations that users haven't noticed:
 - `zdx_start_deeptrace(device_id, ...)` -- start a new trace (write tool)
 
 **Time windows for `since` (hours):**
+
 - `2` -- current issues (default)
 - `24` -- last day
 - `48` -- last 2 days
@@ -494,6 +514,7 @@ Some alerts may fire based on threshold violations that users haven't noticed:
 - `336` -- last 2 weeks (max)
 
 **Related skills:**
+
 - [Troubleshoot User Experience](../troubleshoot-user-experience/) -- for individual user investigation
 - [Diagnose Deep Trace](../diagnose-deeptrace/) -- for comprehensive deep trace analysis
 - [Analyze Application Health](../analyze-application-health/) -- for app-level overview

@@ -6,6 +6,7 @@ description: "Analyze Zscaler Microsegmentation (ZMS) policy rules for optimizat
 # ZMS: Analyze Policy Rules & Segmentation Optimization
 
 ## Keywords
+
 policy rules, segmentation policies, microsegmentation rules, default policy, deny all, allow all, stale rules, unused rules, overly permissive, rule optimization, cross-zone, app zones, lateral movement, zero trust policy, rule priority, policy coverage
 
 ## Overview
@@ -19,6 +20,7 @@ Policy rules are the enforcement backbone of microsegmentation. They define whic
 **Use this skill when:** A security architect needs to audit policy rule hygiene, identify stale rules, tighten overly permissive rules, review default posture, or prepare for a compliance audit that requires demonstrating least-privilege segmentation.
 
 **Important:**
+
 - All ZMS tools require `ZSCALER_CUSTOMER_ID` to be set as an environment variable.
 - All current MCP tools are **read-only** (Query operations).
 - The ZMS API supports full CRUD for policy rules via mutations (`policyRuleCreate`, `policyRuleUpdate`, `policyRuleDelete`, `defaultPolicyRulesCreate/Update/Delete`) but these are not yet exposed through MCP tools.
@@ -32,16 +34,19 @@ Follow this 5-step process for a comprehensive policy rule analysis.
 ### Step 1: Inventory All Policy Rules
 
 **Fetch all custom policy rules:**
-```
+
+```text
 zms_list_policy_rules(fetch_all=True)
-```
+```text
 
 Using `fetch_all=True` bypasses pagination and returns every custom rule. For large tenants with hundreds of rules, use pagination instead:
-```
+
+```text
 zms_list_policy_rules(page_num=1, page_size=50)
-```
+```text
 
 **For each rule, capture:**
+
 - **Name and description**: Is the rule clearly documented?
 - **Action**: Allow or Block
 - **Priority**: Higher values are evaluated first
@@ -53,11 +58,13 @@ zms_list_policy_rules(page_num=1, page_size=50)
 - **Created/modified timestamps**: When was the rule created and last changed?
 
 **List default (baseline) policy rules:**
-```
+
+```text
 zms_list_default_policy_rules(page_num=1, page_size=50)
-```
+```text
 
 Default rules establish the baseline security posture:
+
 - **Default deny (recommended)**: All traffic blocked unless explicitly allowed by a custom rule. This is the Zero Trust approach.
 - **Default allow**: All traffic allowed unless explicitly blocked. This is permissive and not recommended for production.
 - **Direction**: Whether the default applies to inbound, outbound, or both
@@ -72,17 +79,20 @@ Default rules establish the baseline security posture:
 Rules that have never been hit or haven't been hit in a long time are candidates for removal or review.
 
 **Classification criteria:**
+
 - **Never hit**: Rule has no `lastHit` value — may have been created but never matched traffic. Candidate for removal if older than 30 days.
 - **Stale (> 90 days)**: Rule hasn't matched traffic in over 90 days. Likely obsolete unless protecting infrequent maintenance windows.
 - **Aging (30-90 days)**: Rule hasn't matched recently but may be seasonal or periodic. Flag for review.
 - **Active (< 30 days)**: Rule is actively matching traffic. Healthy.
 
 **Also check creation timestamps:**
+
 - Rules created more than 6 months ago with no hits are almost certainly obsolete
 - Rules with names suggesting temporary access ("temp", "debug", "migration", "test") should be reviewed regardless of age
 
 **Build a staleness summary:**
-```
+
+```text
 Policy Rule Staleness Analysis
 ================================
 Total Custom Rules: 42
@@ -91,7 +101,7 @@ Active (hit < 30 days):     32 (76%)  — Healthy
 Aging (hit 30-90 days):      5 (12%)  — Review
 Stale (hit > 90 days):       3 (7%)   — Likely obsolete
 Never hit:                   2 (5%)   — Remove candidates
-```
+```text
 
 ---
 
@@ -100,6 +110,7 @@ Never hit:                   2 (5%)   — Remove candidates
 **Identify rules that are too broad:**
 
 A rule is overly permissive if it:
+
 - **Allows "any" port**: No port restriction means all network services are accessible
 - **Allows "any" protocol**: No protocol restriction
 - **Has wildcard source or destination**: Applies to all resource groups rather than specific ones
@@ -107,12 +118,14 @@ A rule is overly permissive if it:
 - **Combines multiple of the above**: The more wildcards, the broader the rule
 
 **Risk levels:**
+
 - **Critical**: Any-to-any allow rule (completely defeats segmentation)
 - **High**: Specific source, any destination, any port (source can reach anything)
 - **Medium**: Specific source and destination, but any port (all services exposed between groups)
 - **Low**: Specific source, destination, and ports but broad port ranges (e.g., 1-65535)
 
 **Assess each permissive rule:**
+
 - Is the breadth intentional and documented?
 - Can it be narrowed to specific ports/protocols?
 - Is there a business justification?
@@ -123,20 +136,22 @@ A rule is overly permissive if it:
 ### Step 4: Map Cross-Zone Communication Patterns
 
 **List all app zones:**
-```
+
+```text
 zms_list_app_zones(page_num=1, page_size=50)
-```
+```text
 
 **List resource groups for correlation:**
-```
+
+```text
 zms_list_resource_groups(page_num=1, page_size=50)
-```
+```text
 
 **Build a communication matrix:**
 
 Cross-reference policy rules with app zones and resource groups to build a matrix showing which zones can communicate with which:
 
-```
+```text
 Cross-Zone Communication Matrix
 ==================================
 
@@ -149,9 +164,10 @@ Shared          ALLOW(*)    ALLOW(*)    ALLOW(*)    ALLOW(*)
 (*) = intra-zone, any port
 Ports shown = allowed cross-zone ports
 BLOCK = default deny, no explicit allow rule
-```
+```text
 
 **Analysis points:**
+
 - **Intra-zone**: Are there rules controlling traffic within a zone? Often missed.
 - **Cross-zone paths**: Does each cross-zone path have a corresponding allow rule with specific ports?
 - **Shared services access**: Do all zones have appropriate access to DNS, NTP, logging?
@@ -172,9 +188,10 @@ BLOCK = default deny, no explicit allow rule
 6. **Priority conflicts**: Are there rules with the same priority that could cause unpredictable behavior?
 
 **Check resource group protection for correlation:**
-```
+
+```text
 zms_get_resource_group_protection_status()
-```
+```text
 
 Groups with members but no policy coverage represent segmentation gaps.
 
@@ -182,7 +199,7 @@ Groups with members but no policy coverage represent segmentation gaps.
 
 ### Present Policy Analysis Report
 
-```
+```text
 Policy Rule Analysis & Optimization Report
 =============================================
 Date: <current_date>
@@ -277,7 +294,7 @@ Auditor: AI Assistant
 9. Establish rule naming convention if not already in place
 10. Schedule quarterly policy rule reviews
 11. Add descriptions to rules that lack documentation
-```
+```text
 
 ---
 
@@ -285,7 +302,7 @@ Auditor: AI Assistant
 
 ### No Custom Policy Rules
 
-```
+```text
 No custom policy rules found.
 
 The deployment relies entirely on default rules, which means:
@@ -295,22 +312,22 @@ The deployment relies entirely on default rules, which means:
 Action: Create policy rules that match your application communication
 requirements. Start with the most critical communication paths and
 use default deny for everything else.
-```
+```text
 
 ### All Rules Are Active
 
-```
+```text
 All 42 custom rules have been hit within the last 30 days.
 
 This is a healthy state. Continue monitoring for:
 - New rules that may need to be added for new applications
 - Rules that become stale as applications are decommissioned
 - Port ranges that can be further narrowed
-```
+```text
 
 ### Default Posture Is Allow
 
-```
+```text
 WARNING: Default policy posture is set to ALLOW.
 
 This means all traffic between resource groups is allowed unless
@@ -321,7 +338,7 @@ Action: Switch to default DENY via the Zscaler admin portal or
 defaultPolicyRulesUpdate mutation (not available via MCP tools).
 Plan this change carefully — it will block all traffic that isn't
 covered by an explicit allow rule.
-```
+```text
 
 ---
 
@@ -330,17 +347,20 @@ covered by an explicit allow rule.
 **Primary workflow:** Inventory Rules → Staleness → Permissiveness → Communication Matrix → Health Assessment → Report
 
 **Policy rule tools:**
+
 - `zms_list_policy_rules(fetch_all=True)` — all custom rules
 - `zms_list_policy_rules(page_num, page_size)` — paginated custom rules
 - `zms_list_default_policy_rules()` — baseline policies
 
 **Supporting tools:**
+
 - `zms_list_app_zones()` — application zone boundaries
 - `zms_list_resource_groups()` — resource groups referenced by rules
 - `zms_get_resource_group_protection_status()` — groups with/without policy coverage
 - `zms_get_resource_group_members(group_id)` — members of a specific group
 
 **Not yet available via MCP tools:**
+
 - Policy rule create/update/delete (`policyRuleCreate`, `policyRuleUpdate`, `policyRuleDelete`)
 - Default policy rule management (`defaultPolicyRulesCreate/Update/Delete`)
 - These must be performed through the Zscaler admin portal or the ZMS API directly

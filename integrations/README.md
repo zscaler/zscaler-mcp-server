@@ -12,6 +12,7 @@ This directory contains official integrations for the Zscaler MCP Server with va
 | [Kiro Power](#kiro-power) | [`integrations/kiro/`](./kiro/) | `integrations/kiro/mcp.json`, `integrations/kiro/POWER.md` | Available |
 | [Google ADK](#google-adk) | [`integrations/adk/`](./adk/) | `integrations/adk/.env`, `integrations/adk/zscaler_agent/.env` | Available |
 | [Azure (Container Apps / VM)](#azure-container-apps--vm) | [`integrations/azure/`](./azure/) | `integrations/azure/env.properties` | Available |
+| [GitHub MCP Registry](#github-mcp-registry) | [`integrations/github/`](./github/) | `server.json` | Available |
 
 All integrations share the same MCP server, tools, and skills — they differ only in how they connect the AI platform to the server.
 
@@ -121,6 +122,22 @@ python azure_mcp_operations.py deploy
 ```
 
 **Config files:** `integrations/azure/env.properties`
+
+---
+
+### GitHub MCP Registry
+
+**[Full documentation →](./github/README.md)**
+
+Listed on the [GitHub MCP Registry](https://github.com/modelcontextprotocol/registry), enabling one-click installation from GitHub Copilot and MCP-compatible clients.
+
+**Features:**
+- One-click install via PyPI (`uvx zscaler-mcp`) or Docker (`docker.io/zscaler/zscaler-mcp-server`)
+- Only 4 env vars required (Zscaler OneAPI credentials)
+- Secrets marked as `isSecret` for secure client-side storage
+- Version automatically updated by the release pipeline
+
+**Config files at repo root:** `server.json`
 
 ---
 

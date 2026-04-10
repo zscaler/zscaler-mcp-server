@@ -6,6 +6,7 @@ description: "Troubleshoot a user's digital experience using ZDX data. Investiga
 # ZDX: Troubleshoot User Experience
 
 ## Keywords
+
 user experience, slow application, zdx score, digital experience, performance issue, latency, application slow, user complaint, experience score, network path, zdx troubleshoot, deep trace
 
 ## Overview
@@ -21,11 +22,13 @@ Investigate a user's digital experience using Zscaler Digital Experience (ZDX) m
 **ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
 
 After each table, provide:
+
 1. **Detailed analysis** explaining what the data means in plain language
 2. **Root cause identification** based on the metrics and patterns
 3. **Next steps / resolution** with specific, actionable recommendations prioritized by impact
 
 Use color-coded status indicators in tables:
+
 - Green/Good: scores 66-100, metrics within normal range
 - Yellow/Degraded: scores 34-65, metrics approaching thresholds
 - Red/Poor: scores 0-33, metrics exceeding thresholds
@@ -37,6 +40,7 @@ Use color-coded status indicators in tables:
 ### 1. Word Document (.docx) — REQUIRED
 
 Write a Word document to disk named `user_experience_diagnosis_<date>.docx` containing:
+
 - User and device summary (name, email, device type, OS, location, department)
 - Application experience scores with trend analysis
 - Metric breakdown (DNS, TCP connect, SSL handshake, server response, page load)
@@ -124,9 +128,10 @@ function exportCSV(){const t=document.getElementById('metricsTable'),rows=Array.
 </script>
 </body>
 </html>
-```
+```text
 
 **MANDATORY STEPS:**
+
 1. Copy this template exactly
 2. Replace the `{{...}}` placeholders in the summary cards with real values
 3. Add one `<tr>` row inside `<tbody>` for every metric collected
@@ -143,17 +148,18 @@ Follow this 5-step process to troubleshoot user experience.
 
 ### Step 1: Find the User's Device
 
-```
+```text
 zdx_list_devices(search="<username_or_email>")
-```
+```text
 
 Note the device ID, OS, ZDX agent version, and last active timestamp. If multiple devices, confirm which one the user is working on.
 
-```
+```text
 zdx_get_device(device_id="<device_id>")
-```
+```text
 
 Check device-level health:
+
 - CPU utilization
 - Memory usage
 - Disk usage
@@ -165,35 +171,39 @@ Check device-level health:
 ### Step 2: Check Application Experience Scores
 
 **List monitored applications:**
-```
+
+```text
 zdx_list_applications()
-```
+```text
 
 **Get the score trend for the affected application:**
-```
+
+```text
 zdx_get_application_score_trend(app_id="<app_id>")
-```
+```text
 
 **Interpret scores:**
+
 - **80-100:** Good experience -- issue may be intermittent or resolved
 - **50-79:** Degraded -- one or more metrics are outside normal range
 - **0-49:** Poor -- significant performance degradation
 
 **Get application details:**
-```
+
+```text
 zdx_get_application(app_id="<app_id>")
-```
+```text
 
 ---
 
 ### Step 3: Analyze Detailed Metrics
 
-```
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="dns_time"
 )
-```
+```text
 
 Check each metric individually to isolate the bottleneck:
 
@@ -206,6 +216,7 @@ Check each metric individually to isolate the bottleneck:
 | `page_load_time` | < 3000ms | Full page rendering |
 
 **Identify the bottleneck:**
+
 - High DNS time → DNS server issue or resolution failure
 - High TCP connect → Network congestion or routing issue
 - High SSL handshake → Certificate issues or server overload
@@ -217,22 +228,25 @@ Check each metric individually to isolate the bottleneck:
 ### Step 4: Check Alerts and Affected Users
 
 **Check active alerts:**
-```
+
+```text
 zdx_list_alerts()
-```
+```text
 
 If an alert exists for the application:
-```
+
+```text
 zdx_get_alert(alert_id="<alert_id>")
 zdx_list_alert_affected_devices(alert_id="<alert_id>")
-```
+```text
 
 This determines if the issue is isolated to one user or widespread.
 
 **Check historical alerts for patterns:**
-```
+
+```text
 zdx_list_historical_alerts()
-```
+```text
 
 ---
 
@@ -240,13 +254,13 @@ zdx_list_historical_alerts()
 
 Check for existing deep trace sessions:
 
-```
+```text
 zdx_list_device_deep_traces(device_id="<device_id>")
-```
+```text
 
 If a trace exists, analyze all diagnostics data:
 
-```
+```text
 zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
@@ -254,9 +268,10 @@ zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id
 zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
 zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 **Deep trace analysis checklist:**
+
 - **Web probe metrics**: DNS, TCP, SSL, HTTP response times — identify connectivity bottleneck layer
 - **Cloud path topology**: Hop-by-hop path — identify hops with high latency or packet loss
 - **Cloud path metrics**: Per-hop latency, packet loss, jitter trends over the trace duration
@@ -266,11 +281,11 @@ zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
 
 If NO trace exists and metrics suggest network issues, discover probe IDs then start a new diagnostics session (requires write tools):
 
-```
+```text
 zdx_get_web_probes(device_id="<device_id>", app_id="<app_id>")
 zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<app_id>")
 zdx_start_deeptrace(device_id="<device_id>", session_name="Troubleshoot-<user>-<date>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=15, probe_device=True)
-```
+```text
 
 For comprehensive deep trace analysis, see the [Diagnose Deep Trace](../diagnose-deeptrace/) skill.
 
@@ -296,7 +311,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr><td style="padding:8px;border:1px solid #ddd">ZCC Version</td><td style="padding:8px;border:1px solid #ddd">&lt;version&gt;</td></tr>
   <tr><td style="padding:8px;border:1px solid #ddd">Experience Score</td><td style="padding:8px;border:1px solid #ddd;font-weight:bold;color:red">&lt;score&gt;/100 (Poor)</td></tr>
 </tbody></table>
-```
+```text
 
 **Metric Breakdown (HTML table):**
 
@@ -315,7 +330,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Server Response</td><td style="padding:8px">Timeout</td><td style="padding:8px">&lt; 500ms</td><td style="padding:8px;color:red;font-weight:bold">CRITICAL</td></tr>
   <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Page Load</td><td style="padding:8px">N/A</td><td style="padding:8px">&lt; 3000ms</td><td style="padding:8px;color:red;font-weight:bold">FAILED</td></tr>
 </tbody></table>
-```
+```text
 
 **After the tables, ALWAYS provide:**
 
@@ -336,7 +351,7 @@ Present all data in **HTML table format** with detailed analysis.
 
 ### No ZDX Data for User
 
-```
+```text
 No ZDX data found for user "<username>".
 
 Possible causes:
@@ -345,11 +360,11 @@ Possible causes:
 - The user just enrolled and data hasn't been collected yet
 
 Action: Verify ZDX is enabled in the user's ZCC profile.
-```
+```text
 
 ### Application Not Monitored
 
-```
+```text
 The application "<app_name>" is not configured for ZDX monitoring.
 
 Available monitored applications:
@@ -358,19 +373,20 @@ Available monitored applications:
 3. Internal Portal (Score: 92)
 
 To monitor this application, configure it in the ZDX Admin Portal.
-```
+```text
 
 ### Score Fluctuations (Intermittent Issues)
 
 If the score trend shows spikes:
-```
+
+```text
 Intermittent issue detected. Score fluctuates between 30-90 over
 the past 6 hours, suggesting an unstable network path or
 application with periodic performance degradation.
 
 Recommendation: Initiate a deep trace to capture the issue during
 the next degradation window.
-```
+```text
 
 ---
 
@@ -379,6 +395,7 @@ the next degradation window.
 **Primary workflow:** Find Device → Check Scores → Analyze Metrics → Check Alerts → Deep Trace → Diagnosis
 
 **Tools used:**
+
 - `zdx_list_devices(search)` -- find user's device
 - `zdx_get_device(device_id)` -- device health details
 - `zdx_list_applications()` -- list monitored apps
@@ -402,6 +419,7 @@ the next degradation window.
 - `zdx_start_deeptrace(device_id, ...)` -- start a new trace (write tool)
 
 **Score interpretation:**
+
 - 80-100: Good
 - 50-79: Degraded
 - 0-49: Poor

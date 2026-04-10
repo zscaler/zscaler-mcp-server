@@ -6,6 +6,7 @@ description: "Audit the software inventory across devices in the organization us
 # ZDX: Audit Software Inventory
 
 ## Keywords
+
 software inventory, installed software, software audit, compliance, outdated software, software versions, device software, security audit, vulnerability assessment, software deployment, patch management
 
 ## Overview
@@ -21,11 +22,13 @@ Audit the software installed across devices in the organization using ZDX's soft
 **ALWAYS present ZDX data using HTML tables** in the chat for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
 
 After each table, provide:
+
 1. **Detailed analysis** explaining the compliance posture, version distribution, and risk areas
 2. **Security assessment** highlighting EOL, outdated, or vulnerable software
 3. **Next steps / resolution** with specific remediation actions (patching, MDM push, upgrade plans) prioritized by risk
 
 Use color-coded status indicators in tables:
+
 - Green: Current version, no known vulnerabilities
 - Yellow: One version behind or approaching EOL
 - Red: EOL, known vulnerabilities, or significantly outdated
@@ -37,6 +40,7 @@ Use color-coded status indicators in tables:
 ### 1. Word Document (.docx) — REQUIRED
 
 Write a Word document to disk named `software_inventory_audit_<date>.docx` containing:
+
 - Executive summary with compliance posture percentages
 - Full software inventory table (software name, version, vendor, device count, user count, status, risk)
 - Security findings section with EOL/vulnerable software details
@@ -124,9 +128,10 @@ function exportCSV(){const t=document.getElementById('inventoryTable'),rows=Arra
 </script>
 </body>
 </html>
-```
+```text
 
 **MANDATORY STEPS:**
+
 1. Copy this template exactly
 2. Replace the `{{...}}` placeholders in the summary cards with real values
 3. Add one `<tr>` row inside `<tbody>` for every software entry collected from the API
@@ -143,42 +148,48 @@ function exportCSV(){const t=document.getElementById('inventoryTable'),rows=Arra
 
 Retrieve the organization-wide software inventory.
 
-```
+```text
 zdx_list_software()
-```
+```text
 
 **Filter by location:**
-```
+
+```text
 zdx_list_software(location_id=["<location_id>"])
-```
+```text
 
 **Filter by department:**
-```
+
+```text
 zdx_list_software(department_id=["<department_id>"])
-```
+```text
 
 **Filter by geolocation:**
-```
+
+```text
 zdx_list_software(geo_id=["<geo_id>"])
-```
+```text
 
 **Filter by specific users:**
-```
+
+```text
 zdx_list_software(user_ids=["<user_id_1>", "<user_id_2>"])
-```
+```text
 
 **Filter by specific devices:**
-```
+
+```text
 zdx_list_software(device_ids=["<device_id_1>", "<device_id_2>"])
-```
+```text
 
 **Combine filters for targeted audits:**
-```
+
+```text
 zdx_list_software(
   location_id=["<location_id>"],
   department_id=["<department_id>"]
 )
-```
+```text
 
 ---
 
@@ -186,24 +197,25 @@ zdx_list_software(
 
 For a specific software package, get detailed version distribution and device breakdown.
 
-```
+```text
 zdx_get_software_details(software_key="<software_name_and_version>")
-```
+```text
 
 **Filter by scope:**
-```
+
+```text
 zdx_get_software_details(
   software_key="Google Chrome 120.0.6099.130",
   location_id=["<location_id>"]
 )
-```
+```text
 
-```
+```text
 zdx_get_software_details(
   software_key="Microsoft Teams",
   department_id=["<department_id>"]
 )
-```
+```text
 
 ---
 
@@ -211,19 +223,21 @@ zdx_get_software_details(
 
 For specific devices of interest, get full device details.
 
-```
+```text
 zdx_get_device(device_id="<device_id>")
-```
+```text
 
 To find devices owned by a specific user:
-```
+
+```text
 zdx_list_devices(emails=["user@company.com"])
-```
+```text
 
 To find devices in a specific location:
-```
+
+```text
 zdx_list_devices(location_id=["<location_id>"])
-```
+```text
 
 ---
 
@@ -247,7 +261,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr style="background:#fff3cd"><td style="padding:8px;border:1px solid #ddd">Google Chrome</td><td style="padding:8px">120.x (312), 119.x (45)</td><td style="padding:8px">357</td><td style="padding:8px;color:orange;font-weight:bold">45 Outdated</td><td style="padding:8px">Medium</td></tr>
   <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Java Runtime</td><td style="padding:8px">21.x (180), 17.x (95), 8.x (12)</td><td style="padding:8px">287</td><td style="padding:8px;color:red;font-weight:bold">12 EOL</td><td style="padding:8px">Critical</td></tr>
 </tbody></table>
-```
+```text
 
 **Compliance Summary (HTML table):**
 
@@ -263,7 +277,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr style="background:#fff3cd"><td style="padding:8px">One Version Behind</td><td style="padding:8px">43</td><td style="padding:8px">5.1%</td></tr>
   <tr style="background:#f8d7da"><td style="padding:8px">EOL / Unsupported</td><td style="padding:8px">12</td><td style="padding:8px">1.4%</td></tr>
 </tbody></table>
-```
+```text
 
 **After the tables, ALWAYS provide:**
 
@@ -290,7 +304,7 @@ When a CVE is announced for a specific software version:
 3. Cross-reference affected versions with CVE data
 4. List impacted devices by location and department
 
-```
+```text
 Example: CVE-2024-XXXXX affects Chrome < 120.0.6099.130
 
 zdx_list_software()
@@ -303,7 +317,7 @@ Report:
   Vulnerable Devices: 45
   Locations: Tokyo (25), Singapore (20)
   Priority: HIGH - Immediate patch required
-```
+```text
 
 ### Patch Rollout Progress
 
@@ -313,7 +327,7 @@ Track how a software update is rolling out across the organization:
 2. Compare device counts between versions
 3. Filter by location to identify offices lagging behind
 
-```
+```text
 Patch Rollout: Chrome 120.0.6099.130
   Deployed: 312 devices (87.4%)
   Pending: 45 devices (12.6%)
@@ -324,15 +338,15 @@ Patch Rollout: Chrome 120.0.6099.130
     London: 95% deployed
     Tokyo: 72% deployed ← lagging
     Singapore: 68% deployed ← lagging
-```
+```text
 
 ### Department-Specific Audit
 
 For compliance requirements specific to a department:
 
-```
+```text
 zdx_list_software(department_id=["<finance_dept_id>"])
-```
+```text
 
 Useful for auditing regulated departments (Finance, Healthcare, Legal) that may have specific software requirements.
 
@@ -340,7 +354,7 @@ Useful for auditing regulated departments (Finance, Healthcare, Legal) that may 
 
 Count software installations to verify license compliance:
 
-```
+```text
 zdx_list_software()
 → Count installations of licensed software
 
@@ -348,7 +362,7 @@ Example:
   Adobe Acrobat Pro: 142 devices installed
   Licensed seats: 150
   Remaining: 8 seats available
-```
+```text
 
 ---
 
@@ -356,7 +370,7 @@ Example:
 
 ### No Software Data Available
 
-```
+```text
 No software inventory data available for the specified filters.
 
 Possible causes:
@@ -365,11 +379,12 @@ Possible causes:
 - The filtered scope (location/department) has no active devices
 
 Action: Verify ZDX software inventory is enabled in the admin portal.
-```
+```text
 
 ### Large Inventory
 
 If the software list is very long:
+
 - Focus on key categories: browsers, security tools, collaboration apps, runtimes
 - Filter by location or department to narrow scope
 - Prioritize EOL or outdated versions
@@ -381,6 +396,7 @@ If the software list is very long:
 **Primary workflow:** List Software → Filter by Scope → Get Version Details → Cross-Reference Devices → Report
 
 **Tools used:**
+
 - `zdx_list_software()` -- organization-wide inventory
 - `zdx_list_software(location_id, department_id, ...)` -- filtered inventory
 - `zdx_get_software_details(software_key)` -- version details for a package
@@ -388,6 +404,7 @@ If the software list is very long:
 - `zdx_get_device(device_id)` -- device details
 
 **Filter options (available on both list and details):**
+
 - `location_id` -- ZDX location IDs
 - `department_id` -- department IDs
 - `geo_id` -- geolocation IDs
@@ -395,5 +412,6 @@ If the software list is very long:
 - `device_ids` -- specific device IDs
 
 **Related skills:**
+
 - [Troubleshoot User Experience](../troubleshoot-user-experience/) -- if software issues affect user experience
 - [Analyze Application Health](../analyze-application-health/) -- if outdated software correlates with poor app scores

@@ -6,7 +6,21 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
-## 0.9.0 (April xx, 2026)
+## 0.9.1 (April 10, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Features
+
+`PR #47 <https://github.com/zscaler/zscaler-mcp-server/pull/47>`_ - Added **GitHub MCP Registry integration** (``server.json``) enabling one-click installation from GitHub Copilot and MCP-compatible clients. Declares PyPI and Docker packages with required Zscaler OneAPI credentials. Version auto-updated by the release pipeline.
+
+### Bug Fixes
+
+`PR #47 <https://github.com/zscaler/zscaler-mcp-server/pull/47>`_ - Upgraded Docker base image from ``python:3.13-alpine`` to ``python:3.14-alpine`` (digest-pinned) and explicitly patched Alpine packages to fix CVE-2026-28390 (openssl), CVE-2026-22184 (zlib). Applied same fixes to AWS ECR Dockerfile, replacing ``curl`` health check with busybox ``wget`` to eliminate 11 additional curl CVEs.
+
+## 0.9.0 (April 9, 2026)
 
 ### Notes
 

@@ -6,6 +6,7 @@ description: "Compare digital experience across locations, departments, and geol
 # ZDX: Compare Location Experience
 
 ## Keywords
+
 compare locations, location experience, office comparison, department comparison, regional performance, site health, location score, office performance, worst office, best practices, optimization, geographic analysis, location ranking
 
 ## Overview
@@ -23,11 +24,13 @@ Compare digital experience across different locations, departments, and geolocat
 **ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
 
 After each table, provide:
+
 1. **Detailed analysis** explaining the performance differences between locations and what they indicate
 2. **Root cause identification** for underperforming locations (DNS, ISP, WiFi, device fleet age, etc.)
 3. **Next steps / resolution** with site-specific remediation actions prioritized by impact and feasibility
 
 Use color-coded rows based on location ranking:
+
 - Green: Top-performing locations (score 66-100)
 - Yellow: Borderline locations (score 34-65)
 - Red: Worst-performing locations (score 0-33)
@@ -39,6 +42,7 @@ Use color-coded rows based on location ranking:
 ### 1. Word Document (.docx) — REQUIRED
 
 Write a Word document to disk named `location_comparison_report_<date>.docx` containing:
+
 - Executive summary with best/worst performing locations
 - Location ranking table (rank, location, score, PFT, DNS, availability, poor users, alerts)
 - Per-location analysis for underperforming sites with metric breakdowns
@@ -127,9 +131,10 @@ function exportCSV(){const t=document.getElementById('locationTable'),rows=Array
 </script>
 </body>
 </html>
-```
+```text
 
 **MANDATORY STEPS:**
+
 1. Copy this template exactly
 2. Replace the `{{...}}` placeholders in the summary cards with real values
 3. Add one `<tr>` row inside `<tbody>` for every location
@@ -147,14 +152,16 @@ function exportCSV(){const t=document.getElementById('locationTable'),rows=Array
 First, enumerate the organizational dimensions available for comparison.
 
 **List locations:**
-```
+
+```text
 zdx_list_locations()
-```
+```text
 
 **List departments:**
-```
+
+```text
 zdx_list_departments()
-```
+```text
 
 Note the IDs returned -- these are used as filters in subsequent calls.
 
@@ -165,19 +172,22 @@ Note the IDs returned -- these are used as filters in subsequent calls.
 For each application of interest, retrieve scores filtered by different locations.
 
 **Location A:**
-```
+
+```text
 zdx_list_applications(location_id=["<location_a_id>"], since=24)
-```
+```text
 
 **Location B:**
-```
+
+```text
 zdx_list_applications(location_id=["<location_b_id>"], since=24)
-```
+```text
 
 **Location C:**
-```
+
+```text
 zdx_list_applications(location_id=["<location_c_id>"], since=24)
-```
+```text
 
 Compile the scores side by side to identify which locations are underperforming.
 
@@ -187,24 +197,26 @@ Compile the scores side by side to identify which locations are underperforming.
 
 For the worst-performing location, check the score trend.
 
-```
+```text
 zdx_get_application_score_trend(
   app_id="<app_id>",
   location_id=["<worst_location_id>"],
   since=24
 )
-```
+```text
 
 Compare with a healthy location:
-```
+
+```text
 zdx_get_application_score_trend(
   app_id="<app_id>",
   location_id=["<healthy_location_id>"],
   since=24
 )
-```
+```text
 
 **What to look for:**
+
 - Does the underperforming location show a consistent low score or a sudden drop?
 - Does the score correlate with specific times of day (peak hours)?
 - Are multiple applications affected at this location, or just one?
@@ -216,39 +228,42 @@ zdx_get_application_score_trend(
 Drill into metrics for the specific application at each location.
 
 **Page Fetch Time by location:**
-```
+
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="pft",
   location_id=["<location_a_id>"]
 )
-```
+```text
 
-```
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="pft",
   location_id=["<location_b_id>"]
 )
-```
+```text
 
 **DNS by location:**
-```
+
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="dns",
   location_id=["<location_a_id>"]
 )
-```
+```text
 
 **Availability by location:**
-```
+
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="availability",
   location_id=["<location_a_id>"]
 )
-```
+```text
 
 ---
 
@@ -256,21 +271,21 @@ zdx_get_application_metric(
 
 Understand user impact at each location.
 
-```
+```text
 zdx_list_application_users(
   app_id="<app_id>",
   score_bucket="poor",
   location_id=["<worst_location_id>"]
 )
-```
+```text
 
-```
+```text
 zdx_list_application_users(
   app_id="<app_id>",
   score_bucket="poor",
   location_id=["<healthy_location_id>"]
 )
-```
+```text
 
 **Calculate impact ratios:** If Location A has 5 poor users out of 50 total (10%) vs Location B with 25 poor users out of 100 total (25%), Location B has a more severe issue despite Location A having fewer total users.
 
@@ -278,13 +293,13 @@ zdx_list_application_users(
 
 ### Step 6: Check Location-Specific Alerts
 
-```
+```text
 zdx_list_alerts(location_id=["<worst_location_id>"], since=48)
-```
+```text
 
-```
+```text
 zdx_list_historical_alerts(location_id=["<worst_location_id>"], since=168)
-```
+```text
 
 Recurring alerts at a specific location indicate a persistent infrastructure issue at that site.
 
@@ -294,16 +309,18 @@ Recurring alerts at a specific location indicate a persistent infrastructure iss
 
 Check if the issue is device-related rather than network-related.
 
-```
+```text
 zdx_list_devices(location_id=["<worst_location_id>"])
-```
+```text
 
 For specific devices showing issues:
-```
+
+```text
 zdx_get_device(device_id="<device_id>")
-```
+```text
 
 Check for:
+
 - High CPU/memory usage across many devices (hardware refresh needed)
 - Outdated ZCC agent versions
 - WiFi issues (common in specific offices)
@@ -334,7 +351,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr style="background:#fff3cd"><td style="padding:8px">4</td><td style="padding:8px">Tokyo</td><td style="padding:8px;font-weight:bold;color:orange">71</td><td style="padding:8px">3.8s</td><td style="padding:8px">45ms</td><td style="padding:8px">98%</td><td style="padding:8px">8/55</td><td style="padding:8px">1</td></tr>
   <tr style="background:#f8d7da"><td style="padding:8px">5</td><td style="padding:8px">Dallas</td><td style="padding:8px;font-weight:bold;color:red">42</td><td style="padding:8px">8.2s</td><td style="padding:8px">180ms</td><td style="padding:8px">95%</td><td style="padding:8px">35/90</td><td style="padding:8px">2</td></tr>
 </tbody></table>
-```
+```text
 
 **After the table, ALWAYS provide:**
 
@@ -359,12 +376,13 @@ Present all data in **HTML table format** with detailed analysis.
 
 The same workflow applies when comparing departments instead of locations.
 
-```
+```text
 zdx_list_applications(department_id=["<dept_a_id>"], since=24)
 zdx_list_applications(department_id=["<dept_b_id>"], since=24)
-```
+```text
 
 **Department comparison is useful for:**
+
 - Understanding if a specific team is disproportionately affected
 - Compliance reporting (e.g., "How is the Finance team's experience?")
 - Device fleet differences between departments (older hardware, different OS)
@@ -375,15 +393,17 @@ zdx_list_applications(department_id=["<dept_b_id>"], since=24)
 
 Compare how all applications perform at a single location.
 
-```
+```text
 zdx_list_applications(location_id=["<location_id>"], since=24)
-```
+```text
 
 If all applications are degraded at one location:
+
 - The issue is likely network infrastructure (ISP, WiFi, LAN)
 - Not application-specific
 
 If only one application is degraded at a location:
+
 - Likely application-specific routing or server issue for that region
 - Check application CDN or server closest to that location
 
@@ -393,7 +413,7 @@ If only one application is degraded at a location:
 
 ### Location with No Active Devices
 
-```
+```text
 No active devices found at location "<location_name>" in the
 requested time window. The office may be closed, or devices
 may not be reporting.
@@ -402,11 +422,12 @@ Verify:
 - Is the office operational?
 - Are ZDX agents deployed at this location?
 - Check the 'since' parameter (try a wider window)
-```
+```text
 
 ### All Locations Equally Degraded
 
 If all locations show similar poor scores:
+
 - The issue is not location-specific
 - Likely an application server or Zscaler service-wide event
 - Switch to the **Analyze Application Health** skill
@@ -414,6 +435,7 @@ If all locations show similar poor scores:
 ### New Location Without Baseline
 
 For recently added locations with no historical data:
+
 - Cannot reliably compare with established locations
 - Collect at least 1 week of data before drawing conclusions
 - Use current metrics as the initial baseline
@@ -425,6 +447,7 @@ For recently added locations with no historical data:
 **Primary workflow:** List Locations/Depts → Compare App Scores → Drill Trends → Compare Metrics → Check Users → Review Alerts → Report
 
 **Tools used:**
+
 - `zdx_list_locations()` -- enumerate locations
 - `zdx_list_departments()` -- enumerate departments
 - `zdx_list_applications(location_id/department_id)` -- scores by dimension
@@ -437,11 +460,13 @@ For recently added locations with no historical data:
 - `zdx_get_device(device_id)` -- device health details
 
 **Comparison dimensions:**
+
 - `location_id` -- by office / ZIA location
 - `department_id` -- by business unit
 - `geo_id` -- by geographic region
 
 **Related skills:**
+
 - [Troubleshoot User Experience](../troubleshoot-user-experience/) -- individual user drill-down
 - [Analyze Application Health](../analyze-application-health/) -- org-wide app health
 - [Investigate Alerts](../investigate-alerts/) -- alert-focused investigation

@@ -11,6 +11,7 @@ Perform deep trace diagnostics for: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **Username or email** (required)
 - **Application name** (optional — if not provided, the session covers all monitored apps)
 - **Action** (default: analyze)
@@ -20,19 +21,20 @@ Extract:
 
 ## Step 2: Find the User's Device
 
-```
+```text
 zdx_list_devices(search="<username>")
-```
+```text
 
 Note the `device_id`. If multiple devices, ask the user which one.
 
 ## Step 3: Check Existing Deep Traces
 
-```
+```text
 zdx_list_device_deep_traces(device_id="<device_id>")
-```
+```text
 
 Review existing sessions:
+
 - **In Progress** sessions: Wait for completion or analyze partial data
 - **Completed** sessions: Proceed to analysis
 - **No sessions**: Offer to start a new one (requires write tools)
@@ -45,14 +47,14 @@ A diagnostics session can include Deep Tracing, Hi-Fi Cloud Path, Bandwidth Test
 
 First, discover the probe IDs for the target application:
 
-```
+```text
 zdx_get_web_probes(device_id="<device_id>", app_id="<app_id>")
 zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<app_id>")
-```
+```text
 
 Then start the deep trace with all required IDs (all IDs must be integers):
 
-```
+```text
 zdx_start_deeptrace(
   device_id="<device_id>",
   session_name="Diag-<user>-<date>",
@@ -62,9 +64,10 @@ zdx_start_deeptrace(
   session_length_minutes=15,       (5, 15, 30, or 60 minutes)
   probe_device=True                (collect device-level statistics)
 )
-```
+```text
 
 Configuration guidance:
+
 - **5 minutes**: Quick check for intermittent issues
 - **15 minutes**: Standard diagnostics session (recommended default)
 - **30 minutes**: Extended capture for hard-to-reproduce issues
@@ -77,45 +80,59 @@ After starting, inform the user of the expected completion time.
 For a completed trace, collect all diagnostics data:
 
 ### 5a. Trace Summary
-```
+
+```text
 zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 ### 5b. Web Probe Metrics
-```
+
+```text
 zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
+
 Check DNS resolution, TCP connect, SSL handshake, and HTTP response times. These indicate where application connectivity bottlenecks exist.
 
 ### 5c. Cloud Path Topology
-```
+
+```text
 zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
+
 View the full hop-by-hop network path from the user's device to the application. Identify hops with high latency or that are unreachable.
 
 ### 5d. Cloud Path Metrics
-```
+
+```text
 zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
+
 Check per-hop latency, packet loss percentage, and jitter. Spikes on specific hops isolate the network segment causing degradation.
 
 ### 5e. Device Health Metrics
-```
+
+```text
 zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
+
 Check CPU utilization, memory usage, disk I/O, and network interface throughput. High resource usage indicates device-side performance problems.
 
 ### 5f. Top Processes
-```
+
+```text
 zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
+
 Identify processes consuming the most CPU and memory during the trace. Resource-heavy processes can explain device-level degradation.
 
 ### 5g. Events Timeline
-```
+
+```text
 zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
+
 Review events that occurred during the trace window:
+
 - **Zscaler events**: Policy changes, tunnel reconnections
 - **Hardware events**: Driver changes, hardware failures
 - **Software events**: Updates, installations, crashes
@@ -127,9 +144,9 @@ Correlate event timestamps with metric degradation to identify root cause.
 
 Requires `--enable-write-tools`.
 
-```
+```text
 zdx_delete_deeptrace(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 This is a destructive operation. Confirm with the user before proceeding.
 
@@ -138,6 +155,7 @@ This is a destructive operation. Confirm with the user before proceeding.
 **ALWAYS present data in HTML tables** using `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling. Use color-coded rows: green for healthy, yellow for degraded, red for critical.
 
 Include:
+
 1. **Session summary table** (session name, type, user, device, status, start/end time, duration)
 2. **Web probe metrics table** (DNS time, TCP connect, SSL handshake, HTTP response — each with value, threshold, and status)
 3. **Cloud path table** (hop number, IP/hostname, latency, packet loss, jitter — color-coded by severity)

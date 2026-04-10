@@ -6,6 +6,7 @@ description: "Audit the overall Zscaler Microsegmentation (ZMS) deployment postu
 # ZMS: Audit Microsegmentation Posture
 
 ## Keywords
+
 microsegmentation, ZMS audit, workload protection, agent health, policy rules, resource groups, app zones, microsegmentation coverage, zero trust, lateral movement, workload segmentation, protection status, security posture
 
 ## Overview
@@ -13,12 +14,14 @@ microsegmentation, ZMS audit, workload protection, agent health, policy rules, r
 Perform a comprehensive audit of your Zscaler Microsegmentation (ZMS) deployment by examining agent fleet health, workload protection coverage, resource group structure, segmentation policies, app zone boundaries, and the application catalog. Microsegmentation is a critical Zero Trust capability that prevents lateral movement by enforcing granular communication policies between workloads.
 
 The ZMS API is a GraphQL endpoint on OneAPI that supports two root operation types:
+
 - **Query** (read-only): Retrieve agents, groups, statistics, metadata, nonces, resources, policies, and app zones. All current MCP tools use this type.
 - **Mutation** (write): Create, update, and delete agents, groups, nonces, policy rules, and resource groups. These operations are available in the API but are not yet exposed through MCP tools.
 
 **Use this skill when:** A security architect or administrator needs to assess microsegmentation coverage, verify policy configurations, review resource grouping strategy, identify unprotected workloads, or generate a posture report for compliance or executive review.
 
 **Important:**
+
 - All ZMS tools require `ZSCALER_CUSTOMER_ID` to be set as an environment variable.
 - All current MCP tools are **read-only** (Query operations only).
 - The underlying API also supports **Mutation** operations for managing agents, groups, policies, and resources — but these are not yet exposed through MCP tools.
@@ -33,61 +36,72 @@ Follow this 7-step process for a comprehensive microsegmentation audit.
 ### Step 1: Assess Agent Fleet Health
 
 **Get agent connection status overview:**
-```
+
+```text
 zms_get_agent_connection_status_statistics()
-```
+```text
 
 This returns total agent count and percentage breakdown by connection status. Key metrics:
+
 - **Total agents**: How many microsegmentation agents are deployed
 - **Connected vs disconnected**: What percentage are actively reporting
 - **Connection health target**: > 95% connected agents
 
 **Get agent version distribution:**
-```
+
+```text
 zms_get_agent_version_statistics()
-```
+```text
 
 Evaluate version consistency:
+
 - Are all agents on the same version?
 - How many agents are running outdated versions?
 - Is an upgrade rollout in progress?
 
 **List agents with details:**
-```
+
+```text
 zms_list_agents(page=1, page_size=50)
-```
+```text
 
 Review individual agent details:
+
 - Connection status per agent
 - OS distribution (Linux, Windows, etc.)
 - IP addresses and hostnames
 - Agent group membership
 
 **Search for specific agents:**
-```
+
+```text
 zms_list_agents(search="<hostname_or_ip>", page_size=20)
-```
+```text
 
 ---
 
 ### Step 2: Review Workload Protection Coverage
 
 **Get resource protection status:**
-```
+
+```text
 zms_get_resource_protection_status()
-```
+```text
 
 This returns the critical coverage metric:
+
 - **Protected resources**: Workloads with active segmentation policies
 - **Unprotected resources**: Workloads without policy coverage
 - **Protection percentage**: Target > 90% for mature deployments
 
 **List all resources (workloads):**
-```
+
+```text
 zms_list_resources(page_num=1, page_size=50)
-```
+```text
 
 For each resource, review:
+
 - Resource type (VM, container, bare metal)
 - Cloud provider (AWS, Azure, GCP, on-premises)
 - Region / availability zone
@@ -96,23 +110,26 @@ For each resource, review:
 - Protection status
 
 **Include deleted resources for full inventory:**
-```
+
+```text
 zms_list_resources(page_num=1, page_size=50, include_deleted=True)
-```
+```text
 
 **Get resource event metadata:**
-```
+
+```text
 zms_get_metadata()
-```
+```text
 
 ---
 
 ### Step 3: Analyze Resource Group Structure
 
 **List all resource groups:**
-```
+
+```text
 zms_list_resource_groups(page_num=1, page_size=50)
-```
+```text
 
 Resource groups define how workloads are logically grouped for policy enforcement. The ZMS platform supports three distinct group types:
 
@@ -121,27 +138,31 @@ Resource groups define how workloads are logically grouped for policy enforcemen
 - **Recommended groups**: ML-based recommendations from ZMS that suggest resource groupings based on observed traffic patterns. The API provides a `recommendedResourceGroups` query and `managedRecommendedResourceGroupUpdate` mutation for acting on these recommendations. (Not yet available via MCP tools.)
 
 Additional review points:
+
 - **Member count**: Groups with 0 members may be unused
 - **Naming convention**: Groups should follow a clear naming standard
 - **Origin**: Whether the group was created manually, imported, or ML-recommended
 
 **Get resource group protection status:**
-```
+
+```text
 zms_get_resource_group_protection_status()
-```
+```text
 
 Identify which resource groups have policies applied and which are unprotected.
 
 **Inspect members of a specific group:**
-```
+
+```text
 zms_get_resource_group_members(
     group_id="<group_id>",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 Verify:
+
 - Expected workloads are in the correct groups
 - Cloud provider and region distribution within the group
 - No stale or decommissioned workloads in active groups
@@ -151,13 +172,15 @@ Verify:
 ### Step 4: Review Segmentation Policies
 
 **List all policy rules:**
-```
+
+```text
 zms_list_policy_rules(page_num=1, page_size=50)
-```
+```text
 
 Policy rules define the allowed or denied communication paths between resource groups. The ZMS API supports full CRUD for policy rules via mutations (`policyRuleCreate`, `policyRuleUpdate`, `policyRuleDelete`), but current MCP tools are read-only.
 
 For each rule, review:
+
 - **Name and description**: Clear, descriptive naming
 - **Action**: Allow or Block
 - **Priority**: Rule ordering matters -- higher priority rules are evaluated first
@@ -167,16 +190,19 @@ For each rule, review:
 - **Creation time**: When the rule was created — helps identify legacy rules
 
 **Fetch all rules (bypassing pagination):**
-```
+
+```text
 zms_list_policy_rules(fetch_all=True)
-```
+```text
 
 **List default (baseline) policies:**
-```
+
+```text
 zms_list_default_policy_rules()
-```
+```text
 
 Default rules define the baseline security posture. The API supports batch operations on default rules (`defaultPolicyRulesCreate`, `defaultPolicyRulesUpdate`, `defaultPolicyRulesDelete`):
+
 - **Default deny**: All traffic blocked unless explicitly allowed (recommended for Zero Trust)
 - **Default allow**: All traffic allowed unless explicitly blocked (permissive — not recommended)
 - **Direction**: Inbound vs outbound default behavior
@@ -187,11 +213,13 @@ Default rules define the baseline security posture. The API supports batch opera
 ### Step 5: Review App Zones
 
 **List all app zones:**
-```
+
+```text
 zms_list_app_zones(page_num=1, page_size=50)
-```
+```text
 
 App zones define logical application boundaries that control the scope of microsegmentation enforcement. The API supports filtering and sorting for app zone queries. Review:
+
 - **Zone names and descriptions**: Should map to application architecture tiers
 - **Member count per zone**: How many resources belong to each zone
 - **VPC/subnet inclusion settings**: Whether entire VPCs/subnets are included
@@ -203,17 +231,20 @@ App zones define logical application boundaries that control the scope of micros
 ### Step 6: Review Application Catalog
 
 **List discovered applications:**
-```
+
+```text
 zms_list_app_catalog(page_num=1, page_size=50)
-```
+```text
 
 The app catalog shows applications discovered by the microsegmentation agents:
+
 - Application name and category
 - Port and protocol requirements
 - Associated processes
 - Discovery timestamps
 
 Use this to:
+
 - Verify application discovery is working
 - Identify applications that need segmentation policies
 - Understand port/protocol requirements for policy creation
@@ -223,36 +254,41 @@ Use this to:
 ### Step 7: Review Tags and Classification
 
 **List tag namespaces:**
-```
+
+```text
 zms_list_tag_namespaces(page_num=1, page_size=50)
-```
+```text
 
 Tag namespaces organize classification metadata:
+
 - **CUSTOM**: User-defined tags
 - **EXTERNAL**: Cloud provider tags (AWS, Azure, GCP)
 - **ML**: Machine-learning discovered tags
 - **UNKNOWN**: Unclassified tags
 
 **Explore tag keys within a namespace:**
-```
+
+```text
 zms_list_tag_keys(
     namespace_id="<namespace_id>",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 **Explore tag values for a key:**
-```
+
+```text
 zms_list_tag_values(
     tag_id="<tag_id>",
     namespace_origin="EXTERNAL",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 Tags are critical for dynamic resource group membership. Verify:
+
 - Cloud provider tags are being imported correctly
 - Custom tags follow organizational standards
 - ML-discovered tags align with actual workload classification
@@ -261,7 +297,7 @@ Tags are critical for dynamic resource group membership. Verify:
 
 ### Present Audit Report
 
-```
+```text
 Microsegmentation Posture Audit Report
 ==========================================
 Date: <current_date>
@@ -362,7 +398,7 @@ Recommend prioritizing policy creation for these workloads.
 ### Low
 10. Document app zone architecture decisions
 11. Schedule quarterly posture reviews
-```
+```text
 
 ---
 
@@ -370,28 +406,28 @@ Recommend prioritizing policy creation for these workloads.
 
 ### No Agents Deployed
 
-```
+```text
 No ZMS agents found in your environment.
 
 This means microsegmentation has not been deployed yet, or
 agents are registered under a different customer ID.
 
 Action: Verify ZSCALER_CUSTOMER_ID and check agent deployment status.
-```
+```text
 
 ### ZSCALER_CUSTOMER_ID Not Set
 
-```
+```text
 ZSCALER_CUSTOMER_ID environment variable is required for all ZMS tools.
 
 Set this variable to your Zscaler customer ID before using ZMS tools.
 The customer ID can be found in the Zscaler admin portal under
 Administration > Company Profile.
-```
+```text
 
 ### GraphQL Errors with HTTP 200
 
-```
+```text
 The ZMS API returned HTTP 200 but with GraphQL errors in the
 response body.
 
@@ -402,11 +438,11 @@ Common error codes:
 
 The ZMS GraphQL API may return HTTP 200 even when the query fails.
 Always check the response body for the "errors" field.
-```
+```text
 
 ### All Workloads Protected
 
-```
+```text
 All 312 workloads are protected (100% coverage).
 
 This is excellent! Continue monitoring:
@@ -415,11 +451,11 @@ This is excellent! Continue monitoring:
 - Policy rules should be reviewed quarterly for relevance
 - Agent version consistency should be maintained
 - Check for ML-recommended resource groups periodically
-```
+```text
 
 ### Mutation Operations Needed
 
-```
+```text
 The requested operation (create/update/delete) requires mutation
 access which is not available through current MCP tools.
 
@@ -434,7 +470,7 @@ Available mutation operations in the ZMS API:
 
 Action: Perform these operations through the Zscaler admin portal
 or the ZMS API directly.
-```
+```text
 
 ---
 
@@ -443,31 +479,38 @@ or the ZMS API directly.
 **Primary workflow:** Agents → Protection → Groups → Policies → App Zones → App Catalog → Tags → Report
 
 **Agent tools:**
+
 - `zms_list_agents()` -- list all agents with details
 - `zms_get_agent_connection_status_statistics()` -- fleet connection health
 - `zms_get_agent_version_statistics()` -- version distribution
 
 **Resource tools:**
+
 - `zms_list_resources()` -- list workloads
 - `zms_get_resource_protection_status()` -- protection coverage
 - `zms_get_metadata()` -- resource event metadata
 
 **Resource group tools:**
+
 - `zms_list_resource_groups()` -- list all groups
 - `zms_get_resource_group_members(group_id)` -- members of a specific group
 - `zms_get_resource_group_protection_status()` -- group protection coverage
 
 **Policy tools:**
+
 - `zms_list_policy_rules()` -- custom segmentation rules
 - `zms_list_default_policy_rules()` -- baseline policies
 
 **App zone tools:**
+
 - `zms_list_app_zones()` -- application boundaries
 
 **Application catalog tools:**
+
 - `zms_list_app_catalog()` -- discovered applications
 
 **Tag tools:**
+
 - `zms_list_tag_namespaces()` -- tag organization categories
 - `zms_list_tag_keys(namespace_id)` -- keys within a namespace
 - `zms_list_tag_values(tag_id, namespace_origin)` -- values for a key

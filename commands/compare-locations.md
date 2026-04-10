@@ -11,27 +11,28 @@ Compare locations: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **Application** (optional -- compare across all apps)
 - **Locations** to compare (optional -- compare all)
 - **Time window** in hours (default: 24)
 
 ## Step 2: Get Application Scores by Location
 
-```
+```text
 zdx_list_applications()
-```
+```text
 
 For each application:
 
-```
+```text
 zdx_get_application(app_id="<app_id>", since=<hours>)
-```
+```text
 
 ## Step 3: Break Down by Location/Department
 
-```
+```text
 zdx_list_devices(app_id="<app_id>")
-```
+```text
 
 Group devices by location and calculate average scores per location.
 
@@ -39,17 +40,17 @@ Group devices by location and calculate average scores per location.
 
 For locations with significantly worse scores:
 
-```
+```text
 zdx_get_application_metric(app_id="<app_id>", metric_name="dns_time", since=<hours>)
-```
+```text
 
 Check key metrics to identify the bottleneck.
 
 ## Step 5: Check Location-Specific Alerts
 
-```
+```text
 zdx_list_alerts(since=<hours>)
-```
+```text
 
 Correlate alerts with location data.
 
@@ -58,6 +59,7 @@ Correlate alerts with location data.
 **ALWAYS present data in HTML tables** using `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling. Use color-coded rows: green (score 66-100), yellow (score 34-65), red (score 0-33).
 
 Include:
+
 1. **Location ranking table** (rank, location, score, PFT, DNS, availability, poor users, active alerts)
 2. **Detailed analysis** explaining the performance differences between locations and what patterns they reveal
 3. **Root cause** for the worst performer(s) -- what specific metric is the bottleneck and why it's location-specific

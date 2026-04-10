@@ -6,6 +6,7 @@ description: "Review Zscaler Microsegmentation (ZMS) tag classification, applica
 # ZMS: Review Tag Classification & Application Discovery
 
 ## Keywords
+
 tags, tag namespaces, tag keys, tag values, application catalog, app catalog, resource groups, managed groups, workload classification, cloud tags, ML tags, custom tags, EXTERNAL, CUSTOM, ML, application discovery, tag hierarchy, resource grouping
 
 ## Overview
@@ -13,6 +14,7 @@ tags, tag namespaces, tag keys, tag values, application catalog, app catalog, re
 Review the tag classification hierarchy, application catalog discoveries, and how tags drive dynamic resource group membership in Zscaler Microsegmentation. Tags are the foundation of automated workload classification — they determine which workloads belong to which managed resource groups, which in turn are referenced by segmentation policy rules.
 
 The tag system has three levels: **namespace → key → value**. Tag namespaces indicate the origin of the tags:
+
 - **EXTERNAL**: Imported from cloud providers (AWS, Azure, GCP) — e.g., instance tags, labels, resource metadata
 - **CUSTOM**: Created by administrators in the ZMS console for organization-specific classification
 - **ML**: Machine-learning discovered tags based on observed traffic patterns and workload behavior
@@ -23,6 +25,7 @@ The **Application Catalog** tracks applications discovered by microsegmentation 
 **Use this skill when:** An administrator needs to review how workloads are classified, verify cloud tag imports, assess ML tag adoption, audit tag naming conventions, understand application discovery state, or troubleshoot resource group membership driven by tags.
 
 **Important:**
+
 - All ZMS tools require `ZSCALER_CUSTOMER_ID` to be set as an environment variable.
 - All current MCP tools are **read-only** (Query operations).
 - The ZMS API supports **ML Tag Recommendations** (accept/ignore/delete ML-suggested tags) but this is not yet exposed through MCP tools.
@@ -36,23 +39,27 @@ Follow this 5-step process for a complete tag classification review.
 ### Step 1: Map the Tag Namespace Landscape
 
 **List all tag namespaces:**
-```
+
+```text
 zms_list_tag_namespaces(page_num=1, page_size=50)
-```
+```text
 
 This returns the top-level organizational categories for all tags. For each namespace, note:
+
 - **Name**: The namespace identifier
 - **Origin**: CUSTOM, EXTERNAL, ML, or UNKNOWN
 - **Key count**: How many tag keys exist under this namespace
 - **ID**: Required for drilling into keys (Step 2)
 
 **Key questions to answer:**
+
 - Are cloud provider tags (EXTERNAL) being imported? If not, cloud tag integration may not be configured.
 - Are there CUSTOM namespaces? These indicate intentional organizational tagging.
 - Are ML namespaces present? These indicate the ML recommendation engine is active.
 - How many namespaces exist? Too many may indicate inconsistent tagging strategy.
 
 **Expected healthy state:**
+
 - At least one EXTERNAL namespace per cloud provider in use (AWS, Azure, GCP)
 - One or more CUSTOM namespaces for organizational tags
 - ML namespace(s) present if ML recommendations are enabled
@@ -62,27 +69,31 @@ This returns the top-level organizational categories for all tags. For each name
 ### Step 2: Explore Tag Keys Within Each Namespace
 
 **For each namespace identified in Step 1, list the tag keys:**
-```
+
+```text
 zms_list_tag_keys(
     namespace_id="<namespace_id>",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 Tag keys are the categories within a namespace. For example:
+
 - EXTERNAL namespace might have keys like: `aws:environment`, `aws:team`, `aws:application`, `azure:resourceGroup`
 - CUSTOM namespace might have keys like: `tier`, `compliance-level`, `data-classification`
 - ML namespace might have keys like: `ml-app-group`, `ml-traffic-pattern`
 
 **For each key, evaluate:**
+
 - **Naming convention**: Are keys consistently named? (kebab-case, camelCase, etc.)
 - **Relevance**: Do keys map to meaningful workload attributes?
 - **Coverage**: Are the expected organizational dimensions represented (environment, team, application, tier)?
 - **Staleness**: Are there keys that no longer apply?
 
 **Document the key hierarchy:**
-```
+
+```text
 Namespace: aws-tags (EXTERNAL)
 ├── environment → [prod, staging, dev, test]
 ├── team → [platform, backend, data, security]
@@ -93,31 +104,34 @@ Namespace: org-classification (CUSTOM)
 ├── data-sensitivity → [public, internal, confidential, restricted]
 ├── compliance → [pci, hipaa, sox, none]
 └── tier → [web, app, database, shared-services]
-```
+```text
 
 ---
 
 ### Step 3: Inspect Tag Values for Critical Keys
 
 **For each important tag key, list the values:**
-```
+
+```text
 zms_list_tag_values(
     tag_id="<tag_id>",
     namespace_origin="EXTERNAL",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 The `namespace_origin` parameter must be one of: `CUSTOM`, `EXTERNAL`, `ML`, `UNKNOWN`.
 
 **Evaluate values for:**
+
 - **Consistency**: Are values standardized? (e.g., "prod" vs "production" vs "Production")
 - **Completeness**: Are all expected values present?
 - **Cardinality**: High cardinality (many unique values) may make tag-based grouping impractical
 - **Meaningful grouping**: Do values map to logical resource group boundaries?
 
 **Flag issues:**
+
 - Duplicate values with different casing or spelling
 - Values that are too specific (e.g., individual instance IDs) for grouping
 - Missing expected values (e.g., "production" environment exists but "staging" doesn't)
@@ -127,11 +141,13 @@ The `namespace_origin` parameter must be one of: `CUSTOM`, `EXTERNAL`, `ML`, `UN
 ### Step 4: Review Application Catalog Discoveries
 
 **List discovered applications:**
-```
+
+```text
 zms_list_app_catalog(page_num=1, page_size=50)
-```
+```text
 
 The application catalog shows what the microsegmentation agents have discovered running on workloads:
+
 - **Application name**: Identified application
 - **Application category**: Classification of the application
 - **Process name**: The process executing the application
@@ -139,6 +155,7 @@ The application catalog shows what the microsegmentation agents have discovered 
 - **Port range**: Port start and end
 
 **Analysis points:**
+
 - **Expected applications**: Verify that known business applications appear in the catalog
 - **Unknown applications**: Identify unrecognized applications that may need investigation
 - **Port usage**: Understand what ports are actively in use for policy creation
@@ -146,6 +163,7 @@ The application catalog shows what the microsegmentation agents have discovered 
 - **Discovery gaps**: If expected applications are missing, agents may not be deployed on those workloads
 
 **Correlate with tags:**
+
 - Applications in the catalog should have corresponding tags for classification
 - ML tag recommendations are generated based on application catalog discoveries
 - If an application appears in the catalog but has no corresponding tags, tagging coverage needs improvement
@@ -155,39 +173,45 @@ The application catalog shows what the microsegmentation agents have discovered 
 ### Step 5: Correlate Tags with Resource Group Membership
 
 **List resource groups to understand tag-driven membership:**
-```
+
+```text
 zms_list_resource_groups(page_num=1, page_size=50)
-```
+```text
 
 Resource groups come in two types:
+
 - **Managed groups**: Membership determined dynamically by tag-based rules. When workload tags change, group membership updates automatically.
 - **Unmanaged groups**: Membership defined statically by CIDR blocks and/or FQDNs.
 
 **For managed groups, evaluate:**
+
 - What tag keys/values determine membership?
 - Are the tag rules using the keys identified in Steps 2-3?
 - Is the member count expected for the tag criteria?
 - Are there managed groups with 0 members? (tag criteria may be wrong)
 
 **Inspect members of key groups:**
-```
+
+```text
 zms_get_resource_group_members(
     group_id="<group_id>",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 Verify:
+
 - Members match the expected workloads for the tag criteria
 - Cloud provider and region distribution is correct
 - No unexpected workloads have been included
 - No expected workloads are missing
 
 **Check protection status by group:**
-```
+
+```text
 zms_get_resource_group_protection_status()
-```
+```text
 
 Identify groups that have members but no policy coverage — these represent classification without enforcement.
 
@@ -195,7 +219,7 @@ Identify groups that have members but no policy coverage — these represent cla
 
 ### Present Tag Classification Report
 
-```
+```text
 Tag Classification & Application Discovery Report
 ====================================================
 Date: <current_date>
@@ -268,7 +292,7 @@ Auditor: AI Assistant
 ### Low
 6. Document tag naming conventions
 7. Schedule quarterly tag hygiene reviews
-```
+```text
 
 ---
 
@@ -276,7 +300,7 @@ Auditor: AI Assistant
 
 ### No Tag Namespaces Found
 
-```
+```text
 No tag namespaces found in the ZMS deployment.
 
 This means:
@@ -286,11 +310,11 @@ This means:
 
 Action: Configure cloud provider tag integration in the ZMS console
 and create custom namespaces for organizational classification.
-```
+```text
 
 ### No Applications in Catalog
 
-```
+```text
 The application catalog is empty.
 
 Possible causes:
@@ -301,11 +325,11 @@ Possible causes:
 Action: Verify agent deployment status using
 zms_get_agent_connection_status_statistics() and ensure agents
 are connected and running.
-```
+```text
 
 ### ML Tags Present but No Recommendations Reviewed
 
-```
+```text
 ML tag namespace exists with unreviewed tag suggestions.
 
 The ML recommendation engine has identified patterns but no
@@ -314,7 +338,7 @@ recommendations have been accepted, edited, or ignored.
 Action: Review ML tag recommendations in the ZMS console under
 Microsegmentation > Tag Management > ML Tag Recommendations.
 (ML recommendation management is not available via MCP tools.)
-```
+```text
 
 ---
 
@@ -323,19 +347,23 @@ Microsegmentation > Tag Management > ML Tag Recommendations.
 **Primary workflow:** Namespaces → Keys → Values → App Catalog → Resource Groups → Report
 
 **Tag tools:**
+
 - `zms_list_tag_namespaces()` — top-level tag organization
 - `zms_list_tag_keys(namespace_id)` — keys within a namespace
 - `zms_list_tag_values(tag_id, namespace_origin)` — values for a key
 
 **Application catalog tools:**
+
 - `zms_list_app_catalog()` — discovered applications
 
 **Resource group tools (for correlation):**
+
 - `zms_list_resource_groups()` — managed and unmanaged groups
 - `zms_get_resource_group_members(group_id)` — members of a group
 - `zms_get_resource_group_protection_status()` — group protection coverage
 
 **Not yet available via MCP tools:**
+
 - ML Tag Recommendations (accept/ignore/delete suggestions)
 - Tag create/update/delete operations
 - Application catalog management

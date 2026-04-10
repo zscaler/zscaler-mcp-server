@@ -11,46 +11,48 @@ Analyze health for: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **Application name** (optional -- analyze all monitored apps if not provided)
 - **Time window** in hours (default: 2)
 
 ## Step 2: List Monitored Applications
 
-```
+```text
 zdx_list_applications()
-```
+```text
 
 ## Step 3: Get Scores for Each Application
 
 For each application (or the specified one):
 
-```
+```text
 zdx_get_application(app_id="<app_id>", since=<hours>)
 zdx_get_application_score_trend(app_id="<app_id>", since=<hours>)
-```
+```text
 
 ## Step 4: Investigate Degraded Applications
 
 For any application with score < 66:
 
-```
+```text
 zdx_get_application_metric(app_id="<app_id>", metric_name="dns_time", since=<hours>)
 zdx_get_application_metric(app_id="<app_id>", metric_name="availability", since=<hours>)
-```
+```text
 
 Identify the metric causing degradation.
 
 ## Step 5: Check Most Impacted Users
 
-```
+```text
 zdx_list_devices(app_id="<app_id>")
-```
+```text
 
 ## Step 6: Present Report
 
 **ALWAYS present data in HTML tables** using `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling. Use color-coded rows: green (score 66-100), yellow (score 34-65), red (score 0-33).
 
 Include:
+
 1. **Application health overview table** (app name, score, status, PFT, DNS, availability, impacted users, bottleneck)
 2. **Detailed analysis** for each degraded/poor application explaining what the bottleneck metric indicates
 3. **Root cause** per degraded app (DNS resolver, server-side, CDN, ISP, etc.)

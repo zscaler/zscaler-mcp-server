@@ -6,6 +6,7 @@ description: "Create ZPA client forwarding policy rules that control how traffic
 # ZPA: Create Forwarding Policy Rule
 
 ## Keywords
+
 forwarding policy, forwarding rule, bypass zpa, intercept traffic, direct access, client forwarding, traffic routing, bypass rule, split tunnel, forwarding exception, zpa bypass
 
 ## Overview
@@ -61,17 +62,20 @@ Forwarding policies support the same condition object types as access policies. 
 Ask the administrator:
 
 **Required:**
+
 - Rule name
 - Action: `BYPASS`, `INTERCEPT`, or `INTERCEPT_ACCESSIBLE`
 - Which applications or application groups should this rule apply to?
 
 **Optional:**
+
 - Description
 - Who should this apply to? (specific users/groups or everyone)
 - Platform restrictions (e.g., only bypass on Windows)
 - Location or network conditions
 
 **Common scenarios:**
+
 - "Bypass ZPA for Zoom/Teams traffic" -> `BYPASS` with specific APP or APP_GROUP
 - "Route all traffic through ZPA for contractors" -> `INTERCEPT` with SCIM_GROUP condition
 - "Direct access when on corporate network" -> `BYPASS` with TRUSTED_NETWORK condition
@@ -81,39 +85,43 @@ Ask the administrator:
 ### Step 2: Look Up Required IDs
 
 **For application scoping:**
-```
+
+```text
 zpa_list_application_segments()
 zpa_list_segment_groups()
-```
+```text
 
 **For identity conditions:**
-```
+
+```text
 get_zpa_scim_group(search="<group_name>")
 get_zpa_saml_attribute(search="<attribute_name>")
-```
+```text
 
 **For trusted networks:**
-```
+
+```text
 get_zpa_trusted_network(search="<network_name>")
-```
+```text
 
 **For posture profiles:**
-```
+
+```text
 get_zpa_posture_profile(search="<profile_name>")
-```
+```text
 
 ---
 
 ### Step 3: Build Conditions and Create the Rule
 
-```
+```text
 zpa_create_forwarding_policy_rule(
   name="<rule_name>",
   action_type="BYPASS",
   description="<description>",
   conditions=<conditions_payload>
 )
-```
+```text
 
 The conditions format is identical to access policy rules. See the examples below.
 
@@ -121,9 +129,9 @@ The conditions format is identical to access policy rules. See the examples belo
 
 ### Step 4: Verify
 
-```
+```text
 zpa_get_forwarding_policy_rule(rule_id="<returned_rule_id>")
-```
+```text
 
 Present the rule summary including action, conditions, and scope.
 
@@ -136,12 +144,14 @@ Present the rule summary including action, conditions, and scope.
 Bypass ZPA tunneling for all applications in a segment group (e.g., video conferencing apps).
 
 **Step 1: Find the segment group**
-```
+
+```text
 zpa_list_segment_groups()
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_forwarding_policy_rule(
   name="Bypass Video Conferencing",
   action_type="BYPASS",
@@ -158,7 +168,7 @@ zpa_create_forwarding_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -167,13 +177,15 @@ zpa_create_forwarding_policy_rule(
 When users are on the corporate trusted network, bypass ZPA and go direct.
 
 **Step 1: Look up IDs**
-```
+
+```text
 get_zpa_trusted_network(search="Corporate_WiFi")
 get_zpa_scim_group(search="Office_Workers")
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_forwarding_policy_rule(
   name="Direct Access on Corporate Network",
   action_type="BYPASS",
@@ -203,7 +215,7 @@ zpa_create_forwarding_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Logic:** User must be on the corporate trusted network AND be in the Office_Workers group.
 
@@ -214,12 +226,14 @@ zpa_create_forwarding_policy_rule(
 Force all contractor traffic through ZPA regardless of application.
 
 **Step 1: Look up contractor group**
-```
+
+```text
 get_zpa_scim_group(search="Contractors")
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_forwarding_policy_rule(
   name="Intercept Contractor Traffic",
   action_type="INTERCEPT",
@@ -238,7 +252,7 @@ zpa_create_forwarding_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -246,7 +260,7 @@ zpa_create_forwarding_policy_rule(
 
 Bypass ZPA for specific applications only on Linux and Android devices.
 
-```
+```text
 zpa_create_forwarding_policy_rule(
   name="Bypass Dev Tools on Linux/Android",
   action_type="BYPASS",
@@ -275,7 +289,7 @@ zpa_create_forwarding_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -283,7 +297,7 @@ zpa_create_forwarding_policy_rule(
 
 Use `INTERCEPT_ACCESSIBLE` for applications that may or may not be reachable through ZPA depending on the user's location.
 
-```
+```text
 zpa_create_forwarding_policy_rule(
   name="Conditional Intercept for Hybrid Apps",
   action_type="INTERCEPT_ACCESSIBLE",
@@ -300,7 +314,7 @@ zpa_create_forwarding_policy_rule(
     }
   ]
 )
-```
+```text
 
 **When to use:** The application exists both on the corporate network (reachable via ZPA) and on the public internet. `INTERCEPT_ACCESSIBLE` routes through ZPA if connectors can reach it, otherwise falls back to direct access.
 
@@ -310,7 +324,7 @@ zpa_create_forwarding_policy_rule(
 
 Bypass ZPA for a SAML-identified group, only on Windows, only from the US.
 
-```
+```text
 zpa_create_forwarding_policy_rule(
   name="US Windows Bypass for Finance",
   action_type="BYPASS",
@@ -360,7 +374,7 @@ zpa_create_forwarding_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Logic:** App must be in the Finance segment group AND user has SAML group "Finance" AND platform is Windows AND country is US.
 
@@ -386,13 +400,13 @@ zpa_create_forwarding_policy_rule(
 
 A forwarding rule with no conditions applies globally:
 
-```
+```text
 zpa_create_forwarding_policy_rule(
   name="Global Bypass",
   action_type="BYPASS",
   conditions=[]
 )
-```
+```text
 
 This bypasses ZPA for ALL traffic, which is almost never desired. Always scope with conditions.
 
@@ -403,15 +417,17 @@ If traffic is bypassed by a forwarding rule, the access policy rule is never eva
 ### Listing Existing Forwarding Rules
 
 Before creating, check what rules already exist:
-```
+
+```text
 zpa_list_forwarding_policy_rules()
-```
+```text
 
 ---
 
 ## Quick Reference
 
 **Tools used:**
+
 - `zpa_list_application_segments()` -- find application segments
 - `zpa_list_segment_groups()` -- find segment groups
 - `get_zpa_scim_group(search)` -- look up SCIM group IDs
@@ -423,6 +439,7 @@ zpa_list_forwarding_policy_rules()
 - `zpa_get_forwarding_policy_rule(rule_id)` -- verify the rule
 
 **Condition logic:**
+
 - Multiple condition blocks = AND (all must match)
 - Multiple entry_values within a block = OR (any can match)
 - Separate condition blocks per object type

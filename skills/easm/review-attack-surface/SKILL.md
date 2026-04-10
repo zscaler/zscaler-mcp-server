@@ -6,6 +6,7 @@ description: "Review the organization's external attack surface using Zscaler EA
 # EASM: Review Attack Surface
 
 ## Keywords
+
 attack surface, external exposure, easm findings, exposed services, vulnerabilities, lookalike domains, external risk, shadow IT discovery, internet-facing assets, security posture, easm audit
 
 ## Overview
@@ -22,11 +23,12 @@ Follow this 5-step process to review the external attack surface.
 
 ### Step 1: List EASM Organizations
 
-```
+```text
 zeasm_list_organizations()
-```
+```text
 
 EASM can monitor multiple organizations or business units. Note:
+
 - Organization ID and name
 - Monitored domains/assets
 - Last scan date
@@ -37,11 +39,12 @@ If multiple organizations exist, confirm which one to review.
 
 ### Step 2: Retrieve Findings
 
-```
+```text
 zeasm_list_findings(organization_id="<org_id>")
-```
+```text
 
 This returns all findings across the attack surface. Each finding includes:
+
 - Finding type (exposed service, vulnerability, misconfiguration, certificate issue)
 - Severity (Critical, High, Medium, Low, Informational)
 - Asset affected (domain, IP, subdomain)
@@ -49,39 +52,45 @@ This returns all findings across the attack surface. Each finding includes:
 - Current status
 
 **For detailed information on a specific finding:**
-```
+
+```text
 zeasm_get_finding_details(organization_id="<org_id>", finding_id="<finding_id>")
-```
+```text
 
 **For scan evidence:**
-```
+
+```text
 zeasm_get_finding_evidence(organization_id="<org_id>", finding_id="<finding_id>")
-```
+```text
 
 **For complete scan output:**
-```
+
+```text
 zeasm_get_finding_scan_output(organization_id="<org_id>", finding_id="<finding_id>")
-```
+```text
 
 ---
 
 ### Step 3: Check for Lookalike Domains
 
-```
+```text
 zeasm_list_lookalike_domains(organization_id="<org_id>")
-```
+```text
 
 Lookalike domains are domains registered by third parties that resemble your organization's domains. They are commonly used for:
+
 - Phishing campaigns
 - Brand impersonation
 - Credential harvesting
 
 **For details on a specific lookalike domain:**
-```
+
+```text
 zeasm_get_lookalike_domain(organization_id="<org_id>", domain_id="<domain_id>")
-```
+```text
 
 Check:
+
 - Similarity score to your actual domain
 - Registration date (recent registrations are higher risk)
 - Whether the domain is actively hosting content
@@ -94,24 +103,28 @@ Check:
 Group findings by severity and type:
 
 **CRITICAL:**
+
 - Exposed databases (MongoDB, Elasticsearch, Redis without auth)
 - Known CVEs with active exploitation (CISA KEV)
 - Exposed admin panels (phpMyAdmin, Jenkins, Kubernetes dashboard)
 - Default credentials detected
 
 **HIGH:**
+
 - SSL/TLS misconfigurations (expired certs, weak ciphers)
 - Exposed development/staging environments
 - Open mail relays
 - Unpatched services with known CVEs
 
 **MEDIUM:**
+
 - Missing security headers (HSTS, CSP, X-Frame-Options)
 - Directory listing enabled
 - CORS misconfigurations
 - Subdomains pointing to unclaimed resources (subdomain takeover risk)
 
 **LOW/INFORMATIONAL:**
+
 - Technology fingerprinting (web server versions)
 - DNS zone transfer possible
 - Informational banners exposed
@@ -120,7 +133,7 @@ Group findings by severity and type:
 
 ### Step 5: Generate Report
 
-```
+```text
 External Attack Surface Review
 ================================
 Date: <current_date>
@@ -191,7 +204,7 @@ suggesting an active phishing campaign. Recommend:
 4. [HIGH] Investigate and report lookalike domain companny.com
 5. [MEDIUM] Add security headers to all web applications
 6. [LOW] Remove server version banners
-```
+```text
 
 ---
 
@@ -199,7 +212,7 @@ suggesting an active phishing campaign. Recommend:
 
 ### No Findings
 
-```
+```text
 No findings detected for organization "<org_name>".
 
 This means:
@@ -208,12 +221,13 @@ This means:
 
 Recommendation: Verify all known domains and IP ranges are included
 in the EASM monitoring scope.
-```
+```text
 
 ### High Volume of Findings
 
 If there are hundreds of findings:
-```
+
+```text
 Large number of findings detected (X total). Showing top 10 by severity.
 
 For a focused review, I can filter by:
@@ -223,7 +237,7 @@ For a focused review, I can filter by:
 4. Time range (e.g., last 7 days only)
 
 Which filter would you like to apply?
-```
+```text
 
 ---
 
@@ -232,6 +246,7 @@ Which filter would you like to apply?
 **Primary workflow:** List Orgs → Retrieve Findings → Check Lookalikes → Categorize → Report
 
 **Tools used:**
+
 - `zeasm_list_organizations()` -- list monitored organizations
 - `zeasm_list_findings(organization_id)` -- all findings
 - `zeasm_get_finding_details(organization_id, finding_id)` -- finding details
@@ -241,6 +256,7 @@ Which filter would you like to apply?
 - `zeasm_get_lookalike_domain(organization_id, domain_id)` -- domain details
 
 **Severity classification:**
+
 - CRITICAL: Exposed databases, active CVEs, admin panels
 - HIGH: SSL issues, exposed dev environments, unpatched services
 - MEDIUM: Missing headers, CORS issues, subdomain takeover risk

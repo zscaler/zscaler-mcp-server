@@ -6,6 +6,7 @@ description: "Investigate ZIA Sandbox file analysis results, quarantine issues, 
 # ZIA: Investigate Sandbox
 
 ## Keywords
+
 sandbox, file blocked, quarantine, md5 hash, sandbox report, malware, atp, advanced threat protection, malware protection, file analysis, patient zero, patient 0, sandbox quota, file not scanning, quarantine stuck, sandbox verdict, behavioral analysis, unscannable file
 
 ## Overview
@@ -23,11 +24,13 @@ Investigate ZIA Sandbox file analysis results and security policy enforcement is
 Collect from the administrator:
 
 **Required:**
+
 - Symptom: file blocked, file allowed unexpectedly, file stuck in quarantine, sandbox not analyzing
 - File MD5 hash (if available from Web Insights logs)
 - URL or domain where the file was downloaded from
 
 **Helpful:**
+
 - Policy Action from Web Insights logs (e.g., "Sandbox Block", "Quarantined", "Allowed")
 - Threat Super Category from Web Insights logs (e.g., "Sandbox", "Virus", "Malware Protection")
 - Blocked Policy Type (e.g., "Sandbox", "Malware Protection", "Advanced Threat Protection")
@@ -56,11 +59,12 @@ If the administrator knows the Blocked Policy Type, skip to the relevant section
 
 If an MD5 hash is available:
 
-```
+```text
 zia_get_sandbox_report(md5_hash="<md5_hash>", report_details="full")
-```
+```text
 
 **Evaluate the report:**
+
 - **Class Type**: `MALICIOUS`, `SUSPICIOUS`, `BENIGN`
 - If `MALICIOUS` -- the block is expected behavior; the sandbox correctly identified the threat
 - If `BENIGN` -- the file should not be blocked by Sandbox; look for other policies (Malware Protection, ATP, File Type Control)
@@ -71,11 +75,12 @@ The file was not analyzed by Sandbox. Proceed to Step 3D to diagnose why.
 
 #### 3B: Check Sandbox Quota
 
-```
+```text
 zia_get_sandbox_quota()
-```
+```text
 
 Verify:
+
 - Quota is not exhausted (if exhausted, files won't be sent for analysis)
 - Subscription level (Basic vs Advanced affects file type and size limits)
 
@@ -94,15 +99,15 @@ If a file type or size doesn't match the subscription level, Sandbox won't analy
 
 #### 3C: Check Behavioral Analysis and Hash Counts
 
-```
+```text
 zia_get_sandbox_behavioral_analysis()
-```
+```text
 
 Returns the list of MD5 hashes currently blocked by Sandbox. Check if the file's hash appears in this list.
 
-```
+```text
 zia_get_sandbox_file_hash_count()
-```
+```text
 
 Returns blocked-hash usage statistics to understand overall sandbox activity volume.
 
@@ -112,9 +117,9 @@ If the file was not analyzed by Sandbox, walk through these causes:
 
 1. **SSL Inspection not enabled** -- Sandbox requires SSL inspection as a prerequisite
 
-```
+```text
 zia_list_ssl_inspection_rules()
-```
+```text
 
 Check if the traffic for this URL/domain is being SSL-inspected. If a `DO_NOT_INSPECT` or `DO_NOT_DECRYPT` rule matches, Sandbox cannot see the file.
 
@@ -132,19 +137,20 @@ Check if the traffic for this URL/domain is being SSL-inspected. If a `DO_NOT_IN
 
 SSL Inspection is required for both Sandbox and Malware Protection to function:
 
-```
+```text
 zia_list_ssl_inspection_rules()
-```
+```text
 
 **Check for the URL/domain in question:**
+
 - Is there a rule with `DO_NOT_INSPECT` or `DO_NOT_DECRYPT` that matches the domain or URL category?
 - If traffic is not SSL-inspected, Sandbox, Malware Protection, and ATP cannot scan the file content
 
 Also check the URL category for the domain:
 
-```
+```text
 zia_url_lookup(urls=["<url_or_domain>"])
-```
+```text
 
 This helps correlate SSL inspection rules (which often use URL categories as conditions).
 
@@ -170,9 +176,9 @@ If the Blocked Policy Type is "Malware Protection" or "Advanced Threat Protectio
    - Look for "Do Not Scan Content from these URLs" entries
 5. **Verify the URL classification hasn't changed:**
 
-```
+```text
 zia_url_lookup(urls=["<url>"])
-```
+```text
 
 Compare the current category to what it was when access previously worked.
 
@@ -201,9 +207,9 @@ Possible causes:
 
 #### Verify with Sandbox Report
 
-```
+```text
 zia_get_sandbox_report(md5_hash="<md5_hash>", report_details="summary")
-```
+```text
 
 If the report shows "Benign" but the file is still quarantined, the PSE cache hasn't updated yet. The user should retry shortly.
 
@@ -211,9 +217,9 @@ If the report shows "Benign" but the file is still quarantined, the PSE cache ha
 
 ### Step 7: Present Diagnosis
 
-#### Report Format:
+#### Report Format
 
-```
+```text
 ZIA Security Policy Investigation Report
 ==========================================
 
@@ -278,25 +284,28 @@ If the issue involves Malware Protection or ATP policy:
 - [ ] Check Web > Advanced Threat Protection policy and exceptions
 - [ ] Check Web > Security Exceptions > "Do Not Scan Content from these URLs"
 - [ ] Review Web Insights logs with all fields selected
-```
+```text
 
 ---
 
 ## Quick Reference
 
 **Sandbox Tools:**
+
 - `zia_get_sandbox_report(md5_hash, report_details)` -- get sandbox analysis report (summary or full)
 - `zia_get_sandbox_quota()` -- check quota usage and subscription limits
 - `zia_get_sandbox_behavioral_analysis()` -- list of MD5 hashes blocked by sandbox
 - `zia_get_sandbox_file_hash_count()` -- blocked hash usage statistics
 
 **Supporting Tools:**
+
 - `zia_list_ssl_inspection_rules()` -- verify SSL inspection (prerequisite for sandbox)
 - `zia_url_lookup(urls)` -- classify the URL to correlate with policy rules
 - `zia_list_url_filtering_rules()` -- check URL filtering (may block before sandbox)
 - `zia_list_cloud_firewall_rules()` -- check firewall rules
 
 **External Resources (for administrator):**
+
 - Zulu (zulu.zscaler.com) -- URL analysis
 - VirusTotal (virustotal.com) -- file/URL multi-vendor analysis
 - Zscaler Threat Library -- threat name lookup

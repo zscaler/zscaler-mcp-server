@@ -52,6 +52,10 @@ sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/.cursor-plugin/plu
 echo "Updating gemini-extension.json"
 sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/gemini-extension.json" && rm "$ROOT/gemini-extension.json.bak"
 
+# Set version in server.json (MCP Registry manifest)
+echo "Updating server.json"
+sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/server.json" && rm "$ROOT/server.json.bak"
+
 # Generate requirements.txt from pyproject.toml
 echo "Updating requirements.txt"
 uv pip compile pyproject.toml --output-file requirements.txt
