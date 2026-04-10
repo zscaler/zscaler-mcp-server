@@ -6,6 +6,7 @@ description: "Create a ZPA server group with all required dependencies. Server g
 # ZPA: Create Server Group
 
 ## Keywords
+
 create server group, new server group, zpa server group, add server group, connector group dependency, server group setup, zpa infrastructure
 
 ## Overview
@@ -25,10 +26,12 @@ Follow this 5-step process to create a server group with its dependencies.
 Ask the administrator for the following information:
 
 **Required:**
+
 - Server group name
 - Whether to use an existing app connector group or create a new one
 
 **Optional:**
+
 - Server group description
 - Whether IP anchoring is needed (`ip_anchored`)
 - Whether dynamic discovery should be enabled (`dynamic_discovery`)
@@ -41,18 +44,19 @@ Ask the administrator for the following information:
 
 Before creating anything, list existing app connector groups to avoid duplicates.
 
-```
+```text
 zpa_list_app_connector_groups()
-```
+```text
 
 **Evaluate results:**
+
 - If a suitable connector group already exists, note its `id` for use in Step 4
 - If no connector groups exist or none are suitable, proceed to Step 3
 - Present the list to the administrator and ask which to use (or confirm creating a new one)
 
-#### Example Response:
+#### Example Response
 
-```
+```text
 I found the following existing app connector groups:
 
 1. **US-East Connectors** (ID: 72058304567890)
@@ -66,7 +70,7 @@ I found the following existing app connector groups:
    - Connectors: 2
 
 Would you like to use one of these, or should I create a new app connector group?
-```
+```text
 
 ---
 
@@ -74,7 +78,7 @@ Would you like to use one of these, or should I create a new app connector group
 
 If a new app connector group is required:
 
-```
+```text
 zpa_create_app_connector_group(
   name="<connector_group_name>",
   description="<description>",
@@ -85,18 +89,19 @@ zpa_create_app_connector_group(
   city_country="<city>, <country>",
   country_code="<ISO_country_code>"
 )
-```
+```text
 
 **Important notes:**
+
 - `country_code` accepts full names (e.g., "United States") or ISO codes ("US")
 - `latitude` and `longitude` help with geo-proximity routing
 - Save the returned `id` -- it is required in the next step
 
-#### Confirm creation:
+#### Confirm creation
 
-```
+```text
 zpa_get_app_connector_group(group_id="<returned_id>")
-```
+```text
 
 ---
 
@@ -104,7 +109,7 @@ zpa_get_app_connector_group(group_id="<returned_id>")
 
 With the app connector group ID(s) in hand, create the server group:
 
-```
+```text
 zpa_create_server_group(
   name="<server_group_name>",
   app_connector_group_ids=["<connector_group_id>"],
@@ -113,9 +118,10 @@ zpa_create_server_group(
   ip_anchored=False,
   dynamic_discovery=True
 )
-```
+```text
 
 **Parameter guidance:**
+
 - `app_connector_group_ids` (required): List of one or more app connector group IDs from Step 2 or Step 3
 - `dynamic_discovery`: Set to `True` when application servers are discovered automatically; `False` when specifying servers manually via `server_ids`
 - `ip_anchored`: Set to `True` only when source IP anchoring is required (advanced use case)
@@ -126,13 +132,13 @@ zpa_create_server_group(
 
 Confirm the server group was created successfully:
 
-```
+```text
 zpa_get_server_group(group_id="<returned_server_group_id>")
-```
+```text
 
-#### Present Summary:
+#### Present Summary
 
-```
+```text
 Server group created successfully.
 
 **Server Group:**
@@ -149,13 +155,13 @@ Server group created successfully.
 - You can now reference this server group (ID: <id>) when creating
   application segments using `zpa_create_application_segment`
 - To create a complete application, see the "onboard-application" skill
-```
+```text
 
 ---
 
 ## Dependency Chain Reference
 
-```
+```text
 App Connector Group (no dependencies)
         │
         ▼
@@ -166,7 +172,7 @@ Application Segment (requires segment_group_id, optionally server_group_ids)
         │
         ▼
  Access Policy Rule (references application segments, groups, users)
-```
+```text
 
 ---
 
@@ -176,19 +182,19 @@ Application Segment (requires segment_group_id, optionally server_group_ids)
 
 A server group can reference multiple app connector groups for redundancy:
 
-```
+```text
 zpa_create_server_group(
   name="Multi-Region Servers",
   app_connector_group_ids=["<us_east_id>", "<eu_west_id>"],
   dynamic_discovery=True
 )
-```
+```text
 
 ### Microtenant Scoping
 
 In multi-tenant environments, pass `microtenant_id` to both the connector group and server group:
 
-```
+```text
 zpa_create_app_connector_group(
   name="Tenant-A Connectors",
   microtenant_id="<tenant_id>",
@@ -200,13 +206,13 @@ zpa_create_server_group(
   app_connector_group_ids=["<id>"],
   microtenant_id="<tenant_id>"
 )
-```
+```text
 
 ### Static Server Assignment
 
 When dynamic discovery is disabled, associate specific application servers:
 
-```
+```text
 zpa_list_application_servers()
 
 zpa_create_server_group(
@@ -215,7 +221,7 @@ zpa_create_server_group(
   server_ids=["<server_id_1>", "<server_id_2>"],
   dynamic_discovery=False
 )
-```
+```text
 
 ---
 
@@ -224,6 +230,7 @@ zpa_create_server_group(
 **Dependency:** App Connector Group must exist before creating a Server Group.
 
 **Tools used:**
+
 - `zpa_list_app_connector_groups()` -- find existing connector groups
 - `zpa_create_app_connector_group(name, ...)` -- create if needed
 - `zpa_get_app_connector_group(group_id)` -- verify connector group
@@ -231,6 +238,7 @@ zpa_create_server_group(
 - `zpa_get_server_group(group_id)` -- verify server group
 
 **Remember:**
+
 - Always check for existing resources before creating new ones
 - The `app_connector_group_ids` parameter on server groups is required
 - Present the dependency chain to the administrator so they understand the relationship

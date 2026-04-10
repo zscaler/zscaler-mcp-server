@@ -11,14 +11,15 @@ Audit software: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **Software name** (optional -- list all if not provided)
 - **Filter**: location, department, or user (optional)
 
 ## Step 2: List Software Inventory
 
-```
+```text
 zdx_list_software()
-```
+```text
 
 If a specific software was requested, filter the results.
 
@@ -26,9 +27,9 @@ If a specific software was requested, filter the results.
 
 For targeted investigation:
 
-```
+```text
 zdx_get_software_details(software_key="<software_name_and_version>")
-```
+```text
 
 Check version distribution across devices.
 
@@ -36,16 +37,17 @@ Check version distribution across devices.
 
 For devices with outdated or concerning software:
 
-```
+```text
 zdx_list_devices(search="<filter>")
 zdx_get_device(device_id="<id>")
-```
+```text
 
 ## Step 5: Present Report
 
 **ALWAYS present data in HTML tables** in the chat response using `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling. Use color-coded rows: green (current), yellow (one version behind), red (EOL/vulnerable).
 
 Include:
+
 1. **Software inventory table** (software name, version(s), device count, status, risk level)
 2. **Compliance summary table** (up to date count/%, one version behind count/%, EOL count/%)
 3. **Detailed analysis** explaining the compliance posture, version distribution patterns, and geographic concentration of outdated software

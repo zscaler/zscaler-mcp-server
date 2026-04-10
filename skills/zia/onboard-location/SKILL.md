@@ -6,6 +6,7 @@ description: "End-to-end onboarding of a new ZIA location with its traffic forwa
 # ZIA: Onboard Location
 
 ## Keywords
+
 onboard location, new location, add location, branch office, zia location, traffic forwarding, vpn credentials, static ip, ipsec tunnel, site onboarding, sub-location, office setup
 
 ## Overview
@@ -18,7 +19,7 @@ Onboard a new location in Zscaler Internet Access by walking through the full tr
 
 ## Dependency Chain
 
-```
+```text
 Static IP (optional, required for IP-based VPN)
      │
      ▼
@@ -29,9 +30,10 @@ Location (references VPN credentials and/or static IPs)
      │
      ▼
 Sub-Location (optional, references parent location)
-```
+```text
 
 **Two flows:**
+
 - **UFQDN flow** (simpler): Create VPN credential (UFQDN) -> Create location with VPN credential
 - **IP flow** (full chain): Create static IP -> Create VPN credential (IP) referencing static IP -> Create location with both static IP and VPN credential
 
@@ -44,20 +46,24 @@ Sub-Location (optional, references parent location)
 Ask the administrator:
 
 **Required:**
+
 - Location name (e.g., "USA_SJC_37", "London_Office_01")
 - Country (e.g., "UNITED_STATES", "CANADA", "UNITED_KINGDOM")
 - Timezone (e.g., "UNITED_STATES_AMERICA_LOS_ANGELES", "CANADA_AMERICA_VANCOUVER")
 - Traffic forwarding method: UFQDN-based VPN or IP-based VPN
 
 **For UFQDN-based VPN:**
-- FQDN identifier (e.g., "sjc-37@acme.com")
+
+- FQDN identifier (e.g., "<sjc-37@acme.com>")
 - Pre-shared key for the IPSec tunnel
 
 **For IP-based VPN:**
+
 - Public IP address of the site's egress point
 - Pre-shared key for the IPSec tunnel
 
 **Optional:**
+
 - Description
 - State (e.g., "California")
 - Profile: `CORPORATE`, `SERVER`, `GUESTWIFI`, `IOT`, `WORKLOAD`, or `NONE`
@@ -74,19 +80,22 @@ Ask the administrator:
 Before creating anything, list existing resources to avoid duplicates.
 
 **Check existing locations:**
-```
+
+```text
 zia_list_locations()
-```
+```text
 
 **Check existing static IPs:**
-```
+
+```text
 zia_list_static_ips()
-```
+```text
 
 **Check existing VPN credentials:**
-```
+
+```text
 zia_list_vpn_credentials()
-```
+```text
 
 ---
 
@@ -94,21 +103,22 @@ zia_list_vpn_credentials()
 
 If using IP-based VPN credentials, the static IP must be created first.
 
-```
+```text
 zia_create_static_ip(
   ip_address="203.0.113.10",
   routable_ip=True,
   comment="SJC-37 Office Egress IP",
   geo_override=False
 )
-```
+```text
 
 Save the returned `ip_address` and `id` for the next steps.
 
 **Verify:**
-```
+
+```text
 zia_get_static_ip(static_ip_id="<returned_id>")
-```
+```text
 
 **Note:** Geolocation is automatically determined from the IP address. Set `geo_override=True` with explicit `latitude`/`longitude` only if you need custom coordinates.
 
@@ -118,34 +128,35 @@ zia_get_static_ip(static_ip_id="<returned_id>")
 
 #### Option A: UFQDN-Based VPN (simpler, no static IP needed)
 
-```
+```text
 zia_create_vpn_credential(
   credential_type="UFQDN",
   fqdn="sjc-37@acme.com",
   pre_shared_key="<pre_shared_key>",
   comments="USA - San Jose IPSec Tunnel"
 )
-```
+```text
 
 Save the returned `id` and `type` for the location creation.
 
 #### Option B: IP-Based VPN (requires static IP from Step 3)
 
-```
+```text
 zia_create_vpn_credential(
   credential_type="IP",
   ip_address="203.0.113.10",
   pre_shared_key="<pre_shared_key>",
   comments="USA - San Jose IPSec Tunnel"
 )
-```
+```text
 
 Save the returned `id` and `type`.
 
 **Verify:**
-```
+
+```text
 zia_get_vpn_credential(credential_id="<returned_id>")
-```
+```text
 
 ---
 
@@ -153,7 +164,7 @@ zia_get_vpn_credential(credential_id="<returned_id>")
 
 #### With UFQDN VPN Credentials
 
-```
+```text
 zia_create_location(
   location={
     "name": "USA_SJC_37",
@@ -177,11 +188,11 @@ zia_create_location(
     ]
   }
 )
-```
+```text
 
 #### With IP VPN Credentials and Static IP
 
-```
+```text
 zia_create_location(
   location={
     "name": "USA_SJC_37",
@@ -207,14 +218,15 @@ zia_create_location(
     ]
   }
 )
-```
+```text
 
 Save the returned location `id` for sub-location creation if needed.
 
 **Verify:**
-```
+
+```text
 zia_get_location(location_id="<returned_id>")
-```
+```text
 
 ---
 
@@ -222,7 +234,7 @@ zia_get_location(location_id="<returned_id>")
 
 Sub-locations segment traffic within a parent location (e.g., by subnet or VLAN).
 
-```
+```text
 zia_create_location(
   location={
     "name": "USA_SJC37_Office-Branch01",
@@ -241,9 +253,10 @@ zia_create_location(
     "dnBandwidth": 10000
   }
 )
-```
+```text
 
 **Sub-location notes:**
+
 - Must reference `parentId` of an existing location
 - Uses internal IP ranges (e.g., `10.5.0.0-10.5.255.255`) not public IPs
 - Can have different bandwidth limits and policy settings than the parent
@@ -255,15 +268,15 @@ zia_create_location(
 
 After creating locations, activate the configuration to push changes to the Zscaler cloud:
 
-```
+```text
 zia_activate_configuration()
-```
+```text
 
 ---
 
 ### Step 8: Verify and Summarize
 
-```
+```text
 Location onboarding complete.
 
 **Location:** USA_SJC_37
@@ -290,7 +303,7 @@ Location onboarding complete.
 1. Configure IPSec tunnel on the branch router pointing to Zscaler
 2. Verify traffic is flowing through the ZIA service
 3. Assign the location to URL filtering, firewall, or DLP rules if needed
-```
+```text
 
 ---
 
@@ -359,7 +372,7 @@ zia_create_location(location={
   "ipsControl": True,
   "vpnCredentials": [{"id": <vpn_id>, "type": "UFQDN"}]
 })
-```
+```text
 
 ### Data Center (IP VPN with Static IP)
 
@@ -391,7 +404,7 @@ zia_create_location(location={
   "ipAddresses": ["198.51.100.1"],
   "vpnCredentials": [{"id": <vpn_id>, "type": "IP", "ipAddress": "198.51.100.1"}]
 })
-```
+```text
 
 ### Guest WiFi (minimal security)
 
@@ -408,7 +421,7 @@ zia_create_location(location={
   "ipsControl": False,
   "ipAddresses": ["10.100.0.0-10.100.255.255"]
 })
-```
+```text
 
 ---
 
@@ -418,14 +431,14 @@ zia_create_location(location={
 
 A location can be created with only `ipAddresses` (no VPN credentials). This is for sites forwarding traffic via GRE tunnels or proxy chaining rather than IPSec VPN:
 
-```
+```text
 zia_create_location(location={
   "name": "US_SJC_GRE",
   "country": "UNITED_STATES",
   "tz": "UNITED_STATES_AMERICA_LOS_ANGELES",
   "ipAddresses": ["203.0.113.10"]
 })
-```
+```text
 
 ### Multiple VPN Credentials per Location
 
@@ -436,7 +449,7 @@ A location can have multiple VPN credentials for redundancy:
   {"id": <primary_vpn_id>, "type": "UFQDN"},
   {"id": <secondary_vpn_id>, "type": "UFQDN"}
 ]
-```
+```text
 
 ### Sub-Location with Bandwidth Control
 
@@ -445,7 +458,7 @@ Sub-locations can enforce bandwidth limits in bytes:
 ```json
 "upBandwidth": 10000,
 "dnBandwidth": 10000
-```
+```text
 
 A value of `0` means no bandwidth enforcement.
 
@@ -464,6 +477,7 @@ A value of `0` means no bandwidth enforcement.
 ## Quick Reference
 
 **Dependency chain:**
+
 1. `zia_create_static_ip(ip_address, ...)` -- only for IP-based VPN
 2. `zia_create_vpn_credential(credential_type, ...)` -- UFQDN or IP
 3. `zia_create_location(location={...})` -- the location itself
@@ -471,6 +485,7 @@ A value of `0` means no bandwidth enforcement.
 5. `zia_activate_configuration()` -- push changes live
 
 **Verification tools:**
+
 - `zia_list_locations()` -- list all locations
 - `zia_get_location(location_id)` -- get location details
 - `zia_list_static_ips()` -- list all static IPs
@@ -480,5 +495,6 @@ A value of `0` means no bandwidth enforcement.
 - `zia_get_activation_status()` -- check activation status
 
 **VPN types:**
+
 - `UFQDN`: Simpler, no static IP needed, identified by FQDN
 - `IP`: Requires static IP first, identified by IP address

@@ -12,9 +12,9 @@ Investigate: **$ARGUMENTS**
 
 If a URL was provided (not a category name):
 
-```
+```text
 zia_url_lookup(urls=["<url>"])
-```
+```text
 
 Note the category name and ID.
 
@@ -23,28 +23,33 @@ Note the category name and ID.
 Check every policy type for references to this category:
 
 **URL Filtering:**
-```
+
+```text
 zia_list_url_filtering_rules()
-```
+```text
 
 **SSL Inspection:**
-```
+
+```text
 zia_list_ssl_inspection_rules()
-```
+```text
 
 **DLP Web Rules:**
-```
+
+```text
 zia_list_dlp_web_rules()
-```
+```text
 
 **Cloud Firewall:**
-```
+
+```text
 zia_list_cloud_firewall_rules()
-```
+```text
 
 ## Step 3: Map Policy Impact
 
 For each rule that references the category, document:
+
 - Rule name and order
 - Action (ALLOW, BLOCK, CAUTION, INSPECT, DO_NOT_INSPECT, etc.)
 - Scope (which users/groups/departments)
@@ -52,7 +57,7 @@ For each rule that references the category, document:
 
 ## Step 4: Present Report
 
-```
+```text
 URL Category Policy Impact Report
 ===================================
 
@@ -78,4 +83,4 @@ Net effect for a typical user:
   URL Filtering: BLOCKED
   SSL Inspection: NOT INSPECTED
   DLP: Not applicable (bypassed by SSL)
-```
+```text

@@ -11,30 +11,31 @@ Investigate alerts: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **Time window** in hours (default: 24)
 - **Severity filter** (default: all)
 
 ## Step 2: List Active Alerts
 
-```
+```text
 zdx_list_alerts(since=<hours>)
-```
+```text
 
 ## Step 3: For Each Alert, Investigate
 
 For each active or recent alert:
 
-```
+```text
 zdx_get_alert(alert_id="<id>")
-```
+```text
 
 Note: alert type, severity, affected application, start time, end time (if resolved).
 
 ## Step 4: Check Affected Devices
 
-```
+```text
 zdx_list_alert_affected_devices(alert_id="<id>")
-```
+```text
 
 Determine scope: one user, one office, one ISP, or organization-wide.
 
@@ -42,10 +43,10 @@ Determine scope: one user, one office, one ISP, or organization-wide.
 
 For the affected application:
 
-```
+```text
 zdx_get_application_score_trend(app_id="<app_id>", since=<hours>)
 zdx_get_application_metric(app_id="<app_id>", metric_name="dns_time", since=<hours>)
-```
+```text
 
 Check if metrics degraded around the alert start time.
 
@@ -54,6 +55,7 @@ Check if metrics degraded around the alert start time.
 **ALWAYS present data in HTML tables** using `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling. Use color-coded rows: red (high priority), yellow (medium), green (low/resolved).
 
 Include:
+
 1. **Active alerts summary table** (priority, alert name, application, duration, affected devices, locations, bottleneck metric)
 2. **Metric correlation table** per alert (PFT, DNS, availability, root cause indicator)
 3. **Detailed analysis** explaining alert severity, scope (isolated vs widespread), and correlation between alerts

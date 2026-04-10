@@ -6,6 +6,7 @@ description: "Assess network security posture using Zscaler Analytics (Z-Insight
 # Z-Insights: Assess Network Security Posture
 
 ## Keywords
+
 firewall analytics, zero trust firewall, firewall effectiveness, allow block ratio, firewall by location, network services, firewall rules, policy hits, firewall report, security posture, network security, blocked traffic, firewall monitoring
 
 ## Overview
@@ -17,6 +18,7 @@ Zscaler's Zero Trust Firewall protects web and non-web traffic for all users, ap
 **Use this skill when:** A security or network team needs to evaluate firewall policy effectiveness, investigate blocked traffic patterns, review network service usage, or generate firewall compliance reports.
 
 **Important constraints:**
+
 - Z-Insights only supports **historical data** with a 24-48 hour processing delay
 - Time ranges must be exactly **7 or 14 days**
 - All firewall queries support time ranges up to **90 days**
@@ -30,6 +32,7 @@ Follow this 5-step process to assess network security posture.
 ### Step 1: Understand the Assessment Goal
 
 Gather from the requester:
+
 - What is the goal? (policy effectiveness, compliance audit, incident investigation, baseline review)
 - Time period? (7 days for recent, 14 days for trends)
 - Specific locations of interest?
@@ -41,15 +44,17 @@ Gather from the requester:
 ### Step 2: Analyze Firewall Action Distribution
 
 **Get firewall traffic by action (allow/block):**
-```
+
+```text
 zins_get_firewall_by_action(
     start_days_ago=9,
     end_days_ago=2,
     limit=10
 )
-```
+```text
 
 This shows how much traffic is being allowed versus blocked. Key metrics:
+
 - **Block ratio**: What percentage of traffic is being blocked?
   - < 1%: Very permissive -- review if policies are too loose
   - 1-5%: Typical for well-tuned policies
@@ -63,15 +68,17 @@ This shows how much traffic is being allowed versus blocked. Key metrics:
 ### Step 3: Analyze Firewall Activity by Location
 
 **Get firewall traffic by location:**
-```
+
+```text
 zins_get_firewall_by_location(
     start_days_ago=9,
     end_days_ago=2,
     limit=20
 )
-```
+```text
 
 This identifies which locations generate the most firewall traffic. Look for:
+
 - **Disproportionate traffic**: A small office generating more firewall hits than headquarters
 - **Location anomalies**: Sudden spikes at specific locations
 - **Geographic patterns**: High firewall activity in regions with known threat activity
@@ -84,15 +91,17 @@ Cross-reference with web traffic by location to calculate per-location block rat
 ### Step 4: Analyze Network Service Usage
 
 **Get firewall traffic by network service:**
-```
+
+```text
 zins_get_firewall_network_services(
     start_days_ago=9,
     end_days_ago=2,
     limit=30
 )
-```
+```text
 
 Network services represent protocol/port combinations in your traffic. Look for:
+
 - **Expected services**: HTTP (80), HTTPS (443), DNS (53) should dominate
 - **Unusual services**: Unexpected ports or protocols may indicate:
   - Malware communication (non-standard ports)
@@ -107,26 +116,29 @@ Network services represent protocol/port combinations in your traffic. Look for:
 ### Step 5: Correlate with Cyber Incident Data
 
 **Get cybersecurity incident overview:**
-```
+
+```text
 zins_get_cyber_incidents(
     start_days_ago=16,
     end_days_ago=2,
     categorize_by=["THREAT_CATEGORY_ID"],
     limit=20
 )
-```
+```text
 
 **Get incidents by location to identify hotspots:**
-```
+
+```text
 zins_get_cyber_incidents_by_location(
     start_days_ago=16,
     end_days_ago=2,
     categorize_by="LOCATION_ID",
     limit=20
 )
-```
+```text
 
 Correlate firewall blocks with actual security incidents:
+
 - High blocks + high incidents = Active threat targeting
 - High blocks + low incidents = Firewall preventing threats effectively
 - Low blocks + high incidents = Possible policy gaps
@@ -136,7 +148,7 @@ Correlate firewall blocks with actual security incidents:
 
 ### Present Assessment
 
-```
+```text
 Network Security Posture Assessment
 =======================================
 Date: <current_date>
@@ -237,7 +249,7 @@ Firewall effectiveness is strong across all threat categories.
 7. Schedule monthly firewall effectiveness reviews
 8. Track block ratio trends for anomaly detection
 9. Review network service inventory quarterly
-```
+```text
 
 ---
 
@@ -245,7 +257,7 @@ Firewall effectiveness is strong across all threat categories.
 
 ### Very Low Block Ratio (< 0.5%)
 
-```
+```text
 Firewall block ratio is unusually low at X.X%.
 
 This could indicate:
@@ -256,11 +268,11 @@ This could indicate:
 
 Recommendation: Review firewall rule coverage and ensure all
 traffic types are being inspected.
-```
+```text
 
 ### Very High Block Ratio (> 15%)
 
-```
+```text
 Firewall block ratio is elevated at XX.X%.
 
 This could indicate:
@@ -271,7 +283,7 @@ This could indicate:
 
 Recommendation: Review recently changed firewall rules and
 check if users are reporting access issues.
-```
+```text
 
 ---
 
@@ -280,17 +292,20 @@ check if users are reporting access issues.
 **Primary workflow:** Scope → Action Distribution → Locations → Network Services → Incidents → Report
 
 **Firewall tools:**
+
 - `zins_get_firewall_by_action()` -- allow/block traffic distribution
 - `zins_get_firewall_by_location()` -- firewall activity by location
 - `zins_get_firewall_network_services()` -- network service/port usage
 
 **Incident tools (for correlation):**
+
 - `zins_get_cyber_incidents()` -- incident overview by category
 - `zins_get_cyber_incidents_by_location()` -- incidents by location
 - `zins_get_cyber_incidents_daily()` -- daily incident trends
 - `zins_get_cyber_incidents_by_threat_and_app()` -- threat-app correlation
 
 **Key metrics to track:**
+
 - Block ratio: Target 1-5% for well-tuned policies
 - Location anomalies: Per-location block ratios that deviate from average
 - Network services: Unexpected ports or deprecated protocols

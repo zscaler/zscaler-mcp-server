@@ -11,35 +11,37 @@ Investigate experience for: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **Username or email**
 - **Application name** (optional -- investigate all if not provided)
 - **Time window** in hours (default: 2, max: 168)
 
 ## Step 2: Find the User's Device
 
-```
+```text
 zdx_list_devices(search="<username>")
-```
+```text
 
 Note the `device_id`. If multiple devices, ask which one.
 
 ## Step 3: Get Device Details
 
-```
+```text
 zdx_get_device(device_id="<device_id>")
-```
+```text
 
 Check OS, ZCC version, location, department.
 
 ## Step 4: Check Application Scores
 
-```
+```text
 zdx_list_applications()
 zdx_get_application(app_id="<app_id>", since=<hours>)
 zdx_get_application_score_trend(app_id="<app_id>", since=<hours>)
-```
+```text
 
 Score interpretation:
+
 - **66-100**: Good experience
 - **34-65**: Degraded -- investigate further
 - **0-33**: Poor -- significant issue
@@ -48,36 +50,36 @@ Score interpretation:
 
 For degraded/poor scores:
 
-```
+```text
 zdx_get_application_metric(app_id="<app_id>", metric_name="dns_time", since=<hours>)
 zdx_get_application_metric(app_id="<app_id>", metric_name="availability", since=<hours>)
-```
+```text
 
 Check: DNS time, TCP connect, SSL handshake, server response, page fetch time.
 
 ## Step 6: Check Alerts
 
-```
+```text
 zdx_list_alerts(since=<hours>)
-```
+```text
 
 If alerts exist for this user or application, investigate affected devices:
 
-```
+```text
 zdx_list_alert_affected_devices(alert_id="<id>")
-```
+```text
 
 ## Step 7: Deep Trace Analysis
 
 Check for existing deep trace sessions:
 
-```
+```text
 zdx_list_device_deep_traces(device_id="<device_id>")
-```
+```text
 
 If a deep trace exists, analyze its diagnostics data:
 
-```
+```text
 zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
 zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
@@ -85,15 +87,15 @@ zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
 zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 If NO deep trace exists and metrics indicate network or connectivity issues, discover probe IDs and start a new diagnostics session (requires write tools enabled):
 
-```
+```text
 zdx_get_web_probes(device_id="<device_id>", app_id="<app_id>")
 zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<app_id>")
 zdx_start_deeptrace(device_id="<device_id>", session_name="Troubleshoot-<user>-<date>", app_id=<app_id>, web_probe_id=<id>, cloudpath_probe_id=<id>, session_length_minutes=15, probe_device=True)
-```
+```text
 
 ### Deep Trace Analysis Checklist
 
@@ -109,6 +111,7 @@ zdx_start_deeptrace(device_id="<device_id>", session_name="Troubleshoot-<user>-<
 **ALWAYS present data in HTML tables** using `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling. Use color-coded rows: green for healthy metrics, yellow for degraded, red for critical.
 
 Include:
+
 1. **Device summary table** (user, device, OS, location, department, ZCC version)
 2. **Metric breakdown table** (DNS, TCP connect, SSL, server response, page load -- each with current value, normal range, and status)
 3. **Deep trace findings** (if available): web probe metrics, cloud path hops with latency/loss, health metrics, top processes, and correlated events

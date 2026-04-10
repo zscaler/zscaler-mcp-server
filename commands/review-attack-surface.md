@@ -10,21 +10,22 @@ Review attack surface: **$ARGUMENTS**
 
 ## Step 1: List Organizations
 
-```
+```text
 easm_list_organizations()
-```
+```text
 
 If an organization was specified, find its ID. Otherwise, use the primary organization.
 
 ## Step 2: Retrieve Findings
 
-```
+```text
 easm_list_findings(organization_id="<id>")
-```
+```text
 
 ## Step 3: Analyze Findings by Severity
 
 Categorize findings:
+
 - **Critical**: Exploitable vulnerabilities, exposed admin panels, default credentials
 - **High**: Exposed services (RDP, SSH, databases), expired certificates
 - **Medium**: Misconfigurations, information disclosure
@@ -32,9 +33,9 @@ Categorize findings:
 
 ## Step 4: Check Lookalike Domains
 
-```
+```text
 easm_list_lookalike_domains(organization_id="<id>")
-```
+```text
 
 Flag domains that could be used for phishing or brand impersonation.
 
@@ -42,13 +43,13 @@ Flag domains that could be used for phishing or brand impersonation.
 
 For critical/high findings:
 
-```
+```text
 easm_get_finding(finding_id="<id>")
-```
+```text
 
 ## Step 6: Present Report
 
-```
+```text
 External Attack Surface Report
 ================================
 
@@ -76,4 +77,4 @@ LOOKALIKE DOMAINS:
 PRIORITY REMEDIATION:
   1. <most urgent action>
   2. <next action>
-```
+```text

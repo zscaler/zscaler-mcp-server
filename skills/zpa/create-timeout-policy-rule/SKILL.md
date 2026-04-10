@@ -6,6 +6,7 @@ description: "Create ZPA timeout policy rules that control session re-authentica
 # ZPA: Create Timeout Policy Rule
 
 ## Keywords
+
 timeout policy, session timeout, idle timeout, reauth timeout, re-authentication, session expiry, idle disconnect, timeout rule, session duration, zpa timeout, reauth policy
 
 ## Overview
@@ -81,11 +82,13 @@ Timeout policies support a subset of condition types.
 Ask the administrator:
 
 **Required:**
+
 - Rule name
 - Session timeout value (e.g., "8 Hours", "30 Days", "Never")
 - Idle timeout value (e.g., "30 Minutes", "1 Hours", "Never")
 
 **Optional:**
+
 - Description
 - Which applications or segment groups to scope to
 - Which users/groups this applies to
@@ -93,6 +96,7 @@ Ask the administrator:
 - Posture requirements
 
 **Common scenarios:**
+
 - "Sessions should expire after 8 hours for all apps" -> global timeout rule
 - "Sensitive apps should have a 30-minute idle timeout" -> scoped to APP_GROUP
 - "Contractors should re-authenticate every 4 hours" -> scoped to SCIM_GROUP
@@ -103,27 +107,30 @@ Ask the administrator:
 ### Step 2: Look Up Required IDs
 
 **For application scoping:**
-```
+
+```text
 zpa_list_segment_groups()
 zpa_list_application_segments()
-```
+```text
 
 **For identity conditions:**
-```
+
+```text
 get_zpa_scim_group(search="<group_name>")
 get_zpa_saml_attribute(search="<attribute_name>")
-```
+```text
 
 **For posture profiles:**
-```
+
+```text
 get_zpa_posture_profile(search="<profile_name>")
-```
+```text
 
 ---
 
 ### Step 3: Create the Rule
 
-```
+```text
 zpa_create_timeout_policy_rule(
   name="<rule_name>",
   action_type="RE_AUTH",
@@ -132,15 +139,15 @@ zpa_create_timeout_policy_rule(
   description="<description>",
   conditions=<conditions_payload>
 )
-```
+```text
 
 ---
 
 ### Step 4: Verify
 
-```
+```text
 zpa_get_timeout_policy_rule(rule_id="<returned_rule_id>")
-```
+```text
 
 ---
 
@@ -151,12 +158,14 @@ zpa_get_timeout_policy_rule(rule_id="<returned_rule_id>")
 Set 8-hour session timeout and 30-minute idle timeout for internal applications.
 
 **Step 1: Find the segment group**
-```
+
+```text
 zpa_list_segment_groups()
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Standard Timeout - Internal Apps",
   action_type="RE_AUTH",
@@ -175,7 +184,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -183,7 +192,7 @@ zpa_create_timeout_policy_rule(
 
 Short session timeout (4 hours) and aggressive idle timeout (10 minutes) for sensitive apps.
 
-```
+```text
 zpa_create_timeout_policy_rule(
   name="Strict Timeout - Sensitive Apps",
   action_type="RE_AUTH",
@@ -202,7 +211,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -211,12 +220,14 @@ zpa_create_timeout_policy_rule(
 Contractors must re-authenticate every 4 hours with a 15-minute idle timeout.
 
 **Step 1: Look up contractor group**
-```
+
+```text
 get_zpa_scim_group(search="Contractors")
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Contractor Timeout",
   action_type="RE_AUTH",
@@ -237,7 +248,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -246,13 +257,15 @@ zpa_create_timeout_policy_rule(
 Allow a 10-day session for specific SAML-identified users on a specific segment group.
 
 **Step 1: Look up IDs**
-```
+
+```text
 get_zpa_saml_attribute(search="Email_Users")
 zpa_list_segment_groups()
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Extended Timeout - VIP Users",
   action_type="RE_AUTH",
@@ -283,7 +296,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Logic:** User must be accessing apps in the segment group AND have a matching SAML email.
 
@@ -294,7 +307,8 @@ zpa_create_timeout_policy_rule(
 Mobile devices (Android/iOS) get shorter timeouts than desktops.
 
 **Mobile rule (stricter):**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Mobile Timeout - Short",
   action_type="RE_AUTH",
@@ -316,10 +330,11 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Desktop rule (more relaxed):**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Desktop Timeout - Standard",
   action_type="RE_AUTH",
@@ -342,7 +357,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -351,12 +366,14 @@ zpa_create_timeout_policy_rule(
 Devices that pass a posture check get a longer timeout; non-compliant devices get a shorter one.
 
 **Step 1: Look up posture profile**
-```
+
+```text
 get_zpa_posture_profile(search="CrowdStrike_ZTA")
-```
+```text
 
 **Compliant devices (longer timeout):**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Compliant Device Timeout",
   action_type="RE_AUTH",
@@ -377,10 +394,11 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Non-compliant devices (shorter timeout):**
-```
+
+```text
 zpa_create_timeout_policy_rule(
   name="Non-Compliant Device Timeout",
   action_type="RE_AUTH",
@@ -401,7 +419,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -409,7 +427,7 @@ zpa_create_timeout_policy_rule(
 
 Engineering team accessing sensitive apps from Linux gets a specific timeout.
 
-```
+```text
 zpa_create_timeout_policy_rule(
   name="Engineering Linux Timeout",
   action_type="RE_AUTH",
@@ -450,7 +468,7 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -474,7 +492,7 @@ zpa_create_timeout_policy_rule(
 
 A rule with no conditions applies as the default timeout for all users and applications:
 
-```
+```text
 zpa_create_timeout_policy_rule(
   name="Global Default Timeout",
   action_type="RE_AUTH",
@@ -482,13 +500,13 @@ zpa_create_timeout_policy_rule(
   reauth_idle_timeout="30 Minutes",
   conditions=[]
 )
-```
+```text
 
 ### Never Expire
 
 For development or test environments where re-authentication is disruptive:
 
-```
+```text
 zpa_create_timeout_policy_rule(
   name="Dev Environment - No Timeout",
   action_type="RE_AUTH",
@@ -506,22 +524,24 @@ zpa_create_timeout_policy_rule(
     }
   ]
 )
-```
+```text
 
 Not recommended for production applications.
 
 ### Listing Existing Timeout Rules
 
 Before creating, check existing rules to avoid conflicts:
-```
+
+```text
 zpa_list_timeout_policy_rules()
-```
+```text
 
 ---
 
 ## Quick Reference
 
 **Tools used:**
+
 - `zpa_list_segment_groups()` -- find segment group IDs
 - `zpa_list_application_segments()` -- find application segment IDs
 - `get_zpa_scim_group(search)` -- look up SCIM group IDs
@@ -536,6 +556,7 @@ zpa_list_timeout_policy_rules()
 **Action:** `RE_AUTH` (only supported action)
 
 **Condition logic:**
+
 - Multiple condition blocks = AND (all must match)
 - Multiple entry_values within a block = OR (any can match)
 - Separate condition blocks per object type

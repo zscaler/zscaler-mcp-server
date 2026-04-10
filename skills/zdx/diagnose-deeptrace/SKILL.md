@@ -6,6 +6,7 @@ description: "Run a ZDX deep trace diagnostics session to investigate network an
 # ZDX: Deep Trace Diagnostics
 
 ## Keywords
+
 deep trace, diagnostics session, cloud path, web probe, network path, packet loss, latency, jitter, health metrics, top processes, events, troubleshoot network, hop analysis, DNS time, TCP connect, SSL handshake, device health, CPU, memory, diagnostics, deeptrace
 
 ## Overview
@@ -23,11 +24,13 @@ Perform deep trace diagnostics on a user's device to capture detailed network pa
 **ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
 
 After each table, provide:
+
 1. **Detailed analysis** explaining what the metrics reveal about the user's connectivity
 2. **Root cause identification** mapped to the specific layer (device, network, DNS, application, configuration)
 3. **Next steps / resolution** with specific, actionable recommendations
 
 Use color-coded status indicators:
+
 - Green/Good: Metrics within normal range (latency < 50ms, packet loss 0%, healthy CPU/memory)
 - Yellow/Degraded: Metrics approaching thresholds (latency 50-150ms, packet loss 1-5%, moderate resource usage)
 - Red/Critical: Metrics exceeding thresholds (latency > 150ms, packet loss > 5%, resource exhaustion)
@@ -39,6 +42,7 @@ Use color-coded status indicators:
 ### 1. Word Document (.docx) — REQUIRED
 
 Write a Word document to disk named `deep_trace_diagnosis_<date>.docx` containing:
+
 - Session summary (name, type, user, device, status, start/end time, duration)
 - Web probe metrics breakdown (DNS, TCP, SSL, HTTP response times)
 - Cloud path topology with per-hop latency, packet loss, and jitter analysis
@@ -174,9 +178,10 @@ function exportCSV(){const tables=['probeTable','pathTable','healthTable','proce
 </script>
 </body>
 </html>
-```
+```text
 
 **MANDATORY STEPS:**
+
 1. Copy this template exactly
 2. Replace the `{{...}}` placeholders in the summary cards with real values
 3. Add `<tr>` rows inside each `<tbody>` with data from the deep trace tools
@@ -191,9 +196,9 @@ function exportCSV(){const tables=['probeTable','pathTable','healthTable','proce
 
 ### Step 1: Find the User's Device
 
-```
+```text
 zdx_list_devices(search="<username_or_email>")
-```
+```text
 
 Note the `device_id`. If multiple devices, ask the user which one.
 
@@ -201,11 +206,12 @@ Note the `device_id`. If multiple devices, ask the user which one.
 
 ### Step 2: Check Existing Deep Trace Sessions
 
-```
+```text
 zdx_list_device_deep_traces(device_id="<device_id>")
-```
+```text
 
 Review the sessions:
+
 - **In Progress**: The session is still collecting data. Note the expected end time.
 - **Completed**: Proceed to analysis (Step 4).
 - **No sessions found**: Offer to start a new one (Step 3).
@@ -220,14 +226,14 @@ Requires `--enable-write-tools`. Only if no suitable trace exists.
 
 First, discover the probe IDs for the target application:
 
-```
+```text
 zdx_get_web_probes(device_id="<device_id>", app_id="<app_id>")
 zdx_list_cloudpath_probes(device_id="<device_id>", app_id="<app_id>")
-```
+```text
 
 Then start the deep trace with all required IDs (all IDs must be integers):
 
-```
+```text
 zdx_start_deeptrace(
   device_id="<device_id>",
   session_name="Diag-<user>-<date>",
@@ -237,15 +243,17 @@ zdx_start_deeptrace(
   session_length_minutes=15,
   probe_device=True
 )
-```
+```text
 
 **Session duration guidance:**
+
 - **5 minutes**: Quick verification of an intermittent issue
 - **15 minutes**: Standard diagnostics session (recommended)
 - **30 minutes**: Extended capture for hard-to-reproduce problems
 - **60 minutes**: Long-running capture for periodic issues
 
 **Configuration options (from ZDX Admin Portal):**
+
 - **Device Probing**: When enabled, collects device-level CPU, memory, disk, network stats
 - **Application**: Target a specific monitored application or add a special URL
 - **Web Probe**: DNS, TCP, SSL, HTTP response times
@@ -257,9 +265,9 @@ After starting, inform the user of the expected completion time and wait.
 
 ### Step 4: Get Trace Summary
 
-```
+```text
 zdx_get_device_deep_trace(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 Review the trace status, start/end times, and high-level findings.
 
@@ -267,9 +275,9 @@ Review the trace status, start/end times, and high-level findings.
 
 ### Step 5: Analyze Web Probe Metrics
 
-```
+```text
 zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 **Key metrics and thresholds:**
 
@@ -281,6 +289,7 @@ zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>
 | HTTP response | < 500ms | 500-2000ms | > 2000ms | Application server health |
 
 **Diagnosis patterns:**
+
 - High DNS only → DNS server or resolution issue
 - High TCP + SSL → Network path congestion
 - High HTTP only → Application server overload
@@ -290,22 +299,24 @@ zdx_get_deeptrace_webprobe_metrics(device_id="<device_id>", trace_id="<trace_id>
 
 ### Step 6: Analyze Cloud Path
 
-```
+```text
 zdx_get_deeptrace_cloudpath(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 View the full hop-by-hop network path. Identify:
+
 - Hops with abnormally high latency (compared to previous hop)
 - Hops where packet loss begins
 - Whether the issue is in the local network, ISP, or cloud segment
 
-```
+```text
 zdx_get_deeptrace_cloudpath_metrics(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 Check per-hop latency trends, packet loss percentage, and jitter over the trace duration.
 
 **Cloud path interpretation:**
+
 - Latency spike at hop 1-3 → Local network / WiFi issue
 - Latency spike at mid-path → ISP backbone issue
 - Latency spike at final hops → Cloud provider or application datacenter issue
@@ -315,21 +326,23 @@ Check per-hop latency trends, packet loss percentage, and jitter over the trace 
 
 ### Step 7: Analyze Device Health
 
-```
+```text
 zdx_get_deeptrace_health_metrics(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 Check device resource utilization during the trace:
+
 - **CPU > 80%**: Device may be throttling network operations
 - **Memory > 90%**: System under memory pressure, swapping
 - **Disk I/O high**: Background operations competing for resources
 - **Network throughput low**: Interface saturation or driver issues
 
-```
+```text
 zdx_list_deeptrace_top_processes(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 Identify resource-heavy processes. Common culprits:
+
 - Backup software consuming bandwidth
 - Security scans consuming CPU
 - Browser with many tabs consuming memory
@@ -339,9 +352,9 @@ Identify resource-heavy processes. Common culprits:
 
 ### Step 8: Review Events Timeline
 
-```
+```text
 zdx_get_deeptrace_events(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 Review all events that occurred during the trace window:
 
@@ -377,9 +390,9 @@ Present the complete diagnosis with all tables and analysis as described in the 
 
 If the diagnostics session is no longer needed:
 
-```
+```text
 zdx_delete_deeptrace(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 This is a **destructive operation**. Always confirm with the user before deleting.
 
@@ -389,19 +402,19 @@ This is a **destructive operation**. Always confirm with the user before deletin
 
 ### Session Still In Progress
 
-```
+```text
 Diagnostics session "<session_name>" is still collecting data.
 Started: <start_time>
 Expected completion: <end_time> (approximately <remaining> minutes)
 
 Partial data may be available. Wait for completion for the most accurate analysis.
-```
+```text
 
 ### No Application Configured
 
 If the user wants to trace an app that isn't monitored:
 
-```
+```text
 The application is not configured for ZDX monitoring.
 You can start a deep trace with a special application URL:
 
@@ -411,13 +424,13 @@ zdx_start_deeptrace(
   app_url="https://example.com",
   session_length_minutes=15
 )
-```
+```text
 
 ### Device Has Active Session
 
 A device can only have one active diagnostics session at a time:
 
-```
+```text
 Device already has an active diagnostics session:
   Session: <session_name>
   Status: In Progress
@@ -425,7 +438,7 @@ Device already has an active diagnostics session:
 
 Wait for the current session to complete, or delete it first (requires write tools):
   zdx_delete_deeptrace(device_id="<device_id>", trace_id="<trace_id>")
-```
+```text
 
 ---
 
@@ -434,6 +447,7 @@ Wait for the current session to complete, or delete it first (requires write too
 **Primary workflow:** Find Device → Check Traces → Start/Analyze → Web Probes → Cloud Path → Health → Processes → Events → Diagnosis
 
 **Read-only tools:**
+
 - `zdx_list_device_deep_traces(device_id)` — list all trace sessions
 - `zdx_get_device_deep_trace(device_id, trace_id)` — trace summary
 - `zdx_get_deeptrace_webprobe_metrics(device_id, trace_id)` — DNS, TCP, SSL, HTTP times
@@ -444,14 +458,17 @@ Wait for the current session to complete, or delete it first (requires write too
 - `zdx_get_deeptrace_events(device_id, trace_id)` — event timeline
 
 **Probe discovery tools (call before starting a deep trace):**
+
 - `zdx_get_web_probes(device_id, app_id)` — get web_probe_id for the app
 - `zdx_list_cloudpath_probes(device_id, app_id)` — get cloudpath_probe_id for the app
 
 **Write tools (require `--enable-write-tools`):**
+
 - `zdx_start_deeptrace(device_id, session_name, app_id, web_probe_id, cloudpath_probe_id, ...)` — start a diagnostics session
 - `zdx_delete_deeptrace(device_id, trace_id)` — delete a trace session
 
 **Related skills:**
+
 - [Troubleshoot User Experience](../troubleshoot-user-experience/) — for ZDX score and metric analysis
 - [Investigate Alerts](../investigate-alerts/) — for alert-driven investigation
 - [Compare Location Experience](../compare-location-experience/) — for site-by-site comparison

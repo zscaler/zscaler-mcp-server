@@ -11,24 +11,26 @@ Check access for: **$ARGUMENTS**
 ## Step 1: Parse Input
 
 Extract:
+
 - **User or group name**
 - **URL to check** (e.g., youtube.com, drive.google.com/upload)
 
 ## Step 2: Classify the URL
 
-```
+```text
 zia_url_lookup(urls=["<url>"])
-```
+```text
 
 Note the URL category classification.
 
 ## Step 3: Evaluate URL Filtering Rules
 
-```
+```text
 zia_list_url_filtering_rules()
-```
+```text
 
 Walk through rules in order. For each rule, check if:
+
 - The user/group matches the rule's scope
 - The URL category matches the rule's categories
 - The rule's action (ALLOW, BLOCK, CAUTION, ISOLATE)
@@ -37,31 +39,31 @@ The first matching rule determines the verdict.
 
 ## Step 4: Check SSL Inspection
 
-```
+```text
 zia_list_ssl_inspection_rules()
-```
+```text
 
 Determine if the traffic would be inspected, which affects DLP and threat detection.
 
 ## Step 5: Check DLP Rules
 
-```
+```text
 zia_list_dlp_web_rules()
-```
+```text
 
 Check if any DLP rules apply to this URL category for this user.
 
 ## Step 6: Check Cloud Firewall
 
-```
+```text
 zia_list_cloud_firewall_rules()
-```
+```text
 
 Look for port/protocol-based rules that might affect access.
 
 ## Step 7: Present Verdict
 
-```
+```text
 Access Verdict: ALLOWED / BLOCKED / CAUTIONED
 URL: <url>
 Category: <category>
@@ -75,4 +77,4 @@ Additional Findings:
 - SSL Inspection: Yes/No (rule: "<rule_name>")
 - DLP: No matching rules / Matched rule "<name>"
 - Firewall: No blocks / Blocked by "<rule_name>"
-```
+```text
