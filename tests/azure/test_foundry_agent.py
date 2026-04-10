@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 AZURE_DIR = Path(__file__).resolve().parent.parent.parent / "integrations" / "azure"
 sys.path.insert(0, str(AZURE_DIR))
 
-import foundry_agent as fa  # noqa: E402
+import foundry_agent as fa  # noqa: E402, I001
 
 
 # ---------------------------------------------------------------------------

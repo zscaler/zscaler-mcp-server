@@ -27,20 +27,20 @@ This is the same OIDCProxy mechanism used with Auth0, Okta, Keycloak, or any OID
 1. Go to the [Azure Portal](https://portal.azure.com)
 2. Navigate to **Microsoft Entra ID** → **App registrations** → **+ New registration**
 
-![App Registration](images/entra-id/01-app-registration.png)
+   ![App Registration](images/entra-id/01-app-registration.png)
 
 3. Fill in the registration form:
 
-| Field | Value |
-|-------|-------|
-| **Name** | `zscaler-mcp-server` |
-| **Supported account types** | "Accounts in this organizational directory only" (single tenant) |
+   | Field | Value |
+   |-------|-------|
+   | **Name** | `zscaler-mcp-server` |
+   | **Supported account types** | "Accounts in this organizational directory only" (single tenant) |
 
 4. Under **Redirect URI**:
    - **Platform**: Select **Web**
    - **URI**: Enter `http://localhost:8000/auth/callback`
 
-![Redirect URI](images/entra-id/02-redirect-uri.png)
+   ![Redirect URI](images/entra-id/02-redirect-uri.png)
 
 5. Click **Register**
 
@@ -109,7 +109,7 @@ Click **Endpoints** in the top bar of your app registration to view the OIDC end
 
 The key URL you need is the **OpenID Connect metadata document**:
 
-```
+```text
 https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration
 ```
 
@@ -198,7 +198,7 @@ No `--header` flag needed — `mcp-remote` handles the OAuth flow automatically 
 
 The server logs will show the successful authentication flow:
 
-```
+```text
 POST https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token "HTTP/1.1 200 OK"
 GET https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys "HTTP/1.1 200 OK"
 Created new transport with session ID: ...
@@ -263,6 +263,7 @@ OIDCPROXY_AUDIENCE=<app-client-id>
 **Cause:** The client ID or tenant ID is incorrect.
 
 **Fix:**
+
 - Verify the Application (client) ID on the app registration Overview page
 - Verify the tenant ID with `az account show --query tenantId -o tsv`
 - Ensure the app is in the correct directory (tenant)
@@ -290,6 +291,7 @@ az account show --query tenantId -o tsv
 **Cause:** `mcp-remote` may not be triggering the OAuth flow.
 
 **Fix:**
+
 - Ensure the server is running and accessible at `http://localhost:8000`
 - Verify Claude Desktop config points to `http://localhost:8000/mcp`
 - Check that `--allow-http` is included in the `mcp-remote` args
