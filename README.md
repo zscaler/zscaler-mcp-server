@@ -1459,6 +1459,7 @@ The Zscaler MCP Server ships with native integrations for several AI development
 | **Kiro IDE** | Power | Powers panel → Add Custom Power | [integrations/kiro/](integrations/kiro/README.md) |
 | **Azure (Container Apps / VM)** | Deployment + Agent | `python azure_mcp_operations.py deploy` | [integrations/azure/](integrations/azure/README.md) |
 | **Google ADK** | Agent | `adk run zscaler_agent` | [integrations/adk/](integrations/adk/README.md) |
+| **GitHub MCP Registry** | Registry | `mcp-publisher publish` | [integrations/github/](integrations/github/README.md) |
 
 For full documentation on all integrations, see the [Platform Integrations Guide](integrations/README.md).
 
@@ -1511,3 +1512,5 @@ For full documentation on all integrations, see the [Platform Integrations Guide
 - Check agent-specific logs (usually in Help/View menu)
 - Test the server manually to isolate agent vs server issues
 - Review the [Troubleshooting](#troubleshooting) section for more details
+
+<!-- mcp-name: io.github.zscaler/zscaler-mcp-server -->

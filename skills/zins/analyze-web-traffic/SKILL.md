@@ -6,6 +6,7 @@ description: "Analyze web traffic patterns using Zscaler Analytics (Z-Insights).
 # Z-Insights: Analyze Web Traffic Patterns
 
 ## Keywords
+
 web traffic, traffic analytics, traffic by location, protocol distribution, HTTP HTTPS, DLP violations, traffic volume, traffic trends, bandwidth, capacity planning, web analytics, traffic report, data loss prevention
 
 ## Overview
@@ -15,6 +16,7 @@ Analyze web traffic across your organization using the Zscaler Analytics (Z-Insi
 **Use this skill when:** An administrator or security analyst needs to understand web traffic patterns, plan capacity, monitor protocol adoption (e.g., HTTPS migration), investigate DLP policy violations, or generate traffic reports for specific time periods.
 
 **Important constraints:**
+
 - Z-Insights only supports **historical data** with a 24-48 hour processing delay
 - Time ranges must be exactly **7 or 14 days** (the API enforces this)
 - Use `start_days_ago` / `end_days_ago` (recommended) or epoch milliseconds
@@ -29,6 +31,7 @@ Follow this 5-step process to analyze web traffic.
 ### Step 1: Understand the Analysis Request
 
 Gather from the analyst:
+
 - What aspect of traffic? (volume, locations, protocols, threats, DLP)
 - What time period? (past week = 7 days, past two weeks = 14 days)
 - Measurement unit? (TRANSACTIONS for request counts, BYTES for bandwidth)
@@ -40,22 +43,25 @@ Gather from the analyst:
 ### Step 2: Analyze Traffic by Location
 
 **Get web traffic distribution across locations:**
-```
+
+```text
 zins_get_web_traffic_by_location(
     start_days_ago=9,
     end_days_ago=2,
     traffic_unit="TRANSACTIONS",
     limit=20
 )
-```
+```text
 
 This identifies which offices, branches, or regions generate the most web traffic. Look for:
+
 - Top traffic-generating locations (potential bandwidth bottlenecks)
 - Unusual traffic spikes at specific locations
 - Remote vs office traffic distribution
 
 **With trend data for capacity planning:**
-```
+
+```text
 zins_get_web_traffic_by_location(
     start_days_ago=9,
     end_days_ago=2,
@@ -64,23 +70,25 @@ zins_get_web_traffic_by_location(
     trend_interval="DAY",
     limit=10
 )
-```
+```text
 
 ---
 
 ### Step 3: Analyze Protocol Distribution
 
 **Get protocol breakdown:**
-```
+
+```text
 zins_get_web_protocols(
     start_days_ago=9,
     end_days_ago=2,
     traffic_unit="TRANSACTIONS",
     limit=20
 )
-```
+```text
 
 Evaluate:
+
 - **HTTPS adoption**: What percentage of traffic is encrypted?
 - **HTTP traffic**: Remaining unencrypted traffic may indicate legacy applications or misconfigured services
 - **Other protocols**: SSL, FTP over HTTP, WebSocket, etc.
@@ -91,25 +99,28 @@ Evaluate:
 ### Step 4: Analyze Overall Traffic Volume and DLP
 
 **Get total traffic volume (no grouping):**
-```
+
+```text
 zins_get_web_traffic_no_grouping(
     start_days_ago=9,
     end_days_ago=2,
     traffic_unit="TRANSACTIONS"
 )
-```
+```text
 
 **Filter by DLP violations:**
-```
+
+```text
 zins_get_web_traffic_no_grouping(
     start_days_ago=9,
     end_days_ago=2,
     dlp_engine_filter="PCI",
     traffic_unit="TRANSACTIONS"
 )
-```
+```text
 
 Available DLP engine filters:
+
 - `ANY` -- any DLP engine triggered
 - `NONE` -- no DLP engine triggered
 - `HIPAA` -- healthcare data violations
@@ -120,17 +131,19 @@ Available DLP engine filters:
 - `EXTERNAL` -- external DLP engine
 
 **Filter by action:**
-```
+
+```text
 zins_get_web_traffic_no_grouping(
     start_days_ago=9,
     end_days_ago=2,
     action_filter="BLOCK",
     traffic_unit="TRANSACTIONS"
 )
-```
+```text
 
 **Get volume trends over time:**
-```
+
+```text
 zins_get_web_traffic_no_grouping(
     start_days_ago=9,
     end_days_ago=2,
@@ -138,33 +151,35 @@ zins_get_web_traffic_no_grouping(
     trend_interval="DAY",
     traffic_unit="BYTES"
 )
-```
+```text
 
 ---
 
 ### Step 5: Check Threat Activity in Web Traffic
 
 **Get threat super categories:**
-```
+
+```text
 zins_get_threat_super_categories(
     start_days_ago=9,
     end_days_ago=2,
     traffic_unit="TRANSACTIONS",
     limit=20
 )
-```
+```text
 
 This shows high-level threat categories (malware, phishing, spyware, C2, etc.) detected in web traffic.
 
 **Get detailed threat classifications:**
-```
+
+```text
 zins_get_threat_class(
     start_days_ago=9,
     end_days_ago=2,
     traffic_unit="TRANSACTIONS",
     limit=20
 )
-```
+```text
 
 This breaks threats into specific types (virus, trojan, ransomware, exploit kit, cryptominer, etc.).
 
@@ -172,7 +187,7 @@ This breaks threats into specific types (virus, trojan, ransomware, exploit kit,
 
 ### Present Analysis
 
-```
+```text
 Web Traffic Analysis Report
 =============================
 Date: <current_date>
@@ -239,7 +254,7 @@ should be investigated for possible migration to HTTPS.
 2. Review the 12% increase in malware detections
 3. <location> shows unusual traffic spike -- verify with local IT
 4. PCI violations trending up -- review DLP policy exceptions
-```
+```text
 
 ---
 
@@ -247,7 +262,7 @@ should be investigated for possible migration to HTTPS.
 
 ### No Data Returned
 
-```
+```text
 Z-Insights returned no data for the specified time range.
 
 Possible causes:
@@ -257,11 +272,11 @@ Possible causes:
 
 Action: Verify Z-Insights licensing and try a time range ending
 at least 2 days ago.
-```
+```text
 
 ### Time Range Errors
 
-```
+```text
 The Z-Insights API requires time intervals of exactly 7 or 14 days.
 
 Use these parameter combinations:
@@ -269,7 +284,7 @@ Use these parameter combinations:
 - 14-day: start_days_ago=16, end_days_ago=2
 
 The tool auto-adjusts intervals when using days_ago parameters.
-```
+```text
 
 ---
 
@@ -278,15 +293,18 @@ The tool auto-adjusts intervals when using days_ago parameters.
 **Primary workflow:** Scope → Locations → Protocols → Volume/DLP → Threats → Report
 
 **Traffic tools:**
+
 - `zins_get_web_traffic_by_location()` -- traffic distribution by location
 - `zins_get_web_traffic_no_grouping()` -- overall traffic volume with DLP and action filters
 - `zins_get_web_protocols()` -- protocol distribution (HTTP, HTTPS, SSL, etc.)
 
 **Threat tools:**
+
 - `zins_get_threat_super_categories()` -- high-level threat categories
 - `zins_get_threat_class()` -- detailed threat classifications
 
 **Common parameters:**
+
 - `start_days_ago` / `end_days_ago` -- recommended time range specification
 - `traffic_unit` -- TRANSACTIONS (request counts) or BYTES (data volume)
 - `include_trend` / `trend_interval` -- enable time series data (DAY or HOUR)

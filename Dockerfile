@@ -1,6 +1,6 @@
 # Use a Python image with uv pre-installed
-# ghcr.io/astral-sh/uv:0.10.4-python3.13-alpine (multi-arch: amd64, arm64)
-FROM ghcr.io/astral-sh/uv:0.10.4-python3.13-alpine@sha256:849da3c9d1d114758725fe11bfe59c002d8c817a06f8b79ebf02a2f9d3089cfe AS uv
+# ghcr.io/astral-sh/uv:0.10.4-python3.14-alpine (multi-arch: amd64, arm64)
+FROM ghcr.io/astral-sh/uv:0.10.4-python3.14-alpine@sha256:35e9528631d62049f00590f8f0e65124081764d079a98231ce49c7effb6b6ef5 AS uv
 
 # Install the project into `/app`
 WORKDIR /app
@@ -35,19 +35,30 @@ RUN find /app/.venv -name '__pycache__' -type d -exec rm -rf {} + && \
     echo "Cleaned up .venv"
 
 # Final stage
-# python:3.13-alpine (multi-arch: amd64, arm64)
-FROM python:3.13-alpine@sha256:bb1f2fdb1065c85468775c9d680dcd344f6442a2d1181ef7916b60a623f11d40
+# python:3.14-alpine (multi-arch: amd64, arm64)
+FROM python:3.14-alpine@sha256:6f873e340e6786787a632c919ecfb1d2301eb33ccfbe9f0d0add16cbc0892116
 
-# Security: Update Alpine packages to latest versions to fix:
-# - CVE-2024-58251, CVE-2025-46394 (busybox)
-# - CVE-2025-9230, CVE-2025-9231, CVE-2025-9232 (openssl/libcrypto3/libssl3)
-RUN apk update && apk upgrade --no-cache && \
+# Security: Upgrade Alpine packages to patched versions.
+# Pins exact versions to satisfy security assessment requirements:
+# - libcrypto3/libssl3 ≥3.5.6-r0 fixes CVE-2026-28390 (openssl NULL ptr deref)
+# - zlib ≥1.3.2-r0 fixes CVE-2026-22184 (buffer overflow in untgz)
+# - musl ≥1.2.5-r23, libuuid ≥2.41.4-r0 (upstream security patches)
+RUN apk update && \
+    apk upgrade --no-cache \
+        libcrypto3 \
+        libssl3 \
+        musl \
+        musl-utils \
+        libuuid \
+        apk-tools \
+        alpine-baselayout \
+        alpine-baselayout-data && \
     rm -rf /var/cache/apk/*
 
 # Security: Upgrade pip and setuptools to fix:
 # - CVE-2025-8869 (pip)
 # - CVE-2024-6345, CVE-2025-47273 (setuptools)
-RUN pip install --no-cache-dir --upgrade pip>=25.3 setuptools>=78.1.1 wheel>=0.46.2
+RUN pip install --no-cache-dir --upgrade pip>=25.3 setuptools>=82.0.0 wheel>=0.46.2
 
 # Create a non-root user 'app'
 RUN adduser -D -h /home/app -s /bin/sh app
@@ -58,5 +69,7 @@ COPY --from=uv --chown=app:app /app/.venv /app/.venv
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
+
+LABEL io.modelcontextprotocol.server.name="io.github.zscaler/zscaler-mcp-server"
 
 ENTRYPOINT ["zscaler-mcp"]
