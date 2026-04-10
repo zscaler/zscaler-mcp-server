@@ -6,6 +6,7 @@ description: "Audit shadow IT and SaaS application usage using Zscaler Analytics
 # Z-Insights: Audit Shadow IT and SaaS Usage
 
 ## Keywords
+
 shadow IT, unsanctioned apps, SaaS security, CASB, cloud access, risk score, data exfiltration, SaaS compliance, unauthorized applications, cloud apps, IoT devices, device visibility, shadow IT report, app governance
 
 ## Overview
@@ -15,6 +16,7 @@ Audit your organization's shadow IT exposure and SaaS application usage using Zs
 **Use this skill when:** A security or compliance team needs to discover unauthorized SaaS usage, generate shadow IT risk reports, review CASB findings, assess IoT device sprawl, or support compliance audits (SOC2, ISO 27001, HIPAA).
 
 **Important constraints:**
+
 - Z-Insights only supports **historical data** with a 24-48 hour processing delay
 - Shadow IT summary supports time ranges of **1, 7, 15, or 30 days**
 - Shadow IT apps supports time ranges up to **30 days**
@@ -30,6 +32,7 @@ Follow this 5-step process to audit shadow IT and SaaS usage.
 ### Step 1: Understand the Audit Scope
 
 Gather from the requester:
+
 - What is the audit goal? (compliance, risk assessment, incident investigation, routine review)
 - Time period to review? (7 days for recent, 14 days for broader view)
 - Specific application categories of concern? (file sharing, messaging, AI/ML, storage)
@@ -41,14 +44,16 @@ Gather from the requester:
 ### Step 2: Get Shadow IT Summary
 
 **Get the overall shadow IT dashboard:**
-```
+
+```text
 zins_get_shadow_it_summary(
     start_days_ago=16,
     end_days_ago=2
 )
-```
+```text
 
 This returns a comprehensive summary including:
+
 - **total_apps**: Total number of shadow IT applications discovered
 - **total_bytes**: Total data transferred to/from shadow apps
 - **total_upload_bytes**: Data uploaded (potential data exfiltration)
@@ -57,6 +62,7 @@ This returns a comprehensive summary including:
 - **group_by_risk_index_for_app**: Applications grouped by risk level
 
 Key metrics to highlight:
+
 - Total unsanctioned apps vs sanctioned
 - Total data volume (especially uploads -- data exfiltration vector)
 - High-risk application count
@@ -67,15 +73,17 @@ Key metrics to highlight:
 ### Step 3: Discover Shadow IT Applications
 
 **Get detailed shadow IT application list:**
-```
+
+```text
 zins_get_shadow_it_apps(
     start_days_ago=9,
     end_days_ago=2,
     limit=50
 )
-```
+```text
 
 Each application entry includes:
+
 - **application**: Application name
 - **application_category**: Category (file sharing, messaging, social media, etc.)
 - **risk_index**: Risk score (higher = more risk)
@@ -84,6 +92,7 @@ Each application entry includes:
 - **authenticated_users**: Number of users accessing the app
 
 **Prioritize by risk:**
+
 1. **High risk + unsanctioned + high data volume** = Immediate attention
 2. **High risk + unsanctioned + low data volume** = Monitor closely
 3. **Low risk + unsanctioned + high data volume** = Review data transfers
@@ -94,20 +103,23 @@ Each application entry includes:
 ### Step 4: Review CASB SaaS Application Usage
 
 **Get CASB application report:**
-```
+
+```text
 zins_get_casb_app_report(
     start_days_ago=9,
     end_days_ago=2,
     limit=30
 )
-```
+```text
 
 CASB (Cloud Access Security Broker) provides data and threat protection for data at rest in cloud services. This report shows:
+
 - Which SaaS applications are being accessed
 - Usage volume per application
 - Application adoption trends
 
 Cross-reference CASB data with shadow IT findings to identify:
+
 - Sanctioned apps with unexpected usage patterns
 - SaaS applications that should be added to the sanctioned list
 - Applications with declining usage (candidates for decommissioning)
@@ -117,11 +129,13 @@ Cross-reference CASB data with shadow IT findings to identify:
 ### Step 5: Inventory IoT Devices
 
 **Get IoT device statistics:**
-```
+
+```text
 zins_get_iot_device_stats(limit=50)
-```
+```text
 
 IoT Device Visibility uses AI/ML to automatically detect, identify, and classify IoT devices. Returns:
+
 - **devices_count**: Total devices on the network
 - **iot_devices_count**: IoT devices (cameras, printers, sensors, etc.)
 - **user_devices_count**: Unmanaged user devices (BYOD)
@@ -135,7 +149,7 @@ IoT devices represent shadow IT at the hardware level -- unmanaged devices conne
 
 ### Present Audit Report
 
-```
+```text
 Shadow IT & SaaS Usage Audit Report
 =======================================
 Date: <current_date>
@@ -251,7 +265,7 @@ device type and appropriate network segmentation.
 8. Schedule monthly shadow IT audits
 9. Implement automated alerts for new high-risk app discovery
 10. Review IoT device classifications quarterly
-```
+```text
 
 ---
 
@@ -259,7 +273,7 @@ device type and appropriate network segmentation.
 
 ### No Shadow IT Detected
 
-```
+```text
 No shadow IT applications were detected for the specified period.
 
 This could mean:
@@ -268,11 +282,11 @@ This could mean:
 - The time period may be too narrow -- try a 14-day window
 
 This is a positive finding if app governance policies are in place.
-```
+```text
 
 ### IoT Visibility Not Enabled
 
-```
+```text
 No IoT device data available.
 
 Possible causes:
@@ -281,7 +295,7 @@ Possible causes:
 - Device classification is still in progress
 
 Action: Verify IoT Device Visibility licensing and sensor deployment.
-```
+```text
 
 ---
 
@@ -290,16 +304,20 @@ Action: Verify IoT Device Visibility licensing and sensor deployment.
 **Primary workflow:** Scope → Shadow IT Summary → App Details → CASB → IoT → Report
 
 **Shadow IT tools:**
+
 - `zins_get_shadow_it_summary()` -- dashboard overview (totals, categories, risk groups)
 - `zins_get_shadow_it_apps()` -- detailed app list with risk scores and data volumes
 
 **CASB tools:**
+
 - `zins_get_casb_app_report()` -- SaaS application usage report
 
 **IoT tools:**
+
 - `zins_get_iot_device_stats()` -- IoT device inventory and classifications
 
 **Time range notes:**
+
 - Shadow IT summary: supports 1, 7, 15, and 30-day ranges
 - Shadow IT apps: up to 30 days
 - CASB: up to 90 days

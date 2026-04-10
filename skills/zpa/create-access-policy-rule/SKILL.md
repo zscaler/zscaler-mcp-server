@@ -6,6 +6,7 @@ description: "Create ZPA access policy rules with v2 conditions. Supports all co
 # ZPA: Create Access Policy Rule
 
 ## Keywords
+
 access policy, access rule, allow rule, deny rule, zpa policy, scim group policy, saml policy, platform restriction, country restriction, posture check, require approval, zero trust policy, conditional access
 
 ## Overview
@@ -63,11 +64,13 @@ Each condition block must contain a **single object type**. Multiple condition b
 Ask the administrator:
 
 **Required:**
+
 - Rule name
 - Action: `ALLOW`, `DENY`, or `REQUIRE_APPROVAL`
 - What conditions determine access (identity, platform, location, etc.)
 
 **Optional:**
+
 - Description
 - Which application segments or segment groups to scope to
 - App connector group IDs or server group IDs
@@ -79,40 +82,46 @@ Ask the administrator:
 If the rule uses identity-based conditions (SAML, SCIM, SCIM_GROUP), look up the required IDs first.
 
 **For SCIM groups:**
-```
+
+```text
 get_zpa_scim_group(search="<group_name>")
-```
+```text
 
 Note both the SCIM group ID (used as `rhs`) and the Identity Provider ID (used as `lhs`).
 
 **For SAML attributes:**
-```
+
+```text
 get_zpa_saml_attribute(search="<attribute_name>")
-```
+```text
 
 Note the SAML attribute ID (used as `lhs`). The `rhs` is the value to match (e.g., an email address or group name string).
 
 **For SCIM attributes:**
-```
+
+```text
 get_zpa_scim_attribute(search="<attribute_name>")
-```
+```text
 
 **For segment groups (APP_GROUP):**
-```
+
+```text
 zpa_list_segment_groups()
-```
+```text
 
 **For posture profiles:**
-```
+
+```text
 get_zpa_posture_profile(search="<profile_name>")
-```
+```text
 
 Note the `posture_udid` value (used as `lhs`).
 
 **For trusted networks:**
-```
+
+```text
 get_zpa_trusted_network(search="<network_name>")
-```
+```text
 
 Note the `network_id` value (used as `lhs`).
 
@@ -123,6 +132,7 @@ Note the `network_id` value (used as `lhs`).
 Conditions use a list of dictionaries. Each dictionary represents one condition block with an `operator` and `operands`. **Separate condition blocks for each object type.**
 
 **Format:**
+
 ```json
 [
   {
@@ -146,9 +156,10 @@ Conditions use a list of dictionaries. Each dictionary represents one condition 
     ]
   }
 ]
-```
+```text
 
 **Rules:**
+
 - Each condition block contains **one object type only**
 - Multiple condition blocks are **ANDed** together (all must match)
 - Within a block, multiple `entry_values` or multiple `values` are **ORed** (any can match)
@@ -159,7 +170,7 @@ Conditions use a list of dictionaries. Each dictionary represents one condition 
 
 ### Step 4: Create the Rule
 
-```
+```text
 zpa_create_access_policy_rule(
   name="<rule_name>",
   action_type="ALLOW",
@@ -168,15 +179,15 @@ zpa_create_access_policy_rule(
   app_connector_group_ids=["<optional_connector_group_ids>"],
   app_server_group_ids=["<optional_server_group_ids>"]
 )
-```
+```text
 
 ---
 
 ### Step 5: Verify
 
-```
+```text
 zpa_get_access_policy_rule(rule_id="<returned_rule_id>")
-```
+```text
 
 ---
 
@@ -187,14 +198,16 @@ zpa_get_access_policy_rule(rule_id="<returned_rule_id>")
 Allow members of "Engineering" or "DevOps" SCIM groups to access an application segment group.
 
 **Step 1: Look up IDs**
-```
+
+```text
 get_zpa_scim_group(search="Engineering")
 get_zpa_scim_group(search="DevOps")
 zpa_list_segment_groups()
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_access_policy_rule(
   name="Allow Engineering and DevOps",
   action_type="ALLOW",
@@ -223,7 +236,7 @@ zpa_create_access_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Logic:** User must be in the segment group's apps AND be a member of Engineering OR DevOps.
 
@@ -234,12 +247,14 @@ zpa_create_access_policy_rule(
 Allow specific SAML-identified users, but only from macOS and Windows devices.
 
 **Step 1: Look up SAML attribute**
-```
+
+```text
 get_zpa_saml_attribute(search="Email_Users")
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_access_policy_rule(
   name="Allow Specific Users on Mac/Windows",
   action_type="ALLOW",
@@ -270,7 +285,7 @@ zpa_create_access_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Logic:** User must match a SAML email AND be on macOS OR Windows.
 
@@ -280,7 +295,7 @@ zpa_create_access_policy_rule(
 
 Allow access only from the United States and Canada.
 
-```
+```text
 zpa_create_access_policy_rule(
   name="US and Canada Only",
   action_type="ALLOW",
@@ -309,7 +324,7 @@ zpa_create_access_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -318,12 +333,14 @@ zpa_create_access_policy_rule(
 Allow access only from devices that pass a posture check and have a ZIA risk score of LOW or below.
 
 **Step 1: Look up posture profile**
-```
+
+```text
 get_zpa_posture_profile(search="CrowdStrike_ZTA")
-```
+```text
 
 **Step 2: Create rule**
-```
+
+```text
 zpa_create_access_policy_rule(
   name="Posture and Risk Check",
   action_type="ALLOW",
@@ -353,7 +370,7 @@ zpa_create_access_policy_rule(
     }
   ]
 )
-```
+```text
 
 **Logic:** Device must pass posture check AND have a ZIA risk score of UNKNOWN or LOW.
 
@@ -363,7 +380,7 @@ zpa_create_access_policy_rule(
 
 A comprehensive rule combining identity, device, and location conditions.
 
-```
+```text
 zpa_create_access_policy_rule(
   name="Comprehensive Access Rule",
   action_type="ALLOW",
@@ -421,9 +438,9 @@ zpa_create_access_policy_rule(
     }
   ]
 )
-```
+```text
 
-**Logic:** Must access apps in the segment group AND (be in Engineering SCIM group OR be admin@company.com) AND (be on macOS OR Linux) AND (be in US OR Canada).
+**Logic:** Must access apps in the segment group AND (be in Engineering SCIM group OR be <admin@company.com>) AND (be on macOS OR Linux) AND (be in US OR Canada).
 
 ---
 
@@ -431,7 +448,7 @@ zpa_create_access_policy_rule(
 
 Block access from specific platforms.
 
-```
+```text
 zpa_create_access_policy_rule(
   name="Deny Android and iOS",
   action_type="DENY",
@@ -460,7 +477,7 @@ zpa_create_access_policy_rule(
     }
   ]
 )
-```
+```text
 
 ---
 
@@ -470,13 +487,13 @@ zpa_create_access_policy_rule(
 
 A rule with no conditions applies to all users and all applications:
 
-```
+```text
 zpa_create_access_policy_rule(
   name="Default Allow All",
   action_type="ALLOW",
   conditions=[]
 )
-```
+```text
 
 ### Mixing SAML and SCIM in the Same Condition Block
 
@@ -496,7 +513,7 @@ SAML and SCIM_GROUP operands can share a condition block since they are identity
     }
   ]
 }
-```
+```text
 
 ### Trusted Network Condition
 
@@ -510,13 +527,14 @@ SAML and SCIM_GROUP operands can share a condition block since they are identity
     }
   ]
 }
-```
+```text
 
 ---
 
 ## Quick Reference
 
 **Tools used:**
+
 - `get_zpa_scim_group(search)` -- look up SCIM group IDs
 - `get_zpa_saml_attribute(search)` -- look up SAML attribute IDs
 - `get_zpa_scim_attribute(search)` -- look up SCIM attribute IDs
@@ -527,6 +545,7 @@ SAML and SCIM_GROUP operands can share a condition block since they are identity
 - `zpa_get_access_policy_rule(rule_id)` -- verify the rule
 
 **Condition logic:**
+
 - Multiple condition blocks = AND (all must match)
 - Multiple entry_values within a block = OR (any can match)
 - Separate condition blocks per object type

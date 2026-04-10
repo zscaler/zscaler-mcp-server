@@ -6,6 +6,7 @@ description: "Investigate security incidents using Zscaler Z-Insights analytics.
 # Z-Insights: Investigate Security Incident
 
 ## Keywords
+
 security incident, threat investigation, cyber incident, malware detected, phishing, threat analytics, incident response, shadow IT, threat trends, firewall blocks, web traffic anomaly, security analytics
 
 ## Overview
@@ -23,6 +24,7 @@ Follow this 6-step process to investigate a security incident.
 ### Step 1: Understand the Incident Scope
 
 Gather from the analyst:
+
 - What type of event? (malware, phishing, data exfiltration, policy violation, anomalous traffic)
 - When did it occur or when was it detected?
 - Specific user, location, or application involved?
@@ -33,16 +35,18 @@ Gather from the analyst:
 ### Step 2: Check Threat Analytics
 
 **Get threat super categories:**
-```
+
+```text
 zins_get_threat_super_categories()
-```
+```text
 
 This returns high-level threat categories (malware, phishing, spyware, command & control, etc.) with counts. Identify which category the incident falls under.
 
 **Get detailed threat classifications:**
-```
+
+```text
 zins_get_threat_class()
-```
+```text
 
 This breaks down threats into specific types (virus, trojan, ransomware, exploit kit, cryptominer, etc.). Look for spikes or anomalies in the relevant class.
 
@@ -51,29 +55,34 @@ This breaks down threats into specific types (virus, trojan, ransomware, exploit
 ### Step 3: Analyze Cyber Incidents
 
 **Get incident overview:**
-```
+
+```text
 zins_get_cyber_incidents()
-```
+```text
 
 **Get incidents by location to identify the source:**
-```
+
+```text
 zins_get_cyber_incidents_by_location()
-```
+```text
 
 **Get daily trends to identify when the incident started:**
-```
+
+```text
 zins_get_cyber_incidents_daily()
-```
+```text
 
 Look for:
+
 - Sudden spikes in specific incident categories
 - Geographic concentration (specific offices or regions)
 - Correlation between incident start time and reported symptoms
 
 **Get incidents correlated by threat and application:**
-```
+
+```text
 zins_get_cyber_incidents_by_threat_and_app()
-```
+```text
 
 This shows which applications are associated with which threats -- critical for understanding the attack vector.
 
@@ -82,35 +91,41 @@ This shows which applications are associated with which threats -- critical for 
 ### Step 4: Review Firewall and Traffic Data
 
 **Check firewall actions:**
-```
+
+```text
 zins_get_firewall_by_action()
-```
+```text
 
 Look for:
+
 - Spike in BLOCK actions (indicates active threat mitigation)
 - Changes in ALLOW vs BLOCK ratios
 - New blocked categories
 
 **Check firewall by location:**
-```
+
+```text
 zins_get_firewall_by_location()
-```
+```text
 
 **Check web traffic patterns:**
-```
+
+```text
 zins_get_web_traffic_by_location()
 zins_get_web_traffic_no_grouping()
-```
+```text
 
 Look for anomalous traffic volumes that might indicate:
+
 - Data exfiltration (unusual outbound volume)
 - Command & control beaconing (regular small requests)
 - DDoS participation (high outbound traffic to specific destinations)
 
 **Check protocol distribution:**
-```
+
+```text
 zins_get_web_protocols()
-```
+```text
 
 Unusual protocol distribution (e.g., spike in non-HTTPS traffic) may indicate malware communicating over unencrypted channels.
 
@@ -119,17 +134,20 @@ Unusual protocol distribution (e.g., spike in non-HTTPS traffic) may indicate ma
 ### Step 5: Check Shadow IT and CASB
 
 **Review CASB app usage:**
-```
+
+```text
 zins_get_casb_app_report()
-```
+```text
 
 **Discover shadow IT applications:**
-```
+
+```text
 zins_get_shadow_it_apps()
 zins_get_shadow_it_summary()
-```
+```text
 
 Shadow IT applications are unsanctioned SaaS tools that may be:
+
 - Data exfiltration vectors
 - Sources of credential compromise
 - Compliance violations
@@ -140,7 +158,7 @@ Check if the incident involves any unsanctioned applications.
 
 ### Step 6: Generate Incident Report
 
-```
+```text
 Security Incident Investigation Report
 ========================================
 Date: <current_date>
@@ -233,7 +251,7 @@ Reference: <ticket_number>
 9. Implement DLP rules to detect and block sensitive data uploads to
    unsanctioned applications
 10. Add shadow IT discovery findings to monthly security review
-```
+```text
 
 ---
 
@@ -242,26 +260,31 @@ Reference: <ticket_number>
 **Primary workflow:** Scope → Threats → Incidents → Firewall/Traffic → Shadow IT → Report
 
 **Threat tools:**
+
 - `zins_get_threat_super_categories()` -- high-level threat categories
 - `zins_get_threat_class()` -- detailed threat classifications
 
 **Incident tools:**
+
 - `zins_get_cyber_incidents()` -- incident overview
 - `zins_get_cyber_incidents_by_location()` -- incidents by location
 - `zins_get_cyber_incidents_daily()` -- daily trends
 - `zins_get_cyber_incidents_by_threat_and_app()` -- threat-app correlation
 
 **Firewall tools:**
+
 - `zins_get_firewall_by_action()` -- allow/block distribution
 - `zins_get_firewall_by_location()` -- firewall events by location
 - `zins_get_firewall_network_services()` -- network service usage
 
 **Traffic tools:**
+
 - `zins_get_web_traffic_by_location()` -- traffic by location
 - `zins_get_web_traffic_no_grouping()` -- total traffic volume
 - `zins_get_web_protocols()` -- protocol distribution
 
 **Shadow IT tools:**
+
 - `zins_get_casb_app_report()` -- CASB application report
 - `zins_get_shadow_it_apps()` -- discovered shadow IT apps
 - `zins_get_shadow_it_summary()` -- shadow IT summary

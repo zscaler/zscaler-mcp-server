@@ -6,6 +6,7 @@ description: "Analyze the health of one or more monitored applications across th
 # ZDX: Analyze Application Health
 
 ## Keywords
+
 application health, zdx score, application performance, app monitoring, degraded apps, poor score, application analytics, score trend, page fetch time, dns time, availability, impacted users, application overview
 
 ## Overview
@@ -23,11 +24,13 @@ Perform an organization-wide analysis of application health using ZDX. This skil
 **ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
 
 After each table, provide:
+
 1. **Detailed analysis** explaining what the data means in plain language
 2. **Root cause identification** for degraded or poor applications
 3. **Next steps / resolution** with specific, actionable recommendations prioritized by impact
 
 Use color-coded status indicators in tables:
+
 - Green/Good: scores 66-100, metrics within normal range
 - Yellow/Okay: scores 34-65, metrics approaching thresholds
 - Red/Poor: scores 0-33, metrics exceeding thresholds
@@ -39,6 +42,7 @@ Use color-coded status indicators in tables:
 ### 1. Word Document (.docx) — REQUIRED
 
 Write a Word document to disk named `application_health_report_<date>.docx` containing:
+
 - Executive summary with overall health posture (healthy/degraded/poor counts)
 - Application health table (app name, score, status, PFT, DNS, availability, impacted users, bottleneck)
 - Per-application deep dive for degraded/poor apps with metric trends
@@ -128,9 +132,10 @@ function exportCSV(){const t=document.getElementById('healthTable'),rows=Array.f
 </script>
 </body>
 </html>
-```
+```text
 
 **MANDATORY STEPS:**
+
 1. Copy this template exactly
 2. Replace the `{{...}}` placeholders in the summary cards with real values
 3. Add one `<tr>` row inside `<tbody>` for every application
@@ -147,21 +152,22 @@ function exportCSV(){const t=document.getElementById('healthTable'),rows=Array.f
 
 Retrieve the full list of applications monitored by ZDX.
 
-```
+```text
 zdx_list_applications()
-```
+```text
 
 Optionally filter by location, department, or geolocation:
 
-```
+```text
 zdx_list_applications(
   location_id=["<location_id>"],
   department_id=["<department_id>"],
   since=4
 )
-```
+```text
 
 **Categorize results by score:**
+
 - **Good (66-100):** Healthy, no action needed
 - **Okay (34-65):** Degraded, investigate further
 - **Poor (0-33):** Critical, immediate attention
@@ -172,23 +178,24 @@ zdx_list_applications(
 
 For each application with a degraded or poor score, get the score trend to understand if this is a new or ongoing issue.
 
-```
+```text
 zdx_get_application_score_trend(
   app_id="<app_id>",
   since=24
 )
-```
+```text
 
 **Interpret the trend:**
+
 - **Sudden drop:** Likely an incident (server, network, or ISP issue)
 - **Gradual decline:** Resource exhaustion, growing user base, or config drift
 - **Intermittent spikes:** Unstable network path or periodic load spikes
 
 Get application details for additional context:
 
-```
+```text
 zdx_get_application(app_id="<app_id>")
-```
+```text
 
 ---
 
@@ -197,28 +204,31 @@ zdx_get_application(app_id="<app_id>")
 For each degraded application, check individual metrics to isolate the bottleneck.
 
 **Page Fetch Time (overall web performance):**
-```
+
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="pft"
 )
-```
+```text
 
 **DNS Resolution Time:**
-```
+
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="dns"
 )
-```
+```text
 
 **Availability:**
-```
+
+```text
 zdx_get_application_metric(
   app_id="<app_id>",
   metric_name="availability"
 )
-```
+```text
 
 **Metric interpretation guide:**
 
@@ -229,6 +239,7 @@ zdx_get_application_metric(
 | `availability` | App reachability | 99-100% | 95-99% | < 95% |
 
 **Bottleneck mapping:**
+
 - High `pft` + normal `dns` + high `availability` → Server or CDN slow
 - High `pft` + high `dns` + high `availability` → DNS resolution issues
 - Low `availability` → Application or network unreachable
@@ -240,37 +251,41 @@ zdx_get_application_metric(
 For each degraded application, list the impacted users.
 
 **Users with poor scores:**
-```
+
+```text
 zdx_list_application_users(
   app_id="<app_id>",
   score_bucket="poor"
 )
-```
+```text
 
 **Users with okay scores (borderline):**
-```
+
+```text
 zdx_list_application_users(
   app_id="<app_id>",
   score_bucket="okay"
 )
-```
+```text
 
 **Filter by location to scope the impact:**
-```
+
+```text
 zdx_list_application_users(
   app_id="<app_id>",
   score_bucket="poor",
   location_id=["<location_id>"]
 )
-```
+```text
 
 **For a specific user, get detailed experience data:**
-```
+
+```text
 zdx_get_application_user(
   app_id="<app_id>",
   user_id="<user_id>"
 )
-```
+```text
 
 ---
 
@@ -278,15 +293,16 @@ zdx_get_application_user(
 
 Check if any active alerts correlate with the degraded applications.
 
-```
+```text
 zdx_list_alerts(since=24)
-```
+```text
 
 For relevant alerts:
-```
+
+```text
 zdx_get_alert(alert_id="<alert_id>")
 zdx_list_alert_affected_devices(alert_id="<alert_id>")
-```
+```text
 
 ---
 
@@ -313,7 +329,7 @@ Present all data in **HTML table format** with detailed analysis.
   <tr style="background:#fff3cd"><td style="padding:8px;border:1px solid #ddd">Salesforce</td><td style="padding:8px;font-weight:bold;color:orange">52</td><td style="padding:8px">OKAY</td><td style="padding:8px">4.2s</td><td style="padding:8px">180ms</td><td style="padding:8px">99%</td><td style="padding:8px">12 poor, 31 okay</td><td style="padding:8px">DNS Resolution</td></tr>
   <tr style="background:#d4edda"><td style="padding:8px;border:1px solid #ddd">Zoom</td><td style="padding:8px;font-weight:bold;color:green">92</td><td style="padding:8px">GOOD</td><td style="padding:8px">1.2s</td><td style="padding:8px">18ms</td><td style="padding:8px">100%</td><td style="padding:8px">0</td><td style="padding:8px">-</td></tr>
 </tbody></table>
-```
+```text
 
 **After the table, ALWAYS provide:**
 
@@ -332,31 +348,36 @@ Present all data in **HTML table format** with detailed analysis.
 ## Filtering Strategies
 
 ### By Location
+
 Useful for investigating office-specific issues.
 
-```
+```text
 zdx_list_applications(location_id=["<location_id>"])
 zdx_get_application_score_trend(app_id="<app_id>", location_id=["<location_id>"])
 zdx_get_application_metric(app_id="<app_id>", metric_name="pft", location_id=["<location_id>"])
-```
+```text
 
 ### By Department
+
 Useful for understanding impact on specific business units.
 
-```
+```text
 zdx_list_applications(department_id=["<dept_id>"])
 zdx_list_application_users(app_id="<app_id>", department_id=["<dept_id>"])
-```
+```text
 
 ### By Geolocation
+
 Useful for regional analysis.
 
-```
+```text
 zdx_list_applications(geo_id=["<geo_id>"])
-```
+```text
 
 ### By Time Window
+
 Adjust `since` (hours) for different investigation windows:
+
 - `since=2` -- current issues (default)
 - `since=4` -- recent trends
 - `since=24` -- daily overview
@@ -368,7 +389,7 @@ Adjust `since` (hours) for different investigation windows:
 
 ### No Degraded Applications
 
-```
+```text
 All 12 monitored applications are healthy (score > 66).
 
 Top performers:
@@ -378,11 +399,12 @@ Top performers:
 
 No action required. Consider reviewing alert thresholds
 if you want earlier notification of potential issues.
-```
+```text
 
 ### All Applications Degraded
 
 If most applications show poor scores simultaneously:
+
 - Likely a network-wide or ISP issue, not application-specific
 - Check ZDX alerts for ISP or network incidents
 - Compare across locations to see if it's localized or global
@@ -390,6 +412,7 @@ If most applications show poor scores simultaneously:
 ### Single User Reports Issue but Scores Are Good
 
 If the application score is healthy org-wide but one user reports issues:
+
 - Use `zdx_get_application_user(app_id, user_id)` for user-specific data
 - Switch to the **Troubleshoot User Experience** skill for individual investigation
 
@@ -400,6 +423,7 @@ If the application score is healthy org-wide but one user reports issues:
 **Primary workflow:** List Apps → Identify Degraded → Check Trends → Drill Into Metrics → List Impacted Users → Cross-Reference Alerts → Report
 
 **Tools used:**
+
 - `zdx_list_applications()` -- list all monitored apps with scores
 - `zdx_get_application(app_id)` -- application details
 - `zdx_get_application_score_trend(app_id)` -- score over time
@@ -411,6 +435,7 @@ If the application score is healthy org-wide but one user reports issues:
 - `zdx_list_alert_affected_devices(alert_id)` -- alert scope
 
 **Score buckets:**
+
 - `good`: 66-100
 - `okay`: 34-65
 - `poor`: 0-33
@@ -418,6 +443,7 @@ If the application score is healthy org-wide but one user reports issues:
 **Metric names:** `pft`, `dns`, `availability`
 
 **Related skills:**
+
 - [Troubleshoot User Experience](../troubleshoot-user-experience/) -- for individual user investigation
 - [Investigate Alerts](../investigate-alerts/) -- for alert-focused investigation
 - [Compare Location Experience](../compare-location-experience/) -- for cross-location analysis

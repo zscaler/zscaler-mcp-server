@@ -6,6 +6,7 @@ description: "Assess Zscaler Microsegmentation (ZMS) workload protection coverag
 # ZMS: Assess Workload Protection & Coverage Gaps
 
 ## Keywords
+
 workload protection, protection gaps, unprotected resources, protection status, resource groups, resource coverage, microsegmentation coverage, workload inventory, protected workloads, coverage percentage, security gaps, lateral movement risk
 
 ## Overview
@@ -13,6 +14,7 @@ workload protection, protection gaps, unprotected resources, protection status, 
 Perform a focused assessment of workload protection coverage in Zscaler Microsegmentation. This skill systematically identifies unprotected resources, analyzes resource group coverage, breaks down protection status by cloud provider and region, and produces an actionable remediation plan to close coverage gaps.
 
 In a microsegmentation deployment, a workload (resource) is "protected" when:
+
 1. An agent is deployed and connected on the workload
 2. The workload belongs to at least one resource group
 3. The resource group is referenced by at least one policy rule
@@ -22,6 +24,7 @@ A gap at any of these three levels leaves the workload exposed to lateral moveme
 **Use this skill when:** An administrator needs to identify unprotected workloads for remediation, prepare protection coverage reports for compliance, assess whether new deployments have adequate segmentation, or track protection percentage over time.
 
 **Important:**
+
 - All ZMS tools require `ZSCALER_CUSTOMER_ID` to be set as an environment variable.
 - All current MCP tools are **read-only** (Query operations).
 - Remediation (creating resource groups, adding policy rules) must be done through the Zscaler admin portal or the ZMS API directly.
@@ -35,17 +38,20 @@ Follow this 6-step process for a complete workload protection assessment.
 ### Step 1: Get the Protection Status Overview
 
 **Get overall resource protection status:**
-```
+
+```text
 zms_get_resource_protection_status(page_num=1, page_size=100)
-```
+```text
 
 This returns the headline metric:
+
 - **Total resources**: All workloads discovered by agents
 - **Protected count**: Workloads with active segmentation coverage
 - **Unprotected count**: Workloads without policy coverage
 - **Protection percentage**: The primary coverage KPI
 
 **Target thresholds:**
+
 - **> 95%**: Mature deployment — focus on closing remaining gaps
 - **90-95%**: Good coverage — systematic remediation plan needed
 - **80-90%**: Moderate coverage — significant gaps exist
@@ -56,11 +62,13 @@ This returns the headline metric:
 ### Step 2: Inventory All Workloads
 
 **List all resources:**
-```
+
+```text
 zms_list_resources(page_num=1, page_size=50)
-```
+```text
 
 For each resource, capture:
+
 - **Name/hostname**: Workload identifier
 - **Type**: VM, container, bare metal
 - **Cloud provider**: AWS, Azure, GCP, on-premises
@@ -71,16 +79,19 @@ For each resource, capture:
 - **Protection status**: Whether this specific workload has policy coverage
 
 **Paginate through all resources for large environments:**
-```
+
+```text
 zms_list_resources(page_num=2, page_size=50)
-```
+```text
 
 **Include deleted resources for a complete audit trail:**
-```
+
+```text
 zms_list_resources(page_num=1, page_size=50, include_deleted=True)
-```
+```text
 
 This helps identify:
+
 - Recently decommissioned workloads that may still appear in resource groups
 - Workloads removed from the fleet that had policy coverage
 - Ghost entries that need cleanup
@@ -90,14 +101,16 @@ This helps identify:
 ### Step 3: Analyze Protection by Resource Group
 
 **List all resource groups:**
-```
+
+```text
 zms_list_resource_groups(page_num=1, page_size=50)
-```
+```text
 
 **Get group-level protection status:**
-```
+
+```text
 zms_get_resource_group_protection_status(page_num=1, page_size=50)
-```
+```text
 
 **For each resource group, classify:**
 
@@ -107,17 +120,19 @@ zms_get_resource_group_protection_status(page_num=1, page_size=50)
 - **Empty**: Group has 0 members (may be misconfigured or unused)
 
 **Investigate specific groups with issues:**
-```
+
+```text
 zms_get_resource_group_members(
     group_id="<group_id>",
     page_num=1,
     page_size=50
 )
-```
+```text
 
 For groups with protection gaps, list members to identify exactly which workloads are unprotected.
 
 **Document group types:**
+
 - **Managed groups** (tag-driven): Check if tag criteria are too narrow (excluding workloads) or too broad (including unintended workloads)
 - **Unmanaged groups** (CIDR/FQDN): Check if CIDR ranges are current and match actual infrastructure
 
@@ -128,32 +143,38 @@ For groups with protection gaps, list members to identify exactly which workload
 **For each unprotected workload, determine the root cause:**
 
 **Cause 1: Workload not in any resource group**
+
 - The workload has an agent but isn't classified into any group
 - For managed groups: workload tags don't match any group's tag criteria
 - For unmanaged groups: workload IP is outside all defined CIDRs
 - **Fix**: Add appropriate tags or update CIDR ranges
 
 **Cause 2: Resource group has no policy rules**
+
 - The workload is in a resource group, but no policy rule references that group
 - **Fix**: Create policy rules (via admin portal) that include this resource group as source or destination
 
 **Cause 3: Agent not deployed or disconnected**
+
 - The workload exists in cloud infrastructure but has no agent
 - Or the agent was deployed but is disconnected
 
 **Verify agent coverage:**
-```
+
+```text
 zms_get_agent_connection_status_statistics()
-```
+```text
 
 **Correlate with resource list:**
-```
+
+```text
 zms_list_agents(page=1, page_size=50)
-```
+```text
 
 Compare the agent list with the resource list. Resources without a corresponding connected agent represent deployment gaps.
 
 **Cause 4: Stale resource group membership**
+
 - Managed group tag criteria no longer match the workload's current tags
 - Unmanaged group CIDRs are outdated after infrastructure changes
 - **Fix**: Update tag criteria or CIDR definitions
@@ -165,26 +186,29 @@ Compare the agent list with the resource list. Resources without a corresponding
 **Analyze coverage across dimensions using the resource list from Step 2:**
 
 **By cloud provider:**
-```
+
+```text
 Coverage by Cloud Provider
 ============================
 AWS:          145/160 protected (90.6%)
 Azure:         87/95  protected (91.6%)
 GCP:           35/40  protected (87.5%)
 On-Premises:   20/25  protected (80.0%)
-```
+```text
 
 **By resource type:**
-```
+
+```text
 Coverage by Resource Type
 ===========================
 VMs:           172/180 protected (95.6%)
 Containers:     85/95  protected (89.5%)
 Bare Metal:     30/37  protected (81.1%)
-```
+```text
 
 **By app zone:**
-```
+
+```text
 Coverage by App Zone
 ======================
 Web Tier:       48/48  protected (100%)
@@ -192,7 +216,7 @@ App Tier:       62/65  protected (95.4%)
 DB Tier:        30/30  protected (100%)
 Shared Services: 25/25 protected (100%)
 Unzoned:        22/44  protected (50.0%)  ← CRITICAL
-```
+```text
 
 **"Unzoned" workloads** — resources not assigned to any app zone — are often the largest protection gap. They tend to be newly deployed workloads or infrastructure that was overlooked during initial segmentation rollout.
 
@@ -201,15 +225,16 @@ Unzoned:        22/44  protected (50.0%)  ← CRITICAL
 ### Step 6: Build Remediation Plan
 
 **Get resource event metadata for additional context:**
-```
+
+```text
 zms_get_metadata()
-```
+```text
 
 ---
 
 ### Present Protection Assessment Report
 
-```
+```text
 Workload Protection Assessment Report
 ========================================
 Date: <current_date>
@@ -308,7 +333,7 @@ Recommend running this assessment monthly and tracking:
 - New workload onboarding time-to-protection
 - Resource group membership changes
 - Policy rule creation rate vs workload growth rate
-```
+```text
 
 ---
 
@@ -316,7 +341,7 @@ Recommend running this assessment monthly and tracking:
 
 ### 100% Protection Coverage
 
-```
+```text
 All workloads are protected (100% coverage).
 
 This is excellent! Verify this remains true by:
@@ -325,11 +350,11 @@ This is excellent! Verify this remains true by:
 2. Monitoring agent deployment on new infrastructure
 3. Reviewing resource group membership after infrastructure changes
 4. Checking that decommissioned workloads are cleaned up
-```
+```text
 
 ### No Resources Found
 
-```
+```text
 No resources (workloads) found in the ZMS deployment.
 
 Possible causes:
@@ -340,11 +365,11 @@ Possible causes:
 Action: Verify agent deployment using
 zms_get_agent_connection_status_statistics() and check
 ZSCALER_CUSTOMER_ID configuration.
-```
+```text
 
 ### All Unprotected Resources Are in One Cloud
 
-```
+```text
 All 25 unprotected workloads are in AWS.
 
 This suggests a deployment gap specific to AWS:
@@ -353,7 +378,7 @@ This suggests a deployment gap specific to AWS:
 - AWS-specific resource groups may be missing
 
 Action: Prioritize AWS tag integration and resource group creation.
-```
+```text
 
 ---
 
@@ -362,23 +387,28 @@ Action: Prioritize AWS tag integration and resource group creation.
 **Primary workflow:** Protection Status → Inventory → Group Analysis → Root Causes → Dimensional Breakdown → Remediation
 
 **Protection status tools:**
+
 - `zms_get_resource_protection_status()` — overall protection metrics
 - `zms_get_resource_group_protection_status()` — per-group protection
 
 **Resource tools:**
+
 - `zms_list_resources(page_num, page_size)` — workload inventory
 - `zms_list_resources(include_deleted=True)` — including decommissioned
 - `zms_get_metadata()` — resource event metadata
 
 **Resource group tools:**
+
 - `zms_list_resource_groups()` — all groups with types
 - `zms_get_resource_group_members(group_id)` — members of a specific group
 
 **Agent tools (for correlation):**
+
 - `zms_get_agent_connection_status_statistics()` — agent deployment health
 - `zms_list_agents()` — individual agent status
 
 **Not yet available via MCP tools:**
+
 - Resource group create/update/delete
 - Policy rule create/update/delete
 - These must be performed through the Zscaler admin portal or the ZMS API

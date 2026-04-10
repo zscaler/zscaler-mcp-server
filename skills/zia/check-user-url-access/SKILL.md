@@ -6,6 +6,7 @@ description: "Determine whether a specific user or group is allowed to access a 
 # ZIA: Check User URL Access
 
 ## Keywords
+
 can user access, is url blocked, why blocked, url access check, user access, policy evaluation, url allowed, access denied, troubleshoot access, blocked site, user policy
 
 ## Overview
@@ -23,54 +24,59 @@ Follow this 6-step process to evaluate user URL access.
 ### Step 1: Identify the User and URL
 
 Collect from the administrator:
+
 - **URL** to check (e.g., "chat.openai.com", "github.com")
 - **User identifier** -- username, email, group name, or department
 
 **Look up the user:**
-```
+
+```text
 get_zia_users(search="<username_or_email>")
-```
+```text
 
 Note the user's:
+
 - User ID
 - Department (ID and name)
 - Groups (IDs and names)
 
 If the admin specified a group or department instead:
-```
+
+```text
 get_zia_user_groups(search="<group_name>")
 get_zia_user_departments(search="<department_name>")
-```
+```text
 
 ---
 
 ### Step 2: Classify the URL
 
-```
+```text
 zia_url_lookup(urls=["<url>"])
-```
+```text
 
 This returns:
+
 - `urlClassifications` -- the category(ies) the URL belongs to
 - `urlClassificationsWithSecurityAlert` -- whether there are security alerts
 
 Note all categories returned. A URL can belong to multiple categories.
 
-#### Example:
+#### Example
 
-```
+```text
 URL: chat.openai.com
 Categories: AI/ML Applications, Technology
 Security Alert: None
-```
+```text
 
 ---
 
 ### Step 3: Evaluate URL Filtering Rules
 
-```
+```text
 zia_list_url_filtering_rules()
-```
+```text
 
 Walk through rules in **order** (lowest order number = highest priority). For each rule, check if it matches:
 
@@ -80,6 +86,7 @@ Walk through rules in **order** (lowest order number = highest priority). For ea
 4. **First matching rule wins.** Stop evaluating once a match is found.
 
 Record:
+
 - Matching rule name, ID, and order
 - Action: `ALLOW`, `BLOCK`, `CAUTION`
 - Why it matched (category + user scope)
@@ -88,11 +95,12 @@ Record:
 
 ### Step 4: Evaluate SSL Inspection Rules
 
-```
+```text
 zia_list_ssl_inspection_rules()
-```
+```text
 
 Walk through rules in order. Check if the URL's categories or cloud application match any SSL rule. Record:
+
 - Action: `INSPECT`, `DO_NOT_INSPECT`, `DO_NOT_DECRYPT`
 - Impact on downstream policies (DLP effectiveness)
 
@@ -102,11 +110,12 @@ Walk through rules in order. Check if the URL's categories or cloud application 
 
 Only applicable if SSL inspection action is `INSPECT`:
 
-```
+```text
 zia_list_web_dlp_rules()
-```
+```text
 
 Check if any DLP rules target the URL's categories. If yes, note:
+
 - Rule name and action
 - DLP engines involved
 - Whether uploads, downloads, or both are scanned
@@ -117,9 +126,9 @@ If SSL is `DO_NOT_INSPECT`, DLP rules for HTTPS traffic are ineffective. Note th
 
 ### Step 6: Present Access Verdict
 
-#### Report Format:
+#### Report Format
 
-```
+```text
 URL Access Check Results
 =========================
 
@@ -180,13 +189,13 @@ No matching firewall rules for this URL/category.
 
 **Result:** User CAN access chat.openai.com. Uploads will be scanned
 by DLP and logged if sensitive data is detected.
-```
+```text
 
 ---
 
 ### Verdict: BLOCKED Example
 
-```
+```text
 ## Access Verdict: BLOCKED
 
 ### 1. URL Filtering
@@ -207,7 +216,7 @@ an explicit ALLOW exception for Social Networking.
 1. Add the user's group to an existing ALLOW rule
 2. Create a new URL filtering rule to allow this user/group
 3. Move the user to a department with an existing exception
-```
+```text
 
 ---
 
@@ -215,17 +224,17 @@ an explicit ALLOW exception for Social Networking.
 
 ### URL in Multiple Categories
 
-```
+```text
 URL: dropbox.com
 Categories: File Sharing, Cloud Storage, Business Applications
 
 Multiple categories means multiple potential rule matches. I'll evaluate
 against ALL categories and report which category triggered the match.
-```
+```text
 
 ### No Matching Rules (Default Policy)
 
-```
+```text
 No explicit rules matched for this user and URL category.
 The DEFAULT URL filtering rule applies.
 
@@ -233,11 +242,11 @@ Default Rule: "<name>" (ID: <id>)
 - Action: <ALLOW/BLOCK/CAUTION>
 
 This is the catch-all rule at the bottom of the policy.
-```
+```text
 
 ### User in Multiple Groups with Conflicting Rules
 
-```
+```text
 Conflict detected: User is in both "Developers" and "Contractors" groups.
 
 - Rule "Allow GitHub" (Order: 3): ALLOW for Developers
@@ -247,16 +256,16 @@ Resolution: Rule at Order 3 is evaluated first. Since the user IS a
 member of the Developers group, the ALLOW rule matches first.
 
 Verdict: ALLOWED (Developer rule takes precedence by order)
-```
+```text
 
 ### Caution Action
 
-```
+```text
 Action: CAUTION
 
 The user will see a warning page but CAN proceed to the site after
 acknowledging the caution. This is neither a full block nor a full allow.
-```
+```text
 
 ---
 
@@ -274,6 +283,7 @@ acknowledging the caution. This is neither a full block nor a full allow.
 **Primary workflow:** Identify User → Classify URL → Evaluate URL Filtering → Evaluate SSL → Evaluate DLP → Present Verdict
 
 **Tools used:**
+
 - `get_zia_users(search)` -- look up user details
 - `get_zia_user_groups(search)` -- look up group membership
 - `get_zia_user_departments(search)` -- look up department
@@ -284,12 +294,14 @@ acknowledging the caution. This is neither a full block nor a full allow.
 - `zia_list_cloud_firewall_rules()` -- evaluate firewall rules
 
 **Evaluation order:**
+
 1. URL Filtering Rules (by order number, first match wins)
 2. SSL Inspection Rules (determines DLP effectiveness)
 3. DLP Web Rules (only effective if SSL is inspected)
 4. Cloud Firewall Rules (network-level controls)
 
 **Remember:**
+
 - Lowest rule order number = highest priority
 - First matching rule wins (no further evaluation)
 - SSL bypass makes DLP ineffective for HTTPS
