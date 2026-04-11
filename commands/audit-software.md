@@ -1,4 +1,5 @@
 ---
+name: audit-software
 disable-model-invocation: true
 argument-hint: "[software_name] [location_or_department]"
 description: "Audit software inventory across devices using ZDX data for compliance and vulnerability assessment."

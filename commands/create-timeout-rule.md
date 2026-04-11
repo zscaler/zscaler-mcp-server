@@ -1,4 +1,5 @@
 ---
+name: create-timeout-rule
 disable-model-invocation: true
 argument-hint: "<rule_name> <reauth_timeout_seconds> [idle_timeout_seconds] [app_or_group]"
 description: "Create a ZPA timeout policy rule for session re-authentication and idle timeout."

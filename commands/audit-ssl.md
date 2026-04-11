@@ -1,4 +1,5 @@
 ---
+name: audit-ssl
 disable-model-invocation: true
 argument-hint: "<question about SSL rules> [e.g., 'which rules are in decryption mode', 'show bypass exceptions', 'audit all SSL rules']"
 description: "Audit ZIA SSL inspection rules -- list rules by action (INSPECT, DO_NOT_INSPECT, DO_NOT_DECRYPT, BLOCK), identify bypasses, and assess risk."

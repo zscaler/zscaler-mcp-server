@@ -1,4 +1,5 @@
 ---
+name: create-forwarding-rule
 disable-model-invocation: true
 argument-hint: "<rule_name> <action: bypass|intercept> [app_name] [user_or_group]"
 description: "Create a ZPA client forwarding policy rule to bypass or intercept traffic."

@@ -1,4 +1,5 @@
 ---
+name: onboard-app
 disable-model-invocation: true
 argument-hint: "<app_name> <domain:port> [description]"
 description: "End-to-end onboarding of a new application in ZPA with full dependency chain."

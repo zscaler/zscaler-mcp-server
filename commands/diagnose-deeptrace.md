@@ -1,4 +1,5 @@
 ---
+name: diagnose-deeptrace
 disable-model-invocation: true
 argument-hint: "<username_or_email> [application_name] [action: analyze|start|cleanup]"
 description: "Run a ZDX deep trace diagnostics session — start, analyze, or clean up deep traces for a user's device."
