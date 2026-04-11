@@ -10,6 +10,7 @@
   "homepage": "https://github.com/zscaler/zscaler-mcp-server",
   "repository": "https://github.com/zscaler/zscaler-mcp-server",
   "license": "MIT",
+  "logo": "assets/logo.svg",
   "keywords": [
     "zscaler",
     "mcp",
@@ -22,15 +23,14 @@
     "cloud-security",
     "skills"
   ],
-  "category": "security",
+  "category": "developer-tools",
   "tags": [
     "security",
     "zero-trust",
-    "network-security",
     "cloud-security",
-    "sase"
+    "sase",
+    "mcp"
   ],
-  "logo": "docs/media/logo.svg",
   "skills": "./skills/",
-  "mcp": "./mcp.json"
+  "rules": "./rules/"
 }

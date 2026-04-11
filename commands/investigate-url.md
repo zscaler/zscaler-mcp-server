@@ -1,4 +1,5 @@
 ---
+name: investigate-url
 disable-model-invocation: true
 argument-hint: "<url_or_category_name>"
 description: "Investigate where a URL or URL category is referenced across ZIA policy rules."

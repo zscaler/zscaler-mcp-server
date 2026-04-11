@@ -1,4 +1,5 @@
 ---
+name: onboard-location
 disable-model-invocation: true
 argument-hint: "<location_name> <ip_address> [vpn_type: ufqdn|ip]"
 description: "End-to-end onboarding of a new ZIA location with traffic forwarding dependencies."

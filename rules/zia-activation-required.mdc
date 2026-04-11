@@ -1,0 +1,8 @@
+---
+description: ZIA requires explicit activation after any create, update, or delete operation. Forgetting this is the number one source of issues.
+alwaysApply: true
+---
+
+# ZIA activation required
+
+After any ZIA create, update, or delete operation, always call `zia_activate_configuration()`. Changes are staged until activation — they will not take effect without this step. This is the most common cause of "my change didn't work" issues.

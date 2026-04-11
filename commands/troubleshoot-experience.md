@@ -1,4 +1,5 @@
 ---
+name: troubleshoot-experience
 disable-model-invocation: true
 argument-hint: "<username_or_email> [application_name] [since_hours]"
 description: "Troubleshoot a user's digital experience using ZDX scores, metrics, and network path data."

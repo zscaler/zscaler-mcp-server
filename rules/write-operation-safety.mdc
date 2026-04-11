@@ -1,0 +1,12 @@
+---
+description: Write operations are disabled by default and require explicit enablement. Delete operations use HMAC confirmation tokens.
+alwaysApply: true
+---
+
+# Write operation safety
+
+1. Write tools are disabled by default. They must be enabled with `--write-tools` and an explicit allowlist.
+2. Always confirm with the user before executing create, update, or delete operations.
+3. Delete operations return an HMAC-SHA256 confirmation token that must be passed back to confirm execution within 5 minutes.
+4. ZDX is read-only — no create, update, or delete operations exist except `zdx_start_deep_trace`.
+5. ZPA policy rules are evaluated top-to-bottom. New rules append at the end — order matters for access control.

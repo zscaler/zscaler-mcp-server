@@ -1,4 +1,5 @@
 ---
+name: check-access
 disable-model-invocation: true
 argument-hint: "<user_or_group> <url>"
 description: "Check whether a user or group can access a specific URL via ZIA policies."

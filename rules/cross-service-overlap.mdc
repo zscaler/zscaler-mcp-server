@@ -1,0 +1,10 @@
+---
+description: Zscaler APIs have intentional cross-service data overlap. Disabling a service does not remove overlapping tools from other services.
+alwaysApply: true
+---
+
+# Cross-service data overlap
+
+Zscaler APIs expose overlapping data across services. For example, ZIA has device management tools (`zia_list_devices`) that return the same data as ZCC tools. Disabling the `zcc` service removes all `zcc_*` tools but does NOT remove ZIA's device tools. Use `--disabled-tools` with patterns to block cross-service data access when needed.
+
+When a service is disabled, the `zscaler_get_available_services` tool lists it as disabled. Tool search returns the "closest N" results even if none are relevant — always check available services first to avoid using unrelated tools from other services.

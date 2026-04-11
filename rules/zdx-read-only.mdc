@@ -1,0 +1,10 @@
+---
+description: ZDX is a read-only monitoring service. The since parameter is in hours, not timestamps.
+alwaysApply: true
+---
+
+# ZDX read-only and query conventions
+
+1. ZDX tools only query data. There are no create, update, or delete operations except `zdx_start_deep_trace`.
+2. The `since` parameter is in **hours**, not timestamps. Default is 2 hours. Example: `since=24` means "last 24 hours."
+3. ZDX query tools accept optional filters that improve result quality: `location_id`, `department_id`, `geo_id`. Ask the user for scope before running broad queries on large tenants.
