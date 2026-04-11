@@ -1,4 +1,5 @@
 ---
+name: create-server-group
 disable-model-invocation: true
 argument-hint: "<server_group_name> [connector_group_name]"
 description: "Create a ZPA server group with required app connector group dependency."

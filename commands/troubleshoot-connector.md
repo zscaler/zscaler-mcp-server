@@ -1,4 +1,5 @@
 ---
+name: troubleshoot-connector
 disable-model-invocation: true
 argument-hint: "<connector_group_name_or_connector_name> [symptom: not-enrolling|disconnected|upgrade-failed|high-cpu|high-memory|high-disk]"
 description: "Troubleshoot ZPA App Connector issues -- enrollment, connectivity, upgrades, and resource utilization."

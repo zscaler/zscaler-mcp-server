@@ -1,4 +1,5 @@
 ---
+name: compare-locations
 disable-model-invocation: true
 argument-hint: "[application_name] [location1, location2, ...] [since_hours]"
 description: "Compare digital experience across locations, departments, or geolocations using ZDX."

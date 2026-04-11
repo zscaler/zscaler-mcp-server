@@ -1,4 +1,5 @@
 ---
+name: app-health
 disable-model-invocation: true
 argument-hint: "[application_name] [since_hours]"
 description: "Analyze application health across the organization using ZDX scores and metrics."

@@ -1,4 +1,5 @@
 ---
+name: review-attack-surface
 disable-model-invocation: true
 argument-hint: "[organization_name] [focus: findings|lookalikes|all]"
 description: "Review external attack surface using Zscaler EASM findings, exposed services, and lookalike domains."

@@ -3,7 +3,12 @@
     "zscaler": {
       "command": "zscaler-mcp-server",
       "args": [],
-      "env": {}
+      "env": {
+        "ZSCALER_CLIENT_ID": "",
+        "ZSCALER_CLIENT_SECRET": "",
+        "ZSCALER_CUSTOMER_ID": "",
+        "ZSCALER_VANITY_DOMAIN": ""
+      }
     }
   }
 }

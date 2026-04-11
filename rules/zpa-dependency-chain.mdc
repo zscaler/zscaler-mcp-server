@@ -1,0 +1,18 @@
+---
+description: ZPA application onboarding requires resources to be created in a specific dependency order. Skipping dependencies causes cryptic 400 errors.
+alwaysApply: true
+---
+
+# ZPA dependency chain
+
+To onboard a ZPA application, create resources in this order:
+
+1. App connector group
+2. Server group (references connector group)
+3. Segment group
+4. Application segment (references server and segment groups)
+5. Access policy rule (references application segment)
+
+Skipping any dependency causes cryptic 400 errors from the API.
+
+For ZIA locations, the chain is: static IP → VPN credential (references static IP) → location (references VPN credential and static IP).

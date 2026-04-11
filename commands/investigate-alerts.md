@@ -1,4 +1,5 @@
 ---
+name: investigate-alerts
 disable-model-invocation: true
 argument-hint: "[since_hours] [severity: all|critical|warning]"
 description: "Investigate active and historical ZDX alerts to understand scope, root cause, and impact."
