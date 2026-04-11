@@ -1,4 +1,5 @@
 ---
+name: investigate-incident
 disable-model-invocation: true
 argument-hint: "[threat_type_or_keyword] [since_hours]"
 description: "Investigate security incidents using Z-Insights analytics -- threats, firewall actions, shadow IT, and web traffic."

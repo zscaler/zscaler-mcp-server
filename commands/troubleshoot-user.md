@@ -1,4 +1,5 @@
 ---
+name: troubleshoot-user
 disable-model-invocation: true
 argument-hint: "<username_or_email> [application_or_url] [symptom]"
 description: "Cross-product troubleshooting of user connectivity across ZCC, ZDX, ZPA, and ZIA."

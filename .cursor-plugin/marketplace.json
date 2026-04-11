@@ -1,0 +1,17 @@
+{
+  "name": "zscaler-mcp-server",
+  "owner": {
+    "name": "Zscaler",
+    "email": "devrel@zscaler.com"
+  },
+  "metadata": {
+    "description": "Zscaler Zero Trust Exchange MCP server with 300+ tools and guided skills"
+  },
+  "plugins": [
+    {
+      "name": "zscaler",
+      "source": ".",
+      "description": "Manage the Zscaler cloud security platform including ZPA, ZIA, ZDX, ZCC, EASM, and Z-Insights."
+    }
+  ]
+}

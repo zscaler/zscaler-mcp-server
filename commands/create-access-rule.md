@@ -1,4 +1,5 @@
 ---
+name: create-access-rule
 disable-model-invocation: true
 argument-hint: "<rule_name> <action: allow|deny> [app_or_group] [user_or_group]"
 description: "Create a ZPA access policy rule with v2 conditions for application access control."

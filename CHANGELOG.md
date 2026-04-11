@@ -1,6 +1,18 @@
 # Zscaler Integrations MCP Server Changelog
 
-## 0.9.1 (April 10, 2026)
+## 0.10.1 (April 11, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Features
+
+- [PR #48](https://github.com/zscaler/zscaler-mcp-server/pull/48) - Aligned **Cursor Marketplace plugin** with official plugin-template standards. Fixed `category` to `developer-tools`, moved logo to `assets/`, added `marketplace.json` for validation compatibility, declared required Zscaler OneAPI env vars in `mcp.json`, and added `name` frontmatter to all 20 command files. Plugin now passes Cursor's `validate-template.mjs` checklist.
+
+- [PR #48](https://github.com/zscaler/zscaler-mcp-server/pull/48) - Added 7 **Cursor rules** (`.mdc` files) covering tool naming conventions, ZIA activation requirement, ZPA dependency chain, write operation safety, ZDX read-only conventions, ZMS GraphQL patterns, and cross-service data overlap.
+
+## 0.10.0 (April 10, 2026)
 
 ### Notes
 

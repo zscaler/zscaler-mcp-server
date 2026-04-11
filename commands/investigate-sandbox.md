@@ -1,4 +1,5 @@
 ---
+name: investigate-sandbox
 disable-model-invocation: true
 argument-hint: "<md5_hash_or_url> [symptom: blocked|allowed|quarantined|not-analyzed]"
 description: "Investigate ZIA Sandbox file analysis -- check sandbox reports, quota, SSL prerequisite, and diagnose file block/quarantine issues."
