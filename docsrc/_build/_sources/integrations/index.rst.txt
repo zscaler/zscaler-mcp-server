@@ -41,6 +41,10 @@ The Zscaler MCP Server ships with native integrations for several AI development
      - Agent
      - ``python azure_mcp_operations.py agent_create``
      - `Deployment Guide <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md>`__ · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py>`__
+   * - **GitHub MCP Registry**
+     - Registry
+     - ``mcp-publisher publish``
+     - `integrations/github/ <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/github>`__
 
 All integrations share the same MCP server, tools, and skills — they differ only in how they connect the AI platform to the server.
 
@@ -362,6 +366,51 @@ For the complete end-to-end walkthrough (both methods), see the `Azure AI Foundr
    python azure_mcp_operations.py agent_chat -m "query"  # single query
    python azure_mcp_operations.py agent_status    # show agent info
    python azure_mcp_operations.py agent_destroy   # delete agent
+
+.. _github-mcp-registry:
+
+GitHub MCP Registry
+-------------------
+
+The Zscaler MCP Server is listed on the `GitHub MCP Registry <https://github.com/modelcontextprotocol/registry>`__, enabling one-click installation from GitHub Copilot and any MCP-compatible client.
+
+**What's Included:**
+
+- Registry manifest (``server.json``) — Server metadata, PyPI and Docker packages, required env vars
+- PyPI ownership proof in ``README.md`` — ``<!-- mcp-name: io.github.zscaler/zscaler-mcp-server -->``
+- Docker ownership proof in ``Dockerfile`` — ``LABEL io.modelcontextprotocol.server.name``
+
+**Two Package Types:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 50
+
+   * - Package
+     - Runtime
+     - Identifier
+   * - **PyPI**
+     - ``uvx``
+     - ``zscaler-mcp``
+   * - **Docker (OCI)**
+     - ``docker``
+     - ``docker.io/zscaler/zscaler-mcp-server:latest``
+
+**Required Credentials (4 env vars):**
+
+- ``ZSCALER_CLIENT_ID`` (secret) — OneAPI Client ID
+- ``ZSCALER_CLIENT_SECRET`` (secret) — OneAPI Client Secret
+- ``ZSCALER_CUSTOMER_ID`` — Customer ID
+- ``ZSCALER_VANITY_DOMAIN`` — Vanity domain (e.g. ``mycompany.zscloud.net``)
+
+**Publishing:**
+
+.. code-block:: bash
+
+   mcp-publisher login github
+   mcp-publisher publish
+
+**Config files at repo root:** ``server.json``
 
 Shared Components
 -----------------
