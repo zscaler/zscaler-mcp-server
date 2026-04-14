@@ -6,7 +6,43 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
-## 0.9.0 (April xx, 2026)
+## 0.10.2 (April 14, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+`PR #49 <https://github.com/zscaler/zscaler-mcp-server/pull/49>`_ - Update to `zscaler-sdk-python v1.9.21 <https://github.com/zscaler/zscaler-sdk-python/releases/tag/v1.9.21>`_
+
+## 0.10.1 (April 11, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Features
+
+`PR #48 <https://github.com/zscaler/zscaler-mcp-server/pull/48>`_ - Aligned **Cursor Marketplace plugin** with official plugin-template standards. Fixed ``category`` to ``developer-tools``, moved logo to ``assets/``, added ``marketplace.json`` for validation compatibility, declared required Zscaler OneAPI env vars in ``mcp.json``, and added ``name`` frontmatter to all 20 command files. Plugin now passes Cursor's ``validate-template.mjs`` checklist.
+
+`PR #48 <https://github.com/zscaler/zscaler-mcp-server/pull/48>`_ - Added 7 **Cursor rules** (``.mdc`` files) covering tool naming conventions, ZIA activation requirement, ZPA dependency chain, write operation safety, ZDX read-only conventions, ZMS GraphQL patterns, and cross-service data overlap.
+
+## 0.10.0 (April 10, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Features
+
+`PR #47 <https://github.com/zscaler/zscaler-mcp-server/pull/47>`_ - Added **GitHub MCP Registry integration** (``server.json``) enabling one-click installation from GitHub Copilot and MCP-compatible clients. Declares PyPI and Docker packages with required Zscaler OneAPI credentials. Version auto-updated by the release pipeline.
+
+### Bug Fixes
+
+`PR #47 <https://github.com/zscaler/zscaler-mcp-server/pull/47>`_ - Upgraded Docker base image from ``python:3.13-alpine`` to ``python:3.14-alpine`` (digest-pinned) and explicitly patched Alpine packages to fix CVE-2026-28390 (openssl), CVE-2026-22184 (zlib). Applied same fixes to AWS ECR Dockerfile, replacing ``curl`` health check with busybox ``wget`` to eliminate 11 additional curl CVEs.
+
+## 0.9.0 (April 9, 2026)
 
 ### Notes
 

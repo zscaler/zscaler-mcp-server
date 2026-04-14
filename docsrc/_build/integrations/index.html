@@ -278,9 +278,9 @@
           <section id="platform-integrations">
 <span id="id1"></span><h1>Platform Integrations<a class="headerlink" href="#platform-integrations" title="Link to this heading">¶</a></h1>
 <p>The Zscaler MCP Server ships with native integrations for several AI development platforms. Each integration includes platform-specific configuration files, 19 guided skills, and setup instructions.</p>
-<div class="table-wrapper colwidths-given docutils container" id="id7">
-<table class="docutils align-default" id="id7">
-<caption><span class="caption-text">Available Integrations</span><a class="headerlink" href="#id7" title="Link to this table">¶</a></caption>
+<div class="table-wrapper colwidths-given docutils container" id="id8">
+<table class="docutils align-default" id="id8">
+<caption><span class="caption-text">Available Integrations</span><a class="headerlink" href="#id8" title="Link to this table">¶</a></caption>
 <colgroup>
 <col style="width: 15.0%" />
 <col style="width: 15.0%" />
@@ -329,6 +329,11 @@
 <td><p>Agent</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_create</span></code></p></td>
 <td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md">Deployment Guide</a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py">Source</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>GitHub MCP Registry</strong></p></td>
+<td><p>Registry</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mcp-publisher</span> <span class="pre">publish</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/github">integrations/github/</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -646,6 +651,55 @@ python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>age
 </pre></div>
 </div>
 </section>
+<section id="github-mcp-registry">
+<span id="id7"></span><h2>GitHub MCP Registry<a class="headerlink" href="#github-mcp-registry" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is listed on the <a class="reference external" href="https://github.com/modelcontextprotocol/registry">GitHub MCP Registry</a>, enabling one-click installation from GitHub Copilot and any MCP-compatible client.</p>
+<p><strong>What’s Included:</strong></p>
+<ul class="simple">
+<li><p>Registry manifest (<code class="docutils literal notranslate"><span class="pre">server.json</span></code>) — Server metadata, PyPI and Docker packages, required env vars</p></li>
+<li><p>PyPI ownership proof in <code class="docutils literal notranslate"><span class="pre">README.md</span></code> — <code class="docutils literal notranslate"><span class="pre">&lt;!--</span> <span class="pre">mcp-name:</span> <span class="pre">io.github.zscaler/zscaler-mcp-server</span> <span class="pre">--&gt;</span></code></p></li>
+<li><p>Docker ownership proof in <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> — <code class="docutils literal notranslate"><span class="pre">LABEL</span> <span class="pre">io.modelcontextprotocol.server.name</span></code></p></li>
+</ul>
+<p><strong>Two Package Types:</strong></p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 30.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Package</p></th>
+<th class="head"><p>Runtime</p></th>
+<th class="head"><p>Identifier</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>PyPI</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">uvx</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Docker (OCI)</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">docker.io/zscaler/zscaler-mcp-server:latest</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Required Credentials (4 env vars):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code> (secret) — OneAPI Client ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code> (secret) — OneAPI Client Secret</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> — Customer ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code> — Vanity domain (e.g. <code class="docutils literal notranslate"><span class="pre">mycompany.zscloud.net</span></code>)</p></li>
+</ul>
+<p><strong>Publishing:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mcp-publisher<span class="w"> </span>login<span class="w"> </span>github
+mcp-publisher<span class="w"> </span>publish
+</pre></div>
+</div>
+<p><strong>Config files at repo root:</strong> <code class="docutils literal notranslate"><span class="pre">server.json</span></code></p>
+</section>
 <section id="shared-components">
 <h2>Shared Components<a class="headerlink" href="#shared-components" title="Link to this heading">¶</a></h2>
 <p>All integrations leverage common resources from the repository root:</p>
@@ -809,6 +863,7 @@ python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>age
 <li><a class="reference internal" href="#google-adk-agent-development-kit">Google ADK (Agent Development Kit)</a></li>
 <li><a class="reference internal" href="#azure-deployment">Azure Deployment</a></li>
 <li><a class="reference internal" href="#azure-ai-foundry-agent">Azure AI Foundry Agent</a></li>
+<li><a class="reference internal" href="#github-mcp-registry">GitHub MCP Registry</a></li>
 <li><a class="reference internal" href="#shared-components">Shared Components</a><ul>
 <li><a class="reference internal" href="#skills-overview">Skills Overview</a></li>
 </ul>
