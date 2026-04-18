@@ -15,11 +15,12 @@ Prerequisites
 Automated Deployment (Recommended)
 -----------------------------------
 
-The ``scripts/deploy-gcp.py`` script provides an end-to-end deployment experience:
+The ``integrations/google/gcp/gcp_mcp_operations.py`` script provides an interactive deployment experience with support for Cloud Run, GKE, and Compute Engine VM targets:
 
 .. code-block:: bash
 
-   python scripts/deploy-gcp.py
+   cd integrations/google/gcp
+   python gcp_mcp_operations.py deploy
 
 The script:
 
@@ -34,8 +35,11 @@ The script:
 
 .. code-block:: bash
 
-   python scripts/deploy-gcp.py --env-file /path/to/.env   # Use specific .env
-   python scripts/deploy-gcp.py --teardown                  # Delete the service
+   cd integrations/google/gcp
+   python gcp_mcp_operations.py deploy       # Interactive guided deployment
+   python gcp_mcp_operations.py status       # Check deployment
+   python gcp_mcp_operations.py logs         # Stream logs
+   python gcp_mcp_operations.py destroy      # Tear down
 
 Authentication
 ~~~~~~~~~~~~~~

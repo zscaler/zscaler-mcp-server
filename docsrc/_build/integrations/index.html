@@ -221,6 +221,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -315,22 +319,27 @@
 <td><p>Powers panel → Add Custom Power</p></td>
 <td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/kiro">integrations/kiro/</a></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Google ADK</strong></p></td>
-<td><p>Agent</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">run</span> <span class="pre">zscaler_agent</span></code></p></td>
-<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/adk">integrations/adk/</a></p></td>
+<tr class="row-even"><td><p><strong>Google Cloud (Cloud Run / GKE / VM)</strong></p></td>
+<td><p>Deployment</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">gcp_mcp_operations.py</span> <span class="pre">deploy</span></code></p></td>
+<td><p><a class="reference internal" href="../guides/gcp-cloud-run.html"><span class="doc">Cloud Run</span></a> · <a class="reference internal" href="../guides/gcp-gke.html"><span class="doc">GKE</span></a> · <a class="reference internal" href="../guides/gcp-compute-engine-vm.html"><span class="doc">VM</span></a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/google">Source</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Azure</strong></p></td>
+<tr class="row-odd"><td><p><strong>Google ADK Agent</strong></p></td>
+<td><p>Agent</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">adk_agent_operations.py</span> <span class="pre">deploy</span></code></p></td>
+<td><p><a class="reference internal" href="../guides/gcp-adk-agent.html"><span class="doc">Guide</span></a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/google/adk">Source</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Azure (Container Apps / VM / AKS)</strong></p></td>
 <td><p>Deployment</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">deploy</span></code></p></td>
-<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure">integrations/azure/</a></p></td>
+<td><p><a class="reference internal" href="../guides/azure-deployment.html"><span class="doc">Guide</span></a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure">Source</a></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Azure AI Foundry</strong></p></td>
+<tr class="row-odd"><td><p><strong>Azure AI Foundry</strong></p></td>
 <td><p>Agent</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_create</span></code></p></td>
-<td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md">Deployment Guide</a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py">Source</a></p></td>
+<td><p><a class="reference internal" href="../guides/azure-deployment.html"><span class="doc">Guide</span></a> · <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py">Source</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>GitHub MCP Registry</strong></p></td>
+<tr class="row-even"><td><p><strong>GitHub MCP Registry</strong></p></td>
 <td><p>Registry</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mcp-publisher</span> <span class="pre">publish</span></code></p></td>
 <td><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/github">integrations/github/</a></p></td>
@@ -491,15 +500,15 @@ claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="
 <p>The Zscaler MCP Server integrates with <a class="reference external" href="https://google.github.io/adk-docs/">Google ADK</a> to build autonomous Zscaler security agents powered by Gemini models.</p>
 <p><strong>What’s Included:</strong></p>
 <ul class="simple">
-<li><p>Root <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">integrations/adk/.env</span></code>) — Zscaler API credentials and write-tool configuration</p></li>
-<li><p>Agent <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">integrations/adk/zscaler_agent/.env</span></code>) — Google ADK config (model, API key, agent prompt, Cloud Run settings)</p></li>
+<li><p>Root <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">integrations/google/adk/.env</span></code>) — Zscaler API credentials and write-tool configuration</p></li>
+<li><p>Agent <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">integrations/google/adk/zscaler_agent/.env</span></code>) — Google ADK config (model, API key, agent prompt, Cloud Run settings)</p></li>
 </ul>
 <p><strong>How It Works:</strong></p>
 <p>The Google ADK agent connects to the Zscaler MCP Server as an MCP tool provider. The agent starts the MCP server, discovers all 280+ tools, and uses a Gemini model to interpret user requests and invoke the appropriate Zscaler tools.</p>
 <p><strong>Configuration:</strong></p>
 <ol class="arabic simple">
-<li><p>Edit <code class="docutils literal notranslate"><span class="pre">integrations/adk/.env</span></code> with your Zscaler OneAPI credentials</p></li>
-<li><p>Edit <code class="docutils literal notranslate"><span class="pre">integrations/adk/zscaler_agent/.env</span></code> with your Google API key and agent settings</p></li>
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">integrations/google/adk/.env</span></code> with your Zscaler OneAPI credentials</p></li>
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">integrations/google/adk/zscaler_agent/.env</span></code> with your Google API key and agent settings</p></li>
 </ol>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Google ADK Configuration</span>
 <span class="nv">GOOGLE_GENAI_USE_VERTEXAI</span><span class="o">=</span>False
@@ -511,8 +520,8 @@ claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="
 </pre></div>
 </div>
 <p><strong>Local Development:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/adk
-adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/adk
+python<span class="w"> </span>adk_agent_operations.py<span class="w"> </span>local_run
 </pre></div>
 </div>
 <p><strong>Cloud Run Deployment:</strong></p>
@@ -529,7 +538,7 @@ adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
 </section>
 <section id="azure-deployment">
 <span id="id6"></span><h2>Azure Deployment<a class="headerlink" href="#azure-deployment" title="Link to this heading">¶</a></h2>
-<p>The Zscaler MCP Server can be deployed to <strong>Azure Container Apps</strong> (managed, serverless) or an <strong>Azure Virtual Machine</strong> (Ubuntu 22.04) using the interactive <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> script.</p>
+<p>The Zscaler MCP Server can be deployed to <strong>Azure Container Apps</strong> (managed, serverless), an <strong>Azure Virtual Machine</strong> (Ubuntu 22.04), or <strong>Azure Kubernetes Service</strong> (Preview) using the interactive <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> script. Full walkthrough: <a class="reference internal" href="../guides/azure-deployment.html"><span class="doc">Azure Deployment</span></a>.</p>
 <p><strong>What’s Included:</strong></p>
 <ul class="simple">
 <li><p>Deployment script (<code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code>) — Interactive guided deployment with <code class="docutils literal notranslate"><span class="pre">deploy</span></code>, <code class="docutils literal notranslate"><span class="pre">destroy</span></code>, <code class="docutils literal notranslate"><span class="pre">status</span></code>, <code class="docutils literal notranslate"><span class="pre">logs</span></code>, and <code class="docutils literal notranslate"><span class="pre">ssh</span></code> commands</p></li>
@@ -542,22 +551,31 @@ adk<span class="w"> </span>run<span class="w"> </span>zscaler_agent
 <colgroup>
 <col style="width: 25.0%" />
 <col style="width: 35.0%" />
-<col style="width: 40.0%" />
+<col style="width: 30.0%" />
+<col style="width: 10.0%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Target</p></th>
 <th class="head"><p>Description</p></th>
 <th class="head"><p>Image / Package</p></th>
+<th class="head"><p>Status</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><strong>Container Apps</strong></p></td>
 <td><p>Managed serverless containers</p></td>
 <td><p>Docker Hub: <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code></p></td>
+<td><p>GA</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Virtual Machine</strong></p></td>
 <td><p>Ubuntu 22.04, self-managed</p></td>
 <td><p>PyPI: <code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span></code></p></td>
+<td><p>GA</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Azure Kubernetes Service</strong></p></td>
+<td><p>Kubernetes <code class="docutils literal notranslate"><span class="pre">Deployment</span></code> + <code class="docutils literal notranslate"><span class="pre">LoadBalancer</span></code> Service, Key Vault via Workload Identity Federation</p></td>
+<td><p>Docker Hub: <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code></p></td>
+<td><p><strong>Preview</strong></p></td>
 </tr>
 </tbody>
 </table>
@@ -615,7 +633,7 @@ python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>dep
 <li><p><strong>API (CLI):</strong> Create and manage the agent via <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> commands — ideal for automation and scripted deployments.</p></li>
 <li><p><strong>UI (Portal):</strong> Configure the agent through the Azure AI Foundry portal at <a class="reference external" href="https://ai.azure.com">ai.azure.com</a> — ideal for visual setup and exploration.</p></li>
 </ul>
-<p>For the complete end-to-end walkthrough (both methods), see the <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md">Azure AI Foundry Deployment Guide</a>.</p>
+<p>For the complete end-to-end walkthrough (both methods), see <a class="reference internal" href="../guides/azure-deployment.html"><span class="doc">Azure Deployment</span></a>.</p>
 <p><strong>What’s Included:</strong></p>
 <ul class="simple">
 <li><p>Agent lifecycle commands (<code class="docutils literal notranslate"><span class="pre">agent_create</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_chat</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_status</span></code>, <code class="docutils literal notranslate"><span class="pre">agent_destroy</span></code>)</p></li>
@@ -628,17 +646,22 @@ python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>dep
 <ul class="simple">
 <li><p>Azure AI Foundry project (<a class="reference external" href="https://ai.azure.com">https://ai.azure.com</a>)</p></li>
 <li><p>Azure OpenAI deployment (GPT-4o or GPT-4)</p></li>
-<li><p>Deployed Zscaler MCP Server (Container Apps or VM)</p></li>
-<li><p>Python packages: <code class="docutils literal notranslate"><span class="pre">azure-ai-projects</span></code>, <code class="docutils literal notranslate"><span class="pre">azure-identity</span></code></p></li>
+<li><p>Deployed Zscaler MCP Server (Container Apps, VM, or AKS Preview)</p></li>
+<li><p>Python packages: <code class="docutils literal notranslate"><span class="pre">azure-ai-projects</span></code>, <code class="docutils literal notranslate"><span class="pre">azure-ai-agents</span></code>, <code class="docutils literal notranslate"><span class="pre">azure-identity</span></code></p></li>
 </ul>
+<p><strong>Authentication — one-time portal step required:</strong></p>
+<p>Foundry no longer accepts auth headers inlined in <code class="docutils literal notranslate"><span class="pre">MCPTool.headers</span></code>. The supported pattern is to register a <strong>Custom keys connection</strong> in the project that holds the headers, and reference it via <code class="docutils literal notranslate"><span class="pre">MCPTool.project_connection_id</span></code>. <code class="docutils literal notranslate"><span class="pre">agent_create</span></code> will probe the connection at runtime, print copy-paste-ready portal instructions if it’s missing, and exit before mutating Foundry. See <a class="reference internal" href="../guides/azure-deployment.html#azure-deployment-guide"><span class="std std-ref">Azure Deployment</span></a> for the exact portal steps and the per-auth-mode key list.</p>
 <p><strong>Quick Start (CLI):</strong></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Step 1: Deploy the MCP server</span>
 python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
 
-<span class="c1"># Step 2: Create the Foundry agent</span>
+<span class="c1"># Step 2: One-time — create the &quot;Custom keys&quot; connection in the Foundry portal</span>
+<span class="c1">#         (Management center -&gt; Connected resources -&gt; + New connection -&gt; Custom keys)</span>
+
+<span class="c1"># Step 3: Create the Foundry agent</span>
 python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_create
 
-<span class="c1"># Step 3: Start chatting</span>
+<span class="c1"># Step 4: Start chatting</span>
 python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat
 </pre></div>
 </div>
@@ -650,6 +673,7 @@ python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>age
 python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_destroy<span class="w">   </span><span class="c1"># delete agent</span>
 </pre></div>
 </div>
+<p><strong>Finding the agent in the portal:</strong> Foundry agents created by this script are <strong>Prompt Agents</strong> in the new Foundry experience. Open <a class="reference external" href="https://ai.azure.com">ai.azure.com</a>, ensure the <em>New Foundry</em> toggle (top-right) is on, then go to <strong>Build → Agents → Agents</strong> tab and select <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-agent</span></code>. <code class="docutils literal notranslate"><span class="pre">agent_create</span></code> also prints a deep link straight to the agent on success.</p>
 </section>
 <section id="github-mcp-registry">
 <span id="id7"></span><h2>GitHub MCP Registry<a class="headerlink" href="#github-mcp-registry" title="Link to this heading">¶</a></h2>

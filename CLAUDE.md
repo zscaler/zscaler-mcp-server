@@ -355,7 +355,7 @@ The server can be deployed to Google Cloud Run as a managed container with optio
 
 - **`zscaler_mcp/cloud/gcp_secrets.py`** — Runtime Secret Manager loader. Fetches credentials at startup using Application Default Credentials. Activated by `ZSCALER_MCP_GCP_SECRET_MANAGER=true`. Maps env var names to secret IDs by lowercasing and replacing `_` with `-` (e.g., `ZSCALER_CLIENT_ID` → `zscaler-client-id`). Only `ZSCALER_CLIENT_ID` and `ZSCALER_CLIENT_SECRET` are required; other secrets are silently skipped if missing.
 
-- **`scripts/deploy-gcp.py`** — Customer-facing deployment script. Reads `.env`, optionally stores creds in Secret Manager, deploys to Cloud Run with `zscaler` auth mode, generates Base64 auth headers, auto-configures Claude Desktop and Cursor. Supports `--teardown`.
+- **`integrations/google/gcp/gcp_mcp_operations.py`** — Unified GCP deployment script. Interactive CLI with 3 targets (Cloud Run, GKE, Compute Engine VM). Reads `.env`, optionally stores creds in Secret Manager, deploys with configurable auth mode, auto-configures Claude Desktop and Cursor.
 
 ### Default Auth: Zscaler Mode
 
@@ -375,21 +375,22 @@ GCP deployments default to `ZSCALER_MCP_AUTH_MODE=zscaler`. Clients authenticate
 
 ## Azure Deployment
 
-Interactive deployment to Azure via `integrations/azure/azure_mcp_operations.py`. Supports two deployment targets:
+Interactive deployment to Azure via `integrations/azure/azure_mcp_operations.py`. Supports three deployment targets:
 
 ### Deployment Targets
 
-| Target | Runtime | Image/Package |
-|--------|---------|---------------|
-| **Container Apps** | Managed, serverless | Docker Hub: `zscaler/zscaler-mcp-server:latest` |
-| **Virtual Machine** | Ubuntu 22.04, self-managed | PyPI: `zscaler-mcp-server` |
+| Target | Runtime | Image/Package | Status |
+|--------|---------|---------------|--------|
+| **Container Apps** | Managed, serverless | Docker Hub: `zscaler/zscaler-mcp-server:latest` | GA |
+| **Virtual Machine** | Ubuntu 22.04, self-managed | PyPI: `zscaler-mcp-server` | GA |
+| **Azure Kubernetes Service (AKS)** | Kubernetes Deployment + LoadBalancer Service | Docker Hub: `zscaler/zscaler-mcp-server:latest` | **Preview** |
 
 ### Common Features
 
 - **Fully interactive** — prompts for deployment target, credential source (`.env` path or manual entry), auth mode, Azure options
-- **Azure Key Vault mandatory** — all secrets stored in Key Vault (create new or use existing)
-- **Five auth modes** — OIDCProxy, JWT, API Key, Zscaler, None
-- **State file** — `.azure-deploy-state.json` persists resource names for `status`/`logs`/`destroy`/`ssh`
+- **Azure Key Vault** — Container Apps + VM use it (Container Apps offers a deploy-time choice between KV and direct env vars; VM is KV-only). **AKS Preview** also offers a choice: **Azure Key Vault via Workload Identity Federation + Key Vault CSI driver (default, recommended)** or plain Kubernetes `env` vars on the Deployment (PoC fallback).
+- **Five auth modes** — OIDCProxy, JWT, API Key, Zscaler, None. AKS Preview supports four of these (OIDCProxy not yet supported).
+- **State file** — `.azure-deploy-state.json` persists resource names for `status`/`logs`/`destroy`/`ssh`. AKS deployments also write `.aks-manifest.yaml` (the generated Deployment + Service spec).
 - **Client config** — auto-updates Claude Desktop (`claude_desktop_config.json`) and Cursor (`mcp.json`) with correct auth headers
 
 ### Container Apps Specifics
@@ -406,12 +407,28 @@ Interactive deployment to Azure via `integrations/azure/azure_mcp_operations.py`
 - Configures systemd service (`zscaler-mcp.service`) for auto-start and restart on failure
 - SSH access via `python azure_mcp_operations.py ssh`
 
+### AKS Specifics (Preview)
+
+- **Cluster lifecycle:** create new AKS cluster on the fly (Standard_B2s, 1 node, managed identity, Standard SKU LB) **or** attach to an existing cluster. New clusters on the Key Vault path are created with `--enable-workload-identity --enable-oidc-issuer --enable-addons azure-keyvault-secrets-provider` so the cluster comes up federation-ready.
+- **Container image:** same `zscaler/zscaler-mcp-server:latest` from Docker Hub used by Container Apps
+- **Credential storage (interactive choice):**
+  - **Azure Key Vault (default, recommended).** The script provisions / attaches to a Key Vault, stores every Zscaler secret in it, creates a User-Assigned Managed Identity, grants it `Key Vault Secrets User`, and creates a federated credential linking the Pod's K8s `ServiceAccount` (`zscaler-mcp-sa`) to the UAMI. The Key Vault CSI driver mounts the secrets and syncs them into a K8s `Secret` (`zscaler-mcp-secrets`) consumed by the Deployment via `valueFrom.secretKeyRef`. The manifest also includes a `SecretProviderClass` (`zscaler-mcp-spc`).
+  - **Plain env vars (PoC).** Credentials are baked into the Deployment manifest at deploy time (visible via `kubectl describe deployment`).
+- **K8s manifest:** script generates `.aks-manifest.yaml` and `kubectl apply`s it. Contents depend on storage choice (KV path = ServiceAccount + SecretProviderClass + Deployment with secretKeyRef + Service; env-vars path = Deployment with inline values + Service).
+- **Resource defaults:** 200m–1000m CPU, 512Mi–1Gi memory, single replica (scale via `kubectl scale`)
+- **kubectl context:** set automatically via `az aks get-credentials --overwrite-existing`
+- **External access:** Azure Standard Load Balancer with public IP (port 80 → container port 8000)
+- **Smart destroy:** if the script created the cluster → deletes the entire resource group (everything goes with it, including the UAMI and Key Vault). If you used an existing cluster → only the K8s objects we created are removed (Deployment, Service, and on the KV path also ServiceAccount, SecretProviderClass, synced Secret) plus the per-deployment UAMI and federated credential. The Key Vault is preserved when the cluster is preserved.
+- **Status / logs:** `op_status` runs `az aks show` + `kubectl get pods` + `kubectl get svc`; `op_logs` runs `kubectl logs deployment/zscaler-mcp-server -n <ns> -f` with graceful Ctrl+C handling.
+- **Helpers:** `run_kubectl()` wraps `kubectl` calls (alongside `run_az()`); `_build_aks_env_vars()` and `_build_aks_kv_env_vars()` build the env lists for the two storage paths; `_build_aks_kv_manifest()` renders the full KV-path manifest; `_create_uami()`, `_grant_uami_kv_role()`, `_create_federated_credential()`, `_enable_aks_workload_identity()`, and `_enable_aks_kv_csi()` orchestrate the federation setup.
+- **Preview limitations:** OIDCProxy auth mode unsupported; no Ingress/TLS (LoadBalancer exposes plain HTTP — production deployments need NGINX Ingress + cert-manager + DNS); single replica default; no HPA. See `local_dev/azure_mcp_deployment/azure_mcp_deployment_plan_v4.md` "Enterprise Hardening — Future Work" table for the AKS GA roadmap.
+
 ### Auth Mode Differences
 
 | Mode | Container command | MCP env vars | Client auth |
 |------|-------------------|--------------|-------------|
-| OIDCProxy | Inline Python entrypoint (base64-encoded) | `OIDCPROXY_*` env vars, `ZSCALER_MCP_AUTH_ENABLED=false` | `mcp-remote` handles OAuth flow |
-| JWT / API Key / Zscaler | `/app/.venv/bin/zscaler-mcp --transport streamable-http` (Container) or systemd service (VM) | `ZSCALER_MCP_AUTH_MODE=jwt\|api-key\|zscaler` | Auth header via `mcp-remote --header` (Claude) or `headers` (Cursor) |
+| OIDCProxy | Inline Python entrypoint (base64-encoded). **Container Apps + VM only** — not yet supported on AKS Preview. | `OIDCPROXY_*` env vars, `ZSCALER_MCP_AUTH_ENABLED=false` | `mcp-remote` handles OAuth flow |
+| JWT / API Key / Zscaler | `/app/.venv/bin/zscaler-mcp --transport streamable-http` (Container Apps + AKS) or systemd service (VM) | `ZSCALER_MCP_AUTH_MODE=jwt\|api-key\|zscaler` | Auth header via `mcp-remote --header` (Claude) or `headers` (Cursor) |
 | None | Same CLI entrypoint | `ZSCALER_MCP_AUTH_ENABLED=false` | No header |
 
 ### Key Vault Flow
@@ -498,11 +515,12 @@ python azure_mcp_operations.py agent_destroy -y  # skip confirmation prompt
 
 ### Files
 
-- **`integrations/azure/azure_mcp_operations.py`** — Main script. MCP operations: `deploy`, `destroy`, `status`, `logs`, `ssh`. Foundry operations: `agent_create`, `agent_status`, `agent_chat`, `agent_destroy`
+- **`integrations/azure/azure_mcp_operations.py`** — Main script. MCP operations: `deploy`, `destroy`, `status`, `logs`, `ssh` (Container Apps + VM + AKS Preview). Foundry operations: `agent_create`, `agent_status`, `agent_chat`, `agent_destroy`
 - **`integrations/azure/foundry_agent.py`** — Foundry agent module with MCPTool, chat session, approval handling
 - **`integrations/azure/env.properties`** — Template `.env` file with all supported variables
-- **`integrations/azure/.azure-deploy-state.json`** — Created during deploy, stores resource names/FQDN/public IP
+- **`integrations/azure/.azure-deploy-state.json`** — Created during deploy, stores resource names/FQDN/public IP (and AKS cluster name + namespace + `cluster_created` flag)
 - **`integrations/azure/.azure-agent-state.json`** — Created during agent_create, stores Foundry project/agent info
+- **`integrations/azure/.aks-manifest.yaml`** — Generated K8s manifest (Deployment + LoadBalancer Service) — written only for AKS deployments
 
 ## AWS Version
 
@@ -519,7 +537,20 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 ## Platform Integrations
 
-Native integrations available in `integrations/`: Claude Code plugin, Cursor plugin, Gemini CLI extension, Kiro IDE power, Google ADK agent, Azure deployment (Container Apps / VM), Azure AI Foundry agent, GitHub MCP Registry. See `integrations/README.md` and `docs/deployment/azure-ai-foundry.md` for details.
+Native integrations available in `integrations/`: Claude Code plugin, Cursor plugin, Gemini CLI extension, Kiro IDE power, Google Cloud deployment (Cloud Run / GKE / Compute Engine VM), Google ADK agent, Azure deployment (Container Apps / VM / AKS Preview), Azure AI Foundry agent, GitHub MCP Registry. See `integrations/README.md` for details.
+
+### Google Cloud Deployment
+
+`integrations/google/gcp/gcp_mcp_operations.py` — unified interactive deployment script (modeled after Azure's `azure_mcp_operations.py`):
+
+- **3 targets:** Cloud Run (container), GKE (K8s), Compute Engine VM (Python from PyPI + systemd)
+- **Operations:** `deploy`, `destroy`, `status`, `logs`, `ssh` (VM only)
+- **Secret Manager:** Built-in GCP Secret Manager integration (optional)
+- **Auth modes:** JWT, API Key, Zscaler, None
+- **State file:** `.gcp-deploy-state.json` — tracks deployment type for management commands
+- **Client config:** Auto-updates Claude Desktop and Cursor configs
+
+ADK agent lives at `integrations/google/adk/` (deploys to Cloud Run / Vertex AI Agent Engine / Agentspace).
 
 ### GitHub MCP Registry
 

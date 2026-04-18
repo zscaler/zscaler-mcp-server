@@ -2,12 +2,17 @@
 
 The Zscaler MCP Server integrates with [Google ADK](https://google.github.io/adk-docs/) to build autonomous Zscaler security agents powered by Gemini models. This integration enables you to create AI agents that can query and manage your Zscaler Zero Trust Exchange through natural language, using the MCP server as the tool backend.
 
+## Video Walkthrough
+
+A complete video walkthrough covering all Google Cloud deployment options — including the ADK Agent for local development and Cloud Run — is available here:
+
+**[Zscaler Integration MCP Server in GCP — Video Demo](https://zscaler.wistia.com/medias/13jxjizk3r)**
+
 ## What's Included
 
 ```text
-integrations/adk/
+integrations/google/adk/
 ├── adk_agent_operations.py      # Python deployment/operations script
-├── adk_agent_operations.sh      # Legacy bash script (deprecated)
 ├── README.md
 └── zscaler_agent/
     ├── __init__.py              # Package init (re-exports agent module)
@@ -80,6 +85,54 @@ In all cases, the MCP server runs as a co-located subprocess — not as a separa
 - A Google API key (local dev) or Vertex AI access (Cloud Run / Agent Engine)
 - [uv](https://docs.astral.sh/uv/) installed (for `uvx zscaler-mcp`)
 - Zscaler OneAPI credentials (`ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc.)
+
+### Cloud Run / Agent Engine: Required IAM Roles
+
+Cloud deployments use the Compute Engine default service account. Grant these roles before deploying:
+
+```bash
+PROJECT_ID="your-project"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+# Cloud Build uploads source to Cloud Storage
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA" --role="roles/storage.admin"
+
+# Cloud Build pushes built container to Artifact Registry
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA" --role="roles/artifactregistry.writer"
+
+# Cloud Run service calls Gemini via Vertex AI
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA" --role="roles/aiplatform.user"
+```
+
+Also enable the required APIs:
+
+```bash
+gcloud services enable \
+  run.googleapis.com \
+  artifactregistry.googleapis.com \
+  aiplatform.googleapis.com \
+  cloudbuild.googleapis.com \
+  --project $PROJECT_ID
+```
+
+### Cloud Run: Enterprise GCP Organization IAM
+
+Enterprise GCP organizations enforcing `constraints/iam.allowedPolicyMemberDomains` will block `allUsers` access to Cloud Run. When deploying, answer `N` to "Allow unauthenticated invocations" and access the agent via:
+
+```bash
+# Grant yourself invoker access
+gcloud run services add-iam-policy-binding zscaler-agent-service \
+  --region REGION --member="user:YOUR_EMAIL" --role="roles/run.invoker"
+
+# Access via local proxy (handles IAM auth transparently)
+gcloud run services proxy zscaler-agent-service \
+  --region REGION --project YOUR_PROJECT_ID
+# Then open http://localhost:8080
+```
 
 ## Configuration
 
@@ -160,44 +213,53 @@ MAX_PREV_USER_INTERACTIONS=-1     # -1 = unlimited, 5 = recommended
 
 ## Usage
 
-All operations are managed via `adk_agent_operations.py`:
-
-### Local Development
+All operations are managed through a single interactive script (`adk_agent_operations.py`) with a numbered menu — the same UX pattern used by the standalone GCP and Azure deployment scripts:
 
 ```bash
-cd integrations/adk
-python adk_agent_operations.py local_run
+cd integrations/google/adk
+python adk_agent_operations.py deploy      # interactive guided deployment
+python adk_agent_operations.py status      # check deployment status
+python adk_agent_operations.py logs        # stream logs
+python adk_agent_operations.py destroy     # tear down deployed resources
+python adk_agent_operations.py destroy -y  # tear down without confirmation
 ```
 
-This runs `adk web` locally with your `GOOGLE_API_KEY`. The agent UI will be available at `http://localhost:8000`.
+### `deploy` — Interactive Guided Deployment
 
-### Deploy to Cloud Run
+Running `python adk_agent_operations.py deploy` presents a menu to choose the deployment target:
 
-```bash
-python adk_agent_operations.py cloudrun_deploy
+```text
+  Select deployment target:
+
+    [1] Local development  — run with 'adk web' on localhost
+    [2] Google Cloud Run   — deploy as managed container with web UI
+    [3] Vertex AI Agent Engine — fully managed agent hosting
+    [4] Google Agentspace  — register in enterprise agent catalog
 ```
 
-The script automatically:
+The script then prompts for credentials (load from `.env` file or custom path), validates required environment variables, collects target-specific configuration, shows a deployment summary, and asks for confirmation before executing.
+
+#### Local Development
+
+Runs `adk web` locally using your `GOOGLE_API_KEY`. The agent UI will be available at `http://localhost:8000`. No GCP project or IAM setup required.
+
+#### Cloud Run
+
+Builds the agent container from source using Cloud Build, pushes to Artifact Registry, and deploys to Cloud Run. The script automatically:
+
 1. Backs up your `.env` file
 2. Removes `GOOGLE_API_KEY` and sets `GOOGLE_GENAI_USE_VERTEXAI=True`
 3. Runs `adk deploy cloud_run` with the service name `zscaler-agent-service`
-4. Restores your `.env` file on exit (success or failure)
+4. Saves deployment state for `status` / `logs` / `destroy` operations
+5. Restores your `.env` file on exit (success or failure)
 
-### Deploy to Vertex AI Agent Engine
+#### Vertex AI Agent Engine
 
-```bash
-python adk_agent_operations.py agent_engine_deploy
-```
+Deploys to Vertex AI Agent Engine with display name `zscaler_agent`. Requires `AGENT_ENGINE_STAGING_BUCKET` set to a `gs://` bucket.
 
-Requires `AGENT_ENGINE_STAGING_BUCKET` set to a `gs://` bucket. Deploys to Vertex AI Agent Engine with display name `zscaler_agent`.
+#### Google Agentspace
 
-### Register with Google Agentspace
-
-```bash
-python adk_agent_operations.py agentspace_register
-```
-
-Registers the deployed reasoning engine with Google Agentspace via the Discovery Engine API. Requires `PROJECT_NUMBER`, `AGENT_LOCATION`, `REASONING_ENGINE_NUMBER`, and `AGENT_SPACE_APP_NAME`.
+Registers an existing Agent Engine deployment with Google Agentspace via the Discovery Engine API. Requires the deployment to already exist, plus `PROJECT_NUMBER`, `REASONING_ENGINE_NUMBER`, and `AGENT_SPACE_APP_NAME`.
 
 ### Example Prompts
 

@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Amazon Bedrock AgentCore Deployment" href="amazon-bedrock-agentcore.html" /><link rel="prev" title="Examples" href="examples.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="GCP GKE Deployment" href="gcp-gke.html" /><link rel="prev" title="Examples" href="examples.html" />
         <link rel="prefetch" href="../_static/logo.svg" as="image" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
@@ -221,6 +221,10 @@
 <li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
@@ -288,8 +292,9 @@
 </section>
 <section id="automated-deployment-recommended">
 <h2>Automated Deployment (Recommended)<a class="headerlink" href="#automated-deployment-recommended" title="Link to this heading">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">scripts/deploy-gcp.py</span></code> script provides an end-to-end deployment experience:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/deploy-gcp.py
+<p>The <code class="docutils literal notranslate"><span class="pre">integrations/google/gcp/gcp_mcp_operations.py</span></code> script provides an interactive deployment experience with support for Cloud Run, GKE, and Compute Engine VM targets:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/gcp
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>deploy
 </pre></div>
 </div>
 <p>The script:</p>
@@ -302,8 +307,11 @@
 <li><p>Supports <code class="docutils literal notranslate"><span class="pre">--teardown</span></code> for easy service deletion</p></li>
 </ul>
 <p><strong>Options:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/deploy-gcp.py<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w">   </span><span class="c1"># Use specific .env</span>
-python<span class="w"> </span>scripts/deploy-gcp.py<span class="w"> </span>--teardown<span class="w">                  </span><span class="c1"># Delete the service</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/gcp
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>deploy<span class="w">       </span><span class="c1"># Interactive guided deployment</span>
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>status<span class="w">       </span><span class="c1"># Check deployment</span>
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>logs<span class="w">         </span><span class="c1"># Stream logs</span>
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destroy<span class="w">      </span><span class="c1"># Tear down</span>
 </pre></div>
 </div>
 <section id="authentication">
@@ -542,12 +550,12 @@ gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="amazon-bedrock-agentcore.html">
+          <a class="next-page" href="gcp-gke.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Amazon Bedrock AgentCore Deployment</div>
+                <div class="title">GCP GKE Deployment</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
