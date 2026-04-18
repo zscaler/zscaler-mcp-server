@@ -138,7 +138,7 @@ Zscaler Integrations MCP Server Changelog
 
 `PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``GCP Secret Manager integration`` (`zscaler_mcp/cloud/gcp_secrets.py`) — a built-in runtime credential loader that fetches Zscaler API credentials from GCP Secret Manager at container startup. Activated via `ZSCALER_MCP_GCP_SECRET_MANAGER=true`. Works on Cloud Run, GKE, and Compute Engine. Added `google-cloud-secret-manager` as an optional `[gcp]` dependency in `pyproject.toml`, and updated the Dockerfile to install the GCP extras by default.
 
-`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``Google ADK integration`` documentation (`integrations/adk/README.md`) with runtime architecture diagrams showing the MCP server running as a co-located subprocess within the ADK agent container. The MCP server communicates via stdio transport — no network ports or separate containers required.
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``Google ADK integration`` documentation (`integrations/google/adk/README.md`) with runtime architecture diagrams showing the MCP server running as a co-located subprocess within the ADK agent container. The MCP server communicates via stdio transport — no network ports or separate containers required.
 
 ### Enhancements
 
@@ -269,7 +269,8 @@ Platform Integrations
 - **Claude Code Plugin** (``.claude-plugin/``) — Plugin manifest with marketplace support, 19 guided skills, and slash commands
 - **Cursor Plugin** (``.cursor-plugin/``) — Plugin manifest with 19 guided skills for Cursor IDE
 - **Gemini Extension** (``gemini-extension.json``, ``GEMINI.md``) — Google Gemini CLI extension with contextual tool guidance
-- **Google ADK** (``integrations/adk/``) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
+- **Google Cloud** (``integrations/google/``) — Unified GCP deployment script (Cloud Run, GKE, Compute Engine VM) with interactive CLI menus
+- **Google ADK Agent** (``integrations/google/adk/``) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
 - **Integration documentation** (``integrations/``) — Dedicated README per platform with installation, configuration, and verification instructions
 
 Enhancements
