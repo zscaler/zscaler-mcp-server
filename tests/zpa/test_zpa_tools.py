@@ -141,7 +141,7 @@ class TestZpaAppSegments:
     @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
     def test_update_application_segment_standard_no_clientless(self, mock_get_client, mock_client):
         """Standard segments must NOT pass clientless_app_ids to the SDK (omit the key entirely).
-        Passing None triggers the SDK's BROWSER_ACCESS lookup which fails for non-BA segments."""
+        Passing None or [] triggers the SDK's BROWSER_ACCESS lookup which fails for non-BA segments."""
         from zscaler_mcp.tools.zpa.app_segments import zpa_update_application_segment
 
         updated = _mock_obj({"id": "seg1", "name": "Updated"})
@@ -154,8 +154,22 @@ class TestZpaAppSegments:
         call_kwargs = mock_client.zpa.application_segment.update_segment.call_args[1]
         assert "clientless_app_ids" not in call_kwargs, (
             "clientless_app_ids must be omitted for standard segments — "
-            "its presence (even as None) triggers broken BROWSER_ACCESS SDK lookup"
+            "its presence (even as None or []) triggers broken BROWSER_ACCESS SDK lookup"
         )
+
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_update_application_segment_empty_clientless_omitted(self, mock_get_client, mock_client):
+        """Empty list must also be omitted — [] is falsy and should not trigger BROWSER_ACCESS lookup."""
+        from zscaler_mcp.tools.zpa.app_segments import zpa_update_application_segment
+
+        updated = _mock_obj({"id": "seg3", "name": "Updated"})
+        mock_client.zpa.application_segment.update_segment.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        zpa_update_application_segment(segment_id="seg3", clientless_app_ids=[])
+
+        call_kwargs = mock_client.zpa.application_segment.update_segment.call_args[1]
+        assert "clientless_app_ids" not in call_kwargs
 
     @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
     def test_update_application_segment_with_clientless_included(self, mock_get_client, mock_client):

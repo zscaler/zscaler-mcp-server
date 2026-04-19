@@ -224,7 +224,7 @@ def zpa_create_application_segment(
         "passive_health_enabled": passive_health_enabled,
     }
 
-    if clientless_app_ids is not None:
+    if clientless_app_ids:
         body["clientless_app_ids"] = clientless_app_ids
 
     if tcp_port_range:
@@ -351,7 +351,7 @@ def zpa_update_application_segment(
 
     # Only include clientless_app_ids when explicitly provided — passing None causes the SDK
     # to enter BROWSER_ACCESS lookup logic and fail on standard segments.
-    if clientless_app_ids is not None:
+    if clientless_app_ids:
         body["clientless_app_ids"] = clientless_app_ids
 
     if tcp_port_range:
