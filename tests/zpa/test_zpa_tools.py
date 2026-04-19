@@ -138,6 +138,57 @@ class TestZpaAppSegments:
         zpa_list_application_segments(use_legacy=True)
         mock_get_client.assert_called_once_with(use_legacy=True, service="zpa")
 
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_update_application_segment_standard_no_clientless(self, mock_get_client, mock_client):
+        """Standard segments must NOT pass clientless_app_ids to the SDK (omit the key entirely).
+        Passing None triggers the SDK's BROWSER_ACCESS lookup which fails for non-BA segments."""
+        from zscaler_mcp.tools.zpa.app_segments import zpa_update_application_segment
+
+        updated = _mock_obj({"id": "seg1", "name": "Updated"})
+        mock_client.zpa.application_segment.update_segment.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        result = zpa_update_application_segment(segment_id="seg1", name="Updated")
+
+        assert result["id"] == "seg1"
+        call_kwargs = mock_client.zpa.application_segment.update_segment.call_args[1]
+        assert "clientless_app_ids" not in call_kwargs, (
+            "clientless_app_ids must be omitted for standard segments — "
+            "its presence (even as None) triggers broken BROWSER_ACCESS SDK lookup"
+        )
+
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_update_application_segment_with_clientless_included(self, mock_get_client, mock_client):
+        """When clientless_app_ids is explicitly provided it should be forwarded to the SDK."""
+        from zscaler_mcp.tools.zpa.app_segments import zpa_update_application_segment
+
+        updated = _mock_obj({"id": "seg2", "name": "BAApp"})
+        mock_client.zpa.application_segment.update_segment.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        clientless = [{"id": "cl1"}]
+        zpa_update_application_segment(segment_id="seg2", clientless_app_ids=clientless)
+
+        call_kwargs = mock_client.zpa.application_segment.update_segment.call_args[1]
+        assert call_kwargs.get("clientless_app_ids") == clientless
+
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_create_application_segment_standard_no_clientless(self, mock_get_client, mock_client):
+        """Same guard applies to create — clientless_app_ids must be omitted when not provided."""
+        from zscaler_mcp.tools.zpa.app_segments import zpa_create_application_segment
+
+        created = _mock_obj({"id": "new2", "name": "StdApp"})
+        mock_client.zpa.application_segment.add_segment.return_value = (created, None, None)
+        mock_get_client.return_value = mock_client
+
+        zpa_create_application_segment(
+            name="StdApp", segment_group_id="sg1", domain_names=["std.example.com"],
+            tcp_port_ranges=["443", "443"],
+        )
+
+        call_kwargs = mock_client.zpa.application_segment.add_segment.call_args[1]
+        assert "clientless_app_ids" not in call_kwargs
+
 
 # ============================================================================
 # SEGMENT GROUPS

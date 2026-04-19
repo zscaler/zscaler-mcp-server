@@ -222,8 +222,10 @@ def zpa_create_application_segment(
         "health_reporting": health_reporting,
         "is_cname_enabled": is_cname_enabled,
         "passive_health_enabled": passive_health_enabled,
-        "clientless_app_ids": clientless_app_ids,
     }
+
+    if clientless_app_ids is not None:
+        body["clientless_app_ids"] = clientless_app_ids
 
     if tcp_port_range:
         body["tcp_port_range"] = tcp_port_range
@@ -345,8 +347,12 @@ def zpa_update_application_segment(
         "health_reporting": health_reporting,
         "is_cname_enabled": is_cname_enabled,
         "passive_health_enabled": passive_health_enabled,
-        "clientless_app_ids": clientless_app_ids,
     }
+
+    # Only include clientless_app_ids when explicitly provided — passing None causes the SDK
+    # to enter BROWSER_ACCESS lookup logic and fail on standard segments.
+    if clientless_app_ids is not None:
+        body["clientless_app_ids"] = clientless_app_ids
 
     if tcp_port_range:
         body["tcp_port_range"] = tcp_port_range
