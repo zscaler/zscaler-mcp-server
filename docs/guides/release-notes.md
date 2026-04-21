@@ -155,7 +155,8 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 - **Claude Code Plugin** (`.claude-plugin/`) — Plugin manifest with marketplace support, 19 guided skills, and slash commands
 - **Cursor Plugin** (`.cursor-plugin/`) — Plugin manifest with 19 guided skills for Cursor IDE
 - **Gemini Extension** (`gemini-extension.json`, `GEMINI.md`) — Google Gemini CLI extension with contextual tool guidance
-- **Google ADK** (`integrations/adk/`) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
+- **Google Cloud** (`integrations/google/`) — Unified GCP deployment script (Cloud Run, GKE, Compute Engine VM) with interactive CLI menus
+- **Google ADK Agent** (`integrations/google/adk/`) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
 - **Integration documentation** (`integrations/`) — Dedicated README per platform with installation, configuration, and verification instructions
 
 ### Enhancements

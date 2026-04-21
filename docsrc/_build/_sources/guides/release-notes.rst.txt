@@ -6,6 +6,44 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.10.3 (April 20, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Refactored **Azure AI Foundry agent authentication** to use ``MCPTool.project_connection_id`` referencing a Foundry **Custom keys connection** instead of inline ``MCPTool.headers``. Foundry now rejects sensitive header names (``Authorization``, ``*-Secret``, ``*-Key``, ``*-Token``) with ``Headers that can include sensitive information are not allowed in the headers property for MCP tools. Use project_connection_id instead.``, breaking the previous ``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret`` inline pattern. The connection-based flow restores end-to-end agent creation and tool calls.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Replaced the over-broad ``_handle_api_error`` exception swallowing in ``foundry_agent.py`` with a verbose handler that surfaces the underlying exception type, message, HTTP status, and error body. Optional full traceback via ``ZSCALER_FOUNDRY_DEBUG=1``. Previous behavior masked Foundry's real ``invalid_payload`` errors as generic "Connection error" messages.
+
+### Enhancements
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``agent_create`` connection probe** in ``foundry_agent.py``. When the Foundry Custom keys connection (default ``zscaler-mcp-headers``) already exists, the script silently confirms and proceeds; when missing, it prints copy-paste-ready portal instructions (Management center → Connected resources → + New connection → Custom keys, with the per-auth-mode key list) and exits before mutating Foundry. Eliminates noisy repeated portal instructions on every run.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **Foundry portal deep-link generator** to ``agent_create``. Builds a working URL into the new Foundry "nextgen" experience (``https://ai.azure.com/nextgen/r/{sub_b64},{rg},,{account},{project}/build/agents/{name}/build?version={n}``) by base64url-encoding the subscription UUID parsed from the connection ARM resource ID. Replaces the previous non-working ``/projects/<proj>/agents/<name>`` URL.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added ``AZURE_FOUNDRY_CONNECTION_NAME`` environment variable (default ``zscaler-mcp-headers``) so ``agent_create`` runs non-interactively when the connection name is pinned in ``.env``. Promoted from ``azure_mcp_operations.py`` into the runtime environment alongside ``AZURE_AI_PROJECT_ENDPOINT`` and ``AZURE_OPENAI_MODEL``.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Updated ``integrations/azure/README.md`` with the new connection-based authentication walkthrough (per-auth-mode key list, one-time portal setup) and the correct **Prompt Agent** navigation path in the new Foundry UI (``Build → Agents → Agents tab``), plus a callout distinguishing Prompt Agents from legacy Assistant API agents (``asst_xxxx``) that share the same project.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Updated ``local_dev/azure_mcp_deployment/azure_demo_recording_script.md`` to reflect the connection-based Foundry auth flow, including the one-time portal setup callout, the new ``agent_create`` walkthrough, and the deep-link to the deployed agent.
+
+### Documentation
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/azure-deployment.rst``** — consolidated Sphinx guide covering Azure Container Apps, Virtual Machine, AKS (Preview), and the Azure AI Foundry agent (with the new ``project_connection_id`` auth flow and Custom keys portal setup steps).
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/gcp-gke.rst``** — Sphinx guide for the GKE deployment target of ``gcp_mcp_operations.py`` (Autopilot or existing cluster, Workload Identity, Secret Manager, LoadBalancer Service).
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/gcp-compute-engine-vm.rst``** — Sphinx guide for the Compute Engine VM target (Debian 12 + systemd + PyPI), including the rationale for picking VM over Cloud Run in enterprise GCP organizations enforcing ``constraints/iam.allowedPolicyMemberDomains``.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/gcp-adk-agent.rst``** — Sphinx guide for the Gemini-powered Zscaler ADK Agent across Local / Cloud Run / Vertex AI Agent Engine / Google Agentspace, documenting the co-located-subprocess architecture (MCP server runs inside the agent container via stdio, not as a separate networked service).
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Refreshed ``docsrc/integrations/index.rst``: added Azure AKS Preview row to the deployment-targets table, replaced the "Available Integrations" external links with ``:doc:`` references to the new Sphinx guides, and rewrote the Azure AI Foundry section to document the connection-based auth requirement and the new Prompt Agent portal navigation.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Registered the four new guides in ``docsrc/guides/index.rst`` toctree alongside the existing ``gcp-cloud-run`` and ``amazon-bedrock-agentcore`` entries. Full Sphinx build passes with ``-W --keep-going`` (zero warnings, zero errors).
+
 ## 0.10.2 (April 14, 2026)
 
 ### Notes
@@ -138,7 +176,7 @@ Zscaler Integrations MCP Server Changelog
 
 `PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``GCP Secret Manager integration`` (`zscaler_mcp/cloud/gcp_secrets.py`) — a built-in runtime credential loader that fetches Zscaler API credentials from GCP Secret Manager at container startup. Activated via `ZSCALER_MCP_GCP_SECRET_MANAGER=true`. Works on Cloud Run, GKE, and Compute Engine. Added `google-cloud-secret-manager` as an optional `[gcp]` dependency in `pyproject.toml`, and updated the Dockerfile to install the GCP extras by default.
 
-`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``Google ADK integration`` documentation (`integrations/adk/README.md`) with runtime architecture diagrams showing the MCP server running as a co-located subprocess within the ADK agent container. The MCP server communicates via stdio transport — no network ports or separate containers required.
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``Google ADK integration`` documentation (`integrations/google/adk/README.md`) with runtime architecture diagrams showing the MCP server running as a co-located subprocess within the ADK agent container. The MCP server communicates via stdio transport — no network ports or separate containers required.
 
 ### Enhancements
 
@@ -269,7 +307,8 @@ Platform Integrations
 - **Claude Code Plugin** (``.claude-plugin/``) — Plugin manifest with marketplace support, 19 guided skills, and slash commands
 - **Cursor Plugin** (``.cursor-plugin/``) — Plugin manifest with 19 guided skills for Cursor IDE
 - **Gemini Extension** (``gemini-extension.json``, ``GEMINI.md``) — Google Gemini CLI extension with contextual tool guidance
-- **Google ADK** (``integrations/adk/``) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
+- **Google Cloud** (``integrations/google/``) — Unified GCP deployment script (Cloud Run, GKE, Compute Engine VM) with interactive CLI menus
+- **Google ADK Agent** (``integrations/google/adk/``) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
 - **Integration documentation** (``integrations/``) — Dedicated README per platform with installation, configuration, and verification instructions
 
 Enhancements

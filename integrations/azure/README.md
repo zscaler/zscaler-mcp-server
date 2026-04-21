@@ -4,22 +4,23 @@ Deploy the Zscaler MCP Server to Azure with your choice of deployment target, au
 
 ## Deployment Targets
 
-| Target | Description | Image/Package |
-|--------|-------------|---------------|
-| **Azure Container Apps** | Managed, serverless containers | Docker Hub: `zscaler/zscaler-mcp-server:latest` |
-| **Azure Virtual Machine** | Ubuntu 22.04, self-managed | PyPI: `zscaler-mcp-server` |
+| Target | Description | Image/Package | Status |
+|--------|-------------|---------------|--------|
+| **Azure Container Apps** | Managed, serverless containers | Docker Hub: `zscaler/zscaler-mcp-server:latest` | GA |
+| **Azure Virtual Machine** | Ubuntu 22.04, self-managed | PyPI: `zscaler-mcp-server` | GA |
+| **Azure Kubernetes Service (AKS)** | Kubernetes Deployment + LoadBalancer Service | Docker Hub: `zscaler/zscaler-mcp-server:latest` | **Preview** |
 
-Both options use Azure Key Vault for secure credential storage and support all five authentication modes.
+Container Apps and VM use Azure Key Vault for secure credential storage and support all five authentication modes. AKS is in **Preview**: it now supports **Azure Key Vault via Workload Identity Federation + the Key Vault CSI driver as the default credential storage path** (with a plain env-var fallback for PoCs), and supports the `jwt`, `api-key`, `zscaler`, and `none` auth modes today. OIDCProxy auth, TLS Ingress, and HPA are still planned for AKS GA.
 
 ## What It Does
 
 The `azure_mcp_operations.py` script provides a **fully interactive** deployment experience:
 
-1. **Prompts** for deployment target (Container Apps or VM)
+1. **Prompts** for deployment target (Container Apps, VM, or AKS Preview)
 2. **Prompts** for credential source (`.env` file or manual entry)
 3. **Collects** Zscaler API credentials and MCP auth configuration
-4. **Creates** Azure infrastructure (resource group, Key Vault, NSG for VM)
-5. **Stores** all secrets in Azure Key Vault
+4. **Creates** Azure infrastructure (resource group, Key Vault for Container Apps/VM, AKS cluster on demand)
+5. **Stores** all secrets in Azure Key Vault (Container Apps default, VM mandatory, AKS default via the Key Vault CSI driver + Workload Identity), or as plain env vars when explicitly opted in
 6. **Deploys** with the selected authentication mode
 7. **Updates** Claude Desktop and Cursor configs to connect remotely
 8. **Provides** `destroy`, `status`, `logs`, and `ssh` (VM only) commands
@@ -61,10 +62,10 @@ python azure_mcp_operations.py deploy
 
 | Command | Description |
 |---------|-------------|
-| `deploy` | Interactive guided deployment |
-| `destroy` | Tear down all Azure resources (full rollback) |
+| `deploy` | Interactive guided deployment (Container Apps, VM, or AKS Preview) |
+| `destroy` | Tear down all Azure resources (full rollback). For AKS with an existing cluster, removes only the K8s Deployment + Service. |
 | `status` | Show deployment status and health |
-| `logs` | Stream container/VM logs |
+| `logs` | Stream container/VM/pod logs |
 | `ssh` | SSH into VM (VM deployments only) |
 
 ```bash
@@ -216,6 +217,126 @@ sudo systemctl restart zscaler-mcp  # restart service
 /opt/zscaler-mcp/venv/bin/zscaler-mcp --help
 ```
 
+## AKS Deployment (Preview)
+
+> **Status: Preview.** AKS support is fully functional for the four supported auth modes (`jwt`, `api-key`, `zscaler`, `none`) and has been validated end-to-end with cluster creation, LoadBalancer Service, and the Docker Hub image. **Credentials can now be stored in Azure Key Vault and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver** — this is the recommended default. A simpler env-var injection path is also available for short-lived demos. **OIDCProxy auth, TLS Ingress, and HPA are still planned** — see Known Limitations below.
+
+Deploys the MCP server to an Azure Kubernetes Service cluster as a `Deployment` exposed via a `Service` of type `LoadBalancer`:
+
+- **Cluster lifecycle** — create a new AKS cluster (PoC / testing) or use an existing cluster (production)
+- **Container image** — same Docker Hub image as Container Apps (`zscaler/zscaler-mcp-server:latest`)
+- **External access** — Azure Standard Load Balancer with public IP
+- **Resource defaults** — `200m`–`1000m` CPU, `512Mi`–`1Gi` memory per pod, single replica
+- **Namespace** — defaults to `default`, configurable
+- **Credential storage (interactive choice):**
+  - **Azure Key Vault (default, recommended).** Workload Identity Federation + Key Vault CSI driver. The script provisions the vault, the User-Assigned Managed Identity, the federated credential bound to the Pod's `ServiceAccount`, and the `SecretProviderClass`. Pods consume secrets via `valueFrom.secretKeyRef` against a synced Kubernetes `Secret`.
+  - **Plain env vars (PoC).** Credentials are baked into the Deployment manifest at deploy time — fine for short demos, not for production.
+- **Cleanup** — if you used an existing cluster, `destroy` removes only the K8s resources we created plus the per-deployment UAMI + federated credential (the Key Vault is preserved); if the script created the cluster, `destroy` deletes the entire resource group (everything goes with it).
+
+### Architecture (AKS Preview)
+
+```
+┌──────────────────┐                           ┌─────────────────────────────────┐
+│  Claude Desktop  │     HTTP (port 80)        │   AKS Cluster                   │
+│  / Cursor        │◄─────────────────────────►│                                 │
+│  (mcp-remote)    │                           │  ┌───────────────────────────┐  │
+└────────┬─────────┘                           │  │ Service (LoadBalancer)    │  │
+         │                                      │  └─────────────┬─────────────┘  │
+         ▼                                      │                │                │
+┌──────────────────┐                            │  ┌─────────────▼─────────────┐  │
+│  External IP     │                            │  │ Deployment                │  │
+│  (Azure Std LB)  │                            │  │ zscaler-mcp-server        │  │
+└──────────────────┘                            │  │ ServiceAccount + Workload │  │
+                                                │  │ Identity + KV CSI driver  │  │
+                                                │  │ → mounted secrets synced  │  │
+                                                │  │   into K8s Secret, used   │  │
+                                                │  │   via valueFrom.secretRef │  │
+                                                │  └───────────────┬───────────┘  │
+                                                └──────────────────┼──────────────┘
+                                                                   │  Zscaler API
+                                                                   ▼
+                                                       ┌──────────────────────┐
+                                                       │  Zscaler Zero Trust  │
+                                                       │  Exchange (OneAPI)   │
+                                                       └──────────────────────┘
+                                                                   ▲
+                                                  federated identity (OIDC)
+                                                                   │
+                                                       ┌──────────────────────┐
+                                                       │   Azure Key Vault    │
+                                                       │   (Zscaler creds)    │
+                                                       └──────────────────────┘
+```
+
+The diagram shows the **Key Vault path** (default). On the env-vars path, the SecretProviderClass / ServiceAccount / Key Vault chain on the right side is omitted and the Deployment reads credentials directly from inline `env` values.
+
+### Prerequisites
+
+- **kubectl** installed (`kubectl version --client`) — `brew install kubernetes-cli` on macOS
+- **Azure CLI** with the `aks-preview` extension is **not** required (the script uses GA AKS commands)
+- Permission to create AKS clusters in the target resource group (Owner or Contributor)
+- A Standard tier subscription if creating a Standard SKU Load Balancer
+
+### Quick Start (AKS)
+
+```bash
+python azure_mcp_operations.py deploy
+# When prompted, choose:
+#   3) Azure Kubernetes Service (AKS) — Kubernetes deployment [PREVIEW]
+#
+# The script will then ask for:
+#   - Azure region, resource group
+#   - New cluster (default Standard_B2s, 1 node) or existing cluster name
+#   - Kubernetes namespace (default: default)
+#   - Container image (default: zscaler/zscaler-mcp-server:latest)
+#   - MCP server port (default: 8000)
+```
+
+### What the Script Does
+
+1. Verifies `kubectl` and `az` are installed and the user is logged in
+2. Creates the resource group if it does not exist
+3. Creates a new AKS cluster (managed identity + Standard load balancer; on the Key Vault path also `--enable-workload-identity --enable-oidc-issuer --enable-addons azure-keyvault-secrets-provider`) **or** verifies the existing cluster (and enables workload identity + KV CSI addon retroactively if needed)
+4. Runs `az aks get-credentials` to set the kubectl context
+5. Creates the namespace if needed
+6. **Key Vault path only:** provisions / verifies the Key Vault, stores every Zscaler secret in it, creates the User-Assigned Managed Identity, grants it `Key Vault Secrets User`, and creates the federated credential bridging the K8s `ServiceAccount` to the UAMI
+7. Generates `.aks-manifest.yaml` — Deployment + Service for the env-vars path; ServiceAccount + SecretProviderClass + Deployment (with `valueFrom.secretKeyRef`) + Service for the Key Vault path
+8. Applies the manifest with `kubectl apply`
+9. Polls for the LoadBalancer external IP (up to 5 minutes)
+10. Updates Claude Desktop / Cursor configs with `http://<EXTERNAL_IP>/mcp`
+
+### Operations on AKS
+
+```bash
+# Status — shows AKS provisioning state, pod, and service
+python azure_mcp_operations.py status
+
+# Stream pod logs (kubectl logs deployment/zscaler-mcp-server -n <ns> -f)
+python azure_mcp_operations.py logs
+
+# Destroy
+#   - If you created a new cluster: deletes the entire resource group
+#   - If you used an existing cluster: deletes only the K8s Deployment + Service
+python azure_mcp_operations.py destroy
+```
+
+### Direct kubectl
+
+After deployment, the kubectl context is set to your AKS cluster. You can use kubectl directly:
+
+```bash
+kubectl get pods -n default -l app=zscaler-mcp-server
+kubectl logs deployment/zscaler-mcp-server -n default -f
+kubectl get svc zscaler-mcp-server -n default
+kubectl describe deployment zscaler-mcp-server -n default
+```
+
+### Known Limitations (Preview)
+
+- **OIDCProxy auth mode is not supported** on AKS today — use `jwt`, `api-key`, `zscaler`, or `none`
+- **No Ingress controller** — the script provisions a `LoadBalancer` Service that exposes plain HTTP on port 80. For production, place this behind Application Gateway / NGINX Ingress with `cert-manager` for TLS (requires a DNS A record pointing at the cluster's ingress LoadBalancer).
+- **Single replica by default** — for HA, edit `.aks-manifest.yaml` and re-apply, or scale via `kubectl scale deployment zscaler-mcp-server --replicas=3`.
+
 ## Azure AI Foundry Agent Integration
 
 For organizations using Azure AI Foundry, you can create a managed AI agent that uses your deployed MCP server as a tool. This enables:
@@ -268,50 +389,79 @@ For organizations using Azure AI Foundry, you can create a managed AI agent that
 # 1. Deploy MCP server first (if not already done)
 python azure_mcp_operations.py deploy
 
-# 2. Create Foundry agent
+# 2. Create the Foundry "Custom keys" connection ONE TIME in the portal
+#    (see "MCP Server Authentication from Foundry" below for the exact steps).
+
+# 3. Create Foundry agent
 python azure_mcp_operations.py agent_create
 # You'll be prompted for:
 #   - Foundry project endpoint (from portal → Project Overview)
 #   - Model deployment name (default: gpt-4o)
+#   - Foundry connection name that holds the auth headers
+#     (default: zscaler-mcp-headers — pin via AZURE_FOUNDRY_CONNECTION_NAME)
 #   - MCP server auth credentials (loaded from .env or entered manually)
 
-# 3. Start interactive chat (CLI)
+# 4. Start interactive chat (CLI)
 python azure_mcp_operations.py agent_chat
 
-# 4. Or check agent status
+# 5. Or check agent status
 python azure_mcp_operations.py agent_status
 
-# 5. Delete agent when done
+# 6. Delete agent when done
 python azure_mcp_operations.py agent_destroy
 ```
 
 ### MCP Server Authentication from Foundry
 
-The Foundry agent authenticates to the MCP server using custom HTTP headers
-passed via `MCPTool.headers`. The script configures these based on your
-deployment's auth mode:
+Foundry no longer accepts auth headers inlined in `MCPTool.headers` — any
+header containing words like `secret`, `key`, `token`, or `authorization`
+is rejected with `invalid_payload`. The supported pattern is to register
+a **Custom keys connection** in the project that holds the headers and
+reference it via `MCPTool.project_connection_id`. Foundry injects the
+connection's keys as request headers when calling the MCP server.
 
-| MCP Auth Mode | Headers Passed | Source |
-|---------------|---------------|--------|
+**One-time portal setup:**
+
+1. Open your project at [ai.azure.com](https://ai.azure.com).
+2. Left nav → **Management center** → **Connected resources**.
+3. **+ New connection** → **Custom keys**.
+4. Name the connection (default expected by the script: `zscaler-mcp-headers`).
+5. Mark each entry as a **secret** and add the rows below for your MCP auth mode:
+
+| MCP Auth Mode | Custom Keys to Add | Source |
+|---------------|--------------------|--------|
 | `zscaler` | `X-Zscaler-Client-ID` + `X-Zscaler-Client-Secret` | OneAPI credentials |
 | `api-key` | `X-MCP-API-Key` | MCP API key |
-| `none` | *(no headers)* | — |
+| `none` | *(no connection needed)* | — |
 
-> **Why not `Authorization` header or `project_connection_id`?**
-> Azure Foundry blocks `Authorization` in `MCPTool.headers` (sensitive header
-> restriction). The `project_connection_id` / CustomKeys alternative has a
-> known URI parsing bug in the Foundry service. Using `X-Zscaler-*` custom
-> headers bypasses both issues while maintaining full authentication.
+6. **Save**, then run `agent_create`.
+
+The connection name is read from `AZURE_FOUNDRY_CONNECTION_NAME` (env var or
+`.env`), defaulting to `zscaler-mcp-headers`. The data-plane SDK
+(`azure-ai-projects` v2.0.x) cannot create connections — only read them — so
+the portal step is currently required. Connection CRUD via the management
+plane is on the follow-up roadmap.
+
+> **Why the change?** The previous build inlined the headers via
+> `MCPTool.headers`. Microsoft has since tightened the denylist on
+> sensitive header names, so that path now returns
+> `Headers that can include sensitive information are not allowed in the
+> headers property for MCP tools. Use project_connection_id instead.`
+> The error is the prompt for this refactor.
 
 ### Foundry Portal (UI)
 
 After creating the agent, you can access it through the Azure AI Foundry portal:
 
-1. Go to [ai.azure.com](https://ai.azure.com)
-2. Open your project
-3. Navigate to **Agents** in the left panel
-4. Select `zscaler-mcp-agent`
-5. Use the **Playground** to test the agent interactively
+1. Go to [ai.azure.com](https://ai.azure.com) and open your project.
+2. Make sure the **"New Foundry"** toggle (top-right of the page) is **ON** — Prompt Agents are surfaced only in the new experience.
+3. Left nav: **Build** → **Agents** → **Agents** tab.
+4. Select `zscaler-mcp-agent` (Type column will show `prompt`, Version `1`).
+5. Use the **Playground** to test the agent interactively.
+
+The script's `agent_create` command also prints a deep link to the agent at the end of a successful run.
+
+> **Two agent surfaces in Foundry — heads-up.** The "Agents" view in the *new* Foundry experience lists **Prompt Agents** (created by this script, type `prompt`, with versioning). The classic experience also has an "Agents" tab that lists **Assistant API** agents (type `asst_xxxx`, no versioning). They are different platforms in the same project. If you previously opened the Playground or used another tool, you may see leftover `Agent###` rows in classic — they're unrelated to `zscaler-mcp-agent` and safe to delete from `View classic agents` in the new UI's banner.
 
 The portal also lets you publish, monitor, and manage agent versions.
 

@@ -2,15 +2,21 @@
 """
 Zscaler MCP Server — Azure Deployment (Interactive)
 
-Fully interactive deployment script supporting two deployment targets:
+Fully interactive deployment script supporting three deployment targets:
   1. Azure Container Apps (managed, serverless) — pulls from Docker Hub
   2. Azure Virtual Machine (Ubuntu 22.04) — installs Python library via pip
+  3. Azure Kubernetes Service (AKS) — deploys to a Kubernetes cluster (PREVIEW)
 
-Both options:
+All options:
   - Prompt the user for auth mode, credentials, and Azure options
-  - Store all secrets in Azure Key Vault (new or existing)
+  - Store secrets in Azure Key Vault (Container Apps & VM); env vars on AKS (Preview)
   - Update Claude Desktop / Cursor configs with correct auth headers
   - Provide destroy / status / logs operations
+
+NOTE: AKS support is in PREVIEW. Cluster provisioning, K8s manifests, and
+LoadBalancer Service are validated, but Workload Identity + Key Vault CSI
+integration is planned for a future release. For now, AKS injects secrets
+as Kubernetes environment variables on the Deployment.
 
 Supported MCP client authentication modes:
   - OIDCProxy:  OAuth 2.1 + DCR via any OIDC provider (browser-based login)
@@ -28,7 +34,7 @@ Usage:
   python azure_mcp_operations.py deploy     # interactive guided deploy
   python azure_mcp_operations.py destroy    # tear down all resources
   python azure_mcp_operations.py status     # show deployment status
-  python azure_mcp_operations.py logs       # stream container/VM logs
+  python azure_mcp_operations.py logs       # stream container/VM/pod logs
   python azure_mcp_operations.py ssh        # SSH into VM (VM deployments only)
 """
 
@@ -150,6 +156,23 @@ def run_cmd(
         return r
 
 
+def run_kubectl(
+    args: list[str], *, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess:
+    cmd = ["kubectl"] + args
+    info(f"  $ kubectl {' '.join(args[:8])}{'...' if len(args) > 8 else ''}")
+    if capture:
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if check and r.returncode != 0:
+            die(f"kubectl command failed:\n  {r.stderr.strip()}")
+        return r
+    else:
+        r = subprocess.run(cmd)
+        if check and r.returncode != 0:
+            die(f"kubectl command failed (exit code {r.returncode})")
+        return r
+
+
 # ── State helpers ─────────────────────────────────────────────────────────
 
 
@@ -243,44 +266,93 @@ def upsert_json_config(path: Path, updater) -> None:
 # ── Interactive prompt helpers ────────────────────────────────────────────
 
 
+# Words a user can type at any prompt to gracefully exit the script
+# (in addition to picking the explicit "Cancel / Exit" menu entry).
+_EXIT_WORDS = ("exit", "quit", "q", "cancel")
+
+
+def _cancel(reason: str = "Operation cancelled by user.") -> None:
+    """Friendly, idempotent exit point used by every interactive prompt
+    when the user requests to bail out (either by selecting the explicit
+    Cancel option or by typing ``exit`` / ``quit`` / ``q`` / ``cancel``).
+    """
+    print()
+    info(reason)
+    sys.exit(0)
+
+
 def _prompt(label: str, *, default: str = "", secret: bool = False) -> str:
-    """Prompt the user for a value, with optional default."""
+    """Prompt the user for a value, with optional default.
+
+    Typing ``exit`` / ``quit`` / ``q`` / ``cancel`` at any prompt aborts
+    the script gracefully.
+    """
     if default:
         display = f"  {label} [{default}]: "
     else:
         display = f"  {label}: "
     while True:
-        val = getpass.getpass(display) if secret else input(display)
+        try:
+            val = getpass.getpass(display) if secret else input(display)
+        except (EOFError, KeyboardInterrupt):
+            _cancel()
         val = val.strip()
+        if val.lower() in _EXIT_WORDS and not secret:
+            _cancel()
         if val:
             return val
         if default:
             return default
-        error(f"  {label} is required.")
+        error(f"  {label} is required (or type 'exit' to cancel).")
 
 
-def _prompt_choice(title: str, options: list[tuple[str, str]]) -> str:
-    """Display a numbered menu and return the chosen key."""
+def _prompt_choice(
+    title: str,
+    options: list[tuple[str, str]],
+    *,
+    allow_exit: bool = True,
+) -> str:
+    """Display a numbered menu and return the chosen key.
+
+    Unless ``allow_exit=False`` is passed, an additional "Cancel / Exit"
+    entry is appended as the last numbered option so the user can bail
+    out without resorting to Ctrl+C.
+    """
     print()
     print(f"  {BOLD}{title}{NC}")
     print()
-    for idx, (_, label) in enumerate(options, 1):
+    display_options = list(options)
+    if allow_exit:
+        display_options = display_options + [("__exit__", "Cancel / Exit")]
+    for idx, (_, label) in enumerate(display_options, 1):
         print(f"    [{idx}] {label}")
     print()
     while True:
         try:
-            raw = input(f"  Choice [1-{len(options)}]: ").strip()
+            raw = input(f"  Choice [1-{len(display_options)}]: ").strip()
         except (EOFError, KeyboardInterrupt):
-            die("\nAborted.")
-        if raw.isdigit() and 1 <= int(raw) <= len(options):
-            key = options[int(raw) - 1][0]
+            _cancel()
+        if allow_exit and raw.lower() in _EXIT_WORDS:
+            _cancel()
+        if raw.isdigit() and 1 <= int(raw) <= len(display_options):
+            key = display_options[int(raw) - 1][0]
+            if key == "__exit__":
+                _cancel()
             return key
         error(f"  Invalid choice: {raw}")
 
 
 def _prompt_yes_no(question: str, *, default: bool = True) -> bool:
+    """Yes/No prompt.  Typing ``exit`` / ``quit`` / ``q`` / ``cancel``
+    aborts the script gracefully.
+    """
     hint = "Y/n" if default else "y/N"
-    raw = input(f"  {question} [{hint}]: ").strip().lower()
+    try:
+        raw = input(f"  {question} [{hint}]: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        _cancel()
+    if raw in _EXIT_WORDS:
+        _cancel()
     if not raw:
         return default
     return raw in ("y", "yes")
@@ -851,6 +923,165 @@ def _update_client_configs(mcp_url: str, auth_mode: str, creds: dict) -> None:
 # ════════════════════════════════════════════════════════════════════════
 
 
+def _build_kv_secret_map(auth_mode: str) -> list[tuple[str, str]]:
+    """Return [(env_var_name, kv_secret_name), ...] for sensitive values that
+    should be stored in Key Vault when the user picks the Key Vault storage
+    option. Non-sensitive values (URLs, ports, audiences) stay as plain env
+    vars regardless of storage choice."""
+    secret_map: list[tuple[str, str]] = [
+        ("ZSCALER_CLIENT_ID", "zscaler-client-id"),
+        ("ZSCALER_CLIENT_SECRET", "zscaler-client-secret"),
+        ("ZSCALER_VANITY_DOMAIN", "zscaler-vanity-domain"),
+        ("ZSCALER_CUSTOMER_ID", "zscaler-customer-id"),
+    ]
+    if auth_mode == "oidcproxy":
+        secret_map += [
+            ("OIDCPROXY_CLIENT_ID", "oidcproxy-client-id"),
+            ("OIDCPROXY_CLIENT_SECRET", "oidcproxy-client-secret"),
+        ]
+    elif auth_mode == "api-key":
+        secret_map.append(("ZSCALER_MCP_AUTH_API_KEY", "mcp-api-key"))
+    return secret_map
+
+
+def _setup_containerapp_keyvault_refs(
+    *,
+    account: dict,
+    container_app_name: str,
+    resource_group: str,
+    keyvault_name: str,
+    auth_mode: str,
+) -> None:
+    """Switch a Container App from inline env vars to Key Vault secret
+    references. Enables system-assigned managed identity on the app, grants
+    it 'Key Vault Secrets User' on the vault, defines Container Apps
+    `keyvaultref:` secrets, and updates the env vars to use `secretref:`.
+    """
+    secret_map = _build_kv_secret_map(auth_mode)
+
+    info("Switching Container App to Key Vault secret references")
+
+    # Step 1 — enable system-assigned managed identity on the Container App
+    info("  Enabling system-assigned managed identity...")
+    r = run_az(
+        [
+            "containerapp",
+            "identity",
+            "assign",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            resource_group,
+            "--system-assigned",
+            "--output",
+            "json",
+        ],
+        capture=True,
+    )
+    try:
+        identity = json.loads(r.stdout) if r.stdout.strip() else {}
+    except json.JSONDecodeError:
+        identity = {}
+    principal_id = identity.get("principalId", "")
+    if not principal_id:
+        # Fall back to a follow-up show
+        r2 = run_az(
+            [
+                "containerapp",
+                "show",
+                "--name",
+                container_app_name,
+                "--resource-group",
+                resource_group,
+                "--query",
+                "identity.principalId",
+                "--output",
+                "tsv",
+            ],
+            capture=True,
+            check=False,
+        )
+        principal_id = r2.stdout.strip()
+    if not principal_id:
+        die("Could not retrieve the Container App's managed identity principalId.")
+    ok(f"  Managed identity principal ID: {principal_id}")
+
+    # Step 2 — grant Key Vault Secrets User role to the MI
+    info("  Granting 'Key Vault Secrets User' role on the vault...")
+    kv_scope = (
+        f"/subscriptions/{account['id']}/resourceGroups/{resource_group}"
+        f"/providers/Microsoft.KeyVault/vaults/{keyvault_name}"
+    )
+    run_az(
+        [
+            "role",
+            "assignment",
+            "create",
+            "--role",
+            "Key Vault Secrets User",
+            "--assignee-object-id",
+            principal_id,
+            "--assignee-principal-type",
+            "ServicePrincipal",
+            "--scope",
+            kv_scope,
+            "--output",
+            "none",
+        ],
+        check=False,
+        capture=True,
+    )
+    ok("  RBAC role assigned")
+
+    # Step 3 — wait for RBAC propagation
+    info("  Waiting for RBAC propagation (45s)...")
+    time.sleep(45)
+
+    # Step 4 — bind Container Apps secrets to Key Vault
+    info("  Defining Container App secrets bound to Key Vault...")
+    secrets_args = [
+        f"{secret_name}=keyvaultref:https://{keyvault_name}.vault.azure.net/secrets/{secret_name},"
+        f"identityref:system"
+        for _, secret_name in secret_map
+    ]
+    run_az(
+        [
+            "containerapp",
+            "secret",
+            "set",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            resource_group,
+            "--secrets",
+            *secrets_args,
+            "--output",
+            "none",
+        ]
+    )
+    ok(f"  {len(secret_map)} secrets now resolved from Key Vault at runtime")
+
+    # Step 5 — update env vars to use secret references
+    info("  Updating Container App env vars to use Key Vault secret references...")
+    env_var_args = [f"{env_name}=secretref:{secret_name}" for env_name, secret_name in secret_map]
+    run_az(
+        [
+            "containerapp",
+            "update",
+            "--name",
+            container_app_name,
+            "--resource-group",
+            resource_group,
+            "--set-env-vars",
+            *env_var_args,
+            "--output",
+            "none",
+        ]
+    )
+    ok("  Env vars now reference Key Vault secrets (revision recreated)")
+    print()
+
+
 def _deploy_container_app(account: dict, creds: dict) -> None:
     """Deploy to Azure Container Apps."""
     env = creds["env"]
@@ -870,22 +1101,46 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     mcp_port = _prompt("MCP server port", default=resolve(env, "MCP_PORT") or "8000")
     print()
 
-    # Key Vault
-    info("Azure Key Vault")
-    kv_choice = _prompt_choice(
-        "Key Vault for storing secrets:",
+    # Credential storage strategy
+    info("Credential storage")
+    storage_choice = _prompt_choice(
+        "How should credentials be stored and injected into the container?",
         [
-            ("new", "Create a new Key Vault"),
-            ("existing", "Use an existing Key Vault"),
+            (
+                "keyvault",
+                "Azure Key Vault (recommended for production)  — secrets stored in KV,"
+                " pulled at runtime via Container Apps secret references",
+            ),
+            (
+                "envvars",
+                "Direct environment variables (PoC / dev)       — credentials injected"
+                " as plain env vars at deploy time, no Key Vault provisioned",
+            ),
         ],
     )
-    if kv_choice == "existing":
-        keyvault_name = _prompt("Existing Key Vault name")
-    else:
-        keyvault_name = _prompt(
-            "New Key Vault name",
-            default=resolve(env, "AZURE_KEYVAULT_NAME") or f"zscalermcpkv{suffix}",
+
+    keyvault_name = ""
+    kv_choice = ""
+    if storage_choice == "keyvault":
+        info("Azure Key Vault")
+        kv_choice = _prompt_choice(
+            "Key Vault for storing secrets:",
+            [
+                ("new", "Create a new Key Vault"),
+                ("existing", "Use an existing Key Vault"),
+            ],
         )
+        if kv_choice == "existing":
+            keyvault_name = _prompt("Existing Key Vault name")
+        else:
+            keyvault_name = _prompt(
+                "New Key Vault name",
+                default=resolve(env, "AZURE_KEYVAULT_NAME") or f"zscalermcpkv{suffix}",
+            )
+    else:
+        warn("Credentials will be passed as plain environment variables on the Container App.")
+        warn("  They are visible to anyone with read access via 'az containerapp show'.")
+        warn("  For production, re-run and choose the Key Vault option.")
     print()
 
     # Confirmation
@@ -898,13 +1153,21 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
         "none": "None (no auth)",
     }
 
+    if storage_choice == "keyvault":
+        storage_label = (
+            f"Azure Key Vault — {keyvault_name} "
+            f"({'new' if kv_choice == 'new' else 'existing'}); runtime secret refs"
+        )
+    else:
+        storage_label = "Plain env vars (no Key Vault)"
+
     print()
     print(f"  {BOLD}Deployment summary:{NC}")
     print("    Target:          Azure Container Apps")
     print(f"    Image:           {DOCKER_HUB_IMAGE}")
     print(f"    Resource Group:  {resource_group}")
     print(f"    Location:        {location}")
-    print(f"    Key Vault:       {keyvault_name} ({'new' if kv_choice == 'new' else 'existing'})")
+    print(f"    Credentials:     {storage_label}")
     print(f"    Container App:   {container_app_name}")
     print(f"    Auth mode:       {_auth_labels[auth_mode]}")
     print(f"    Zscaler Cloud:   {creds['zscaler_cloud']}")
@@ -923,8 +1186,9 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     ok(f"Resource group '{resource_group}' ready")
     print()
 
-    # Key Vault
-    _setup_keyvault(account, resource_group, location, keyvault_name, kv_choice, creds)
+    # Key Vault (only when the user chose the keyvault path)
+    if storage_choice == "keyvault":
+        _setup_keyvault(account, resource_group, location, keyvault_name, kv_choice, creds)
 
     # Container Apps environment
     info("Creating Container Apps environment")
@@ -1214,12 +1478,23 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
         warn(f"  {BOLD}{azure_callback}{NC}")
     print()
 
+    # Switch to Key Vault secret references (if user chose KV storage)
+    if storage_choice == "keyvault":
+        _setup_containerapp_keyvault_refs(
+            account=account,
+            container_app_name=container_app_name,
+            resource_group=resource_group,
+            keyvault_name=keyvault_name,
+            auth_mode=auth_mode,
+        )
+
     # Save state
     _save_state(
         {
             "deployment_type": "container_app",
             "resource_group": resource_group,
             "location": location,
+            "credential_storage": storage_choice,
             "keyvault_name": keyvault_name,
             "container_app_env": container_app_env_name,
             "container_app": container_app_name,
@@ -1271,7 +1546,10 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     print(f"  Image:           {DOCKER_HUB_IMAGE}")
     print(f"  Resource Group:  {resource_group}")
     print(f"  Container App:   {container_app_name}")
-    print(f"  Key Vault:       {keyvault_name}")
+    if storage_choice == "keyvault":
+        print(f"  Key Vault:       {keyvault_name} (runtime secret refs)")
+    else:
+        print("  Credentials:     Plain env vars (no Key Vault)")
     print(f"  Auth mode:       {_auth_labels[auth_mode]}")
 
     if auth_mode == "api-key":
@@ -1726,6 +2004,971 @@ def _deploy_vm(account: dict, creds: dict) -> None:
 
 
 # ════════════════════════════════════════════════════════════════════════
+#  Deploy — Azure Kubernetes Service (AKS)  [PREVIEW]
+# ════════════════════════════════════════════════════════════════════════
+
+
+def _build_aks_env_vars(creds: dict, mcp_port: str) -> list[tuple[str, str]]:
+    """Build the env vars to inject into the AKS pod (auth + Zscaler creds)
+    for the **envvars** storage path.  Used when the user opts out of Key
+    Vault integration on AKS.
+    """
+    auth_mode = creds["auth_mode"]
+    env_vars: list[tuple[str, str]] = [
+        ("ZSCALER_MCP_ALLOW_HTTP", "true"),
+        ("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "true"),
+        ("MCP_HOST", "0.0.0.0"),
+        ("MCP_PORT", mcp_port),
+        ("ZSCALER_CLIENT_ID", creds["zscaler_client_id"]),
+        ("ZSCALER_CLIENT_SECRET", creds["zscaler_client_secret"]),
+        ("ZSCALER_VANITY_DOMAIN", creds["zscaler_vanity_domain"]),
+        ("ZSCALER_CUSTOMER_ID", creds["zscaler_customer_id"]),
+    ]
+    if creds["zscaler_cloud"]:
+        env_vars.append(("ZSCALER_CLOUD", creds["zscaler_cloud"]))
+    if creds["write_enabled"]:
+        env_vars.append(("ZSCALER_MCP_WRITE_ENABLED", creds["write_enabled"]))
+    if creds["write_tools"]:
+        env_vars.append(("ZSCALER_MCP_WRITE_TOOLS", creds["write_tools"]))
+    if creds["disabled_tools"]:
+        env_vars.append(("ZSCALER_MCP_DISABLED_TOOLS", creds["disabled_tools"]))
+    if creds["disabled_services"]:
+        env_vars.append(("ZSCALER_MCP_DISABLED_SERVICES", creds["disabled_services"]))
+
+    if auth_mode == "jwt":
+        env_vars += [
+            ("ZSCALER_MCP_AUTH_ENABLED", "true"),
+            ("ZSCALER_MCP_AUTH_MODE", "jwt"),
+            ("ZSCALER_MCP_AUTH_JWKS_URI", creds["jwks_uri"]),
+            ("ZSCALER_MCP_AUTH_ISSUER", creds["jwt_issuer"]),
+            ("ZSCALER_MCP_AUTH_AUDIENCE", creds["jwt_audience"]),
+        ]
+    elif auth_mode == "api-key":
+        env_vars += [
+            ("ZSCALER_MCP_AUTH_ENABLED", "true"),
+            ("ZSCALER_MCP_AUTH_MODE", "api-key"),
+            ("ZSCALER_MCP_AUTH_API_KEY", creds["api_key"]),
+        ]
+    elif auth_mode == "zscaler":
+        env_vars += [
+            ("ZSCALER_MCP_AUTH_ENABLED", "true"),
+            ("ZSCALER_MCP_AUTH_MODE", "zscaler"),
+        ]
+    else:
+        env_vars.append(("ZSCALER_MCP_AUTH_ENABLED", "false"))
+    return env_vars
+
+
+# ────────────────────────────────────────────────────────────────────────
+#  AKS — Workload Identity Federation + Key Vault CSI driver helpers
+# ────────────────────────────────────────────────────────────────────────
+
+
+# K8s ServiceAccount + Secret name used by the AKS deployment.  These
+# stay constant per deployment because the federated credential subject
+# embeds the ServiceAccount name.
+AKS_SERVICE_ACCOUNT_NAME = "zscaler-mcp-sa"
+AKS_K8S_SECRET_NAME = "zscaler-mcp-secrets"
+AKS_SPC_NAME = "zscaler-mcp-spc"
+
+
+def _build_aks_kv_env_vars(creds: dict, mcp_port: str) -> list[dict]:
+    """Build the Deployment env vars for the **keyvault** storage path.
+
+    Sensitive values reference a synced Kubernetes Secret (populated by
+    the Key Vault CSI driver via the SecretProviderClass).  Non-sensitive
+    values stay inline.
+
+    Returns a list of dict env entries ready to be rendered as YAML.
+    """
+    auth_mode = creds["auth_mode"]
+    secret_map = _build_kv_secret_map(auth_mode)
+    secret_keys = {env_name: kv_name for env_name, kv_name in secret_map}
+
+    inline: list[tuple[str, str]] = [
+        ("ZSCALER_MCP_ALLOW_HTTP", "true"),
+        ("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "true"),
+        ("MCP_HOST", "0.0.0.0"),
+        ("MCP_PORT", mcp_port),
+    ]
+    if creds["zscaler_cloud"]:
+        inline.append(("ZSCALER_CLOUD", creds["zscaler_cloud"]))
+    if creds["write_enabled"]:
+        inline.append(("ZSCALER_MCP_WRITE_ENABLED", creds["write_enabled"]))
+    if creds["write_tools"]:
+        inline.append(("ZSCALER_MCP_WRITE_TOOLS", creds["write_tools"]))
+    if creds["disabled_tools"]:
+        inline.append(("ZSCALER_MCP_DISABLED_TOOLS", creds["disabled_tools"]))
+    if creds["disabled_services"]:
+        inline.append(("ZSCALER_MCP_DISABLED_SERVICES", creds["disabled_services"]))
+
+    if auth_mode == "jwt":
+        inline += [
+            ("ZSCALER_MCP_AUTH_ENABLED", "true"),
+            ("ZSCALER_MCP_AUTH_MODE", "jwt"),
+            ("ZSCALER_MCP_AUTH_JWKS_URI", creds["jwks_uri"]),
+            ("ZSCALER_MCP_AUTH_ISSUER", creds["jwt_issuer"]),
+            ("ZSCALER_MCP_AUTH_AUDIENCE", creds["jwt_audience"]),
+        ]
+    elif auth_mode == "api-key":
+        inline += [
+            ("ZSCALER_MCP_AUTH_ENABLED", "true"),
+            ("ZSCALER_MCP_AUTH_MODE", "api-key"),
+        ]
+    elif auth_mode == "zscaler":
+        inline += [
+            ("ZSCALER_MCP_AUTH_ENABLED", "true"),
+            ("ZSCALER_MCP_AUTH_MODE", "zscaler"),
+        ]
+    else:
+        inline.append(("ZSCALER_MCP_AUTH_ENABLED", "false"))
+
+    rendered: list[dict] = [{"name": k, "value": v} for k, v in inline]
+    for env_name, kv_secret_name in secret_keys.items():
+        rendered.append(
+            {
+                "name": env_name,
+                "valueFrom": {
+                    "secretKeyRef": {
+                        "name": AKS_K8S_SECRET_NAME,
+                        "key": kv_secret_name,
+                    }
+                },
+            }
+        )
+    return rendered
+
+
+def _enable_aks_workload_identity(cluster_name: str, resource_group: str) -> str:
+    """Enable Workload Identity + OIDC issuer on the AKS cluster and return
+    the cluster's OIDC issuer URL.
+    """
+    info("  Enabling Workload Identity + OIDC issuer on the cluster...")
+    run_az(
+        [
+            "aks",
+            "update",
+            "--name",
+            cluster_name,
+            "--resource-group",
+            resource_group,
+            "--enable-workload-identity",
+            "--enable-oidc-issuer",
+            "--output",
+            "none",
+        ]
+    )
+    r = run_az(
+        [
+            "aks",
+            "show",
+            "--name",
+            cluster_name,
+            "--resource-group",
+            resource_group,
+            "--query",
+            "oidcIssuerProfile.issuerUrl",
+            "--output",
+            "tsv",
+        ],
+        capture=True,
+    )
+    issuer_url = r.stdout.strip()
+    if not issuer_url:
+        die("Could not retrieve OIDC issuer URL from the AKS cluster.")
+    ok(f"  OIDC issuer URL: {issuer_url}")
+    return issuer_url
+
+
+def _enable_aks_kv_csi(cluster_name: str, resource_group: str) -> None:
+    """Enable the Azure Key Vault provider for Secrets Store CSI driver on
+    the AKS cluster.  Idempotent — succeeds quietly if already enabled.
+    """
+    info("  Enabling Key Vault CSI driver addon...")
+    r = run_az(
+        [
+            "aks",
+            "enable-addons",
+            "--name",
+            cluster_name,
+            "--resource-group",
+            resource_group,
+            "--addons",
+            "azure-keyvault-secrets-provider",
+            "--enable-secret-rotation",
+            "--rotation-poll-interval",
+            "2m",
+            "--output",
+            "none",
+        ],
+        check=False,
+        capture=True,
+    )
+    if r.returncode != 0 and "already enabled" not in (r.stderr or "").lower():
+        # Some Azure CLI versions return a non-zero exit if already enabled
+        # but emit a clear message — surface anything unexpected.
+        warn(f"  enable-addons returned non-zero ({r.returncode}); continuing.")
+        if r.stderr:
+            warn(f"  stderr: {r.stderr.strip()[:200]}")
+    ok("  Key Vault CSI driver addon ready")
+
+
+def _create_uami(uami_name: str, resource_group: str, location: str) -> dict:
+    """Create (idempotent) a User-Assigned Managed Identity and return its
+    ``{clientId, principalId, id}`` payload.
+    """
+    info(f"  Creating User-Assigned Managed Identity '{uami_name}'...")
+    r = run_az(
+        [
+            "identity",
+            "create",
+            "--name",
+            uami_name,
+            "--resource-group",
+            resource_group,
+            "--location",
+            location,
+            "--output",
+            "json",
+        ],
+        capture=True,
+    )
+    payload = json.loads(r.stdout) if r.stdout.strip() else {}
+    client_id = payload.get("clientId", "")
+    principal_id = payload.get("principalId", "")
+    resource_id = payload.get("id", "")
+    if not (client_id and principal_id and resource_id):
+        die("Failed to create / retrieve the User-Assigned Managed Identity.")
+    ok(f"  UAMI clientId: {client_id}")
+    return {"client_id": client_id, "principal_id": principal_id, "id": resource_id}
+
+
+def _grant_uami_kv_role(
+    *, account: dict, uami_principal_id: str, resource_group: str, keyvault_name: str
+) -> None:
+    """Grant the UAMI 'Key Vault Secrets User' on the Key Vault scope."""
+    info("  Granting 'Key Vault Secrets User' role to the UAMI...")
+    kv_scope = (
+        f"/subscriptions/{account['id']}/resourceGroups/{resource_group}"
+        f"/providers/Microsoft.KeyVault/vaults/{keyvault_name}"
+    )
+    run_az(
+        [
+            "role",
+            "assignment",
+            "create",
+            "--role",
+            "Key Vault Secrets User",
+            "--assignee-object-id",
+            uami_principal_id,
+            "--assignee-principal-type",
+            "ServicePrincipal",
+            "--scope",
+            kv_scope,
+            "--output",
+            "none",
+        ],
+        check=False,
+        capture=True,
+    )
+    ok("  RBAC role assigned")
+
+
+def _create_federated_credential(
+    *,
+    uami_name: str,
+    resource_group: str,
+    issuer_url: str,
+    namespace: str,
+    service_account: str,
+) -> None:
+    """Create (idempotent) a federated credential linking the K8s
+    ServiceAccount to the UAMI.
+    """
+    fc_name = f"{uami_name}-fed-{namespace}-{service_account}"
+    subject = f"system:serviceaccount:{namespace}:{service_account}"
+    info(f"  Creating federated credential for {subject} ...")
+    # Check whether a credential with this name already exists
+    r = run_az(
+        [
+            "identity",
+            "federated-credential",
+            "show",
+            "--identity-name",
+            uami_name,
+            "--resource-group",
+            resource_group,
+            "--name",
+            fc_name,
+            "--output",
+            "none",
+        ],
+        check=False,
+        capture=True,
+    )
+    if r.returncode == 0:
+        ok(f"  Federated credential '{fc_name}' already exists")
+        return
+
+    run_az(
+        [
+            "identity",
+            "federated-credential",
+            "create",
+            "--identity-name",
+            uami_name,
+            "--resource-group",
+            resource_group,
+            "--name",
+            fc_name,
+            "--issuer",
+            issuer_url,
+            "--subject",
+            subject,
+            "--audiences",
+            "api://AzureADTokenExchange",
+            "--output",
+            "none",
+        ]
+    )
+    ok(f"  Federated credential '{fc_name}' created")
+
+
+def _build_aks_kv_manifest(
+    *,
+    image: str,
+    namespace: str,
+    mcp_port: str,
+    creds: dict,
+    keyvault_name: str,
+    tenant_id: str,
+    uami_client_id: str,
+) -> str:
+    """Generate the full K8s manifest for the **keyvault** storage path:
+    ServiceAccount + SecretProviderClass + Deployment + Service.
+
+    The Deployment uses a federated workload identity to mount the
+    SecretProviderClass volume, which causes the CSI driver to pull every
+    Zscaler secret from Key Vault and sync them into a Kubernetes Secret
+    that the Pod's env vars read via ``valueFrom.secretKeyRef``.
+    """
+    auth_mode = creds["auth_mode"]
+    secret_map = _build_kv_secret_map(auth_mode)
+
+    spc_objects_yaml = "\n".join(
+        f"          - |\n"
+        f"            objectName: {kv_name}\n"
+        f"            objectType: secret"
+        for _, kv_name in secret_map
+    )
+    secret_data_yaml = "\n".join(
+        f"      - objectName: {kv_name}\n        key: {kv_name}" for _, kv_name in secret_map
+    )
+
+    env_entries_yaml = ""
+    for entry in _build_aks_kv_env_vars(creds, mcp_port):
+        if "value" in entry:
+            env_entries_yaml += (
+                f"        - name: {entry['name']}\n"
+                f"          value: {json.dumps(str(entry['value']))}\n"
+            )
+        else:
+            ref = entry["valueFrom"]["secretKeyRef"]
+            env_entries_yaml += (
+                f"        - name: {entry['name']}\n"
+                f"          valueFrom:\n"
+                f"            secretKeyRef:\n"
+                f"              name: {ref['name']}\n"
+                f"              key: {ref['key']}\n"
+            )
+
+    manifest = f"""apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {AKS_SERVICE_ACCOUNT_NAME}
+  namespace: {namespace}
+  annotations:
+    azure.workload.identity/client-id: {uami_client_id}
+  labels:
+    azure.workload.identity/use: "true"
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {AKS_SPC_NAME}
+  namespace: {namespace}
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    clientID: {uami_client_id}
+    keyvaultName: {keyvault_name}
+    tenantId: {tenant_id}
+    objects: |
+      array:
+{spc_objects_yaml}
+  secretObjects:
+  - secretName: {AKS_K8S_SECRET_NAME}
+    type: Opaque
+    data:
+{secret_data_yaml}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {SERVER_NAME}
+  namespace: {namespace}
+  labels:
+    app: {SERVER_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {SERVER_NAME}
+  template:
+    metadata:
+      labels:
+        app: {SERVER_NAME}
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: {AKS_SERVICE_ACCOUNT_NAME}
+      containers:
+      - name: zscaler-mcp
+        image: {image}
+        command: ["/app/.venv/bin/zscaler-mcp"]
+        args: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "{mcp_port}"]
+        ports:
+        - containerPort: {mcp_port}
+        env:
+{env_entries_yaml}        volumeMounts:
+        - name: zscaler-secrets-store
+          mountPath: /mnt/secrets-store
+          readOnly: true
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+      volumes:
+      - name: zscaler-secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: {AKS_SPC_NAME}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {SERVER_NAME}
+  namespace: {namespace}
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: {mcp_port}
+    protocol: TCP
+  selector:
+    app: {SERVER_NAME}
+"""
+    return manifest
+
+
+def _deploy_aks(account: dict, creds: dict) -> None:
+    """Deploy to Azure Kubernetes Service (AKS) — PREVIEW."""
+    env = creds["env"]
+    suffix = _secrets.token_hex(3)
+
+    # Auth-mode guard for Preview
+    if creds["auth_mode"] == "oidcproxy":
+        die(
+            "OIDCProxy auth mode is not yet supported on AKS (Preview).\n"
+            "  Use 'jwt', 'api-key', 'zscaler', or 'none' for AKS deployments."
+        )
+
+    print()
+    warn(
+        f"{BOLD}AKS deployment is in PREVIEW.{NC}{YELLOW} "
+        "Cluster + LoadBalancer + K8s manifests are validated;"
+    )
+    warn("  TLS Ingress, OIDCProxy auth, and HPA are planned for a future release.")
+    print()
+
+    if not shutil.which("kubectl"):
+        die(
+            "kubectl not found. Install: https://kubernetes.io/docs/tasks/tools/\n"
+            "  On macOS: brew install kubernetes-cli"
+        )
+
+    info("AKS configuration")
+    location = _prompt("Azure region", default=resolve(env, "AZURE_LOCATION") or "eastus")
+    resource_group = _prompt(
+        "Resource group name",
+        default=resolve(env, "AZURE_RESOURCE_GROUP") or f"zscaler-mcp-rg-{suffix}",
+    )
+
+    cluster_mode = _prompt_choice(
+        "AKS cluster:",
+        [
+            ("new", "Create a new AKS cluster (PoC / testing)"),
+            ("existing", "Use an existing AKS cluster (production)"),
+        ],
+    )
+
+    if cluster_mode == "new":
+        cluster_name = _prompt(
+            "New cluster name",
+            default=resolve(env, "AZURE_AKS_CLUSTER") or f"zscaler-mcp-aks-{suffix}",
+        )
+        node_count = _prompt("Node count", default="1")
+        node_size = _prompt("Node VM size", default="Standard_B2s")
+    else:
+        cluster_name = _prompt(
+            "Existing cluster name",
+            default=resolve(env, "AZURE_AKS_CLUSTER") or "",
+        )
+        node_count = ""
+        node_size = ""
+
+    namespace = _prompt("Kubernetes namespace", default="default")
+    image = _prompt("Container image", default=DOCKER_HUB_IMAGE)
+    mcp_port = _prompt("MCP server port", default=resolve(env, "MCP_PORT") or "8000")
+    print()
+
+    # Credential storage strategy
+    info("Credential storage")
+    storage_choice = _prompt_choice(
+        "How should credentials be stored and injected into the pods?",
+        [
+            (
+                "keyvault",
+                "Azure Key Vault (recommended)  — Workload Identity Federation + Key Vault"
+                " CSI driver, secrets mounted at runtime",
+            ),
+            (
+                "envvars",
+                "Direct environment variables   — credentials baked into the Deployment manifest"
+                " at deploy time, no Key Vault provisioned",
+            ),
+        ],
+    )
+
+    keyvault_name = ""
+    kv_choice = ""
+    uami_name = ""
+    if storage_choice == "keyvault":
+        info("Azure Key Vault")
+        kv_choice = _prompt_choice(
+            "Key Vault for storing secrets:",
+            [
+                ("new", "Create a new Key Vault"),
+                ("existing", "Use an existing Key Vault"),
+            ],
+        )
+        if kv_choice == "existing":
+            keyvault_name = _prompt("Existing Key Vault name")
+        else:
+            keyvault_name = _prompt(
+                "New Key Vault name",
+                default=resolve(env, "AZURE_KEYVAULT_NAME") or f"zscalermcpkv{suffix}",
+            )
+        uami_name = _prompt(
+            "User-Assigned Managed Identity name",
+            default=f"zscaler-mcp-uami-{suffix}",
+        )
+    else:
+        warn("Credentials will be passed as plain environment variables on the Deployment.")
+        warn("  They are visible to anyone with read access via 'kubectl describe deployment'.")
+        warn("  For production, re-run and choose the Key Vault option.")
+    print()
+
+    auth_mode = creds["auth_mode"]
+    _auth_labels = {
+        "jwt": f"JWT (JWKS: {creds['jwks_uri']})",
+        "api-key": "API Key (shared secret)",
+        "zscaler": "Zscaler (OneAPI credentials)",
+        "none": "None (no auth)",
+    }
+
+    if storage_choice == "keyvault":
+        storage_label = (
+            f"Azure Key Vault — {keyvault_name} "
+            f"({'new' if kv_choice == 'new' else 'existing'}); KV CSI + Workload Identity"
+        )
+    else:
+        storage_label = "Plain env vars (no Key Vault)"
+
+    print()
+    print(f"  {BOLD}Deployment summary:{NC}")
+    print("    Target:          Azure Kubernetes Service (AKS) [PREVIEW]")
+    print(f"    Image:           {image}")
+    print(f"    Resource Group:  {resource_group}")
+    print(f"    Location:        {location}")
+    print(f"    Cluster:         {cluster_name} ({'new' if cluster_mode == 'new' else 'existing'})")
+    if cluster_mode == "new":
+        print(f"    Node count:      {node_count}")
+        print(f"    Node size:       {node_size}")
+    print(f"    Namespace:       {namespace}")
+    print(f"    Credentials:     {storage_label}")
+    if storage_choice == "keyvault":
+        print(f"    UAMI:            {uami_name}")
+    print(f"    Auth mode:       {_auth_labels.get(auth_mode, auth_mode)}")
+    print(f"    Zscaler Cloud:   {creds['zscaler_cloud']}")
+    print(f"    Port:            {mcp_port}")
+    print()
+
+    if not _prompt_yes_no("Proceed with deployment?"):
+        die("Deployment cancelled.")
+    print()
+
+    # Resource group
+    info("Ensuring resource group")
+    run_az(
+        ["group", "create", "--name", resource_group, "--location", location, "--output", "none"]
+    )
+    ok(f"Resource group '{resource_group}' ready")
+    print()
+
+    # AKS cluster
+    if cluster_mode == "new":
+        info(f"Creating AKS cluster '{cluster_name}' (this may take 5-10 minutes)...")
+        new_cluster_args = [
+            "aks",
+            "create",
+            "--name",
+            cluster_name,
+            "--resource-group",
+            resource_group,
+            "--location",
+            location,
+            "--node-count",
+            node_count,
+            "--node-vm-size",
+            node_size,
+            "--enable-managed-identity",
+            "--generate-ssh-keys",
+            "--load-balancer-sku",
+            "standard",
+        ]
+        # Enable Workload Identity + OIDC issuer + KV CSI driver up front
+        # when the user picked the Key Vault path so the cluster comes up
+        # ready for federated identity.  For envvars path we skip these
+        # extras.
+        if storage_choice == "keyvault":
+            new_cluster_args += [
+                "--enable-workload-identity",
+                "--enable-oidc-issuer",
+                "--enable-addons",
+                "azure-keyvault-secrets-provider",
+            ]
+        new_cluster_args += ["--output", "none"]
+        run_az(new_cluster_args)
+        ok(f"AKS cluster '{cluster_name}' created")
+        print()
+    else:
+        info(f"Verifying existing cluster '{cluster_name}'...")
+        r = run_az(
+            [
+                "aks",
+                "show",
+                "--name",
+                cluster_name,
+                "--resource-group",
+                resource_group,
+                "--output",
+                "none",
+            ],
+            check=False,
+            capture=True,
+        )
+        if r.returncode != 0:
+            die(
+                f"AKS cluster '{cluster_name}' not found in resource group '{resource_group}'.\n"
+                "  Verify the cluster name and resource group, or create a new cluster."
+            )
+        ok(f"Cluster '{cluster_name}' found")
+        print()
+
+    # kubectl credentials
+    info("Fetching kubectl credentials...")
+    run_az(
+        [
+            "aks",
+            "get-credentials",
+            "--name",
+            cluster_name,
+            "--resource-group",
+            resource_group,
+            "--overwrite-existing",
+            "--output",
+            "none",
+        ]
+    )
+    ok("kubectl context set to cluster")
+    print()
+
+    # Namespace
+    info(f"Ensuring namespace '{namespace}'...")
+    r = run_kubectl(["get", "namespace", namespace], check=False, capture=True)
+    if r.returncode != 0:
+        run_kubectl(["create", "namespace", namespace])
+        ok(f"Namespace '{namespace}' created")
+    else:
+        ok(f"Namespace '{namespace}' already exists")
+    print()
+
+    # Key Vault + Workload Identity Federation (only for the keyvault path)
+    uami_payload: dict = {}
+    issuer_url = ""
+    tenant_id = ""
+    if storage_choice == "keyvault":
+        info("Setting up Key Vault + Workload Identity Federation for AKS")
+        # 1. Provision / verify the vault and store every Zscaler secret in
+        #    it (reuses the helper used by Container Apps).
+        _setup_keyvault(account, resource_group, location, keyvault_name, kv_choice, creds)
+
+        # 2. For existing clusters we may need to enable Workload Identity
+        #    + OIDC issuer + the KV CSI addon retroactively.  For new
+        #    clusters this was already done at create time.
+        if cluster_mode == "existing":
+            issuer_url = _enable_aks_workload_identity(cluster_name, resource_group)
+            _enable_aks_kv_csi(cluster_name, resource_group)
+        else:
+            r = run_az(
+                [
+                    "aks",
+                    "show",
+                    "--name",
+                    cluster_name,
+                    "--resource-group",
+                    resource_group,
+                    "--query",
+                    "oidcIssuerProfile.issuerUrl",
+                    "--output",
+                    "tsv",
+                ],
+                capture=True,
+            )
+            issuer_url = r.stdout.strip()
+            if not issuer_url:
+                die("Could not retrieve OIDC issuer URL from the new AKS cluster.")
+            ok(f"  OIDC issuer URL: {issuer_url}")
+
+        # 3. Capture the tenant ID — needed by the SecretProviderClass.
+        tenant_id = account.get("tenantId", "")
+        if not tenant_id:
+            r = run_az(
+                ["account", "show", "--query", "tenantId", "--output", "tsv"], capture=True
+            )
+            tenant_id = r.stdout.strip()
+        if not tenant_id:
+            die("Could not determine Azure tenant ID for the SecretProviderClass.")
+        ok(f"  Azure tenant ID: {tenant_id}")
+
+        # 4. Create the User-Assigned Managed Identity, grant it
+        #    'Key Vault Secrets User' on the vault, and create the
+        #    federated credential bridging the K8s ServiceAccount.
+        uami_payload = _create_uami(uami_name, resource_group, location)
+        _grant_uami_kv_role(
+            account=account,
+            uami_principal_id=uami_payload["principal_id"],
+            resource_group=resource_group,
+            keyvault_name=keyvault_name,
+        )
+        _create_federated_credential(
+            uami_name=uami_name,
+            resource_group=resource_group,
+            issuer_url=issuer_url,
+            namespace=namespace,
+            service_account=AKS_SERVICE_ACCOUNT_NAME,
+        )
+
+        info("  Waiting for federated identity propagation (45s)...")
+        time.sleep(45)
+        print()
+
+    # Build manifest
+    if storage_choice == "keyvault":
+        manifest = _build_aks_kv_manifest(
+            image=image,
+            namespace=namespace,
+            mcp_port=mcp_port,
+            creds=creds,
+            keyvault_name=keyvault_name,
+            tenant_id=tenant_id,
+            uami_client_id=uami_payload["client_id"],
+        )
+    else:
+        env_vars = _build_aks_env_vars(creds, mcp_port)
+        env_entries = "\n".join(
+            f"        - name: {k}\n          value: {json.dumps(v)}" for k, v in env_vars
+        )
+        manifest = f"""apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {SERVER_NAME}
+  namespace: {namespace}
+  labels:
+    app: {SERVER_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {SERVER_NAME}
+  template:
+    metadata:
+      labels:
+        app: {SERVER_NAME}
+    spec:
+      containers:
+      - name: zscaler-mcp
+        image: {image}
+        command: ["/app/.venv/bin/zscaler-mcp"]
+        args: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "{mcp_port}"]
+        ports:
+        - containerPort: {mcp_port}
+        env:
+{env_entries}
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {SERVER_NAME}
+  namespace: {namespace}
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: {mcp_port}
+    protocol: TCP
+  selector:
+    app: {SERVER_NAME}
+"""
+
+    manifest_path = SCRIPT_DIR / ".aks-manifest.yaml"
+    manifest_path.write_text(manifest, encoding="utf-8")
+    ok(f"K8s manifest written to {manifest_path}")
+    print()
+
+    info("Applying K8s manifest...")
+    run_kubectl(["apply", "-f", str(manifest_path)])
+    ok("Deployment + Service applied")
+    print()
+
+    # Wait for LoadBalancer external IP
+    info("Waiting for LoadBalancer external IP (this may take 1-3 minutes)...")
+    external_ip = ""
+    for attempt in range(30):
+        time.sleep(10)
+        r = run_kubectl(
+            [
+                "get",
+                "svc",
+                SERVER_NAME,
+                "-n",
+                namespace,
+                "-o",
+                "jsonpath={.status.loadBalancer.ingress[0].ip}",
+            ],
+            check=False,
+            capture=True,
+        )
+        if r.stdout.strip():
+            external_ip = r.stdout.strip()
+            break
+        info(f"  Waiting for external IP... (attempt {attempt + 1}/30)")
+
+    if external_ip:
+        mcp_url = f"http://{external_ip}/mcp"
+        ok(f"External IP: {external_ip}")
+    else:
+        warn(
+            "External IP not yet assigned. Check later with: "
+            f"kubectl get svc {SERVER_NAME} -n {namespace}"
+        )
+        mcp_url = "http://<PENDING>/mcp"
+    print()
+
+    # Save state
+    _save_state(
+        {
+            "deployment_type": "aks",
+            "resource_group": resource_group,
+            "location": location,
+            "cluster_name": cluster_name,
+            "cluster_created": cluster_mode == "new",
+            "namespace": namespace,
+            "service_name": SERVER_NAME,
+            "external_ip": external_ip,
+            "mcp_url": mcp_url,
+            "auth_mode": auth_mode,
+            "suffix": suffix,
+            "credential_storage": storage_choice,
+            "keyvault_name": keyvault_name,
+            "uami_name": uami_name,
+            "service_account_name": (
+                AKS_SERVICE_ACCOUNT_NAME if storage_choice == "keyvault" else ""
+            ),
+        }
+    )
+
+    if external_ip:
+        _update_client_configs(mcp_url, auth_mode, creds)
+
+    # Summary
+    print("=" * 76)
+    print(f"  {GREEN}AKS deployment complete (PREVIEW){NC}")
+    print("=" * 76)
+    print()
+    print(f"  MCP URL:         {mcp_url}")
+    print(f"  Image:           {image}")
+    print(f"  Resource Group:  {resource_group}")
+    print(f"  Cluster:         {cluster_name}")
+    print(f"  Namespace:       {namespace}")
+    print(f"  External IP:     {external_ip or '<PENDING>'}")
+    if storage_choice == "keyvault":
+        print(f"  Key Vault:       {keyvault_name} (CSI + Workload Identity)")
+        print(f"  UAMI:            {uami_name}")
+    else:
+        print("  Credentials:     Plain env vars (no Key Vault)")
+    print(f"  Auth mode:       {_auth_labels.get(auth_mode, auth_mode)}")
+
+    if auth_mode == "api-key":
+        print(f"  API Key:         {creds['api_key']}")
+    elif auth_mode == "jwt":
+        print(f"  JWKS URI:        {creds['jwks_uri']}")
+    print()
+    print(f"  {BOLD}Next steps:{NC}")
+    if auth_mode == "jwt":
+        print(f"    1. {BOLD}Obtain a valid JWT{NC} from your identity provider")
+        print("    2. Update Claude/Cursor config with: Authorization: Bearer <JWT>")
+    elif auth_mode in ("api-key", "zscaler"):
+        print("    1. Restart Claude Desktop — auth headers are pre-configured")
+    else:
+        print("    1. Restart Claude Desktop / Cursor")
+    print()
+    print(f"  {BOLD}Kubernetes commands:{NC}")
+    print(f"    kubectl get pods -n {namespace}")
+    print(f"    kubectl logs deployment/{SERVER_NAME} -n {namespace} -f")
+    print(f"    kubectl get svc {SERVER_NAME} -n {namespace}")
+    print()
+    print("  Management:")
+    print("    python azure_mcp_operations.py status     — Check deployment health")
+    print("    python azure_mcp_operations.py logs       — Stream pod logs")
+    print("    python azure_mcp_operations.py destroy    — Tear down all resources")
+    print()
+
+
+# ════════════════════════════════════════════════════════════════════════
 #  Deploy (main entry point)
 # ════════════════════════════════════════════════════════════════════════
 
@@ -1757,6 +3000,7 @@ def op_deploy(args: argparse.Namespace) -> None:
         [
             ("container_app", "Azure Container Apps  — managed, serverless (Docker Hub image)"),
             ("vm", "Azure Virtual Machine — Ubuntu 22.04, self-managed (Python library)"),
+            ("aks", "Azure Kubernetes Service (AKS) — Kubernetes deployment [PREVIEW]"),
         ],
     )
     ok(f"Deployment target: {deploy_target}")
@@ -1769,8 +3013,10 @@ def op_deploy(args: argparse.Namespace) -> None:
     # Branch to target-specific deployment
     if deploy_target == "container_app":
         _deploy_container_app(account, creds)
-    else:
+    elif deploy_target == "vm":
         _deploy_vm(account, creds)
+    else:
+        _deploy_aks(account, creds)
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -1794,19 +3040,207 @@ def op_destroy(args: argparse.Namespace) -> None:
     print(f"  {RED}DESTROY — Tearing down all Azure resources{NC}")
     print("=" * 76)
     print()
-    warn(f"This will delete the ENTIRE resource group: {resource_group}")
-    if deployment_type == "vm":
-        warn("Includes: Virtual Machine, NSG, Public IP, Key Vault, and all data.")
+    cluster_created = state.get("cluster_created", False)
+    cluster_name = state.get("cluster_name", "")
+    namespace = state.get("namespace", "default")
+
+    aks_keep_cluster = deployment_type == "aks" and not cluster_created
+
+    if aks_keep_cluster:
+        warn(
+            f"AKS cluster '{cluster_name}' was pre-existing — only the K8s "
+            "Deployment + Service will be removed."
+        )
+        warn("The AKS cluster and resource group will NOT be deleted.")
+        if state.get("credential_storage") == "keyvault":
+            warn("Also removing: ServiceAccount, SecretProviderClass, synced Secret,")
+            warn("  the per-deployment UAMI, and its federated credential.")
+            warn("  Key Vault itself is NOT deleted (it may be shared).")
     else:
-        warn("Includes: Container App, Key Vault, and all data.")
+        warn(f"This will delete the ENTIRE resource group: {resource_group}")
+        if deployment_type == "vm":
+            warn("Includes: Virtual Machine, NSG, Public IP, Key Vault, and all data.")
+        elif deployment_type == "aks":
+            warn(
+                f"Includes: AKS cluster '{cluster_name}', LoadBalancer, all K8s resources, "
+                "and any other resources in the group."
+            )
+        else:
+            if keyvault_name:
+                warn("Includes: Container App, Key Vault, and all data.")
+            else:
+                warn("Includes: Container App and all data (no Key Vault was provisioned).")
     print()
 
     if not args.yes:
-        confirm = input(f"  Type '{resource_group}' to confirm: ").strip()
-        if confirm != resource_group:
-            die("Destruction cancelled.")
+        prompt_target = (
+            cluster_name if aks_keep_cluster and cluster_name else resource_group
+        )
+        try:
+            confirm = input(f"  Type '{prompt_target}' to confirm (or 'exit' to cancel): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            _cancel("Destruction cancelled.")
+        if confirm.lower() in _EXIT_WORDS:
+            _cancel("Destruction cancelled.")
+        if confirm != prompt_target:
+            _cancel("Destruction cancelled — confirmation text did not match.")
 
     print()
+
+    if aks_keep_cluster:
+        info(f"Removing K8s resources from cluster '{cluster_name}'...")
+        r = run_az(
+            [
+                "aks",
+                "get-credentials",
+                "--name",
+                cluster_name,
+                "--resource-group",
+                resource_group,
+                "--overwrite-existing",
+                "--output",
+                "none",
+            ],
+            check=False,
+            capture=True,
+        )
+        if r.returncode == 0:
+            # Clean up the K8s objects we created.  When the keyvault path
+            # is in use, we also delete the ServiceAccount and the
+            # SecretProviderClass so re-deploying into the same cluster
+            # works cleanly.
+            extra_kinds = ""
+            if state.get("credential_storage") == "keyvault":
+                extra_kinds = ",serviceaccount,secretproviderclass,secret"
+            run_kubectl(
+                [
+                    "delete",
+                    f"deployment,service{extra_kinds}",
+                    "-l",
+                    f"app={SERVER_NAME}",
+                    "-n",
+                    namespace,
+                    "--ignore-not-found",
+                ],
+                check=False,
+            )
+            # Selector won't catch the SA / SPC / synced Secret (we don't
+            # apply a label to them), so delete by name as well.
+            if state.get("credential_storage") == "keyvault":
+                run_kubectl(
+                    [
+                        "delete",
+                        "serviceaccount",
+                        AKS_SERVICE_ACCOUNT_NAME,
+                        "-n",
+                        namespace,
+                        "--ignore-not-found",
+                    ],
+                    check=False,
+                )
+                run_kubectl(
+                    [
+                        "delete",
+                        "secretproviderclass",
+                        AKS_SPC_NAME,
+                        "-n",
+                        namespace,
+                        "--ignore-not-found",
+                    ],
+                    check=False,
+                )
+                run_kubectl(
+                    [
+                        "delete",
+                        "secret",
+                        AKS_K8S_SECRET_NAME,
+                        "-n",
+                        namespace,
+                        "--ignore-not-found",
+                    ],
+                    check=False,
+                )
+            # Also remove the Deployment + Service explicitly in case the
+            # selector-based delete missed them.
+            run_kubectl(
+                [
+                    "delete",
+                    "deployment,service",
+                    SERVER_NAME,
+                    "-n",
+                    namespace,
+                    "--ignore-not-found",
+                ],
+                check=False,
+            )
+            ok("K8s resources removed (Deployment + Service" + (
+                " + SA + SPC + Secret)" if state.get("credential_storage") == "keyvault" else ")"
+            ))
+        else:
+            warn("Could not connect to AKS cluster to clean up K8s resources.")
+
+        # When the keyvault path is in use, also remove the per-deployment
+        # UAMI + federated credential.  The Vault itself may be shared and
+        # is left intact.
+        uami_name = state.get("uami_name", "")
+        sa_name = state.get("service_account_name", "") or AKS_SERVICE_ACCOUNT_NAME
+        if uami_name:
+            info(f"Removing federated credential + UAMI '{uami_name}'...")
+            fc_name = f"{uami_name}-fed-{namespace}-{sa_name}"
+            run_az(
+                [
+                    "identity",
+                    "federated-credential",
+                    "delete",
+                    "--identity-name",
+                    uami_name,
+                    "--resource-group",
+                    resource_group,
+                    "--name",
+                    fc_name,
+                    "--yes",
+                    "--output",
+                    "none",
+                ],
+                check=False,
+                capture=True,
+            )
+            run_az(
+                [
+                    "identity",
+                    "delete",
+                    "--name",
+                    uami_name,
+                    "--resource-group",
+                    resource_group,
+                    "--output",
+                    "none",
+                ],
+                check=False,
+                capture=True,
+            )
+            ok(f"UAMI '{uami_name}' deleted")
+
+        # Skip resource group + Key Vault cleanup paths
+        for path_label, path in [("Claude Desktop", CLAUDE_CONFIG), ("Cursor", CURSOR_CONFIG)]:
+            if path.is_file():
+                try:
+                    config = json.loads(path.read_text(encoding="utf-8"))
+                    servers = config.get("mcpServers", {})
+                    if SERVER_NAME in servers:
+                        del servers[SERVER_NAME]
+                        path.write_text(
+                            json.dumps(config, indent=2) + "\n", encoding="utf-8"
+                        )
+                        ok(f"Removed '{SERVER_NAME}' from {path_label} config")
+                except (json.JSONDecodeError, OSError):
+                    warn(f"Could not update {path_label} config")
+        _clear_state()
+        print()
+        ok("Destroy complete (cluster preserved). Restart Claude Desktop / Cursor.")
+        print()
+        return
+
     info(f"Deleting resource group '{resource_group}'...")
     run_az(["group", "delete", "--name", resource_group, "--yes", "--no-wait"], check=False)
     ok(f"Resource group '{resource_group}' deletion initiated")
@@ -1857,7 +3291,83 @@ def op_status(args: argparse.Namespace) -> None:
 
     print()
 
-    if deployment_type == "vm":
+    if deployment_type == "aks":
+        cluster_name = state.get("cluster_name", "")
+        namespace = state.get("namespace", "default")
+        if not cluster_name:
+            die("No AKS cluster name in state. Redeploy or check manually.")
+
+        info(f"Status of AKS cluster '{cluster_name}' in '{resource_group}'")
+        print()
+
+        r = run_az(
+            [
+                "aks",
+                "show",
+                "--name",
+                cluster_name,
+                "--resource-group",
+                resource_group,
+                "--output",
+                "json",
+            ],
+            capture=True,
+            check=False,
+        )
+        if r.returncode != 0:
+            error("AKS cluster not found.")
+            return
+
+        cluster = json.loads(r.stdout)
+        print(f"  Cluster:         {cluster_name}")
+        print(f"  Provisioning:    {cluster.get('provisioningState', '?')}")
+        print(f"  Power State:     {cluster.get('powerState', {}).get('code', '?')}")
+        print(f"  K8s version:     {cluster.get('kubernetesVersion', '?')}")
+        print(f"  Namespace:       {namespace}")
+        print(f"  External IP:     {state.get('external_ip', '?')}")
+        print(f"  MCP URL:         {state.get('mcp_url', '?')}")
+        print(f"  Auth mode:       {state.get('auth_mode', '?')}")
+        print()
+
+        info("Refreshing kubectl credentials...")
+        run_az(
+            [
+                "aks",
+                "get-credentials",
+                "--name",
+                cluster_name,
+                "--resource-group",
+                resource_group,
+                "--overwrite-existing",
+                "--output",
+                "none",
+            ],
+            check=False,
+            capture=True,
+        )
+
+        info("Pods:")
+        run_kubectl(
+            [
+                "get",
+                "pods",
+                "-n",
+                namespace,
+                "-l",
+                f"app={SERVER_NAME}",
+                "-o",
+                "wide",
+            ],
+            check=False,
+        )
+        print()
+        info("Service:")
+        run_kubectl(
+            ["get", "svc", SERVER_NAME, "-n", namespace, "-o", "wide"],
+            check=False,
+        )
+
+    elif deployment_type == "vm":
         vm_name = state.get("vm_name", "")
         if not vm_name:
             die("No VM name in state. Redeploy or check manually.")
@@ -1988,6 +3498,49 @@ def op_logs(args: argparse.Namespace) -> None:
     if not resource_group:
         die("No deployment found. Deploy first or pass --resource-group.")
 
+    if deployment_type == "aks":
+        cluster_name = state.get("cluster_name", "")
+        namespace = state.get("namespace", "default")
+        if not cluster_name:
+            die("No AKS cluster in state.")
+
+        info(f"Refreshing kubectl credentials for cluster '{cluster_name}'...")
+        run_az(
+            [
+                "aks",
+                "get-credentials",
+                "--name",
+                cluster_name,
+                "--resource-group",
+                resource_group,
+                "--overwrite-existing",
+                "--output",
+                "none",
+            ],
+            check=False,
+            capture=True,
+        )
+        info(f"Streaming logs for deployment/{SERVER_NAME} in namespace '{namespace}'...")
+        info("Press Ctrl+C to stop")
+        print()
+        try:
+            run_kubectl(
+                [
+                    "logs",
+                    f"deployment/{SERVER_NAME}",
+                    "-n",
+                    namespace,
+                    "--tail",
+                    "100",
+                    "-f",
+                ],
+                check=False,
+            )
+        except KeyboardInterrupt:
+            print()
+            info("Log streaming stopped.")
+        return
+
     if deployment_type == "vm":
         vm_name = state.get("vm_name", "")
         if not vm_name:
@@ -2102,20 +3655,31 @@ def op_agent_create(args: argparse.Namespace) -> None:
     env: dict[str, str] = {}
     if auth_mode in ("api-key", "zscaler"):
         info(f"Deployment uses '{auth_mode}' authentication.")
-        print()
-        print("How would you like to provide MCP auth credentials?")
-        print("  1. Load from a .env file")
-        print("  2. Enter manually")
-        print()
-        choice = input("Select [1/2]: ").strip()
-
-        if choice == "1":
+        choice = _prompt_choice(
+            "How would you like to provide MCP auth credentials?",
+            [
+                ("env", "Load from a .env file"),
+                ("manual", "Enter manually"),
+            ],
+        )
+        if choice == "env":
             env_path_str = _prompt("Path to .env file", default=str(PROJECT_ROOT / ".env"))
             env_path = Path(env_path_str).expanduser().resolve()
             if not env_path.is_file():
                 die(f".env file not found: {env_path}")
             env = load_env(env_path)
             ok(f".env loaded from {env_path} ({len(env)} variables)")
+
+            # Promote Foundry-specific values into the process env so the
+            # downstream prompt_foundry_config() picks them up without
+            # re-prompting the user for the same .env path.
+            for k in (
+                "AZURE_AI_PROJECT_ENDPOINT",
+                "AZURE_OPENAI_MODEL",
+                "AZURE_FOUNDRY_CONNECTION_NAME",
+            ):
+                if env.get(k) and not os.environ.get(k):
+                    os.environ[k] = env[k]
 
     # Collect auth credentials based on deployment auth mode
     client_id: str | None = None
@@ -2125,14 +3689,14 @@ def op_agent_create(args: argparse.Namespace) -> None:
     if auth_mode == "api-key":
         api_key_value = env.get("ZSCALER_MCP_AUTH_API_KEY", "")
         if not api_key_value:
-            api_key_value = getpass.getpass("Enter the MCP server API key: ").strip()
+            api_key_value = _prompt("Enter the MCP server API key", secret=True)
     elif auth_mode == "zscaler":
         client_id = env.get("ZSCALER_CLIENT_ID", env.get("ZSCALER_MCP_CLIENT_ID", ""))
         client_secret = env.get("ZSCALER_CLIENT_SECRET", env.get("ZSCALER_MCP_CLIENT_SECRET", ""))
         if not client_id:
-            client_id = input("Enter Zscaler client ID for MCP auth: ").strip()
+            client_id = _prompt("Enter Zscaler client ID for MCP auth")
         if not client_secret:
-            client_secret = getpass.getpass("Enter Zscaler client secret: ").strip()
+            client_secret = _prompt("Enter Zscaler client secret", secret=True)
     elif auth_mode in ("jwt", "oidcproxy"):
         warn(
             f"Auth mode '{auth_mode}' requires token-based auth.\n"

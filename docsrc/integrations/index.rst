@@ -29,18 +29,22 @@ The Zscaler MCP Server ships with native integrations for several AI development
      - Power
      - Powers panel → Add Custom Power
      - `integrations/kiro/ <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/kiro>`__
-   * - **Google ADK**
+   * - **Google Cloud (Cloud Run / GKE / VM)**
+     - Deployment
+     - ``python gcp_mcp_operations.py deploy``
+     - :doc:`Cloud Run <../guides/gcp-cloud-run>` · :doc:`GKE <../guides/gcp-gke>` · :doc:`VM <../guides/gcp-compute-engine-vm>` · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/google>`__
+   * - **Google ADK Agent**
      - Agent
-     - ``adk run zscaler_agent``
-     - `integrations/adk/ <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/adk>`__
-   * - **Azure**
+     - ``python adk_agent_operations.py deploy``
+     - :doc:`Guide <../guides/gcp-adk-agent>` · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/google/adk>`__
+   * - **Azure (Container Apps / VM / AKS)**
      - Deployment
      - ``python azure_mcp_operations.py deploy``
-     - `integrations/azure/ <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure>`__
+     - :doc:`Guide <../guides/azure-deployment>` · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure>`__
    * - **Azure AI Foundry**
      - Agent
      - ``python azure_mcp_operations.py agent_create``
-     - `Deployment Guide <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md>`__ · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py>`__
+     - :doc:`Guide <../guides/azure-deployment>` · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py>`__
    * - **GitHub MCP Registry**
      - Registry
      - ``mcp-publisher publish``
@@ -210,8 +214,8 @@ The Zscaler MCP Server integrates with `Google ADK <https://google.github.io/adk
 
 **What's Included:**
 
-- Root ``.env`` (``integrations/adk/.env``) — Zscaler API credentials and write-tool configuration
-- Agent ``.env`` (``integrations/adk/zscaler_agent/.env``) — Google ADK config (model, API key, agent prompt, Cloud Run settings)
+- Root ``.env`` (``integrations/google/adk/.env``) — Zscaler API credentials and write-tool configuration
+- Agent ``.env`` (``integrations/google/adk/zscaler_agent/.env``) — Google ADK config (model, API key, agent prompt, Cloud Run settings)
 
 **How It Works:**
 
@@ -219,8 +223,8 @@ The Google ADK agent connects to the Zscaler MCP Server as an MCP tool provider.
 
 **Configuration:**
 
-1. Edit ``integrations/adk/.env`` with your Zscaler OneAPI credentials
-2. Edit ``integrations/adk/zscaler_agent/.env`` with your Google API key and agent settings
+1. Edit ``integrations/google/adk/.env`` with your Zscaler OneAPI credentials
+2. Edit ``integrations/google/adk/zscaler_agent/.env`` with your Google API key and agent settings
 
 .. code-block:: bash
 
@@ -236,8 +240,8 @@ The Google ADK agent connects to the Zscaler MCP Server as an MCP tool provider.
 
 .. code-block:: bash
 
-   cd integrations/adk
-   adk run zscaler_agent
+   cd integrations/google/adk
+   python adk_agent_operations.py local_run
 
 **Cloud Run Deployment:**
 
@@ -257,7 +261,7 @@ The Google ADK agent connects to the Zscaler MCP Server as an MCP tool provider.
 Azure Deployment
 ----------------
 
-The Zscaler MCP Server can be deployed to **Azure Container Apps** (managed, serverless) or an **Azure Virtual Machine** (Ubuntu 22.04) using the interactive ``azure_mcp_operations.py`` script.
+The Zscaler MCP Server can be deployed to **Azure Container Apps** (managed, serverless), an **Azure Virtual Machine** (Ubuntu 22.04), or **Azure Kubernetes Service** (Preview) using the interactive ``azure_mcp_operations.py`` script. Full walkthrough: :doc:`../guides/azure-deployment`.
 
 **What's Included:**
 
@@ -269,17 +273,24 @@ The Zscaler MCP Server can be deployed to **Azure Container Apps** (managed, ser
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 35 40
+   :widths: 25 35 30 10
 
    * - Target
      - Description
      - Image / Package
+     - Status
    * - **Container Apps**
      - Managed serverless containers
      - Docker Hub: ``zscaler/zscaler-mcp-server:latest``
+     - GA
    * - **Virtual Machine**
      - Ubuntu 22.04, self-managed
      - PyPI: ``zscaler-mcp``
+     - GA
+   * - **Azure Kubernetes Service**
+     - Kubernetes ``Deployment`` + ``LoadBalancer`` Service, Key Vault via Workload Identity Federation
+     - Docker Hub: ``zscaler/zscaler-mcp-server:latest``
+     - **Preview**
 
 **Authentication Modes:**
 
@@ -327,7 +338,7 @@ There are two ways to configure the Foundry agent:
 - **API (CLI):** Create and manage the agent via ``azure_mcp_operations.py`` commands — ideal for automation and scripted deployments.
 - **UI (Portal):** Configure the agent through the Azure AI Foundry portal at `ai.azure.com <https://ai.azure.com>`__ — ideal for visual setup and exploration.
 
-For the complete end-to-end walkthrough (both methods), see the `Azure AI Foundry Deployment Guide <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/azure-ai-foundry.md>`__.
+For the complete end-to-end walkthrough (both methods), see :doc:`../guides/azure-deployment`.
 
 **What's Included:**
 
@@ -341,8 +352,12 @@ For the complete end-to-end walkthrough (both methods), see the `Azure AI Foundr
 
 - Azure AI Foundry project (https://ai.azure.com)
 - Azure OpenAI deployment (GPT-4o or GPT-4)
-- Deployed Zscaler MCP Server (Container Apps or VM)
-- Python packages: ``azure-ai-projects``, ``azure-identity``
+- Deployed Zscaler MCP Server (Container Apps, VM, or AKS Preview)
+- Python packages: ``azure-ai-projects``, ``azure-ai-agents``, ``azure-identity``
+
+**Authentication — one-time portal step required:**
+
+Foundry no longer accepts auth headers inlined in ``MCPTool.headers``. The supported pattern is to register a **Custom keys connection** in the project that holds the headers, and reference it via ``MCPTool.project_connection_id``. ``agent_create`` will probe the connection at runtime, print copy-paste-ready portal instructions if it's missing, and exit before mutating Foundry. See :ref:`azure-deployment-guide` for the exact portal steps and the per-auth-mode key list.
 
 **Quick Start (CLI):**
 
@@ -351,10 +366,13 @@ For the complete end-to-end walkthrough (both methods), see the `Azure AI Foundr
    # Step 1: Deploy the MCP server
    python azure_mcp_operations.py deploy
 
-   # Step 2: Create the Foundry agent
+   # Step 2: One-time — create the "Custom keys" connection in the Foundry portal
+   #         (Management center -> Connected resources -> + New connection -> Custom keys)
+
+   # Step 3: Create the Foundry agent
    python azure_mcp_operations.py agent_create
 
-   # Step 3: Start chatting
+   # Step 4: Start chatting
    python azure_mcp_operations.py agent_chat
 
 **All Agent Commands:**
@@ -366,6 +384,8 @@ For the complete end-to-end walkthrough (both methods), see the `Azure AI Foundr
    python azure_mcp_operations.py agent_chat -m "query"  # single query
    python azure_mcp_operations.py agent_status    # show agent info
    python azure_mcp_operations.py agent_destroy   # delete agent
+
+**Finding the agent in the portal:** Foundry agents created by this script are **Prompt Agents** in the new Foundry experience. Open `ai.azure.com <https://ai.azure.com>`__, ensure the *New Foundry* toggle (top-right) is on, then go to **Build → Agents → Agents** tab and select ``zscaler-mcp-agent``. ``agent_create`` also prints a deep link straight to the agent on success.
 
 .. _github-mcp-registry:
 
