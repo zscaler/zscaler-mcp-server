@@ -44,8 +44,8 @@
   - [Docker Version](#docker-version)
 - [Additional Deployment Options](#additional-deployment-options)
   - [Remote MCP Deployment (EC2, VM, etc.)](#remote-mcp-deployment-ec2-vm-etc)
-  - [Azure Container Apps / Virtual Machine](#azure-container-apps--virtual-machine)
-  - [GCP Cloud Run](#gcp-cloud-run)
+  - [Azure Container Apps / Virtual Machine / AKS (Preview)](#azure-container-apps--virtual-machine--aks-preview)
+  - [Google Cloud (Cloud Run / GKE / VM / ADK Agent)](#google-cloud-cloud-run--gke--vm--adk-agent)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
 - [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
   - [Claude Desktop](#claude-desktop)
@@ -1220,14 +1220,15 @@ Then use `"Authorization: Basic <base64_value>"` in place of the Bearer header a
 
 > **📖 Full remote deployment details** (venv usage, 421 troubleshooting, security, TLS): [Remote Deployment](docs/deployment/authentication-and-deployment.md#remote-deployment-ec2-vm-etc) · [421 Misdirected Request](docs/deployment/authentication-and-deployment.md#421-misdirected-request-invalid-host-header) · [Troubleshooting](docs/guides/TROUBLESHOOTING.md#remote-mcp-421-misdirected-request)
 
-### Azure Container Apps / Virtual Machine
+### Azure Container Apps / Virtual Machine / AKS (Preview)
 
 Deploy the Zscaler MCP Server to Azure with your choice of deployment target:
 
-| Target | Description | Runtime |
-|--------|-------------|---------|
-| **Container Apps** | Managed, serverless | Docker Hub image |
-| **Virtual Machine** | Ubuntu 22.04, self-managed | Python library (PyPI) |
+| Target | Description | Runtime | Status |
+|--------|-------------|---------|--------|
+| **Container Apps** | Managed, serverless | Docker Hub image | GA |
+| **Virtual Machine** | Ubuntu 22.04, self-managed | Python library (PyPI) | GA |
+| **Azure Kubernetes Service (AKS)** | Kubernetes Deployment + LoadBalancer | Docker Hub image | **Preview** |
 
 ```bash
 # Interactive guided deployment — no .env file required
@@ -1250,37 +1251,59 @@ python azure_mcp_operations.py agent_destroy   # delete agent
 
 The script will prompt you for:
 
-- **Deployment target**: Container Apps or Virtual Machine
+- **Deployment target**: Container Apps, Virtual Machine, or Azure Kubernetes Service (Preview)
 - **Credential source**: `.env` file path or manual entry
-- **Auth mode**: OIDCProxy (OAuth 2.1), JWT, API Key, Zscaler, or None
-- **Azure options**: resource group, region, Key Vault (new or existing)
+- **Auth mode**: OIDCProxy (OAuth 2.1), JWT, API Key, Zscaler, or None (OIDCProxy not yet supported on AKS)
+- **Azure options**: resource group, region, Key Vault (new or existing); for AKS: cluster lifecycle (create new or use existing), node count/size, namespace
 
-Both options store all secrets in Azure Key Vault (mandatory) and auto-configure Claude Desktop / Cursor.
+Container Apps and VM store all secrets in Azure Key Vault (mandatory) and auto-configure Claude Desktop / Cursor. **AKS Preview** injects credentials as Kubernetes environment variables on the Deployment — Workload Identity Federation + Key Vault CSI driver integration is planned.
 
 **Foundry Agent**: Optionally create an Azure-hosted AI agent that wraps the MCP server. The agent is accessible via CLI chat (with spinner, token tracking, and timing), the [Azure AI Foundry portal](https://ai.azure.com) playground, REST APIs, or Microsoft 365 Copilot integrations.
 
 > **📖 Full Azure deployment guide**: [integrations/azure/README.md](integrations/azure/README.md)
 
-### GCP Cloud Run
+### Google Cloud (Cloud Run / GKE / VM / ADK Agent)
 
-Deploy the Zscaler MCP Server container to Google Cloud Run with optional GCP Secret Manager integration for secure credential storage.
+Google Cloud deployments cover both the standalone MCP Server and the Gemini-powered ADK Agent. A complete video walkthrough is available here:
 
-**Automated Deployment (Recommended):**
+**[Zscaler Integration MCP Server in GCP — Video Demo](https://zscaler.wistia.com/medias/13jxjizk3r)**
 
-The `scripts/deploy-gcp.py` script provides an end-to-end deployment experience — it reads credentials from your `.env` file, optionally stores them in GCP Secret Manager, deploys to Cloud Run with Zscaler auth mode enabled, and automatically configures Claude Desktop and Cursor:
+Two interactive Python scripts manage all five Google Cloud deployment targets:
+
+| Script | Deployment Targets |
+|--------|-------------------|
+| `integrations/google/gcp/gcp_mcp_operations.py` | Cloud Run, GKE, Compute Engine VM (standalone MCP server) |
+| `integrations/google/adk/adk_agent_operations.py` | Local, Cloud Run, Vertex AI Agent Engine, Agentspace (ADK agent) |
+
+**Standalone MCP Server — Automated Deployment:**
 
 ```bash
-python scripts/deploy-gcp.py
+cd integrations/google/gcp
+python gcp_mcp_operations.py deploy      # guided deployment (prompts for target)
+python gcp_mcp_operations.py status      # check health
+python gcp_mcp_operations.py logs        # stream logs
+python gcp_mcp_operations.py ssh         # SSH into VM (VM target only)
+python gcp_mcp_operations.py destroy     # tear down
 ```
 
-The script:
+The script prompts for deployment target, credentials, and auth mode. It:
 
 - Prompts for GCP project/region (or reads from `.env`)
 - Optionally stores credentials in GCP Secret Manager
 - Deploys the container to Cloud Run with `zscaler` authentication mode
 - Generates `Authorization: Basic` headers from your Zscaler OneAPI credentials
 - Auto-configures Claude Desktop (`claude_desktop_config.json`) and Cursor (`~/.cursor/mcp.json`)
-- Supports `--teardown` flag for easy service deletion
+- Writes a deployment state file (`.gcp-deploy-state.json`) for subsequent `status` / `logs` / `destroy` operations
+
+**ADK Agent — Interactive Deployment:**
+
+```bash
+cd integrations/google/adk
+python adk_agent_operations.py deploy      # guided deployment (local, Cloud Run, Agent Engine, Agentspace)
+python adk_agent_operations.py status
+python adk_agent_operations.py logs
+python adk_agent_operations.py destroy
+```
 
 **Manual Deployment:**
 
@@ -1307,7 +1330,9 @@ gcloud run deploy zscaler-mcp-server \
 
 The loader also works on GKE and Compute Engine — anywhere GCP Application Default Credentials are available.
 
-> **📖 Full GCP deployment guide** (Secret Manager setup, IAM, authentication modes, GKE manifests, credential rotation): [GCP Secret Manager Integration](docs/deployment/gcp_secrets_manager_integration.md)
+> **📖 Full Google Cloud deployment guide** (all five targets, IAM roles, authentication modes, enterprise patterns): [integrations/google/README.md](integrations/google/README.md)
+>
+> **📖 Secret Manager deep-dive** (GKE manifests, credential rotation, loader internals): [GCP Secret Manager Integration](docs/deployment/gcp_secrets_manager_integration.md)
 
 ### Amazon Bedrock AgentCore
 
@@ -1458,7 +1483,8 @@ The Zscaler MCP Server ships with native integrations for several AI development
 | **Gemini CLI** | Extension | Register `gemini-extension.json` | [integrations/gemini-extension/](integrations/gemini-extension/README.md) |
 | **Kiro IDE** | Power | Powers panel → Add Custom Power | [integrations/kiro/](integrations/kiro/README.md) |
 | **Azure (Container Apps / VM)** | Deployment + Agent | `python azure_mcp_operations.py deploy` | [integrations/azure/](integrations/azure/README.md) |
-| **Google ADK** | Agent | `adk run zscaler_agent` | [integrations/adk/](integrations/adk/README.md) |
+| **Google Cloud (Cloud Run / GKE / VM)** | Deployment | `python gcp_mcp_operations.py deploy` | [integrations/google/](integrations/google/README.md) |
+| **Google ADK Agent** | Agent | `python adk_agent_operations.py deploy` | [integrations/google/adk/](integrations/google/adk/README.md) |
 | **GitHub MCP Registry** | Registry | `mcp-publisher publish` | [integrations/github/](integrations/github/README.md) |
 
 For full documentation on all integrations, see the [Platform Integrations Guide](integrations/README.md).

@@ -3,11 +3,11 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="GCP GKE Deployment" href="gcp-gke.html" /><link rel="prev" title="Examples" href="examples.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="GCP Compute Engine VM Deployment" href="gcp-compute-engine-vm.html" /><link rel="prev" title="GCP Cloud Run Deployment" href="gcp-cloud-run.html" />
         <link rel="prefetch" href="../_static/logo.svg" as="image" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
-        <title>GCP Cloud Run Deployment</title>
+        <title>GCP GKE Deployment</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
@@ -220,8 +220,8 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">GCP Cloud Run Deployment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">GCP GKE Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
@@ -259,7 +259,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="../_sources/guides/gcp-cloud-run.rst.txt" title="View this page">
+  <a class="muted-link" href="../_sources/guides/gcp-gke.rst.txt" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -279,91 +279,30 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="gcp-cloud-run-deployment">
-<span id="gcp-cloud-run"></span><h1>GCP Cloud Run Deployment<a class="headerlink" href="#gcp-cloud-run-deployment" title="Link to this heading">¶</a></h1>
-<p>This guide walks you through deploying the Zscaler Integrations MCP Server to Google Cloud Run with optional GCP Secret Manager integration for secure credential storage.</p>
+          <section id="gcp-gke-deployment">
+<span id="gcp-gke"></span><h1>GCP GKE Deployment<a class="headerlink" href="#gcp-gke-deployment" title="Link to this heading">¶</a></h1>
+<p>This guide walks you through deploying the Zscaler Integrations MCP Server to <strong>Google Kubernetes Engine</strong> (GKE). The unified <code class="docutils literal notranslate"><span class="pre">gcp_mcp_operations.py</span></code> script provisions an Autopilot cluster on demand (or reuses an existing one), generates the manifests, applies them, and wires up GCP Secret Manager for credential delivery.</p>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://cloud.google.com/sdk/docs/install">gcloud CLI</a> installed and authenticated</p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/sdk/docs/install">gcloud CLI</a> installed and authenticated (<code class="docutils literal notranslate"><span class="pre">gcloud</span> <span class="pre">auth</span> <span class="pre">login</span></code>)</p></li>
 <li><p>A GCP project with billing enabled</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kubectl</span></code> installed (<code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">kubernetes-cli</span></code> on macOS, <code class="docutils literal notranslate"><span class="pre">gcloud</span> <span class="pre">components</span> <span class="pre">install</span> <span class="pre">kubectl</span></code> otherwise)</p></li>
 <li><p>Zscaler OneAPI credentials (<code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code>)</p></li>
 </ul>
-</section>
-<section id="automated-deployment-recommended">
-<h2>Automated Deployment (Recommended)<a class="headerlink" href="#automated-deployment-recommended" title="Link to this heading">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">integrations/google/gcp/gcp_mcp_operations.py</span></code> script provides an interactive deployment experience with support for Cloud Run, GKE, and Compute Engine VM targets:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/gcp
-python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>deploy
+<section id="required-gcp-apis">
+<h3>Required GCP APIs<a class="headerlink" href="#required-gcp-apis" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gcloud<span class="w"> </span>services<span class="w"> </span><span class="nb">enable</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>container.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>secretmanager.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>compute.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--project<span class="w"> </span>YOUR_PROJECT_ID
 </pre></div>
 </div>
-<p>The script:</p>
-<ul class="simple">
-<li><p>Reads credentials from your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file (or prompts interactively)</p></li>
-<li><p>Optionally stores credentials in GCP Secret Manager</p></li>
-<li><p>Deploys the container to Cloud Run with <code class="docutils literal notranslate"><span class="pre">zscaler</span></code> authentication mode</p></li>
-<li><p>Generates <code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Basic</span></code> headers from your Zscaler OneAPI credentials</p></li>
-<li><p>Auto-configures Claude Desktop and Cursor client configs</p></li>
-<li><p>Supports <code class="docutils literal notranslate"><span class="pre">--teardown</span></code> for easy service deletion</p></li>
-</ul>
-<p><strong>Options:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/gcp
-python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>deploy<span class="w">       </span><span class="c1"># Interactive guided deployment</span>
-python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>status<span class="w">       </span><span class="c1"># Check deployment</span>
-python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>logs<span class="w">         </span><span class="c1"># Stream logs</span>
-python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destroy<span class="w">      </span><span class="c1"># Tear down</span>
-</pre></div>
-</div>
-<section id="authentication">
-<h3>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h3>
-<p>The script defaults to <strong>Zscaler auth mode</strong> — clients authenticate with the same Zscaler OneAPI credentials (<code class="docutils literal notranslate"><span class="pre">client_id:client_secret</span></code>) via HTTP Basic auth. No external Identity Provider, JWT setup, or API keys are required.</p>
-<p>The script automatically:</p>
-<ol class="arabic simple">
-<li><p>Sets <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ENABLED=true</span></code> and <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_MODE=zscaler</span></code> on the container</p></li>
-<li><p>Generates <code class="docutils literal notranslate"><span class="pre">base64(client_id:client_secret)</span></code> for the <code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Basic</span></code> header</p></li>
-<li><p>Configures Claude Desktop (via <code class="docutils literal notranslate"><span class="pre">mcp-remote</span> <span class="pre">--header</span></code>) and Cursor (via native <code class="docutils literal notranslate"><span class="pre">headers</span></code>) with the auth credentials</p></li>
-</ol>
 </section>
-</section>
-<section id="manual-deployment">
-<h2>Manual Deployment<a class="headerlink" href="#manual-deployment" title="Link to this heading">¶</a></h2>
-<p>Deploy directly with <code class="docutils literal notranslate"><span class="pre">gcloud</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gcloud<span class="w"> </span>run<span class="w"> </span>deploy<span class="w"> </span>zscaler-mcp-server<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--image<span class="o">=</span>zscaler/zscaler-mcp-server:latest<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--region<span class="o">=</span>us-central1<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--platform<span class="o">=</span>managed<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--port<span class="o">=</span><span class="m">8000</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--args<span class="o">=</span><span class="s2">&quot;--transport,streamable-http,--host,0.0.0.0,--port,8000&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set-env-vars<span class="o">=</span><span class="s2">&quot;\</span>
-<span class="s2">ZSCALER_CLIENT_ID=your-client-id,\</span>
-<span class="s2">ZSCALER_CLIENT_SECRET=your-client-secret,\</span>
-<span class="s2">ZSCALER_VANITY_DOMAIN=your-domain,\</span>
-<span class="s2">ZSCALER_CUSTOMER_ID=your-customer-id,\</span>
-<span class="s2">ZSCALER_CLOUD=production,\</span>
-<span class="s2">ZSCALER_MCP_ALLOW_HTTP=true,\</span>
-<span class="s2">ZSCALER_MCP_DISABLE_HOST_VALIDATION=true,\</span>
-<span class="s2">ZSCALER_MCP_AUTH_ENABLED=true,\</span>
-<span class="s2">ZSCALER_MCP_AUTH_MODE=zscaler&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--memory<span class="o">=</span>512Mi<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--allow-unauthenticated
-</pre></div>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Credentials passed as <code class="docutils literal notranslate"><span class="pre">--set-env-vars</span></code> are visible in the Cloud Console. Use GCP Secret Manager for production deployments.</p>
-</div>
-</section>
-<section id="gcp-secret-manager-integration">
-<h2>GCP Secret Manager Integration<a class="headerlink" href="#gcp-secret-manager-integration" title="Link to this heading">¶</a></h2>
-<p>The Docker image includes a built-in credential loader for GCP Secret Manager. When enabled, the server fetches Zscaler API credentials at startup — no wrapper scripts or container modifications required.</p>
-<p><strong>How It Works:</strong></p>
-<ol class="arabic simple">
-<li><p>Container starts and checks <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_GCP_SECRET_MANAGER</span></code></p></li>
-<li><p>If <code class="docutils literal notranslate"><span class="pre">true</span></code>, fetches each credential from Secret Manager using Application Default Credentials</p></li>
-<li><p>Sets values as environment variables before the MCP server initializes</p></li>
-</ol>
-<p><strong>Naming Convention:</strong></p>
-<p>Environment variable names are converted to Secret Manager IDs by lowercasing and replacing underscores with hyphens:</p>
+<section id="required-iam-roles">
+<h3>Required IAM Roles<a class="headerlink" href="#required-iam-roles" title="Link to this heading">¶</a></h3>
+<p>The default Compute Engine service account (<code class="docutils literal notranslate"><span class="pre">PROJECT_NUMBER-compute&#64;developer.gserviceaccount.com</span></code>) needs:</p>
 <div class="table-wrapper colwidths-given docutils container">
 <table class="docutils align-default">
 <colgroup>
@@ -371,83 +310,146 @@ python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destr
 <col style="width: 50.0%" />
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>Environment Variable</p></th>
-<th class="head"><p>Secret Manager ID</p></th>
+<tr class="row-odd"><th class="head"><p>Role</p></th>
+<th class="head"><p>Purpose</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">zscaler-client-id</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">roles/secretmanager.secretAccessor</span></code></p></td>
+<td><p>Read Zscaler credentials from GCP Secret Manager at runtime</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">zscaler-client-secret</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">zscaler-vanity-domain</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">zscaler-customer-id</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">zscaler-cloud</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">roles/iam.workloadIdentityUser</span></code></p></td>
+<td><p>Bind the Kubernetes <code class="docutils literal notranslate"><span class="pre">ServiceAccount</span></code> to the GCP service account</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<section id="step-1-create-secrets">
-<h3>Step 1: Create Secrets<a class="headerlink" href="#step-1-create-secrets" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PROJECT_ID</span><span class="o">=</span><span class="s2">&quot;your-gcp-project&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PROJECT_ID</span><span class="o">=</span><span class="s2">&quot;your-project&quot;</span>
+<span class="nv">PROJECT_NUMBER</span><span class="o">=</span><span class="k">$(</span>gcloud<span class="w"> </span>projects<span class="w"> </span>describe<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span>--format<span class="o">=</span><span class="s2">&quot;value(projectNumber)&quot;</span><span class="k">)</span>
+<span class="nv">SA</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PROJECT_NUMBER</span><span class="si">}</span><span class="s2">-compute@developer.gserviceaccount.com&quot;</span>
 
-<span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;your-client-id&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>gcloud<span class="w"> </span>secrets<span class="w"> </span>create<span class="w"> </span>zscaler-client-id<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--data-file<span class="o">=</span>-<span class="w"> </span>--replication-policy<span class="o">=</span>automatic<span class="w"> </span>--project<span class="o">=</span><span class="nv">$PROJECT_ID</span>
-
-<span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;your-client-secret&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>gcloud<span class="w"> </span>secrets<span class="w"> </span>create<span class="w"> </span>zscaler-client-secret<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--data-file<span class="o">=</span>-<span class="w"> </span>--replication-policy<span class="o">=</span>automatic<span class="w"> </span>--project<span class="o">=</span><span class="nv">$PROJECT_ID</span>
-
-<span class="c1"># Repeat for zscaler-vanity-domain, zscaler-customer-id, zscaler-cloud</span>
+gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:</span><span class="nv">$SA</span><span class="s2">&quot;</span><span class="w"> </span>--role<span class="o">=</span><span class="s2">&quot;roles/secretmanager.secretAccessor&quot;</span>
+gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:</span><span class="nv">$SA</span><span class="s2">&quot;</span><span class="w"> </span>--role<span class="o">=</span><span class="s2">&quot;roles/iam.workloadIdentityUser&quot;</span>
 </pre></div>
 </div>
 </section>
-<section id="step-2-grant-iam-access">
-<h3>Step 2: Grant IAM Access<a class="headerlink" href="#step-2-grant-iam-access" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PROJECT_NUMBER</span><span class="o">=</span><span class="k">$(</span>gcloud<span class="w"> </span>projects<span class="w"> </span>describe<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span>--format<span class="o">=</span><span class="s2">&quot;value(projectNumber)&quot;</span><span class="k">)</span>
-<span class="nv">SA_EMAIL</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PROJECT_NUMBER</span><span class="si">}</span><span class="s2">-compute@developer.gserviceaccount.com&quot;</span>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/gcp
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+<p>When prompted for the deployment target, select <strong>GKE</strong>. The script then asks for:</p>
+<ul class="simple">
+<li><p><strong>GCP project ID</strong> and <strong>region / zone</strong> (defaults pulled from <code class="docutils literal notranslate"><span class="pre">.env</span></code> if present)</p></li>
+<li><p><strong>Cluster mode</strong> — create a new GKE Autopilot cluster (PoC / testing) or use an existing cluster (production)</p></li>
+<li><p><strong>Cluster name</strong> — defaults to <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-cluster</span></code> for new clusters</p></li>
+<li><p><strong>Kubernetes namespace</strong> — defaults to <code class="docutils literal notranslate"><span class="pre">default</span></code></p></li>
+<li><p><strong>Container image</strong> — defaults to <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code> from Docker Hub</p></li>
+<li><p><strong>GCP Secret Manager</strong> — recommended (<code class="docutils literal notranslate"><span class="pre">y</span></code>). When enabled, the script provisions secrets and grants the runtime service account <code class="docutils literal notranslate"><span class="pre">roles/secretmanager.secretAccessor</span></code>; when disabled, credentials are baked into the manifest as plain env values.</p></li>
+<li><p><strong>MCP auth mode</strong> — JWT, API Key, Zscaler, or None</p></li>
+</ul>
+<section id="what-the-script-does">
+<h3>What the Script Does<a class="headerlink" href="#what-the-script-does" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Verifies <code class="docutils literal notranslate"><span class="pre">kubectl</span></code> and <code class="docutils literal notranslate"><span class="pre">gcloud</span></code> are installed and the user is logged in</p></li>
+<li><p>Enables the GKE API on the target project</p></li>
+<li><p>Creates the GKE Autopilot cluster (if requested) — this typically takes 5–10 minutes</p></li>
+<li><p>Runs <code class="docutils literal notranslate"><span class="pre">gcloud</span> <span class="pre">container</span> <span class="pre">clusters</span> <span class="pre">get-credentials</span></code> to set the kubectl context</p></li>
+<li><p>(Secret Manager path) creates Zscaler secrets in Secret Manager and grants IAM access</p></li>
+<li><p>Generates a Kubernetes manifest (<code class="docutils literal notranslate"><span class="pre">Deployment</span></code> + <code class="docutils literal notranslate"><span class="pre">Service</span></code> of type <code class="docutils literal notranslate"><span class="pre">LoadBalancer</span></code>)</p></li>
+<li><p>Applies the manifest with <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">apply</span></code></p></li>
+<li><p>Polls for the LoadBalancer external IP</p></li>
+<li><p>Updates Claude Desktop and Cursor configs with <code class="docutils literal notranslate"><span class="pre">http://&lt;EXTERNAL_IP&gt;/mcp</span></code></p></li>
+</ol>
+</section>
+</section>
+<section id="operations">
+<h2>Operations<a class="headerlink" href="#operations" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>status<span class="w">      </span><span class="c1"># cluster state, pod, and service</span>
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>logs<span class="w">        </span><span class="c1"># kubectl logs deployment/zscaler-mcp-server -f</span>
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destroy<span class="w">     </span><span class="c1"># tear down (full or partial — see below)</span>
+python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destroy<span class="w"> </span>-y<span class="w">  </span><span class="c1"># non-interactive teardown</span>
+</pre></div>
+</div>
+<p><strong>Destroy behavior:</strong></p>
+<ul class="simple">
+<li><p>If the script created the cluster (<code class="docutils literal notranslate"><span class="pre">new</span></code> mode), <code class="docutils literal notranslate"><span class="pre">destroy</span></code> deletes the cluster and any per-deployment GCP resources.</p></li>
+<li><p>If you supplied an existing cluster, <code class="docutils literal notranslate"><span class="pre">destroy</span></code> removes only the K8s <code class="docutils literal notranslate"><span class="pre">Deployment</span></code> and <code class="docutils literal notranslate"><span class="pre">Service</span></code> we created — your cluster and any other workloads remain intact.</p></li>
+</ul>
+<p>Direct <code class="docutils literal notranslate"><span class="pre">kubectl</span></code> access works after deployment — the script sets your kubectl context to the cluster automatically:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>default<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>zscaler-mcp-server
+kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>zscaler-mcp-server<span class="w"> </span>-n<span class="w"> </span>default
+kubectl<span class="w"> </span>describe<span class="w"> </span>deployment<span class="w"> </span>zscaler-mcp-server<span class="w"> </span>-n<span class="w"> </span>default
+</pre></div>
+</div>
+</section>
+<section id="gcp-secret-manager-integration">
+<h2>GCP Secret Manager Integration<a class="headerlink" href="#gcp-secret-manager-integration" title="Link to this heading">¶</a></h2>
+<p>When you answer <strong>Yes</strong> to “Use GCP Secret Manager for credentials?”, the script:</p>
+<ol class="arabic simple">
+<li><p>Stores each Zscaler credential as a separate secret in Secret Manager (with the canonical naming convention <code class="docutils literal notranslate"><span class="pre">zscaler-client-id</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler-client-secret</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler-vanity-domain</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler-customer-id</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler-cloud</span></code>)</p></li>
+<li><p>Grants <code class="docutils literal notranslate"><span class="pre">roles/secretmanager.secretAccessor</span></code> to the project’s default Compute Engine service account</p></li>
+<li><p>Configures the Pod with <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_GCP_SECRET_MANAGER=true</span></code> and <code class="docutils literal notranslate"><span class="pre">GCP_PROJECT_ID=&lt;project&gt;</span></code></p></li>
+</ol>
+<p>The MCP server’s built-in credential loader fetches each secret at startup before the server initializes — no wrapper scripts or container changes required. See <a class="reference internal" href="gcp-cloud-run.html"><span class="doc">GCP Cloud Run Deployment</span></a> for the full naming convention table.</p>
+<p>To rotate a credential:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;new-client-secret&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>gcloud<span class="w"> </span>secrets<span class="w"> </span>versions<span class="w"> </span>add<span class="w"> </span>zscaler-client-secret<span class="w"> </span>--data-file<span class="o">=</span>-
 
-<span class="k">for</span><span class="w"> </span>SECRET<span class="w"> </span><span class="k">in</span><span class="w"> </span>zscaler-client-id<span class="w"> </span>zscaler-client-secret<span class="w"> </span>zscaler-vanity-domain<span class="w"> </span><span class="se">\</span>
-<span class="w">              </span>zscaler-customer-id<span class="w"> </span>zscaler-cloud<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span>gcloud<span class="w"> </span>secrets<span class="w"> </span>add-iam-policy-binding<span class="w"> </span><span class="nv">$SECRET</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:</span><span class="nv">$SA_EMAIL</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--role<span class="o">=</span><span class="s2">&quot;roles/secretmanager.secretAccessor&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--project<span class="o">=</span><span class="nv">$PROJECT_ID</span><span class="w"> </span>--quiet
-<span class="k">done</span>
+kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/zscaler-mcp-server<span class="w"> </span>-n<span class="w"> </span>default
 </pre></div>
 </div>
 </section>
-<section id="step-3-deploy-with-secret-manager">
-<h3>Step 3: Deploy with Secret Manager<a class="headerlink" href="#step-3-deploy-with-secret-manager" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gcloud<span class="w"> </span>run<span class="w"> </span>deploy<span class="w"> </span>zscaler-mcp-server<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--image<span class="o">=</span>zscaler/zscaler-mcp-server:latest<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--region<span class="o">=</span>us-central1<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--set-env-vars<span class="o">=</span><span class="s2">&quot;\</span>
-<span class="s2">ZSCALER_MCP_GCP_SECRET_MANAGER=true,\</span>
-<span class="s2">GCP_PROJECT_ID=</span><span class="nv">$PROJECT_ID</span><span class="s2">,\</span>
-<span class="s2">ZSCALER_MCP_ALLOW_HTTP=true,\</span>
-<span class="s2">ZSCALER_MCP_DISABLE_HOST_VALIDATION=true,\</span>
-<span class="s2">ZSCALER_MCP_AUTH_ENABLED=true,\</span>
-<span class="s2">ZSCALER_MCP_AUTH_MODE=zscaler&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--args<span class="o">=</span><span class="s2">&quot;--transport,streamable-http,--host,0.0.0.0,--port,8000&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--port<span class="o">=</span><span class="m">8000</span><span class="w"> </span>--memory<span class="o">=</span>512Mi<span class="w"> </span>--allow-unauthenticated
-</pre></div>
+<section id="authentication-modes">
+<h2>Authentication Modes<a class="headerlink" href="#authentication-modes" title="Link to this heading">¶</a></h2>
+<p>GKE supports four MCP client authentication modes (the same set as Cloud Run):</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 50.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Client Auth Header</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>JWT</strong></p></td>
+<td><p>Validate JWTs against a JWKS endpoint</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;JWT&gt;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>API Key</strong></p></td>
+<td><p>Shared secret (auto-generated if not provided)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;api-key&gt;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Zscaler</strong></p></td>
+<td><p>Validate via OneAPI client credentials</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Basic</span> <span class="pre">base64(id:secret)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>None</strong></p></td>
+<td><p>No authentication — development only</p></td>
+<td><p>No header</p></td>
+</tr>
+</tbody>
+</table>
 </div>
+<p>When authentication is enabled, the script generates the appropriate <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header and writes it into your Claude Desktop and Cursor configs alongside the LoadBalancer URL.</p>
 </section>
-<section id="gke-deployment">
-<h3>GKE Deployment<a class="headerlink" href="#gke-deployment" title="Link to this heading">¶</a></h3>
+<section id="manual-deployment">
+<h2>Manual Deployment<a class="headerlink" href="#manual-deployment" title="Link to this heading">¶</a></h2>
+<p>If you prefer a hand-rolled manifest, here is a minimal reference that mirrors what the script generates (Secret Manager path):</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zscaler-mcp-server</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
@@ -470,21 +472,39 @@ python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destr
 <span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCP_PROJECT_ID</span>
 <span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-gcp-project&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZSCALER_MCP_ALLOW_HTTP</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZSCALER_MCP_DISABLE_HOST_VALIDATION</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zscaler-mcp-server</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zscaler-mcp-server</span>
+<span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
 </pre></div>
 </div>
-</section>
+<p>You will also need a Kubernetes <code class="docutils literal notranslate"><span class="pre">ServiceAccount</span></code> (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp-sa</span></code>) bound to a GCP service account that holds <code class="docutils literal notranslate"><span class="pre">roles/secretmanager.secretAccessor</span></code> via Workload Identity. The script handles all of this end-to-end.</p>
 </section>
 <section id="connecting-clients">
 <h2>Connecting Clients<a class="headerlink" href="#connecting-clients" title="Link to this heading">¶</a></h2>
-<section id="claude-desktop">
-<h3>Claude Desktop<a class="headerlink" href="#claude-desktop" title="Link to this heading">¶</a></h3>
+<p>The script updates Claude Desktop and Cursor automatically. If you need to configure a client manually:</p>
+<p><strong>Claude Desktop:</strong></p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;npx&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="s2">&quot;-y&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mcp-remote&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;https://your-service.run.app/mcp&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;http://&lt;EXTERNAL_IP&gt;/mcp&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--allow-http&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="s2">&quot;--header&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="s2">&quot;Authorization: Basic &lt;base64(client_id:client_secret)&gt;&quot;</span>
 <span class="w">      </span><span class="p">]</span>
@@ -493,17 +513,11 @@ python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destr
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Generate the Base64 value:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;your-client-id:your-client-secret&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64
-</pre></div>
-</div>
-</section>
-<section id="cursor">
-<h3>Cursor<a class="headerlink" href="#cursor" title="Link to this heading">¶</a></h3>
+<p><strong>Cursor (``mcp.json``):</strong></p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://your-service.run.app/mcp&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://&lt;EXTERNAL_IP&gt;/mcp&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;headers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;Authorization&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Basic &lt;base64(client_id:client_secret)&gt;&quot;</span>
 <span class="w">      </span><span class="p">}</span>
@@ -512,36 +526,35 @@ python<span class="w"> </span>gcp_mcp_operations.py<span class="w"> </span>destr
 <span class="p">}</span>
 </pre></div>
 </div>
+<p>For HTTPS endpoints (e.g. when you place an Ingress with TLS in front of the LoadBalancer), drop the <code class="docutils literal notranslate"><span class="pre">--allow-http</span></code> flag.</p>
 </section>
-</section>
-<section id="credential-rotation">
-<h2>Credential Rotation<a class="headerlink" href="#credential-rotation" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Update the secret value</span>
-<span class="nb">echo</span><span class="w"> </span>-n<span class="w"> </span><span class="s2">&quot;new-client-secret&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>gcloud<span class="w"> </span>secrets<span class="w"> </span>versions<span class="w"> </span>add<span class="w"> </span>zscaler-client-secret<span class="w"> </span>--data-file<span class="o">=</span>-
-
-<span class="c1"># Restart the service to pick up the new version</span>
-gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"> </span>update<span class="w"> </span>zscaler-mcp-server<span class="w"> </span>--region<span class="o">=</span>us-central1
-</pre></div>
-</div>
+<section id="production-hardening">
+<h2>Production Hardening<a class="headerlink" href="#production-hardening" title="Link to this heading">¶</a></h2>
+<p>The default deployment exposes plain HTTP via a <code class="docutils literal notranslate"><span class="pre">LoadBalancer</span></code> Service for simplicity. For production:</p>
+<ul class="simple">
+<li><p><strong>TLS</strong> — front the Service with an <a class="reference external" href="https://cloud.google.com/kubernetes-engine/docs/how-to/managed-certs">Ingress + Google-managed certificate</a> or NGINX Ingress + <code class="docutils literal notranslate"><span class="pre">cert-manager</span></code> (Let’s Encrypt).</p></li>
+<li><p><strong>Internal-only ingress</strong> — switch the Service to <code class="docutils literal notranslate"><span class="pre">ClusterIP</span></code> and expose via an internal LB or a private Ingress if clients are inside the VPC.</p></li>
+<li><p><strong>Replicas / HPA</strong> — scale beyond the default single replica (<code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">scale</span> <span class="pre">deployment</span> <span class="pre">zscaler-mcp-server</span> <span class="pre">--replicas=3</span></code>) and add an <code class="docutils literal notranslate"><span class="pre">HorizontalPodAutoscaler</span></code>.</p></li>
+<li><p><strong>Network policies</strong> — restrict pod ingress to the Ingress controller / known clients only.</p></li>
+</ul>
 </section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
-<p><strong>401 Unauthorized:</strong></p>
+<p><strong>Pod stuck in ``Pending``</strong> — usually an Autopilot resource constraint. Run <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">describe</span> <span class="pre">pod</span> <span class="pre">&lt;pod&gt;</span></code> to see the scheduler events.</p>
+<p><strong>``CrashLoopBackOff`` with ``permission denied`` on Secret Manager</strong> — confirm the project’s default Compute Engine service account has <code class="docutils literal notranslate"><span class="pre">roles/secretmanager.secretAccessor</span></code> (the script grants this; rerun if you skipped Secret Manager originally).</p>
+<p><strong>LoadBalancer external IP stays ``&lt;pending&gt;``</strong> — the script polls for up to 5 minutes. Beyond that, GKE/GCP is still provisioning the Standard Load Balancer; <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">svc</span> <span class="pre">zscaler-mcp-server</span> <span class="pre">-w</span></code> will show it eventually. Verify the project has the Compute Engine API enabled and a default network.</p>
+<p><strong>``Connection refused`` from clients</strong> — check the firewall (<code class="docutils literal notranslate"><span class="pre">gcloud</span> <span class="pre">compute</span> <span class="pre">firewall-rules</span> <span class="pre">list</span></code>) and confirm the Service shows <code class="docutils literal notranslate"><span class="pre">EXTERNAL-IP</span></code> with port 80 open.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Verify the <code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Basic</span></code> header contains valid <code class="docutils literal notranslate"><span class="pre">base64(client_id:client_secret)</span></code></p></li>
-<li><p>Confirm <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ENABLED=true</span></code> and <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_MODE=zscaler</span></code> are set on the container</p></li>
+<li><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/google">integrations/google/</a> — full integration source, env templates, and per-client configuration examples</p></li>
+<li><p><a class="reference internal" href="gcp-cloud-run.html"><span class="doc">GCP Cloud Run Deployment</span></a> — Cloud Run deployment guide (sister target)</p></li>
+<li><p><a class="reference internal" href="gcp-compute-engine-vm.html"><span class="doc">GCP Compute Engine VM Deployment</span></a> — Compute Engine VM deployment guide</p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview">GKE Autopilot</a></p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity">Workload Identity on GKE</a></p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/secret-manager/docs">GCP Secret Manager</a></p></li>
 </ul>
-<p><strong>Permission denied accessing secret:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gcloud<span class="w"> </span>secrets<span class="w"> </span>add-iam-policy-binding<span class="w"> </span>zscaler-client-secret<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:YOUR_SA_EMAIL&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--role<span class="o">=</span><span class="s2">&quot;roles/secretmanager.secretAccessor&quot;</span>
-</pre></div>
-</div>
-<p><strong>Viewing logs:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"> </span>logs<span class="w"> </span><span class="nb">read</span><span class="w"> </span>zscaler-mcp-server<span class="w"> </span>--region<span class="o">=</span>us-central1<span class="w"> </span>--limit<span class="o">=</span><span class="m">50</span>
-</pre></div>
-</div>
 </section>
 </section>
 
@@ -550,23 +563,23 @@ gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="gcp-gke.html">
+          <a class="next-page" href="gcp-compute-engine-vm.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">GCP GKE Deployment</div>
+                <div class="title">GCP Compute Engine VM Deployment</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="examples.html">
+          <a class="prev-page" href="gcp-cloud-run.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Examples</div>
+                <div class="title">GCP Cloud Run Deployment</div>
                 
               </div>
             </a>
@@ -600,27 +613,24 @@ gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">GCP Cloud Run Deployment</a><ul>
-<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-<li><a class="reference internal" href="#automated-deployment-recommended">Automated Deployment (Recommended)</a><ul>
-<li><a class="reference internal" href="#authentication">Authentication</a></li>
+<li><a class="reference internal" href="#">GCP GKE Deployment</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li><a class="reference internal" href="#required-gcp-apis">Required GCP APIs</a></li>
+<li><a class="reference internal" href="#required-iam-roles">Required IAM Roles</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li><a class="reference internal" href="#what-the-script-does">What the Script Does</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#operations">Operations</a></li>
+<li><a class="reference internal" href="#gcp-secret-manager-integration">GCP Secret Manager Integration</a></li>
+<li><a class="reference internal" href="#authentication-modes">Authentication Modes</a></li>
 <li><a class="reference internal" href="#manual-deployment">Manual Deployment</a></li>
-<li><a class="reference internal" href="#gcp-secret-manager-integration">GCP Secret Manager Integration</a><ul>
-<li><a class="reference internal" href="#step-1-create-secrets">Step 1: Create Secrets</a></li>
-<li><a class="reference internal" href="#step-2-grant-iam-access">Step 2: Grant IAM Access</a></li>
-<li><a class="reference internal" href="#step-3-deploy-with-secret-manager">Step 3: Deploy with Secret Manager</a></li>
-<li><a class="reference internal" href="#gke-deployment">GKE Deployment</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#connecting-clients">Connecting Clients</a><ul>
-<li><a class="reference internal" href="#claude-desktop">Claude Desktop</a></li>
-<li><a class="reference internal" href="#cursor">Cursor</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#credential-rotation">Credential Rotation</a></li>
+<li><a class="reference internal" href="#connecting-clients">Connecting Clients</a></li>
+<li><a class="reference internal" href="#production-hardening">Production Hardening</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
 </ul>
 </li>
 </ul>

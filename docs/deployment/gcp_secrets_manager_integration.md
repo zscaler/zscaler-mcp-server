@@ -359,7 +359,7 @@ echo -n "your-client-id:your-client-secret" | base64
 }
 ```
 
-> **Tip**: The `scripts/deploy-gcp.py` script generates these configs automatically, including the Base64-encoded credentials.
+> **Tip**: The `integrations/google/gcp/gcp_mcp_operations.py deploy` command generates these configs automatically, including the Base64-encoded credentials.
 
 Omit the `Authorization` header if authentication is disabled.
 

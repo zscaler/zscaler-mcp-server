@@ -15,10 +15,20 @@ This module provides:
   - Multi-turn response chaining for conversation continuity
 
 Authentication:
-  MCP server auth uses custom headers (X-Zscaler-Client-ID /
-  X-Zscaler-Client-Secret or X-MCP-API-Key) via MCPTool.headers.
-  The Authorization header and project_connection_id are NOT used
-  due to Foundry restrictions (sensitive header blocking, URI parsing bug).
+  Foundry blocks any "sensitive-looking" header (containing words like
+  "secret", "key", "token", "authorization") in MCPTool.headers and
+  returns invalid_payload.  The supported path is to register a
+  "Custom keys" connection in the Foundry project that holds the auth
+  headers as key/value pairs, then reference it via
+  MCPTool.project_connection_id.  Foundry injects the keys as request
+  headers when calling the MCP server.
+
+  The connection name is read from AZURE_FOUNDRY_CONNECTION_NAME (env
+  var or .env).  Required custom keys depend on the MCP server auth
+  mode:
+    - zscaler  -> X-Zscaler-Client-ID + X-Zscaler-Client-Secret
+    - api-key  -> X-MCP-API-Key
+    - none     -> no connection required
 
 Prerequisites:
   - Azure AI Foundry project (https://ai.azure.com)
@@ -38,11 +48,14 @@ Usage:
 
 from __future__ import annotations
 
+import base64
 import json
 import os
+import re
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -204,17 +217,14 @@ def _build_mcp_headers(
     api_key_value: str | None = None,
 ) -> dict[str, str]:
     """
-    Build MCP server authentication headers based on the auth mode.
+    Build the header key/value pairs the MCP server expects for the
+    given auth mode.
 
-    Azure Foundry blocks ``Authorization`` and other sensitive headers
-    in MCPTool.headers (returns ``invalid_payload``).  Foundry's
-    ``project_connection_id`` / CustomKeys alternative triggers an
-    ``Invalid URI`` parsing bug in the service backend.
-
-    The workaround is to use the MCP server's custom header authentication:
-    ``X-Zscaler-Client-ID`` + ``X-Zscaler-Client-Secret`` for Zscaler auth,
-    or ``X-MCP-API-Key`` for API-key auth. These are non-sensitive custom
-    headers that Foundry passes through without issues.
+    The result is **not** passed inline to MCPTool.headers anymore
+    (Foundry rejects sensitive-looking header names).  Instead, callers
+    use this dict to (a) print portal instructions for creating the
+    Foundry "Custom keys" connection and (b) populate the connection
+    via the management plane in the future.
 
     Args:
         auth_mode: MCP server auth mode (zscaler, api-key, jwt, none)
@@ -223,7 +233,7 @@ def _build_mcp_headers(
         api_key_value: API key (for api-key auth)
 
     Returns:
-        dict of headers to pass to MCPTool
+        dict of header_name -> value the MCP server expects.
     """
     headers: dict[str, str] = {}
 
@@ -241,27 +251,184 @@ def _build_mcp_headers(
     return headers
 
 
+def _resolve_project_connection_id(
+    project: "Any",
+    connection_name: str,
+) -> str:
+    """
+    Look up a Foundry project connection by name and return its full
+    resource ID, suitable for MCPTool.project_connection_id.
+
+    Raises a friendly error if the connection doesn't exist.
+    """
+    try:
+        connection = project.connections.get(name=connection_name)
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "not found" in msg or "404" in msg:
+            die(
+                f"Foundry connection '{connection_name}' was not found in the project.\n"
+                f"  Create it in the portal first (see instructions printed above)\n"
+                f"  or unset AZURE_FOUNDRY_CONNECTION_NAME and re-run."
+            )
+        raise
+
+    conn_id = getattr(connection, "id", None)
+    if not conn_id:
+        die(f"Foundry connection '{connection_name}' has no resource ID; cannot continue.")
+    return conn_id
+
+
+_CONNECTION_ID_RE = re.compile(
+    r"^/subscriptions/(?P<sub>[0-9a-fA-F-]{36})"
+    r"/resourceGroups/(?P<rg>[^/]+)"
+    r"/providers/Microsoft\.CognitiveServices"
+    r"/accounts/(?P<account>[^/]+)"
+    r"/projects/(?P<project>[^/]+)"
+    r"/connections/[^/]+$"
+)
+
+
+def _build_foundry_agent_deep_link(
+    connection_id: str | None,
+    agent_name: str,
+    version: str | int | None = None,
+) -> str | None:
+    """
+    Build a Foundry "new experience" deep link for the agent page.
+
+    The portal URL format is:
+      https://ai.azure.com/nextgen/r/{sub_b64},{rg},,{account},{project}
+        /build/agents/{agent_name}/build?version={version}
+
+    Where ``sub_b64`` is the URL-safe base64 of the subscription UUID
+    bytes (no padding).  All identifiers are derived from the connection
+    resource ID we already resolved, so this builder needs no extra
+    network calls.
+
+    Returns ``None`` when the connection ID isn't in the expected ARM
+    shape (e.g. not provided, unauthenticated agent, future API change).
+    """
+    if not connection_id:
+        return None
+
+    match = _CONNECTION_ID_RE.match(connection_id)
+    if not match:
+        return None
+
+    try:
+        sub_b64 = (
+            base64.urlsafe_b64encode(uuid.UUID(match.group("sub")).bytes)
+            .decode()
+            .rstrip("=")
+        )
+    except ValueError:
+        return None
+
+    url = (
+        f"https://ai.azure.com/nextgen/r/"
+        f"{sub_b64},{match.group('rg')},,{match.group('account')},{match.group('project')}"
+        f"/build/agents/{agent_name}/build"
+    )
+    if version is not None:
+        url += f"?version={version}"
+    return url
+
+
+def _connection_exists(project_endpoint: str, connection_name: str) -> bool:
+    """
+    Best-effort probe to see whether a connection already exists in
+    the project.  Returns False on any "not found" / 404, True on a
+    successful lookup.  Other exceptions propagate so genuine auth /
+    network failures aren't silently hidden.
+    """
+    if not check_sdk_installed():
+        return False
+
+    from azure.ai.projects import AIProjectClient
+    from azure.identity import DefaultAzureCredential
+
+    try:
+        project = AIProjectClient(
+            endpoint=project_endpoint,
+            credential=DefaultAzureCredential(),
+        )
+        project.connections.get(name=connection_name)
+        return True
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "not found" in msg or "404" in msg:
+            return False
+        raise
+
+
+def _print_connection_setup_instructions(
+    project_endpoint: str,
+    connection_name: str,
+    expected_headers: dict[str, str],
+) -> None:
+    """
+    Print copy-paste-ready instructions for creating the Foundry
+    Custom keys connection that backs MCPTool.project_connection_id.
+    """
+    portal_url = project_endpoint.replace("/api/projects/", "/projects/")
+    print()
+    print("=" * 72)
+    print(f"  {BOLD}Create the Foundry connection ({connection_name}){NC}")
+    print("=" * 72)
+    print()
+    print("  Foundry blocks sensitive headers in the agent definition.  Auth")
+    print("  headers must live in a Custom keys connection on the project.")
+    print()
+    print(f"  {BOLD}Portal steps:{NC}")
+    print(f"    1. Open your project: {portal_url}")
+    print("    2. Left nav -> Management center -> Connected resources")
+    print("    3. + New connection -> Custom keys")
+    print(f"    4. Connection name: {connection_name}")
+    print("    5. Mark each key as a SECRET and add the rows below:")
+    print()
+    for key, value in expected_headers.items():
+        masked = value[:4] + "..." + value[-4:] if value and len(value) > 12 else "<set in your env>"
+        print(f"       {key:<32} = {masked}")
+    print()
+    print("    6. Save, then re-run agent_create.")
+    print()
+    print(f"  {DIM}Tip: pin the name in your .env so future runs are non-interactive:{NC}")
+    print(f"       AZURE_FOUNDRY_CONNECTION_NAME={connection_name}")
+    print()
+
+
 def create_agent(
     project_endpoint: str,
     mcp_server_url: str,
     model: str = DEFAULT_MODEL,
     require_approval: str = "always",
-    mcp_headers: dict[str, str] | None = None,
+    connection_name: str | None = None,
 ) -> dict[str, Any]:
     """
     Create a Foundry agent with MCPTool pointing to the Zscaler MCP Server.
 
+    When ``connection_name`` is provided, the matching Foundry "Custom
+    keys" connection is resolved and passed via
+    ``MCPTool.project_connection_id``.  Foundry injects the connection's
+    keys as request headers when invoking the MCP server.
+
+    When ``connection_name`` is ``None``, the agent is created with no
+    auth headers (suitable for MCP servers that do not require
+    authentication, e.g. dev mode).
+
     Args:
-        project_endpoint: Azure AI Foundry project endpoint
+        project_endpoint: Azure AI Foundry project endpoint.
             Format: https://{resource}.services.ai.azure.com/api/projects/{project}
-        mcp_server_url: URL of the deployed MCP server
-        model: Azure OpenAI model deployment name (default: gpt-4o)
-        require_approval: Tool approval mode ("always", "never", or tool list)
-        mcp_headers: Custom headers for MCP server authentication
-            (X-Zscaler-Client-ID, X-Zscaler-Client-Secret, etc.)
+        mcp_server_url: URL of the deployed MCP server.
+        model: Azure OpenAI model deployment name (default: gpt-4o).
+        require_approval: Tool approval mode ("always", "never", or tool list).
+        connection_name: Name of the Foundry Custom keys connection that
+            holds the auth headers for the MCP server.  Required for any
+            MCP server that enforces auth.
 
     Returns:
-        dict with agent details (id, name, version)
+        dict with agent details (id, name, version, connection_id).
     """
     if not check_sdk_installed():
         install_sdk_prompt()
@@ -277,20 +444,25 @@ def create_agent(
         credential=DefaultAzureCredential(),
     )
 
-    # Build MCP tool with custom auth headers
+    project_connection_id: str | None = None
+    if connection_name:
+        info(f"Resolving Foundry connection: {connection_name}")
+        project_connection_id = _resolve_project_connection_id(project, connection_name)
+        ok(f"Connection resolved: {project_connection_id}")
+
     mcp_tool = MCPTool(
         server_label="zscaler",
         server_url=mcp_server_url,
         require_approval=require_approval,
+        project_connection_id=project_connection_id,
     )
-    if mcp_headers:
-        mcp_tool.headers = mcp_headers
 
     info(f"Creating agent '{AGENT_NAME}' with model '{model}'")
     info(f"MCP Server URL: {mcp_server_url}")
-    if mcp_headers:
-        header_names = ", ".join(mcp_headers.keys())
-        info(f"Auth headers: {header_names}")
+    if project_connection_id:
+        info(f"Auth: project connection '{connection_name}'")
+    else:
+        warn("No connection supplied — agent will call the MCP server unauthenticated.")
 
     try:
         agent = project.agents.create_version(
@@ -312,6 +484,8 @@ def create_agent(
         "version": agent.version,
         "model": model,
         "mcp_url": mcp_server_url,
+        "connection_name": connection_name,
+        "connection_id": project_connection_id,
     }
 
 
@@ -447,6 +621,24 @@ def _handle_api_error(exc: Exception) -> None:
         print()
         warn(f"Unexpected error: {type(exc).__name__}")
         print(f"  {exc}")
+
+    print(f"  {DIM}Underlying exception: {type(exc).__name__}: {exc!r}{NC}")
+    status = getattr(exc, "status_code", None) or getattr(
+        getattr(exc, "response", None), "status_code", None
+    )
+    if status:
+        print(f"  {DIM}HTTP status: {status}{NC}")
+    if error_body:
+        print(f"  {DIM}Error body: {error_body}{NC}")
+    if os.environ.get("ZSCALER_FOUNDRY_DEBUG"):
+        import traceback as _tb
+
+        print(f"  {DIM}--- traceback ---{NC}")
+        _tb.print_exc()
+    else:
+        print(
+            f"  {DIM}For full traceback, re-run with ZSCALER_FOUNDRY_DEBUG=1{NC}"
+        )
 
     print()
 
@@ -753,11 +945,10 @@ def prompt_foundry_config() -> dict[str, str]:
     print("Create one at: https://ai.azure.com")
     print()
 
-    # Check for existing values from environment
     endpoint = os.environ.get("AZURE_AI_PROJECT_ENDPOINT", "")
     model = os.environ.get("AZURE_OPENAI_MODEL", "")
+    connection_name = os.environ.get("AZURE_FOUNDRY_CONNECTION_NAME", "")
 
-    # Offer to load from .env file
     if not endpoint:
         print("How would you like to provide Foundry configuration?")
         print("  1. Load from a .env file")
@@ -771,6 +962,8 @@ def prompt_foundry_config() -> dict[str, str]:
                 env_vars = _load_env_file(env_path)
                 endpoint = env_vars.get("AZURE_AI_PROJECT_ENDPOINT", "")
                 model = env_vars.get("AZURE_OPENAI_MODEL", "")
+                if not connection_name:
+                    connection_name = env_vars.get("AZURE_FOUNDRY_CONNECTION_NAME", "")
                 if endpoint:
                     ok(f"Loaded project endpoint from {env_path}")
                 else:
@@ -799,9 +992,20 @@ def prompt_foundry_config() -> dict[str, str]:
     if model_input:
         model = model_input
 
+    # Foundry connection name — holds the MCP server auth headers
+    if connection_name:
+        ok(f"Foundry connection name: {connection_name}")
+    else:
+        print()
+        print("Foundry 'Custom keys' connection name (holds MCP auth headers).")
+        print("Leave blank only if your MCP server is unauthenticated.")
+        prompt_input = input("Connection name [zscaler-mcp-headers]: ").strip()
+        connection_name = prompt_input or "zscaler-mcp-headers"
+
     return {
         "project_endpoint": endpoint,
         "model": model,
+        "connection_name": connection_name,
     }
 
 
@@ -815,13 +1019,43 @@ def op_agent_create(
     """Create the Foundry agent."""
     config = prompt_foundry_config()
 
-    # Build MCP auth headers
-    mcp_headers = _build_mcp_headers(
+    # MCP server expects these headers — they're stored in the Foundry
+    # connection (NOT inlined into the MCP tool definition).
+    expected_headers = _build_mcp_headers(
         auth_mode=auth_mode,
         client_id=client_id,
         client_secret=client_secret,
         api_key_value=api_key_value,
     )
+
+    connection_name: str | None = config.get("connection_name") or None
+
+    if expected_headers and not connection_name:
+        _print_connection_setup_instructions(
+            project_endpoint=config["project_endpoint"],
+            connection_name="zscaler-mcp-headers",
+            expected_headers=expected_headers,
+        )
+        die(
+            "Set AZURE_FOUNDRY_CONNECTION_NAME (or accept the default at the prompt)\n"
+            "  after the connection is created in the portal."
+        )
+
+    # Only print the (noisy) portal-setup block when the connection is
+    # actually missing.  On repeat runs we just confirm and move on.
+    if expected_headers and connection_name:
+        if _connection_exists(config["project_endpoint"], connection_name):
+            ok(f"Foundry connection '{connection_name}' already exists — reusing it.")
+        else:
+            _print_connection_setup_instructions(
+                project_endpoint=config["project_endpoint"],
+                connection_name=connection_name,
+                expected_headers=expected_headers,
+            )
+            die(
+                f"Connection '{connection_name}' was not found in the project.\n"
+                "  Create it in the portal (steps above), then re-run agent_create."
+            )
 
     print()
     info("Creating Foundry agent with Zscaler MCP tools...")
@@ -832,10 +1066,9 @@ def op_agent_create(
         mcp_server_url=mcp_url,
         model=config["model"],
         require_approval="always",
-        mcp_headers=mcp_headers if mcp_headers else None,
+        connection_name=connection_name,
     )
 
-    # Save state
     state = {
         **config,
         **agent_info,
@@ -851,13 +1084,24 @@ def op_agent_create(
     print(f"  Version:       {agent_info['version']}")
     print(f"  Model:         {agent_info['model']}")
     print(f"  MCP Server:    {agent_info['mcp_url']}")
+    if agent_info.get("connection_name"):
+        print(f"  Connection:    {agent_info['connection_name']}")
     print()
+    deep_link = _build_foundry_agent_deep_link(
+        connection_id=agent_info.get("connection_id"),
+        agent_name=agent_info["name"],
+        version=agent_info.get("version"),
+    )
     print(f"  {BOLD}Next steps:{NC}")
     print("    1. Start a chat session:")
     print("       python azure_mcp_operations.py agent_chat")
     print()
-    print("    2. Or use the Foundry portal:")
-    print(f"       {config['project_endpoint'].replace('/api/projects/', '/projects/')}")
+    print("    2. Or open the agent in the Foundry portal:")
+    if deep_link:
+        print(f"       {deep_link}")
+    else:
+        print("       https://ai.azure.com  (Build -> Agents -> Agents tab)")
+    print(f"       {DIM}(navigate: Build -> Agents -> Agents tab -> {agent_info['name']}){NC}")
     print()
 
 

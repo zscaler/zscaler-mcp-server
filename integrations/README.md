@@ -10,7 +10,8 @@ This directory contains official integrations for the Zscaler MCP Server with va
 | [Cursor Plugin](#cursor-plugin) | [`integrations/cursor-plugin/`](./cursor-plugin/) | `.cursor-plugin/plugin.json`, `mcp.json` | Available |
 | [Gemini Extension](#gemini-extension) | [`integrations/gemini-extension/`](./gemini-extension/) | `gemini-extension.json`, `GEMINI.md` | Available |
 | [Kiro Power](#kiro-power) | [`integrations/kiro/`](./kiro/) | `integrations/kiro/mcp.json`, `integrations/kiro/POWER.md` | Available |
-| [Google ADK](#google-adk) | [`integrations/adk/`](./adk/) | `integrations/adk/.env`, `integrations/adk/zscaler_agent/.env` | Available |
+| [Google Cloud (Cloud Run / GKE / VM)](#google-cloud-cloud-run--gke--vm) | [`integrations/google/gcp/`](./google/gcp/) | `integrations/google/gcp/env.properties` | Available |
+| [Google ADK Agent](#google-adk-agent) | [`integrations/google/adk/`](./google/adk/) | `integrations/google/adk/zscaler_agent/.env` | Available |
 | [Azure (Container Apps / VM)](#azure-container-apps--vm) | [`integrations/azure/`](./azure/) | `integrations/azure/env.properties` | Available |
 | [GitHub MCP Registry](#github-mcp-registry) | [`integrations/github/`](./github/) | `server.json` | Available |
 
@@ -77,25 +78,52 @@ Native [Cursor](https://cursor.so/) plugin with 19 guided skills for ZPA, ZIA, Z
 
 ---
 
-### Google ADK
+### Google Cloud (Cloud Run / GKE / VM)
 
-**[Full documentation →](./adk/README.md)**
+**[Full documentation →](./google/README.md)**
 
-[Google ADK (Agent Development Kit)](https://google.github.io/adk-docs/) integration for building autonomous Zscaler security agents powered by Gemini models. Create AI agents that query and manage your Zscaler environment through natural language.
+Interactive deployment of the Zscaler MCP Server to Google Cloud with three deployment targets:
+- **Cloud Run** — managed, serverless container (Docker Hub / GCP Marketplace image)
+- **GKE (Kubernetes)** — container on existing GKE cluster
+- **Compute Engine VM** — Debian 12, self-managed (Python library from PyPI)
 
 **Features:**
-- Gemini-powered autonomous agent with 280+ Zscaler tools
-- Local development via `adk run` or Cloud Run deployment
+- Fully interactive — prompts for deployment target, credentials, auth mode, and GCP options
+- GCP Secret Manager integration (optional, recommended)
+- Four auth modes (JWT, API Key, Zscaler, None)
+- Auto-configures Claude Desktop and Cursor client configs
+- Management commands: `status`, `logs`, `ssh` (VM only), `destroy`
+
+**Quick start:**
+
+```bash
+cd integrations/google/gcp
+python gcp_mcp_operations.py deploy
+```
+
+**Config files:** `integrations/google/gcp/env.properties`
+
+---
+
+### Google ADK Agent
+
+**[Full documentation →](./google/adk/README.md)**
+
+[Google ADK (Agent Development Kit)](https://google.github.io/adk-docs/) integration for building autonomous Zscaler security agents powered by Gemini models. Deploys a Gemini-powered agent that wraps the MCP server as an internal subprocess.
+
+**Features:**
+- Gemini-powered autonomous agent with 300+ Zscaler tools
+- Local development, Cloud Run, Vertex AI Agent Engine, and Agentspace deployment
 - Configurable system prompt, model selection, and write-tool controls
 
 **Quick start:**
 
 ```bash
-cd integrations/adk
-adk run zscaler_agent
+cd integrations/google/adk
+python adk_agent_operations.py local_run
 ```
 
-**Config files:** `integrations/adk/.env`, `integrations/adk/zscaler_agent/.env`
+**Config files:** `integrations/google/adk/zscaler_agent/.env`
 
 ---
 
