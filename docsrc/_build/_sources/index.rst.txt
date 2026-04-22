@@ -609,7 +609,7 @@ Using Pre-built Image (Recommended)
 
    # Use a specific version instead of latest
    docker run --rm --env-file /path/to/.env \
-     zscaler/zscaler-mcp-server:latest:1.2.3
+     zscaler/zscaler-mcp-server:1.2.3
 
    # Alternative: Individual environment variables
    docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \

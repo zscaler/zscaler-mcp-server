@@ -713,7 +713,7 @@ Claude Desktop's configuration file location:
 
 #### Scenario 1: stdio via Docker (No Auth) — Recommended for Single User
 
-This is the simplest setup. Claude Desktop spawns the Docker container directly.
+This is the simplest setup. Claude Desktop spawns the Docker container directly using the published image from Docker Hub — no local build required.
 
 ```json
 {
@@ -724,10 +724,9 @@ This is the simplest setup. Claude Desktop spawns the Docker container directly.
         "run",
         "-i",
         "--rm",
-        "--pull=never",
         "--env-file",
         "/absolute/path/to/your/.env",
-        "zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }
@@ -738,9 +737,10 @@ Replace `/absolute/path/to/your/.env` with the full path to your `.env` file.
 
 **Requirements:**
 
-- Docker image must be built locally (`make docker-build`)
-- Docker must be running
-- No additional setup needed
+- Docker must be running (Docker pulls `zscaler/zscaler-mcp-server:latest` from Docker Hub on first launch)
+- No local build required
+
+> **Developers building locally:** swap the image for the local tag built by `make docker-build` (`zscaler-mcp-server:latest`) and add `--pull=never` to skip the registry lookup.
 
 #### Scenario 2: HTTP via mcp-remote Bridge (With Auth)
 
@@ -948,10 +948,9 @@ Cursor supports MCP servers via its settings. Configuration can be done through 
         "run",
         "-i",
         "--rm",
-        "--pull=never",
         "--env-file",
         "/absolute/path/to/your/.env",
-        "zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }
@@ -1044,10 +1043,9 @@ Windsurf supports MCP servers through its configuration file.
         "run",
         "-i",
         "--rm",
-        "--pull=never",
         "--env-file",
         "/absolute/path/to/your/.env",
-        "zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }
@@ -1089,10 +1087,9 @@ VS Code supports MCP servers through its settings or workspace configuration.
         "run",
         "-i",
         "--rm",
-        "--pull=never",
         "--env-file",
         "/absolute/path/to/your/.env",
-        "zscaler-mcp-server:latest"
+        "zscaler/zscaler-mcp-server:latest"
       ]
     }
   }
@@ -1807,10 +1804,10 @@ When Claude Desktop restarts the process, the previous container hasn't fully re
     "zscaler-mcp-server": {
       "command": "docker",
       "args": [
-        "run", "-i", "--rm", "--pull=never",
+        "run", "-i", "--rm",
         "-p", "8000:8000",
-        "--env-file", "/path/to/.env",
-        "zscaler-mcp-server:latest",
+        "--env-file", "/absolute/path/to/.env",
+        "zscaler/zscaler-mcp-server:latest",
         "--transport", "streamable-http",
         "--host", "0.0.0.0",
         "--port", "8000"
