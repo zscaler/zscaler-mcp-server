@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zscaler-mcp-sa
+  namespace: default
+  annotations:
+    azure.workload.identity/client-id: 1735b76b-9573-4c0c-b513-363ca858dd62
+  labels:
+    azure.workload.identity/use: "true"
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: zscaler-mcp-spc
+  namespace: default
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    clientID: 1735b76b-9573-4c0c-b513-363ca858dd62
+    keyvaultName: zscalermcpkv50b6fe
+    tenantId: 02ddc0c2-02a1-40f0-b91d-f1ae13bd1f63
+    objects: |
+      array:
+          - |
+            objectName: zscaler-client-id
+            objectType: secret
+          - |
+            objectName: zscaler-client-secret
+            objectType: secret
+          - |
+            objectName: zscaler-vanity-domain
+            objectType: secret
+          - |
+            objectName: zscaler-customer-id
+            objectType: secret
+  secretObjects:
+  - secretName: zscaler-mcp-secrets
+    type: Opaque
+    data:
+      - objectName: zscaler-client-id
+        key: zscaler-client-id
+      - objectName: zscaler-client-secret
+        key: zscaler-client-secret
+      - objectName: zscaler-vanity-domain
+        key: zscaler-vanity-domain
+      - objectName: zscaler-customer-id
+        key: zscaler-customer-id
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zscaler-mcp-server
+  namespace: default
+  labels:
+    app: zscaler-mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zscaler-mcp-server
+  template:
+    metadata:
+      labels:
+        app: zscaler-mcp-server
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: zscaler-mcp-sa
+      containers:
+      - name: zscaler-mcp
+        image: zscaler/zscaler-mcp-server:latest
+        command: ["/app/.venv/bin/zscaler-mcp"]
+        args: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ZSCALER_MCP_ALLOW_HTTP
+          value: "true"
+        - name: ZSCALER_MCP_DISABLE_HOST_VALIDATION
+          value: "true"
+        - name: MCP_HOST
+          value: "0.0.0.0"
+        - name: MCP_PORT
+          value: "8000"
+        - name: ZSCALER_CLOUD
+          value: "beta"
+        - name: ZSCALER_MCP_WRITE_ENABLED
+          value: "true"
+        - name: ZSCALER_MCP_WRITE_TOOLS
+          value: "zpa_*,zia_*,zdx_*"
+        - name: ZSCALER_MCP_AUTH_ENABLED
+          value: "true"
+        - name: ZSCALER_MCP_AUTH_MODE
+          value: "zscaler"
+        - name: ZSCALER_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: zscaler-mcp-secrets
+              key: zscaler-client-id
+        - name: ZSCALER_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: zscaler-mcp-secrets
+              key: zscaler-client-secret
+        - name: ZSCALER_VANITY_DOMAIN
+          valueFrom:
+            secretKeyRef:
+              name: zscaler-mcp-secrets
+              key: zscaler-vanity-domain
+        - name: ZSCALER_CUSTOMER_ID
+          valueFrom:
+            secretKeyRef:
+              name: zscaler-mcp-secrets
+              key: zscaler-customer-id
+        volumeMounts:
+        - name: zscaler-secrets-store
+          mountPath: /mnt/secrets-store
+          readOnly: true
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+      volumes:
+      - name: zscaler-secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: zscaler-mcp-spc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zscaler-mcp-server
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: zscaler-mcp-server

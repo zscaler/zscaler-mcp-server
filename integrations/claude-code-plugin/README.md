@@ -44,20 +44,22 @@ claude plugin install .
 
 ### Option 3: Manual MCP configuration
 
-Add to your `.mcp.json`:
+When installed as a Claude Code plugin, the bundled `.mcp.json` resolves the env file relative to the plugin install directory using `${CLAUDE_PLUGIN_ROOT}` — no path editing required:
 
 ```json
 {
   "mcpServers": {
     "zscaler-mcp-server": {
       "command": "uvx",
-      "args": ["--env-file", "/absolute/path/to/.env", "zscaler-mcp"]
+      "args": ["--env-file", "${CLAUDE_PLUGIN_ROOT}/.env", "zscaler-mcp@0.10.3"]
     }
   }
 }
 ```
 
-Or using Docker:
+If you are wiring the MCP server up **outside** the Claude Code plugin context (e.g. a standalone MCP client), replace `${CLAUDE_PLUGIN_ROOT}/.env` with an absolute path to your own `.env` file, since `${CLAUDE_PLUGIN_ROOT}` is only resolved by Claude Code at runtime.
+
+Optionally, you can run the server via the published Docker image instead:
 
 ```json
 {
@@ -77,8 +79,9 @@ Or using Docker:
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-- [uv](https://docs.astral.sh/uv/) installed (for `uvx` method) or Docker
-- Zscaler OneAPI credentials configured in `.env`
+- [uv](https://docs.astral.sh/uv/) installed (provides the `uvx` runner used by the plugin's `.mcp.json`)
+- Zscaler OneAPI credentials configured in `.env` (copy `.env.example` and fill in the values)
+- Docker is **optional** — only required if you choose the Docker-based manual configuration above
 
 ## Configuration
 
