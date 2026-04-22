@@ -44,6 +44,14 @@ sed -i.bak -E "s/^__version__ = \".+\"$/__version__ = \"$NEW_VERSION\"/" "$ROOT/
 echo "Updating .claude-plugin/marketplace.json"
 sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/.claude-plugin/marketplace.json" && rm "$ROOT/.claude-plugin/marketplace.json.bak"
 
+# Set version in .claude-plugin/plugin.json
+echo "Updating .claude-plugin/plugin.json"
+sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/.claude-plugin/plugin.json" && rm "$ROOT/.claude-plugin/plugin.json.bak"
+
+# Set pinned PyPI version in .mcp.json (zscaler-mcp@<version>)
+echo "Updating .mcp.json"
+sed -i.bak -E 's/"zscaler-mcp@[^"]+"/"zscaler-mcp@'"$1"'"/' "$ROOT/.mcp.json" && rm "$ROOT/.mcp.json.bak"
+
 # Set version in .cursor-plugin/plugin.json
 echo "Updating .cursor-plugin/plugin.json"
 sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/.cursor-plugin/plugin.json" && rm "$ROOT/.cursor-plugin/plugin.json.bak"

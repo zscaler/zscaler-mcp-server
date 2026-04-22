@@ -1,6 +1,35 @@
 # Zscaler Integrations MCP Server Changelog
 
-## 0.10.3 (April 20, 2026)
+## 0.10.4 (April 22, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Switched the **Claude Code plugin** runtime in `.mcp.json` from a local-only Docker image (`zscaler-mcp-server:latest` with `--pull=never`) to the published PyPI distribution (`uvx zscaler-mcp@<version>`), and replaced the hard-coded absolute path to `.env` with `${CLAUDE_PLUGIN_ROOT}/.env`. Resolves Anthropic marketplace review feedback that the previous configuration would not work for end users.
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Added the missing `"version"` field to `.claude-plugin/plugin.json` so the plugin manifest is aligned with `.claude-plugin/marketplace.json`, `pyproject.toml`, and `zscaler_mcp/__init__.py`.
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Corrected the invalid Docker image tag `zscaler/zscaler-mcp-server:latest:1.2.3` to `zscaler/zscaler-mcp-server:1.2.3` in `README.md` and `docsrc/index.rst`.
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Fixed `uvx` invocations in `README.md` to use the correct PyPI package name (`zscaler-mcp`) instead of the repository name (`zscaler-mcp-server`) in three install snippets.
+
+### Enhancements
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Updated Docker-based MCP client configuration examples in `docs/deployment/authentication-and-deployment.md` (Claude Desktop, Cursor, Windsurf, VS Code, troubleshooting) to use the public Docker Hub image `zscaler/zscaler-mcp-server:latest` and removed the `--pull=never` flag so end-user snippets work without a local build.
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Refreshed `integrations/claude-code-plugin/README.md` to document the `uvx` execution model with `${CLAUDE_PLUGIN_ROOT}/.env`, mark Docker as optional, and reference the public Docker image for fallback usage.
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Added a clarifying note in `README.md` on resolving `.env` paths across plugin contexts (`${CLAUDE_PLUGIN_ROOT}/.env` for Claude Code, `${extensionPath}${pathSeparator}.env` for Gemini extensions, absolute paths for standalone MCP clients).
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Extended `.github/set-version.sh` to bump the `version` field in `.claude-plugin/plugin.json` and the pinned `zscaler-mcp@<version>` reference in `.mcp.json` on every `semantic-release` cut.
+
+- [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Added `.claude-plugin/plugin.json` and `.mcp.json` to the `assets` list in `.releaserc.json` so `semantic-release` commits the bumped versions back to the repository alongside the other manifests.
+
+
+## 0.10.3 (April 21, 2026)
 
 ### Notes
 
