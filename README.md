@@ -1095,7 +1095,7 @@ docker run --rm --env-file /path/to/.env \
 
 # Use a specific version instead of latest
 docker run --rm --env-file /path/to/.env \
-  zscaler/zscaler-mcp-server:latest:1.2.3
+  zscaler/zscaler-mcp-server:1.2.3
 
 # Alternative: Individual environment variables
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
@@ -1129,11 +1129,13 @@ You can integrate the Zscaler Integrations MCP server with your editor or AI ass
   "mcpServers": {
     "zscaler-mcp-server": {
       "command": "uvx",
-      "args": ["--env-file", "/path/to/.env", "zscaler-mcp-server"]
+      "args": ["--env-file", "/absolute/path/to/.env", "zscaler-mcp"]
     }
   }
 }
 ```
+
+> **Note:** The published PyPI package is `zscaler-mcp` (not `zscaler-mcp-server`). When integrating as a Claude Code plugin, use `${CLAUDE_PLUGIN_ROOT}/.env` instead of an absolute path; for Gemini extensions, use `${extensionPath}${pathSeparator}.env`.
 
 ## Additional Deployment Options
 
@@ -1436,7 +1438,7 @@ The easiest way to get started—one-click install with a user-friendly UI in Cl
   "mcpServers": {
     "zscaler-mcp-server": {
       "command": "uvx",
-      "args": ["--env-file", "/absolute/path/to/your/.env", "zscaler-mcp-server"]
+      "args": ["--env-file", "/absolute/path/to/your/.env", "zscaler-mcp"]
     }
   }
 }
@@ -1514,7 +1516,7 @@ For full documentation on all integrations, see the [Platform Integrations Guide
 
 5. **"Server connection timeout"**
    - Ensure the MCP server can start successfully
-   - Test manually: `uvx --env-file /path/to/.env zscaler-mcp`
+   - Test manually: `uvx --env-file /absolute/path/to/.env zscaler-mcp`
    - Check for port conflicts if using HTTP transports
 
 6. **Windows: `ModuleNotFoundError: No module named 'rpds.rpds'`** (Claude Desktop extension)

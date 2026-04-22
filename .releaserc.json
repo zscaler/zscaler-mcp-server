@@ -18,6 +18,8 @@
           "README.md",
           "zscaler_mcp/__init__.py",
           ".claude-plugin/marketplace.json",
+          ".claude-plugin/plugin.json",
+          ".mcp.json",
           ".cursor-plugin/plugin.json",
           "gemini-extension.json",
           "server.json"
