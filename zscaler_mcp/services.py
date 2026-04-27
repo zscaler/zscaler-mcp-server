@@ -928,9 +928,22 @@ class ZIAService(BaseService):
         )
         from .tools.zia.cloud_app_control import zia_list_cloud_app_control_actions
         from .tools.zia.cloud_applications import (
-            zia_bulk_update_cloud_applications,
-            zia_list_cloud_application_custom_tags,
-            zia_list_cloud_applications,
+            zia_list_cloud_app_policy,
+            zia_list_cloud_app_ssl_policy,
+        )
+        from .tools.zia.cloud_firewall_dns_rules import (
+            zia_create_cloud_firewall_dns_rule,
+            zia_delete_cloud_firewall_dns_rule,
+            zia_get_cloud_firewall_dns_rule,
+            zia_list_cloud_firewall_dns_rules,
+            zia_update_cloud_firewall_dns_rule,
+        )
+        from .tools.zia.cloud_firewall_ips_rules import (
+            zia_create_cloud_firewall_ips_rule,
+            zia_delete_cloud_firewall_ips_rule,
+            zia_get_cloud_firewall_ips_rule,
+            zia_list_cloud_firewall_ips_rules,
+            zia_update_cloud_firewall_ips_rule,
         )
         from .tools.zia.cloud_firewall_rules import (
             zia_create_cloud_firewall_rule,
@@ -943,6 +956,14 @@ class ZIAService(BaseService):
             zia_list_device_groups,
             zia_list_devices,
             zia_list_devices_lite,
+        )
+        from .tools.zia.file_type_control_rules import (
+            zia_create_file_type_control_rule,
+            zia_delete_file_type_control_rule,
+            zia_get_file_type_control_rule,
+            zia_list_file_type_categories,
+            zia_list_file_type_control_rules,
+            zia_update_file_type_control_rule,
         )
         from .tools.zia.geo_search import zia_geo_search_tool
         from .tools.zia.get_sandbox_info import (
@@ -1015,6 +1036,18 @@ class ZIAService(BaseService):
             zia_get_rule_label,
             zia_list_rule_labels,
             zia_update_rule_label,
+        )
+        from .tools.zia.sandbox_rules import (
+            zia_create_sandbox_rule,
+            zia_delete_sandbox_rule,
+            zia_get_sandbox_rule,
+            zia_list_sandbox_rules,
+            zia_update_sandbox_rule,
+        )
+        from .tools.zia.shadow_it_report import (
+            zia_bulk_update_shadow_it_apps,
+            zia_list_shadow_it_apps,
+            zia_list_shadow_it_custom_tags,
         )
         from .tools.zia.ssl_inspection import (
             zia_create_ssl_inspection_rule,
@@ -1302,16 +1335,27 @@ class ZIAService(BaseService):
                 "name": "zia_list_auth_exempt_urls",
                 "description": "List ZIA authentication exempt URLs (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
-            # Cloud Applications
+            # Shadow IT Report (analytics catalog: numeric IDs, friendly names, custom tags)
             {
-                "func": zia_list_cloud_applications,
-                "name": "zia_list_cloud_applications",
-                "description": "List ZIA cloud applications (read-only) Supports JMESPath client-side filtering via the query parameter.",
+                "func": zia_list_shadow_it_apps,
+                "name": "zia_list_shadow_it_apps",
+                "description": "List ZIA Shadow IT cloud applications — analytics catalog with numeric IDs and friendly names (e.g. 'Sharepoint Online', id 655377). NOT the policy-engine enum catalog. Use zia_list_cloud_app_policy / zia_list_cloud_app_ssl_policy for the canonical enum strings consumed by SSL inspection / DLP / Cloud App Control rules. Supports JMESPath client-side filtering via the query parameter.",
             },
             {
-                "func": zia_list_cloud_application_custom_tags,
-                "name": "zia_list_cloud_application_custom_tags",
-                "description": "List ZIA cloud application custom tags (read-only) Supports JMESPath client-side filtering via the query parameter.",
+                "func": zia_list_shadow_it_custom_tags,
+                "name": "zia_list_shadow_it_custom_tags",
+                "description": "List ZIA Shadow IT custom tags (read-only). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            # Cloud Applications (policy-engine catalog: canonical enum strings for rules)
+            {
+                "func": zia_list_cloud_app_policy,
+                "name": "zia_list_cloud_app_policy",
+                "description": "List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule's cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.",
+            },
+            {
+                "func": zia_list_cloud_app_ssl_policy,
+                "name": "zia_list_cloud_app_ssl_policy",
+                "description": "List the ZIA cloud-application catalog scoped to SSL Inspection rules — returns the canonical enum strings the SSL Inspection API will accept in the cloud_applications field (e.g. ONEDRIVE, SHAREPOINT_ONLINE). Use this to resolve enum names before creating or updating SSL Inspection rules. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.",
             },
             # Cloud App Control
             {
@@ -1360,6 +1404,55 @@ class ZIAService(BaseService):
                 "func": zia_get_sandbox_report,
                 "name": "zia_get_sandbox_report",
                 "description": "Retrieve sandbox analysis report for a specific MD5 hash (read-only)",
+            },
+            # Cloud Firewall DNS Rules
+            {
+                "func": zia_list_cloud_firewall_dns_rules,
+                "name": "zia_list_cloud_firewall_dns_rules",
+                "description": "List ZIA cloud firewall DNS rules (read-only). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_cloud_firewall_dns_rule,
+                "name": "zia_get_cloud_firewall_dns_rule",
+                "description": "Get a specific ZIA cloud firewall DNS rule by ID (read-only)",
+            },
+            # Cloud Firewall IPS Rules
+            {
+                "func": zia_list_cloud_firewall_ips_rules,
+                "name": "zia_list_cloud_firewall_ips_rules",
+                "description": "List ZIA cloud firewall IPS rules (read-only). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_cloud_firewall_ips_rule,
+                "name": "zia_get_cloud_firewall_ips_rule",
+                "description": "Get a specific ZIA cloud firewall IPS rule by ID (read-only)",
+            },
+            # File Type Control Rules
+            {
+                "func": zia_list_file_type_control_rules,
+                "name": "zia_list_file_type_control_rules",
+                "description": "List ZIA File Type Control rules (read-only). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_file_type_control_rule,
+                "name": "zia_get_file_type_control_rule",
+                "description": "Get a specific ZIA File Type Control rule by ID (read-only)",
+            },
+            {
+                "func": zia_list_file_type_categories,
+                "name": "zia_list_file_type_categories",
+                "description": "List ZIA file-type categories (predefined and custom) used by File Type Control and Web DLP rules (read-only).",
+            },
+            # Sandbox Rules
+            {
+                "func": zia_list_sandbox_rules,
+                "name": "zia_list_sandbox_rules",
+                "description": "List ZIA Sandbox rules (read-only). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_sandbox_rule,
+                "name": "zia_get_sandbox_rule",
+                "description": "Get a specific ZIA Sandbox rule by ID (read-only)",
             },
         ]
 
@@ -1638,11 +1731,75 @@ class ZIAService(BaseService):
                 "name": "zia_delete_auth_exempt_urls",
                 "description": "Delete URLs from ZIA authentication exempt list (destructive operation)",
             },
-            # Cloud Applications
+            # Shadow IT Report (write)
             {
-                "func": zia_bulk_update_cloud_applications,
-                "name": "zia_bulk_update_cloud_applications",
-                "description": "Bulk update ZIA cloud applications (write operation)",
+                "func": zia_bulk_update_shadow_it_apps,
+                "name": "zia_bulk_update_shadow_it_apps",
+                "description": "Bulk update sanction state and/or custom tags on ZIA Shadow IT cloud applications (write operation).",
+            },
+            # Cloud Firewall DNS Rules
+            {
+                "func": zia_create_cloud_firewall_dns_rule,
+                "name": "zia_create_cloud_firewall_dns_rule",
+                "description": "Create a new ZIA cloud firewall DNS rule (write operation)",
+            },
+            {
+                "func": zia_update_cloud_firewall_dns_rule,
+                "name": "zia_update_cloud_firewall_dns_rule",
+                "description": "Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.",
+            },
+            {
+                "func": zia_delete_cloud_firewall_dns_rule,
+                "name": "zia_delete_cloud_firewall_dns_rule",
+                "description": "Delete a ZIA cloud firewall DNS rule (destructive operation)",
+            },
+            # Cloud Firewall IPS Rules
+            {
+                "func": zia_create_cloud_firewall_ips_rule,
+                "name": "zia_create_cloud_firewall_ips_rule",
+                "description": "Create a new ZIA cloud firewall IPS rule (write operation)",
+            },
+            {
+                "func": zia_update_cloud_firewall_ips_rule,
+                "name": "zia_update_cloud_firewall_ips_rule",
+                "description": "Update an existing ZIA cloud firewall IPS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.",
+            },
+            {
+                "func": zia_delete_cloud_firewall_ips_rule,
+                "name": "zia_delete_cloud_firewall_ips_rule",
+                "description": "Delete a ZIA cloud firewall IPS rule (destructive operation)",
+            },
+            # File Type Control Rules
+            {
+                "func": zia_create_file_type_control_rule,
+                "name": "zia_create_file_type_control_rule",
+                "description": "Create a new ZIA File Type Control rule (write operation). Friendly cloud-application names are auto-resolved to canonical enums.",
+            },
+            {
+                "func": zia_update_file_type_control_rule,
+                "name": "zia_update_file_type_control_rule",
+                "description": "Update an existing ZIA File Type Control rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. Friendly cloud-application names are auto-resolved.",
+            },
+            {
+                "func": zia_delete_file_type_control_rule,
+                "name": "zia_delete_file_type_control_rule",
+                "description": "Delete a ZIA File Type Control rule (destructive operation)",
+            },
+            # Sandbox Rules
+            {
+                "func": zia_create_sandbox_rule,
+                "name": "zia_create_sandbox_rule",
+                "description": "Create a new ZIA Sandbox rule (write operation)",
+            },
+            {
+                "func": zia_update_sandbox_rule,
+                "name": "zia_update_sandbox_rule",
+                "description": "Update an existing ZIA Sandbox rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.",
+            },
+            {
+                "func": zia_delete_sandbox_rule,
+                "name": "zia_delete_sandbox_rule",
+                "description": "Delete a ZIA Sandbox rule (destructive operation)",
             },
         ]
 

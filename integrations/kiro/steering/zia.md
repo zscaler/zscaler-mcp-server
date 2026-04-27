@@ -124,6 +124,10 @@ To onboard a ZIA location, resources must be created in order:
 |------|-------------|
 | `zia_list_cloud_firewall_rules` | List firewall rules |
 | `zia_get_cloud_firewall_rule` | Get specific firewall rule |
+| `zia_list_cloud_firewall_dns_rules` | List firewall DNS rules |
+| `zia_get_cloud_firewall_dns_rule` | Get specific firewall DNS rule |
+| `zia_list_cloud_firewall_ips_rules` | List firewall IPS rules |
+| `zia_get_cloud_firewall_ips_rule` | Get specific firewall IPS rule |
 | `zia_list_url_filtering_rules` | List URL filtering rules |
 | `zia_get_url_filtering_rule` | Get specific URL rule |
 | `zia_list_ssl_inspection_rules` | List SSL inspection rules |
@@ -131,6 +135,11 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_list_web_dlp_rules` | List DLP rules |
 | `zia_list_web_dlp_rules_lite` | List DLP rules (lightweight) |
 | `zia_get_web_dlp_rule` | Get specific DLP rule |
+| `zia_list_file_type_control_rules` | List File Type Control rules |
+| `zia_get_file_type_control_rule` | Get specific File Type Control rule |
+| `zia_list_file_type_categories` | List file-type categories |
+| `zia_list_sandbox_rules` | List Sandbox rules |
+| `zia_get_sandbox_rule` | Get specific Sandbox rule |
 | `zia_list_url_categories` | List URL categories |
 | `zia_get_url_category` | Get specific URL category |
 | `zia_url_lookup` | Classify a URL into categories |
@@ -159,8 +168,10 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_get_ip_destination_group` | Get specific IP destination group |
 | `zia_list_auth_exempt_urls` | List authentication-exempt URLs |
 | `zia_list_cloud_app_control_actions` | List cloud application control actions |
-| `zia_list_cloud_applications` | List cloud applications |
-| `zia_list_cloud_application_custom_tags` | List custom tags for cloud apps |
+| `zia_list_shadow_it_apps` | List Shadow IT cloud applications (analytics catalog: numeric IDs, friendly names) |
+| `zia_list_shadow_it_custom_tags` | List Shadow IT custom tags |
+| `zia_list_cloud_app_policy` | List the policy-engine cloud-app catalog (canonical enums for Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, Advanced Settings) |
+| `zia_list_cloud_app_ssl_policy` | List the cloud-app catalog scoped to SSL Inspection rules (canonical enums) |
 | `zia_list_atp_malicious_urls` | List ATP malicious URL entries |
 | `zia_list_device_groups` | List device groups |
 | `zia_list_devices` | List devices |
@@ -184,6 +195,12 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_create_cloud_firewall_rule` | Create firewall rule |
 | `zia_update_cloud_firewall_rule` | Update firewall rule |
 | `zia_delete_cloud_firewall_rule` | Delete firewall rule |
+| `zia_create_cloud_firewall_dns_rule` | Create firewall DNS rule |
+| `zia_update_cloud_firewall_dns_rule` | Update firewall DNS rule (PUT — name/order silently backfilled) |
+| `zia_delete_cloud_firewall_dns_rule` | Delete firewall DNS rule |
+| `zia_create_cloud_firewall_ips_rule` | Create firewall IPS rule |
+| `zia_update_cloud_firewall_ips_rule` | Update firewall IPS rule (PUT — name/order silently backfilled) |
+| `zia_delete_cloud_firewall_ips_rule` | Delete firewall IPS rule |
 | `zia_create_url_filtering_rule` | Create URL filtering rule |
 | `zia_update_url_filtering_rule` | Update URL filtering rule |
 | `zia_delete_url_filtering_rule` | Delete URL filtering rule |
@@ -193,6 +210,12 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_create_web_dlp_rule` | Create DLP rule |
 | `zia_update_web_dlp_rule` | Update DLP rule |
 | `zia_delete_web_dlp_rule` | Delete DLP rule |
+| `zia_create_file_type_control_rule` | Create File Type Control rule (friendly cloud-app names auto-resolved) |
+| `zia_update_file_type_control_rule` | Update File Type Control rule (PUT — name/order silently backfilled) |
+| `zia_delete_file_type_control_rule` | Delete File Type Control rule |
+| `zia_create_sandbox_rule` | Create Sandbox rule |
+| `zia_update_sandbox_rule` | Update Sandbox rule (PUT — name/order silently backfilled) |
+| `zia_delete_sandbox_rule` | Delete Sandbox rule |
 | `zia_create_url_category` | Create custom URL category |
 | `zia_update_url_category` | Update URL category |
 | `zia_delete_url_category` | Delete custom URL category |
@@ -231,7 +254,7 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_delete_auth_exempt_urls` | Delete auth-exempt URLs |
 | `zia_add_atp_malicious_urls` | Add ATP malicious URLs |
 | `zia_delete_atp_malicious_urls` | Delete ATP malicious URLs |
-| `zia_bulk_update_cloud_applications` | Bulk update cloud application settings |
+| `zia_bulk_update_shadow_it_apps` | Bulk update sanction state / custom tags on Shadow IT cloud applications |
 
 ## Important Notes
 
@@ -245,6 +268,23 @@ To onboard a ZIA location, resources must be created in order:
 - All ZIA changes are staged until `zia_activate_configuration` is called
 - Always check `zia_get_activation_status` after changes — status should be "PENDING"
 - Activation applies ALL pending changes, not just your latest change
+
+### Cloud-Application Catalogs (Shadow IT vs Policy-Engine)
+ZIA has **two separate cloud-app catalogs** that are NOT interchangeable:
+
+- **Shadow IT analytics** (`zia_list_shadow_it_apps`) → numeric IDs + friendly names ("Sharepoint Online", id 655377). Used for sanction state and usage analytics.
+- **Policy-engine catalog** (`zia_list_cloud_app_policy`, `zia_list_cloud_app_ssl_policy`) → canonical enum tokens (`SHAREPOINT_ONLINE`, `ONEDRIVE`). This is the catalog the `cloud_applications` field on SSL Inspection / Web DLP / Cloud App Control / File Type Control / Bandwidth Classes / Advanced Settings rules accepts.
+
+Passing a Shadow IT id or friendly name into a policy rule's `cloud_applications` causes ZIA to silently coerce the value to `NONE`. Always resolve via the policy-engine catalog first.
+
+`zia_create_ssl_inspection_rule` and `zia_update_ssl_inspection_rule` auto-resolve friendly names to canonical enums before the API call (in-process resolver, 5-minute cache). The response includes a `_cloud_applications_resolution` field showing the mapping so you can echo it back to the user. Set `resolve_cloud_apps=False` to disable.
+
+### Response Style — Don't Leak Implementation Details
+When answering the user, give the **business answer in plain language**. Never narrate JMESPath queries, output validation errors, internal type coercion, or which projection you ran. The user is asking a business question; the JMESPath is just an internal optimization.
+
+- *"how many ZIA DNS rules exist?"* → **"There are 19 ZIA DNS firewall rules in the tenant."**  Not: *"The JMESPath `length(@)` returned 19 before hitting the validation error — so there are 19 rules."*
+- *"list my SSL inspection rules"* → list the names. Not: *"I projected `[*].name`."*
+- If a tool errors, summarize the user-facing meaning. Don't paste back Pydantic validation messages or internal field names.
 
 ## Best Practices
 

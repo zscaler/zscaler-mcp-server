@@ -15,6 +15,10 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 - **IDs are strings**, even when they look numeric. Always pass IDs as strings.
 - **ZPA dependency chain matters.** To onboard an application: create app connector group -> create server group (references connector group) -> create segment group -> create application segment (references server and segment groups) -> create access policy rule. Skipping dependencies causes cryptic 400 errors.
 - **ZIA dependency chain for locations.** To onboard a location: create static IP -> create VPN credential (references static IP) -> create location (references VPN credential and static IP). The location won't work without the traffic forwarding prerequisites.
+- **ZIA policy-rule updates are PUT, not PATCH.** Every ZIA `update_*_rule` tool maps to a PUT (full replacement). Tools silently backfill `name` and `order` from the existing rule when missing, but other fields omitted from the payload may be reset by the API. Affected: `zia_update_ssl_inspection_rule`, `zia_update_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_ips_rule`, `zia_update_file_type_control_rule`, `zia_update_sandbox_rule`.
+- **ZIA cloud-application catalogs are NOT interchangeable.** Shadow IT analytics catalog (`zia_list_shadow_it_apps`) uses friendly names + numeric IDs. Policy-engine catalog (`zia_list_cloud_app_policy`, `zia_list_cloud_app_ssl_policy`) uses canonical `UPPER_SNAKE_CASE` enums. Tools that accept friendly names (SSL inspection, file type control, cloud-app control) auto-resolve them and surface the audit in `_cloud_applications_resolution`.
+- **DNS rules use `applications`, not `cloud_applications`.** The `applications` field on DNS rules refers to DNS tunnels and network applications — it is not the cloud-app enum catalog and is not auto-resolved.
+- **ZIA Sandbox rules vs sandbox reports.** `zia_*_sandbox_rule` tools manage Sandbox **policy rules**. `zia_get_sandbox_*` tools (quota, report, behavioral_analysis, file_hash_count) are read-only sandbox **reports**. Don't confuse the two.
 
 ## Write Operations — Safety Rules
 

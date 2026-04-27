@@ -221,6 +221,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -1009,24 +1013,50 @@ This is a write operation that requires the –enable-write-tools flag.</p>
 <dd><p>Update an existing ZIA network application group.</p>
 </dd></dl>
 
-<dl class="py function" id="module-zscaler_mcp.tools.zia.cloud_applications">
-<dt class="sig sig-object py" id="zscaler_mcp.tools.zia.cloud_applications.zia_bulk_update_cloud_applications">
-<span class="sig-name descname"><span class="pre">zia_bulk_update_cloud_applications</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sanction_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">application_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_tag_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/cloud_applications.html#zia_bulk_update_cloud_applications"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.cloud_applications.zia_bulk_update_cloud_applications" title="Link to this definition">¶</a></dt>
-<dd><p>Apply sanction state and/or custom tags to ZIA Shadow IT applications in bulk.</p>
+<p id="module-zscaler_mcp.tools.zia.cloud_applications">ZIA Cloud Applications (policy-engine catalog) tools.</p>
+<p>These tools wrap the SDK’s <code class="docutils literal notranslate"><span class="pre">client.zia.cloud_applications</span></code> resource, which
+returns the <strong>policy-engine cloud-application catalog</strong> — the canonical enum
+strings (e.g. <code class="docutils literal notranslate"><span class="pre">ONEDRIVE</span></code>, <code class="docutils literal notranslate"><span class="pre">ONEDRIVE_PERSONAL</span></code>, <code class="docutils literal notranslate"><span class="pre">SHAREPOINT_ONLINE</span></code>,
+<code class="docutils literal notranslate"><span class="pre">DROPBOX</span></code>) consumed by the <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> field on:</p>
+<ul class="simple">
+<li><p>SSL Inspection rules</p></li>
+<li><p>Web DLP rules</p></li>
+<li><p>Cloud App Control rules</p></li>
+<li><p>File Type Control rules</p></li>
+<li><p>Bandwidth Classes</p></li>
+<li><p>Advanced Settings</p></li>
+</ul>
+<p>Use these tools when you need to look up the exact enum token to pass into a
+policy rule’s <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> field. For the broader Shadow IT
+analytics catalog (numeric IDs, friendly display names, sanction state,
+custom tags) see <code class="docutils literal notranslate"><span class="pre">zscaler_mcp/tools/zia/shadow_it_report.py</span></code>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_policy">
+<span class="sig-name descname"><span class="pre">zia_list_cloud_app_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">app_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_results</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/cloud_applications.html#zia_list_cloud_app_policy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_policy" title="Link to this definition">¶</a></dt>
+<dd><p>List the ZIA policy-engine cloud-application catalog.</p>
+<p>Returns the predefined and user-defined cloud applications referenced by
+DLP rules, Cloud App Control rules, File Type Control rules, Bandwidth
+Classes, and Advanced Settings. Each entry includes the canonical enum
+string used as the <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> value on policy rules.</p>
+<p>Supports both server-side filtering (<code class="docutils literal notranslate"><span class="pre">search</span></code>, <code class="docutils literal notranslate"><span class="pre">app_class</span></code>,
+<code class="docutils literal notranslate"><span class="pre">group_results</span></code>) and client-side JMESPath projection (<code class="docutils literal notranslate"><span class="pre">query</span></code>).</p>
+<p>Tip: when looking up the right enum to feed into an SSL inspection or
+DLP rule, prefer <code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code> if the target rule is
+SSL-inspection-scoped — its catalog can differ slightly from the generic
+policy catalog returned here.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_application_custom_tags">
-<span class="sig-name descname"><span class="pre">zia_list_cloud_application_custom_tags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/cloud_applications.html#zia_list_cloud_application_custom_tags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_application_custom_tags" title="Link to this definition">¶</a></dt>
-<dd><p>List ZIA Shadow IT custom tags.</p>
-<p>Supports JMESPath client-side filtering via the query parameter.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_applications">
-<span class="sig-name descname"><span class="pre">zia_list_cloud_applications</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">page_number</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/cloud_applications.html#zia_list_cloud_applications"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_applications" title="Link to this definition">¶</a></dt>
-<dd><p>List ZIA Shadow IT cloud applications with optional pagination.</p>
-<p>Supports JMESPath client-side filtering via the query parameter.</p>
+<dt class="sig sig-object py" id="zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_ssl_policy">
+<span class="sig-name descname"><span class="pre">zia_list_cloud_app_ssl_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">app_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_results</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zia'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/tools/zia/cloud_applications.html#zia_list_cloud_app_ssl_policy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_ssl_policy" title="Link to this definition">¶</a></dt>
+<dd><p>List the ZIA cloud-application catalog scoped to SSL Inspection rules.</p>
+<p>Returns the predefined and user-defined cloud applications that are
+addressable by the <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> field on SSL Inspection rules.
+Each entry includes the canonical enum string ZIA expects when creating
+or updating an SSL Inspection rule.</p>
+<p>This is the right tool to call when answering “what enum should I pass
+into <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> for SharePoint Online / OneDrive / Box / …?”
+because it returns the exact strings the SSL Inspection API will accept.</p>
 </dd></dl>
 
 <dl class="py function" id="module-zscaler_mcp.tools.zia.atp_malicious_urls">
@@ -2752,9 +2782,8 @@ Supports JMESPath client-side filtering via the query parameter.</p>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.network_app_groups.zia_get_network_app_group"><code class="docutils literal notranslate"><span class="pre">zia_get_network_app_group()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.network_app_groups.zia_list_network_app_groups"><code class="docutils literal notranslate"><span class="pre">zia_list_network_app_groups()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.network_app_groups.zia_update_network_app_group"><code class="docutils literal notranslate"><span class="pre">zia_update_network_app_group()</span></code></a></li>
-<li><a class="reference internal" href="#zscaler_mcp.tools.zia.cloud_applications.zia_bulk_update_cloud_applications"><code class="docutils literal notranslate"><span class="pre">zia_bulk_update_cloud_applications()</span></code></a></li>
-<li><a class="reference internal" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_application_custom_tags"><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_application_custom_tags()</span></code></a></li>
-<li><a class="reference internal" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_applications"><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_applications()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_policy"><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_policy()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_ssl_policy"><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.atp_malicious_urls.zia_add_atp_malicious_urls"><code class="docutils literal notranslate"><span class="pre">zia_add_atp_malicious_urls()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.atp_malicious_urls.zia_delete_atp_malicious_urls"><code class="docutils literal notranslate"><span class="pre">zia_delete_atp_malicious_urls()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.tools.zia.atp_malicious_urls.zia_list_atp_malicious_urls"><code class="docutils literal notranslate"><span class="pre">zia_list_atp_malicious_urls()</span></code></a></li>
