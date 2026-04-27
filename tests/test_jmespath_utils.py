@@ -106,5 +106,58 @@ class TestApplyJmespath(unittest.TestCase):
         self.assertIn("svc", result[0])
 
 
+class TestListToolsReturnTypeContract(unittest.TestCase):
+    """Regression: list tools that pipe through apply_jmespath MUST declare
+    their return type as ``Any``, not ``List[dict]`` / ``List[str]``.
+
+    Why: JMESPath expressions like ``length(@)`` produce scalar results that
+    apply_jmespath wraps as ``[19]`` — a list of int. A strict ``List[dict]``
+    annotation causes the MCP/Pydantic output validator to reject the
+    response, forcing the AI agent to narrate around the validation error
+    and exposing implementation details (JMESPath, validators) to the user.
+    """
+
+    import typing as _typing
+
+    def _assert_returns_any(self, fn):
+        rt = self._typing.get_type_hints(fn).get("return")
+        self.assertIs(
+            rt,
+            self._typing.Any,
+            f"{fn.__module__}.{fn.__name__} return type is {rt!r}; "
+            "tools that call apply_jmespath must declare `-> Any` so "
+            "JMESPath scalar results (e.g. length(@) -> [19]) are not "
+            "rejected by the MCP output validator.",
+        )
+
+    def test_zia_list_cloud_firewall_dns_rules_returns_any(self):
+        from zscaler_mcp.tools.zia.cloud_firewall_dns_rules import (
+            zia_list_cloud_firewall_dns_rules,
+        )
+        self._assert_returns_any(zia_list_cloud_firewall_dns_rules)
+
+    def test_zia_list_cloud_firewall_ips_rules_returns_any(self):
+        from zscaler_mcp.tools.zia.cloud_firewall_ips_rules import (
+            zia_list_cloud_firewall_ips_rules,
+        )
+        self._assert_returns_any(zia_list_cloud_firewall_ips_rules)
+
+    def test_zia_list_file_type_control_rules_returns_any(self):
+        from zscaler_mcp.tools.zia.file_type_control_rules import (
+            zia_list_file_type_control_rules,
+        )
+        self._assert_returns_any(zia_list_file_type_control_rules)
+
+    def test_zia_list_file_type_categories_returns_any(self):
+        from zscaler_mcp.tools.zia.file_type_control_rules import (
+            zia_list_file_type_categories,
+        )
+        self._assert_returns_any(zia_list_file_type_categories)
+
+    def test_zia_list_sandbox_rules_returns_any(self):
+        from zscaler_mcp.tools.zia.sandbox_rules import zia_list_sandbox_rules
+        self._assert_returns_any(zia_list_sandbox_rules)
+
+
 if __name__ == "__main__":
     unittest.main()

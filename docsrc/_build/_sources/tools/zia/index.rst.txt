@@ -18,10 +18,26 @@ Available Tools
      - Manages the malicious URL denylist in the ZIA Advanced Threat Protection (ATP) policy
    * - ``zia_auth_exempt_urls``
      - Manages the list of cookie authentication exempt URLs in ZIA
-   * - ``zia_cloud_applications``
-     - Tool for managing ZIA Shadow IT Cloud Applications
+   * - ``zia_list_shadow_it_apps``
+     - List ZIA Shadow IT cloud applications (analytics catalog with numeric IDs and friendly names)
+   * - ``zia_list_shadow_it_custom_tags``
+     - List ZIA Shadow IT custom tags
+   * - ``zia_bulk_update_shadow_it_apps``
+     - Bulk update sanction state and/or custom tags on ZIA Shadow IT applications
+   * - ``zia_list_cloud_app_policy``
+     - List the ZIA policy-engine cloud-application catalog (canonical enum strings used by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, Advanced Settings)
+   * - ``zia_list_cloud_app_ssl_policy``
+     - List the ZIA cloud-application catalog scoped to SSL Inspection rules (canonical enum strings used by ``cloud_applications`` on SSL Inspection rules)
    * - ``zia_cloud_firewall_rule``
      - Manages ZIA Cloud Firewall Rules
+   * - ``zia_cloud_firewall_dns_rule``
+     - Manages ZIA Cloud Firewall DNS Rules (list/get/create/update/delete)
+   * - ``zia_cloud_firewall_ips_rule``
+     - Manages ZIA Cloud Firewall IPS Rules (list/get/create/update/delete)
+   * - ``zia_file_type_control_rule``
+     - Manages ZIA File Type Control Rules (list/get/create/update/delete) plus ``zia_list_file_type_categories``. Friendly cloud-application names on ``cloud_applications`` are auto-resolved to canonical enums.
+   * - ``zia_sandbox_rule``
+     - Manages ZIA Sandbox Rules (list/get/create/update/delete). Distinct from ``zia_sandbox_info`` (read-only sandbox reports/quotas).
    * - ``zia_geo_search``
      - Performs geographical lookup actions using the ZIA Locations API
    * - ``zia_gre_range``
@@ -191,6 +207,40 @@ Tool for retrieving ZIA Sandbox information.
 .. code-block:: python
 
    sandbox_info = zia_sandbox_info()
+
+Two Cloud-Application Catalogs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ZIA exposes the cloud-application catalog through two distinct API surfaces.
+Picking the right tool matters — the catalogs are not interchangeable.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * - Catalog
+     - Tools
+     - Identifier returned
+   * - **Shadow IT analytics**
+     - ``zia_list_shadow_it_apps``, ``zia_list_shadow_it_custom_tags``, ``zia_bulk_update_shadow_it_apps``
+     - Numeric ``id`` (e.g. ``655377``), friendly ``name`` (e.g. ``Sharepoint Online``)
+   * - **Policy-engine catalog**
+     - ``zia_list_cloud_app_policy``, ``zia_list_cloud_app_ssl_policy``
+     - Canonical ``app`` enum (e.g. ``SHAREPOINT_ONLINE``), display ``app_name``
+
+Policy resources — SSL Inspection, Web DLP, Cloud App Control, File Type
+Control, Bandwidth Classes, Advanced Settings — accept **only** the canonical
+``app`` enum from the policy-engine catalog in their ``cloud_applications``
+field. Passing a Shadow IT numeric ID or a friendly display name causes ZIA
+to silently coerce the value to ``NONE``.
+
+The SSL Inspection create/update tools (``zia_create_ssl_inspection_rule``,
+``zia_update_ssl_inspection_rule``) include an in-process resolver that
+auto-translates friendly names to canonical enums via
+``zia_list_cloud_app_ssl_policy`` before sending the API call. The resolution
+is cached for 5 minutes and surfaced back to the caller in a
+``_cloud_applications_resolution`` field on the response. Set
+``resolve_cloud_apps=False`` to opt out.
 
 For complete documentation of all ZIA tools, see the individual tool pages.
 

@@ -97,6 +97,32 @@ The `zscaler_get_available_services` tool exposes disabled services to the AI ag
 - **IDs are strings**, even when they look numeric. Always pass IDs as strings.
 - **ZPA dependency chain matters.** To onboard an application: create app connector group -> create server group (references connector group) -> create segment group -> create application segment (references server and segment groups) -> create access policy rule. Skipping dependencies causes cryptic 400 errors.
 - **ZIA dependency chain for locations.** To onboard a location: create static IP -> create VPN credential (references static IP) -> create location (references VPN credential and static IP). The location won't work without the traffic forwarding prerequisites.
+- **ZIA policy-rule updates are PUT, not PATCH.** Every ZIA `update_*_rule` tool ultimately maps to a PUT under the hood (full-replace). Tools silently backfill the required `name` and `order` from the existing rule when a partial payload is supplied, so partial updates "just work" — but any other field omitted from the payload may be reset by the API. When in doubt, fetch the rule first and merge changes into the existing payload. Tools using this pattern: `zia_update_ssl_inspection_rule`, `zia_update_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_ips_rule`, `zia_update_file_type_control_rule`, `zia_update_sandbox_rule`.
+- **ZIA cloud-application catalogs are NOT interchangeable.** Two distinct catalogs exist:
+  - **Shadow IT analytics catalog** (`zia_list_shadow_it_apps`, `zia_list_shadow_it_custom_tags`, `zia_bulk_update_shadow_it_apps`) — friendly names + numeric IDs, used for analytics/sanctioning.
+  - **Policy-engine catalog** (`zia_list_cloud_app_policy`, `zia_list_cloud_app_ssl_policy`) — canonical `UPPER_SNAKE_CASE` enum strings used by SSL Inspection, Web DLP, Cloud App Control, File Type Control rules.
+  - The `cloud_applications` field on policy rules expects canonical enums. Tools that accept friendly names (`zia_create_ssl_inspection_rule`, `zia_update_ssl_inspection_rule`, `zia_create_file_type_control_rule`, `zia_update_file_type_control_rule`, `zia_list_cloud_app_control_actions`) auto-resolve them via `zscaler_mcp/common/zia_cloud_app_resolver.py` (5-minute in-process cache, strict mode), surfacing the audit trail in `_cloud_applications_resolution`. See `skills/zia/resolve-cloud-app-enum/SKILL.md`.
+- **DNS rules use `applications`, not `cloud_applications`.** The `applications` field on `zia_create/update_cloud_firewall_dns_rule` refers to DNS tunnels and network applications — it is **not** the cloud-app enum catalog and is **not** wired to the resolver.
+- **ZIA Sandbox rules vs sandbox reports.** `zia_*_sandbox_rule` tools manage Sandbox **policy rules** (write). `zia_get_sandbox_*` tools (`quota`, `report`, `behavioral_analysis`, `file_hash_count`) are read-only sandbox **report/quota** tools. Don't confuse the two.
+
+## ZIA (Zscaler Internet Access)
+
+ZIA is the largest service in the server. Tool modules are organized one-resource-per-file under `zscaler_mcp/tools/zia/`. Every tool follows the strict `{service}_{verb}_{resource}` design — one tool per action (list / get / create / update / delete), no multiplexed `action=` parameters.
+
+### ZIA Policy-Rule Tool Family (one-tool-per-action design)
+
+| Resource | Module | List / Get | Create / Update / Delete | Notes |
+|----------|--------|-----------|--------------------------|-------|
+| Cloud Firewall | `cloud_firewall_rules.py` | `zia_list_cloud_firewall_rules`, `zia_get_cloud_firewall_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
+| Cloud Firewall DNS | `cloud_firewall_dns_rules.py` | `zia_list_cloud_firewall_dns_rules`, `zia_get_cloud_firewall_dns_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | `applications` ≠ cloud-app enum |
+| Cloud Firewall IPS | `cloud_firewall_ips_rules.py` | `zia_list_cloud_firewall_ips_rules`, `zia_get_cloud_firewall_ips_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
+| URL Filtering | `url_filtering_rules.py` | `zia_list_url_filtering_rules`, `zia_get_url_filtering_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
+| SSL Inspection | `ssl_inspection.py` | `zia_list_ssl_inspection_rules`, `zia_get_ssl_inspection_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Cloud-app auto-resolver |
+| Web DLP | `web_dlp_rules.py` | `zia_list_web_dlp_rules`, `zia_list_web_dlp_rules_lite`, `zia_get_web_dlp_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
+| File Type Control | `file_type_control_rules.py` | `zia_list_file_type_control_rules`, `zia_get_file_type_control_rule`, `zia_list_file_type_categories` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Cloud-app auto-resolver |
+| Sandbox Rules | `sandbox_rules.py` | `zia_list_sandbox_rules`, `zia_get_sandbox_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Distinct from sandbox **reports** in `get_sandbox_info.py` |
+
+All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill required identifiers on update.
 
 ## ZMS (Zscaler Microsegmentation)
 
@@ -175,7 +201,17 @@ Standard [JMESPath](https://jmespath.org/) syntax. Field names are **snake_case*
 1. Import: `from zscaler_mcp.common.jmespath_utils import apply_jmespath`
 2. Add `query` parameter before `service`/`use_legacy` in the signature
 3. Wrap the success return: `return apply_jmespath(results, query)`
-4. Update the tool description in `services.py` to mention JMESPath support
+4. **Declare the return type as `Any`** — never `List[dict]` / `List[str]`. JMESPath expressions like `length(@)`, `[*].name`, or `sum(...)` produce scalars or differently-shaped lists; a strict element type causes the MCP/Pydantic output validator to reject the response, which forces the AI agent to narrate around the error and exposes implementation details (JMESPath, validation failures) to the user. Document the happy-path shape in the docstring instead.
+5. Update the tool description in `services.py` to mention JMESPath support
+
+### Response Style for AI Agents
+
+When a tool returns a JMESPath-projected scalar (most commonly a count from `length(@)`), respond to the user with **only the answer in plain language** — never expose the JMESPath expression, the wrapper list, or any underlying validation behavior. Examples:
+
+- User: *"how many ZIA DNS rules exist?"* → Agent: *"There are **19** ZIA DNS firewall rules in the tenant."*  ❌ Do **not** say "The JMESPath `length(@)` returned 19 before hitting the validation error — so there are 19 rules." That leaks implementation mechanics.
+- User: *"list the names of my SSL inspection rules"* → Agent lists the names. ❌ Do not mention "I projected `[*].name`."
+
+The user is asking a business question; the JMESPath query is an internal optimization. Never narrate it.
 
 ### Tool Discovery via JMESPath
 

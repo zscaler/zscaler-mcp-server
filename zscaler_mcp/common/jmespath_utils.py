@@ -24,7 +24,18 @@ def apply_jmespath(
 
     Returns:
         Filtered/projected data. If the expression yields None,
-        returns an empty list. Scalar results are wrapped in a list.
+        returns an empty list. Scalar results are wrapped in a list
+        (e.g. ``length(@)`` over 19 rules returns ``[19]``, not ``19``).
+
+    NOTE: Tools that pipe through this helper MUST declare their return
+    type as ``Any`` (not ``List[dict]`` or ``List[str]``). The "happy
+    path" element type only holds when the caller does not supply a
+    ``query``; with a JMESPath expression the result can be a list of
+    scalars, projected values, or other shapes. A strict ``List[dict]``
+    annotation will trip the MCP/Pydantic output validator and force the
+    AI agent to narrate around the error (exposing internal mechanics
+    like JMESPath and validation failures to the end user). Use ``Any``
+    and document the happy-path shape in the docstring instead.
     """
     if not expression:
         return data

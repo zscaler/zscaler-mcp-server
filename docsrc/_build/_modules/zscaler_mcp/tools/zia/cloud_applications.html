@@ -220,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
@@ -269,7 +273,27 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.tools.zia.cloud_applications</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span></span><span class="sd">&quot;&quot;&quot;ZIA Cloud Applications (policy-engine catalog) tools.</span>
+
+<span class="sd">These tools wrap the SDK&#39;s ``client.zia.cloud_applications`` resource, which</span>
+<span class="sd">returns the **policy-engine cloud-application catalog** — the canonical enum</span>
+<span class="sd">strings (e.g. ``ONEDRIVE``, ``ONEDRIVE_PERSONAL``, ``SHAREPOINT_ONLINE``,</span>
+<span class="sd">``DROPBOX``) consumed by the ``cloud_applications`` field on:</span>
+
+<span class="sd">- SSL Inspection rules</span>
+<span class="sd">- Web DLP rules</span>
+<span class="sd">- Cloud App Control rules</span>
+<span class="sd">- File Type Control rules</span>
+<span class="sd">- Bandwidth Classes</span>
+<span class="sd">- Advanced Settings</span>
+
+<span class="sd">Use these tools when you need to look up the exact enum token to pass into a</span>
+<span class="sd">policy rule&#39;s ``cloud_applications`` field. For the broader Shadow IT</span>
+<span class="sd">analytics catalog (numeric IDs, friendly display names, sanction state,</span>
+<span class="sd">custom tags) see ``zscaler_mcp/tools/zia/shadow_it_report.py``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 
@@ -281,105 +305,162 @@
 <span class="c1"># =============================================================================</span>
 
 
-<div class="viewcode-block" id="zia_list_cloud_applications">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_applications">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_cloud_applications</span><span class="p">(</span>
-    <span class="n">page_number</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional page number for pagination.&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_query_params</span><span class="p">(</span>
+    <span class="n">search</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">page</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">page_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">app_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">group_results</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+    <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">search</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;search&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search</span>
+    <span class="k">if</span> <span class="n">page</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page</span>
+    <span class="k">if</span> <span class="n">page_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;page_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_size</span>
+    <span class="k">if</span> <span class="n">app_class</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;app_class&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">app_class</span>
+    <span class="k">if</span> <span class="n">group_results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;group_results&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">group_results</span>
+    <span class="k">return</span> <span class="n">params</span> <span class="ow">or</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="zia_list_cloud_app_policy">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_policy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_cloud_app_policy</span><span class="p">(</span>
+    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Server-side substring filter on application name &quot;</span>
+                <span class="s2">&quot;(e.g. &#39;sharepoint&#39;, &#39;onedrive&#39;). Use this first to narrow &quot;</span>
+                <span class="s2">&quot;results before applying a JMESPath query.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">limit</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+    <span class="n">app_class</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Filter by application category (e.g. &#39;WEB_MAIL&#39;, &quot;</span>
+                <span class="s2">&quot;&#39;ENTERPRISE_COLLABORATION&#39;, &#39;FILE_SHARE&#39;).&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">page</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page offset for pagination.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">page_size</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional result limit. Use 1000 as the maximum limit for efficiency.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page size (default 200, maximum 1000).&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group_results</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;If true, return application counts grouped by category.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;JMESPath expression for client-side filtering/projection of results.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;JMESPath expression for client-side filtering/projection. &quot;</span>
+                <span class="s2">&quot;Examples: &#39;[?contains(name, `Share`)].{id: id, name: name}&#39;, &quot;</span>
+                <span class="s2">&quot;&#39;[?app_class==`ENTERPRISE_COLLABORATION`].name&#39;.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List ZIA Shadow IT cloud applications with optional pagination.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List the ZIA policy-engine cloud-application catalog.</span>
 
-<span class="sd">    Supports JMESPath client-side filtering via the query parameter.</span>
+<span class="sd">    Returns the predefined and user-defined cloud applications referenced by</span>
+<span class="sd">    DLP rules, Cloud App Control rules, File Type Control rules, Bandwidth</span>
+<span class="sd">    Classes, and Advanced Settings. Each entry includes the canonical enum</span>
+<span class="sd">    string used as the ``cloud_applications`` value on policy rules.</span>
+
+<span class="sd">    Supports both server-side filtering (``search``, ``app_class``,</span>
+<span class="sd">    ``group_results``) and client-side JMESPath projection (``query``).</span>
+
+<span class="sd">    Tip: when looking up the right enum to feed into an SSL inspection or</span>
+<span class="sd">    DLP rule, prefer ``zia_list_cloud_app_ssl_policy`` if the target rule is</span>
+<span class="sd">    SSL-inspection-scoped — its catalog can differ slightly from the generic</span>
+<span class="sd">    policy catalog returned here.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    <span class="n">shadow_it</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">shadow_it_report</span>
+    <span class="n">cloud_apps</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_applications</span>
 
-    <span class="n">query_params</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">page_number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;page_number&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_number</span>
-    <span class="k">if</span> <span class="n">limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">limit</span>
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">_build_query_params</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">app_class</span><span class="p">,</span> <span class="n">group_results</span><span class="p">)</span>
 
-    <span class="n">apps</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">shadow_it</span><span class="o">.</span><span class="n">list_apps</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">apps</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">cloud_apps</span><span class="o">.</span><span class="n">list_cloud_app_policy</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list applications: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list cloud application policies: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">app</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">app</span> <span class="ow">in</span> <span class="n">apps</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">apply_jmespath</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span></div>
 
 
 
-<div class="viewcode-block" id="zia_list_cloud_application_custom_tags">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_application_custom_tags">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_cloud_application_custom_tags</span><span class="p">(</span>
+<div class="viewcode-block" id="zia_list_cloud_app_ssl_policy">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.cloud_applications.zia_list_cloud_app_ssl_policy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_list_cloud_app_ssl_policy</span><span class="p">(</span>
+    <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Server-side substring filter on application name &quot;</span>
+                <span class="s2">&quot;(e.g. &#39;sharepoint&#39;, &#39;onedrive&#39;). Use this first to narrow &quot;</span>
+                <span class="s2">&quot;results before applying a JMESPath query.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">app_class</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by application category.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">page</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page offset for pagination.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">page_size</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page size (default 200, maximum 1000).&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">group_results</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;If true, return application counts grouped by category.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;JMESPath expression for client-side filtering/projection of results.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;JMESPath expression for client-side filtering/projection. &quot;</span>
+                <span class="s2">&quot;Example: &#39;[?contains(name, `Share`)].{id: id, name: name}&#39;.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List ZIA Shadow IT custom tags.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List the ZIA cloud-application catalog scoped to SSL Inspection rules.</span>
 
-<span class="sd">    Supports JMESPath client-side filtering via the query parameter.</span>
+<span class="sd">    Returns the predefined and user-defined cloud applications that are</span>
+<span class="sd">    addressable by the ``cloud_applications`` field on SSL Inspection rules.</span>
+<span class="sd">    Each entry includes the canonical enum string ZIA expects when creating</span>
+<span class="sd">    or updating an SSL Inspection rule.</span>
+
+<span class="sd">    This is the right tool to call when answering &quot;what enum should I pass</span>
+<span class="sd">    into ``cloud_applications`` for SharePoint Online / OneDrive / Box / …?&quot;</span>
+<span class="sd">    because it returns the exact strings the SSL Inspection API will accept.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    <span class="n">shadow_it</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">shadow_it_report</span>
+    <span class="n">cloud_apps</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_applications</span>
 
-    <span class="n">tags</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">shadow_it</span><span class="o">.</span><span class="n">list_custom_tags</span><span class="p">()</span>
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">_build_query_params</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">app_class</span><span class="p">,</span> <span class="n">group_results</span><span class="p">)</span>
+
+    <span class="n">apps</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">cloud_apps</span><span class="o">.</span><span class="n">list_cloud_app_ssl_policy</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list custom tags: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list cloud application SSL policies: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">app</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">app</span> <span class="ow">in</span> <span class="n">apps</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">apply_jmespath</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span></div>
-
-
-
-<span class="c1"># =============================================================================</span>
-<span class="c1"># WRITE OPERATIONS</span>
-<span class="c1"># =============================================================================</span>
-
-
-<div class="viewcode-block" id="zia_bulk_update_cloud_applications">
-<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.cloud_applications.zia_bulk_update_cloud_applications">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">zia_bulk_update_cloud_applications</span><span class="p">(</span>
-    <span class="n">sanction_state</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;One of &#39;sanctioned&#39;, &#39;unsanctioned&#39;, or &#39;any&#39; (required).&quot;</span><span class="p">)</span>
-    <span class="p">],</span>
-    <span class="n">application_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of application IDs to update.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">custom_tag_ids</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of custom tag IDs to apply.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply sanction state and/or custom tags to ZIA Shadow IT applications in bulk.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">sanction_state</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide a sanction_state for bulk updates&quot;</span><span class="p">)</span>
-
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
-    <span class="n">shadow_it</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">shadow_it_report</span>
-
-    <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">shadow_it</span><span class="o">.</span><span class="n">bulk_update</span><span class="p">(</span>
-        <span class="n">sanction_state</span><span class="p">,</span>
-        <span class="n">application_ids</span><span class="o">=</span><span class="n">application_ids</span><span class="p">,</span>
-        <span class="n">custom_tag_ids</span><span class="o">=</span><span class="n">custom_tag_ids</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bulk update failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;as_dict&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">result</span></div>
 
 </pre></div>
         </article>

@@ -5,7 +5,47 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_cloud_app_resolver import resolve_cloud_applications
 from zscaler_mcp.utils.utils import parse_list
+
+
+def _resolve_cloud_apps_in_place(
+    cloud_applications: Optional[Union[List[str], str]],
+    *,
+    use_legacy: bool,
+    service: str,
+) -> tuple[Optional[List[str]], Optional[dict]]:
+    """Translate friendly cloud-app inputs to canonical enums.
+
+    Returns ``(resolved_enums, audit)``. ``audit`` is ``None`` when the
+    inputs were already canonical (no transformation happened) or when no
+    inputs were provided. When inputs need translation, ``audit`` is a
+    summary the caller can echo back to the agent so the user sees which
+    enum each friendly name resolved to.
+    """
+    if cloud_applications is None:
+        return None, None
+
+    parsed = parse_list(cloud_applications)
+    if not parsed:
+        return parsed, None
+
+    resolved, audit = resolve_cloud_applications(
+        parsed,
+        scope="ssl",
+        use_legacy=use_legacy,
+        service=service,
+        strict=True,
+    )
+
+    transformed = False
+    for original, info in audit["resolved"].items():
+        enums = info["enums"]
+        if info["match"] != "canonical" or [original] != enums:
+            transformed = True
+            break
+
+    return resolved, (audit if transformed else None)
 
 # ============================================================================
 # Helper Functions
@@ -344,8 +384,12 @@ def zia_create_ssl_inspection_rule(
         Field(
             description=(
                 "Cloud applications for which the SSL inspection rule is applied. "
-                "Accepts cloud application names (e.g., 'CHATGPT_AI', 'ANDI'). "
-                "Accepts JSON string or list."
+                "Accepts EITHER canonical ZIA enum tokens (e.g. 'ONEDRIVE', "
+                "'SHAREPOINT_ONLINE') OR friendly display names ('OneDrive', "
+                "'share point online'). Friendly names are auto-resolved to the "
+                "canonical enum via the policy-engine SSL catalog before the "
+                "API call — set resolve_cloud_apps=False to disable. Accepts "
+                "JSON string or list."
             )
         ),
     ] = None,
@@ -420,6 +464,17 @@ def zia_create_ssl_inspection_rule(
             description="IDs for Source IP Anchoring-enabled ZPA Application Segments. Accepts JSON string or list."
         ),
     ] = None,
+    resolve_cloud_apps: Annotated[
+        bool,
+        Field(
+            description=(
+                "When True (default), friendly cloud-application names supplied "
+                "via cloud_applications are resolved to canonical ZIA enum "
+                "tokens by consulting the policy-engine SSL catalog. Set False "
+                "to pass cloud_applications through unchanged (advanced)."
+            )
+        ),
+    ] = True,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
@@ -556,6 +611,12 @@ def zia_create_ssl_inspection_rule(
         ...     road_warrior_for_kerberos=True
         ... )
     """
+    cloud_apps_audit: Optional[dict] = None
+    if resolve_cloud_apps and cloud_applications is not None:
+        cloud_applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
+            cloud_applications, use_legacy=use_legacy, service=service
+        )
+
     payload = _build_ssl_inspection_rule_payload(
         name=name,
         action=action,
@@ -592,7 +653,10 @@ def zia_create_ssl_inspection_rule(
     rule, _, err = ssl_inspection.add_rule(**payload)
     if err:
         raise Exception(f"Failed to add SSL inspection rule: {err}")
-    return rule.as_dict()
+    result = rule.as_dict()
+    if cloud_apps_audit:
+        result["_cloud_applications_resolution"] = cloud_apps_audit
+    return result
 
 
 def zia_update_ssl_inspection_rule(
@@ -670,8 +734,12 @@ def zia_update_ssl_inspection_rule(
         Field(
             description=(
                 "Cloud applications for which the SSL inspection rule is applied. "
-                "Accepts cloud application names (e.g., 'CHATGPT_AI', 'ANDI'). "
-                "Accepts JSON string or list."
+                "Accepts EITHER canonical ZIA enum tokens (e.g. 'ONEDRIVE', "
+                "'SHAREPOINT_ONLINE') OR friendly display names ('OneDrive', "
+                "'share point online'). Friendly names are auto-resolved to the "
+                "canonical enum via the policy-engine SSL catalog before the "
+                "API call — set resolve_cloud_apps=False to disable. Accepts "
+                "JSON string or list."
             )
         ),
     ] = None,
@@ -746,6 +814,17 @@ def zia_update_ssl_inspection_rule(
             description="IDs for Source IP Anchoring-enabled ZPA Application Segments. Accepts JSON string or list."
         ),
     ] = None,
+    resolve_cloud_apps: Annotated[
+        bool,
+        Field(
+            description=(
+                "When True (default), friendly cloud-application names supplied "
+                "via cloud_applications are resolved to canonical ZIA enum "
+                "tokens by consulting the policy-engine SSL catalog. Set False "
+                "to pass cloud_applications through unchanged (advanced)."
+            )
+        ),
+    ] = True,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
@@ -886,6 +965,12 @@ def zia_update_ssl_inspection_rule(
         ...     user_agent_types=["CHROME", "FIREFOX", "SAFARI"]
         ... )
     """
+    cloud_apps_audit: Optional[dict] = None
+    if resolve_cloud_apps and cloud_applications is not None:
+        cloud_applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
+            cloud_applications, use_legacy=use_legacy, service=service
+        )
+
     payload = _build_ssl_inspection_rule_payload(
         name=name,
         action=action,
@@ -919,10 +1004,28 @@ def zia_update_ssl_inspection_rule(
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 
+    # ZIA's SSL Inspection update endpoint is a PUT (full replacement) under
+    # the hood, and rejects payloads missing the required identifiers `name`
+    # and `order`. Silently backfill them from the existing rule when the
+    # caller did not supply them, so partial updates "just work" without
+    # exposing the merge as a user-facing knob.
+    if "name" not in payload or "order" not in payload:
+        existing, _, fetch_err = ssl_inspection.get_rule(rule_id)
+        if fetch_err:
+            raise Exception(
+                f"Failed to fetch SSL inspection rule {rule_id} for required-field backfill: {fetch_err}"
+            )
+        existing_dict = existing.as_dict()
+        payload.setdefault("name", existing_dict.get("name"))
+        payload.setdefault("order", existing_dict.get("order"))
+
     rule, _, err = ssl_inspection.update_rule(rule_id, **payload)
     if err:
         raise Exception(f"Failed to update SSL inspection rule {rule_id}: {err}")
-    return rule.as_dict()
+    result = rule.as_dict()
+    if cloud_apps_audit:
+        result["_cloud_applications_resolution"] = cloud_apps_audit
+    return result
 
 
 def zia_delete_ssl_inspection_rule(

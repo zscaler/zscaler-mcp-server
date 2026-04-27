@@ -6,6 +6,42 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.10.5 (April 27, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Breaking Changes
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Renamed three ZIA Shadow IT tools to disambiguate them from the policy-engine cloud-application catalog: ``zia_list_cloud_applications`` → ``zia_list_shadow_it_apps``, ``zia_list_cloud_application_custom_tags`` → ``zia_list_shadow_it_custom_tags``, ``zia_bulk_update_cloud_applications`` → ``zia_bulk_update_shadow_it_apps``. Update any saved prompts, scripts, or integrations that reference the previous names.
+
+### Enhancements
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA Cloud Firewall DNS Rules** management tools: ``zia_list_cloud_firewall_dns_rules``, ``zia_get_cloud_firewall_dns_rule``, ``zia_create_cloud_firewall_dns_rule``, ``zia_update_cloud_firewall_dns_rule``, ``zia_delete_cloud_firewall_dns_rule``.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA Cloud Firewall IPS Rules** management tools: ``zia_list_cloud_firewall_ips_rules``, ``zia_get_cloud_firewall_ips_rule``, ``zia_create_cloud_firewall_ips_rule``, ``zia_update_cloud_firewall_ips_rule``, ``zia_delete_cloud_firewall_ips_rule``.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA File Type Control Rules** management tools: ``zia_list_file_type_control_rules``, ``zia_get_file_type_control_rule``, ``zia_create_file_type_control_rule``, ``zia_update_file_type_control_rule``, ``zia_delete_file_type_control_rule``, plus ``zia_list_file_type_categories`` for discovering canonical ``file_types`` enum values.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA Sandbox Rules** management tools: ``zia_list_sandbox_rules``, ``zia_get_sandbox_rule``, ``zia_create_sandbox_rule``, ``zia_update_sandbox_rule``, ``zia_delete_sandbox_rule``. These manage the policy rules governing sandbox enforcement and are distinct from the existing sandbox **report** tools (``zia_get_sandbox_report``, ``zia_get_sandbox_quota``).
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA policy-engine cloud-application catalog** read tools: ``zia_list_cloud_app_policy`` and ``zia_list_cloud_app_ssl_policy``. Use these to discover the canonical ``UPPER_SNAKE_CASE`` enum tokens (e.g. ``SHAREPOINT_ONLINE``, ``GOOGLE_DRIVE``, ``ONEDRIVE``) that the ``cloud_applications`` field on SSL Inspection, Web DLP, Cloud App Control, File Type Control, Bandwidth, and Advanced Settings rules accepts. Distinct from the Shadow IT analytics catalog (``zia_list_shadow_it_apps``).
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - **Cloud-application name auto-resolution** for ``zia_create_ssl_inspection_rule``, ``zia_update_ssl_inspection_rule``, ``zia_create_file_type_control_rule``, ``zia_update_file_type_control_rule``, and ``zia_list_cloud_app_control_actions``. Friendly inputs like ``"Google Drive"``, ``"one drive"``, or ``"Sharepoint Online"`` are silently translated to the canonical enums the API requires (``GOOGLE_DRIVE``, ``ONEDRIVE``, ``SHAREPOINT_ONLINE``) using a 5-minute in-process catalog cache. The response includes a ``_cloud_applications_resolution`` audit field showing the mapping. Set ``resolve_cloud_apps=False`` to disable.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - **Silent backfill of required fields** on ZIA policy-rule update tools (``zia_update_ssl_inspection_rule``, ``zia_update_cloud_firewall_dns_rule``, ``zia_update_cloud_firewall_ips_rule``, ``zia_update_file_type_control_rule``, ``zia_update_sandbox_rule``). ZIA's update endpoints are PUT (full replacement), not PATCH — partial payloads previously risked resetting unspecified fields. The tools now fetch the existing rule and silently backfill ``name`` and ``order`` when they are missing from the input payload.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added new skill ``skills/zia/resolve-cloud-app-enum/SKILL.md`` guiding agents on which ZIA cloud-application catalog to use (Shadow IT analytics vs. policy-engine) and how to leverage the auto-resolver when configuring policy rules.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added ``local_dev/scripts/setup-zscaler-auth.py`` — one-shot orchestration script for running the MCP server with Zscaler OneAPI authentication (``auth-mode=zscaler``). Loads credentials from ``.env``, starts the server (Docker or Python), verifies the auth endpoints, and writes static ``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret`` headers into Claude Desktop and Cursor configs. Mirrors the existing ``setup-oidcproxy-auth.py`` flow.
+
+### Bug Fixes
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Fixed validation errors on the new ZIA list tools (``zia_list_cloud_firewall_dns_rules``, ``zia_list_cloud_firewall_ips_rules``, ``zia_list_file_type_control_rules``, ``zia_list_file_type_categories``, ``zia_list_sandbox_rules``) when JMESPath expressions returned scalars or non-dict shapes (e.g. ``query="length(@)"`` to count rules). The strict ``-> List[dict]`` return-type annotation was being rejected by the MCP/Pydantic output validator, which forced AI agents to narrate around the error and exposed JMESPath / validation internals to end users. Return type relaxed to ``Any`` to match the polymorphic JMESPath contract.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Hardened the four new ZIA delete tools (``zia_delete_cloud_firewall_dns_rule``, ``zia_delete_cloud_firewall_ips_rule``, ``zia_delete_file_type_control_rule``, ``zia_delete_sandbox_rule``) into the resource-bound HMAC-SHA256 confirmation flow. Confirmation tokens are bound to the specific ``rule_id`` and rejected if replayed against a different resource — closing the same vulnerability class (CWE-345) addressed in earlier delete tools.
+
 ## 0.10.4 (April 22, 2026)
 
 ### Notes

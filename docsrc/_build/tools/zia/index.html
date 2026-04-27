@@ -210,13 +210,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -298,11 +306,35 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_auth_exempt_urls</span></code></p></td>
 <td><p>Manages the list of cookie authentication exempt URLs in ZIA</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_applications</span></code></p></td>
-<td><p>Tool for managing ZIA Shadow IT Cloud Applications</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_apps</span></code></p></td>
+<td><p>List ZIA Shadow IT cloud applications (analytics catalog with numeric IDs and friendly names)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_custom_tags</span></code></p></td>
+<td><p>List ZIA Shadow IT custom tags</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_bulk_update_shadow_it_apps</span></code></p></td>
+<td><p>Bulk update sanction state and/or custom tags on ZIA Shadow IT applications</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_policy</span></code></p></td>
+<td><p>List the ZIA policy-engine cloud-application catalog (canonical enum strings used by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, Advanced Settings)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code></p></td>
+<td><p>List the ZIA cloud-application catalog scoped to SSL Inspection rules (canonical enum strings used by <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> on SSL Inspection rules)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall_rule</span></code></p></td>
 <td><p>Manages ZIA Cloud Firewall Rules</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall_dns_rule</span></code></p></td>
+<td><p>Manages ZIA Cloud Firewall DNS Rules (list/get/create/update/delete)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall_ips_rule</span></code></p></td>
+<td><p>Manages ZIA Cloud Firewall IPS Rules (list/get/create/update/delete)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_file_type_control_rule</span></code></p></td>
+<td><p>Manages ZIA File Type Control Rules (list/get/create/update/delete) plus <code class="docutils literal notranslate"><span class="pre">zia_list_file_type_categories</span></code>. Friendly cloud-application names on <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> are auto-resolved to canonical enums.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_sandbox_rule</span></code></p></td>
+<td><p>Manages ZIA Sandbox Rules (list/get/create/update/delete). Distinct from <code class="docutils literal notranslate"><span class="pre">zia_sandbox_info</span></code> (read-only sandbox reports/quotas).</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_geo_search</span></code></p></td>
 <td><p>Performs geographical lookup actions using the ZIA Locations API</p></td>
@@ -563,6 +595,48 @@
 <blockquote>
 <div><p>sandbox_info = zia_sandbox_info()</p>
 </div></blockquote>
+</section>
+<section id="two-cloud-application-catalogs">
+<h3>Two Cloud-Application Catalogs<a class="headerlink" href="#two-cloud-application-catalogs" title="Link to this heading">¶</a></h3>
+<p>ZIA exposes the cloud-application catalog through two distinct API surfaces.
+Picking the right tool matters — the catalogs are not interchangeable.</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 35.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Catalog</p></th>
+<th class="head"><p>Tools</p></th>
+<th class="head"><p>Identifier returned</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Shadow IT analytics</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_apps</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_custom_tags</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_bulk_update_shadow_it_apps</span></code></p></td>
+<td><p>Numeric <code class="docutils literal notranslate"><span class="pre">id</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">655377</span></code>), friendly <code class="docutils literal notranslate"><span class="pre">name</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Sharepoint</span> <span class="pre">Online</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Policy-engine catalog</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_policy</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code></p></td>
+<td><p>Canonical <code class="docutils literal notranslate"><span class="pre">app</span></code> enum (e.g. <code class="docutils literal notranslate"><span class="pre">SHAREPOINT_ONLINE</span></code>), display <code class="docutils literal notranslate"><span class="pre">app_name</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Policy resources — SSL Inspection, Web DLP, Cloud App Control, File Type
+Control, Bandwidth Classes, Advanced Settings — accept <strong>only</strong> the canonical
+<code class="docutils literal notranslate"><span class="pre">app</span></code> enum from the policy-engine catalog in their <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code>
+field. Passing a Shadow IT numeric ID or a friendly display name causes ZIA
+to silently coerce the value to <code class="docutils literal notranslate"><span class="pre">NONE</span></code>.</p>
+<p>The SSL Inspection create/update tools (<code class="docutils literal notranslate"><span class="pre">zia_create_ssl_inspection_rule</span></code>,
+<code class="docutils literal notranslate"><span class="pre">zia_update_ssl_inspection_rule</span></code>) include an in-process resolver that
+auto-translates friendly names to canonical enums via
+<code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code> before sending the API call. The resolution
+is cached for 5 minutes and surfaced back to the caller in a
+<code class="docutils literal notranslate"><span class="pre">_cloud_applications_resolution</span></code> field on the response. Set
+<code class="docutils literal notranslate"><span class="pre">resolve_cloud_apps=False</span></code> to opt out.</p>
 <p>For complete documentation of all ZIA tools, see the individual tool pages.</p>
 </section>
 </section>
@@ -680,6 +754,7 @@
 <li><a class="reference internal" href="#zia-url-categories">zia_url_categories</a></li>
 <li><a class="reference internal" href="#zia-cloud-firewall-rule">zia_cloud_firewall_rule</a></li>
 <li><a class="reference internal" href="#zia-sandbox-info">zia_sandbox_info</a></li>
+<li><a class="reference internal" href="#two-cloud-application-catalogs">Two Cloud-Application Catalogs</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#authentication">Authentication</a></li>

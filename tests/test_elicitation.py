@@ -386,6 +386,10 @@ class TestCWE345TokenReplayPrevention:
             ("zia_delete_url_category", "category_id"),
             ("zia_delete_gre_tunnel", "tunnel_id"),
             ("zia_delete_cloud_firewall_rule", "rule_id"),
+            ("zia_delete_cloud_firewall_dns_rule", "rule_id"),
+            ("zia_delete_cloud_firewall_ips_rule", "rule_id"),
+            ("zia_delete_file_type_control_rule", "rule_id"),
+            ("zia_delete_sandbox_rule", "rule_id"),
             ("ztw_delete_ip_destination_group", "group_id"),
             ("ztw_delete_ip_source_group", "group_id"),
             ("ztw_delete_ip_group", "group_id"),
@@ -438,3 +442,126 @@ class TestCWE345SourceCodeRegression:
             f"CWE-345 regression: check_confirmation() called with empty {{}} "
             f"in {len(violations)} location(s):\n" + "\n".join(f"  - {v}" for v in violations)
         )
+
+
+# ---------------------------------------------------------------------------
+# Behavioral regression: every new ZIA delete tool enforces HMAC confirmation
+# ---------------------------------------------------------------------------
+
+
+class TestNewZIADeleteToolsConfirmation:
+    """End-to-end verification that the four new ZIA rule-delete tools
+    (cloud_firewall_dns, cloud_firewall_ips, file_type_control, sandbox)
+    refuse to call the SDK without a valid, resource-bound confirmation token.
+
+    The static analyzer above guarantees we don't pass empty {} to
+    check_confirmation; this suite proves the wiring actually fires at
+    runtime so a future refactor that drops the call will fail loudly.
+    """
+
+    DELETE_TOOLS = [
+        (
+            "zscaler_mcp.tools.zia.cloud_firewall_dns_rules",
+            "zia_delete_cloud_firewall_dns_rule",
+            "cloud_firewall_dns",
+        ),
+        (
+            "zscaler_mcp.tools.zia.cloud_firewall_ips_rules",
+            "zia_delete_cloud_firewall_ips_rule",
+            "cloud_firewall_ips",
+        ),
+        (
+            "zscaler_mcp.tools.zia.file_type_control_rules",
+            "zia_delete_file_type_control_rule",
+            "file_type_control_rule",
+        ),
+        (
+            "zscaler_mcp.tools.zia.sandbox_rules",
+            "zia_delete_sandbox_rule",
+            "sandbox_rules",
+        ),
+    ]
+
+    @staticmethod
+    def _patched_client(sdk_attr):
+        """Return a MagicMock client + the inner delete_rule mock, wired so
+        ``client.zia.<sdk_attr>.delete_rule(rule_id)`` returns ``(None, None, None)``.
+        """
+        from unittest.mock import MagicMock
+
+        delete_rule = MagicMock(return_value=(None, None, None))
+        sdk_resource = MagicMock(delete_rule=delete_rule)
+        client = MagicMock()
+        setattr(client.zia, sdk_attr, sdk_resource)
+        return client, delete_rule
+
+    def test_all_new_delete_tools_block_without_confirmation(self):
+        """No confirmation token => returns confirmation prompt, never calls SDK."""
+        import importlib
+
+        for module_path, fn_name, sdk_attr in self.DELETE_TOOLS:
+            mod = importlib.import_module(module_path)
+            fn = getattr(mod, fn_name)
+            client, delete_rule = self._patched_client(sdk_attr)
+
+            with patch.dict(os.environ, {}, clear=False), patch(
+                f"{module_path}.get_zscaler_client", return_value=client
+            ):
+                result = fn(rule_id="42")
+
+            assert isinstance(result, str), f"{fn_name} must return a string prompt"
+            assert "confirm" in result.lower(), (
+                f"{fn_name} prompt must mention confirmation; got: {result[:120]}"
+            )
+            delete_rule.assert_not_called(), (
+                f"{fn_name} called SDK delete_rule() without a confirmation token!"
+            )
+
+    def test_all_new_delete_tools_reject_token_for_different_rule_id(self):
+        """Token bound to rule X must NOT authorize deletion of rule Y (CWE-345)."""
+        import importlib
+        import json
+
+        for module_path, fn_name, sdk_attr in self.DELETE_TOOLS:
+            mod = importlib.import_module(module_path)
+            fn = getattr(mod, fn_name)
+            client, delete_rule = self._patched_client(sdk_attr)
+
+            decoy_token = _generate_token(fn_name, {"rule_id": "DECOY"})
+
+            with patch(f"{module_path}.get_zscaler_client", return_value=client):
+                result = fn(
+                    rule_id="TARGET",
+                    kwargs=json.dumps({"confirmation_token": decoy_token}),
+                )
+
+            assert isinstance(result, str)
+            assert "rejected" in result.lower() or "confirm" in result.lower(), (
+                f"{fn_name} must reject decoy token; got: {result[:120]}"
+            )
+            delete_rule.assert_not_called(), (
+                f"{fn_name} called SDK delete_rule() with a cross-resource token!"
+            )
+
+    def test_all_new_delete_tools_proceed_with_valid_token(self):
+        """Valid resource-bound token => SDK delete_rule is invoked exactly once."""
+        import importlib
+        import json
+
+        for module_path, fn_name, sdk_attr in self.DELETE_TOOLS:
+            mod = importlib.import_module(module_path)
+            fn = getattr(mod, fn_name)
+            client, delete_rule = self._patched_client(sdk_attr)
+
+            valid_token = _generate_token(fn_name, {"rule_id": "42"})
+
+            with patch(f"{module_path}.get_zscaler_client", return_value=client):
+                result = fn(
+                    rule_id="42",
+                    kwargs=json.dumps({"confirmation_token": valid_token}),
+                )
+
+            assert "deleted successfully" in result, (
+                f"{fn_name} should return success message; got: {result[:120]}"
+            )
+            delete_rule.assert_called_once_with("42")

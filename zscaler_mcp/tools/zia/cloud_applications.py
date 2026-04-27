@@ -1,3 +1,23 @@
+"""ZIA Cloud Applications (policy-engine catalog) tools.
+
+These tools wrap the SDK's ``client.zia.cloud_applications`` resource, which
+returns the **policy-engine cloud-application catalog** — the canonical enum
+strings (e.g. ``ONEDRIVE``, ``ONEDRIVE_PERSONAL``, ``SHAREPOINT_ONLINE``,
+``DROPBOX``) consumed by the ``cloud_applications`` field on:
+
+- SSL Inspection rules
+- Web DLP rules
+- Cloud App Control rules
+- File Type Control rules
+- Bandwidth Classes
+- Advanced Settings
+
+Use these tools when you need to look up the exact enum token to pass into a
+policy rule's ``cloud_applications`` field. For the broader Shadow IT
+analytics catalog (numeric IDs, friendly display names, sanction state,
+custom tags) see ``zscaler_mcp/tools/zia/shadow_it_report.py``.
+"""
+
 from typing import Annotated, List, Optional
 
 from pydantic import Field
@@ -10,94 +30,154 @@ from zscaler_mcp.common.jmespath_utils import apply_jmespath
 # =============================================================================
 
 
-def zia_list_cloud_applications(
-    page_number: Annotated[
-        Optional[int], Field(description="Optional page number for pagination.")
+def _build_query_params(
+    search: Optional[str],
+    page: Optional[int],
+    page_size: Optional[int],
+    app_class: Optional[str],
+    group_results: Optional[bool],
+) -> Optional[dict]:
+    params: dict = {}
+    if search:
+        params["search"] = search
+    if page is not None:
+        params["page"] = page
+    if page_size is not None:
+        params["page_size"] = page_size
+    if app_class:
+        params["app_class"] = app_class
+    if group_results is not None:
+        params["group_results"] = group_results
+    return params or None
+
+
+def zia_list_cloud_app_policy(
+    search: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring filter on application name "
+                "(e.g. 'sharepoint', 'onedrive'). Use this first to narrow "
+                "results before applying a JMESPath query."
+            )
+        ),
     ] = None,
-    limit: Annotated[
+    app_class: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Filter by application category (e.g. 'WEB_MAIL', "
+                "'ENTERPRISE_COLLABORATION', 'FILE_SHARE')."
+            )
+        ),
+    ] = None,
+    page: Annotated[
+        Optional[int], Field(description="Page offset for pagination.")
+    ] = None,
+    page_size: Annotated[
         Optional[int],
-        Field(description="Optional result limit. Use 1000 as the maximum limit for efficiency."),
+        Field(description="Page size (default 200, maximum 1000)."),
+    ] = None,
+    group_results: Annotated[
+        Optional[bool],
+        Field(description="If true, return application counts grouped by category."),
     ] = None,
     query: Annotated[
         Optional[str],
-        Field(description="JMESPath expression for client-side filtering/projection of results."),
+        Field(
+            description=(
+                "JMESPath expression for client-side filtering/projection. "
+                "Examples: '[?contains(name, `Share`)].{id: id, name: name}', "
+                "'[?app_class==`ENTERPRISE_COLLABORATION`].name'."
+            )
+        ),
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
-    """List ZIA Shadow IT cloud applications with optional pagination.
+    """List the ZIA policy-engine cloud-application catalog.
 
-    Supports JMESPath client-side filtering via the query parameter.
+    Returns the predefined and user-defined cloud applications referenced by
+    DLP rules, Cloud App Control rules, File Type Control rules, Bandwidth
+    Classes, and Advanced Settings. Each entry includes the canonical enum
+    string used as the ``cloud_applications`` value on policy rules.
+
+    Supports both server-side filtering (``search``, ``app_class``,
+    ``group_results``) and client-side JMESPath projection (``query``).
+
+    Tip: when looking up the right enum to feed into an SSL inspection or
+    DLP rule, prefer ``zia_list_cloud_app_ssl_policy`` if the target rule is
+    SSL-inspection-scoped — its catalog can differ slightly from the generic
+    policy catalog returned here.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
-    shadow_it = client.zia.shadow_it_report
+    cloud_apps = client.zia.cloud_applications
 
-    query_params = {}
-    if page_number is not None:
-        query_params["page_number"] = page_number
-    if limit is not None:
-        query_params["limit"] = limit
+    query_params = _build_query_params(search, page, page_size, app_class, group_results)
 
-    apps, _, err = shadow_it.list_apps(query_params=query_params or None)
+    apps, _, err = cloud_apps.list_cloud_app_policy(query_params=query_params)
     if err:
-        raise Exception(f"Failed to list applications: {err}")
+        raise Exception(f"Failed to list cloud application policies: {err}")
     results = [app.as_dict() for app in apps]
     return apply_jmespath(results, query)
 
 
-def zia_list_cloud_application_custom_tags(
+def zia_list_cloud_app_ssl_policy(
+    search: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring filter on application name "
+                "(e.g. 'sharepoint', 'onedrive'). Use this first to narrow "
+                "results before applying a JMESPath query."
+            )
+        ),
+    ] = None,
+    app_class: Annotated[
+        Optional[str],
+        Field(description="Filter by application category."),
+    ] = None,
+    page: Annotated[
+        Optional[int], Field(description="Page offset for pagination.")
+    ] = None,
+    page_size: Annotated[
+        Optional[int],
+        Field(description="Page size (default 200, maximum 1000)."),
+    ] = None,
+    group_results: Annotated[
+        Optional[bool],
+        Field(description="If true, return application counts grouped by category."),
+    ] = None,
     query: Annotated[
         Optional[str],
-        Field(description="JMESPath expression for client-side filtering/projection of results."),
+        Field(
+            description=(
+                "JMESPath expression for client-side filtering/projection. "
+                "Example: '[?contains(name, `Share`)].{id: id, name: name}'."
+            )
+        ),
     ] = None,
     use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
-    """List ZIA Shadow IT custom tags.
+    """List the ZIA cloud-application catalog scoped to SSL Inspection rules.
 
-    Supports JMESPath client-side filtering via the query parameter.
+    Returns the predefined and user-defined cloud applications that are
+    addressable by the ``cloud_applications`` field on SSL Inspection rules.
+    Each entry includes the canonical enum string ZIA expects when creating
+    or updating an SSL Inspection rule.
+
+    This is the right tool to call when answering "what enum should I pass
+    into ``cloud_applications`` for SharePoint Online / OneDrive / Box / …?"
+    because it returns the exact strings the SSL Inspection API will accept.
     """
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
-    shadow_it = client.zia.shadow_it_report
+    cloud_apps = client.zia.cloud_applications
 
-    tags, _, err = shadow_it.list_custom_tags()
+    query_params = _build_query_params(search, page, page_size, app_class, group_results)
+
+    apps, _, err = cloud_apps.list_cloud_app_ssl_policy(query_params=query_params)
     if err:
-        raise Exception(f"Failed to list custom tags: {err}")
-    results = [tag.as_dict() for tag in tags]
+        raise Exception(f"Failed to list cloud application SSL policies: {err}")
+    results = [app.as_dict() for app in apps]
     return apply_jmespath(results, query)
-
-
-# =============================================================================
-# WRITE OPERATIONS
-# =============================================================================
-
-
-def zia_bulk_update_cloud_applications(
-    sanction_state: Annotated[
-        str, Field(description="One of 'sanctioned', 'unsanctioned', or 'any' (required).")
-    ],
-    application_ids: Annotated[
-        Optional[List[str]], Field(description="List of application IDs to update.")
-    ] = None,
-    custom_tag_ids: Annotated[
-        Optional[List[str]], Field(description="List of custom tag IDs to apply.")
-    ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
-    service: Annotated[str, Field(description="The service to use.")] = "zia",
-) -> dict:
-    """Apply sanction state and/or custom tags to ZIA Shadow IT applications in bulk."""
-    if not sanction_state:
-        raise ValueError("You must provide a sanction_state for bulk updates")
-
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
-    shadow_it = client.zia.shadow_it_report
-
-    result, _, err = shadow_it.bulk_update(
-        sanction_state,
-        application_ids=application_ids,
-        custom_tag_ids=custom_tag_ids,
-    )
-    if err:
-        raise Exception(f"Bulk update failed: {err}")
-
-    return result.as_dict() if hasattr(result, "as_dict") else result
