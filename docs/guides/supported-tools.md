@@ -83,6 +83,26 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 | `zia_update_cloud_firewall_rule` | Update an existing cloud firewall rule | Write |
 | `zia_delete_cloud_firewall_rule` | Delete a cloud firewall rule | Write |
 
+### Cloud Firewall DNS Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zia_list_cloud_firewall_dns_rules` | List ZIA cloud firewall DNS rules | Read-only |
+| `zia_get_cloud_firewall_dns_rule` | Get a specific cloud firewall DNS rule | Read-only |
+| `zia_create_cloud_firewall_dns_rule` | Create a new cloud firewall DNS rule | Write |
+| `zia_update_cloud_firewall_dns_rule` | Update an existing cloud firewall DNS rule (PUT — name/order silently backfilled) | Write |
+| `zia_delete_cloud_firewall_dns_rule` | Delete a cloud firewall DNS rule | Write |
+
+### Cloud Firewall IPS Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zia_list_cloud_firewall_ips_rules` | List ZIA cloud firewall IPS rules | Read-only |
+| `zia_get_cloud_firewall_ips_rule` | Get a specific cloud firewall IPS rule | Read-only |
+| `zia_create_cloud_firewall_ips_rule` | Create a new cloud firewall IPS rule | Write |
+| `zia_update_cloud_firewall_ips_rule` | Update an existing cloud firewall IPS rule (PUT — name/order silently backfilled) | Write |
+| `zia_delete_cloud_firewall_ips_rule` | Delete a cloud firewall IPS rule | Write |
+
 ### URL Filtering Rules
 
 | Tool Name | Description | Type |
@@ -104,6 +124,29 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 | `zia_update_web_dlp_rule` | Update an existing web DLP rule | Write |
 | `zia_delete_web_dlp_rule` | Delete a web DLP rule | Write |
 
+### File Type Control Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zia_list_file_type_control_rules` | List ZIA File Type Control rules | Read-only |
+| `zia_get_file_type_control_rule` | Get a specific File Type Control rule | Read-only |
+| `zia_list_file_type_categories` | List file-type categories (predefined and custom) | Read-only |
+| `zia_create_file_type_control_rule` | Create a new File Type Control rule (friendly cloud-app names auto-resolved) | Write |
+| `zia_update_file_type_control_rule` | Update an existing File Type Control rule (PUT — name/order silently backfilled) | Write |
+| `zia_delete_file_type_control_rule` | Delete a File Type Control rule | Write |
+
+### Sandbox Rules
+
+| Tool Name | Description | Type |
+|-----------|-------------|------|
+| `zia_list_sandbox_rules` | List ZIA Sandbox rules | Read-only |
+| `zia_get_sandbox_rule` | Get a specific Sandbox rule | Read-only |
+| `zia_create_sandbox_rule` | Create a new Sandbox rule | Write |
+| `zia_update_sandbox_rule` | Update an existing Sandbox rule (PUT — name/order silently backfilled) | Write |
+| `zia_delete_sandbox_rule` | Delete a Sandbox rule | Write |
+
+> **Note:** Sandbox **rules** (policy) are distinct from the Sandbox **report/quota** read-only tools listed under "Sandbox" further down.
+
 ### Configuration Activation
 
 | Tool Name | Description | Type |
@@ -115,9 +158,11 @@ ZIA provides both **read-only** and **write** tools. Write operations require `-
 
 | Tool Name | Description | Type |
 |-----------|-------------|------|
-| `zia_list_cloud_applications` | List ZIA cloud applications | Read-only |
-| `zia_list_cloud_application_tags` | List cloud application tags | Read-only |
-| `zia_bulk_update_cloud_applications` | Bulk update cloud applications | Write |
+| `zia_list_shadow_it_apps` | List ZIA Shadow IT cloud applications (analytics catalog: numeric IDs + friendly names) | Read-only |
+| `zia_list_shadow_it_custom_tags` | List ZIA Shadow IT custom tags | Read-only |
+| `zia_list_cloud_app_policy` | List the ZIA policy-engine cloud-app catalog (canonical enum strings for Web DLP / Cloud App Control / File Type Control / Bandwidth Classes / Advanced Settings) | Read-only |
+| `zia_list_cloud_app_ssl_policy` | List the ZIA cloud-app catalog scoped to SSL Inspection rules (canonical enum strings) | Read-only |
+| `zia_bulk_update_shadow_it_apps` | Bulk update sanction state / custom tags on ZIA Shadow IT applications | Write |
 
 ### URL Categories
 

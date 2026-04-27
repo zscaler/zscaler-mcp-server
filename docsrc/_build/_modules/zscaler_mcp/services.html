@@ -220,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -1228,9 +1232,27 @@
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_app_control</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_list_cloud_app_control_actions</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_applications</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_bulk_update_cloud_applications</span><span class="p">,</span>
-            <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span>
-            <span class="n">zia_list_cloud_applications</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_app_policy</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_app_ssl_policy</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.shadow_it_report</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_bulk_update_shadow_it_apps</span><span class="p">,</span>
+            <span class="n">zia_list_shadow_it_apps</span><span class="p">,</span>
+            <span class="n">zia_list_shadow_it_custom_tags</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_dns_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_cloud_firewall_dns_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_cloud_firewall_dns_rule</span><span class="p">,</span>
+            <span class="n">zia_get_cloud_firewall_dns_rule</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_firewall_dns_rules</span><span class="p">,</span>
+            <span class="n">zia_update_cloud_firewall_dns_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_ips_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_cloud_firewall_ips_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_cloud_firewall_ips_rule</span><span class="p">,</span>
+            <span class="n">zia_get_cloud_firewall_ips_rule</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_firewall_ips_rules</span><span class="p">,</span>
+            <span class="n">zia_update_cloud_firewall_ips_rule</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_cloud_firewall_rule</span><span class="p">,</span>
@@ -1309,12 +1331,27 @@
             <span class="n">zia_list_network_svc_groups</span><span class="p">,</span>
             <span class="n">zia_update_network_svc_group</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.file_type_control_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_file_type_control_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_file_type_control_rule</span><span class="p">,</span>
+            <span class="n">zia_get_file_type_control_rule</span><span class="p">,</span>
+            <span class="n">zia_list_file_type_categories</span><span class="p">,</span>
+            <span class="n">zia_list_file_type_control_rules</span><span class="p">,</span>
+            <span class="n">zia_update_file_type_control_rule</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.rule_labels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_rule_label</span><span class="p">,</span>
             <span class="n">zia_delete_rule_label</span><span class="p">,</span>
             <span class="n">zia_get_rule_label</span><span class="p">,</span>
             <span class="n">zia_list_rule_labels</span><span class="p">,</span>
             <span class="n">zia_update_rule_label</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.sandbox_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_sandbox_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_sandbox_rule</span><span class="p">,</span>
+            <span class="n">zia_get_sandbox_rule</span><span class="p">,</span>
+            <span class="n">zia_list_sandbox_rules</span><span class="p">,</span>
+            <span class="n">zia_update_sandbox_rule</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ssl_inspection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_ssl_inspection_rule</span><span class="p">,</span>
@@ -1602,16 +1639,27 @@
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_auth_exempt_urls&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA authentication exempt URLs (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
-            <span class="c1"># Cloud Applications</span>
+            <span class="c1"># Shadow IT Report (analytics catalog: numeric IDs, friendly names, custom tags)</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_applications</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_applications&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud applications (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_shadow_it_apps</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_shadow_it_apps&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA Shadow IT cloud applications — analytics catalog with numeric IDs and friendly names (e.g. &#39;Sharepoint Online&#39;, id 655377). NOT the policy-engine enum catalog. Use zia_list_cloud_app_policy / zia_list_cloud_app_ssl_policy for the canonical enum strings consumed by SSL inspection / DLP / Cloud App Control rules. Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_application_custom_tags</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_application_custom_tags&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud application custom tags (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_shadow_it_custom_tags</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_shadow_it_custom_tags&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA Shadow IT custom tags (read-only). Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Cloud Applications (policy-engine catalog: canonical enum strings for rules)</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_policy</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_policy&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule&#39;s cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_ssl_policy</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_ssl_policy&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the ZIA cloud-application catalog scoped to SSL Inspection rules — returns the canonical enum strings the SSL Inspection API will accept in the cloud_applications field (e.g. ONEDRIVE, SHAREPOINT_ONLINE). Use this to resolve enum names before creating or updating SSL Inspection rules. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Cloud App Control</span>
             <span class="p">{</span>
@@ -1660,6 +1708,55 @@
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_report</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_report&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Retrieve sandbox analysis report for a specific MD5 hash (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Cloud Firewall DNS Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_firewall_dns_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_firewall_dns_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud firewall DNS rules (read-only). Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_cloud_firewall_dns_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_cloud_firewall_dns_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA cloud firewall DNS rule by ID (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Cloud Firewall IPS Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_firewall_ips_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_firewall_ips_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA cloud firewall IPS rules (read-only). Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_cloud_firewall_ips_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_cloud_firewall_ips_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA cloud firewall IPS rule by ID (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># File Type Control Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_file_type_control_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_file_type_control_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA File Type Control rules (read-only). Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_file_type_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_file_type_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA File Type Control rule by ID (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_file_type_categories</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_file_type_categories&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA file-type categories (predefined and custom) used by File Type Control and Web DLP rules (read-only).&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Sandbox Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_sandbox_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_sandbox_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA Sandbox rules (read-only). Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA Sandbox rule by ID (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
 
@@ -1938,11 +2035,75 @@
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_auth_exempt_urls&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete URLs from ZIA authentication exempt list (destructive operation)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
-            <span class="c1"># Cloud Applications</span>
+            <span class="c1"># Shadow IT Report (write)</span>
             <span class="p">{</span>
-                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_bulk_update_cloud_applications</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_bulk_update_cloud_applications&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Bulk update ZIA cloud applications (write operation)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_bulk_update_shadow_it_apps</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_bulk_update_shadow_it_apps&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Bulk update sanction state and/or custom tags on ZIA Shadow IT cloud applications (write operation).&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Cloud Firewall DNS Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_cloud_firewall_dns_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_cloud_firewall_dns_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA cloud firewall DNS rule (write operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_cloud_firewall_dns_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_cloud_firewall_dns_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_cloud_firewall_dns_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_cloud_firewall_dns_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA cloud firewall DNS rule (destructive operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Cloud Firewall IPS Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_cloud_firewall_ips_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_cloud_firewall_ips_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA cloud firewall IPS rule (write operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_cloud_firewall_ips_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_cloud_firewall_ips_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA cloud firewall IPS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_cloud_firewall_ips_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_cloud_firewall_ips_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA cloud firewall IPS rule (destructive operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># File Type Control Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_file_type_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_file_type_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA File Type Control rule (write operation). Friendly cloud-application names are auto-resolved to canonical enums.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_file_type_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_file_type_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA File Type Control rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. Friendly cloud-application names are auto-resolved.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_file_type_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_file_type_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA File Type Control rule (destructive operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Sandbox Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_sandbox_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_sandbox_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA Sandbox rule (write operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_sandbox_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_sandbox_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA Sandbox rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_sandbox_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_sandbox_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA Sandbox rule (destructive operation)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
 
