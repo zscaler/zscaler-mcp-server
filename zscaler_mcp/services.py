@@ -931,11 +931,6 @@ class ZIAService(BaseService):
             zia_list_cloud_app_policy,
             zia_list_cloud_app_ssl_policy,
         )
-        from .tools.zia.shadow_it_report import (
-            zia_bulk_update_shadow_it_apps,
-            zia_list_shadow_it_apps,
-            zia_list_shadow_it_custom_tags,
-        )
         from .tools.zia.cloud_firewall_dns_rules import (
             zia_create_cloud_firewall_dns_rule,
             zia_delete_cloud_firewall_dns_rule,
@@ -961,6 +956,14 @@ class ZIAService(BaseService):
             zia_list_device_groups,
             zia_list_devices,
             zia_list_devices_lite,
+        )
+        from .tools.zia.file_type_control_rules import (
+            zia_create_file_type_control_rule,
+            zia_delete_file_type_control_rule,
+            zia_get_file_type_control_rule,
+            zia_list_file_type_categories,
+            zia_list_file_type_control_rules,
+            zia_update_file_type_control_rule,
         )
         from .tools.zia.geo_search import zia_geo_search_tool
         from .tools.zia.get_sandbox_info import (
@@ -1027,14 +1030,6 @@ class ZIAService(BaseService):
             zia_list_network_svc_groups,
             zia_update_network_svc_group,
         )
-        from .tools.zia.file_type_control_rules import (
-            zia_create_file_type_control_rule,
-            zia_delete_file_type_control_rule,
-            zia_get_file_type_control_rule,
-            zia_list_file_type_categories,
-            zia_list_file_type_control_rules,
-            zia_update_file_type_control_rule,
-        )
         from .tools.zia.rule_labels import (
             zia_create_rule_label,
             zia_delete_rule_label,
@@ -1048,6 +1043,11 @@ class ZIAService(BaseService):
             zia_get_sandbox_rule,
             zia_list_sandbox_rules,
             zia_update_sandbox_rule,
+        )
+        from .tools.zia.shadow_it_report import (
+            zia_bulk_update_shadow_it_apps,
+            zia_list_shadow_it_apps,
+            zia_list_shadow_it_custom_tags,
         )
         from .tools.zia.ssl_inspection import (
             zia_create_ssl_inspection_rule,
