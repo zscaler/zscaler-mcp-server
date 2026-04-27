@@ -14,7 +14,8 @@ Dependencies:
     - Uses the zscaler-sdk-python cloudappcontrol module
 
 Related Tools:
-    - zia_list_cloud_applications: List cloud applications (Shadow IT)
+    - zia_list_shadow_it_apps: List Shadow IT cloud applications (analytics catalog)
+    - zia_list_cloud_app_policy: List policy-engine cloud-app enum catalog
     - zia_list_cloud_firewall_rules: Cloud firewall rules
 
 Example Usage:
@@ -31,6 +32,8 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_cloud_app_resolver import resolve_cloud_applications
+from zscaler_mcp.utils.utils import parse_list
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -51,8 +54,13 @@ def zia_list_cloud_app_control_actions(
     cloud_apps: Annotated[
         Union[List[str], str],
         Field(
-            description="List of cloud application names for filtering. "
-            "Examples: ['DROPBOX'], ['GOOGLE_WEBMAIL', 'YAHOO_WEBMAIL']. Accepts JSON string or list."
+            description=(
+                "List of cloud application names. Accepts EITHER canonical ZIA "
+                "enum tokens (e.g. 'DROPBOX', 'GOOGLE_WEBMAIL') OR friendly "
+                "display names ('Dropbox', 'google webmail') — friendly names "
+                "are auto-resolved to the canonical enum via the policy-engine "
+                "cloud-app catalog before the API call. Accepts JSON string or list."
+            )
         ),
     ],
     query: Annotated[
@@ -131,24 +139,26 @@ def zia_list_cloud_app_control_actions(
         - BUSINESS_PRODUCTIVITY: ALLOW_BUSINESS_PRODUCTIVITY_APPS, BLOCK_BUSINESS_PRODUCTIVITY_APPS
         - SOCIAL_NETWORKING: ALLOW_SOCIAL_NETWORKING_VIEW, ALLOW_SOCIAL_NETWORKING_POST, BLOCK_SOCIAL_NETWORKING_POST
     """
-    # Normalize cloud_apps: accept list or JSON string
-    if isinstance(cloud_apps, str):
-        import json
+    parsed_apps = parse_list(cloud_apps)
+    if not parsed_apps:
+        raise ValueError("cloud_apps must be a non-empty list of cloud application names or a JSON string")
 
-        try:
-            cloud_apps = json.loads(cloud_apps)
-        except json.JSONDecodeError:
-            cloud_apps = [a.strip() for a in cloud_apps.split(",") if a.strip()]
-    if not isinstance(cloud_apps, list):
-        raise ValueError("cloud_apps must be a list of cloud application names or a JSON string")
-    if not cloud_apps:
-        raise ValueError("cloud_apps cannot be empty")
+    # Translate friendly display names ("Dropbox", "google webmail") to the
+    # canonical ZIA enum tokens the API expects. Already-canonical tokens are
+    # passed through unchanged.
+    resolved_apps, _audit = resolve_cloud_applications(
+        parsed_apps,
+        scope="policy",
+        use_legacy=use_legacy,
+        service=service,
+        strict=True,
+    )
 
     client = get_zscaler_client(use_legacy=use_legacy, service=service)
     cloudappcontrol = client.zia.cloudappcontrol
 
     actions, _, err = cloudappcontrol.list_available_actions(
-        rule_type=rule_type, cloud_apps=cloud_apps
+        rule_type=rule_type, cloud_apps=resolved_apps
     )
     if err:
         raise Exception(f"Failed to list available Cloud App Control actions: {err}")
