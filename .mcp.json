@@ -5,7 +5,7 @@
       "args": [
         "--env-file",
         "${CLAUDE_PLUGIN_ROOT}/.env",
-        "zscaler-mcp@0.10.4"
+        "zscaler-mcp@0.10.5"
       ]
     }
   }

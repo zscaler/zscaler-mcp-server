@@ -1,6 +1,6 @@
 {
   "name": "zscaler",
-  "version": "0.10.4",
+  "version": "0.10.5",
   "mcpServers": {
     "zscaler": {
       "command": "uvx",
