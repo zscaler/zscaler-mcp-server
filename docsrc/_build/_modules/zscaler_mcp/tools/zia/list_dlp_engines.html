@@ -209,17 +209,25 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -286,46 +294,43 @@
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional engine ID to retrieve a specific engine.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional search filter for listing engines by name or description.&quot;</span><span class="p">),</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional search filter for listing engines by name or description.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Manages ZIA DLP Engines for data loss prevention rule evaluation.</span>
-<span class="sd">    </span>
+
 <span class="sd">    DLP Engines are logical expressions that combine DLP dictionaries using operators like AND, OR, NOT,</span>
 <span class="sd">    and Sum to create sophisticated data loss prevention detection rules. They evaluate content against</span>
 <span class="sd">    patterns and phrases to identify potential data breaches or policy violations.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        action (str): Operation to perform: read (list all or retrieve specific by engine_id), read_lite (list with minimal data).</span>
 <span class="sd">        engine_id (int/str, optional): Optional engine ID to retrieve a specific engine.</span>
 <span class="sd">        search (str, optional): Search string to match against engine name or description.</span>
-<span class="sd">        use_legacy (bool, optional): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str, optional): The service to use (default: &quot;zia&quot;).</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict | list[dict]: Engine object(s) depending on action.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        List all DLP engines:</span>
 <span class="sd">        &gt;&gt;&gt; engines = zia_dlp_engine_manager(action=&quot;read&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">        List engines with name and ID only (faster):</span>
 <span class="sd">        &gt;&gt;&gt; engines = zia_dlp_engine_manager(action=&quot;read_lite&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">        Search for engines containing &quot;credit card&quot;:</span>
 <span class="sd">        &gt;&gt;&gt; engines = zia_dlp_engine_manager(action=&quot;read&quot;, search=&quot;credit card&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">        Get a specific engine by ID:</span>
 <span class="sd">        &gt;&gt;&gt; engine = zia_dlp_engine_manager(action=&quot;read&quot;, engine_id=&quot;12345&quot;)</span>
-<span class="sd">        </span>
+
 <span class="sd">        Search for engines containing &quot;SSN&quot;:</span>
 <span class="sd">        &gt;&gt;&gt; engines = zia_dlp_engine_manager(action=&quot;read&quot;, search=&quot;SSN&quot;)</span>
-<span class="sd">    </span>
+
 <span class="sd">    Note:</span>
 <span class="sd">        - The read action returns full engine details including expressions and configuration.</span>
 <span class="sd">        - When engine_id is provided with read action, it retrieves a specific engine.</span>
@@ -339,7 +344,7 @@
 <span class="sd">        - Engine expressions reference DLP dictionaries by their IDs (e.g., D63.S &gt; 1).</span>
 <span class="sd">        - Engines are used in DLP rules to define what content should be monitored or blocked.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
 
     <span class="n">dlp_engine</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_engine</span>
 
@@ -400,7 +405,7 @@
       
     </aside>
   </div>
-</div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>

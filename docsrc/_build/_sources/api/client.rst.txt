@@ -11,7 +11,8 @@ The Zscaler client wrapper and authentication handling.
 Client Configuration
 --------------------
 
-The client supports both OneAPI and Legacy API authentication methods.
+The client uses **OneAPI** authentication through ZIdentity. All Zscaler
+products are reached through the unified ``zscaler.ZscalerClient``.
 
 OneAPI Authentication
 ~~~~~~~~~~~~~~~~~~~~~
@@ -30,131 +31,17 @@ OneAPI Authentication
      - Zscaler API Client Secret
      - ``ZSCALER_CLIENT_SECRET``
    * - ``customer_id``
-     - Zscaler Customer ID
+     - Zscaler Customer ID (required when calling ZPA tools)
      - ``ZSCALER_CUSTOMER_ID``
    * - ``vanity_domain``
      - Zscaler Vanity Domain
      - ``ZSCALER_VANITY_DOMAIN``
    * - ``private_key``
-     - OAuth Private Key (alternative to client_secret)
+     - PEM-encoded private key for JWT auth (alternative to ``client_secret``)
      - ``ZSCALER_PRIVATE_KEY``
    * - ``cloud``
-     - Zscaler Cloud Environment
+     - Cloud override (e.g. ``BETA``, ``zscalertwo``); omit for production
      - ``ZSCALER_CLOUD``
-
-Legacy API Authentication
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Legacy authentication supports individual service credentials:
-
-ZIA Legacy
-^^^^^^^^^^
-
-.. list-table:: ZIA Legacy Authentication
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Parameter
-     - Description
-     - Environment Variable
-   * - ``username``
-     - ZIA Username
-     - ``ZIA_USERNAME``
-   * - ``password``
-     - ZIA Password
-     - ``ZIA_PASSWORD``
-   * - ``api_key``
-     - ZIA API Key
-     - ``ZIA_API_KEY``
-   * - ``cloud``
-     - ZIA Cloud Environment
-     - ``ZIA_CLOUD``
-
-ZPA Legacy
-^^^^^^^^^^
-
-.. list-table:: ZPA Legacy Authentication
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Parameter
-     - Description
-     - Environment Variable
-   * - ``client_id``
-     - ZPA Client ID
-     - ``ZPA_CLIENT_ID``
-   * - ``client_secret``
-     - ZPA Client Secret
-     - ``ZPA_CLIENT_SECRET``
-   * - ``customer_id``
-     - ZPA Customer ID
-     - ``ZPA_CUSTOMER_ID``
-   * - ``cloud``
-     - ZPA Cloud Environment
-     - ``ZPA_CLOUD``
-
-ZCC Legacy
-^^^^^^^^^^
-
-.. list-table:: ZCC Legacy Authentication
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Parameter
-     - Description
-     - Environment Variable
-   * - ``api_key``
-     - ZCC API Key
-     - ``ZCC_CLIENT_ID``
-   * - ``secret_key``
-     - ZCC Secret Key
-     - ``ZCC_CLIENT_ID``
-   * - ``cloud``
-     - ZCC Cloud Environment
-     - ``ZCC_CLOUD``
-
-ZDX Legacy
-^^^^^^^^^^
-
-.. list-table:: ZDX Legacy Authentication
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Parameter
-     - Description
-     - Environment Variable
-   * - ``key_id``
-     - ZDX Key ID
-     - ``ZDX_CLIENT_ID``
-   * - ``key_secret``
-     - ZDX Key Secret
-     - ``ZDX_CLIENT_SECRET``
-   * - ``cloud``
-     - ZDX Cloud Environment
-     - ``ZDX_CLOUD``
-
-ZTW Legacy
-^^^^^^^^^^
-
-.. list-table:: ZTW Legacy Authentication
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Parameter
-     - Description
-     - Environment Variable
-   * - ``username``
-     - ZTW Username
-     - ``ZTW_USERNAME``
-   * - ``password``
-     - ZTW Password
-     - ``ZTW_PASSWORD``
-   * - ``api_key``
-     - ZTW API Key
-     - ``ZTW_API_KEY``
-   * - ``cloud``
-     - ZTW Cloud Environment
-     - ``ZTW_CLOUD``
 
 Usage Examples
 --------------
@@ -174,32 +61,13 @@ OneAPI Client
        client_id="your_client_id",
        client_secret="your_client_secret",
        customer_id="your_customer_id",
-       vanity_domain="your_vanity_domain"
+       vanity_domain="your_vanity_domain",
    )
 
-Legacy Client
-~~~~~~~~~~~~~
-
-.. code-block:: python
-
-   from zscaler_mcp.client import get_zscaler_client
-
-   # ZIA Legacy
+   # JWT-based auth (private key in place of client secret)
    client = get_zscaler_client(
-       use_legacy=True,
-       service="zia",
-       username="your_username",
-       password="your_password",
-       api_key="your_api_key",
-       cloud="your_cloud"
-   )
-
-   # ZPA Legacy
-   client = get_zscaler_client(
-       use_legacy=True,
-       service="zpa",
        client_id="your_client_id",
-       client_secret="your_client_secret",
+       private_key="-----BEGIN PRIVATE KEY-----...",
        customer_id="your_customer_id",
-       cloud="your_cloud"
+       vanity_domain="your_vanity_domain",
    )

@@ -95,8 +95,6 @@ CRUD handler for ZPA Application Segments.
 :type action: str
 :param segment_id: The ID of the segment for "read", "update", "delete" actions
 :type segment_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zpa")
 :type service: str
 
@@ -119,8 +117,6 @@ CRUD handler for ZPA Server Groups.
 :type action: str
 :param group_id: The ID of the group for "read", "update", "delete" actions
 :type group_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zpa")
 :type service: str
 
@@ -143,8 +139,6 @@ CRUD handler for ZPA Access Policy Rules.
 :type action: str
 :param policy_id: The ID of the policy for "read", "update", "delete" actions
 :type policy_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zpa")
 :type service: str
 
@@ -167,8 +161,6 @@ Tool for managing ZPA Provisioning Keys.
 :type action: str
 :param key_id: The ID of the key for "read", "update", "delete" actions
 :type key_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zpa")
 :type service: str
 
@@ -185,26 +177,14 @@ For complete documentation of all ZPA tools, see the individual tool pages.
 Authentication
 --------------
 
-ZPA tools support both OneAPI and Legacy authentication methods:
-
-**OneAPI Authentication:**
-- Uses OAuth2 client credentials
-- Requires the following environment variables:
+ZPA tools authenticate through **OneAPI** (OAuth2 client credentials).
+Required environment variables:
 
   * ``ZSCALER_CLIENT_ID``
   * ``ZSCALER_CLIENT_SECRET``
   * ``ZSCALER_VANITY_DOMAIN``
   * ``ZSCALER_CLOUD``
-  * ``ZPA_CUSTOMER_ID``
-
-**Legacy Authentication:**
-- Uses username, password, and API key
-- Requires the following environment variables:
-
-  * ``ZPA_CLIENT_ID``
-  * ``ZPA_CLIENT_SECRET``
-  * ``ZPA_CUSTOMER_ID``
-  * ``ZPA_CLOUD``
+  * ``ZSCALER_CUSTOMER_ID``
 
 Common Use Cases
 ----------------

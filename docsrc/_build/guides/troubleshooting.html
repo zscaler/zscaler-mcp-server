@@ -210,13 +210,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
@@ -273,9 +281,231 @@
         <article role="main" id="furo-main-content">
           <section id="troubleshooting-guide">
 <span id="id1"></span><h1>Troubleshooting Guide<a class="headerlink" href="#troubleshooting-guide" title="Link to this heading">¶</a></h1>
-<section id="how-to-troubleshoot-your-problem">
-<h2>How to troubleshoot your problem<a class="headerlink" href="#how-to-troubleshoot-your-problem" title="Link to this heading">¶</a></h2>
-<p>This section is under construction</p>
+<p>This guide covers common issues and solutions when using the Zscaler Integrations MCP Server.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>For the most up-to-date troubleshooting information, see the <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/TROUBLESHOOTING.md">Troubleshooting Guide on GitHub</a>.</p>
+</div>
+<section id="installation-issues">
+<h2>Installation Issues<a class="headerlink" href="#installation-issues" title="Link to this heading">¶</a></h2>
+<p><strong>“Command not found: zscaler-mcp”</strong></p>
+<p>Install <code class="docutils literal notranslate"><span class="pre">uv</span></code> and use <code class="docutils literal notranslate"><span class="pre">uvx</span></code> to run the server:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+uvx<span class="w"> </span>zscaler-mcp
+</pre></div>
+</div>
+<p>Or install directly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>zscaler-mcp
+</pre></div>
+</div>
+<p>If installed but not found, update your shell PATH.</p>
+<p><strong>“.env file not found”</strong></p>
+<ul class="simple">
+<li><p>Use <strong>absolute paths</strong>, not relative paths, when specifying the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file location</p></li>
+<li><p>Verify the file exists: <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-la</span> <span class="pre">/path/to/.env</span></code></p></li>
+<li><p>Check file permissions (should be readable)</p></li>
+</ul>
+</section>
+<section id="zscaler-api-authentication">
+<h2>Zscaler API Authentication<a class="headerlink" href="#zscaler-api-authentication" title="Link to this heading">¶</a></h2>
+<p><strong>“Authentication failed” / 401 Unauthorized</strong></p>
+<ol class="arabic simple">
+<li><p>Verify all 4 required OneAPI variables are set:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></li>
+</ul>
+</li>
+<li><p>Check that credentials are not expired</p></li>
+<li><p>Ensure the API client has the necessary scopes in the ZIdentity console</p></li>
+</ol>
+<p><strong>“ZSCALER_CUSTOMER_ID required”</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> is required for ZPA operations. If you only use ZIA/ZDX/ZCC, this can be omitted.</p>
+</section>
+<section id="mcp-client-authentication">
+<h2>MCP Client Authentication<a class="headerlink" href="#mcp-client-authentication" title="Link to this heading">¶</a></h2>
+<p><strong>Client receives 401 when connecting over HTTP</strong></p>
+<ol class="arabic simple">
+<li><p>Check <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ENABLED</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
+<li><p>Verify <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_MODE</span></code> matches the client’s authentication method</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">api-key</span></code> mode: Client must send <code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;key&gt;</span></code> with the correct key</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">jwt</span></code> mode: Verify the JWKS URI is reachable, issuer/audience match, and the token is not expired</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">zscaler</span></code> mode: Client must send valid Basic Auth or <code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-ID</span></code>/<code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-Secret</span></code> headers</p></li>
+</ol>
+<p><strong>JWT token validation fails</strong></p>
+<ul class="simple">
+<li><p>Ensure <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_JWKS_URI</span></code> points to a reachable JWKS endpoint</p></li>
+<li><p>Verify <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ISSUER</span></code> exactly matches the <code class="docutils literal notranslate"><span class="pre">iss</span></code> claim in your tokens</p></li>
+<li><p>Verify <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_AUDIENCE</span></code> exactly matches the <code class="docutils literal notranslate"><span class="pre">aud</span></code> claim</p></li>
+<li><p>Check that <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_AUTH_ALGORITHMS</span></code> includes the algorithm used by your IdP (default: <code class="docutils literal notranslate"><span class="pre">RS256</span></code>)</p></li>
+</ul>
+<p><strong>Generate a test token:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp<span class="w"> </span>--generate-auth-token
+</pre></div>
+</div>
+</section>
+<section id="network-security">
+<h2>Network Security<a class="headerlink" href="#network-security" title="Link to this heading">¶</a></h2>
+<p><strong>Connection refused on non-localhost</strong></p>
+<p>By default, the server blocks plaintext HTTP on non-localhost interfaces. Either:</p>
+<ul class="simple">
+<li><p>Configure TLS: Set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TLS_CERT_FILE</span></code> and <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TLS_KEY_FILE</span></code></p></li>
+<li><p>Or allow HTTP explicitly: Set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOW_HTTP=true</span></code> (only if TLS is handled upstream)</p></li>
+</ul>
+<p><strong>421 Misdirected Request / “Invalid Host header”</strong></p>
+<p>The server validates <code class="docutils literal notranslate"><span class="pre">Host</span></code> headers to prevent DNS rebinding attacks. Fix:</p>
+<ul class="simple">
+<li><p>Add your hostname to <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_HOSTS</span></code>: <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ZSCALER_MCP_ALLOWED_HOSTS=&quot;myserver.example.com&quot;</span></code></p></li>
+<li><p>Or disable validation (not recommended): <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">ZSCALER_MCP_DISABLE_HOST_VALIDATION=true</span></code></p></li>
+<li><p>Localhost variants (<code class="docutils literal notranslate"><span class="pre">localhost</span></code>, <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>, <code class="docutils literal notranslate"><span class="pre">::1</span></code>) are always allowed</p></li>
+</ul>
+<p><strong>Client IP rejected / 403 Forbidden</strong></p>
+<p>If <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_SOURCE_IPS</span></code> is configured:</p>
+<ul class="simple">
+<li><p>Ensure the client’s IP is in the allowed list</p></li>
+<li><p>Use CIDR notation for ranges: <code class="docutils literal notranslate"><span class="pre">10.0.0.0/8,192.168.1.0/24</span></code></p></li>
+<li><p>Check if the client is behind a proxy (the server sees the proxy’s IP)</p></li>
+</ul>
+</section>
+<section id="write-operations">
+<h2>Write Operations<a class="headerlink" href="#write-operations" title="Link to this heading">¶</a></h2>
+<p><strong>Write tools not appearing</strong></p>
+<ol class="arabic simple">
+<li><p>Is <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED=true</span></code> set?</p></li>
+<li><p>Is <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code> provided? This is <strong>mandatory</strong> — if empty, 0 write tools are registered</p></li>
+<li><p>Do patterns match tool names? Use <code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span> <span class="pre">--list-tools</span></code> to see all registered tools</p></li>
+<li><p>Wildcards are supported: <code class="docutils literal notranslate"><span class="pre">zpa_create_*</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_*</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_delete_application_segment</span></code></p></li>
+</ol>
+<p><strong>Delete operations require confirmation</strong></p>
+<p>All 33 delete operations require double confirmation:</p>
+<ol class="arabic simple">
+<li><p>AI agent permission dialog (<code class="docutils literal notranslate"><span class="pre">destructiveHint</span></code>)</p></li>
+<li><p>Server-side confirmation via hidden <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> parameter</p></li>
+</ol>
+<p>To skip confirmations (advanced/CI use only): Set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SKIP_CONFIRMATIONS</span></code> with an HMAC-SHA256 token. The confirmation window is controlled by <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_CONFIRMATION_TTL</span></code> (default: 300 seconds).</p>
+</section>
+<section id="tool-filtering">
+<h2>Tool Filtering<a class="headerlink" href="#tool-filtering" title="Link to this heading">¶</a></h2>
+<p>These checks apply on every transport (<code class="docutils literal notranslate"><span class="pre">stdio</span></code>, <code class="docutils literal notranslate"><span class="pre">sse</span></code>, <code class="docutils literal notranslate"><span class="pre">streamable-http</span></code>).</p>
+<p><strong>A specific tool isn’t loaded</strong></p>
+<p>Walk down this list in order — each item rules out one filter the server applies at startup.</p>
+<ol class="arabic simple">
+<li><p>Was the service explicitly disabled? Check <code class="docutils literal notranslate"><span class="pre">--disabled-services</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_SERVICES</span></code>. A service in this list contributes zero tools.</p></li>
+<li><p>Was the tool’s pattern explicitly disabled? Check <code class="docutils literal notranslate"><span class="pre">--disabled-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code>. This list supports wildcards (e.g. <code class="docutils literal notranslate"><span class="pre">zcc_*</span></code>) and wins over every other filter.</p></li>
+<li><p>Is it a write tool with no allowlist? Write tools (<code class="docutils literal notranslate"><span class="pre">*_create_*</span></code>, <code class="docutils literal notranslate"><span class="pre">*_update_*</span></code>, <code class="docutils literal notranslate"><span class="pre">*_delete_*</span></code>) require both <code class="docutils literal notranslate"><span class="pre">--enable-write-tools</span></code> AND a matching pattern in <code class="docutils literal notranslate"><span class="pre">--write-tools</span></code>. With write mode disabled (the default), no write tool is registered.</p></li>
+<li><p>Was the tool’s toolset filtered out? If you set <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> (or <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code>), only tools that belong to a listed toolset are registered. Call <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> from your client to see what’s currently active and what’s available.</p></li>
+<li><p>Did the OneAPI entitlement filter drop the tool’s product? Look for a startup log line of the form <code class="docutils literal notranslate"><span class="pre">entitlement</span> <span class="pre">filter</span> <span class="pre">applied:</span> <span class="pre">entitled</span> <span class="pre">services=[...],</span> <span class="pre">kept</span> <span class="pre">N</span> <span class="pre">toolset(s),</span> <span class="pre">removed</span> <span class="pre">M</span> <span class="pre">toolset(s)</span></code>. If the product (e.g. ZDX) isn’t in the entitled list, every toolset for that product was filtered out. Either grant the OneAPI client the missing product entitlement in ZIdentity, or — for a quick diagnostic — restart the server with <code class="docutils literal notranslate"><span class="pre">--no-entitlement-filter</span></code> to confirm the filter is the cause.</p></li>
+</ol>
+<p>If the agent reports a tool that genuinely doesn’t exist (typo, hallucination), <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> and <code class="docutils literal notranslate"><span class="pre">zscaler_get_available_services</span></code> are the right introspection tools to call. Use <code class="docutils literal notranslate"><span class="pre">name_contains</span></code> / <code class="docutils literal notranslate"><span class="pre">description_contains</span></code> on <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> to scope the search to a single area before drilling in with <code class="docutils literal notranslate"><span class="pre">zscaler_get_toolset_tools</span></code>.</p>
+<p><strong>How do I see what the entitlement filter dropped?</strong></p>
+<p>The OneAPI entitlement filter logs one <code class="docutils literal notranslate"><span class="pre">INFO</span></code> line at startup with the result, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">entitlement</span> <span class="nb">filter</span> <span class="n">applied</span><span class="p">:</span> <span class="n">entitled</span> <span class="n">services</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;zia&#39;</span><span class="p">,</span> <span class="s1">&#39;zpa&#39;</span><span class="p">],</span> <span class="n">kept</span> <span class="mi">12</span> <span class="n">toolset</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">removed</span> <span class="mi">17</span> <span class="n">toolset</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To see which specific toolsets were removed, compare two startup runs:</p>
+<ol class="arabic simple">
+<li><p>Start the server normally and call <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> — note which toolsets show as currently enabled.</p></li>
+<li><p>Restart with <code class="docutils literal notranslate"><span class="pre">--no-entitlement-filter</span></code> (or <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true</span></code>), call <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> again — anything new is what the filter was hiding.</p></li>
+</ol>
+<p>If you see a <code class="docutils literal notranslate"><span class="pre">WARN</span> <span class="pre">entitlement</span> <span class="pre">filter</span> <span class="pre">skipped</span> <span class="pre">(...)</span></code> line instead, the filter never ran — the parenthesized reason tells you why (missing OneAPI credentials, the ZIdentity token endpoint was unreachable, the token didn’t decode, or the token had no recognizable product entitlements). Your tool list in that case is whatever your other filters produced.</p>
+</section>
+<section id="agent-editor-issues">
+<h2>Agent/Editor Issues<a class="headerlink" href="#agent-editor-issues" title="Link to this heading">¶</a></h2>
+<p><strong>Claude Desktop: “MCP server not found”</strong></p>
+<ul class="simple">
+<li><p>Verify the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file path is absolute and correct</p></li>
+<li><p>Check Claude Desktop logs: Help → View Logs</p></li>
+<li><p>Restart Claude Desktop completely (quit and reopen)</p></li>
+</ul>
+<p><strong>Claude Desktop: Extension not working on Windows</strong></p>
+<p>The one-click extension bundles macOS/Linux binaries. Use manual configuration with <code class="docutils literal notranslate"><span class="pre">uvx</span></code> instead:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;C:\\Users\\You\\.env&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Windows: “‘C:\Program’ is not recognized” (npx path issue)</strong></p>
+<p>Paths with spaces break <code class="docutils literal notranslate"><span class="pre">npx</span></code> when called directly. Use <code class="docutils literal notranslate"><span class="pre">cmd</span> <span class="pre">/c</span></code>:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cmd&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/c&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;npx&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-y&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mcp-remote&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;http://server:8000/mcp&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>“Non-HTTPS URLs are only allowed for localhost” (mcp-remote)</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">mcp-remote</span></code> enforces HTTPS for non-localhost URLs. Add <code class="docutils literal notranslate"><span class="pre">--allow-http</span></code> to the args:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-y&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mcp-remote&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;http://server:8000/mcp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--allow-http&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--header&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Authorization: Bearer sk-key&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Self-signed certificate rejected (mcp-remote)</strong></p>
+<p>When using self-signed certificates, add to the MCP server config:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;NODE_TLS_REJECT_UNAUTHORIZED&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Cursor: Tools not appearing</strong></p>
+<ul class="simple">
+<li><p>Check Cursor’s MCP logs: View → Output → MCP</p></li>
+<li><p>Verify the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file path is absolute</p></li>
+<li><p>Config file location: <code class="docutils literal notranslate"><span class="pre">~/.cursor/mcp.json</span></code> (macOS/Linux) or <code class="docutils literal notranslate"><span class="pre">%USERPROFILE%\.cursor\mcp.json</span></code> (Windows)</p></li>
+</ul>
+</section>
+<section id="docker-issues">
+<h2>Docker Issues<a class="headerlink" href="#docker-issues" title="Link to this heading">¶</a></h2>
+<p><strong>“Server connection timeout” with Docker</strong></p>
+<p>When using HTTP transports in Docker, always bind to <code class="docutils literal notranslate"><span class="pre">0.0.0.0</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0
+</pre></div>
+</div>
+<p><strong>Port conflicts</strong></p>
+<p>Change the port with <code class="docutils literal notranslate"><span class="pre">--port</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8001</span>:8001<span class="w"> </span>--env-file<span class="w"> </span>/path/to/.env<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>zscaler/zscaler-mcp-server:latest<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8001</span>
+</pre></div>
+</div>
+</section>
+<section id="debugging">
+<h2>Debugging<a class="headerlink" href="#debugging" title="Link to this heading">¶</a></h2>
+<p><strong>Enable debug logging:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DEBUG</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+zscaler-mcp
+</pre></div>
+</div>
+<p><strong>List all registered tools:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp<span class="w"> </span>--list-tools
+</pre></div>
+</div>
+<p><strong>Test the server manually:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start server with HTTP transport</span>
+zscaler-mcp<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+
+<span class="c1"># Test health (in another terminal)</span>
+curl<span class="w"> </span>http://127.0.0.1:8000/mcp
+</pre></div>
+</div>
+</section>
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/issues">GitHub Issues</a></p></li>
+<li><p><a class="reference external" href="https://community.zscaler.com/">Zscaler Community</a></p></li>
+<li><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/TROUBLESHOOTING.md">Full Troubleshooting Guide (GitHub)</a></p></li>
+</ul>
 </section>
 </section>
 
@@ -335,7 +565,16 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Troubleshooting Guide</a><ul>
-<li><a class="reference internal" href="#how-to-troubleshoot-your-problem">How to troubleshoot your problem</a></li>
+<li><a class="reference internal" href="#installation-issues">Installation Issues</a></li>
+<li><a class="reference internal" href="#zscaler-api-authentication">Zscaler API Authentication</a></li>
+<li><a class="reference internal" href="#mcp-client-authentication">MCP Client Authentication</a></li>
+<li><a class="reference internal" href="#network-security">Network Security</a></li>
+<li><a class="reference internal" href="#write-operations">Write Operations</a></li>
+<li><a class="reference internal" href="#tool-filtering">Tool Filtering</a></li>
+<li><a class="reference internal" href="#agent-editor-issues">Agent/Editor Issues</a></li>
+<li><a class="reference internal" href="#docker-issues">Docker Issues</a></li>
+<li><a class="reference internal" href="#debugging">Debugging</a></li>
+<li><a class="reference internal" href="#getting-help">Getting Help</a></li>
 </ul>
 </li>
 </ul>

@@ -209,13 +209,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../guides/support.html">Support Guide</a></li>
@@ -279,16 +287,16 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_list</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function to parse list parameters that can be JSON strings or lists.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        val: Either a JSON string representation of a list, or an actual list/other type.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Parsed list if input was a JSON string, otherwise returns the value as-is.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the input is a string but not valid JSON.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        &gt;&gt;&gt; parse_list(&#39;[&quot;item1&quot;, &quot;item2&quot;]&#39;)</span>
 <span class="sd">        [&#39;item1&#39;, &#39;item2&#39;]</span>
@@ -344,9 +352,7 @@
                     <span class="k">if</span> <span class="p">(</span>
                         <span class="n">obj_type_lower</span> <span class="o">==</span> <span class="s2">&quot;platform&quot;</span>
                         <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
-                        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
-                            <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">values</span>
-                        <span class="p">)</span>
+                        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">values</span><span class="p">)</span>
                     <span class="p">):</span>
                         <span class="n">normalized_conditions</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>  <span class="c1"># no op</span>
                         <span class="k">continue</span>
@@ -356,10 +362,7 @@
                         <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
                         <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
                         <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span>
-                        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
-                            <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
-                            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                        <span class="p">)</span>
+                        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
                     <span class="p">):</span>
                         <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -374,9 +377,7 @@
                     <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
                     <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
                     <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span>
-                    <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
-                        <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="p">)</span>
+                    <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
                 <span class="p">):</span>
                     <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -387,45 +388,64 @@
 
         <span class="k">return</span> <span class="n">normalized_conditions</span>
 
-    <span class="c1"># ✅ Step 3: Convert API v1-style response (dicts)</span>
+    <span class="c1"># ✅ Step 3: Convert v2 dict-shaped conditions to SDK tuple format.</span>
+    <span class="c1">#</span>
+    <span class="c1"># The SDK&#39;s ``policies._create_conditions_v2`` accepts the simplified</span>
+    <span class="c1"># tuple shapes documented in the SDK example</span>
+    <span class="c1"># (``zscaler-sdk-python/local_dev/.../access_rule_v2.py``):</span>
+    <span class="c1">#</span>
+    <span class="c1">#   - ``(object_type, [&lt;id&gt;, ...])`` for ID-based types (APP, APP_GROUP,</span>
+    <span class="c1">#     CLIENT_TYPE, CONSOLE, LOCATION, MACHINE_GRP, USER_PORTAL,</span>
+    <span class="c1">#     CHROME_POSTURE_PROFILE).</span>
+    <span class="c1">#   - ``(object_type, [(lhs, rhs), ...])`` or</span>
+    <span class="c1">#     ``(operator, (object_type, [(lhs, rhs), ...]))`` for attribute-based</span>
+    <span class="c1">#     types (POSTURE, TRUSTED_NETWORK, COUNTRY_CODE, PLATFORM,</span>
+    <span class="c1">#     RISK_FACTOR_TYPE, SAML, SCIM, SCIM_GROUP).</span>
+    <span class="c1">#   - ``(chrome_enterprise, attr, value)`` — flat 3-tuple, scalar lhs/rhs,</span>
+    <span class="c1">#     no operator wrapper. CHROME_ENTERPRISE is the only type that breaks</span>
+    <span class="c1">#     the otherwise-uniform list-of-tuples pattern.</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">):</span>
-        <span class="n">converted</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">converted</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">cond</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
-            <span class="n">operator</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operator&quot;</span><span class="p">,</span> <span class="s2">&quot;AND&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="c1"># SDK defaults missing operators to OR; align with that to avoid</span>
+            <span class="c1"># silently grouping operands under an unintended AND.</span>
+            <span class="n">operator</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operator&quot;</span><span class="p">,</span> <span class="s2">&quot;OR&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
             <span class="n">operands</span> <span class="o">=</span> <span class="n">cond</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operands&quot;</span><span class="p">,</span> <span class="p">[])</span>
 
             <span class="k">for</span> <span class="n">operand</span> <span class="ow">in</span> <span class="n">operands</span><span class="p">:</span>
-                <span class="n">obj_type</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;objectType&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_type&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="n">obj_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;objectType&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_type&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
                 <span class="n">values</span> <span class="o">=</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">,</span> <span class="p">[])</span>
-                <span class="n">entry_values</span> <span class="o">=</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                    <span class="s2">&quot;entryValues&quot;</span><span class="p">,</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entry_values&quot;</span><span class="p">,</span> <span class="p">[])</span>
-                <span class="p">)</span>
+                <span class="n">entry_values</span> <span class="o">=</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entryValues&quot;</span><span class="p">,</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entry_values&quot;</span><span class="p">,</span> <span class="p">[]))</span>
 
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_type</span><span class="p">:</span>
                     <span class="k">continue</span>
 
                 <span class="k">if</span> <span class="n">values</span><span class="p">:</span>
-                    <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="p">(</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">values</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">values</span><span class="p">])</span>
-                    <span class="p">)</span>
+                    <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">values</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">values</span><span class="p">]))</span>
+                    <span class="k">continue</span>
 
-                <span class="k">elif</span> <span class="n">entry_values</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">entry_values</span><span class="p">:</span>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry_values</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                         <span class="n">entry_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry_values</span><span class="p">]</span>
                     <span class="n">flattened</span> <span class="o">=</span> <span class="p">[</span>
-                        <span class="p">(</span><span class="n">ev</span><span class="p">[</span><span class="s2">&quot;lhs&quot;</span><span class="p">],</span> <span class="n">ev</span><span class="p">[</span><span class="s2">&quot;rhs&quot;</span><span class="p">])</span>
-                        <span class="k">for</span> <span class="n">ev</span> <span class="ow">in</span> <span class="n">entry_values</span>
-                        <span class="k">if</span> <span class="s2">&quot;lhs&quot;</span> <span class="ow">in</span> <span class="n">ev</span> <span class="ow">and</span> <span class="s2">&quot;rhs&quot;</span> <span class="ow">in</span> <span class="n">ev</span>
+                        <span class="p">(</span><span class="n">ev</span><span class="p">[</span><span class="s2">&quot;lhs&quot;</span><span class="p">],</span> <span class="n">ev</span><span class="p">[</span><span class="s2">&quot;rhs&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">ev</span> <span class="ow">in</span> <span class="n">entry_values</span> <span class="k">if</span> <span class="s2">&quot;lhs&quot;</span> <span class="ow">in</span> <span class="n">ev</span> <span class="ow">and</span> <span class="s2">&quot;rhs&quot;</span> <span class="ow">in</span> <span class="n">ev</span>
                     <span class="p">]</span>
-                    <span class="p">(</span>
-                        <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">flattened</span><span class="p">))</span>
-                        <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s2">&quot;platform&quot;</span>
-                        <span class="k">else</span> <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">operator</span><span class="p">,</span> <span class="p">(</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">flattened</span><span class="p">)))</span>
-                    <span class="p">)</span>
 
-                <span class="k">elif</span> <span class="s2">&quot;lhs&quot;</span> <span class="ow">in</span> <span class="n">operand</span> <span class="ow">and</span> <span class="s2">&quot;rhs&quot;</span> <span class="ow">in</span> <span class="n">operand</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s2">&quot;chrome_enterprise&quot;</span><span class="p">:</span>
+                        <span class="c1"># SDK expects ``(chrome_enterprise, attr, value)`` —</span>
+                        <span class="c1"># one flat 3-tuple per attribute. Emit one per entry</span>
+                        <span class="c1"># to handle multi-attribute inputs correctly.</span>
+                        <span class="k">for</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="ow">in</span> <span class="n">flattened</span><span class="p">:</span>
+                            <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">))</span>
+                    <span class="k">elif</span> <span class="n">obj_type</span> <span class="o">==</span> <span class="s2">&quot;platform&quot;</span><span class="p">:</span>
+                        <span class="c1"># PLATFORM is the only entry-shaped type the SDK</span>
+                        <span class="c1"># documents as bare (no operator wrapper).</span>
+                        <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">flattened</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">operator</span><span class="p">,</span> <span class="p">(</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">flattened</span><span class="p">)))</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="s2">&quot;lhs&quot;</span> <span class="ow">in</span> <span class="n">operand</span> <span class="ow">and</span> <span class="s2">&quot;rhs&quot;</span> <span class="ow">in</span> <span class="n">operand</span><span class="p">:</span>
                     <span class="n">converted</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">obj_type</span><span class="p">,</span> <span class="n">operand</span><span class="p">[</span><span class="s2">&quot;lhs&quot;</span><span class="p">],</span> <span class="n">operand</span><span class="p">[</span><span class="s2">&quot;rhs&quot;</span><span class="p">]))</span>
 
         <span class="k">return</span> <span class="n">converted</span>
@@ -434,77 +454,210 @@
 
 
 
+<span class="c1"># Object types whose v1 operands carry the resolved ID in `rhs` (with `lhs=&quot;id&quot;`)</span>
+<span class="c1"># and which should be emitted in v2 as ``{&quot;object_type&quot;: X, &quot;values&quot;: [&lt;ids&gt;]}``.</span>
+<span class="c1"># Mirrors ``ConvertV1ResponseToV2Request`` in the Terraform ZPA provider</span>
+<span class="c1"># (terraform-provider-zpa/zpa/common.go).</span>
+<span class="n">_V1_TO_V2_VALUE_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;APP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;APP_GROUP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CONSOLE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CHROME_POSTURE_PROFILE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MACHINE_GRP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LOCATION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BRANCH_CONNECTOR_GROUP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;EDGE_CONNECTOR_GROUP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CLIENT_TYPE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;USER_PORTAL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PRIVILEGE_PORTAL&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># Object types whose v1 operands carry semantic ``lhs``/``rhs`` pairs and</span>
+<span class="c1"># which should be emitted in v2 as ``{&quot;object_type&quot;: X, &quot;entry_values&quot;: [{&quot;lhs&quot;:..,&quot;rhs&quot;:..}]}``.</span>
+<span class="n">_V1_TO_V2_ENTRY_TYPES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;PLATFORM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;POSTURE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TRUSTED_NETWORK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SAML&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SCIM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SCIM_GROUP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COUNTRY_CODE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RISK_FACTOR_TYPE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CHROME_ENTERPRISE&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
 <div class="viewcode-block" id="convert_v1_to_v2_response">
 <a class="viewcode-back" href="../../../api/utils.html#zscaler_mcp.utils.utils.convert_v1_to_v2_response">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">convert_v1_to_v2_response</span><span class="p">(</span><span class="n">conditions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Convert the API&#39;s v1 response format to a standardized v2 format</span>
-<span class="sd">    that maintains operator grouping and simplifies the structure.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize a ZPA Policy Access v1 GET/POST response into v2 request shape.</span>
+
+<span class="sd">    The ZPA Policy Access API is structurally asymmetric: write operations</span>
+<span class="sd">    accept a v2-shaped body (``operands`` carry ``values: [...]`` for ID-based</span>
+<span class="sd">    types and ``entry_values: [{lhs, rhs}, ...]`` for attribute-based types),</span>
+<span class="sd">    but read operations return a v1-shaped body where every operand is a flat</span>
+<span class="sd">    ``{&quot;objectType&quot;: ..., &quot;lhs&quot;: ..., &quot;rhs&quot;: ...}`` dict and operands of the</span>
+<span class="sd">    same logical block are split into multiple sibling operand entries inside</span>
+<span class="sd">    the same condition.</span>
+
+<span class="sd">    This function reshapes the v1 response back into the v2 shape so callers</span>
+<span class="sd">    can round-trip a created/fetched rule through update without re-deriving</span>
+<span class="sd">    the condition payload by hand. The algorithm mirrors</span>
+<span class="sd">    ``ConvertV1ResponseToV2Request`` in the Terraform ZPA provider</span>
+<span class="sd">    (``terraform-provider-zpa/zpa/common.go``). For each input v1 condition it</span>
+<span class="sd">    preserves the original ``operator``, groups operands by ``objectType`` into</span>
+<span class="sd">    a VALUE bucket (ID-typed objects: APP, APP_GROUP, MACHINE_GRP, LOCATION,</span>
+<span class="sd">    CLIENT_TYPE, USER_PORTAL, PRIVILEGE_PORTAL, CONSOLE, CHROME_POSTURE_PROFILE,</span>
+<span class="sd">    BRANCH_CONNECTOR_GROUP, EDGE_CONNECTOR_GROUP) and an ENTRY bucket</span>
+<span class="sd">    (attribute-typed objects: PLATFORM, POSTURE, TRUSTED_NETWORK, SAML, SCIM,</span>
+<span class="sd">    SCIM_GROUP, COUNTRY_CODE, RISK_FACTOR_TYPE, CHROME_ENTERPRISE), then emits</span>
+<span class="sd">    one v2 operand per ``(objectType, bucket)``. Aggregation never crosses</span>
+<span class="sd">    condition boundaries — preserving them is critical because the AND/OR</span>
+<span class="sd">    semantics depend on it (two separate POSTURE conditions = AND, two operands</span>
+<span class="sd">    within one POSTURE condition = OR). Object types and entry-value pairs are</span>
+<span class="sd">    sorted for stable output.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        conditions: A list of v1-shaped condition dicts as returned by ZPA Policy</span>
+<span class="sd">            Access GET/POST endpoints. Each condition has an ``operator`` and a</span>
+<span class="sd">            flat list of ``operands``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of v2-shaped condition dicts, one per input v1 condition. Each</span>
+<span class="sd">        emitted condition has the form</span>
+<span class="sd">        ``{&quot;operator&quot;: &quot;AND&quot;|&quot;OR&quot;, &quot;operands&quot;: [{&quot;object_type&quot;: &quot;APP&quot;,</span>
+<span class="sd">        &quot;values&quot;: [...]}, {&quot;object_type&quot;: &quot;POSTURE&quot;, &quot;entry_values&quot;:</span>
+<span class="sd">        [{&quot;lhs&quot;: &quot;...&quot;, &quot;rhs&quot;: &quot;true&quot;}, ...]}]}``. Empty input returns an empty</span>
+<span class="sd">        list.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">conditions</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="n">VALUE_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;APP&quot;</span><span class="p">,</span> <span class="s2">&quot;APP_GROUP&quot;</span><span class="p">,</span> <span class="s2">&quot;CLIENT_TYPE&quot;</span><span class="p">,</span> <span class="s2">&quot;MACHINE_GRP&quot;</span><span class="p">}</span>
-    <span class="n">ENTRY_TYPES</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;COUNTRY_CODE&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;POSTURE&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;TRUSTED_NETWORK&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SAML&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SCIM&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;SCIM_GROUP&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;PLATFORM&quot;</span><span class="p">,</span>
-    <span class="p">}</span>
+    <span class="n">v2_conditions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="n">grouped_values</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-    <span class="n">grouped_entries</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-    <span class="n">v2_conditions</span> <span class="o">=</span> <span class="p">[]</span>
-
+    <span class="c1"># Iteration is intentionally per-condition: aggregation MUST NOT cross</span>
+    <span class="c1"># condition boundaries (see docstring re. AND vs OR semantics).</span>
     <span class="k">for</span> <span class="n">condition</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">:</span>
         <span class="n">cond_op</span> <span class="o">=</span> <span class="p">(</span><span class="n">condition</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operator&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;OR&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">operands</span> <span class="o">=</span> <span class="n">condition</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operands&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
 
-        <span class="k">for</span> <span class="n">operand</span> <span class="ow">in</span> <span class="n">condition</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operands&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+        <span class="c1"># Aggregate operands of the same objectType WITHIN this condition only.</span>
+        <span class="n">values_by_type</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">entries_by_type</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">operand</span> <span class="ow">in</span> <span class="n">operands</span><span class="p">:</span>
             <span class="n">obj_type</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;objectType&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_type&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
             <span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">obj_type</span><span class="p">:</span>
                 <span class="k">continue</span>
 
-            <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">VALUE_TYPES</span><span class="p">:</span>
-                <span class="n">rhs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">rhs</span><span class="p">:</span>
-                    <span class="n">grouped_values</span><span class="p">[(</span><span class="n">cond_op</span><span class="p">,</span> <span class="n">obj_type</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">_V1_TO_V2_VALUE_TYPES</span><span class="p">:</span>
+                <span class="n">rhs</span> <span class="o">=</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rhs&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">rhs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                    <span class="n">values_by_type</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">rhs</span><span class="p">))</span>
 
-            <span class="k">elif</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">ENTRY_TYPES</span><span class="p">:</span>
-                <span class="n">lhs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lhs&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-                <span class="n">rhs</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rhs&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">lhs</span> <span class="ow">and</span> <span class="n">rhs</span><span class="p">:</span>
-                    <span class="n">grouped_entries</span><span class="p">[(</span><span class="n">cond_op</span><span class="p">,</span> <span class="n">obj_type</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="p">{</span><span class="s2">&quot;lhs&quot;</span><span class="p">:</span> <span class="n">lhs</span><span class="p">,</span> <span class="s2">&quot;rhs&quot;</span><span class="p">:</span> <span class="n">rhs</span><span class="p">}</span>
+            <span class="k">elif</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">_V1_TO_V2_ENTRY_TYPES</span><span class="p">:</span>
+                <span class="n">lhs</span> <span class="o">=</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;lhs&quot;</span><span class="p">)</span>
+                <span class="n">rhs</span> <span class="o">=</span> <span class="n">operand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rhs&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">lhs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rhs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">entries_by_type</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">{</span><span class="s2">&quot;lhs&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">lhs</span><span class="p">),</span> <span class="s2">&quot;rhs&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">rhs</span><span class="p">)}</span>
                     <span class="p">)</span>
+            <span class="c1"># Unknown object types are ignored (matches Terraform behavior:</span>
+            <span class="c1"># the switch has no default branch).</span>
 
-    <span class="c1"># Group value-based conditions</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">obj_type</span><span class="p">),</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">grouped_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">v2_conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;operator&quot;</span><span class="p">:</span> <span class="n">op</span><span class="p">,</span>
-                <span class="s2">&quot;operands&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span><span class="s2">&quot;object_type&quot;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">values</span><span class="p">)))}</span>
-                <span class="p">],</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
+        <span class="n">new_operands</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="c1"># Group entry-value-based conditions</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">obj_type</span><span class="p">),</span> <span class="n">entries</span> <span class="ow">in</span> <span class="n">grouped_entries</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">v2_conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;operands&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;object_type&quot;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s2">&quot;entry_values&quot;</span><span class="p">:</span> <span class="n">entries</span><span class="p">}],</span>
-                <span class="o">**</span><span class="p">(</span>
-                    <span class="p">{</span><span class="s2">&quot;operator&quot;</span><span class="p">:</span> <span class="n">op</span><span class="p">}</span> <span class="k">if</span> <span class="n">obj_type</span> <span class="o">!=</span> <span class="s2">&quot;PLATFORM&quot;</span> <span class="k">else</span> <span class="p">{}</span>
-                <span class="p">),</span>  <span class="c1"># ✅ no operator for platform</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
+        <span class="c1"># Emit value-bucket operands in deterministic order.</span>
+        <span class="k">for</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">values_by_type</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="c1"># De-dupe while preserving order, then sort for stable output.</span>
+            <span class="n">unique_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">values_by_type</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]))</span>
+            <span class="n">new_operands</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;object_type&quot;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">unique_sorted</span><span class="p">})</span>
+
+        <span class="c1"># Emit entry-bucket operands in deterministic order.</span>
+        <span class="k">for</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">entries_by_type</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">entries</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="n">entries_by_type</span><span class="p">[</span><span class="n">obj_type</span><span class="p">],</span>
+                <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s2">&quot;lhs&quot;</span><span class="p">],</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;rhs&quot;</span><span class="p">]),</span>
+            <span class="p">)</span>
+            <span class="n">new_operands</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;object_type&quot;</span><span class="p">:</span> <span class="n">obj_type</span><span class="p">,</span> <span class="s2">&quot;entry_values&quot;</span><span class="p">:</span> <span class="n">entries</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_operands</span><span class="p">:</span>
+            <span class="c1"># Drop empty conditions rather than emit an operator with no operands.</span>
+            <span class="k">continue</span>
+
+        <span class="n">v2_conditions</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;operator&quot;</span><span class="p">:</span> <span class="n">cond_op</span><span class="p">,</span> <span class="s2">&quot;operands&quot;</span><span class="p">:</span> <span class="n">new_operands</span><span class="p">})</span>
 
     <span class="k">return</span> <span class="n">v2_conditions</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_v2_rule_response">
+<a class="viewcode-back" href="../../../api/utils.html#zscaler_mcp.utils.utils.normalize_v2_rule_response">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_v2_rule_response</span><span class="p">(</span><span class="n">sdk_object</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">raw_response</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stitch a v2 policy-rule write response into a complete, correct dict.</span>
+
+<span class="sd">    Background — the SDK has a known asymmetry in its policy-rule models:</span>
+
+<span class="sd">    - The **V1 Operand** model (used by ``policies.get_rule(...)``) reads</span>
+<span class="sd">      ``objectType``, ``lhs``, and ``rhs`` from the API response. It</span>
+<span class="sd">      preserves the data the v1-shaped API actually returns.</span>
+
+<span class="sd">    - The **V2 Operand** model (used by ``policies.add_*_rule_v2`` and</span>
+<span class="sd">      ``policies.update_*_rule_v2``) reads only ``objectType``, ``values``,</span>
+<span class="sd">      and ``entryValues`` — it does **not** read ``lhs`` / ``rhs``. But the</span>
+<span class="sd">      v2 add/update endpoints receive a **v1-shaped response** from the API</span>
+<span class="sd">      (operands with flat ``lhs``/``rhs``), which the V2 model then drops on</span>
+<span class="sd">      deserialization. Result: ``created.as_dict()[&quot;conditions&quot;]`` returns</span>
+<span class="sd">      operands with empty ``values`` and ``entry_values`` arrays even when</span>
+<span class="sd">      the rule was created perfectly.</span>
+
+<span class="sd">    The fix is to bypass the lossy V2 model: read the raw API response body</span>
+<span class="sd">    (``response.get_body()`` returns the JSON-decoded dict, untouched by any</span>
+<span class="sd">    SDK model) and run its ``conditions`` through ``convert_v1_to_v2_response``.</span>
+<span class="sd">    The rest of the rule (id, name, action, etc.) comes from the SDK&#39;s</span>
+<span class="sd">    ``as_dict()`` because the top-level fields ARE preserved correctly there.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sdk_object</span>
+<span class="sd">        The first element of the SDK tuple — e.g. ``created`` from</span>
+<span class="sd">        ``created, response, err = api.add_access_rule_v2(...)``. Provides</span>
+<span class="sd">        the snake_case top-level field set the agent expects.</span>
+<span class="sd">    raw_response</span>
+<span class="sd">        The second element of the SDK tuple — the ``ZscalerAPIResponse``</span>
+<span class="sd">        (or ``None`` if the call failed before a body was received). Used</span>
+<span class="sd">        only to recover the v1-shaped ``conditions`` block that the SDK&#39;s</span>
+<span class="sd">        V2 model dropped.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The SDK&#39;s ``as_dict()`` with ``conditions`` rebuilt from the raw response.</span>
+<span class="sd">    Falls back gracefully (returns the SDK dict unchanged) when the raw</span>
+<span class="sd">    response is missing, has no body, or carries no conditions — so callers</span>
+<span class="sd">    do not have to check.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rule_data</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">sdk_object</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">sdk_object</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">raw_response</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rule_data</span>
+
+    <span class="n">body</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">raw_response</span><span class="o">.</span><span class="n">get_body</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rule_data</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">rule_data</span>
+
+    <span class="n">raw_conditions</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conditions&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">raw_conditions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">rule_data</span>
+
+    <span class="n">rule_data</span><span class="p">[</span><span class="s2">&quot;conditions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">convert_v1_to_v2_response</span><span class="p">(</span><span class="n">raw_conditions</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rule_data</span></div>
 
 
 

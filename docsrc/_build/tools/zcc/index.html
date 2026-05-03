@@ -210,13 +210,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -292,13 +300,10 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_devices</span></code></p></td>
 <td><p>Retrieves ZCC device enrollment information from the Client Connector Portal</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_devices_csv_exporter</span></code></p></td>
-<td><p>Downloads ZCC device information or service status as a CSV file</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_trusted_networks</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_trusted_networks</span></code></p></td>
 <td><p>Returns the list of Trusted Networks By Company ID in the Client Connector Portal</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_forwarding_profiles</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_forwarding_profiles</span></code></p></td>
 <td><p>Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal</p></td>
 </tr>
 </tbody>
@@ -330,12 +335,6 @@
 <dt class="field-even">type search<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[str]</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zcc”)</p>
 </dd>
@@ -349,38 +348,6 @@
 .. code-block:: python</p>
 <blockquote>
 <div><p>devices = zcc_list_devices(page=1, page_size=50, search=”laptop”)</p>
-</div></blockquote>
-</section>
-<section id="zcc-devices-csv-exporter">
-<h3>zcc_devices_csv_exporter<a class="headerlink" href="#zcc-devices-csv-exporter" title="Link to this heading">¶</a></h3>
-<p>Downloads ZCC device information or service status as a CSV file.</p>
-<p><strong>Parameters:</strong></p>
-<dl class="field-list simple">
-<dt class="field-odd">param export_type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Type of export (“devices” or “service_status”)</p>
-</dd>
-<dt class="field-even">type export_type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str</p>
-</dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-<dt class="field-odd">param service<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The service to use (default: “zcc”)</p>
-</dd>
-<dt class="field-even">type service<span class="colon">:</span></dt>
-<dd class="field-even"><p>str</p>
-</dd>
-</dl>
-<p><strong>Returns:</strong>
-- CSV file content as string</p>
-<p><strong>Example:</strong>
-.. code-block:: python</p>
-<blockquote>
-<div><p>csv_data = zcc_devices_csv_exporter(export_type=”devices”)</p>
 </div></blockquote>
 </section>
 <section id="zcc-list-trusted-networks">
@@ -405,12 +372,6 @@
 </dd>
 <dt class="field-even">type search<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[str]</p>
-</dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
 </dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zcc”)</p>
@@ -450,12 +411,6 @@
 <dt class="field-even">type search<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[str]</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zcc”)</p>
 </dd>
@@ -474,26 +429,14 @@
 </section>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
-<p>ZCC tools support both OneAPI and Legacy authentication methods:</p>
-<p><strong>OneAPI Authentication:</strong>
-- Uses OAuth2 client credentials
-- Requires the following environment variables:</p>
+<p>ZCC tools authenticate through <strong>OneAPI</strong> (OAuth2 client credentials).
+Required environment variables:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></li>
-</ul>
-</div></blockquote>
-<p><strong>Legacy Authentication:</strong>
-- Uses API key and secret key
-- Requires the following environment variables:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_ID</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_SECRET</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLOUD</span></code></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -578,7 +521,6 @@
 <li><a class="reference internal" href="#available-tools">Available Tools</a></li>
 <li><a class="reference internal" href="#tool-details">Tool Details</a><ul>
 <li><a class="reference internal" href="#zcc-list-devices">zcc_list_devices</a></li>
-<li><a class="reference internal" href="#zcc-devices-csv-exporter">zcc_devices_csv_exporter</a></li>
 <li><a class="reference internal" href="#zcc-list-trusted-networks">zcc_list_trusted_networks</a></li>
 <li><a class="reference internal" href="#zcc-list-forwarding-profiles">zcc_list_forwarding_profiles</a></li>
 </ul>

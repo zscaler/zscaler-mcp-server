@@ -6,6 +6,436 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## Unreleased
+
+### Breaking Changes
+
+**Removed legacy per-service authentication.** OneAPI is now the only supported authentication mode. The ``ZSCALER_USE_LEGACY`` environment variable, the ``use_legacy`` parameter on every tool, the per-service legacy clients (``LegacyZPAClient``, ``LegacyZIAClient``, ``LegacyZCCClient``, ``LegacyZTWClient``, ``LegacyZDXClient``), and the per-service credential blocks (``ZPA_*``, ``ZIA_*``, ``ZCC_*``, ``ZTW_*``, ``ZDX_*``) have all been removed. To migrate: configure ``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECRET`` (or ``ZSCALER_PRIVATE_KEY``), ``ZSCALER_VANITY_DOMAIN``, and ``ZSCALER_CUSTOMER_ID`` (the last is required only when calling ZPA tools), and drop any ``use_legacy=true`` arguments from your MCP tool calls.
+
+**Removed the** ``zcc_devices_csv_exporter`` **tool.** Tool registration was already removed in PR #38; this release deletes the tool module, unit tests, the e2e fixture, and all remaining references in documentation. Use ``zcc_list_devices`` for device inventory queries.
+
+## 0.10.5 (April 27, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Breaking Changes
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Renamed three ZIA Shadow IT tools to disambiguate them from the policy-engine cloud-application catalog: ``zia_list_cloud_applications`` → ``zia_list_shadow_it_apps``, ``zia_list_cloud_application_custom_tags`` → ``zia_list_shadow_it_custom_tags``, ``zia_bulk_update_cloud_applications`` → ``zia_bulk_update_shadow_it_apps``. Update any saved prompts, scripts, or integrations that reference the previous names.
+
+### Enhancements
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA Cloud Firewall DNS Rules** management tools: ``zia_list_cloud_firewall_dns_rules``, ``zia_get_cloud_firewall_dns_rule``, ``zia_create_cloud_firewall_dns_rule``, ``zia_update_cloud_firewall_dns_rule``, ``zia_delete_cloud_firewall_dns_rule``.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA Cloud Firewall IPS Rules** management tools: ``zia_list_cloud_firewall_ips_rules``, ``zia_get_cloud_firewall_ips_rule``, ``zia_create_cloud_firewall_ips_rule``, ``zia_update_cloud_firewall_ips_rule``, ``zia_delete_cloud_firewall_ips_rule``.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA File Type Control Rules** management tools: ``zia_list_file_type_control_rules``, ``zia_get_file_type_control_rule``, ``zia_create_file_type_control_rule``, ``zia_update_file_type_control_rule``, ``zia_delete_file_type_control_rule``, plus ``zia_list_file_type_categories`` for discovering canonical ``file_types`` enum values.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA Sandbox Rules** management tools: ``zia_list_sandbox_rules``, ``zia_get_sandbox_rule``, ``zia_create_sandbox_rule``, ``zia_update_sandbox_rule``, ``zia_delete_sandbox_rule``. These manage the policy rules governing sandbox enforcement and are distinct from the existing sandbox **report** tools (``zia_get_sandbox_report``, ``zia_get_sandbox_quota``).
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added **ZIA policy-engine cloud-application catalog** read tools: ``zia_list_cloud_app_policy`` and ``zia_list_cloud_app_ssl_policy``. Use these to discover the canonical ``UPPER_SNAKE_CASE`` enum tokens (e.g. ``SHAREPOINT_ONLINE``, ``GOOGLE_DRIVE``, ``ONEDRIVE``) that the ``cloud_applications`` field on SSL Inspection, Web DLP, Cloud App Control, File Type Control, Bandwidth, and Advanced Settings rules accepts. Distinct from the Shadow IT analytics catalog (``zia_list_shadow_it_apps``).
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - **Cloud-application name auto-resolution** for ``zia_create_ssl_inspection_rule``, ``zia_update_ssl_inspection_rule``, ``zia_create_file_type_control_rule``, ``zia_update_file_type_control_rule``, and ``zia_list_cloud_app_control_actions``. Friendly inputs like ``"Google Drive"``, ``"one drive"``, or ``"Sharepoint Online"`` are silently translated to the canonical enums the API requires (``GOOGLE_DRIVE``, ``ONEDRIVE``, ``SHAREPOINT_ONLINE``) using a 5-minute in-process catalog cache. The response includes a ``_cloud_applications_resolution`` audit field showing the mapping. Set ``resolve_cloud_apps=False`` to disable.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - **Silent backfill of required fields** on ZIA policy-rule update tools (``zia_update_ssl_inspection_rule``, ``zia_update_cloud_firewall_dns_rule``, ``zia_update_cloud_firewall_ips_rule``, ``zia_update_file_type_control_rule``, ``zia_update_sandbox_rule``). ZIA's update endpoints are PUT (full replacement), not PATCH — partial payloads previously risked resetting unspecified fields. The tools now fetch the existing rule and silently backfill ``name`` and ``order`` when they are missing from the input payload.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added new skill ``skills/zia/resolve-cloud-app-enum/SKILL.md`` guiding agents on which ZIA cloud-application catalog to use (Shadow IT analytics vs. policy-engine) and how to leverage the auto-resolver when configuring policy rules.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Added ``local_dev/scripts/setup-zscaler-auth.py`` — one-shot orchestration script for running the MCP server with Zscaler OneAPI authentication (``auth-mode=zscaler``). Loads credentials from ``.env``, starts the server (Docker or Python), verifies the auth endpoints, and writes static ``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret`` headers into Claude Desktop and Cursor configs. Mirrors the existing ``setup-oidcproxy-auth.py`` flow.
+
+### Bug Fixes
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Fixed validation errors on the new ZIA list tools (``zia_list_cloud_firewall_dns_rules``, ``zia_list_cloud_firewall_ips_rules``, ``zia_list_file_type_control_rules``, ``zia_list_file_type_categories``, ``zia_list_sandbox_rules``) when JMESPath expressions returned scalars or non-dict shapes (e.g. ``query="length(@)"`` to count rules). The strict ``-> List[dict]`` return-type annotation was being rejected by the MCP/Pydantic output validator, which forced AI agents to narrate around the error and exposed JMESPath / validation internals to end users. Return type relaxed to ``Any`` to match the polymorphic JMESPath contract.
+
+`PR #57 <https://github.com/zscaler/zscaler-mcp-server/pull/57>`_ - Hardened the four new ZIA delete tools (``zia_delete_cloud_firewall_dns_rule``, ``zia_delete_cloud_firewall_ips_rule``, ``zia_delete_file_type_control_rule``, ``zia_delete_sandbox_rule``) into the resource-bound HMAC-SHA256 confirmation flow. Confirmation tokens are bound to the specific ``rule_id`` and rejected if replayed against a different resource — closing the same vulnerability class (CWE-345) addressed in earlier delete tools.
+
+## 0.10.4 (April 22, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Switched the **Claude Code plugin** runtime in ``.mcp.json`` from a local-only Docker image (``zscaler-mcp-server:latest`` with ``--pull=never``) to the published PyPI distribution (``uvx zscaler-mcp@<version>``), and replaced the hard-coded absolute path to ``.env`` with ``${CLAUDE_PLUGIN_ROOT}/.env``. Resolves Anthropic marketplace review feedback that the previous configuration would not work for end users.
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Added the missing ``"version"`` field to ``.claude-plugin/plugin.json`` so the plugin manifest is aligned with ``.claude-plugin/marketplace.json``, ``pyproject.toml``, and ``zscaler_mcp/__init__.py``.
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Corrected the invalid Docker image tag ``zscaler/zscaler-mcp-server:latest:1.2.3`` to ``zscaler/zscaler-mcp-server:1.2.3`` in ``README.md`` and ``docsrc/index.rst``.
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Fixed ``uvx`` invocations in ``README.md`` to use the correct PyPI package name (``zscaler-mcp``) instead of the repository name (``zscaler-mcp-server``) in three install snippets.
+
+### Enhancements
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Updated Docker-based MCP client configuration examples in ``docs/deployment/authentication-and-deployment.md`` (Claude Desktop, Cursor, Windsurf, VS Code, troubleshooting) to use the public Docker Hub image ``zscaler/zscaler-mcp-server:latest`` and removed the ``--pull=never`` flag so end-user snippets work without a local build.
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Refreshed ``integrations/claude-code-plugin/README.md`` to document the ``uvx`` execution model with ``${CLAUDE_PLUGIN_ROOT}/.env``, mark Docker as optional, and reference the public Docker image for fallback usage.
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Added a clarifying note in ``README.md`` on resolving ``.env`` paths across plugin contexts (``${CLAUDE_PLUGIN_ROOT}/.env`` for Claude Code, ``${extensionPath}${pathSeparator}.env`` for Gemini extensions, absolute paths for standalone MCP clients).
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Extended ``.github/set-version.sh`` to bump the ``version`` field in ``.claude-plugin/plugin.json`` and the pinned ``zscaler-mcp@<version>`` reference in ``.mcp.json`` on every ``semantic-release`` cut.
+
+`PR #55 <https://github.com/zscaler/zscaler-mcp-server/pull/55>`_ - Added ``.claude-plugin/plugin.json`` and ``.mcp.json`` to the ``assets`` list in ``.releaserc.json`` so ``semantic-release`` commits the bumped versions back to the repository alongside the other manifests.
+
+## 0.10.3 (April 20, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Refactored **Azure AI Foundry agent authentication** to use ``MCPTool.project_connection_id`` referencing a Foundry **Custom keys connection** instead of inline ``MCPTool.headers``. Foundry now rejects sensitive header names (``Authorization``, ``*-Secret``, ``*-Key``, ``*-Token``) with ``Headers that can include sensitive information are not allowed in the headers property for MCP tools. Use project_connection_id instead.``, breaking the previous ``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret`` inline pattern. The connection-based flow restores end-to-end agent creation and tool calls.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Replaced the over-broad ``_handle_api_error`` exception swallowing in ``foundry_agent.py`` with a verbose handler that surfaces the underlying exception type, message, HTTP status, and error body. Optional full traceback via ``ZSCALER_FOUNDRY_DEBUG=1``. Previous behavior masked Foundry's real ``invalid_payload`` errors as generic "Connection error" messages.
+
+### Enhancements
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``agent_create`` connection probe** in ``foundry_agent.py``. When the Foundry Custom keys connection (default ``zscaler-mcp-headers``) already exists, the script silently confirms and proceeds; when missing, it prints copy-paste-ready portal instructions (Management center → Connected resources → + New connection → Custom keys, with the per-auth-mode key list) and exits before mutating Foundry. Eliminates noisy repeated portal instructions on every run.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **Foundry portal deep-link generator** to ``agent_create``. Builds a working URL into the new Foundry "nextgen" experience (``https://ai.azure.com/nextgen/r/{sub_b64},{rg},,{account},{project}/build/agents/{name}/build?version={n}``) by base64url-encoding the subscription UUID parsed from the connection ARM resource ID. Replaces the previous non-working ``/projects/<proj>/agents/<name>`` URL.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added ``AZURE_FOUNDRY_CONNECTION_NAME`` environment variable (default ``zscaler-mcp-headers``) so ``agent_create`` runs non-interactively when the connection name is pinned in ``.env``. Promoted from ``azure_mcp_operations.py`` into the runtime environment alongside ``AZURE_AI_PROJECT_ENDPOINT`` and ``AZURE_OPENAI_MODEL``.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Updated ``integrations/azure/README.md`` with the new connection-based authentication walkthrough (per-auth-mode key list, one-time portal setup) and the correct **Prompt Agent** navigation path in the new Foundry UI (``Build → Agents → Agents tab``), plus a callout distinguishing Prompt Agents from legacy Assistant API agents (``asst_xxxx``) that share the same project.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Updated ``local_dev/azure_mcp_deployment/azure_demo_recording_script.md`` to reflect the connection-based Foundry auth flow, including the one-time portal setup callout, the new ``agent_create`` walkthrough, and the deep-link to the deployed agent.
+
+### Documentation
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/azure-deployment.rst``** — consolidated Sphinx guide covering Azure Container Apps, Virtual Machine, AKS (Preview), and the Azure AI Foundry agent (with the new ``project_connection_id`` auth flow and Custom keys portal setup steps).
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/gcp-gke.rst``** — Sphinx guide for the GKE deployment target of ``gcp_mcp_operations.py`` (Autopilot or existing cluster, Workload Identity, Secret Manager, LoadBalancer Service).
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/gcp-compute-engine-vm.rst``** — Sphinx guide for the Compute Engine VM target (Debian 12 + systemd + PyPI), including the rationale for picking VM over Cloud Run in enterprise GCP organizations enforcing ``constraints/iam.allowedPolicyMemberDomains``.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Added **``docsrc/guides/gcp-adk-agent.rst``** — Sphinx guide for the Gemini-powered Zscaler ADK Agent across Local / Cloud Run / Vertex AI Agent Engine / Google Agentspace, documenting the co-located-subprocess architecture (MCP server runs inside the agent container via stdio, not as a separate networked service).
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Refreshed ``docsrc/integrations/index.rst``: added Azure AKS Preview row to the deployment-targets table, replaced the "Available Integrations" external links with ``:doc:`` references to the new Sphinx guides, and rewrote the Azure AI Foundry section to document the connection-based auth requirement and the new Prompt Agent portal navigation.
+
+`PR #50 <https://github.com/zscaler/zscaler-mcp-server/pull/50>`_ - Registered the four new guides in ``docsrc/guides/index.rst`` toctree alongside the existing ``gcp-cloud-run`` and ``amazon-bedrock-agentcore`` entries. Full Sphinx build passes with ``-W --keep-going`` (zero warnings, zero errors).
+
+## 0.10.2 (April 14, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+`PR #49 <https://github.com/zscaler/zscaler-mcp-server/pull/49>`_ - Update to `zscaler-sdk-python v1.9.21 <https://github.com/zscaler/zscaler-sdk-python/releases/tag/v1.9.21>`_
+
+## 0.10.1 (April 11, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Features
+
+`PR #48 <https://github.com/zscaler/zscaler-mcp-server/pull/48>`_ - Aligned **Cursor Marketplace plugin** with official plugin-template standards. Fixed ``category`` to ``developer-tools``, moved logo to ``assets/``, added ``marketplace.json`` for validation compatibility, declared required Zscaler OneAPI env vars in ``mcp.json``, and added ``name`` frontmatter to all 20 command files. Plugin now passes Cursor's ``validate-template.mjs`` checklist.
+
+`PR #48 <https://github.com/zscaler/zscaler-mcp-server/pull/48>`_ - Added 7 **Cursor rules** (``.mdc`` files) covering tool naming conventions, ZIA activation requirement, ZPA dependency chain, write operation safety, ZDX read-only conventions, ZMS GraphQL patterns, and cross-service data overlap.
+
+## 0.10.0 (April 10, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Features
+
+`PR #47 <https://github.com/zscaler/zscaler-mcp-server/pull/47>`_ - Added **GitHub MCP Registry integration** (``server.json``) enabling one-click installation from GitHub Copilot and MCP-compatible clients. Declares PyPI and Docker packages with required Zscaler OneAPI credentials. Version auto-updated by the release pipeline.
+
+### Bug Fixes
+
+`PR #47 <https://github.com/zscaler/zscaler-mcp-server/pull/47>`_ - Upgraded Docker base image from ``python:3.13-alpine`` to ``python:3.14-alpine`` (digest-pinned) and explicitly patched Alpine packages to fix CVE-2026-28390 (openssl), CVE-2026-22184 (zlib). Applied same fixes to AWS ECR Dockerfile, replacing ``curl`` health check with busybox ``wget`` to eliminate 11 additional curl CVEs.
+
+## 0.9.0 (April 9, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Azure Container Apps deployment** via interactive script (``azure_mcp_operations.py``). Pulls image from Docker Hub, supports 5 auth modes (OIDCProxy, JWT, API Key, Zscaler, None), and stores all secrets in Azure Key Vault.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Azure Virtual Machine deployment** with Ubuntu 22.04, systemd service, PyPI install, NSG configuration, and SSH access.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Azure AI Foundry Agent integration** (``foundry_agent.py``). Creates a managed GPT-4o agent that wraps the deployed MCP server as a tool via ``MCPTool``, with ``require_approval="always"`` for human oversight.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Foundry Agent interactive CLI chat** (``agent_chat``) with animated braille spinner, per-response token tracking, wall-clock timing, in-chat commands (``help``, ``status``, ``clear``, ``reset``), and end-of-session summary.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **OIDCProxy support for Microsoft Entra ID** as an identity provider. Entra ID works as a drop-in replacement for Auth0/Okta with ``audience`` set to the Application (client) ID.
+
+### Enhancements
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Foundry Agent authenticates to MCP server via ``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret`` custom headers, bypassing Foundry's sensitive header restriction on ``Authorization`` and the ``project_connection_id`` URI parsing bug.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Foundry Agent chat implements proper response chaining via ``previous_response_id`` for multi-turn conversations with tool approvals.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Foundry Agent chat displays Zscaler ASCII logo banner on startup with agent name and version.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Foundry Agent chat includes **graceful API error handling** for common failures (DeploymentNotFound, authentication errors, rate limits, connection issues) with actionable remediation steps instead of raw tracebacks.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Azure deployment script uses **provider-neutral OIDC variable names** (``OIDCPROXY_DOMAIN``, ``OIDCPROXY_CLIENT_ID``, etc.) with backward-compatible fallbacks to ``AUTH0_*`` variables.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Azure deployment script auto-configures Claude Desktop and Cursor client configs with correct auth headers and MCP endpoint URL.
+
+### Tests
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **81 unit tests** for Azure deployment (``test_azure_mcp_operations.py``) and Foundry agent (``test_foundry_agent.py``) covering .env parsing, credential resolution, CLI parser, state management, VM setup script generation, MCP header building, error handling, agent lifecycle, and in-chat commands.
+
+### Documentation
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added **Azure AI Foundry deployment guide** (``docs/deployment/azure-ai-foundry.md``) with end-to-end walkthrough covering both CLI and portal methods, Foundry project creation with screenshots, model deployment prerequisites, in-chat commands, environment variables, and troubleshooting.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added Azure integration README (``integrations/azure/README.md``) with architecture diagrams for Container Apps, VM, and Foundry Agent deployments, all CLI commands, client configuration examples, and troubleshooting guide.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Added Microsoft Entra ID OIDCProxy step-by-step guide (``docs/deployment/entra-id-oidcproxy.md``) with 7 portal screenshots covering app registration, client secret, ID tokens, API permissions, and endpoints.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``docsrc/integrations/index.rst`` with Azure Deployment, Azure AI Foundry Agent sections, quick start commands, and link to the Foundry deployment guide.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated root ``README.md`` with Azure deployment section including Foundry agent commands and platform integrations table.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``CLAUDE.md`` with Azure deployment architecture, Foundry Agent command reference with flags, in-chat commands, graceful error handling, deployment guide reference, and Entra ID guide reference.
+
+`PR #46 <https://github.com/zscaler/zscaler-mcp-server/pull/46>`_ - Updated ``authentication-and-deployment.md`` with expanded Entra ID app registration instructions and link to the dedicated Entra ID guide.
+
+## 0.8.1 (April 6, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Added **JMESPath client-side filtering** across all 88 list tools spanning 9 services (ZIA, ZPA, ZDX, ZCC, ZTW, ZID, EASM, ZINS, ZMS). Every list tool now accepts an optional ``query`` parameter for server-side filtering and projection of API results before they reach the AI agent.
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Added ``zscaler_search_tools`` meta-tool for AI agent tool discovery. Supports filtering by ``service``, ``name_contains``, ``description_contains``, and advanced JMESPath queries against the full tool registry. Returns tool name, description, service, and type (read/write) for each match.
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Added **tool-call audit logging** via ``--log-tool-calls`` CLI flag or ``ZSCALER_MCP_LOG_TOOL_CALLS`` environment variable. Logs tool name, sanitized arguments, execution duration, and result summary for every tool invocation. Sensitive parameters (passwords, secrets, tokens) are automatically redacted.
+
+### Enhancements
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Added **ZMS GraphQL filtering and ordering** to 6 tool domains: resources, resource groups, policy rules, app zones, app catalog, and tags. Tools now accept ``filter_by`` parameters (name, status, resource_type, cloud_provider, cloud_region, platform_os) and ``sort_order`` for server-side query refinement.
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Added 3 new ZMS guided skills: ``review-tag-classification`` (tag namespace hierarchy analysis), ``analyze-policy-rules`` (policy rule optimization and conflict detection), and ``assess-workload-protection`` (workload coverage and agent health assessment).
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Created centralized JMESPath utility module (``zscaler_mcp/common/jmespath_utils.py``) shared across all services, with graceful error handling for invalid expressions and consistent return normalization.
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Added ``jmespath>=1.0.0`` as an explicit dependency in ``pyproject.toml``.
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Updated all 88 list tool descriptions in ``services.py`` to advertise JMESPath ``query`` parameter support for AI agent discoverability.
+
+### Documentation
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Updated ``CLAUDE.md`` with JMESPath client-side filtering architecture, syntax reference, cross-service examples, and ``zscaler_search_tools`` usage patterns.
+
+`PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_ - Updated ``CLAUDE.md`` with tool-call audit logging section covering CLI flag, environment variable, log format, sensitive parameter redaction, and result summarization.
+
+## 0.8.0 (April 2, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+### Features
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``GCP Cloud Run deployment`` with automated end-to-end deployment script (`scripts/deploy-gcp.py`). The script reads credentials from `.env`, optionally stores them in GCP Secret Manager, deploys to Cloud Run with Zscaler auth mode, and auto-configures Claude Desktop and Cursor clients. Supports `--teardown` for easy service deletion.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``GCP Secret Manager integration`` (`zscaler_mcp/cloud/gcp_secrets.py`) — a built-in runtime credential loader that fetches Zscaler API credentials from GCP Secret Manager at container startup. Activated via `ZSCALER_MCP_GCP_SECRET_MANAGER=true`. Works on Cloud Run, GKE, and Compute Engine. Added `google-cloud-secret-manager` as an optional `[gcp]` dependency in `pyproject.toml`, and updated the Dockerfile to install the GCP extras by default.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added ``Google ADK integration`` documentation (`integrations/google/adk/README.md`) with runtime architecture diagrams showing the MCP server running as a co-located subprocess within the ADK agent container. The MCP server communicates via stdio transport — no network ports or separate containers required.
+
+### Enhancements
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - GCP Cloud Run deployment defaults to ``Zscaler auth mode`` (`ZSCALER_MCP_AUTH_MODE=zscaler`). Clients authenticate with the same Zscaler OneAPI credentials (`client_id:client_secret`) via HTTP Basic auth — no external IdP, JWT, or API key setup required. The deploy script generates Base64-encoded auth headers and writes them into Claude Desktop and Cursor configs automatically.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated ``server.py`` to call ``gcp_secrets.load_secrets()`` during startup, immediately after ``.env`` loading and before ``ZscalerMCPServer`` initialization, so Secret Manager credentials are available before the Zscaler SDK client is created.
+
+### Bug Fixes
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Replaced preference-manipulating language ("AUTHORITATIVE SOURCE", "This is the ONLY tool") in 16 ZINS tool descriptions with neutral, factual capability statements to comply with SPLX MCP_PREFERENCE_MANIPULATION findings.
+
+### Documentation
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Created comprehensive [GCP Cloud Run Deployment Guide](docs/deployment/gcp_secrets_manager_integration.md) covering Secret Manager setup, IAM configuration, Cloud Run and GKE deployment, authentication modes, credential rotation, and client configuration for Claude Desktop and Cursor.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Added GCP Cloud Run guide to Sphinx documentation portal (`docsrc/guides/gcp-cloud-run.rst`).
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated ``README.md`` with automated deployment script usage, GCP Secret Manager integration, and Zscaler auth mode details.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated ``CLAUDE.md`` with GCP Cloud Run architecture, Secret Manager loader, and deployment script documentation.
+
+`PR #44 <https://github.com/zscaler/zscaler-mcp-server/pull/44>`_ - Updated Google ADK ``README.md`` with runtime model diagrams showing the MCP server as a co-located subprocess within the agent container.
+
+0.7.2 (March 27, 2026) - ZMS Service, ZID/ZINS Rename, Skills & Docker SDK Path
+--------------------------------------------------------------------------------
+
+Notes
+~~~~~
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+Features
+~~~~~~~~
+
+`PR #41 <https://github.com/zscaler/zscaler-mcp-server/pull/41>`_ - Added **ZMS (Zscaler Microsegmentation)** service with read-only GraphQL-backed tools: agents, agent groups, resources, resource groups, policy rules (including default rules), app zones, app catalog, nonces (provisioning keys), and tags. Requires ``ZSCALER_CUSTOMER_ID`` and OneAPI credentials.
+
+`PR #41 <https://github.com/zscaler/zscaler-mcp-server/pull/41>`_ - Renamed **ZIdentity** service to **ZID** and **Z-Insights** service to **ZINS** to align with ``zscaler-sdk-python`` (``client.zid``, ``client.zins``). Tool prefixes are now ``zid_*`` and ``zins_*``; registry keys are ``zid`` and ``zins``.
+
+Enhancements
+~~~~~~~~~~~~
+
+`PR #41 <https://github.com/zscaler/zscaler-mcp-server/pull/41>`_ - Added guided **skills** for ZINS (``analyze-web-traffic``, ``audit-shadow-it``, ``assess-network-security``) and ZMS (``audit-microsegmentation-posture``, ``troubleshoot-agent-deployment``), plus expanded ZMS skill content using the Microsegmentation API GraphQL schema reference (Query vs Mutation, managed/unmanaged/recommended resource groups, error handling).
+
+`PR #41 <https://github.com/zscaler/zscaler-mcp-server/pull/41>`_ - **Dockerfile** (temporary dev path): optional install of a local ``zscaler_sdk_python`` tarball after ``uv sync`` to test against an unpublished SDK build; **``.dockerignore``** exception so ``local_dev/zscaler_sdk_python-*.tar.gz`` is included in the build context.
+
+Fixes
+~~~~~
+
+`PR #41 <https://github.com/zscaler/zscaler-mcp-server/pull/41>`_ - **CWE-345 — HMAC confirmation token replay vulnerability.** Fixed 31 delete operations across ZPA, ZIA, and ZTW that passed empty parameters (``{}``) to ``check_confirmation()``, producing fungible HMAC-SHA256 tokens that could be replayed across different resources of the same type. All delete operations now bind the specific resource identifier into the HMAC payload, preventing cross-resource token replay. Added 6 regression tests including AST-based static analysis to prevent future occurrences.
+
+`PR #41 <https://github.com/zscaler/zscaler-mcp-server/pull/41>`_ - Resolved **ruff** ``I001`` import-sorting issues in ZMS tool modules, ``services.py`` (ZMSService imports), and ZMS tests.
+
+Documentation
+~~~~~~~~~~~~~
+
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Updated ``CLAUDE.md``, ``README.md``, ``docs/guides/supported-tools.md``, ``codecov.yml``, Sphinx ``docsrc/``, integrations, and tests for ZMS, ZID, and ZINS naming.
+
+0.7.1 (March 26, 2026) - Tool & Service Exclusion, OIDCProxy Improvements
+---------------------------------------------------------------------------
+
+Notes
+~~~~~
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+Features
+~~~~~~~~
+
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Added ``--disabled-tools`` CLI flag and ``ZSCALER_MCP_DISABLED_TOOLS`` environment variable to exclude specific tools from registration. Supports ``fnmatch`` wildcard patterns (e.g., ``zcc_list_*`` disables all ZCC list tools).
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_- Added ``--disabled-services`` CLI flag and ``ZSCALER_MCP_DISABLED_SERVICES`` environment variable to exclude entire services from loading. Accepts service names: ``zcc``, ``zdx``, ``zia``, ``zpa``, ``ztw``, ``zid``.
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Combined ``--disabled-tools`` and ``--disabled-services`` for fine-grained control: disable an entire service to prevent loading, or selectively exclude individual tools while keeping the rest of the service active.
+
+Enhancements
+~~~~~~~~~~~~
+
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_- Removed ``zcc_devices_csv_exporter`` tool — ``zcc_list_devices`` already returns equivalent data without file I/O overhead.
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Added ``verify_id_token=True`` to OIDCProxy setup for cross-platform compatibility. Auth0 may return opaque access tokens that fail JWT validation on certain platforms (e.g., Windows Docker). Verifying the OIDC ``id_token`` instead ensures consistent behavior across macOS and Windows.
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Added ``--debug`` CLI flag to ``setup-oidcproxy-auth.py`` for verbose token validation diagnostics (``FASTMCP_DEBUG=true``).
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Added Step 2b to ``setup-oidcproxy-auth.py`` to clear stale ``mcp-remote`` OAuth caches and orphaned processes before server start, preventing ``EADDRINUSE`` and ``invalid_token`` errors after container restarts.
+
+Documentation
+~~~~~~~~~~~~~
+
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Updated README with "Excluding Services and Tools" section documenting ``fnmatch`` wildcard syntax and combined usage examples.
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Updated Authentication & Deployment Guide with troubleshooting entry for persistent 401 ``invalid_token`` on Windows Docker.
+`PR #38 <https://github.com/zscaler/zscaler-mcp-server/pull/38>`_ - Added tip about prompt specificity for large tool catalogs.
+
+0.7.0 (March 25, 2026) - Authentication, Security & Platform Integrations
+--------------------------------------------------------------------------
+
+Notes
+~~~~~
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+MCP Client Authentication
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added multi-mode authentication for MCP clients connecting over HTTP transports (``sse``, ``streamable-http``). Authentication is disabled by default for backward compatibility and does not apply to ``stdio`` transport.
+
+**Four authentication modes:**
+
+- **api-key** — Simple shared secret. Client sends ``Authorization: Bearer <key>``. Best for quick setup and internal environments.
+- **jwt** — External Identity Provider via JWKS. Tokens are validated locally using the IdP's public keys. Supports Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, and Google Cloud Identity.
+- **zscaler** — Zscaler OneAPI credential validation. Client sends Basic Auth (``client_id:client_secret``) or custom headers (``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret``). Server validates against Zscaler's ``/oauth2/v1/token`` endpoint.
+
+**Architecture:**
+
+- Implemented as ASGI middleware (``zscaler_mcp/auth.py``) that wraps HTTP transport apps before they reach FastMCP
+- Two independent security layers: Layer 1 (MCP Client Auth) controls who can connect; Layer 2 (Zscaler API Auth) controls how the server authenticates to Zscaler APIs
+- Zero overhead when authentication is disabled — middleware returns the app unchanged
+
+Network Security
+~~~~~~~~~~~~~~~~~
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added defense-in-depth network security controls for HTTP transports:
+
+- **HTTPS / TLS Configuration** — Optional TLS termination at the server with ``ZSCALER_MCP_TLS_CERT_FILE`` and ``ZSCALER_MCP_TLS_KEY_FILE``
+- **HTTPS Policy Enforcement** — ``ZSCALER_MCP_ALLOW_HTTP=false`` (default) blocks plaintext HTTP on non-localhost interfaces when TLS is not configured
+- **Host Header Validation** — ``ZSCALER_MCP_ALLOWED_HOSTS`` restricts accepted ``Host`` headers to prevent DNS rebinding attacks; auto-configured for localhost
+- **Source IP Access Control** — ``ZSCALER_MCP_ALLOWED_SOURCE_IPS`` restricts which client IPs can connect (CIDR notation supported)
+
+Platform Integrations
+~~~~~~~~~~~~~~~~~~~~~~
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added native platform integrations for AI development environments:
+
+- **Claude Code Plugin** (``.claude-plugin/``) — Plugin manifest with marketplace support, 19 guided skills, and slash commands
+- **Cursor Plugin** (``.cursor-plugin/``) — Plugin manifest with 19 guided skills for Cursor IDE
+- **Gemini Extension** (``gemini-extension.json``, ``GEMINI.md``) — Google Gemini CLI extension with contextual tool guidance
+- **Google Cloud** (``integrations/google/``) — Unified GCP deployment script (Cloud Run, GKE, Compute Engine VM) with interactive CLI menus
+- **Google ADK Agent** (``integrations/google/adk/``) — Google Agent Development Kit integration for building autonomous Zscaler security agents powered by Gemini models
+- **Integration documentation** (``integrations/``) — Dedicated README per platform with installation, configuration, and verification instructions
+
+Enhancements
+~~~~~~~~~~~~
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added ``--generate-auth-token`` CLI argument for generating authorization tokens from configured credentials
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added ``--write-tools``, ``--user-agent-comment``, ``--list-tools``, and ``--version`` CLI flags
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added ``ZSCALER_MCP_CONFIRMATION_TTL`` environment variable for configurable confirmation window on destructive operations
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added ``ZSCALER_MCP_AUTH_ALGORITHMS`` environment variable for restricting JWT validation algorithms
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added ``docker-run-http``, ``docker-stop``, and ``docker-generate-auth-token`` Makefile targets for HTTP transport and authentication workflows
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Added ``PyJWT[crypto]>=2.8.0`` dependency for JWT token validation
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Updated ``.env.example`` with MCP Client Authentication and network security environment variables
+
+Documentation
+~~~~~~~~~~~~~
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Created comprehensive `Authentication & Deployment Guide <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/authentication-and-deployment.md>`__ covering transport modes, authentication architecture, IdP-specific JWKS setup, Docker/Python deployment, client configuration, and troubleshooting
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Updated ``README.md`` with MCP Client Authentication section, network security features, and Platform Integrations reference
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Created ``integrations/README.md`` as central index for all platform integrations
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Created dedicated integration READMEs for Claude Code Plugin, Cursor Plugin, Gemini Extension, and Kiro Power
+
+`PR #31 <https://github.com/zscaler/zscaler-mcp-server/pull/31>`_ - Updated Sphinx documentation portal (``docsrc/``) with platform integrations page and release notes for v0.7.0
+
+0.6.2 (February 18, 2026)
+--------------------------
+
+Notes
+~~~~~
+
+- Python Versions: **v3.11, v3.12, v3.13**
+
+Enhancements
+~~~~~~~~~~~~
+
+`PR #29 <https://github.com/zscaler/zscaler-mcp-server/pull/29>`_ - Added new ZIA tools:
+
+- ``network_apps``
+- ``network_services_group``
+- ``network_services``
+- ``zia_url_lookup``
+- ``zia_list_cloud_app_control_actions``
+
+`PR #29 <https://github.com/zscaler/zscaler-mcp-server/pull/29>`_ - Improved search capabilities in the ZIA tool:
+
+- ``device_management``
+
 0.6.1 (December 16, 2025) - Z-Insights Analytics Integration
 ------------------------------------------------------------
 
@@ -18,22 +448,22 @@ Enhancements
 ~~~~~~~~~~~~
 
 `PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - ✨ Added Z-Insights Analytics service with 16 read-only tools for Zscaler analytics via GraphQL API
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_web_traffic_by_location`` - Get web traffic analytics grouped by location
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_web_traffic_no_grouping`` - Get overall web traffic volume metrics
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_web_protocols`` - Get web traffic by protocol (HTTP, HTTPS, SSL)
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_threat_super_categories`` - Get threat super categories (malware, phishing, spyware)
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_threat_class`` - Get detailed threat class breakdown
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents`` - Get cybersecurity incidents by category
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents_by_location`` - Get cybersecurity incidents grouped by location
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents_daily`` - Get daily cybersecurity incident trends
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_cyber_incidents_by_threat_and_app`` - Get incidents correlated by threat and application
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_firewall_by_action`` - Get Zero Trust Firewall traffic by action (allow/block)
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_firewall_by_location`` - Get firewall traffic grouped by location
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_firewall_network_services`` - Get firewall network service usage
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_casb_app_report`` - Get CASB SaaS application usage report
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_shadow_it_apps`` - Get discovered shadow IT applications with risk scores
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_shadow_it_summary`` - Get shadow IT summary statistics and groupings
-`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zinsights_get_iot_device_stats`` - Get IoT device statistics and classifications
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_web_traffic_by_location`` - Get web traffic analytics grouped by location
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_web_traffic_no_grouping`` - Get overall web traffic volume metrics
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_web_protocols`` - Get web traffic by protocol (HTTP, HTTPS, SSL)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_threat_super_categories`` - Get threat super categories (malware, phishing, spyware)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_threat_class`` - Get detailed threat class breakdown
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_cyber_incidents`` - Get cybersecurity incidents by category
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_cyber_incidents_by_location`` - Get cybersecurity incidents grouped by location
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_cyber_incidents_daily`` - Get daily cybersecurity incident trends
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_cyber_incidents_by_threat_and_app`` - Get incidents correlated by threat and application
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_firewall_by_action`` - Get Zero Trust Firewall traffic by action (allow/block)
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_firewall_by_location`` - Get firewall traffic grouped by location
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_firewall_network_services`` - Get firewall network service usage
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_casb_app_report`` - Get CASB SaaS application usage report
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_shadow_it_apps`` - Get discovered shadow IT applications with risk scores
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_shadow_it_summary`` - Get shadow IT summary statistics and groupings
+`PR #22 <https://github.com/zscaler/zscaler-mcp-server/pull/22>`_ - Added ``zins_get_iot_device_stats`` - Get IoT device statistics and classifications
 
 Bug Fixes
 ~~~~~~~~~
@@ -337,7 +767,7 @@ Added
 ~~~~~
 
 - Initial implementation for the zscaler-mcp server (`#1 <https://github.com/zscaler/zscaler-mcp/issues/1>`_)
-- Support for Zscaler services: ``zcc``, ``zdx``, ``zia``, ``zpa``, ``zidentity`` (`#1 <https://github.com/zscaler/zscaler-mcp/issues/1>`_)
+- Support for Zscaler services: ``zcc``, ``zdx``, ``zia``, ``zpa``, ``zid`` (`#1 <https://github.com/zscaler/zscaler-mcp/issues/1>`_)
 - Flexible per service initialization (`#1 <https://github.com/zscaler/zscaler-mcp/issues/1>`_)
 - Streamable-http transport with Docker support (`#1 <https://github.com/zscaler/zscaler-mcp/issues/1>`_)
 - Debug option (`#1 <https://github.com/zscaler/zscaler-mcp/issues/1>`_)

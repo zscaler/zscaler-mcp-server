@@ -210,13 +210,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -277,8 +285,45 @@
 <dl class="py function" id="module-zscaler_mcp.utils.utils">
 <dt class="sig sig-object py" id="zscaler_mcp.utils.utils.convert_v1_to_v2_response">
 <span class="sig-name descname"><span class="pre">convert_v1_to_v2_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conditions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/utils/utils.html#convert_v1_to_v2_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.utils.utils.convert_v1_to_v2_response" title="Link to this definition">¶</a></dt>
-<dd><p>Convert the API’s v1 response format to a standardized v2 format
-that maintains operator grouping and simplifies the structure.</p>
+<dd><p>Normalize a ZPA Policy Access v1 GET/POST response into v2 request shape.</p>
+<p>The ZPA Policy Access API is structurally asymmetric: write operations
+accept a v2-shaped body (<code class="docutils literal notranslate"><span class="pre">operands</span></code> carry <code class="docutils literal notranslate"><span class="pre">values:</span> <span class="pre">[...]</span></code> for ID-based
+types and <code class="docutils literal notranslate"><span class="pre">entry_values:</span> <span class="pre">[{lhs,</span> <span class="pre">rhs},</span> <span class="pre">...]</span></code> for attribute-based types),
+but read operations return a v1-shaped body where every operand is a flat
+<code class="docutils literal notranslate"><span class="pre">{&quot;objectType&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;lhs&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;rhs&quot;:</span> <span class="pre">...}</span></code> dict and operands of the
+same logical block are split into multiple sibling operand entries inside
+the same condition.</p>
+<p>This function reshapes the v1 response back into the v2 shape so callers
+can round-trip a created/fetched rule through update without re-deriving
+the condition payload by hand. The algorithm mirrors
+<code class="docutils literal notranslate"><span class="pre">ConvertV1ResponseToV2Request</span></code> in the Terraform ZPA provider
+(<code class="docutils literal notranslate"><span class="pre">terraform-provider-zpa/zpa/common.go</span></code>). For each input v1 condition it
+preserves the original <code class="docutils literal notranslate"><span class="pre">operator</span></code>, groups operands by <code class="docutils literal notranslate"><span class="pre">objectType</span></code> into
+a VALUE bucket (ID-typed objects: APP, APP_GROUP, MACHINE_GRP, LOCATION,
+CLIENT_TYPE, USER_PORTAL, PRIVILEGE_PORTAL, CONSOLE, CHROME_POSTURE_PROFILE,
+BRANCH_CONNECTOR_GROUP, EDGE_CONNECTOR_GROUP) and an ENTRY bucket
+(attribute-typed objects: PLATFORM, POSTURE, TRUSTED_NETWORK, SAML, SCIM,
+SCIM_GROUP, COUNTRY_CODE, RISK_FACTOR_TYPE, CHROME_ENTERPRISE), then emits
+one v2 operand per <code class="docutils literal notranslate"><span class="pre">(objectType,</span> <span class="pre">bucket)</span></code>. Aggregation never crosses
+condition boundaries — preserving them is critical because the AND/OR
+semantics depend on it (two separate POSTURE conditions = AND, two operands
+within one POSTURE condition = OR). Object types and entry-value pairs are
+sorted for stable output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conditions</strong> – A list of v1-shaped condition dicts as returned by ZPA Policy
+Access GET/POST endpoints. Each condition has an <code class="docutils literal notranslate"><span class="pre">operator</span></code> and a
+flat list of <code class="docutils literal notranslate"><span class="pre">operands</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of v2-shaped condition dicts, one per input v1 condition. Each
+emitted condition has the form
+<code class="docutils literal notranslate"><span class="pre">{&quot;operator&quot;:</span> <span class="pre">&quot;AND&quot;|&quot;OR&quot;,</span> <span class="pre">&quot;operands&quot;:</span> <span class="pre">[{&quot;object_type&quot;:</span> <span class="pre">&quot;APP&quot;,</span>
+<span class="pre">&quot;values&quot;:</span> <span class="pre">[...]},</span> <span class="pre">{&quot;object_type&quot;:</span> <span class="pre">&quot;POSTURE&quot;,</span> <span class="pre">&quot;entry_values&quot;:</span>
+<span class="pre">[{&quot;lhs&quot;:</span> <span class="pre">&quot;...&quot;,</span> <span class="pre">&quot;rhs&quot;:</span> <span class="pre">&quot;true&quot;},</span> <span class="pre">...]}]}</span></code>. Empty input returns an empty
+list.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -342,6 +387,53 @@ Also flattens malformed entryValues and ensures nothing is dropped.</p>
 <span class="go">&#39;zscaler-mcp-server/0.2.0/Darwin-24.6.0-x86_64&#39;</span>
 </pre></div>
 </div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.utils.utils.normalize_v2_rule_response">
+<span class="sig-name descname"><span class="pre">normalize_v2_rule_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sdk_object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_response</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/utils/utils.html#normalize_v2_rule_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.utils.utils.normalize_v2_rule_response" title="Link to this definition">¶</a></dt>
+<dd><p>Stitch a v2 policy-rule write response into a complete, correct dict.</p>
+<p>Background — the SDK has a known asymmetry in its policy-rule models:</p>
+<ul class="simple">
+<li><p>The <strong>V1 Operand</strong> model (used by <code class="docutils literal notranslate"><span class="pre">policies.get_rule(...)</span></code>) reads
+<code class="docutils literal notranslate"><span class="pre">objectType</span></code>, <code class="docutils literal notranslate"><span class="pre">lhs</span></code>, and <code class="docutils literal notranslate"><span class="pre">rhs</span></code> from the API response. It
+preserves the data the v1-shaped API actually returns.</p></li>
+<li><p>The <strong>V2 Operand</strong> model (used by <code class="docutils literal notranslate"><span class="pre">policies.add_*_rule_v2</span></code> and
+<code class="docutils literal notranslate"><span class="pre">policies.update_*_rule_v2</span></code>) reads only <code class="docutils literal notranslate"><span class="pre">objectType</span></code>, <code class="docutils literal notranslate"><span class="pre">values</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">entryValues</span></code> — it does <strong>not</strong> read <code class="docutils literal notranslate"><span class="pre">lhs</span></code> / <code class="docutils literal notranslate"><span class="pre">rhs</span></code>. But the
+v2 add/update endpoints receive a <strong>v1-shaped response</strong> from the API
+(operands with flat <code class="docutils literal notranslate"><span class="pre">lhs</span></code>/<code class="docutils literal notranslate"><span class="pre">rhs</span></code>), which the V2 model then drops on
+deserialization. Result: <code class="docutils literal notranslate"><span class="pre">created.as_dict()[&quot;conditions&quot;]</span></code> returns
+operands with empty <code class="docutils literal notranslate"><span class="pre">values</span></code> and <code class="docutils literal notranslate"><span class="pre">entry_values</span></code> arrays even when
+the rule was created perfectly.</p></li>
+</ul>
+<p>The fix is to bypass the lossy V2 model: read the raw API response body
+(<code class="docutils literal notranslate"><span class="pre">response.get_body()</span></code> returns the JSON-decoded dict, untouched by any
+SDK model) and run its <code class="docutils literal notranslate"><span class="pre">conditions</span></code> through <code class="docutils literal notranslate"><span class="pre">convert_v1_to_v2_response</span></code>.
+The rest of the rule (id, name, action, etc.) comes from the SDK’s
+<code class="docutils literal notranslate"><span class="pre">as_dict()</span></code> because the top-level fields ARE preserved correctly there.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sdk_object</strong> – The first element of the SDK tuple — e.g. <code class="docutils literal notranslate"><span class="pre">created</span></code> from
+<code class="docutils literal notranslate"><span class="pre">created,</span> <span class="pre">response,</span> <span class="pre">err</span> <span class="pre">=</span> <span class="pre">api.add_access_rule_v2(...)</span></code>. Provides
+the snake_case top-level field set the agent expects.</p></li>
+<li><p><strong>raw_response</strong> – The second element of the SDK tuple — the <code class="docutils literal notranslate"><span class="pre">ZscalerAPIResponse</span></code>
+(or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the call failed before a body was received). Used
+only to recover the v1-shaped <code class="docutils literal notranslate"><span class="pre">conditions</span></code> block that the SDK’s
+V2 model dropped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>The SDK’s <code class="docutils literal notranslate"><span class="pre">as_dict()</span></code> with <code class="docutils literal notranslate"><span class="pre">conditions</span></code> rebuilt from the raw response.</p></li>
+<li><p><em>Falls back gracefully (returns the SDK dict unchanged) when the raw</em></p></li>
+<li><p><em>response is missing, has no body, or carries no conditions — so callers</em></p></li>
+<li><p><em>do not have to check.</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -508,6 +600,14 @@ Also flattens malformed entryValues and ensures nothing is dropped.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.common.logging.log_security_warning">
+<span class="sig-name descname"><span class="pre">log_security_warning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/common/logging.html#log_security_warning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.common.logging.log_security_warning" title="Link to this definition">¶</a></dt>
+<dd><p>Log a prominent security warning banner.</p>
+<p>Used across modules (server.py, auth.py) to display standardized
+security warnings when protective features are disabled.</p>
+</dd></dl>
+
 </section>
 <section id="configuration-utilities">
 <h3>Configuration Utilities<a class="headerlink" href="#configuration-utilities" title="Link to this heading">¶</a></h3>
@@ -594,6 +694,7 @@ Also flattens malformed entryValues and ensures nothing is dropped.</p>
 <li><a class="reference internal" href="#zscaler_mcp.utils.utils.convert_v2_to_sdk_format"><code class="docutils literal notranslate"><span class="pre">convert_v2_to_sdk_format()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.utils.utils.get_combined_user_agent"><code class="docutils literal notranslate"><span class="pre">get_combined_user_agent()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.utils.utils.get_mcp_user_agent"><code class="docutils literal notranslate"><span class="pre">get_mcp_user_agent()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.utils.utils.normalize_v2_rule_response"><code class="docutils literal notranslate"><span class="pre">normalize_v2_rule_response()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.utils.utils.parse_list"><code class="docutils literal notranslate"><span class="pre">parse_list()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.utils.utils.validate_and_convert_country_code"><code class="docutils literal notranslate"><span class="pre">validate_and_convert_country_code()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.utils.utils.validate_and_convert_country_code_iso"><code class="docutils literal notranslate"><span class="pre">validate_and_convert_country_code_iso()</span></code></a></li>
@@ -603,6 +704,7 @@ Also flattens malformed entryValues and ensures nothing is dropped.</p>
 <li><a class="reference internal" href="#module-zscaler_mcp.common.logging">Logging Utilities</a><ul>
 <li><a class="reference internal" href="#zscaler_mcp.common.logging.configure_logging"><code class="docutils literal notranslate"><span class="pre">configure_logging()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.common.logging.get_logger"><code class="docutils literal notranslate"><span class="pre">get_logger()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.common.logging.log_security_warning"><code class="docutils literal notranslate"><span class="pre">log_security_warning()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#configuration-utilities">Configuration Utilities</a></li>
