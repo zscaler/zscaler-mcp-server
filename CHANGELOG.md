@@ -1,11 +1,48 @@
 # Zscaler Integrations MCP Server Changelog
 
-## Unreleased
+## 0.11.0 (May 4, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
 
 ### Breaking Changes
 
-- **Removed legacy per-service authentication.** OneAPI is now the only supported authentication mode. The `ZSCALER_USE_LEGACY` environment variable, the `use_legacy` parameter on every tool, the per-service legacy clients (`LegacyZPAClient`, `LegacyZIAClient`, `LegacyZCCClient`, `LegacyZTWClient`, `LegacyZDXClient`), and the per-service credential blocks (`ZPA_*`, `ZIA_*`, `ZCC_*`, `ZTW_*`, `ZDX_*`) have all been removed. All Zscaler products are accessed through the unified ZIdentity OneAPI client (`zscaler.ZscalerClient`). To migrate: set `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`), `ZSCALER_VANITY_DOMAIN`, and `ZSCALER_CUSTOMER_ID` (the last is required only when calling ZPA tools), drop any `use_legacy=true` arguments from your MCP tool calls, and remove `ZSCALER_USE_LEGACY` from your `.env`. Tool, skill, and rule documentation has been updated; the `examples/use_legacy_env_example.py` script has been deleted.
-- **Removed the `zcc_devices_csv_exporter` tool.** Tool registration was already removed in PR #38; this release deletes the tool module (`zscaler_mcp/tools/zcc/download_devices.py`), unit tests (`TestZccDevicesCsvExporter` in `tests/zcc/test_zcc_tools.py`), the e2e fixture (`test_download_devices` in `tests/e2e/test_zcc.py`), and all remaining references in documentation and examples. Use `zcc_list_devices` for device inventory queries.
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - **Removed legacy per-service authentication.** OneAPI is now the only supported authentication mode. The `ZSCALER_USE_LEGACY` environment variable, the `use_legacy` parameter on every tool, the per-service legacy clients (`LegacyZPAClient`, `LegacyZIAClient`, `LegacyZCCClient`, `LegacyZTWClient`, `LegacyZDXClient`), and the per-service credential blocks (`ZPA_*`, `ZIA_*`, `ZCC_*`, `ZTW_*`, `ZDX_*`) have all been removed. All Zscaler products are accessed through the unified ZIdentity OneAPI client (`zscaler.ZscalerClient`). To migrate: set `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`), `ZSCALER_VANITY_DOMAIN`, and `ZSCALER_CUSTOMER_ID` (the last is required only when calling ZPA tools), drop any `use_legacy=true` arguments from your MCP tool calls, and remove `ZSCALER_USE_LEGACY` from your `.env`. Tool, skill, and rule documentation has been updated; the `examples/use_legacy_env_example.py` script has been deleted.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59)- **Removed the `zcc_devices_csv_exporter` tool.** Tool registration was already removed in PR #38; this release deletes the tool module (`zscaler_mcp/tools/zcc/download_devices.py`), unit tests (`TestZccDevicesCsvExporter` in `tests/zcc/test_zcc_tools.py`), the e2e fixture (`test_download_devices` in `tests/e2e/test_zcc.py`), and all remaining references in documentation and examples. Use `zcc_list_devices` for device inventory queries.
+
+### Enhancements
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - **Toolsets.** Tools are now grouped into 29 logical toolsets across every service (15 ZIA, 6 ZPA, 1 each for ZDX/ZCC/ZTW/ZID/ZEASM/ZINS/ZMS, plus the always-on `meta` toolset). Select via `--toolsets` / `ZSCALER_MCP_TOOLSETS`; supports `default`, `all`, and explicit ids. Three always-on discovery meta-tools (`zscaler_list_toolsets`, `zscaler_get_toolset_tools`, `zscaler_enable_toolset`) let agents enumerate and runtime-enable additional toolsets. Per-toolset system instructions are composed into the server's `instructions` field at startup with snippet dedup. Filter precedence is now consistent and documented (`disabled_tools` > toolset > `enabled_tools` > `write_tools`). See `docs/guides/toolsets.md`.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - **OneAPI entitlement filter.** At startup the server decodes the OneAPI bearer token and intersects the active toolsets with the products the token is actually entitled to call, hiding tools that would only ever return `401 Unauthorized`. Non-fatal on every failure path (missing creds / network / undecodable token). Opt-out via `--no-entitlement-filter` / `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true`. Implementation in `zscaler_mcp/common/entitlements.py`.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - **Output sanitization.** Every tool result is passed through a three-stage sanitizer before reaching the LLM: invisible / control-character stripping (BiDi overrides, zero-width spaces, BOM), HTML / Markdown sanitization (`bleach` strips tags + comments; Markdown link/image syntax is neutralised), and code-fence info-string filtering (suspicious tokens like `system`, `assistant`, `tool`, `ignore` are rewritten to `text`). Defends against prompt-injection payloads embedded in Zscaler resource names / descriptions. Recursive over dict/list/tuple. Opt-out via `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION=true`. Implementation in `zscaler_mcp/common/sanitize.py`.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - **Tool annotations.** `register_read_tools()` now stamps `readOnlyHint=True` on every read tool, and `register_write_tools()` stamps `destructiveHint=True` on every write tool. The five always-on meta-tools explicitly set `readOnlyHint=True`. AI-agent permission frameworks (Claude Desktop, Cursor) consume these hints to prompt for confirmation on destructive actions.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - **Auto-generated tool documentation.** New `--generate-docs` and `--check-docs` CLI flags (and matching `make generate-docs` / `make check-docs` targets) regenerate marker-bounded regions of `docs/guides/supported-tools.md`, `README.md`, and `docs/guides/toolsets.md` from the live tool inventory. CI runs `--check-docs` before the test suite to fail builds on stale docs. Idempotent — re-running with no source changes produces no file writes. Implementation in `zscaler_mcp/common/docgen.py`.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Added **ZIA Time Intervals** management tools: `zia_list_time_intervals`, `zia_get_time_interval`, `zia_create_time_interval`, `zia_update_time_interval`, `zia_delete_time_interval`. Reusable schedule objects referenced by all ZIA rule types via the `time_windows` field; `start_time`/`end_time` are minutes from midnight (0-1439); `days_of_week` accepts `EVERYDAY` or `SUN`-`SAT`. The update tool silently backfills `name`, `start_time`, `end_time`, and `days_of_week` from the existing record when omitted (PUT-replace semantics).
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Added **ZIA Workload Groups** read tools: `zia_list_workload_groups`, `zia_get_workload_group`. Used as a rule operand by every ZIA policy-rule type.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Added **ZIA Cloud App Control rule** family: `zia_list_cloud_app_control_rules`, `zia_get_cloud_app_control_rule`, `zia_create_cloud_app_control_rule`, `zia_update_cloud_app_control_rule`, `zia_delete_cloud_app_control_rule`, `zia_list_cloud_app_control_actions`. `rule_type` is required on every CRUD call and is discoverable via `zia_list_cloud_app_policy` (the app's `parent` field). Cloud-application name auto-resolution is wired in (same friendly-name → enum behaviour as the SSL Inspection / File Type Control rule families).
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Added new ZIA skills: `create-firewall-filtering-rule`, `create-ssl-inspection-rule`, `create-url-filtering-rule`, `create-cloud-app-control-rule`, `manage-time-interval`, `look-up-rule-targets`. Also renamed `resolve-cloud-app-enum` → `look-up-cloud-app-name` for clarity.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Added new ZPA skills: `create-conditional-access-rule`, `create-session-duration-rule`. Updated `create-forwarding-policy-rule` and `create-timeout-policy-rule`.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Helper-file consolidation: per-feature ZIA helper modules (e.g. `zia_cloud_app_resolver.py`) were collapsed into a single `zscaler_mcp/common/zia_helpers.py` per the helper-file convention documented in `CLAUDE.md`. No public API changes.
+
+### Documentation
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - New `docs/guides/toolsets.md` covering toolset selection, filter precedence, the OneAPI entitlement filter (with an interaction-with-`--toolsets` matrix), per-toolset system instructions, the runtime discovery tools, and the contributor steps for adding a new toolset.
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - `CLAUDE.md` updated with sections covering toolsets, the entitlement filter, output sanitization, auto-generated docs, the helper-file convention (DO NOT FRAGMENT), the new ZIA rule families and tool gotchas, and the new CLI flags (`--toolsets`, `--no-entitlement-filter`, `--generate-docs`, `--check-docs`).
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - `README.md` and integration READMEs (`integrations/kiro/POWER.md`, Kiro steering files for ZCC/ZIA/ZPA) refreshed for OneAPI-only auth and the new toolset / sanitization / entitlement-filter env vars.
 
 ## 0.10.5 (April 27, 2026)
 
