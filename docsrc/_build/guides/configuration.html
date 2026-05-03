@@ -221,6 +221,10 @@
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
@@ -278,16 +282,11 @@
           <section id="configuration-guide">
 <span id="id1"></span><h1>Configuration Guide<a class="headerlink" href="#configuration-guide" title="Link to this heading">¶</a></h1>
 <p>This guide explains all supported authentication methods and configuration options for the Zscaler Integrations MCP Server.</p>
-<section id="authentication-methods">
-<h2>Authentication Methods<a class="headerlink" href="#authentication-methods" title="Link to this heading">¶</a></h2>
-<p>The server supports two authentication frameworks:</p>
-<ol class="arabic simple">
-<li><p><strong>OneAPI Authentication</strong> (Recommended) - Modern OAuth2-based unified authentication</p></li>
-<li><p><strong>Legacy Authentication</strong> - Service-specific API key authentication (per service)</p></li>
-</ol>
-<section id="oneapi-authentication-recommended">
-<h3>OneAPI Authentication (Recommended)<a class="headerlink" href="#oneapi-authentication-recommended" title="Link to this heading">¶</a></h3>
-<p>OneAPI provides unified authentication across all Zscaler services using a single set of OAuth2 credentials.</p>
+<section id="authentication">
+<h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
+<p>The server uses <strong>OneAPI</strong> authentication exclusively, providing unified
+authentication across all Zscaler services with a single set of OAuth2
+credentials.</p>
 <p><strong>Required Environment Variables:</strong></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># OneAPI OAuth2 Credentials</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span><span class="w">           </span><span class="c1"># OAuth client ID</span>
@@ -301,57 +300,6 @@
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_PRIVATE_KEY</span><span class="o">=</span><span class="s2">&quot;path/to/key&quot;</span><span class="w"> </span><span class="c1"># Path to private key for JWT authentication</span>
 </pre></div>
 </div>
-<p><strong>When to Use OneAPI:</strong></p>
-<ul class="simple">
-<li><p>✅ Modern deployments (recommended)</p></li>
-<li><p>✅ Unified authentication across all services</p></li>
-<li><p>✅ OAuth2-based security</p></li>
-<li><p>✅ Works with ZPA, ZIA, ZDX, ZCC, ZIdentity</p></li>
-</ul>
-</section>
-<section id="legacy-authentication-per-service">
-<h3>Legacy Authentication (Per-Service)<a class="headerlink" href="#legacy-authentication-per-service" title="Link to this heading">¶</a></h3>
-<p>Legacy authentication uses service-specific API keys and credentials.</p>
-<p><strong>Enable Legacy Mode:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-</pre></div>
-</div>
-<p><strong>ZPA Legacy Authentication:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_zpa_client_id&quot;</span><span class="w">       </span><span class="c1"># ZPA API client ID</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_zpa_secret&quot;</span><span class="w">      </span><span class="c1"># ZPA API client secret</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span><span class="w">       </span><span class="c1"># ZPA customer ID</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="w">                   </span><span class="c1"># ZPA cloud (production, beta, etc.)</span>
-</pre></div>
-</div>
-<p><strong>ZIA Legacy Authentication:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;admin@company.com&quot;</span><span class="w">         </span><span class="c1"># ZIA admin email</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span><span class="w">             </span><span class="c1"># ZIA admin password</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span><span class="w">               </span><span class="c1"># ZIA obfuscated API key</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo&quot;</span><span class="w">               </span><span class="c1"># ZIA cloud</span>
-</pre></div>
-</div>
-<p><strong>ZCC Legacy Authentication:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZCC_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span><span class="w">             </span><span class="c1"># ZCC API key</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZCC_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_secret_key&quot;</span><span class="w">      </span><span class="c1"># ZCC secret key</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZCC_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo&quot;</span><span class="w">               </span><span class="c1"># ZCC cloud</span>
-</pre></div>
-</div>
-<p><strong>ZDX Legacy Authentication:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZDX_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_key_id&quot;</span><span class="w">              </span><span class="c1"># ZDX key ID</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZDX_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_secret_key&quot;</span><span class="w">      </span><span class="c1"># ZDX secret key</span>
-</pre></div>
-</div>
-<p><strong>When to Use Legacy:</strong></p>
-<ul class="simple">
-<li><p>Legacy deployments with existing service-specific credentials</p></li>
-<li><p>Services not yet migrated to OneAPI</p></li>
-<li><p>Gradual migration scenarios</p></li>
-</ul>
-</section>
 </section>
 <section id="server-configuration">
 <h2>Server Configuration<a class="headerlink" href="#server-configuration" title="Link to this heading">¶</a></h2>
@@ -504,6 +452,43 @@
 </pre></div>
 </div>
 </section>
+<section id="toolsets">
+<h3>Toolsets<a class="headerlink" href="#toolsets" title="Link to this heading">¶</a></h3>
+<p>Tools are grouped into named <strong>toolsets</strong> so you can load only the slice an agent actually needs (e.g. <code class="docutils literal notranslate"><span class="pre">zia_url_filtering</span></code> (5 tools) instead of every tool from every service (~280)). Toolsets reduce the agent’s context cost and improve tool-selection accuracy. They apply on <strong>every transport</strong>, including <code class="docutils literal notranslate"><span class="pre">stdio</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load just two slices</span>
+zscaler-mcp<span class="w"> </span>--toolsets<span class="w"> </span>zia_url_filtering,zpa_app_segments
+
+<span class="c1"># Or use the curated default-on subset</span>
+zscaler-mcp<span class="w"> </span>--toolsets<span class="w"> </span>default
+
+<span class="c1"># Or load every registered toolset explicitly</span>
+zscaler-mcp<span class="w"> </span>--toolsets<span class="w"> </span>all
+
+<span class="c1"># Equivalent via environment variable</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_TOOLSETS</span><span class="o">=</span><span class="s2">&quot;zia_url_filtering,zpa_app_segments&quot;</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> is unspecified, every toolset whose service is enabled is loaded (preserves the historical default).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">meta</span></code> toolset (server discovery) is always loaded regardless of selection. The agent can also enable additional toolsets at runtime through the always-on <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler_get_toolset_tools</span></code>, and <code class="docutils literal notranslate"><span class="pre">zscaler_enable_toolset</span></code> tools.</p>
+<p>For the full catalog (29 toolsets across all services), filter precedence rules, and per-toolset agent guidance, see the dedicated <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/main/docs/guides/toolsets.md">Toolsets guide</a>.</p>
+</section>
+<section id="oneapi-entitlement-filter">
+<h3>OneAPI Entitlement Filter<a class="headerlink" href="#oneapi-entitlement-filter" title="Link to this heading">¶</a></h3>
+<p>After your toolset selection resolves, the server reads the product entitlements from the OneAPI bearer token issued for your <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code> and silently drops toolsets for products the credentials cannot call. If your OneAPI client is only entitled to ZIA and ZPA, every <code class="docutils literal notranslate"><span class="pre">zdx_*</span></code> / <code class="docutils literal notranslate"><span class="pre">zcc_*</span></code> / <code class="docutils literal notranslate"><span class="pre">ztw_*</span></code> / <code class="docutils literal notranslate"><span class="pre">zid_*</span></code> / <code class="docutils literal notranslate"><span class="pre">zeasm_*</span></code> / <code class="docutils literal notranslate"><span class="pre">zins_*</span></code> / <code class="docutils literal notranslate"><span class="pre">zms_*</span></code> toolset is filtered out at startup — even with <code class="docutils literal notranslate"><span class="pre">--toolsets</span> <span class="pre">all</span></code>.</p>
+<p>This prevents an agent from discovering tools whose first call would only ever return <code class="docutils literal notranslate"><span class="pre">401</span> <span class="pre">Unauthorized</span></code>. The filter applies on every transport, including <code class="docutils literal notranslate"><span class="pre">stdio</span></code>.</p>
+<p>When the filter runs you’ll see one log line at startup, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">entitlement</span> <span class="nb">filter</span> <span class="n">applied</span><span class="p">:</span> <span class="n">entitled</span> <span class="n">services</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;zia&#39;</span><span class="p">,</span> <span class="s1">&#39;zpa&#39;</span><span class="p">],</span> <span class="n">kept</span> <span class="mi">12</span> <span class="n">toolset</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">removed</span> <span class="mi">17</span> <span class="n">toolset</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The filter is <strong>non-fatal</strong>. If credentials are missing, the token endpoint is unreachable, the token doesn’t decode, or the token has no recognizable product entitlements, the server logs a single <code class="docutils literal notranslate"><span class="pre">WARN</span></code> line and starts normally with the user-selected toolsets unchanged.</p>
+<p>To bypass the filter (for example, while diagnosing an unusual token shape):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp<span class="w"> </span>--no-entitlement-filter
+<span class="c1"># or</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER</span><span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+<p>Only <strong>product entitlement</strong> is honoured — not role names. The server defers per-action permission enforcement to the live API; the entitlement filter only ensures the agent doesn’t discover tools for products the client has zero access to.</p>
+</section>
 </section>
 <section id="complete-configuration-examples">
 <h2>Complete Configuration Examples<a class="headerlink" href="#complete-configuration-examples" title="Link to this heading">¶</a></h2>
@@ -535,29 +520,6 @@
 
 <span class="c1"># MANDATORY: Specify allowlist</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_create_*,zpa_update_*,zia_create_rule_label&quot;</span>
-</pre></div>
-</div>
-</section>
-<section id="legacy-mode-configuration">
-<h3>Legacy Mode Configuration<a class="headerlink" href="#legacy-mode-configuration" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable Legacy Mode</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-
-<span class="c1"># ZPA Legacy Credentials</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_zpa_client_id&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_zpa_secret&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;production&quot;</span>
-
-<span class="c1"># ZIA Legacy Credentials</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;admin@company.com&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo&quot;</span>
-
-<span class="c1"># Optional: Enable write mode with allowlist</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="s2">&quot;zpa_*,zia_*&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -605,7 +567,11 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code> - Comma-separated service list (empty = all)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLS</span></code> - Comma-separated tool list (empty = all)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_SERVICES</span></code> - Comma-separated services to exclude (e.g., <code class="docutils literal notranslate"><span class="pre">zcc,zdx</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code> - Comma-separated tools to exclude, supports wildcards (e.g., <code class="docutils literal notranslate"><span class="pre">zcc_*,zcc_devices_csv_exporter</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code> - Comma-separated tools to exclude, supports wildcards (e.g., <code class="docutils literal notranslate"><span class="pre">zcc_*,zia_list_devices</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code> - Comma-separated toolset ids to enable (e.g. <code class="docutils literal notranslate"><span class="pre">zia_url_filtering,zpa_app_segments</span></code>). Special values: <code class="docutils literal notranslate"><span class="pre">default</span></code> (curated default-on subset), <code class="docutils literal notranslate"><span class="pre">all</span></code> (every toolset). When unset, every toolset whose service is enabled is loaded. The <code class="docutils literal notranslate"><span class="pre">meta</span></code> toolset is always loaded. See the Toolsets section below.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER</span></code> - Skip the OneAPI entitlement filter (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>). The filter trims toolsets to the products the configured <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code> is entitled to. It is non-fatal by default; set to <code class="docutils literal notranslate"><span class="pre">true</span></code> only as an emergency override.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION</span></code> - Disable defense-in-depth output sanitization (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>). Sanitization strips invisible/BiDi/zero-width characters, raw HTML, dangerous Markdown link/image syntax, and suspicious code-fence info-strings from every tool response before it reaches the agent. Disabling removes a prompt-injection defense layer; only set to <code class="docutils literal notranslate"><span class="pre">true</span></code> for diagnostics.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_LOG_TOOL_CALLS</span></code> - Enable per-tool-call audit logging (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DEBUG</span></code> - Enable debug logging (<code class="docutils literal notranslate"><span class="pre">true</span></code>/<code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_HOST</span></code> - HTTP bind host (default: <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_PORT</span></code> - HTTP port (default: <code class="docutils literal notranslate"><span class="pre">8000</span></code>)</p></li>
@@ -646,29 +612,27 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code> - Cloud environment (optional)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code> - Private key path for JWT (optional)</p></li>
 </ul>
-<p><strong>Legacy Authentication:</strong></p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY</span></code> - Enable legacy mode (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CUSTOMER_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZPA_CLOUD</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZIA_USERNAME</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_PASSWORD</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_API_KEY</span></code>, <code class="docutils literal notranslate"><span class="pre">ZIA_CLOUD</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZCC_CLOUD</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZDX_CLOUD</span></code></p></li>
-</ul>
 </section>
 </section>
 <section id="cli-flags-reference">
 <h2>CLI Flags Reference<a class="headerlink" href="#cli-flags-reference" title="Link to this heading">¶</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--transport           Transport protocol: stdio, sse, streamable-http (default: stdio)
---host                Host to bind to for HTTP transports (default: 127.0.0.1)
---port                Port for HTTP transports (default: 8000)
---services            Comma-separated list of services to enable
---enable-write-tools  Enable write (create/update/delete) tools
---write-tools         Mandatory allowlist of write tools (supports wildcards)
---generate-auth-token Generate an authorization token from configured credentials
---list-tools          List all registered tools and exit
---user-agent-comment  Additional comment appended to the User-Agent header
---version             Show server version and exit
---debug               Enable debug logging
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--transport               Transport protocol: stdio, sse, streamable-http (default: stdio)
+--host                    Host to bind to for HTTP transports (default: 127.0.0.1)
+--port                    Port for HTTP transports (default: 8000)
+--services                Comma-separated list of services to enable
+--disabled-services       Comma-separated list of services to exclude (e.g., zcc,zdx)
+--tools                   Comma-separated list of specific tools to enable
+--disabled-tools          Comma-separated tool patterns to exclude (wildcards supported)
+--toolsets                Comma-separated toolset ids to enable (use &#39;default&#39; or &#39;all&#39; as keywords)
+--no-entitlement-filter   Skip the OneAPI entitlement filter (emergency override)
+--enable-write-tools      Enable write (create/update/delete) tools
+--write-tools             Mandatory allowlist of write tools (supports wildcards)
+--log-tool-calls          Enable per-tool-call audit logging
+--generate-auth-token     Generate an authorization token from configured credentials
+--list-tools              List all registered tools and exit
+--user-agent-comment      Additional comment appended to the User-Agent header
+--version                 Show server version and exit
+--debug                   Enable debug logging
 </pre></div>
 </div>
 </section>
@@ -684,9 +648,10 @@
 <p><strong>Issue: Zscaler API authentication fails</strong></p>
 <p>Check:</p>
 <ol class="arabic simple">
-<li><p>For OneAPI: All 4 required variables set (CLIENT_ID, CLIENT_SECRET, CUSTOMER_ID, VANITY_DOMAIN)</p></li>
-<li><p>For Legacy: <code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY=true</span></code> + service-specific credentials</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code> (or <code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code>), and <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code> are all set</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> is set when calling ZPA tools</p></li>
 <li><p>Credentials are valid and not expired</p></li>
+<li><p>The OneAPI client has the required scopes in the ZIdentity console</p></li>
 </ol>
 <p><strong>Issue: MCP Client Authentication fails</strong></p>
 <p>Check:</p>
@@ -780,22 +745,19 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Configuration Guide</a><ul>
-<li><a class="reference internal" href="#authentication-methods">Authentication Methods</a><ul>
-<li><a class="reference internal" href="#oneapi-authentication-recommended">OneAPI Authentication (Recommended)</a></li>
-<li><a class="reference internal" href="#legacy-authentication-per-service">Legacy Authentication (Per-Service)</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#authentication">Authentication</a></li>
 <li><a class="reference internal" href="#server-configuration">Server Configuration</a><ul>
 <li><a class="reference internal" href="#general-server-settings">General Server Settings</a></li>
 <li><a class="reference internal" href="#mcp-client-authentication">MCP Client Authentication</a></li>
 <li><a class="reference internal" href="#network-security">Network Security</a></li>
 <li><a class="reference internal" href="#write-operations-configuration-security">Write Operations Configuration (Security)</a></li>
+<li><a class="reference internal" href="#toolsets">Toolsets</a></li>
+<li><a class="reference internal" href="#oneapi-entitlement-filter">OneAPI Entitlement Filter</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#complete-configuration-examples">Complete Configuration Examples</a><ul>
 <li><a class="reference internal" href="#read-only-mode-default-recommended">Read-Only Mode (Default - Recommended)</a></li>
 <li><a class="reference internal" href="#write-mode-with-allowlist-advanced">Write Mode with Allowlist (Advanced)</a></li>
-<li><a class="reference internal" href="#legacy-mode-configuration">Legacy Mode Configuration</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#security-best-practices">Security Best Practices</a></li>

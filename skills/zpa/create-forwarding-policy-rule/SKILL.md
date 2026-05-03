@@ -414,9 +414,16 @@ This bypasses ZPA for ALL traffic, which is almost never desired. Always scope w
 
 If traffic is bypassed by a forwarding rule, the access policy rule is never evaluated for that traffic. Be careful not to bypass traffic that requires access policy enforcement.
 
-### Listing Existing Forwarding Rules
+### Listing Existing Forwarding Rules (opt-in)
 
-Before creating, check what rules already exist:
+Do **not** pre-list forwarding rules before every create. New ZPA
+forwarding rules are appended at the end of the policy by default;
+pre-listing adds a round trip, gives no useful information for the
+typical case, and invites fan-out retries when the list comes back
+empty on a fresh tenant.
+
+Run the listing **only** when the admin explicitly asks about ordering,
+duplicate names, or wants to inspect existing rules:
 
 ```text
 zpa_list_forwarding_policy_rules()
@@ -434,8 +441,8 @@ zpa_list_forwarding_policy_rules()
 - `get_zpa_saml_attribute(search)` -- look up SAML attribute IDs
 - `get_zpa_trusted_network(search)` -- look up trusted network IDs
 - `get_zpa_posture_profile(search)` -- look up posture profile UDIDs
-- `zpa_list_forwarding_policy_rules()` -- list existing rules
-- `zpa_create_forwarding_policy_rule(name, action_type, conditions)` -- create the rule
+- `zpa_create_forwarding_policy_rule(name, action_type, conditions)` -- create the rule (no pre-flight needed)
+- `zpa_list_forwarding_policy_rules()` -- **only** when the admin explicitly asks about ordering or wants to inspect existing rules
 - `zpa_get_forwarding_policy_rule(rule_id)` -- verify the rule
 
 **Condition logic:**

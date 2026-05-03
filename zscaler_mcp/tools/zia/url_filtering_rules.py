@@ -4,6 +4,13 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -125,7 +132,6 @@ def zia_list_url_filtering_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -139,7 +145,6 @@ def zia_list_url_filtering_rules(
 
     Args:
         search (str, optional): Search string for filtering rules by name.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -152,7 +157,7 @@ def zia_list_url_filtering_rules(
         Search for rules containing "block":
         >>> rules = zia_list_url_filtering_rules(search="block")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     url = client.zia.url_filtering
 
     query_params = {"search": search} if search else {}
@@ -167,7 +172,6 @@ def zia_get_url_filtering_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the URL filtering rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -176,7 +180,6 @@ def zia_get_url_filtering_rule(
 
     Args:
         rule_id (int/str): The ID of the URL filtering rule to retrieve.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -186,7 +189,7 @@ def zia_get_url_filtering_rule(
         Get a specific rule:
         >>> rule = zia_get_url_filtering_rule(rule_id="12345")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     url = client.zia.url_filtering
 
     rule, _, err = url.get_rule(rule_id)
@@ -205,7 +208,13 @@ def zia_create_url_filtering_rule(
     rule_action: Annotated[
         str,
         Field(
-            description="Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE"
+            description=(
+                "Action taken when traffic matches rule criteria. Allowed values: "
+                "ALLOW, BLOCK, CAUTION, ISOLATE. "
+                "ALLOW permits the traffic. BLOCK denies the URL outright. "
+                "CAUTION shows the user a warning page and lets them proceed. "
+                "ISOLATE renders the page in Browser Isolation (subscription required)."
+            )
         ),
     ],
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
@@ -213,7 +222,7 @@ def zia_create_url_filtering_rule(
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = True,
     rank: Annotated[
-        Optional[int], Field(description="The admin rank of the user who creates the rule.")
+        Optional[int], Field(description=RANK_FIELD_DESCRIPTION)
     ] = None,
     order: Annotated[
         Optional[int],
@@ -346,7 +355,6 @@ def zia_create_url_filtering_rule(
             description="The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK."
         ),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -356,7 +364,11 @@ def zia_create_url_filtering_rule(
     Args:
         name (str): Rule name (required).
         rule_action (str): Action taken when traffic matches rule criteria.
-                          Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE.
+                          Allowed values: ALLOW, BLOCK, CAUTION, ISOLATE.
+                          - ALLOW: Permit the traffic.
+                          - BLOCK: Deny the URL outright (a BLOCK page is shown).
+                          - CAUTION: Show a warning interstitial; the user may proceed.
+                          - ISOLATE: Render the page in Browser Isolation (requires Browser Isolation entitlement).
         [... additional parameters as documented in function signature ...]
 
     Returns:
@@ -371,6 +383,8 @@ def zia_create_url_filtering_rule(
         ...     protocols=["ANY_RULE"]
         ... )
     """
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_url_filtering_rule_payload(
         name=name,
         description=description,
@@ -407,7 +421,7 @@ def zia_create_url_filtering_rule(
         override_groups=override_groups,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     url = client.zia.url_filtering
 
     rule, _, err = url.add_rule(**payload)
@@ -425,14 +439,17 @@ def zia_update_url_filtering_rule(
     rule_action: Annotated[
         Optional[str],
         Field(
-            description="Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE"
+            description=(
+                "Action taken when traffic matches rule criteria. Allowed values: "
+                "ALLOW, BLOCK, CAUTION, ISOLATE."
+            )
         ),
     ] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
     rank: Annotated[
-        Optional[int], Field(description="The admin rank of the user who creates the rule.")
+        Optional[int], Field(description=RANK_FIELD_DESCRIPTION)
     ] = None,
     order: Annotated[
         Optional[int],
@@ -565,7 +582,6 @@ def zia_update_url_filtering_rule(
             description="The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK."
         ),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -587,6 +603,10 @@ def zia_update_url_filtering_rule(
         ...     enabled=True
         ... )
     """
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_url_filtering_rule_payload(
         name=name,
         description=description,
@@ -623,7 +643,7 @@ def zia_update_url_filtering_rule(
         override_groups=override_groups,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     url = client.zia.url_filtering
 
     rule, _, err = url.update_rule(rule_id, **payload)
@@ -636,7 +656,6 @@ def zia_delete_url_filtering_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the URL filtering rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -648,7 +667,6 @@ def zia_delete_url_filtering_rule(
 
     Args:
         rule_id (int/str): The ID of the URL filtering rule to delete.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -669,7 +687,7 @@ def zia_delete_url_filtering_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     url = client.zia.url_filtering
 
     _, _, err = url.delete_rule(rule_id)

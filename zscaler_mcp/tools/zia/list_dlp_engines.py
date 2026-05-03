@@ -20,7 +20,6 @@ def zia_dlp_engine_manager(
         Optional[str],
         Field(description="Optional search filter for listing engines by name or description."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Union[dict, List[dict]]:
     """
@@ -34,7 +33,6 @@ def zia_dlp_engine_manager(
         action (str): Operation to perform: read (list all or retrieve specific by engine_id), read_lite (list with minimal data).
         engine_id (int/str, optional): Optional engine ID to retrieve a specific engine.
         search (str, optional): Search string to match against engine name or description.
-        use_legacy (bool, optional): Whether to use the legacy API (default: False).
         service (str, optional): The service to use (default: "zia").
 
     Returns:
@@ -69,7 +67,7 @@ def zia_dlp_engine_manager(
         - Engine expressions reference DLP dictionaries by their IDs (e.g., D63.S > 1).
         - Engines are used in DLP rules to define what content should be monitored or blocked.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     dlp_engine = client.zia.dlp_engine
 

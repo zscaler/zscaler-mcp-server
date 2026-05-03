@@ -220,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
@@ -275,6 +279,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.jmespath_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_jmespath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.zia_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_predefined_category</span>
 
 <span class="c1"># =============================================================================</span>
 <span class="c1"># READ-ONLY OPERATIONS</span>
@@ -291,14 +296,13 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;JMESPath expression for client-side filtering/projection of results.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List all ZIA URL categories with optional filtering.</span>
 
 <span class="sd">    Supports JMESPath client-side filtering via the query parameter.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
 
     <span class="n">results</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">list_categories</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span> <span class="ow">or</span> <span class="p">{})</span>
@@ -320,7 +324,6 @@
             <span class="s2">&quot;URLs are processed in batches of 100; large lists may take longer due to API rate limiting.&quot;</span>
         <span class="p">),</span>
     <span class="p">],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -335,7 +338,6 @@
 <span class="sd">        urls: List of URLs or domains to look up (e.g., &quot;google.com&quot;, &quot;acme.com&quot;).</span>
 <span class="sd">            Accepts a list or JSON string. Maximum 100 URLs per batch; larger</span>
 <span class="sd">            lists are processed in multiple batches automatically.</span>
-<span class="sd">        use_legacy: Whether to use the legacy API (default: False).</span>
 <span class="sd">        service: The service identifier (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -379,7 +381,7 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">urls</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;urls cannot be empty&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
 
     <span class="n">results</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">urls</span><span class="o">=</span><span class="n">urls</span><span class="p">)</span>
@@ -407,20 +409,50 @@
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_categories.zia_get_url_category">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_get_url_category</span><span class="p">(</span>
     <span class="n">category_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Category ID.&quot;</span><span class="p">)],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a specific ZIA URL category by ID.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">category_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;category_id is required&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
 
     <span class="n">result</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_category</span><span class="p">(</span><span class="n">category_id</span><span class="o">=</span><span class="n">category_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Read failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="zia_get_url_category_predefined">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_categories.zia_get_url_category_predefined">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_get_url_category_predefined</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Predefined URL category identifier. Accepts the canonical &quot;</span>
+                <span class="s2">&quot;ID (e.g. ``FINANCE``) or the display ``configured_name`` &quot;</span>
+                <span class="s2">&quot;(e.g. ``Finance``). Case-insensitive. Refuses custom &quot;</span>
+                <span class="s2">&quot;categories — use ``zia_get_url_category`` for those.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a Zscaler-curated **predefined** URL category by ID or display name.</span>
+
+<span class="sd">    Mirrors the Terraform ``resource_zia_url_categories_predefined``</span>
+<span class="sd">    importer behavior: predefined categories only, case-insensitive</span>
+<span class="sd">    match on canonical ID or ``configured_name``.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if ``name`` does not match any predefined category</span>
+<span class="sd">            or if the match is a custom category.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">resolve_predefined_category</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
 
 
 
@@ -456,14 +488,22 @@
     <span class="n">ip_ranges_retaining_parent_category</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Retained IP ranges from parent.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new custom ZIA URL category.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new **custom** ZIA URL category.</span>
+
+<span class="sd">    Cannot be used to create predefined categories (``FINANCE``,</span>
+<span class="sd">    ``NEWS_AND_MEDIA``, ``OTHER_ADULT_MATERIAL``, etc.) — those are</span>
+<span class="sd">    Zscaler-curated and cannot be created via the API. To modify a</span>
+<span class="sd">    predefined category&#39;s URLs / IP ranges use</span>
+<span class="sd">    ``zia_add_urls_to_category`` / ``zia_remove_urls_from_category``;</span>
+<span class="sd">    to replace its keyword fields use</span>
+<span class="sd">    ``zia_update_url_category_predefined``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">configured_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">super_category</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;configured_name and super_category are required for creation&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
 
     <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
@@ -517,15 +557,36 @@
     <span class="n">ip_ranges_retaining_parent_category</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Retained IP ranges from parent.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an existing ZIA URL category (full replacement of all fields).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an existing **custom** ZIA URL category (full replacement of all fields).</span>
+
+<span class="sd">    Refuses predefined (Zscaler-curated) categories — a full-PUT against</span>
+<span class="sd">    one would obliterate Zscaler&#39;s curated URL list. To modify a</span>
+<span class="sd">    predefined category use ``zia_update_url_category_predefined`` for</span>
+<span class="sd">    full-replacement semantics, or ``zia_add_urls_to_category`` /</span>
+<span class="sd">    ``zia_remove_urls_from_category`` for incremental URL/IP-range</span>
+<span class="sd">    changes (both already work correctly against predefined IDs).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">category_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">configured_name</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;category_id and configured_name are required for full update&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
+
+    <span class="n">existing</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_category</span><span class="p">(</span><span class="n">category_id</span><span class="o">=</span><span class="n">category_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Read failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">existing_dict</span> <span class="o">=</span> <span class="n">existing</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">existing</span><span class="p">,</span> <span class="s2">&quot;as_dict&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">existing</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">existing_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_category&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">category_id</span><span class="si">!r}</span><span class="s2"> is a predefined URL category. The full-replace &quot;</span>
+            <span class="s2">&quot;PUT performed by this tool would obliterate Zscaler&#39;s curated &quot;</span>
+            <span class="s2">&quot;URL list. Use zia_update_url_category_predefined to replace &quot;</span>
+            <span class="s2">&quot;fields on a predefined category, or zia_add_urls_to_category / &quot;</span>
+            <span class="s2">&quot;zia_remove_urls_from_category for incremental URL/IP-range &quot;</span>
+            <span class="s2">&quot;changes.&quot;</span>
+        <span class="p">)</span>
 
     <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configured_name&quot;</span><span class="p">:</span> <span class="n">configured_name</span><span class="p">}</span>
     <span class="k">if</span> <span class="n">urls</span><span class="p">:</span>
@@ -550,20 +611,142 @@
 
 
 
+<div class="viewcode-block" id="zia_update_url_category_predefined">
+<a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_categories.zia_update_url_category_predefined">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">zia_update_url_category_predefined</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Predefined URL category identifier. Accepts the canonical &quot;</span>
+                <span class="s2">&quot;ID (e.g. ``FINANCE``) or the display ``configured_name`` &quot;</span>
+                <span class="s2">&quot;(e.g. ``Finance``). Case-insensitive. Refuses custom &quot;</span>
+                <span class="s2">&quot;categories — use ``zia_update_url_category`` for those.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">configured_name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Display name to send on the PUT. ZIA&#39;s PUT endpoint &quot;</span>
+                <span class="s2">&quot;requires it. When omitted, the existing category&#39;s &quot;</span>
+                <span class="s2">&quot;``configured_name`` is silently backfilled (matches the &quot;</span>
+                <span class="s2">&quot;behavior of every other ZIA rule update tool).&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;List of URLs to set on the category (full replacement). &quot;</span>
+                <span class="s2">&quot;Predefined categories ship with Zscaler&#39;s curated list — &quot;</span>
+                <span class="s2">&quot;passing ``urls`` here REPLACES that list. For incremental &quot;</span>
+                <span class="s2">&quot;add/remove use ``zia_add_urls_to_category`` / &quot;</span>
+                <span class="s2">&quot;``zia_remove_urls_from_category`` instead.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional description.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">keywords</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Custom keywords. Replacement semantics — the API does &quot;</span>
+                <span class="s2">&quot;not support incremental keyword updates.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ip_ranges</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Custom IP ranges (full replacement). For incremental &quot;</span>
+                <span class="s2">&quot;add/remove use ``zia_add_urls_to_category`` / &quot;</span>
+                <span class="s2">&quot;``zia_remove_urls_from_category`` instead.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">db_categorized_urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;DB-categorized URLs.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">keywords_retaining_parent_category</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Retained keywords from the parent category.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ip_ranges_retaining_parent_category</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Retained IP ranges from the parent category.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update a Zscaler-curated **predefined** URL category (full PUT).</span>
+
+<span class="sd">    Mirrors the contract of ``zia_update_url_category`` — same field</span>
+<span class="sd">    surface, same full-replacement PUT semantics — but targets</span>
+<span class="sd">    predefined categories specifically. Resolves ``name`` to the</span>
+<span class="sd">    canonical predefined ID via :func:`resolve_predefined_category`,</span>
+<span class="sd">    backfills ``configured_name`` from the existing category if the</span>
+<span class="sd">    caller omits it, then performs one</span>
+<span class="sd">    ``update_url_category(action=None, ...)`` call.</span>
+
+<span class="sd">    For incremental URL/IP-range mutations (the typical &quot;add a few URLs</span>
+<span class="sd">    to FINANCE&quot; workflow) prefer ``zia_add_urls_to_category`` /</span>
+<span class="sd">    ``zia_remove_urls_from_category`` — they wrap the SDK&#39;s</span>
+<span class="sd">    ``ADD_TO_LIST`` / ``REMOVE_FROM_LIST`` actions and work on both</span>
+<span class="sd">    custom and predefined IDs.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if ``name`` does not match any predefined category</span>
+<span class="sd">            or matches a custom one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
+
+    <span class="n">existing</span> <span class="o">=</span> <span class="n">resolve_predefined_category</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="n">category_id</span> <span class="o">=</span> <span class="n">existing</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+
+    <span class="n">payload</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;configured_name&quot;</span><span class="p">:</span> <span class="n">configured_name</span> <span class="ow">or</span> <span class="n">existing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;configured_name&quot;</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">urls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;urls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">urls</span>
+    <span class="k">if</span> <span class="n">description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">description</span>
+    <span class="k">if</span> <span class="n">keywords</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;keywords&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keywords</span>
+    <span class="k">if</span> <span class="n">ip_ranges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;ip_ranges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ip_ranges</span>
+    <span class="k">if</span> <span class="n">db_categorized_urls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;db_categorized_urls&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">db_categorized_urls</span>
+    <span class="k">if</span> <span class="n">keywords_retaining_parent_category</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;keywords_retaining_parent_category&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keywords_retaining_parent_category</span>
+    <span class="k">if</span> <span class="n">ip_ranges_retaining_parent_category</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;ip_ranges_retaining_parent_category&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ip_ranges_retaining_parent_category</span>
+
+    <span class="n">updated</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">update_url_category</span><span class="p">(</span><span class="n">category_id</span><span class="o">=</span><span class="n">category_id</span><span class="p">,</span> <span class="o">**</span><span class="n">payload</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Update failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">updated</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span></div>
+
+
+
 <div class="viewcode-block" id="zia_add_urls_to_category">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_categories.zia_add_urls_to_category">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_add_urls_to_category</span><span class="p">(</span>
     <span class="n">category_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Category ID (required).&quot;</span><span class="p">)],</span>
     <span class="n">configured_name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Name of the category (required).&quot;</span><span class="p">)],</span>
     <span class="n">urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of URLs to add (required).&quot;</span><span class="p">)],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Incrementally add URLs to an existing ZIA URL category.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">category_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">configured_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">urls</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;category_id, configured_name, and urls are required for adding URLs&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
 
     <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configured_name&quot;</span><span class="p">:</span> <span class="n">configured_name</span><span class="p">,</span> <span class="s2">&quot;urls&quot;</span><span class="p">:</span> <span class="n">urls</span><span class="p">}</span>
@@ -580,7 +763,6 @@
     <span class="n">category_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Category ID (required).&quot;</span><span class="p">)],</span>
     <span class="n">configured_name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Name of the category (required).&quot;</span><span class="p">)],</span>
     <span class="n">urls</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of URLs to remove (required).&quot;</span><span class="p">)],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
     <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
@@ -601,7 +783,7 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">category_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">configured_name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">urls</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;category_id, configured_name, and urls are required for removing URLs&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
 
     <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configured_name&quot;</span><span class="p">:</span> <span class="n">configured_name</span><span class="p">,</span> <span class="s2">&quot;urls&quot;</span><span class="p">:</span> <span class="n">urls</span><span class="p">}</span>
@@ -616,14 +798,16 @@
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.url_categories.zia_delete_url_category">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_delete_url_category</span><span class="p">(</span>
     <span class="n">category_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Category ID (required).&quot;</span><span class="p">)],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
     <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a custom ZIA URL category.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a **custom** ZIA URL category.</span>
+
+<span class="sd">    Refuses predefined (Zscaler-curated) categories — those cannot be</span>
+<span class="sd">    deleted via the ZIA API.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.elicitation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_confirmation</span><span class="p">,</span> <span class="n">extract_confirmed_from_kwargs</span>
 
-    <span class="c1"># Extract confirmation from kwargs (hidden from tool schema)</span>
     <span class="n">confirmed</span> <span class="o">=</span> <span class="n">extract_confirmed_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="n">confirmation_check</span> <span class="o">=</span> <span class="n">check_confirmation</span><span class="p">(</span><span class="s2">&quot;zia_delete_url_category&quot;</span><span class="p">,</span> <span class="n">confirmed</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;category_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">category_id</span><span class="p">)})</span>
@@ -633,8 +817,19 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">category_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;category_id is required for deletion&quot;</span><span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">api</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_categories</span>
+
+    <span class="n">existing</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_category</span><span class="p">(</span><span class="n">category_id</span><span class="o">=</span><span class="n">category_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Read failed: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">existing_dict</span> <span class="o">=</span> <span class="n">existing</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">existing</span><span class="p">,</span> <span class="s2">&quot;as_dict&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">existing</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">existing_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;custom_category&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">category_id</span><span class="si">!r}</span><span class="s2"> is a predefined URL category. Predefined &quot;</span>
+            <span class="s2">&quot;categories are Zscaler-curated and cannot be deleted via the &quot;</span>
+            <span class="s2">&quot;API. Only custom categories can be deleted.&quot;</span>
+        <span class="p">)</span>
 
     <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">delete_category</span><span class="p">(</span><span class="n">category_id</span><span class="o">=</span><span class="n">category_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>

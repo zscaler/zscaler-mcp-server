@@ -19,6 +19,14 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    ORDER_FIELD_DESCRIPTION,
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -131,7 +139,6 @@ def zia_list_cloud_firewall_ips_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Any:
     """
@@ -145,7 +152,7 @@ def zia_list_cloud_firewall_ips_rules(
     Returns:
         list[dict]: Cloud Firewall IPS rule records.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ips = client.zia.cloud_firewall_ips
 
     query_params = {"search": search} if search else {}
@@ -160,7 +167,6 @@ def zia_get_cloud_firewall_ips_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the Cloud Firewall IPS rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -169,7 +175,7 @@ def zia_get_cloud_firewall_ips_rule(
     Returns:
         dict: The Cloud Firewall IPS rule record.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ips = client.zia.cloud_firewall_ips
 
     rule, _, err = ips.get_rule(rule_id)
@@ -196,8 +202,8 @@ def zia_create_cloud_firewall_ips_rule(
     ],
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = True,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
-    order: Annotated[Optional[int], Field(description="Rule order; defaults to bottom.")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
+    order: Annotated[Optional[int], Field(description=ORDER_FIELD_DESCRIPTION)] = None,
     enable_full_logging: Annotated[
         Optional[bool], Field(description="If True, enables full logging.")
     ] = None,
@@ -289,7 +295,6 @@ def zia_create_cloud_firewall_ips_rule(
     zpa_app_segments: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for ZPA app segments.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -300,6 +305,8 @@ def zia_create_cloud_firewall_ips_rule(
     Returns:
         dict: The created Cloud Firewall IPS rule.
     """
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_ips_rule_payload(
         name=name,
         description=description,
@@ -337,7 +344,7 @@ def zia_create_cloud_firewall_ips_rule(
         zpa_app_segments=zpa_app_segments,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ips = client.zia.cloud_firewall_ips
 
     rule, _, err = ips.add_rule(**payload)
@@ -353,8 +360,8 @@ def zia_update_cloud_firewall_ips_rule(
     name: Annotated[Optional[str], Field(description="Rule name (max 31 chars).")] = None,
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = None,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
-    order: Annotated[Optional[int], Field(description="Rule order.")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
+    order: Annotated[Optional[int], Field(description=ORDER_FIELD_DESCRIPTION)] = None,
     rule_action: Annotated[
         Optional[str],
         Field(description="Action. Values: ALLOW, BLOCK_DROP, BLOCK_RESET, BYPASS_IPS."),
@@ -441,7 +448,6 @@ def zia_update_cloud_firewall_ips_rule(
     zpa_app_segments: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for ZPA app segments.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -456,6 +462,10 @@ def zia_update_cloud_firewall_ips_rule(
     Returns:
         dict: The updated Cloud Firewall IPS rule.
     """
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_ips_rule_payload(
         name=name,
         description=description,
@@ -493,7 +503,7 @@ def zia_update_cloud_firewall_ips_rule(
         zpa_app_segments=zpa_app_segments,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ips = client.zia.cloud_firewall_ips
 
     if "name" not in payload or "order" not in payload:
@@ -516,7 +526,6 @@ def zia_delete_cloud_firewall_ips_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the Cloud Firewall IPS rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -538,7 +547,7 @@ def zia_delete_cloud_firewall_ips_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ips = client.zia.cloud_firewall_ips
 
     _, _, err = ips.delete_rule(rule_id)

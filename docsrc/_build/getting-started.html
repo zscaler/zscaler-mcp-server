@@ -221,6 +221,10 @@
 <li class="toctree-l2"><a class="reference internal" href="guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="guides/support.html">Support Guide</a></li>
@@ -284,7 +288,7 @@
 <ul class="simple">
 <li><p>Python 3.11 or higher installed</p></li>
 <li><p><a class="reference external" href="https://docs.astral.sh/uv/">uv</a> installed (recommended) or pip</p></li>
-<li><p>Access to Zscaler APIs (OneAPI or Legacy credentials)</p></li>
+<li><p>Access to Zscaler APIs (OneAPI credentials)</p></li>
 <li><p>Basic understanding of Model Context Protocol (MCP)</p></li>
 </ul>
 </section>
@@ -308,32 +312,16 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <p>The MCP server requires Zscaler API credentials to function. Create a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file with your credentials:</p>
-<section id="oneapi-authentication-recommended">
-<h3>OneAPI Authentication (Recommended)<a class="headerlink" href="#oneapi-authentication-recommended" title="Link to this heading">¶</a></h3>
+<section id="oneapi-authentication">
+<h3>OneAPI Authentication<a class="headerlink" href="#oneapi-authentication" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
 <span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
-<span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
+<span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span><span class="w">  </span><span class="c1"># required only for ZPA tools</span>
 <span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span>
 </pre></div>
 </div>
-</section>
-<section id="legacy-api-authentication">
-<h3>Legacy API Authentication<a class="headerlink" href="#legacy-api-authentication" title="Link to this heading">¶</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_USE_LEGACY</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
-
-<span class="c1"># ZIA Legacy</span>
-<span class="nv">ZIA_USERNAME</span><span class="o">=</span><span class="s2">&quot;your_username&quot;</span>
-<span class="nv">ZIA_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span>
-<span class="nv">ZIA_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span>
-<span class="nv">ZIA_CLOUD</span><span class="o">=</span><span class="s2">&quot;zscalertwo&quot;</span>
-
-<span class="c1"># ZPA Legacy</span>
-<span class="nv">ZPA_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span>
-<span class="nv">ZPA_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span>
-<span class="nv">ZPA_CUSTOMER_ID</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span>
-<span class="nv">ZPA_CLOUD</span><span class="o">=</span><span class="s2">&quot;PRODUCTION&quot;</span>
-</pre></div>
-</div>
+<p>For JWT-based auth, set <code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code> (PEM-encoded) in place of
+<code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Do not commit <code class="docutils literal notranslate"><span class="pre">.env</span></code> to source control. Add it to your <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code>.</p>
@@ -355,6 +343,9 @@ zscaler-mcp<span class="w"> </span>--transport<span class="w"> </span>streamable
 
 <span class="c1"># With specific services</span>
 zscaler-mcp<span class="w"> </span>--services<span class="w"> </span>zia,zpa,zdx
+
+<span class="c1"># With a narrow toolset selection (loads only those tools, on every transport)</span>
+zscaler-mcp<span class="w"> </span>--toolsets<span class="w"> </span>zia_url_filtering,zpa_app_segments
 
 <span class="c1"># With write operations enabled</span>
 zscaler-mcp<span class="w"> </span>--enable-write-tools<span class="w"> </span>--write-tools<span class="w"> </span><span class="s2">&quot;zpa_create_*,zia_update_*&quot;</span>
@@ -500,8 +491,7 @@ zscaler-mcp<span class="w"> </span>--enable-write-tools<span class="w"> </span>-
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#configuration">Configuration</a><ul>
-<li><a class="reference internal" href="#oneapi-authentication-recommended">OneAPI Authentication (Recommended)</a></li>
-<li><a class="reference internal" href="#legacy-api-authentication">Legacy API Authentication</a></li>
+<li><a class="reference internal" href="#oneapi-authentication">OneAPI Authentication</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#running-the-server">Running the Server</a></li>

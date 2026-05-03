@@ -11,7 +11,6 @@ from zscaler_mcp.client import get_zscaler_client
 
 def zdx_get_analysis(
     analysis_id: Annotated[str, Field(description="The unique ID for the analysis.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -24,7 +23,6 @@ def zdx_get_analysis(
 
     Args:
         analysis_id: The unique ID for the analysis (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -37,7 +35,7 @@ def zdx_get_analysis(
         Get analysis status:
         >>> status = zdx_get_analysis(analysis_id="analysis123")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     result, _, err = client.zdx.troubleshooting.get_analysis(analysis_id)
     if err:
@@ -69,7 +67,6 @@ def zdx_start_analysis(
         Optional[int],
         Field(description="End time as Unix epoch timestamp."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -86,7 +83,6 @@ def zdx_start_analysis(
         app_id: The unique ID for the application (required).
         t0: Start time as Unix epoch timestamp.
         t1: End time as Unix epoch timestamp.
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -102,7 +98,7 @@ def zdx_start_analysis(
         ...     app_id=1
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     kwargs = {
         "device_id": device_id,
@@ -126,7 +122,6 @@ def zdx_delete_analysis(
     analysis_id: Annotated[
         str, Field(description="The unique ID for the analysis to stop/delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
     kwargs: str = "{}",
 ) -> str:
@@ -138,7 +133,6 @@ def zdx_delete_analysis(
 
     Args:
         analysis_id: The unique ID for the analysis to stop (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -162,7 +156,7 @@ def zdx_delete_analysis(
     if not analysis_id:
         raise ValueError("analysis_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     _, _, err = client.zdx.troubleshooting.delete_analysis(analysis_id)
     if err:

@@ -11,7 +11,6 @@ tests/
 ├── test_logging.py          # Logging functionality tests
 ├── test_registry.py         # Service registry tests
 ├── test_streamable_http_transport.py  # Transport layer tests
-├── test_use_legacy_env.py   # Legacy environment tests
 │
 ├── e2e/                     # End-to-End tests (require --run-e2e flag)
 │   ├── test_zia.py
@@ -192,7 +191,6 @@ Each tool function should have tests for:
 - ✅ **Error handling** - API errors and exceptions
 - ✅ **Input validation** - Missing or invalid parameters
 - ✅ **Edge cases** - Empty results, None values, etc.
-- ✅ **Legacy mode** - If applicable (use_legacy=True)
 
 ### Example: Complete Test Coverage
 

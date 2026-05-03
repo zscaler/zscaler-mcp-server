@@ -294,7 +294,11 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the service with a Zscaler client.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            zscaler_client: The Zscaler client instance (can be None in legacy mode)</span>
+<span class="sd">            zscaler_client: The Zscaler OneAPI client instance, or ``None``.</span>
+<span class="sd">                The server does not eagerly construct a client at startup;</span>
+<span class="sd">                tools call :func:`zscaler_mcp.client.get_zscaler_client`</span>
+<span class="sd">                lazily on first invocation, so a missing client at register</span>
+<span class="sd">                time is expected and not an error.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">zscaler_client</span> <span class="o">=</span> <span class="n">zscaler_client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tools</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Kept for backward compatibility during migration</span>
@@ -306,7 +310,8 @@
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.BaseService.register_tools">[docs]</a>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register tools with the MCP server.</span>
 
@@ -316,6 +321,10 @@
 <span class="sd">            enable_write_tools: Whether to enable write tools (default: False)</span>
 <span class="sd">            write_tools: Explicit allowlist of write tools (supports wildcards). Requires enable_write_tools=True.</span>
 <span class="sd">            disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch).</span>
+<span class="sd">            selected_toolsets: Set of toolset ids (e.g. ``{&quot;zia_url_filtering&quot;}``) that</span>
+<span class="sd">                this service is allowed to register tools for. ``None`` disables</span>
+<span class="sd">                toolset filtering. The ``meta`` toolset is always exempt. See</span>
+<span class="sd">                :mod:`zscaler_mcp.common.toolsets`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
@@ -370,15 +379,17 @@
 <div class="viewcode-block" id="ZCCService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZCCService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZCC tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register verb-based tools with proper annotations (all read-only)</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZCC Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
@@ -596,15 +607,17 @@
 <div class="viewcode-block" id="ZDXService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZDXService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZDX tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register verb-based tools with proper annotations (all read-only)</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZDX Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
@@ -756,12 +769,12 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_app_connector_groups</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_list_app_connector_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA app connector groups (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZPA App Connector Groups (read-only). Returns every connector group in the tenant — id, name, location, country, enrollment cert, server-group memberships. Use this to discover existing connector groups before creating server groups (which require an app_connector_group_id) or before onboarding an application. Supports name search and JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_get_app_connector_group</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zpa_get_app_connector_group&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZPA app connector group by ID (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZPA App Connector Group by ID (read-only). Returns the full record including the enrollmentCertId, server-group memberships, and connector membership.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zpa_list_app_connectors</span><span class="p">,</span>
@@ -1195,15 +1208,17 @@
 <div class="viewcode-block" id="ZPAService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZPAService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZPA tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register verb-based tools with proper annotations</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZPA Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
@@ -1230,15 +1245,17 @@
             <span class="n">zia_delete_auth_exempt_urls</span><span class="p">,</span>
             <span class="n">zia_list_auth_exempt_urls</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_app_control</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_list_cloud_app_control_actions</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_app_control</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_cloud_app_control_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_cloud_app_control_rule</span><span class="p">,</span>
+            <span class="n">zia_get_cloud_app_control_rule</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_app_control_actions</span><span class="p">,</span>
+            <span class="n">zia_list_cloud_app_control_rules</span><span class="p">,</span>
+            <span class="n">zia_update_cloud_app_control_rule</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_applications</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_list_cloud_app_policy</span><span class="p">,</span>
             <span class="n">zia_list_cloud_app_ssl_policy</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.shadow_it_report</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_bulk_update_shadow_it_apps</span><span class="p">,</span>
-            <span class="n">zia_list_shadow_it_apps</span><span class="p">,</span>
-            <span class="n">zia_list_shadow_it_custom_tags</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.cloud_firewall_dns_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_cloud_firewall_dns_rule</span><span class="p">,</span>
@@ -1265,6 +1282,14 @@
             <span class="n">zia_list_device_groups</span><span class="p">,</span>
             <span class="n">zia_list_devices</span><span class="p">,</span>
             <span class="n">zia_list_devices_lite</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.file_type_control_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_file_type_control_rule</span><span class="p">,</span>
+            <span class="n">zia_delete_file_type_control_rule</span><span class="p">,</span>
+            <span class="n">zia_get_file_type_control_rule</span><span class="p">,</span>
+            <span class="n">zia_list_file_type_categories</span><span class="p">,</span>
+            <span class="n">zia_list_file_type_control_rules</span><span class="p">,</span>
+            <span class="n">zia_update_file_type_control_rule</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.geo_search</span><span class="w"> </span><span class="kn">import</span> <span class="n">zia_geo_search_tool</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.get_sandbox_info</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1303,6 +1328,8 @@
             <span class="n">zia_create_location</span><span class="p">,</span>
             <span class="n">zia_delete_location</span><span class="p">,</span>
             <span class="n">zia_get_location</span><span class="p">,</span>
+            <span class="n">zia_get_location_group</span><span class="p">,</span>
+            <span class="n">zia_list_location_groups</span><span class="p">,</span>
             <span class="n">zia_list_locations</span><span class="p">,</span>
             <span class="n">zia_update_location</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1331,14 +1358,6 @@
             <span class="n">zia_list_network_svc_groups</span><span class="p">,</span>
             <span class="n">zia_update_network_svc_group</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.file_type_control_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-            <span class="n">zia_create_file_type_control_rule</span><span class="p">,</span>
-            <span class="n">zia_delete_file_type_control_rule</span><span class="p">,</span>
-            <span class="n">zia_get_file_type_control_rule</span><span class="p">,</span>
-            <span class="n">zia_list_file_type_categories</span><span class="p">,</span>
-            <span class="n">zia_list_file_type_control_rules</span><span class="p">,</span>
-            <span class="n">zia_update_file_type_control_rule</span><span class="p">,</span>
-        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.rule_labels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_rule_label</span><span class="p">,</span>
             <span class="n">zia_delete_rule_label</span><span class="p">,</span>
@@ -1352,6 +1371,11 @@
             <span class="n">zia_get_sandbox_rule</span><span class="p">,</span>
             <span class="n">zia_list_sandbox_rules</span><span class="p">,</span>
             <span class="n">zia_update_sandbox_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.shadow_it_report</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_bulk_update_shadow_it_apps</span><span class="p">,</span>
+            <span class="n">zia_list_shadow_it_apps</span><span class="p">,</span>
+            <span class="n">zia_list_shadow_it_custom_tags</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.ssl_inspection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_create_ssl_inspection_rule</span><span class="p">,</span>
@@ -1367,14 +1391,23 @@
             <span class="n">zia_list_static_ips</span><span class="p">,</span>
             <span class="n">zia_update_static_ip</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.time_intervals</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_create_time_interval</span><span class="p">,</span>
+            <span class="n">zia_delete_time_interval</span><span class="p">,</span>
+            <span class="n">zia_get_time_interval</span><span class="p">,</span>
+            <span class="n">zia_list_time_intervals</span><span class="p">,</span>
+            <span class="n">zia_update_time_interval</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_categories</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">zia_add_urls_to_category</span><span class="p">,</span>
             <span class="n">zia_create_url_category</span><span class="p">,</span>
             <span class="n">zia_delete_url_category</span><span class="p">,</span>
             <span class="n">zia_get_url_category</span><span class="p">,</span>
+            <span class="n">zia_get_url_category_predefined</span><span class="p">,</span>
             <span class="n">zia_list_url_categories</span><span class="p">,</span>
             <span class="n">zia_remove_urls_from_category</span><span class="p">,</span>
             <span class="n">zia_update_url_category</span><span class="p">,</span>
+            <span class="n">zia_update_url_category_predefined</span><span class="p">,</span>
             <span class="n">zia_url_lookup</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.url_filtering_rules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1398,6 +1431,10 @@
             <span class="n">zia_list_web_dlp_rules</span><span class="p">,</span>
             <span class="n">zia_list_web_dlp_rules_lite</span><span class="p">,</span>
             <span class="n">zia_update_web_dlp_rule</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.tools.zia.workload_groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">zia_get_workload_group</span><span class="p">,</span>
+            <span class="n">zia_list_workload_groups</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># Read-only tools</span>
@@ -1472,7 +1509,15 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_user_group_manager</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;get_zia_user_groups&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Manage ZIA user groups for access control and policy assignment (read-only)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Read ZIA user groups for access control and policy assignment. &quot;</span>
+                    <span class="s2">&quot;Pass `name=</span><span class="se">\&quot;</span><span class="s2">&lt;literal admin-supplied name&gt;</span><span class="se">\&quot;</span><span class="s2">` (e.g. `name=</span><span class="se">\&quot;</span><span class="s2">A000</span><span class="se">\&quot;</span><span class="s2">`) &quot;</span>
+                    <span class="s2">&quot;for a case-insensitive substring match resolved client-side — &quot;</span>
+                    <span class="s2">&quot;this is the right knob for find-by-name workflows. &quot;</span>
+                    <span class="s2">&quot;Pass `group_id=` to fetch a single group. The `search` &quot;</span>
+                    <span class="s2">&quot;parameter forwards to the ZIA API and is unreliable for &quot;</span>
+                    <span class="s2">&quot;name-based lookups; prefer `name`.&quot;</span>
+                <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_users_manager</span><span class="p">,</span>
@@ -1527,7 +1572,18 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_network_services</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_network_services&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA network services with optional filtering by protocol or search (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZIA network services (read-only). Pass &quot;</span>
+                    <span class="s2">&quot;`name=</span><span class="se">\&quot;</span><span class="s2">&lt;friendly admin-supplied name&gt;</span><span class="se">\&quot;</span><span class="s2">` (e.g. `name=</span><span class="se">\&quot;</span><span class="s2">http</span><span class="se">\&quot;</span><span class="s2">`, &quot;</span>
+                    <span class="s2">&quot;`name=</span><span class="se">\&quot;</span><span class="s2">ftp</span><span class="se">\&quot;</span><span class="s2">`, `name=</span><span class="se">\&quot;</span><span class="s2">dns</span><span class="se">\&quot;</span><span class="s2">`) for a case-insensitive &quot;</span>
+                    <span class="s2">&quot;substring match resolved client-side — this is the right &quot;</span>
+                    <span class="s2">&quot;knob when the admin gives a service name in any casing. &quot;</span>
+                    <span class="s2">&quot;ZIA&#39;s canonical service names are uppercase enums &quot;</span>
+                    <span class="s2">&quot;(`HTTP`, `FTP`, `DNS`, ...), so server-side `search` is &quot;</span>
+                    <span class="s2">&quot;case-sensitive and unreliable for friendly inputs. Also &quot;</span>
+                    <span class="s2">&quot;supports `protocol` / `locale` filters and JMESPath &quot;</span>
+                    <span class="s2">&quot;projection via `query`.&quot;</span>
+                <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_network_service</span><span class="p">,</span>
@@ -1557,6 +1613,16 @@
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA URL category by ID (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_url_category_predefined</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_url_category_predefined&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Get a Zscaler-curated predefined URL category by canonical ID &quot;</span>
+                    <span class="s2">&quot;(e.g. &#39;FINANCE&#39;) or display name (e.g. &#39;Finance&#39;). &quot;</span>
+                    <span class="s2">&quot;Case-insensitive. Refuses custom categories — use &quot;</span>
+                    <span class="s2">&quot;zia_get_url_category for those (read-only).&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_url_lookup</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_url_lookup&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Look up URL category for given URLs (read-only)&quot;</span><span class="p">,</span>
@@ -1582,6 +1648,42 @@
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_location</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_location&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA location by ID (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Location Groups (referenced as location_groups operand on every ZIA rule resource)</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_location_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_location_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZIA location groups, referenced by ID on the location_groups &quot;</span>
+                    <span class="s2">&quot;operand of every ZIA rule resource (Cloud Firewall, DNS, IPS, URL &quot;</span>
+                    <span class="s2">&quot;Filtering, SSL Inspection, Web DLP, File Type Control, Sandbox, &quot;</span>
+                    <span class="s2">&quot;Cloud App Control). Read-only — the public ZIA API does not expose &quot;</span>
+                    <span class="s2">&quot;location group create/update/delete. Supports name/search/group_type &quot;</span>
+                    <span class="s2">&quot;filters and JMESPath via the query parameter.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_location_group</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_location_group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA location group by ID (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Workload Groups (referenced as workload_groups operand on Cloud Firewall, URL Filtering, SSL Inspection, Web DLP)</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_workload_groups</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_workload_groups&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;List ZIA workload groups, referenced by ID on the workload_groups &quot;</span>
+                    <span class="s2">&quot;operand of Cloud Firewall, URL Filtering, SSL Inspection, and &quot;</span>
+                    <span class="s2">&quot;Web DLP rules. Read-only — workload group authoring (with its &quot;</span>
+                    <span class="s2">&quot;expression DSL) is intentionally left to the ZIA UI. The ZIA list &quot;</span>
+                    <span class="s2">&quot;endpoint has no server-side name filter; pair with JMESPath query &quot;</span>
+                    <span class="s2">&quot;(e.g. </span><span class="se">\&quot;</span><span class="s2">[?name==&#39;WG-AWS-Prod&#39;]</span><span class="se">\&quot;</span><span class="s2">) to look up a group by name.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_workload_group</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_workload_group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA workload group by ID (read-only)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># VPN Credentials</span>
             <span class="p">{</span>
@@ -1654,18 +1756,28 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_policy</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_policy&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule&#39;s cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule&#39;s cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter. Pass app_class to narrow the catalog by category when the user describes a kind of app instead of a specific one — valid values: SOCIAL_NETWORKING, STREAMING_MEDIA, WEBMAIL, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, SALES_AND_MARKETING, SYSTEM_AND_DEVELOPMENT, CONSUMER, HOSTING_PROVIDER, IT_SERVICES, FILE_SHARE, DNS_OVER_HTTPS, HUMAN_RESOURCES, LEGAL, HEALTH_CARE, FINANCE, CUSTOM_CAPP, AI_ML.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_ssl_policy</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_ssl_policy&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the ZIA cloud-application catalog scoped to SSL Inspection rules — returns the canonical enum strings the SSL Inspection API will accept in the cloud_applications field (e.g. ONEDRIVE, SHAREPOINT_ONLINE). Use this to resolve enum names before creating or updating SSL Inspection rules. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the ZIA cloud-application catalog scoped to SSL Inspection rules — returns the canonical enum strings the SSL Inspection API will accept in the cloud_applications field (e.g. ONEDRIVE, SHAREPOINT_ONLINE). Use this to resolve enum names before creating or updating SSL Inspection rules. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter. Pass app_class to narrow the catalog by category when the user describes a kind of app — valid values: SOCIAL_NETWORKING, STREAMING_MEDIA, WEBMAIL, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, SALES_AND_MARKETING, SYSTEM_AND_DEVELOPMENT, CONSUMER, HOSTING_PROVIDER, IT_SERVICES, FILE_SHARE, DNS_OVER_HTTPS, HUMAN_RESOURCES, LEGAL, HEALTH_CARE, FINANCE, CUSTOM_CAPP, AI_ML.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Cloud App Control</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_control_actions</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_control_actions&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List granular actions supported for a Cloud App Control rule type (read-only) Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List the granular Cloud App Control (CAC) actions available for a cloud application — answers &#39;what actions can I control for &lt;app&gt;?&#39;, &#39;list actions for Azure DevOps&#39;, &#39;what can I block on Dropbox&#39;, &#39;show me available actions for ChatGPT&#39;. Takes a single cloud_app (canonical enum like AZURE_DEVOPS or friendly name like &#39;Azure DevOps&#39;); the tool auto-resolves the name, looks up its category (rule type), and returns the category&#39;s full action set. Actions are CATEGORY-LEVEL not per-app — every app in SYSTEM_AND_DEVELOPMENT shares the same actions, every app in AI_ML shares its own set, etc. The tool also handles a ZIA API quirk where calling list_available_actions(rule_type, [some_app]) sometimes returns empty because not every app is a &#39;representative&#39; for its category — when that happens, it transparently walks other apps in the same category until one surfaces the action set. Returns a dict with: cloud_app, resolved_app, category, category_name, actions, actions_surfaced_via (which app finally produced the actions), and probe_attempts. Use the optional rule_type parameter only to override the auto-detected category; use query (JMESPath) to project just the actions list (e.g. &#39;actions&#39;) or filter them (e.g. &#39;actions[?contains(@, ``BLOCK``)]&#39;).&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_cloud_app_control_rules</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_cloud_app_control_rules&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA Cloud App Control rules for a specific rule_type (category). The CAC API is category-scoped, so rule_type is REQUIRED — pass one of WEBMAIL, STREAMING_MEDIA, FILE_SHARE, AI_ML, SYSTEM_AND_DEVELOPMENT, SOCIAL_NETWORKING, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, etc. To list across multiple categories, call this once per category. If the user names an app instead of a category, call zia_list_cloud_app_control_actions(cloud_app=...) first to discover the right rule_type. Supports server-side `search` (substring on rule name) and JMESPath client-side filtering via the `query` parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_cloud_app_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_cloud_app_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA Cloud App Control rule by rule_type AND rule_id (read-only). Both arguments are required because the CAC API is category-scoped — rule_id alone is not sufficient. If you only know the app name, call zia_list_cloud_app_control_actions(cloud_app=...) first to discover the rule_type.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># Device Management</span>
             <span class="p">{</span>
@@ -1757,6 +1869,17 @@
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_sandbox_rule</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_sandbox_rule&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA Sandbox rule by ID (read-only)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Time Intervals</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_list_time_intervals</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_list_time_intervals&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;List ZIA Time Intervals (recurring time-of-day / day-of-week schedules referenced by policy rules via the time_windows field). Read-only. Supports JMESPath client-side filtering via the query parameter.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_get_time_interval</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_get_time_interval&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Get a specific ZIA Time Interval by ID (read-only).&quot;</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
 
@@ -1915,12 +2038,35 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_url_category</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_url_category&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA URL category (write operation)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Update an existing custom ZIA URL category (full PUT, write &quot;</span>
+                    <span class="s2">&quot;operation). Refuses predefined categories — use &quot;</span>
+                    <span class="s2">&quot;zia_update_url_category_predefined for those, or &quot;</span>
+                    <span class="s2">&quot;zia_add_urls_to_category / zia_remove_urls_from_category for &quot;</span>
+                    <span class="s2">&quot;incremental URL/IP-range changes.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_url_category_predefined</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_url_category_predefined&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Update a Zscaler-curated predefined URL category (full PUT, &quot;</span>
+                    <span class="s2">&quot;write operation). Same field surface as zia_update_url_category. &quot;</span>
+                    <span class="s2">&quot;Resolves the category by canonical ID (&#39;FINANCE&#39;) or display &quot;</span>
+                    <span class="s2">&quot;name (&#39;Finance&#39;) and silently backfills configured_name from &quot;</span>
+                    <span class="s2">&quot;the existing category when omitted. For incremental URL/IP-range &quot;</span>
+                    <span class="s2">&quot;mutations prefer zia_add_urls_to_category / &quot;</span>
+                    <span class="s2">&quot;zia_remove_urls_from_category — both work on predefined IDs.&quot;</span>
+                <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_url_category</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_url_category&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA URL category (destructive operation)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="s2">&quot;Delete a custom ZIA URL category (destructive operation). &quot;</span>
+                    <span class="s2">&quot;Refuses predefined categories — those are Zscaler-curated and &quot;</span>
+                    <span class="s2">&quot;cannot be deleted via the API.&quot;</span>
+                <span class="p">),</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_add_urls_to_category</span><span class="p">,</span>
@@ -2045,12 +2191,12 @@
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_cloud_firewall_dns_rule</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_cloud_firewall_dns_rule&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA cloud firewall DNS rule (write operation)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA cloud firewall DNS rule (write operation). The `applications` field accepts the same canonical ZIA cloud-app names used by SSL Inspection / Web DLP / FTC / CAC in their `cloud_applications` field — DNS just exposes the field as `applications`. Friendly names (e.g. </span><span class="se">\&quot;</span><span class="s2">OneDrive</span><span class="se">\&quot;</span><span class="s2">, </span><span class="se">\&quot;</span><span class="s2">Cloudflare DoH</span><span class="se">\&quot;</span><span class="s2">) are auto-resolved.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_cloud_firewall_dns_rule</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_cloud_firewall_dns_rule&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. The `applications` field accepts canonical ZIA cloud-app names (same catalog as SSL/DLP/FTC/CAC&#39;s `cloud_applications`) and auto-resolves friendly names.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_cloud_firewall_dns_rule</span><span class="p">,</span>
@@ -2072,6 +2218,22 @@
                 <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_cloud_firewall_ips_rule</span><span class="p">,</span>
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_cloud_firewall_ips_rule&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA cloud firewall IPS rule (destructive operation)&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="c1"># Cloud App Control Rules</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_cloud_app_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_cloud_app_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA Cloud App Control (CAC) rule (write operation). The CAC API is category-scoped — rule_type is REQUIRED (e.g. WEBMAIL, FILE_SHARE, AI_ML, SYSTEM_AND_DEVELOPMENT). Workflow: first call zia_list_cloud_app_control_actions(cloud_app=&lt;app&gt;) to discover both the correct rule_type (returned as `category`) AND the valid `actions` enums for that app, then pass those into this tool together with `name`, `cloud_applications`, and any scoping fields (groups, departments, locations, etc.). Friendly cloud-application names like &#39;Dropbox&#39; are auto-resolved to canonical enums (DROPBOX). Note: the SDK kwarg for the apps list is `applications` but this tool surfaces it as `cloud_applications` for consistency with other ZIA rule families.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_cloud_app_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_cloud_app_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA Cloud App Control (CAC) rule (write operation). Both rule_type AND rule_id are required (the CAC API is category-scoped). Update is a PUT under the hood — `name` is silently backfilled from the existing rule when not supplied so partial updates work safely. Friendly cloud-application names are auto-resolved to canonical enums.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_cloud_app_control_rule</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_cloud_app_control_rule&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA Cloud App Control (CAC) rule by rule_type and rule_id (destructive operation). Both arguments are required because the CAC API is category-scoped. Requires HMAC confirmation token.&quot;</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="c1"># File Type Control Rules</span>
             <span class="p">{</span>
@@ -2105,20 +2267,38 @@
                 <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_sandbox_rule&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA Sandbox rule (destructive operation)&quot;</span><span class="p">,</span>
             <span class="p">},</span>
+            <span class="c1"># Time Intervals</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_create_time_interval</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_create_time_interval&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Create a new ZIA Time Interval (reusable schedule referenced by policy rules via the time_windows field). start_time/end_time are minutes from midnight (0-1439). days_of_week accepts EVERYDAY, SUN, MON, TUE, WED, THU, FRI, SAT.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_update_time_interval</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_update_time_interval&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Update an existing ZIA Time Interval (write operation). Update is a PUT — name, start_time, end_time, and days_of_week are silently backfilled from the existing record when not supplied.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">zia_delete_time_interval</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;zia_delete_time_interval&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Delete a ZIA Time Interval (destructive operation). Will fail if the Time Interval is currently referenced by any policy rule.&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
         <span class="p">]</span>
 
 <div class="viewcode-block" id="ZIAService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZIAService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZIA tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register verb-based tools with proper annotations</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZIA Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
@@ -2266,15 +2446,17 @@
 <div class="viewcode-block" id="ZTWService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZTWService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZTW tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register verb-based tools with proper annotations</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ZTW Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
@@ -2364,15 +2546,17 @@
 <div class="viewcode-block" id="ZIDService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZIDService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZIdentity tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register verb-based tools with proper annotations (all read-only)</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -2449,15 +2633,17 @@
 <div class="viewcode-block" id="ZEASMService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZEASMService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register EASM tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register read-only tools</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;EASM Service: Registered </span><span class="si">{</span><span class="n">read_count</span><span class="si">}</span><span class="s2"> read tools, </span><span class="si">{</span><span class="n">write_count</span><span class="si">}</span><span class="s2"> write tools&quot;</span><span class="p">)</span></div>
@@ -2668,15 +2854,17 @@
 <div class="viewcode-block" id="ZINSService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZINSService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register Z-Insights tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
         <span class="c1"># Register read-only tools</span>
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -2940,14 +3128,16 @@
 <div class="viewcode-block" id="ZMSService.register_tools">
 <a class="viewcode-back" href="../../api/services.html#zscaler_mcp.services.ZMSService.register_tools">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">register_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">selected_toolsets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register ZMS tools with the server.&quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_read_tools</span><span class="p">,</span> <span class="n">register_write_tools</span>
 
-        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">)</span>
+        <span class="n">read_count</span> <span class="o">=</span> <span class="n">register_read_tools</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">)</span>
         <span class="n">write_count</span> <span class="o">=</span> <span class="n">register_write_tools</span><span class="p">(</span>
-            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span> <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span>
+            <span class="n">server</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span> <span class="n">enabled_tools</span><span class="p">,</span> <span class="n">enable_write_tools</span><span class="p">,</span> <span class="n">write_tools</span><span class="p">,</span>
+            <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span> <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">selected_toolsets</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>

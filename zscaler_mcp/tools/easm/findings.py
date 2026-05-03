@@ -40,7 +40,7 @@ def zeasm_list_findings(
         >>> for finding in findings['results']:
         ...     print(f"  {finding['id']}: {finding['category']}")
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     findings, _, err = client.zeasm.findings.list_findings(org_id=org_id)
     if err:
@@ -76,7 +76,7 @@ def zeasm_get_finding_details(
         ... )
         >>> print(details)
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     finding, _, err = client.zeasm.findings.get_finding_details(
         org_id=org_id, finding_id=finding_id
@@ -114,7 +114,7 @@ def zeasm_get_finding_evidence(
         ... )
         >>> print(evidence['content'])
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     evidence, _, err = client.zeasm.findings.get_finding_evidence(
         org_id=org_id, finding_id=finding_id
@@ -151,7 +151,7 @@ def zeasm_get_finding_scan_output(
         ... )
         >>> print(scan_output['content'])
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     scan_output, _, err = client.zeasm.findings.get_finding_scan_output(
         org_id=org_id, finding_id=finding_id

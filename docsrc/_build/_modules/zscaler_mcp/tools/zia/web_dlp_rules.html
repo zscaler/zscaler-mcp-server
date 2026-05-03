@@ -220,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
@@ -275,6 +279,13 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.jmespath_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_jmespath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.zia_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RANK_FIELD_DESCRIPTION</span><span class="p">,</span>
+    <span class="n">apply_default_order</span><span class="p">,</span>
+    <span class="n">apply_default_rank</span><span class="p">,</span>
+    <span class="n">validate_order</span><span class="p">,</span>
+    <span class="n">validate_rank</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_list</span>
 
 <span class="c1"># ============================================================================</span>
@@ -314,6 +325,7 @@
     <span class="n">time_windows</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">users</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">url_categories</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">workload_groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build payload for web DLP rule operations.&quot;&quot;&quot;</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="p">{}</span>
@@ -374,6 +386,7 @@
         <span class="p">(</span><span class="s2">&quot;time_windows&quot;</span><span class="p">,</span> <span class="n">time_windows</span><span class="p">),</span>
         <span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">users</span><span class="p">),</span>
         <span class="p">(</span><span class="s2">&quot;url_categories&quot;</span><span class="p">,</span> <span class="n">url_categories</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;workload_groups&quot;</span><span class="p">,</span> <span class="n">workload_groups</span><span class="p">),</span>
     <span class="p">]:</span>
         <span class="k">if</span> <span class="n">param_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">payload</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_list</span><span class="p">(</span><span class="n">param_value</span><span class="p">)</span>
@@ -396,7 +409,6 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;JMESPath expression for client-side filtering/projection of results.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -410,7 +422,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        search (str, optional): Search string for filtering rules by name.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -423,7 +434,7 @@
 <span class="sd">        Search for rules containing &quot;block&quot;:</span>
 <span class="sd">        &gt;&gt;&gt; rules = zia_list_web_dlp_rules(search=&quot;block&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
     <span class="n">query_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
@@ -445,7 +456,6 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;JMESPath expression for client-side filtering/projection of results.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -456,7 +466,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        search (str, optional): Search string for filtering rules by name.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -466,7 +475,7 @@
 <span class="sd">        List rules with name and ID only:</span>
 <span class="sd">        &gt;&gt;&gt; rules = zia_list_web_dlp_rules_lite()</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
     <span class="n">query_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
@@ -484,7 +493,6 @@
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the web DLP rule to retrieve.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -493,7 +501,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        rule_id (int/str): The ID of the web DLP rule to retrieve.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -503,7 +510,7 @@
 <span class="sd">        Get a specific rule:</span>
 <span class="sd">        &gt;&gt;&gt; rule = zia_get_web_dlp_rule(rule_id=&quot;12345&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
     <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">get_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>
@@ -532,7 +539,7 @@
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Admin rank of the rule.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">RANK_FIELD_DESCRIPTION</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule order, defaults to the bottom.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -626,7 +633,10 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for URL categories the rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">workload_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for workload groups this rule applies to.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -650,6 +660,8 @@
 <span class="sd">        ...     dlp_download_scan_enabled=True</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">apply_default_rank</span><span class="p">(</span><span class="n">rank</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">apply_default_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="n">_build_web_dlp_rule_payload</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
@@ -682,9 +694,10 @@
         <span class="n">time_windows</span><span class="o">=</span><span class="n">time_windows</span><span class="p">,</span>
         <span class="n">users</span><span class="o">=</span><span class="n">users</span><span class="p">,</span>
         <span class="n">url_categories</span><span class="o">=</span><span class="n">url_categories</span><span class="p">,</span>
+        <span class="n">workload_groups</span><span class="o">=</span><span class="n">workload_groups</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
     <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">add_rule</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">)</span>
@@ -709,7 +722,7 @@
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Admin rank of the rule.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">RANK_FIELD_DESCRIPTION</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule order, defaults to the bottom.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -803,7 +816,10 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for URL categories the rule applies to.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">workload_groups</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;IDs for workload groups this rule applies to.&quot;</span><span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -825,6 +841,10 @@
 <span class="sd">        ...     enabled=True</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="n">validate_rank</span><span class="p">(</span><span class="n">rank</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">validate_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="n">_build_web_dlp_rule_payload</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
@@ -857,9 +877,10 @@
         <span class="n">time_windows</span><span class="o">=</span><span class="n">time_windows</span><span class="p">,</span>
         <span class="n">users</span><span class="o">=</span><span class="n">users</span><span class="p">,</span>
         <span class="n">url_categories</span><span class="o">=</span><span class="n">url_categories</span><span class="p">,</span>
+        <span class="n">workload_groups</span><span class="o">=</span><span class="n">workload_groups</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
     <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">update_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span> <span class="o">**</span><span class="n">payload</span><span class="p">)</span>
@@ -873,7 +894,6 @@
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.web_dlp_rules.zia_delete_web_dlp_rule">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_delete_web_dlp_rule</span><span class="p">(</span>
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the web DLP rule to delete.&quot;</span><span class="p">)],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
     <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -885,7 +905,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        rule_id (int/str): The ID of the web DLP rule to delete.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -906,7 +925,7 @@
     <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">confirmation_check</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">dlp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">dlp_web_rules</span>
 
     <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">dlp</span><span class="o">.</span><span class="n">delete_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>

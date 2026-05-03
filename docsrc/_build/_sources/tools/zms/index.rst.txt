@@ -4,8 +4,8 @@ Zscaler Microsegmentation (ZMS) Tools
 The Zscaler Microsegmentation (ZMS) tools provide **read-only** access to the ZMS GraphQL API for querying microsegmentation data. These 20 tools cover agents, agent groups, resources, resource groups, policy rules, app zones, app catalog, nonces, and tags.
 
 .. note::
-   All ZMS tools are read-only (queries only — no mutations). ZMS only works with
-   OneAPI credentials — the ``use_legacy`` parameter has no effect.
+   All ZMS tools are read-only (queries only — no mutations). ZMS
+   authenticates exclusively through OneAPI.
 
 Available Tools
 ---------------
@@ -608,7 +608,7 @@ All paginated responses include ``pageInfo`` with ``pageNumber``, ``pageSize``, 
 Authentication
 --------------
 
-ZMS tools use OneAPI authentication exclusively (legacy authentication is not supported):
+ZMS tools authenticate through OneAPI:
 
 - ``ZSCALER_CLIENT_ID``
 - ``ZSCALER_CLIENT_SECRET``

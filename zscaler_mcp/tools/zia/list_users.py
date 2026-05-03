@@ -38,10 +38,6 @@ def zia_users_manager(
         Optional[int],
         Field(description="Page size for listing users. Default is 100; maximum is 1000."),
     ] = None,
-    use_legacy: Annotated[
-        bool,
-        Field(description="Whether to use the legacy API."),
-    ] = False,
     service: Annotated[
         str,
         Field(description="Zscaler service name. Always 'zia' for this tool."),
@@ -65,7 +61,6 @@ def zia_users_manager(
     - name: Optional user name filter (starts with match).
     - page: Optional page offset for pagination.
     - page_size: Optional page size for pagination. Default 100; maximum 1000.
-    - use_legacy: Whether to use the legacy client implementation.
     - service: Zscaler service. Use "zia".
 
     Returns:
@@ -88,7 +83,7 @@ def zia_users_manager(
     - Get a user by ID
       >>> zia_users_manager(user_id=123456)
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.user_management
 
     if action == "read":

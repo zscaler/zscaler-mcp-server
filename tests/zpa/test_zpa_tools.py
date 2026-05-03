@@ -128,16 +128,6 @@ class TestZpaAppSegments:
         )
         assert result["id"] == "new1"
 
-    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
-    def test_list_application_segments_legacy(self, mock_get_client, mock_client):
-        from zscaler_mcp.tools.zpa.app_segments import zpa_list_application_segments
-
-        mock_client.zpa.application_segment.list_segments.return_value = ([], None, None)
-        mock_get_client.return_value = mock_client
-
-        zpa_list_application_segments(use_legacy=True)
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zpa")
-
 
 # ============================================================================
 # SEGMENT GROUPS
@@ -229,6 +219,140 @@ class TestZpaServerGroups:
 
         result = zpa_create_server_group(name="NewSG", app_connector_group_ids=["acg1"])
         assert result["id"] == "sg2"
+        kwargs = mock_client.zpa.server_groups.add_group.call_args.kwargs
+        assert kwargs["dynamic_discovery"] is True
+        assert kwargs["app_connector_group_ids"] == ["acg1"]
+        assert "server_ids" not in kwargs
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_create_server_group_rejects_empty_connector_groups(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_create_server_group
+
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="app_connector_group_ids is required"):
+            zpa_create_server_group(name="NewSG", app_connector_group_ids=[])
+
+        mock_client.zpa.server_groups.add_group.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_create_server_group_dynamic_discovery_false_requires_server_ids(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_create_server_group
+
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(
+            ValueError, match="dynamic_discovery=False requires server_ids"
+        ):
+            zpa_create_server_group(
+                name="StaticSG",
+                app_connector_group_ids=["acg1"],
+                dynamic_discovery=False,
+            )
+
+        mock_client.zpa.server_groups.add_group.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_create_server_group_dynamic_discovery_false_with_server_ids_succeeds(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_create_server_group
+
+        mock_client.zpa.server_groups.add_group.return_value = (
+            _mock_obj({"id": "sg-static", "name": "StaticSG"}),
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_create_server_group(
+            name="StaticSG",
+            app_connector_group_ids=["acg1"],
+            dynamic_discovery=False,
+            server_ids=["srv-1", "srv-2"],
+        )
+
+        kwargs = mock_client.zpa.server_groups.add_group.call_args.kwargs
+        assert kwargs["dynamic_discovery"] is False
+        assert kwargs["server_ids"] == ["srv-1", "srv-2"]
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_update_server_group_partial_does_not_clobber_lists(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_update_server_group
+
+        mock_client.zpa.server_groups.update_group.return_value = (
+            _mock_obj({"id": "sg9"}),
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_update_server_group(group_id="sg9", description="renamed")
+
+        kwargs = mock_client.zpa.server_groups.update_group.call_args.kwargs
+        assert kwargs == {"description": "renamed"}
+        assert "app_connector_group_ids" not in kwargs
+        assert "server_ids" not in kwargs
+        assert "dynamic_discovery" not in kwargs
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_update_server_group_rejects_empty_connector_groups(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_update_server_group
+
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="cannot be set to an empty list"):
+            zpa_update_server_group(group_id="sg9", app_connector_group_ids=[])
+
+        mock_client.zpa.server_groups.update_group.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_update_server_group_dyn_disc_false_with_no_existing_servers_raises(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_update_server_group
+
+        existing = _mock_obj({"id": "sg9", "servers": []})
+        existing.servers = []
+        mock_client.zpa.server_groups.get_group.return_value = (existing, None, None)
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(
+            ValueError, match="dynamic_discovery=False requires server_ids"
+        ):
+            zpa_update_server_group(group_id="sg9", dynamic_discovery=False)
+
+        mock_client.zpa.server_groups.update_group.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
+    def test_update_server_group_dyn_disc_false_when_existing_has_servers_succeeds(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.server_groups import zpa_update_server_group
+
+        existing = _mock_obj({"id": "sg9", "servers": [{"id": "srv-1"}]})
+        existing.servers = [{"id": "srv-1"}]
+        mock_client.zpa.server_groups.get_group.return_value = (existing, None, None)
+        mock_client.zpa.server_groups.update_group.return_value = (
+            _mock_obj({"id": "sg9"}),
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_update_server_group(group_id="sg9", dynamic_discovery=False)
+
+        kwargs = mock_client.zpa.server_groups.update_group.call_args.kwargs
+        assert kwargs["dynamic_discovery"] is False
+        assert "server_ids" not in kwargs
 
     @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
     def test_list_server_groups_error(self, mock_get_client, mock_client):
@@ -270,18 +394,156 @@ class TestZpaAppConnectorGroups:
         result = zpa_get_app_connector_group(group_id="acg1")
         assert result["name"] == "US-West"
 
+    @staticmethod
+    def _cert(cert_id: str, name: str):
+        """Return a mock SDK enrollment-cert object with .id and .name set as real attrs."""
+        cert = MagicMock()
+        cert.id = cert_id
+        cert.name = name
+        return cert
+
+    def _arm_default_cert_lookup(self, mock_client, cert_id: str = "ent-cert-default"):
+        """Make the 'Connector' enrollment cert resolve to ``cert_id``."""
+        cert = self._cert(cert_id, "Connector")
+        mock_client.zpa.enrollment_certificates.list_enrolment.return_value = (
+            [cert],
+            None,
+            None,
+        )
+
     @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
-    def test_create_app_connector_group(self, mock_get_client, mock_client):
+    def test_create_app_connector_group_auto_resolves_default_cert(
+        self, mock_get_client, mock_client
+    ):
         from zscaler_mcp.tools.zpa.app_connector_groups import zpa_create_app_connector_group
 
+        self._arm_default_cert_lookup(mock_client, cert_id="ent-cert-default")
         created = _mock_obj({"id": "acg2", "name": "EU-Central"})
-        mock_client.zpa.app_connector_groups.add_connector_group.return_value = (created, None, None)
+        mock_client.zpa.app_connector_groups.add_connector_group.return_value = (
+            created,
+            None,
+            None,
+        )
         mock_get_client.return_value = mock_client
 
         result = zpa_create_app_connector_group(
             name="EU-Central", latitude="48.85", longitude="2.35", location="Paris"
         )
+
+        mock_client.zpa.enrollment_certificates.list_enrolment.assert_called_once_with(
+            query_params={"search": "Connector"}
+        )
+        kwargs = mock_client.zpa.app_connector_groups.add_connector_group.call_args.kwargs
+        assert kwargs["enrollment_cert_id"] == "ent-cert-default"
         assert result["id"] == "acg2"
+
+    @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
+    def test_create_app_connector_group_with_explicit_cert_id_skips_lookup(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.app_connector_groups import zpa_create_app_connector_group
+
+        created = _mock_obj({"id": "acg3", "name": "APAC"})
+        mock_client.zpa.app_connector_groups.add_connector_group.return_value = (
+            created,
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_create_app_connector_group(name="APAC", enrollment_cert_id="explicit-id-9")
+
+        mock_client.zpa.enrollment_certificates.list_enrolment.assert_not_called()
+        kwargs = mock_client.zpa.app_connector_groups.add_connector_group.call_args.kwargs
+        assert kwargs["enrollment_cert_id"] == "explicit-id-9"
+
+    @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
+    def test_create_app_connector_group_with_custom_cert_name(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.app_connector_groups import zpa_create_app_connector_group
+
+        custom = self._cert("svc-edge-cert-77", "Service Edge")
+        mock_client.zpa.enrollment_certificates.list_enrolment.return_value = (
+            [custom],
+            None,
+            None,
+        )
+        mock_client.zpa.app_connector_groups.add_connector_group.return_value = (
+            _mock_obj({"id": "acg4", "name": "Edge-Group"}),
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_create_app_connector_group(
+            name="Edge-Group", enrollment_cert_name="Service Edge"
+        )
+
+        mock_client.zpa.enrollment_certificates.list_enrolment.assert_called_once_with(
+            query_params={"search": "Service Edge"}
+        )
+        kwargs = mock_client.zpa.app_connector_groups.add_connector_group.call_args.kwargs
+        assert kwargs["enrollment_cert_id"] == "svc-edge-cert-77"
+
+    @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
+    def test_create_app_connector_group_cert_not_found_raises(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.app_connector_groups import zpa_create_app_connector_group
+
+        mock_client.zpa.enrollment_certificates.list_enrolment.return_value = (
+            [],
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="Enrollment certificate 'Connector' not found"):
+            zpa_create_app_connector_group(name="No-Cert-Group")
+
+        mock_client.zpa.app_connector_groups.add_connector_group.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
+    def test_update_app_connector_group_preserves_cert_when_not_specified(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.app_connector_groups import zpa_update_app_connector_group
+
+        updated = _mock_obj({"id": "acg9", "name": "Renamed"})
+        mock_client.zpa.app_connector_groups.update_connector_group.return_value = (
+            updated,
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_update_app_connector_group(group_id="acg9", name="Renamed")
+
+        mock_client.zpa.enrollment_certificates.list_enrolment.assert_not_called()
+        _args, kwargs = mock_client.zpa.app_connector_groups.update_connector_group.call_args
+        assert "enrollment_cert_id" not in kwargs
+
+    @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
+    def test_update_app_connector_group_resolves_when_name_provided(
+        self, mock_get_client, mock_client
+    ):
+        from zscaler_mcp.tools.zpa.app_connector_groups import zpa_update_app_connector_group
+
+        self._arm_default_cert_lookup(mock_client, cert_id="rotated-cert-1")
+        mock_client.zpa.app_connector_groups.update_connector_group.return_value = (
+            _mock_obj({"id": "acg9"}),
+            None,
+            None,
+        )
+        mock_get_client.return_value = mock_client
+
+        zpa_update_app_connector_group(
+            group_id="acg9", enrollment_cert_name="Connector"
+        )
+
+        _args, kwargs = mock_client.zpa.app_connector_groups.update_connector_group.call_args
+        assert kwargs["enrollment_cert_id"] == "rotated-cert-1"
 
     @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
     def test_list_app_connector_groups_error(self, mock_get_client, mock_client):

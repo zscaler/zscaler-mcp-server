@@ -218,6 +218,16 @@ Access policy rules use conditions to determine who gets access. Each condition 
 | `zpa_create_ba_certificate` | Create BA certificate |
 | `zpa_delete_ba_certificate` | Delete BA certificate |
 
+## Response Style — Don't Leak Implementation Details
+
+When answering the admin, give the **business answer in plain language**. Tool plumbing — `search` keys, JMESPath, pagination, validation, retries — is internal optimization the user does not care about.
+
+- **Plain-language answers only.** Translate tool output into the answer the admin actually wanted; don't paste back JMESPath expressions or projections.
+- **Empty is authoritative — do not fan out retries.** A `zpa_list_*` call with `search="<exact name>"` is a server-side substring match on the resource's `name` field. An empty result means the resource does not exist by that name. **Stop.** Do NOT re-call the same tool with split keywords, broader JMESPath projections, larger `page_size`, or no filter "to double-check". Ask the admin to clarify the name instead. ❌ *Five calls (search → split keywords → unfiltered → "let me drop the projection in case it's too aggressive").* ✅ *One call → empty → "I can't find an application segment named `<name>`. Want me to use a different name?"*
+- **Don't narrate strategy pivots.** If a retry is genuinely warranted, do it quietly and report the final answer. ❌ *"The `search` filter came back empty. Let me list without the filter and apply JMESPath instead so I'm not relying on server-side fuzzy matching."* ✅ *"I didn't find a connector group by that name. Here's what's in the tenant: …"*
+- **Don't claim a tool doesn't exist without checking.** If `zpa_get_*` / `zpa_create_*` / `zpa_update_*` / `zpa_delete_*` are visible, the matching `zpa_list_*` almost certainly exists too — search by the `zpa_` prefix and the resource name before declaring a gap. Examples that have been wrongly mis-claimed missing: `zpa_list_app_connector_groups`, `zpa_list_segment_groups`, `zpa_list_application_segments`.
+- **Don't expose internal field names or validators.** Pydantic messages, MCP output-validator errors, and SDK tuple shapes are noise — convert them into a one-line user-facing summary.
+
 ## Best Practices
 
 1. **Respect the dependency chain** — Create connector groups before server groups, server groups before app segments, app segments before policy rules. Deleting follows the reverse order.

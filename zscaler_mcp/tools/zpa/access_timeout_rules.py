@@ -4,7 +4,11 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
-from zscaler_mcp.utils.utils import convert_v1_to_v2_response, convert_v2_to_sdk_format
+from zscaler_mcp.utils.utils import (
+    convert_v1_to_v2_response,
+    convert_v2_to_sdk_format,
+    normalize_v2_rule_response,
+)
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -22,14 +26,13 @@ def zpa_list_timeout_policy_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA timeout policy rules.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "timeout"
 
@@ -49,14 +52,13 @@ def zpa_get_timeout_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA timeout policy rule by ID."""
     if not rule_id:
         raise ValueError("rule_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "timeout"
 
@@ -99,14 +101,13 @@ def zpa_create_timeout_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA timeout policy rule."""
     if not name:
         raise ValueError("'name' is required for creating a timeout rule")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
 
     # Convert input conditions to SDK format
@@ -127,10 +128,10 @@ def zpa_create_timeout_policy_rule(
     if microtenant_id:
         payload["microtenant_id"] = microtenant_id
 
-    created, _, err = api.add_timeout_rule_v2(**payload)
+    created, response, err = api.add_timeout_rule_v2(**payload)
     if err:
         raise Exception(f"Failed to create timeout policy rule: {err}")
-    return created.as_dict()
+    return normalize_v2_rule_response(created, response)
 
 
 def zpa_update_timeout_policy_rule(
@@ -157,14 +158,13 @@ def zpa_update_timeout_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA timeout policy rule."""
     if not rule_id:
         raise ValueError("'rule_id' is required for updating a timeout rule")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
 
     # Convert input conditions to SDK format
@@ -185,14 +185,10 @@ def zpa_update_timeout_policy_rule(
     if microtenant_id:
         payload["microtenant_id"] = microtenant_id
 
-    updated, _, err = api.update_timeout_rule_v2(rule_id, **payload)
+    updated, response, err = api.update_timeout_rule_v2(rule_id, **payload)
     if err:
         raise Exception(f"Failed to update timeout policy rule {rule_id}: {err}")
-
-    rule_data = updated.as_dict()
-    if "conditions" in rule_data:
-        rule_data["conditions"] = convert_v1_to_v2_response(rule_data["conditions"])
-    return rule_data
+    return normalize_v2_rule_response(updated, response)
 
 
 def zpa_delete_timeout_policy_rule(
@@ -200,7 +196,6 @@ def zpa_delete_timeout_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -217,7 +212,7 @@ def zpa_delete_timeout_policy_rule(
     if not rule_id:
         raise ValueError("'rule_id' is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "timeout"
 

@@ -16,7 +16,6 @@ def enrollment_certificate_manager(
         dict,
         Field(description="Optional query parameters for filtering via search key."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[dict, List[dict], str]:
     """
@@ -37,7 +36,7 @@ def enrollment_certificate_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported.")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     api = client.zpa.enrollment_certificates
 

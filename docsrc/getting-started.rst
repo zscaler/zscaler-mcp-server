@@ -10,7 +10,7 @@ Before you begin, ensure you have:
 
 - Python 3.11 or higher installed
 - `uv <https://docs.astral.sh/uv/>`__ installed (recommended) or pip
-- Access to Zscaler APIs (OneAPI or Legacy credentials)
+- Access to Zscaler APIs (OneAPI credentials)
 - Basic understanding of Model Context Protocol (MCP)
 
 Installation
@@ -41,34 +41,18 @@ Configuration
 
 The MCP server requires Zscaler API credentials to function. Create a ``.env`` file with your credentials:
 
-OneAPI Authentication (Recommended)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+OneAPI Authentication
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
    ZSCALER_CLIENT_ID="your_client_id"
    ZSCALER_CLIENT_SECRET="your_client_secret"
-   ZSCALER_CUSTOMER_ID="your_customer_id"
+   ZSCALER_CUSTOMER_ID="your_customer_id"  # required only for ZPA tools
    ZSCALER_VANITY_DOMAIN="your_vanity_domain"
 
-Legacy API Authentication
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-   ZSCALER_USE_LEGACY="true"
-
-   # ZIA Legacy
-   ZIA_USERNAME="your_username"
-   ZIA_PASSWORD="your_password"
-   ZIA_API_KEY="your_api_key"
-   ZIA_CLOUD="zscalertwo"
-
-   # ZPA Legacy
-   ZPA_CLIENT_ID="your_client_id"
-   ZPA_CLIENT_SECRET="your_client_secret"
-   ZPA_CUSTOMER_ID="your_customer_id"
-   ZPA_CLOUD="PRODUCTION"
+For JWT-based auth, set ``ZSCALER_PRIVATE_KEY`` (PEM-encoded) in place of
+``ZSCALER_CLIENT_SECRET``.
 
 .. warning::
    Do not commit ``.env`` to source control. Add it to your ``.gitignore``.
@@ -93,6 +77,9 @@ Start the MCP server using the command line:
 
    # With specific services
    zscaler-mcp --services zia,zpa,zdx
+
+   # With a narrow toolset selection (loads only those tools, on every transport)
+   zscaler-mcp --toolsets zia_url_filtering,zpa_app_segments
 
    # With write operations enabled
    zscaler-mcp --enable-write-tools --write-tools "zpa_create_*,zia_update_*"

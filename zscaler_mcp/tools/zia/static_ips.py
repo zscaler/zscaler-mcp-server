@@ -18,14 +18,13 @@ def zia_list_static_ips(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """List ZIA static IP addresses.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_static_ip
 
     results, _, err = api.list_static_ips(query_params=query_params)
@@ -37,14 +36,13 @@ def zia_list_static_ips(
 
 def zia_get_static_ip(
     static_ip_id: Annotated[int, Field(description="Static IP ID.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Get a specific ZIA static IP by ID."""
     if not static_ip_id:
         raise ValueError("static_ip_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_static_ip
 
     result, _, err = api.get_static_ip(static_ip_id)
@@ -73,14 +71,13 @@ def zia_create_static_ip(
     longitude: Annotated[
         Optional[float], Field(description="Longitude for geolocation override.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Create a new ZIA static IP address."""
     if not ip_address:
         raise ValueError("ip_address is required for creating a static IP")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_static_ip
 
     payload = {
@@ -113,14 +110,13 @@ def zia_update_static_ip(
     longitude: Annotated[
         Optional[float], Field(description="Longitude for geolocation override.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Update an existing ZIA static IP. Note: IP address cannot be changed."""
     if not static_ip_id:
         raise ValueError("static_ip_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_static_ip
 
     update_data = {
@@ -139,7 +135,6 @@ def zia_update_static_ip(
 
 def zia_delete_static_ip(
     static_ip_id: Annotated[int, Field(description="Static IP ID (required).")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -156,7 +151,7 @@ def zia_delete_static_ip(
     if not static_ip_id:
         raise ValueError("static_ip_id is required for deletion")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_static_ip
 
     _, _, err = api.delete_static_ip(static_ip_id)

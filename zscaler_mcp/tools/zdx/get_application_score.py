@@ -23,7 +23,6 @@ def zdx_get_application(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -39,7 +38,6 @@ def zdx_get_application(
         department_id: Optional list of department IDs to filter by specific departments.
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
         since: Optional number of hours to look back for application data (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -58,7 +56,7 @@ def zdx_get_application(
         ...     location_id=["125584"]
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:
@@ -96,7 +94,6 @@ def zdx_get_application_score_trend(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -112,7 +109,6 @@ def zdx_get_application_score_trend(
         department_id: Optional list of department IDs to filter by specific departments.
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
         since: Optional number of hours to look back for application data (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -131,7 +127,7 @@ def zdx_get_application_score_trend(
         ...     since=10
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:

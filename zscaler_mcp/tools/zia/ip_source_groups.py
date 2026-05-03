@@ -19,14 +19,13 @@ def zia_list_ip_source_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """List ZIA IP source groups with optional filtering.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     query_params = {"search": search} if search else {}
@@ -39,14 +38,13 @@ def zia_list_ip_source_groups(
 
 def zia_get_ip_source_group(
     group_id: Annotated[Union[int, str], Field(description="Group ID for the IP source group.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Get a specific ZIA IP source group by ID."""
     if not group_id:
         raise ValueError("group_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.get_ip_source_group(group_id)
@@ -69,7 +67,6 @@ def zia_create_ip_source_group(
     description: Annotated[
         Optional[str], Field(description="Group description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Create a new ZIA IP source group."""
@@ -83,7 +80,7 @@ def zia_create_ip_source_group(
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON for ip_addresses: {e}")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.add_ip_source_group(
@@ -104,7 +101,6 @@ def zia_update_ip_source_group(
     description: Annotated[
         Optional[str], Field(description="Group description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Update an existing ZIA IP source group."""
@@ -118,7 +114,7 @@ def zia_update_ip_source_group(
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON for ip_addresses: {e}")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.update_ip_source_group(
@@ -131,7 +127,6 @@ def zia_update_ip_source_group(
 
 def zia_delete_ip_source_group(
     group_id: Annotated[Union[int, str], Field(description="Group ID (required).")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -148,7 +143,7 @@ def zia_delete_ip_source_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     _, _, err = zia.delete_ip_source_group(group_id)

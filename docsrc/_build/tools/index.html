@@ -324,18 +324,13 @@
 </section>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
-<p>All tools require proper authentication to Zscaler services. The MCP server supports:</p>
-<ul class="simple">
-<li><p><strong>OneAPI Authentication</strong>: Modern OAuth2-based authentication</p></li>
-<li><p><strong>Legacy Authentication</strong>: Service-specific API key authentication</p></li>
-</ul>
+<p>All tools authenticate to Zscaler services through <strong>OneAPI</strong> (modern OAuth2-based authentication via ZIdentity).</p>
 <p>See the getting-started guide for authentication setup.</p>
 </section>
 <section id="tool-parameters">
 <h2>Tool Parameters<a class="headerlink" href="#tool-parameters" title="Link to this heading">¶</a></h2>
 <p>Most tools accept the following common parameters:</p>
 <ul class="simple">
-<li><p><strong>use_legacy</strong>: Whether to use legacy API authentication (default: False). Note: EASM does not support legacy authentication.</p></li>
 <li><p><strong>service</strong>: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zid, zeasm, zins, zms)</p></li>
 <li><p><strong>page</strong>: Page number for paginated results</p></li>
 <li><p><strong>page_size</strong>: Number of results per page</p></li>

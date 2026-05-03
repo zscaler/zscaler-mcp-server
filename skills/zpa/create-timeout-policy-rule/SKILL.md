@@ -528,9 +528,16 @@ zpa_create_timeout_policy_rule(
 
 Not recommended for production applications.
 
-### Listing Existing Timeout Rules
+### Listing Existing Timeout Rules (opt-in)
 
-Before creating, check existing rules to avoid conflicts:
+Do **not** pre-list timeout rules before every create. New ZPA timeout
+rules are appended at the end of the policy by default; pre-listing
+adds a round trip, gives no useful information for the typical case,
+and invites fan-out retries when the list comes back empty on a fresh
+tenant.
+
+Run the listing **only** when the admin explicitly asks about ordering,
+duplicate names, or wants to inspect existing rules:
 
 ```text
 zpa_list_timeout_policy_rules()
@@ -547,8 +554,8 @@ zpa_list_timeout_policy_rules()
 - `get_zpa_scim_group(search)` -- look up SCIM group IDs
 - `get_zpa_saml_attribute(search)` -- look up SAML attribute IDs
 - `get_zpa_posture_profile(search)` -- look up posture profile UDIDs
-- `zpa_list_timeout_policy_rules()` -- list existing rules
-- `zpa_create_timeout_policy_rule(name, action_type, reauth_timeout, reauth_idle_timeout, conditions)` -- create the rule
+- `zpa_create_timeout_policy_rule(name, action_type, reauth_timeout, reauth_idle_timeout, conditions)` -- create the rule (no pre-flight needed)
+- `zpa_list_timeout_policy_rules()` -- **only** when the admin explicitly asks about ordering or wants to inspect existing rules
 - `zpa_get_timeout_policy_rule(rule_id)` -- verify the rule
 
 **Timeout format:** `"<number> Minutes"`, `"<number> Hours"`, `"<number> Days"`, `"Never"`

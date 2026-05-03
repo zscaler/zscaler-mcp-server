@@ -47,10 +47,7 @@ These tools allow you to create, update, and delete Zscaler resources:
 Authentication
 --------------
 
-All tools require proper authentication to Zscaler services. The MCP server supports:
-
-- **OneAPI Authentication**: Modern OAuth2-based authentication
-- **Legacy Authentication**: Service-specific API key authentication
+All tools authenticate to Zscaler services through **OneAPI** (modern OAuth2-based authentication via ZIdentity).
 
 See the getting-started guide for authentication setup.
 
@@ -59,7 +56,6 @@ Tool Parameters
 
 Most tools accept the following common parameters:
 
-- **use_legacy**: Whether to use legacy API authentication (default: False). Note: EASM does not support legacy authentication.
 - **service**: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zid, zeasm, zins, zms)
 - **page**: Page number for paginated results
 - **page_size**: Number of results per page

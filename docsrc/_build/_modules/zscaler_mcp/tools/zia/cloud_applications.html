@@ -299,6 +299,12 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.jmespath_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_jmespath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.zia_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">APP_CLASS_FIELD_DESCRIPTION</span><span class="p">,</span>
+    <span class="n">CLOUD_APP_CLASSES</span><span class="p">,</span>
+    <span class="n">parent_for_app_class</span><span class="p">,</span>
+    <span class="n">validate_app_class</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># =============================================================================</span>
 <span class="c1"># READ-ONLY OPERATIONS</span>
@@ -341,12 +347,7 @@
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">app_class</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span>
-            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">&quot;Filter by application category (e.g. &#39;WEB_MAIL&#39;, &quot;</span>
-                <span class="s2">&quot;&#39;ENTERPRISE_COLLABORATION&#39;, &#39;FILE_SHARE&#39;).&quot;</span>
-            <span class="p">)</span>
-        <span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">APP_CLASS_FIELD_DESCRIPTION</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">page</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page offset for pagination.&quot;</span><span class="p">)</span>
@@ -369,7 +370,6 @@
             <span class="p">)</span>
         <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List the ZIA policy-engine cloud-application catalog.</span>
@@ -382,15 +382,32 @@
 <span class="sd">    Supports both server-side filtering (``search``, ``app_class``,</span>
 <span class="sd">    ``group_results``) and client-side JMESPath projection (``query``).</span>
 
+<span class="sd">    When the user describes a *kind* of application — &quot;all webmail apps&quot;,</span>
+<span class="sd">    &quot;every AI/ML tool&quot;, &quot;the file-sharing services&quot; — pass ``app_class``</span>
+<span class="sd">    set to the matching canonical category (for example ``WEBMAIL``,</span>
+<span class="sd">    ``AI_ML``, ``FILE_SHARE``). The full set of valid categories is</span>
+<span class="sd">    enumerated in</span>
+<span class="sd">    :data:`zscaler_mcp.common.zia_helpers.CLOUD_APP_CLASSES` and surfaced</span>
+<span class="sd">    in the ``app_class`` parameter description.</span>
+
 <span class="sd">    Tip: when looking up the right enum to feed into an SSL inspection or</span>
 <span class="sd">    DLP rule, prefer ``zia_list_cloud_app_ssl_policy`` if the target rule is</span>
 <span class="sd">    SSL-inspection-scoped — its catalog can differ slightly from the generic</span>
 <span class="sd">    policy catalog returned here.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">canonical_class</span> <span class="o">=</span> <span class="n">validate_app_class</span><span class="p">(</span><span class="n">app_class</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="c1"># The catalog query parameter uses the catalog vocabulary</span>
+    <span class="c1"># (``STREAMING``, ``WEB_MAIL``), not the policy vocabulary</span>
+    <span class="c1"># (``STREAMING_MEDIA``, ``WEBMAIL``). Translate after validation</span>
+    <span class="c1"># so callers can pass either form.</span>
+    <span class="n">catalog_class</span> <span class="o">=</span> <span class="n">parent_for_app_class</span><span class="p">(</span><span class="n">canonical_class</span><span class="p">)</span>
+
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">cloud_apps</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_applications</span>
 
-    <span class="n">query_params</span> <span class="o">=</span> <span class="n">_build_query_params</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">app_class</span><span class="p">,</span> <span class="n">group_results</span><span class="p">)</span>
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">_build_query_params</span><span class="p">(</span>
+        <span class="n">search</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">catalog_class</span><span class="p">,</span> <span class="n">group_results</span>
+    <span class="p">)</span>
 
     <span class="n">apps</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">cloud_apps</span><span class="o">.</span><span class="n">list_cloud_app_policy</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
@@ -415,7 +432,7 @@
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">app_class</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filter by application category.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">APP_CLASS_FIELD_DESCRIPTION</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">page</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Page offset for pagination.&quot;</span><span class="p">)</span>
@@ -437,7 +454,6 @@
             <span class="p">)</span>
         <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;List the ZIA cloud-application catalog scoped to SSL Inspection rules.</span>
@@ -450,11 +466,21 @@
 <span class="sd">    This is the right tool to call when answering &quot;what enum should I pass</span>
 <span class="sd">    into ``cloud_applications`` for SharePoint Online / OneDrive / Box / …?&quot;</span>
 <span class="sd">    because it returns the exact strings the SSL Inspection API will accept.</span>
+
+<span class="sd">    Use ``app_class`` to filter by category when the user describes a</span>
+<span class="sd">    *kind* of application (e.g. ``AI_ML``, ``WEBMAIL``, ``FILE_SHARE``).</span>
+<span class="sd">    See :data:`zscaler_mcp.common.zia_helpers.CLOUD_APP_CLASSES` for the</span>
+<span class="sd">    canonical set.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">canonical_class</span> <span class="o">=</span> <span class="n">validate_app_class</span><span class="p">(</span><span class="n">app_class</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">catalog_class</span> <span class="o">=</span> <span class="n">parent_for_app_class</span><span class="p">(</span><span class="n">canonical_class</span><span class="p">)</span>
+
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">cloud_apps</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">cloud_applications</span>
 
-    <span class="n">query_params</span> <span class="o">=</span> <span class="n">_build_query_params</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">app_class</span><span class="p">,</span> <span class="n">group_results</span><span class="p">)</span>
+    <span class="n">query_params</span> <span class="o">=</span> <span class="n">_build_query_params</span><span class="p">(</span>
+        <span class="n">search</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">catalog_class</span><span class="p">,</span> <span class="n">group_results</span>
+    <span class="p">)</span>
 
     <span class="n">apps</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">cloud_apps</span><span class="o">.</span><span class="n">list_cloud_app_ssl_policy</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
@@ -462,6 +488,15 @@
     <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">app</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">app</span> <span class="ow">in</span> <span class="n">apps</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">apply_jmespath</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span></div>
 
+
+
+<span class="c1"># Re-export so callers/tests can introspect the canonical category list</span>
+<span class="c1"># directly from the tool module.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;zia_list_cloud_app_policy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zia_list_cloud_app_ssl_policy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CLOUD_APP_CLASSES&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 </pre></div>
         </article>
       </div>

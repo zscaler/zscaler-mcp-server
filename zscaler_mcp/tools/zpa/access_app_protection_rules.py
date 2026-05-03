@@ -4,7 +4,11 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
-from zscaler_mcp.utils.utils import convert_v1_to_v2_response, convert_v2_to_sdk_format
+from zscaler_mcp.utils.utils import (
+    convert_v1_to_v2_response,
+    convert_v2_to_sdk_format,
+    normalize_v2_rule_response,
+)
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -22,14 +26,13 @@ def zpa_list_app_protection_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA inspection policy rules (app protection).
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "inspection"
 
@@ -49,14 +52,13 @@ def zpa_get_app_protection_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA inspection policy rule (app protection) by ID."""
     if not rule_id:
         raise ValueError("rule_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "inspection"
 
@@ -97,7 +99,6 @@ def zpa_create_app_protection_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA inspection policy rule (app protection)."""
@@ -106,7 +107,7 @@ def zpa_create_app_protection_rule(
     if action_type.lower() == "inspect" and not zpn_inspection_profile_id:
         raise ValueError("'zpn_inspection_profile_id' is required when action_type is 'inspect'")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
 
     try:
@@ -125,10 +126,10 @@ def zpa_create_app_protection_rule(
     if microtenant_id:
         payload["microtenant_id"] = microtenant_id
 
-    created, _, err = api.add_app_protection_rule_v2(**payload)
+    created, response, err = api.add_app_protection_rule_v2(**payload)
     if err:
         raise Exception(f"Failed to create app protection rule: {err}")
-    return created.as_dict()
+    return normalize_v2_rule_response(created, response)
 
 
 def zpa_update_app_protection_rule(
@@ -152,14 +153,13 @@ def zpa_update_app_protection_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA inspection policy rule (app protection)."""
     if not rule_id:
         raise ValueError("'rule_id' is required for updating an inspection rule")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
 
     try:
@@ -178,14 +178,10 @@ def zpa_update_app_protection_rule(
     if microtenant_id:
         payload["microtenant_id"] = microtenant_id
 
-    updated, _, err = api.update_app_protection_rule_v2(rule_id, **payload)
+    updated, response, err = api.update_app_protection_rule_v2(rule_id, **payload)
     if err:
         raise Exception(f"Failed to update app protection rule {rule_id}: {err}")
-
-    rule_data = updated.as_dict()
-    if "conditions" in rule_data:
-        rule_data["conditions"] = convert_v1_to_v2_response(rule_data["conditions"])
-    return rule_data
+    return normalize_v2_rule_response(updated, response)
 
 
 def zpa_delete_app_protection_rule(
@@ -193,7 +189,6 @@ def zpa_delete_app_protection_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -210,7 +205,7 @@ def zpa_delete_app_protection_rule(
     if not rule_id:
         raise ValueError("'rule_id' is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "inspection"
 

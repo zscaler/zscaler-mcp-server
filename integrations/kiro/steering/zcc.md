@@ -17,13 +17,12 @@ ZCC is the endpoint agent that connects users to the Zscaler Zero Trust Exchange
 
 Use for understanding the fleet of enrolled devices.
 
-```
+```text
 1. zcc_list_devices          → Get all enrolled devices with status, OS, version
 2. Filter results by enrollment status:
    - Enrolled: Device is active and connected
    - Pending: Device enrollment in progress
    - Unenrolled: Device has been removed
-3. zcc_devices_csv_exporter  → Export full device data for analysis in spreadsheet/BI tools
 ```
 
 ### Traffic Forwarding Review
@@ -53,7 +52,6 @@ ZCC data is the starting point for cross-product troubleshooting:
 | Tool | Description |
 |------|-------------|
 | `zcc_list_devices` | List all enrolled devices with status |
-| `zcc_devices_csv_exporter` | Export device data as CSV |
 | `zcc_list_trusted_networks` | List trusted network definitions |
 | `zcc_list_forwarding_profiles` | List forwarding profiles |
 
@@ -70,7 +68,6 @@ All ZCC tools are **read-only**.
 ## Best Practices
 
 1. **Check enrollment first in troubleshooting** — An unenrolled or pending device explains most "can't access anything" issues
-2. **Use CSV export for large-scale analysis** — `zcc_devices_csv_exporter` is better than paginating through `zcc_list_devices` for fleet-wide reporting
-3. **Review forwarding profiles** — Misconfigured forwarding profiles can cause traffic to bypass ZPA/ZIA
-4. **Check trusted networks** — Users on trusted networks may bypass ZPA/ZIA, which changes access behavior
-5. **Combine with ZDX** — ZCC shows device enrollment; ZDX shows device health metrics. Both are needed for full device troubleshooting.
+2. **Review forwarding profiles** — Misconfigured forwarding profiles can cause traffic to bypass ZPA/ZIA
+3. **Check trusted networks** — Users on trusted networks may bypass ZPA/ZIA, which changes access behavior
+4. **Combine with ZDX** — ZCC shows device enrollment; ZDX shows device health metrics. Both are needed for full device troubleshooting.

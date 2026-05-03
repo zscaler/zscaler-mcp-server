@@ -107,7 +107,7 @@ class TestZdxActiveDevices:
         result = zdx_list_devices()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.devices.list_devices.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["id"] == "dev1"
@@ -208,7 +208,7 @@ class TestZdxAdministration:
         result = zdx_list_departments()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.admin.list_departments.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["name"] == "Engineering"
@@ -259,7 +259,7 @@ class TestZdxAdministration:
         result = zdx_list_locations()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.admin.list_locations.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["name"] == "San Francisco"
@@ -318,7 +318,7 @@ class TestZdxApplications:
         result = zdx_list_applications()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.apps.list_apps.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["name"] == "Salesforce"
@@ -590,7 +590,7 @@ class TestZdxAlerts:
         result = zdx_list_alerts()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.alerts.list_ongoing.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["severity"] == "high"
@@ -755,7 +755,7 @@ class TestZdxSoftwareInventory:
         result = zdx_list_software()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.inventory.list_softwares.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["name"] == "Chrome"
@@ -833,7 +833,7 @@ class TestZdxHistoricalAlerts:
         result = zdx_list_historical_alerts()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zdx")
+        mock_get_client.assert_called_once_with(service="zdx")
         mock_client.zdx.alerts.list_historical.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["ended_on"] == "2024-01-01"

@@ -221,6 +221,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -280,8 +284,8 @@
 <p>The Zscaler Microsegmentation (ZMS) tools provide <strong>read-only</strong> access to the ZMS GraphQL API for querying microsegmentation data. These 20 tools cover agents, agent groups, resources, resource groups, policy rules, app zones, app catalog, nonces, and tags.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>All ZMS tools are read-only (queries only — no mutations). ZMS only works with
-OneAPI credentials — the <code class="docutils literal notranslate"><span class="pre">use_legacy</span></code> parameter has no effect.</p>
+<p>All ZMS tools are read-only (queries only — no mutations). ZMS
+authenticates exclusively through OneAPI.</p>
 </div>
 <section id="available-tools">
 <h2>Available Tools<a class="headerlink" href="#available-tools" title="Link to this heading">¶</a></h2>
@@ -1217,7 +1221,7 @@ to discover tag values.</p>
 </section>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
-<p>ZMS tools use OneAPI authentication exclusively (legacy authentication is not supported):</p>
+<p>ZMS tools authenticate through OneAPI:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></li>

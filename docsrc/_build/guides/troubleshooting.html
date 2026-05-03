@@ -221,6 +221,10 @@
 <li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
@@ -316,7 +320,6 @@ uvx<span class="w"> </span>zscaler-mcp
 </li>
 <li><p>Check that credentials are not expired</p></li>
 <li><p>Ensure the API client has the necessary scopes in the ZIdentity console</p></li>
-<li><p>For legacy auth: <code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY=true</span></code> must be set along with service-specific credentials</p></li>
 </ol>
 <p><strong>“ZSCALER_CUSTOMER_ID required”</strong></p>
 <p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> is required for ZPA operations. If you only use ZIA/ZDX/ZCC, this can be omitted.</p>
@@ -382,6 +385,31 @@ uvx<span class="w"> </span>zscaler-mcp
 <li><p>Server-side confirmation via hidden <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> parameter</p></li>
 </ol>
 <p>To skip confirmations (advanced/CI use only): Set <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SKIP_CONFIRMATIONS</span></code> with an HMAC-SHA256 token. The confirmation window is controlled by <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_CONFIRMATION_TTL</span></code> (default: 300 seconds).</p>
+</section>
+<section id="tool-filtering">
+<h2>Tool Filtering<a class="headerlink" href="#tool-filtering" title="Link to this heading">¶</a></h2>
+<p>These checks apply on every transport (<code class="docutils literal notranslate"><span class="pre">stdio</span></code>, <code class="docutils literal notranslate"><span class="pre">sse</span></code>, <code class="docutils literal notranslate"><span class="pre">streamable-http</span></code>).</p>
+<p><strong>A specific tool isn’t loaded</strong></p>
+<p>Walk down this list in order — each item rules out one filter the server applies at startup.</p>
+<ol class="arabic simple">
+<li><p>Was the service explicitly disabled? Check <code class="docutils literal notranslate"><span class="pre">--disabled-services</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_SERVICES</span></code>. A service in this list contributes zero tools.</p></li>
+<li><p>Was the tool’s pattern explicitly disabled? Check <code class="docutils literal notranslate"><span class="pre">--disabled-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code>. This list supports wildcards (e.g. <code class="docutils literal notranslate"><span class="pre">zcc_*</span></code>) and wins over every other filter.</p></li>
+<li><p>Is it a write tool with no allowlist? Write tools (<code class="docutils literal notranslate"><span class="pre">*_create_*</span></code>, <code class="docutils literal notranslate"><span class="pre">*_update_*</span></code>, <code class="docutils literal notranslate"><span class="pre">*_delete_*</span></code>) require both <code class="docutils literal notranslate"><span class="pre">--enable-write-tools</span></code> AND a matching pattern in <code class="docutils literal notranslate"><span class="pre">--write-tools</span></code>. With write mode disabled (the default), no write tool is registered.</p></li>
+<li><p>Was the tool’s toolset filtered out? If you set <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> (or <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code>), only tools that belong to a listed toolset are registered. Call <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> from your client to see what’s currently active and what’s available.</p></li>
+<li><p>Did the OneAPI entitlement filter drop the tool’s product? Look for a startup log line of the form <code class="docutils literal notranslate"><span class="pre">entitlement</span> <span class="pre">filter</span> <span class="pre">applied:</span> <span class="pre">entitled</span> <span class="pre">services=[...],</span> <span class="pre">kept</span> <span class="pre">N</span> <span class="pre">toolset(s),</span> <span class="pre">removed</span> <span class="pre">M</span> <span class="pre">toolset(s)</span></code>. If the product (e.g. ZDX) isn’t in the entitled list, every toolset for that product was filtered out. Either grant the OneAPI client the missing product entitlement in ZIdentity, or — for a quick diagnostic — restart the server with <code class="docutils literal notranslate"><span class="pre">--no-entitlement-filter</span></code> to confirm the filter is the cause.</p></li>
+</ol>
+<p>If the agent reports a tool that genuinely doesn’t exist (typo, hallucination), <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> and <code class="docutils literal notranslate"><span class="pre">zscaler_get_available_services</span></code> are the right introspection tools to call. Use <code class="docutils literal notranslate"><span class="pre">name_contains</span></code> / <code class="docutils literal notranslate"><span class="pre">description_contains</span></code> on <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> to scope the search to a single area before drilling in with <code class="docutils literal notranslate"><span class="pre">zscaler_get_toolset_tools</span></code>.</p>
+<p><strong>How do I see what the entitlement filter dropped?</strong></p>
+<p>The OneAPI entitlement filter logs one <code class="docutils literal notranslate"><span class="pre">INFO</span></code> line at startup with the result, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">entitlement</span> <span class="nb">filter</span> <span class="n">applied</span><span class="p">:</span> <span class="n">entitled</span> <span class="n">services</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;zia&#39;</span><span class="p">,</span> <span class="s1">&#39;zpa&#39;</span><span class="p">],</span> <span class="n">kept</span> <span class="mi">12</span> <span class="n">toolset</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">removed</span> <span class="mi">17</span> <span class="n">toolset</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To see which specific toolsets were removed, compare two startup runs:</p>
+<ol class="arabic simple">
+<li><p>Start the server normally and call <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> — note which toolsets show as currently enabled.</p></li>
+<li><p>Restart with <code class="docutils literal notranslate"><span class="pre">--no-entitlement-filter</span></code> (or <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true</span></code>), call <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> again — anything new is what the filter was hiding.</p></li>
+</ol>
+<p>If you see a <code class="docutils literal notranslate"><span class="pre">WARN</span> <span class="pre">entitlement</span> <span class="pre">filter</span> <span class="pre">skipped</span> <span class="pre">(...)</span></code> line instead, the filter never ran — the parenthesized reason tells you why (missing OneAPI credentials, the ZIdentity token endpoint was unreachable, the token didn’t decode, or the token had no recognizable product entitlements). Your tool list in that case is whatever your other filters produced.</p>
 </section>
 <section id="agent-editor-issues">
 <h2>Agent/Editor Issues<a class="headerlink" href="#agent-editor-issues" title="Link to this heading">¶</a></h2>
@@ -542,6 +570,7 @@ curl<span class="w"> </span>http://127.0.0.1:8000/mcp
 <li><a class="reference internal" href="#mcp-client-authentication">MCP Client Authentication</a></li>
 <li><a class="reference internal" href="#network-security">Network Security</a></li>
 <li><a class="reference internal" href="#write-operations">Write Operations</a></li>
+<li><a class="reference internal" href="#tool-filtering">Tool Filtering</a></li>
 <li><a class="reference internal" href="#agent-editor-issues">Agent/Editor Issues</a></li>
 <li><a class="reference internal" href="#docker-issues">Docker Issues</a></li>
 <li><a class="reference internal" href="#debugging">Debugging</a></li>

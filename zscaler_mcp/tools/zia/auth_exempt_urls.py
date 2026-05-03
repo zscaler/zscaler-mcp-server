@@ -16,14 +16,13 @@ def zia_list_auth_exempt_urls(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
     """Retrieve the current list of cookie authentication exempt URLs in ZIA.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     url_list, _, err = client.zia.authentication_settings.get_exempted_urls()
     if err:
@@ -42,7 +41,6 @@ def zia_add_auth_exempt_urls(
         Union[List[str], str],
         Field(description="List of exempt URLs to add. Accepts list or JSON string."),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
     """Add URLs to the cookie authentication exempt list in ZIA."""
@@ -59,7 +57,7 @@ def zia_add_auth_exempt_urls(
     if not processed_urls:
         raise ValueError("You must provide a list of exempt URLs to add")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     url_list, _, err = client.zia.authentication_settings.add_urls_to_exempt_list(processed_urls)
     if err:
@@ -72,7 +70,6 @@ def zia_delete_auth_exempt_urls(
         Union[List[str], str],
         Field(description="List of exempt URLs to remove. Accepts list or JSON string."),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> Union[str, List[str]]:
@@ -103,7 +100,7 @@ def zia_delete_auth_exempt_urls(
     if not processed_urls:
         raise ValueError("You must provide a list of exempt URLs to delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     url_list, _, err = client.zia.authentication_settings.delete_urls_from_exempt_list(
         processed_urls

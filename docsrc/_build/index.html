@@ -324,13 +324,10 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_devices</span></code></p></td>
 <td><p>Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_devices_csv_exporter</span></code></p></td>
-<td><p>Downloads ZCC device information or service status as a CSV file</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_trusted_networks</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_trusted_networks</span></code></p></td>
 <td><p>Returns the list of Trusted Networks By Company ID in the Client Connector Portal</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_forwarding_profiles</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zcc_list_forwarding_profiles</span></code></p></td>
 <td><p>Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal</p></td>
 </tr>
 </tbody>
@@ -835,7 +832,7 @@
 <p><strong>Optional Configuration:</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code>: (Optional) Zscaler cloud environment (e.g., <code class="docutils literal notranslate"><span class="pre">beta</span></code>) - Required when interacting with Beta Tenant ONLY.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY</span></code>: Enable legacy API mode (<code class="docutils literal notranslate"><span class="pre">true</span></code>/<code class="docutils literal notranslate"><span class="pre">false</span></code>, default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code>: (Optional) PEM-encoded private key for JWT-based OneAPI auth, used in place of <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code>: Comma-separated list of services to enable (default: all services)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TRANSPORT</span></code>: Transport method - <code class="docutils literal notranslate"><span class="pre">stdio</span></code>, <code class="docutils literal notranslate"><span class="pre">sse</span></code>, or <code class="docutils literal notranslate"><span class="pre">streamable-http</span></code> (default: <code class="docutils literal notranslate"><span class="pre">stdio</span></code>)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DEBUG</span></code>: Enable debug logging - <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> (default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</p></li>
@@ -965,7 +962,7 @@ zscaler-mcp
 </section>
 <section id="zscaler-api-credentials-authentication">
 <h1>Zscaler API Credentials &amp; Authentication<a class="headerlink" href="#zscaler-api-credentials-authentication" title="Link to this heading">¶</a></h1>
-<p>The Zscaler Integrations MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.</p>
+<p>The Zscaler Integrations MCP Server uses <strong>OneAPI</strong> authentication exclusively. A single set of ZIdentity credentials authenticates the server to every Zscaler product.</p>
 <section id="zscaler-oneapi-authentication">
 <h2>Zscaler OneAPI Authentication<a class="headerlink" href="#zscaler-oneapi-authentication" title="Link to this heading">¶</a></h2>
 <p>Before using the Zscaler Integrations MCP Server, you need to create API credentials in your Zidentity console. The Zscaler Integrations MCP Server supports Zscaler’s OneAPI authentication via OAuth2.0 as the default and preferred method.</p>
@@ -1015,10 +1012,6 @@ zscaler-mcp
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
 <td><p>The Zidentity cloud to authenticate to i.e <code class="docutils literal notranslate"><span class="pre">beta</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use_legacy</span></code></p></td>
-<td><p>Whether to use legacy API clients instead of OneAPI. Can be set to <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_USE_LEGACY</span></code></p></td>
 </tr>
 </tbody>
 </table>

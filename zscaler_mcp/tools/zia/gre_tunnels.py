@@ -15,14 +15,13 @@ def zia_list_gre_tunnels(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """List all ZIA GRE tunnels.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     gre_api = client.zia.gre_tunnel
 
     tunnels, _, err = gre_api.list_gre_tunnels()
@@ -34,14 +33,13 @@ def zia_list_gre_tunnels(
 
 def zia_get_gre_tunnel(
     tunnel_id: Annotated[int, Field(description="Tunnel ID.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Get a specific ZIA GRE tunnel by ID."""
     if not tunnel_id:
         raise ValueError("tunnel_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     gre_api = client.zia.gre_tunnel
 
     tunnel, _, err = gre_api.get_gre_tunnel(tunnel_id)
@@ -71,7 +69,6 @@ def zia_create_gre_tunnel(
     comment: Annotated[
         Optional[str], Field(description="Comment for the GRE tunnel or static IP.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -83,7 +80,7 @@ def zia_create_gre_tunnel(
     if not static_ip_address:
         raise ValueError("static_ip_address is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     gre_api = client.zia.gre_tunnel
     ip_api = client.zia.traffic_static_ip
 
@@ -127,7 +124,6 @@ def zia_delete_gre_tunnel(
     static_ip_id: Annotated[
         int, Field(description="Static IP ID to delete after tunnel removal (required).")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -148,7 +144,7 @@ def zia_delete_gre_tunnel(
     if not tunnel_id or not static_ip_id:
         raise ValueError("Both tunnel_id and static_ip_id are required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     gre_api = client.zia.gre_tunnel
     ip_api = client.zia.traffic_static_ip
 

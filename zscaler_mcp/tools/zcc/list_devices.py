@@ -26,7 +26,6 @@ def zcc_list_devices(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> List[dict]:
     """
@@ -35,7 +34,7 @@ def zcc_list_devices(
     This is a read-only operation to retrieve device information.
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if username:

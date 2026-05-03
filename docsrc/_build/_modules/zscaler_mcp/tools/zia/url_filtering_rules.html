@@ -220,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
@@ -275,6 +279,13 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.jmespath_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_jmespath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.zia_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RANK_FIELD_DESCRIPTION</span><span class="p">,</span>
+    <span class="n">apply_default_order</span><span class="p">,</span>
+    <span class="n">apply_default_rank</span><span class="p">,</span>
+    <span class="n">validate_order</span><span class="p">,</span>
+    <span class="n">validate_rank</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_list</span>
 
 <span class="c1"># ============================================================================</span>
@@ -398,7 +409,6 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;JMESPath expression for client-side filtering/projection of results.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -412,7 +422,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        search (str, optional): Search string for filtering rules by name.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -425,7 +434,7 @@
 <span class="sd">        Search for rules containing &quot;block&quot;:</span>
 <span class="sd">        &gt;&gt;&gt; rules = zia_list_url_filtering_rules(search=&quot;block&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_filtering</span>
 
     <span class="n">query_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span> <span class="k">if</span> <span class="n">search</span> <span class="k">else</span> <span class="p">{}</span>
@@ -443,7 +452,6 @@
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the URL filtering rule to retrieve.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -452,7 +460,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        rule_id (int/str): The ID of the URL filtering rule to retrieve.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -462,7 +469,7 @@
 <span class="sd">        Get a specific rule:</span>
 <span class="sd">        &gt;&gt;&gt; rule = zia_get_url_filtering_rule(rule_id=&quot;12345&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_filtering</span>
 
     <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">get_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>
@@ -484,7 +491,13 @@
     <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="nb">str</span><span class="p">,</span>
         <span class="n">Field</span><span class="p">(</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE&quot;</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Action taken when traffic matches rule criteria. Allowed values: &quot;</span>
+                <span class="s2">&quot;ALLOW, BLOCK, CAUTION, ISOLATE. &quot;</span>
+                <span class="s2">&quot;ALLOW permits the traffic. BLOCK denies the URL outright. &quot;</span>
+                <span class="s2">&quot;CAUTION shows the user a warning page and lets them proceed. &quot;</span>
+                <span class="s2">&quot;ISOLATE renders the page in Browser Isolation (subscription required).&quot;</span>
+            <span class="p">)</span>
         <span class="p">),</span>
     <span class="p">],</span>
     <span class="n">description</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional rule description.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -492,7 +505,7 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The admin rank of the user who creates the rule.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">RANK_FIELD_DESCRIPTION</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
@@ -625,7 +638,6 @@
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span>
         <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -635,7 +647,11 @@
 <span class="sd">    Args:</span>
 <span class="sd">        name (str): Rule name (required).</span>
 <span class="sd">        rule_action (str): Action taken when traffic matches rule criteria.</span>
-<span class="sd">                          Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE.</span>
+<span class="sd">                          Allowed values: ALLOW, BLOCK, CAUTION, ISOLATE.</span>
+<span class="sd">                          - ALLOW: Permit the traffic.</span>
+<span class="sd">                          - BLOCK: Deny the URL outright (a BLOCK page is shown).</span>
+<span class="sd">                          - CAUTION: Show a warning interstitial; the user may proceed.</span>
+<span class="sd">                          - ISOLATE: Render the page in Browser Isolation (requires Browser Isolation entitlement).</span>
 <span class="sd">        [... additional parameters as documented in function signature ...]</span>
 
 <span class="sd">    Returns:</span>
@@ -650,6 +666,8 @@
 <span class="sd">        ...     protocols=[&quot;ANY_RULE&quot;]</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">apply_default_rank</span><span class="p">(</span><span class="n">rank</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">apply_default_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="n">_build_url_filtering_rule_payload</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
@@ -686,7 +704,7 @@
         <span class="n">override_groups</span><span class="o">=</span><span class="n">override_groups</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_filtering</span>
 
     <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">add_rule</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">)</span>
@@ -707,14 +725,17 @@
     <span class="n">rule_action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">Field</span><span class="p">(</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Action taken when traffic matches rule criteria. Values: ANY, NONE, BLOCK, CAUTION, ALLOW, ICAP_RESPONSE&quot;</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Action taken when traffic matches rule criteria. Allowed values: &quot;</span>
+                <span class="s2">&quot;ALLOW, BLOCK, CAUTION, ISOLATE.&quot;</span>
+            <span class="p">)</span>
         <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;True to enable rule, False to disable.&quot;</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">rank</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The admin rank of the user who creates the rule.&quot;</span><span class="p">)</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">RANK_FIELD_DESCRIPTION</span><span class="p">)</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
@@ -847,7 +868,6 @@
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The IDs of groups that this rule can be overridden for. Only applies if block_override=True, action=BLOCK.&quot;</span>
         <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -869,6 +889,10 @@
 <span class="sd">        ...     enabled=True</span>
 <span class="sd">        ... )</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="n">validate_rank</span><span class="p">(</span><span class="n">rank</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">validate_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="n">_build_url_filtering_rule_payload</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
@@ -905,7 +929,7 @@
         <span class="n">override_groups</span><span class="o">=</span><span class="n">override_groups</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_filtering</span>
 
     <span class="n">rule</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">update_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">,</span> <span class="o">**</span><span class="n">payload</span><span class="p">)</span>
@@ -921,7 +945,6 @@
     <span class="n">rule_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ID of the URL filtering rule to delete.&quot;</span><span class="p">)</span>
     <span class="p">],</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The service to use.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
     <span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -933,7 +956,6 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        rule_id (int/str): The ID of the URL filtering rule to delete.</span>
-<span class="sd">        use_legacy (bool): Whether to use the legacy API (default: False).</span>
 <span class="sd">        service (str): The service to use (default: &quot;zia&quot;).</span>
 
 <span class="sd">    Returns:</span>
@@ -954,7 +976,7 @@
     <span class="k">if</span> <span class="n">confirmation_check</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">confirmation_check</span>
 
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">url_filtering</span>
 
     <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">delete_rule</span><span class="p">(</span><span class="n">rule_id</span><span class="p">)</span>

@@ -209,15 +209,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../tools/z-insights/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -267,271 +273,123 @@
         </div>
         <article role="main" id="furo-main-content">
           <h1>Source code for zscaler_mcp.client</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span></span><span class="sd">&quot;&quot;&quot;Zscaler SDK client factory (OneAPI).</span>
+
+<span class="sd">All Zscaler products are accessed through the unified OneAPI client</span>
+<span class="sd">(`zscaler.ZscalerClient`), authenticated against ZIdentity using a single set</span>
+<span class="sd">of credentials:</span>
+
+<span class="sd">    - ``ZSCALER_CLIENT_ID``</span>
+<span class="sd">    - ``ZSCALER_CLIENT_SECRET`` (or ``ZSCALER_PRIVATE_KEY`` for JWT auth)</span>
+<span class="sd">    - ``ZSCALER_VANITY_DOMAIN``</span>
+<span class="sd">    - ``ZSCALER_CUSTOMER_ID`` (required when calling ZPA tools)</span>
+<span class="sd">    - ``ZSCALER_CLOUD`` (optional; defaults to production)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZscalerClient</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">zscaler.oneapi_client</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">LegacyZCCClient</span><span class="p">,</span>
-    <span class="n">LegacyZDXClient</span><span class="p">,</span>
-    <span class="n">LegacyZIAClient</span><span class="p">,</span>
-    <span class="n">LegacyZPAClient</span><span class="p">,</span>
-    <span class="n">LegacyZTWClient</span><span class="p">,</span>
-<span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_combined_user_agent</span>
 
-<span class="c1"># Suppress SyntaxWarnings from the zscaler SDK DLP modules</span>
+<span class="c1"># Suppress SyntaxWarnings emitted by the upstream zscaler SDK DLP modules.</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">SyntaxWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">&quot;zscaler.zia.dlp_dictionary&quot;</span><span class="p">)</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">SyntaxWarning</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="s2">&quot;zscaler.zia.dlp_engine&quot;</span><span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_required</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">env_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a credential value, falling back to the environment.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">env_name</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="get_zscaler_client">
 <a class="viewcode-back" href="../../api/client.html#zscaler_mcp.client.get_zscaler_client">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_zscaler_client</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">client_secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">customer_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">vanity_domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">private_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">key_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">key_secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">secret_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">cloud</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">service</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># &#39;zpa&#39; or &#39;zia&#39;</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">user_agent_comment</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ZscalerClient</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an authenticated OneAPI ZscalerClient.</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="sd">    Args:</span>
+<span class="sd">        client_id: OAuth client ID. Falls back to ``ZSCALER_CLIENT_ID``.</span>
+<span class="sd">        client_secret: OAuth client secret. Falls back to ``ZSCALER_CLIENT_SECRET``.</span>
+<span class="sd">        customer_id: Zscaler customer/tenant ID. Falls back to ``ZSCALER_CUSTOMER_ID``.</span>
+<span class="sd">            Required only when ``service=&quot;zpa&quot;``.</span>
+<span class="sd">        vanity_domain: ZIdentity vanity domain. Falls back to ``ZSCALER_VANITY_DOMAIN``.</span>
+<span class="sd">        private_key: OAuth private key for JWT-based auth (used in place of</span>
+<span class="sd">            ``client_secret``). Falls back to ``ZSCALER_PRIVATE_KEY``.</span>
+<span class="sd">        cloud: Zscaler cloud environment override (e.g. ``&quot;BETA&quot;``,</span>
+<span class="sd">            ``&quot;zscalertwo&quot;``). Falls back to ``ZSCALER_CLOUD``.</span>
+<span class="sd">        service: Optional service hint used by tool modules to signal which</span>
+<span class="sd">            Zscaler product they are calling (``&quot;zpa&quot;``, ``&quot;zia&quot;``, ``&quot;zdx&quot;``,</span>
+<span class="sd">            ``&quot;zcc&quot;``, ``&quot;ztw&quot;``, ``&quot;zid&quot;``, ``&quot;zeasm&quot;``, ``&quot;zins&quot;``,</span>
+<span class="sd">            ``&quot;zms&quot;``). The OneAPI client itself is universal; this hint is</span>
+<span class="sd">            only used to enforce the ZPA-specific ``customer_id`` requirement.</span>
+<span class="sd">        user_agent_comment: Optional suffix appended to the User-Agent header</span>
+<span class="sd">            (e.g. ``&quot;Claude Desktop 1.2024.10.23&quot;``). Falls back to</span>
+<span class="sd">            ``ZSCALER_MCP_USER_AGENT_COMMENT``.</span>
 
+<span class="sd">    Returns:</span>
+<span class="sd">        An authenticated :class:`zscaler.ZscalerClient` instance.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: when one or more required OneAPI credentials are missing.</span>
+<span class="sd">        ValueError: when neither ``client_secret`` nor ``private_key`` is provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">load_dotenv</span><span class="p">()</span>
 
-    <span class="c1"># Get user agent comment from environment variable if not explicitly provided</span>
     <span class="k">if</span> <span class="n">user_agent_comment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">user_agent_comment</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_USER_AGENT_COMMENT&quot;</span><span class="p">)</span>
 
-    <span class="c1"># ✅ Defensive fallback logic</span>
-    <span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span> <span class="k">if</span> <span class="n">client_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_ID&quot;</span><span class="p">)</span>
-    <span class="n">client_secret</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">client_secret</span> <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">customer_id</span> <span class="o">=</span> <span class="n">customer_id</span> <span class="k">if</span> <span class="n">customer_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CUSTOMER_ID&quot;</span><span class="p">)</span>
-    <span class="n">vanity_domain</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">vanity_domain</span> <span class="k">if</span> <span class="n">vanity_domain</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">cloud</span> <span class="o">=</span> <span class="n">cloud</span> <span class="k">if</span> <span class="n">cloud</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_CLOUD&quot;</span><span class="p">)</span>
-    <span class="n">private_key</span> <span class="o">=</span> <span class="n">private_key</span> <span class="k">if</span> <span class="n">private_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_PRIVATE_KEY&quot;</span><span class="p">)</span>
+    <span class="n">client_id</span> <span class="o">=</span> <span class="n">_required</span><span class="p">(</span><span class="n">client_id</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_CLIENT_ID&quot;</span><span class="p">)</span>
+    <span class="n">client_secret</span> <span class="o">=</span> <span class="n">_required</span><span class="p">(</span><span class="n">client_secret</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">)</span>
+    <span class="n">customer_id</span> <span class="o">=</span> <span class="n">_required</span><span class="p">(</span><span class="n">customer_id</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_CUSTOMER_ID&quot;</span><span class="p">)</span>
+    <span class="n">vanity_domain</span> <span class="o">=</span> <span class="n">_required</span><span class="p">(</span><span class="n">vanity_domain</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">)</span>
+    <span class="n">cloud</span> <span class="o">=</span> <span class="n">_required</span><span class="p">(</span><span class="n">cloud</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_CLOUD&quot;</span><span class="p">)</span>
+    <span class="n">private_key</span> <span class="o">=</span> <span class="n">_required</span><span class="p">(</span><span class="n">private_key</span><span class="p">,</span> <span class="s2">&quot;ZSCALER_PRIVATE_KEY&quot;</span><span class="p">)</span>
 
-    <span class="c1"># ✅ Environment variable fallback for use_legacy</span>
-    <span class="c1"># Check environment variable if use_legacy is not explicitly set to True</span>
-    <span class="k">if</span> <span class="n">use_legacy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">use_legacy</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
-        <span class="n">env_use_legacy</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_USE_LEGACY&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span>
-        <span class="k">if</span> <span class="n">env_use_legacy</span><span class="p">:</span>
-            <span class="n">use_legacy</span> <span class="o">=</span> <span class="kc">True</span>
-
-    <span class="c1"># ✅ Environment variable fallback for legacy credentials (only if in legacy mode)</span>
-    <span class="k">if</span> <span class="n">use_legacy</span><span class="p">:</span>
-        <span class="c1"># ZPA legacy credentials</span>
-        <span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span> <span class="k">if</span> <span class="n">client_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CLIENT_ID&quot;</span><span class="p">)</span>
-        <span class="n">client_secret</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">client_secret</span> <span class="k">if</span> <span class="n">client_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CLIENT_SECRET&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">customer_id</span> <span class="o">=</span> <span class="n">customer_id</span> <span class="k">if</span> <span class="n">customer_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CUSTOMER_ID&quot;</span><span class="p">)</span>
-
-        <span class="c1"># ZIA legacy credentials</span>
-        <span class="n">username</span> <span class="o">=</span> <span class="n">username</span> <span class="k">if</span> <span class="n">username</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZIA_USERNAME&quot;</span><span class="p">)</span>
-        <span class="n">password</span> <span class="o">=</span> <span class="n">password</span> <span class="k">if</span> <span class="n">password</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZIA_PASSWORD&quot;</span><span class="p">)</span>
-        <span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="k">if</span> <span class="n">api_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZIA_API_KEY&quot;</span><span class="p">)</span>
-
-        <span class="c1"># ZTW legacy credentials</span>
-        <span class="n">username</span> <span class="o">=</span> <span class="n">username</span> <span class="k">if</span> <span class="n">username</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_USERNAME&quot;</span><span class="p">)</span>
-        <span class="n">password</span> <span class="o">=</span> <span class="n">password</span> <span class="k">if</span> <span class="n">password</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_PASSWORD&quot;</span><span class="p">)</span>
-        <span class="n">api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="k">if</span> <span class="n">api_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_API_KEY&quot;</span><span class="p">)</span>
-
-        <span class="c1"># ZDX legacy credentials</span>
-        <span class="n">key_id</span> <span class="o">=</span> <span class="n">key_id</span> <span class="k">if</span> <span class="n">key_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZDX_CLIENT_ID&quot;</span><span class="p">)</span>
-        <span class="n">key_secret</span> <span class="o">=</span> <span class="n">key_secret</span> <span class="k">if</span> <span class="n">key_secret</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZDX_CLIENT_SECRET&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Cloud environment (service-specific)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cloud</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zpa&quot;</span><span class="p">:</span>
-                <span class="n">cloud</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZPA_CLOUD&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zia&quot;</span><span class="p">:</span>
-                <span class="n">cloud</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZIA_CLOUD&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;ztw&quot;</span><span class="p">:</span>
-                <span class="n">cloud</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZTW_CLOUD&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zdx&quot;</span><span class="p">:</span>
-                <span class="n">cloud</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZDX_CLOUD&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zcc&quot;</span><span class="p">:</span>
-                <span class="n">cloud</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLOUD&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Debug logging (only in debug mode)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[DEBUG] use_legacy parameter: </span><span class="si">{</span><span class="n">use_legacy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[DEBUG] ZSCALER_USE_LEGACY env var: </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;ZSCALER_USE_LEGACY&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="c1"># ✅ Debug logging</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;[DEBUG] Final Auth Config:&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  client_id: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  client_secret: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">client_secret</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  customer_id: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">customer_id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  vanity_domain: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">vanity_domain</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  cloud: </span><span class="si">{</span><span class="n">cloud</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  use_legacy: </span><span class="si">{</span><span class="n">use_legacy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  username: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  password: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">password</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  api_key: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  key_id: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">key_id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  key_secret: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">key_secret</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  secret_key: </span><span class="si">{</span><span class="nb">bool</span><span class="p">(</span><span class="n">secret_key</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns an authenticated Zscaler SDK client (OneAPI or Legacy).</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        client_id (str): OAuth client ID or legacy ZPA client ID.</span>
-<span class="sd">        client_secret (str): OAuth client secret or legacy ZPA secret.</span>
-<span class="sd">        customer_id (str): Zscaler customer ID (used in both OneAPI and legacy ZPA).</span>
-<span class="sd">        vanity_domain (str): Vanity domain (required only for OneAPI clients).</span>
-<span class="sd">        private_key (str): OAuth private key for OneAPI JWT-based auth.</span>
-<span class="sd">        username (str): Legacy ZIA username (used only by LegacyZIAClient).</span>
-<span class="sd">        password (str): Legacy ZIA password (used only by LegacyZIAClient).</span>
-<span class="sd">        api_key (str): Legacy ZCC AND ZIA API key (used only by LegacyZIAClient, LegacyZCCClient and LegacyZTWClient).</span>
-<span class="sd">        secret_key (str): Legacy ZCC Secret key (used only by LegacyZCCClient).</span>
-<span class="sd">        key_id (str): Legacy ZDX Key ID (used only by LegacyZDXClient).</span>
-<span class="sd">        key_secret (str): Legacy ZDX Secret Key (used only by LegacyZDXClient).</span>
-<span class="sd">        cloud (str): Zscaler cloud environment (e.g., &#39;BETA&#39;, &#39;zscalertwo&#39;).</span>
-<span class="sd">        service (str): Required if use_legacy=True. Must be either &#39;zpa&#39; or &#39;zia&#39;.</span>
-<span class="sd">        use_legacy (bool): If True, selects the appropriate legacy client (</span>
-<span class="sd">                          LegacyZCCClient, LegacyZDXClient, LegacyZPAClient, LegacyZIAClient, LegacyZTWClient).</span>
-<span class="sd">                          Can also be set via ZSCALER_USE_LEGACY environment variable.</span>
-<span class="sd">        user_agent_comment (str): Optional additional information to include in the User-Agent header</span>
-<span class="sd">                                 (e.g., &quot;Claude Desktop 1.2024.10.23&quot;). Can also be set via</span>
-<span class="sd">                                 ZSCALER_MCP_USER_AGENT_COMMENT environment variable.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        Union[ZscalerClient, LegacyZPAClient, LegacyZIAClient]: An authenticated client instance.</span>
-
-<span class="sd">    Notes:</span>
-<span class="sd">        - If `use_legacy=True`, do **not** set or expect `vanity_domain`. It is required only for OneAPI.</span>
-<span class="sd">        - Each legacy service requires different credential parameters:</span>
-<span class="sd">            • LegacyZCCClient: api_key (ZCC_CLIENT_ID), secret_key (ZCC_CLIENT_SECRET), cloud</span>
-<span class="sd">            • LegacyZDXClient: api_key, key_secret, cloud</span>
-<span class="sd">            • LegacyZPAClient: client_id, client_secret, customer_id, cloud</span>
-<span class="sd">            • LegacyZIAClient: username, password, api_key, cloud</span>
-<span class="sd">            • LegacyZTWClient: username, password, api_key, cloud</span>
-<span class="sd">            • LegacyZDXClient: key_id, key_secret, cloud</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># Generate custom user-agent for all requests</span>
-    <span class="n">custom_user_agent</span> <span class="o">=</span> <span class="n">get_combined_user_agent</span><span class="p">(</span><span class="n">user_agent_comment</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[DEBUG] Using custom user-agent: </span><span class="si">{</span><span class="n">custom_user_agent</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">use_legacy</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">service</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;You must specify the &#39;service&#39; (e.g., zdx, &#39;zpa&#39;, &#39;zia&#39;, ztw) when using legacy mode.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zpa&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">,</span> <span class="n">customer_id</span><span class="p">,</span> <span class="n">cloud</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing required credentials for LegacyZPAClient.&quot;</span><span class="p">)</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;clientId&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
-                <span class="s2">&quot;clientSecret&quot;</span><span class="p">:</span> <span class="n">client_secret</span><span class="p">,</span>
-                <span class="s2">&quot;customerId&quot;</span><span class="p">:</span> <span class="n">customer_id</span><span class="p">,</span>
-                <span class="s2">&quot;cloud&quot;</span><span class="p">:</span> <span class="n">cloud</span><span class="p">,</span>
-                <span class="s2">&quot;userAgent&quot;</span><span class="p">:</span> <span class="n">custom_user_agent</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="n">LegacyZPAClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zcc&quot;</span><span class="p">:</span>
-            <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLIENT_ID&quot;</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span>
-            <span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZCC_CLIENT_SECRET&quot;</span><span class="p">,</span> <span class="n">secret_key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">secret_key</span><span class="p">,</span> <span class="n">cloud</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing required credentials for LegacyZCCClient.&quot;</span><span class="p">)</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;api_key&quot;</span><span class="p">:</span> <span class="n">api_key</span><span class="p">,</span>
-                <span class="s2">&quot;secret_key&quot;</span><span class="p">:</span> <span class="n">secret_key</span><span class="p">,</span>
-                <span class="s2">&quot;cloud&quot;</span><span class="p">:</span> <span class="n">cloud</span><span class="p">,</span>
-                <span class="s2">&quot;userAgent&quot;</span><span class="p">:</span> <span class="n">custom_user_agent</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="n">LegacyZCCClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zia&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">cloud</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing required credentials for LegacyZIAClient.&quot;</span><span class="p">)</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
-                <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span>
-                <span class="s2">&quot;api_key&quot;</span><span class="p">:</span> <span class="n">api_key</span><span class="p">,</span>
-                <span class="s2">&quot;cloud&quot;</span><span class="p">:</span> <span class="n">cloud</span><span class="p">,</span>
-                <span class="s2">&quot;userAgent&quot;</span><span class="p">:</span> <span class="n">custom_user_agent</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="n">LegacyZIAClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;ztw&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">api_key</span><span class="p">,</span> <span class="n">cloud</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing required credentials for LegacyZTWClient.&quot;</span><span class="p">)</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
-                <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span>
-                <span class="s2">&quot;api_key&quot;</span><span class="p">:</span> <span class="n">api_key</span><span class="p">,</span>
-                <span class="s2">&quot;cloud&quot;</span><span class="p">:</span> <span class="n">cloud</span><span class="p">,</span>
-                <span class="s2">&quot;userAgent&quot;</span><span class="p">:</span> <span class="n">custom_user_agent</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="n">LegacyZTWClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zdx&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">key_id</span><span class="p">,</span> <span class="n">key_secret</span><span class="p">,</span> <span class="n">cloud</span><span class="p">]):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing required credentials for LegacyZDXClient.&quot;</span><span class="p">)</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;key_id&quot;</span><span class="p">:</span> <span class="n">key_id</span><span class="p">,</span>
-                <span class="s2">&quot;key_secret&quot;</span><span class="p">:</span> <span class="n">key_secret</span><span class="p">,</span>
-                <span class="s2">&quot;cloud&quot;</span><span class="p">:</span> <span class="n">cloud</span><span class="p">,</span>
-                <span class="s2">&quot;userAgent&quot;</span><span class="p">:</span> <span class="n">custom_user_agent</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="n">LegacyZDXClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported legacy service: </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Default: OneAPI client</span>
-    <span class="c1"># ✅ Check for required OneAPI credentials</span>
-    <span class="c1"># ZSCALER_CUSTOMER_ID is only required for ZPA service</span>
     <span class="n">auth_fields</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;ZSCALER_CLIENT_ID&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
-        <span class="s2">&quot;ZSCALER_CLIENT_SECRET&quot;</span><span class="p">:</span> <span class="n">client_secret</span><span class="p">,</span>
         <span class="s2">&quot;ZSCALER_VANITY_DOMAIN&quot;</span><span class="p">:</span> <span class="n">vanity_domain</span><span class="p">,</span>
     <span class="p">}</span>
-
-    <span class="c1"># Add customer_id requirement only for ZPA</span>
     <span class="k">if</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">&quot;zpa&quot;</span><span class="p">:</span>
         <span class="n">auth_fields</span><span class="p">[</span><span class="s2">&quot;ZSCALER_CUSTOMER_ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">customer_id</span>
 
-    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">auth_fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">value</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">())]</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">auth_fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">value</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">())]</span>
     <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Zscaler SDK failed to initialize due to missing configuration values: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">. &quot;</span>
-            <span class="s2">&quot;Please ensure the MCP container has these values set in the environment or .env file.&quot;</span>
+            <span class="s2">&quot;Zscaler SDK failed to initialize due to missing OneAPI credentials: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">. Set them in the environment or .env file.&quot;</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">client_secret</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">private_key</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide either client_secret or private_key for OneAPI client.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;You must provide either ZSCALER_CLIENT_SECRET or ZSCALER_PRIVATE_KEY &quot;</span>
+            <span class="s2">&quot;for the OneAPI client.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">custom_user_agent</span> <span class="o">=</span> <span class="n">get_combined_user_agent</span><span class="p">(</span><span class="n">user_agent_comment</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;[client] OneAPI client init (service=</span><span class="si">%s</span><span class="s2">, ua=</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">custom_user_agent</span><span class="p">)</span>
 
     <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;clientId&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
         <span class="s2">&quot;vanityDomain&quot;</span><span class="p">:</span> <span class="n">vanity_domain</span><span class="p">,</span>
         <span class="s2">&quot;userAgent&quot;</span><span class="p">:</span> <span class="n">custom_user_agent</span><span class="p">,</span>
     <span class="p">}</span>
-
-    <span class="c1"># Only include customerId if provided (required only for ZPA)</span>
     <span class="k">if</span> <span class="n">customer_id</span> <span class="ow">and</span> <span class="n">customer_id</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
         <span class="n">config</span><span class="p">[</span><span class="s2">&quot;customerId&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">customer_id</span>
     <span class="k">if</span> <span class="n">cloud</span><span class="p">:</span>

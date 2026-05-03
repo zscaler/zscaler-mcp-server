@@ -22,7 +22,6 @@ def zpa_list_provisioning_keys(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA provisioning keys by type.
@@ -33,7 +32,7 @@ def zpa_list_provisioning_keys(
     if key_type not in VALID_TYPES:
         raise ValueError(f"Invalid key_type '{key_type}'. Must be 'connector' or 'service_edge'.")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.provisioning
 
     qp = query_params or {}
@@ -51,7 +50,6 @@ def zpa_get_provisioning_key(
     key_id: Annotated[str, Field(description="Provisioning key ID.")],
     key_type: Annotated[str, Field(description="Type of key: 'connector' or 'service_edge'.")],
     query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA provisioning key by ID and type."""
@@ -61,7 +59,7 @@ def zpa_get_provisioning_key(
     if not key_id:
         raise ValueError("key_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.provisioning
 
     result, _, err = api.get_provisioning_key(
@@ -94,7 +92,6 @@ def zpa_create_provisioning_key(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA provisioning key."""
@@ -106,7 +103,7 @@ def zpa_create_provisioning_key(
     if key_type == "connector" and not enrollment_cert_id:
         raise ValueError("enrollment_cert_id is required for 'connector' key_type")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.provisioning
 
     payload = {
@@ -145,7 +142,6 @@ def zpa_update_provisioning_key(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA provisioning key."""
@@ -155,7 +151,7 @@ def zpa_update_provisioning_key(
     if not key_id:
         raise ValueError("key_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.provisioning
 
     update_data = {
@@ -181,7 +177,6 @@ def zpa_delete_provisioning_key(
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
     query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -201,7 +196,7 @@ def zpa_delete_provisioning_key(
     if not key_id:
         raise ValueError("key_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.provisioning
 
     # Check if the key exists before attempting deletion

@@ -20,14 +20,13 @@ def zia_list_locations(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict[str, Any]]:
     """List all ZIA locations with optional filtering.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     locations_api = client.zia.locations
 
     result, _, err = locations_api.list_locations(query_params=query_params or {})
@@ -39,19 +38,108 @@ def zia_list_locations(
 
 def zia_get_location(
     location_id: Annotated[int, Field(description="Location ID.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict[str, Any]:
     """Get a specific ZIA location by ID."""
     if not location_id:
         raise ValueError("location_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     locations_api = client.zia.locations
 
     result, _, err = locations_api.get_location(location_id)
     if err:
         raise Exception(f"Failed to get location {location_id}: {err}")
+    return result.as_dict()
+
+
+def zia_list_location_groups(
+    search: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring search across location group attributes "
+                "(forwarded to ZIA's ``search`` query parameter)."
+            )
+        ),
+    ] = None,
+    name: Annotated[
+        Optional[str],
+        Field(description="Filter by exact location group name (forwarded to ZIA's ``name`` query parameter)."),
+    ] = None,
+    group_type: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Filter by group type. ZIA supports ``Static`` (manually-curated "
+                "membership) and ``Dynamic`` (membership driven by location attributes)."
+            )
+        ),
+    ] = None,
+    location_id: Annotated[
+        Optional[int],
+        Field(description="Return only location groups that include this location ID."),
+    ] = None,
+    page: Annotated[Optional[int], Field(description="Page offset for pagination.")] = None,
+    page_size: Annotated[
+        Optional[int],
+        Field(description="Page size. Default 100; maximum 1000."),
+    ] = None,
+    query: Annotated[
+        Optional[str],
+        Field(description="JMESPath expression for client-side filtering/projection."),
+    ] = None,
+    service: Annotated[str, Field(description="The service to use.")] = "zia",
+) -> Any:
+    """List ZIA location groups, used as the ``location_groups`` operand on rule resources.
+
+    Location groups are referenced by ID on every ZIA rule resource that
+    accepts a ``location_groups`` field (Cloud Firewall, DNS, IPS, URL
+    Filtering, SSL Inspection, Web DLP, File Type Control, Sandbox,
+    Cloud App Control). The ZIA API does not expose a create/update/delete
+    operation for location groups via the public endpoint — this tool is
+    read-only.
+
+    Supports JMESPath client-side filtering via the ``query`` parameter.
+    """
+    query_params: Dict[str, Any] = {}
+    if search is not None:
+        query_params["search"] = search
+    if name is not None:
+        query_params["name"] = name
+    if group_type is not None:
+        query_params["group_type"] = group_type
+    if location_id is not None:
+        query_params["location_id"] = location_id
+    if page is not None:
+        query_params["page"] = page
+    if page_size is not None:
+        query_params["page_size"] = page_size
+
+    client = get_zscaler_client(service=service)
+    locations_api = client.zia.locations
+
+    result, _, err = locations_api.list_location_groups(query_params=query_params or None)
+    if err:
+        raise Exception(f"Failed to list location groups: {err}")
+    results = [grp.as_dict() for grp in result or []]
+    return apply_jmespath(results, query)
+
+
+def zia_get_location_group(
+    group_id: Annotated[int, Field(description="Location group ID.")],
+    service: Annotated[str, Field(description="The service to use.")] = "zia",
+) -> Dict[str, Any]:
+    """Get a specific ZIA location group by ID."""
+    if not group_id:
+        raise ValueError("group_id is required")
+
+    client = get_zscaler_client(service=service)
+    locations_api = client.zia.locations
+
+    result, _, err = locations_api.get_location_group(group_id)
+    if err:
+        raise Exception(f"Failed to get location group {group_id}: {err}")
     return result.as_dict()
 
 
@@ -65,7 +153,6 @@ def zia_create_location(
         Union[Dict[str, Any], str],
         Field(description="Location configuration as dictionary or JSON string (required)."),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict[str, Any]:
     """
@@ -102,7 +189,7 @@ def zia_create_location(
             "If neither is provided, you may want to create a static IP using the `zia_create_static_ip` tool."
         )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     locations_api = client.zia.locations
 
     created, _, err = locations_api.add_location(**location)
@@ -119,7 +206,6 @@ def zia_update_location(
             description="Updated location configuration as dictionary or JSON string (required)."
         ),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict[str, Any]:
     """Update an existing ZIA location."""
@@ -132,7 +218,7 @@ def zia_update_location(
         except Exception as e:
             raise ValueError(f"Invalid JSON for location: {e}")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     locations_api = client.zia.locations
 
     updated, _, err = locations_api.update_location(location_id, **location)
@@ -143,7 +229,6 @@ def zia_update_location(
 
 def zia_delete_location(
     location_id: Annotated[int, Field(description="Location ID (required).")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -164,7 +249,7 @@ def zia_delete_location(
     if not location_id:
         raise ValueError("location_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     locations_api = client.zia.locations
 
     _, _, err = locations_api.delete_location(location_id)

@@ -108,11 +108,28 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
 
         return normalized_conditions
 
-    # ✅ Step 3: Convert API v1-style response (dicts)
+    # ✅ Step 3: Convert v2 dict-shaped conditions to SDK tuple format.
+    #
+    # The SDK's ``policies._create_conditions_v2`` accepts the simplified
+    # tuple shapes documented in the SDK example
+    # (``zscaler-sdk-python/local_dev/.../access_rule_v2.py``):
+    #
+    #   - ``(object_type, [<id>, ...])`` for ID-based types (APP, APP_GROUP,
+    #     CLIENT_TYPE, CONSOLE, LOCATION, MACHINE_GRP, USER_PORTAL,
+    #     CHROME_POSTURE_PROFILE).
+    #   - ``(object_type, [(lhs, rhs), ...])`` or
+    #     ``(operator, (object_type, [(lhs, rhs), ...]))`` for attribute-based
+    #     types (POSTURE, TRUSTED_NETWORK, COUNTRY_CODE, PLATFORM,
+    #     RISK_FACTOR_TYPE, SAML, SCIM, SCIM_GROUP).
+    #   - ``(chrome_enterprise, attr, value)`` — flat 3-tuple, scalar lhs/rhs,
+    #     no operator wrapper. CHROME_ENTERPRISE is the only type that breaks
+    #     the otherwise-uniform list-of-tuples pattern.
     if isinstance(conditions, list) and all(isinstance(x, dict) for x in conditions):
-        converted = []
+        converted: List[Union[Tuple, List]] = []
         for cond in conditions:
-            operator = cond.get("operator", "AND").upper()
+            # SDK defaults missing operators to OR; align with that to avoid
+            # silently grouping operands under an unintended AND.
+            operator = cond.get("operator", "OR").upper()
             operands = cond.get("operands", [])
 
             for operand in operands:
@@ -125,20 +142,30 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
 
                 if values:
                     converted.append((obj_type, values if isinstance(values, list) else [values]))
+                    continue
 
-                elif entry_values:
+                if entry_values:
                     if isinstance(entry_values, dict):
                         entry_values = [entry_values]
                     flattened = [
                         (ev["lhs"], ev["rhs"]) for ev in entry_values if "lhs" in ev and "rhs" in ev
                     ]
-                    (
-                        converted.append((obj_type, flattened))
-                        if obj_type == "platform"
-                        else converted.append((operator, (obj_type, flattened)))
-                    )
 
-                elif "lhs" in operand and "rhs" in operand:
+                    if obj_type == "chrome_enterprise":
+                        # SDK expects ``(chrome_enterprise, attr, value)`` —
+                        # one flat 3-tuple per attribute. Emit one per entry
+                        # to handle multi-attribute inputs correctly.
+                        for lhs, rhs in flattened:
+                            converted.append((obj_type, lhs, rhs))
+                    elif obj_type == "platform":
+                        # PLATFORM is the only entry-shaped type the SDK
+                        # documents as bare (no operator wrapper).
+                        converted.append((obj_type, flattened))
+                    else:
+                        converted.append((operator, (obj_type, flattened)))
+                    continue
+
+                if "lhs" in operand and "rhs" in operand:
                     converted.append((obj_type, operand["lhs"], operand["rhs"]))
 
         return converted
@@ -146,69 +173,205 @@ def convert_v2_to_sdk_format(conditions: Any) -> List[Union[Tuple, List]]:
     raise ValueError(f"Unsupported conditions format: {type(conditions)}")
 
 
+# Object types whose v1 operands carry the resolved ID in `rhs` (with `lhs="id"`)
+# and which should be emitted in v2 as ``{"object_type": X, "values": [<ids>]}``.
+# Mirrors ``ConvertV1ResponseToV2Request`` in the Terraform ZPA provider
+# (terraform-provider-zpa/zpa/common.go).
+_V1_TO_V2_VALUE_TYPES = {
+    "APP",
+    "APP_GROUP",
+    "CONSOLE",
+    "CHROME_POSTURE_PROFILE",
+    "MACHINE_GRP",
+    "LOCATION",
+    "BRANCH_CONNECTOR_GROUP",
+    "EDGE_CONNECTOR_GROUP",
+    "CLIENT_TYPE",
+    "USER_PORTAL",
+    "PRIVILEGE_PORTAL",
+}
+
+# Object types whose v1 operands carry semantic ``lhs``/``rhs`` pairs and
+# which should be emitted in v2 as ``{"object_type": X, "entry_values": [{"lhs":..,"rhs":..}]}``.
+_V1_TO_V2_ENTRY_TYPES = {
+    "PLATFORM",
+    "POSTURE",
+    "TRUSTED_NETWORK",
+    "SAML",
+    "SCIM",
+    "SCIM_GROUP",
+    "COUNTRY_CODE",
+    "RISK_FACTOR_TYPE",
+    "CHROME_ENTERPRISE",
+}
+
+
 def convert_v1_to_v2_response(conditions: List[Dict]) -> List[Dict]:
-    """
-    Convert the API's v1 response format to a standardized v2 format
-    that maintains operator grouping and simplifies the structure.
+    """Normalize a ZPA Policy Access v1 GET/POST response into v2 request shape.
+
+    The ZPA Policy Access API is structurally asymmetric: write operations
+    accept a v2-shaped body (``operands`` carry ``values: [...]`` for ID-based
+    types and ``entry_values: [{lhs, rhs}, ...]`` for attribute-based types),
+    but read operations return a v1-shaped body where every operand is a flat
+    ``{"objectType": ..., "lhs": ..., "rhs": ...}`` dict and operands of the
+    same logical block are split into multiple sibling operand entries inside
+    the same condition.
+
+    This function reshapes the v1 response back into the v2 shape so callers
+    can round-trip a created/fetched rule through update without re-deriving
+    the condition payload by hand. The algorithm mirrors
+    ``ConvertV1ResponseToV2Request`` in the Terraform ZPA provider
+    (``terraform-provider-zpa/zpa/common.go``). For each input v1 condition it
+    preserves the original ``operator``, groups operands by ``objectType`` into
+    a VALUE bucket (ID-typed objects: APP, APP_GROUP, MACHINE_GRP, LOCATION,
+    CLIENT_TYPE, USER_PORTAL, PRIVILEGE_PORTAL, CONSOLE, CHROME_POSTURE_PROFILE,
+    BRANCH_CONNECTOR_GROUP, EDGE_CONNECTOR_GROUP) and an ENTRY bucket
+    (attribute-typed objects: PLATFORM, POSTURE, TRUSTED_NETWORK, SAML, SCIM,
+    SCIM_GROUP, COUNTRY_CODE, RISK_FACTOR_TYPE, CHROME_ENTERPRISE), then emits
+    one v2 operand per ``(objectType, bucket)``. Aggregation never crosses
+    condition boundaries — preserving them is critical because the AND/OR
+    semantics depend on it (two separate POSTURE conditions = AND, two operands
+    within one POSTURE condition = OR). Object types and entry-value pairs are
+    sorted for stable output.
+
+    Args:
+        conditions: A list of v1-shaped condition dicts as returned by ZPA Policy
+            Access GET/POST endpoints. Each condition has an ``operator`` and a
+            flat list of ``operands``.
+
+    Returns:
+        A list of v2-shaped condition dicts, one per input v1 condition. Each
+        emitted condition has the form
+        ``{"operator": "AND"|"OR", "operands": [{"object_type": "APP",
+        "values": [...]}, {"object_type": "POSTURE", "entry_values":
+        [{"lhs": "...", "rhs": "true"}, ...]}]}``. Empty input returns an empty
+        list.
     """
     if not conditions:
         return []
 
-    VALUE_TYPES = {"APP", "APP_GROUP", "CLIENT_TYPE", "MACHINE_GRP"}
-    ENTRY_TYPES = {
-        "COUNTRY_CODE",
-        "POSTURE",
-        "TRUSTED_NETWORK",
-        "SAML",
-        "SCIM",
-        "SCIM_GROUP",
-        "PLATFORM",
-    }
+    v2_conditions: List[Dict] = []
 
-    grouped_values = defaultdict(list)
-    grouped_entries = defaultdict(list)
-    v2_conditions = []
-
+    # Iteration is intentionally per-condition: aggregation MUST NOT cross
+    # condition boundaries (see docstring re. AND vs OR semantics).
     for condition in conditions:
         cond_op = (condition.get("operator") or "OR").upper()
+        operands = condition.get("operands") or []
 
-        for operand in condition.get("operands", []):
-            obj_type = (operand.get("objectType") or operand.get("object_type") or "").upper()
+        # Aggregate operands of the same objectType WITHIN this condition only.
+        values_by_type: Dict[str, List[str]] = defaultdict(list)
+        entries_by_type: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+
+        for operand in operands:
+            obj_type = (
+                operand.get("objectType") or operand.get("object_type") or ""
+            ).upper()
             if not obj_type:
                 continue
 
-            if obj_type in VALUE_TYPES:
-                rhs = str(operand.get("rhs", ""))
-                if rhs:
-                    grouped_values[(cond_op, obj_type)].append(rhs)
+            if obj_type in _V1_TO_V2_VALUE_TYPES:
+                rhs = operand.get("rhs")
+                if rhs is not None and str(rhs) != "":
+                    values_by_type[obj_type].append(str(rhs))
 
-            elif obj_type in ENTRY_TYPES:
-                lhs = str(operand.get("lhs", ""))
-                rhs = str(operand.get("rhs", ""))
-                if lhs and rhs:
-                    grouped_entries[(cond_op, obj_type)].append({"lhs": lhs, "rhs": rhs})
+            elif obj_type in _V1_TO_V2_ENTRY_TYPES:
+                lhs = operand.get("lhs")
+                rhs = operand.get("rhs")
+                if lhs is not None and rhs is not None:
+                    entries_by_type[obj_type].append(
+                        {"lhs": str(lhs), "rhs": str(rhs)}
+                    )
+            # Unknown object types are ignored (matches Terraform behavior:
+            # the switch has no default branch).
 
-    # Group value-based conditions
-    for (op, obj_type), values in grouped_values.items():
-        v2_conditions.append(
-            {
-                "operator": op,
-                "operands": [{"object_type": obj_type, "values": sorted(list(set(values)))}],
-            }
-        )
+        new_operands: List[Dict] = []
 
-    # Group entry-value-based conditions
-    for (op, obj_type), entries in grouped_entries.items():
-        v2_conditions.append(
-            {
-                "operands": [{"object_type": obj_type, "entry_values": entries}],
-                **(
-                    {"operator": op} if obj_type != "PLATFORM" else {}
-                ),  # ✅ no operator for platform
-            }
-        )
+        # Emit value-bucket operands in deterministic order.
+        for obj_type in sorted(values_by_type.keys()):
+            # De-dupe while preserving order, then sort for stable output.
+            unique_sorted = sorted(set(values_by_type[obj_type]))
+            new_operands.append({"object_type": obj_type, "values": unique_sorted})
+
+        # Emit entry-bucket operands in deterministic order.
+        for obj_type in sorted(entries_by_type.keys()):
+            entries = sorted(
+                entries_by_type[obj_type],
+                key=lambda e: (e["lhs"], e["rhs"]),
+            )
+            new_operands.append({"object_type": obj_type, "entry_values": entries})
+
+        if not new_operands:
+            # Drop empty conditions rather than emit an operator with no operands.
+            continue
+
+        v2_conditions.append({"operator": cond_op, "operands": new_operands})
 
     return v2_conditions
+
+
+def normalize_v2_rule_response(sdk_object: Any, raw_response: Any) -> Dict:
+    """Stitch a v2 policy-rule write response into a complete, correct dict.
+
+    Background — the SDK has a known asymmetry in its policy-rule models:
+
+    - The **V1 Operand** model (used by ``policies.get_rule(...)``) reads
+      ``objectType``, ``lhs``, and ``rhs`` from the API response. It
+      preserves the data the v1-shaped API actually returns.
+
+    - The **V2 Operand** model (used by ``policies.add_*_rule_v2`` and
+      ``policies.update_*_rule_v2``) reads only ``objectType``, ``values``,
+      and ``entryValues`` — it does **not** read ``lhs`` / ``rhs``. But the
+      v2 add/update endpoints receive a **v1-shaped response** from the API
+      (operands with flat ``lhs``/``rhs``), which the V2 model then drops on
+      deserialization. Result: ``created.as_dict()["conditions"]`` returns
+      operands with empty ``values`` and ``entry_values`` arrays even when
+      the rule was created perfectly.
+
+    The fix is to bypass the lossy V2 model: read the raw API response body
+    (``response.get_body()`` returns the JSON-decoded dict, untouched by any
+    SDK model) and run its ``conditions`` through ``convert_v1_to_v2_response``.
+    The rest of the rule (id, name, action, etc.) comes from the SDK's
+    ``as_dict()`` because the top-level fields ARE preserved correctly there.
+
+    Parameters
+    ----------
+    sdk_object
+        The first element of the SDK tuple — e.g. ``created`` from
+        ``created, response, err = api.add_access_rule_v2(...)``. Provides
+        the snake_case top-level field set the agent expects.
+    raw_response
+        The second element of the SDK tuple — the ``ZscalerAPIResponse``
+        (or ``None`` if the call failed before a body was received). Used
+        only to recover the v1-shaped ``conditions`` block that the SDK's
+        V2 model dropped.
+
+    Returns
+    -------
+    The SDK's ``as_dict()`` with ``conditions`` rebuilt from the raw response.
+    Falls back gracefully (returns the SDK dict unchanged) when the raw
+    response is missing, has no body, or carries no conditions — so callers
+    do not have to check.
+    """
+    rule_data: Dict = sdk_object.as_dict() if sdk_object is not None else {}
+
+    if raw_response is None:
+        return rule_data
+
+    body = None
+    try:
+        body = raw_response.get_body()
+    except AttributeError:
+        return rule_data
+
+    if not isinstance(body, dict):
+        return rule_data
+
+    raw_conditions = body.get("conditions")
+    if raw_conditions is None:
+        return rule_data
+
+    rule_data["conditions"] = convert_v1_to_v2_response(raw_conditions)
+    return rule_data
 
 
 def validate_and_convert_country_code(country_input: str) -> str:

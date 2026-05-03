@@ -243,7 +243,7 @@ Get details for a specific lookalike domain by domain name.
 Authentication
 --------------
 
-EASM tools support OneAPI authentication only (legacy authentication is not supported):
+EASM tools authenticate through OneAPI:
 
 **OneAPI Authentication:**
 

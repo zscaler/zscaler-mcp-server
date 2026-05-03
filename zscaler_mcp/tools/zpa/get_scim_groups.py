@@ -14,7 +14,6 @@ def scim_group_manager(
     query_params: Annotated[
         dict, Field(description="Optional filters like search, page, page_size, etc.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[dict, List[dict], str]:
     """
@@ -31,7 +30,7 @@ def scim_group_manager(
     Returns:
         Union[dict, list[dict], str]: SCIM group(s) data.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     idp_api = client.zpa.idp
     scim_api = client.zpa.scim_groups

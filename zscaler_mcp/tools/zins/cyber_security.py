@@ -153,9 +153,7 @@ def zins_get_cyber_incidents(
     validate_categorize_by(categorize_by)
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.cyber_security.get_incidents(
         start_time=resolved_start,
@@ -264,9 +262,7 @@ def zins_get_cyber_incidents_by_location(
     validate_categorize_by_with_id(categorize_by)
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.cyber_security.get_incidents_by_location(
         start_time=resolved_start,
@@ -365,9 +361,7 @@ def zins_get_cyber_incidents_daily(
     # Validate inputs
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     # Use TIME categorization to get daily data
     entries, response, err = client.zins.cyber_security.get_incidents(
@@ -467,9 +461,7 @@ def zins_get_cyber_incidents_by_threat_and_app(
     # Validate inputs
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     # Use both THREAT_CATEGORY_ID and APP_ID for correlation
     entries, response, err = client.zins.cyber_security.get_incidents(

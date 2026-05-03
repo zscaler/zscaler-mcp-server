@@ -77,7 +77,6 @@ def zdx_list_device_deep_traces(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -91,7 +90,6 @@ def zdx_list_device_deep_traces(
 
     Args:
         device_id: The unique ID for the ZDX device (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -104,7 +102,7 @@ def zdx_list_device_deep_traces(
         Get all deep traces for a device:
         >>> traces = zdx_list_device_deep_traces(device_id="device123")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     result, _, err = client.zdx.troubleshooting.list_deeptraces(device_id)
     if err:
@@ -126,7 +124,6 @@ def zdx_list_device_deep_traces(
 def zdx_get_device_deep_trace(
     device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
     trace_id: Annotated[str, Field(description="The unique ID for the deeptrace.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -140,7 +137,6 @@ def zdx_get_device_deep_trace(
     Args:
         device_id: The unique ID for the ZDX device (required).
         trace_id: The unique ID for the deeptrace (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -156,7 +152,7 @@ def zdx_get_device_deep_trace(
         ...     trace_id="trace456"
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     result, _, err = client.zdx.troubleshooting.get_deeptrace(device_id, trace_id)
     if err:

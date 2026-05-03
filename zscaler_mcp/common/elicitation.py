@@ -41,7 +41,7 @@ def _canonical_payload(tool_name: str, params: Dict[str, Any]) -> str:
     clean = {
         k: v
         for k, v in params.items()
-        if k not in ("confirmed", "confirmation_token", "use_legacy", "service", "kwargs")
+        if k not in ("confirmed", "confirmation_token", "service", "kwargs")
         and not k.startswith("_")
     }
     return tool_name + ":" + json.dumps(clean, sort_keys=True, separators=(",", ":"))
@@ -116,7 +116,7 @@ def extract_confirmed_from_kwargs(kwargs_value: Any) -> Optional[str]:
         if token:
             return str(token)
         if data.get("confirmed") or data.get("confirm"):
-            return "__legacy_confirmed__"
+            return "__deprecated_bool_confirmed__"
 
     return None
 
@@ -135,7 +135,7 @@ def generate_confirmation_message(tool_name: str, params: Dict[str, Any], token:
     display_params = {
         k: v
         for k, v in params.items()
-        if k not in ("confirmed", "confirmation_token", "use_legacy", "service")
+        if k not in ("confirmed", "confirmation_token", "service")
         and not k.startswith("_")
     }
 
@@ -212,8 +212,8 @@ def check_confirmation(tool_name: str, confirmed: Any, params: Dict[str, Any]) -
 
     Called at the start of every write tool. The ``confirmed`` argument is
     the value returned by ``extract_confirmed_from_kwargs`` — either a
-    confirmation_token string, the legacy sentinel ``"__legacy_confirmed__"``,
-    or None (no confirmation yet).
+    confirmation_token string, the deprecated-bool sentinel
+    ``"__deprecated_bool_confirmed__"``, or None (no confirmation yet).
 
     Returns a confirmation message (str) if the caller should stop and ask
     the user, or None if the operation may proceed.
@@ -229,10 +229,10 @@ def check_confirmation(tool_name: str, confirmed: Any, params: Dict[str, Any]) -
         logger.info("Confirmation required for %s", tool_name)
         return generate_confirmation_message(tool_name, params, token)
 
-    if confirmed == "__legacy_confirmed__":
+    if confirmed == "__deprecated_bool_confirmed__":
         token = _generate_token(tool_name, params)
         logger.warning(
-            "Legacy confirmed=true received for %s. "
+            "Deprecated confirmed=true received for %s. "
             "Please use confirmation_token instead. Generating new token.",
             tool_name,
         )

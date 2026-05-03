@@ -16,14 +16,13 @@ def zia_list_atp_malicious_urls(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
     """Retrieve the current malicious URL denylist from ZIA Advanced Threat Protection (ATP) policy.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     url_list, _, err = client.zia.atp_policy.get_atp_malicious_urls()
     if err:
@@ -44,7 +43,6 @@ def zia_add_atp_malicious_urls(
             description="List of malicious URLs to add to denylist. Accepts list or JSON string."
         ),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[str]:
     """Add URLs to the malicious URL denylist in ZIA ATP policy."""
@@ -61,7 +59,7 @@ def zia_add_atp_malicious_urls(
     if not processed_urls:
         raise ValueError("You must provide a list of malicious URLs to add")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     url_list, _, err = client.zia.atp_policy.add_atp_malicious_urls(processed_urls)
     if err:
@@ -76,7 +74,6 @@ def zia_delete_atp_malicious_urls(
             description="List of malicious URLs to remove from denylist. Accepts list or JSON string."
         ),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> Union[str, List[str]]:
@@ -107,7 +104,7 @@ def zia_delete_atp_malicious_urls(
     if not processed_urls:
         raise ValueError("You must provide a list of malicious URLs to delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     url_list, _, err = client.zia.atp_policy.delete_atp_malicious_urls(processed_urls)
     if err:

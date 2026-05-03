@@ -18,6 +18,13 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 
 ## Changelog
 
+## Unreleased
+
+### Breaking Changes
+
+- **Removed legacy per-service authentication.** OneAPI is now the only supported authentication mode. The `ZSCALER_USE_LEGACY` environment variable, the `use_legacy` parameter on every tool, the per-service legacy clients (`LegacyZPAClient`, `LegacyZIAClient`, `LegacyZCCClient`, `LegacyZTWClient`, `LegacyZDXClient`), and the per-service credential blocks (`ZPA_*`, `ZIA_*`, `ZCC_*`, `ZTW_*`, `ZDX_*`) have all been removed. To migrate: configure `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`), `ZSCALER_VANITY_DOMAIN`, and `ZSCALER_CUSTOMER_ID` (the last is required only when calling ZPA tools), and drop any `use_legacy=true` arguments from your MCP tool calls.
+- **Removed the `zcc_devices_csv_exporter` tool.** Tool registration was already removed in PR #38; this release deletes the tool module, unit tests, the e2e fixture, and all remaining references in documentation. Use `zcc_list_devices` for device inventory queries.
+
 ## 0.10.1 (April 11, 2026)
 
 ### Notes

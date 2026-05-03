@@ -49,7 +49,6 @@ Zscaler API Authentication
 
 2. Check that credentials are not expired
 3. Ensure the API client has the necessary scopes in the ZIdentity console
-4. For legacy auth: ``ZSCALER_USE_LEGACY=true`` must be set along with service-specific credentials
 
 **"ZSCALER_CUSTOMER_ID required"**
 
@@ -123,6 +122,36 @@ All 33 delete operations require double confirmation:
 2. Server-side confirmation via hidden ``kwargs`` parameter
 
 To skip confirmations (advanced/CI use only): Set ``ZSCALER_MCP_SKIP_CONFIRMATIONS`` with an HMAC-SHA256 token. The confirmation window is controlled by ``ZSCALER_MCP_CONFIRMATION_TTL`` (default: 300 seconds).
+
+Tool Filtering
+--------------
+
+These checks apply on every transport (``stdio``, ``sse``, ``streamable-http``).
+
+**A specific tool isn't loaded**
+
+Walk down this list in order — each item rules out one filter the server applies at startup.
+
+1. Was the service explicitly disabled? Check ``--disabled-services`` / ``ZSCALER_MCP_DISABLED_SERVICES``. A service in this list contributes zero tools.
+2. Was the tool's pattern explicitly disabled? Check ``--disabled-tools`` / ``ZSCALER_MCP_DISABLED_TOOLS``. This list supports wildcards (e.g. ``zcc_*``) and wins over every other filter.
+3. Is it a write tool with no allowlist? Write tools (``*_create_*``, ``*_update_*``, ``*_delete_*``) require both ``--enable-write-tools`` AND a matching pattern in ``--write-tools``. With write mode disabled (the default), no write tool is registered.
+4. Was the tool's toolset filtered out? If you set ``--toolsets`` (or ``ZSCALER_MCP_TOOLSETS``), only tools that belong to a listed toolset are registered. Call ``zscaler_list_toolsets`` from your client to see what's currently active and what's available.
+5. Did the OneAPI entitlement filter drop the tool's product? Look for a startup log line of the form ``entitlement filter applied: entitled services=[...], kept N toolset(s), removed M toolset(s)``. If the product (e.g. ZDX) isn't in the entitled list, every toolset for that product was filtered out. Either grant the OneAPI client the missing product entitlement in ZIdentity, or — for a quick diagnostic — restart the server with ``--no-entitlement-filter`` to confirm the filter is the cause.
+
+If the agent reports a tool that genuinely doesn't exist (typo, hallucination), ``zscaler_list_toolsets`` and ``zscaler_get_available_services`` are the right introspection tools to call. Use ``name_contains`` / ``description_contains`` on ``zscaler_list_toolsets`` to scope the search to a single area before drilling in with ``zscaler_get_toolset_tools``.
+
+**How do I see what the entitlement filter dropped?**
+
+The OneAPI entitlement filter logs one ``INFO`` line at startup with the result, for example::
+
+   entitlement filter applied: entitled services=['zia', 'zpa'], kept 12 toolset(s), removed 17 toolset(s)
+
+To see which specific toolsets were removed, compare two startup runs:
+
+1. Start the server normally and call ``zscaler_list_toolsets`` — note which toolsets show as currently enabled.
+2. Restart with ``--no-entitlement-filter`` (or ``ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true``), call ``zscaler_list_toolsets`` again — anything new is what the filter was hiding.
+
+If you see a ``WARN entitlement filter skipped (...)`` line instead, the filter never ran — the parenthesized reason tells you why (missing OneAPI credentials, the ZIdentity token endpoint was unreachable, the token didn't decode, or the token had no recognizable product entitlements). Your tool list in that case is whatever your other filters produced.
 
 Agent/Editor Issues
 --------------------
