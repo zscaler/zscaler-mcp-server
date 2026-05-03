@@ -210,17 +210,25 @@
 <li class="toctree-l2"><a class="reference internal" href="../zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -298,58 +306,85 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_auth_exempt_urls</span></code></p></td>
 <td><p>Manages the list of cookie authentication exempt URLs in ZIA</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_applications</span></code></p></td>
-<td><p>Tool for managing ZIA Shadow IT Cloud Applications</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_apps</span></code></p></td>
+<td><p>List ZIA Shadow IT cloud applications (analytics catalog with numeric IDs and friendly names)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_custom_tags</span></code></p></td>
+<td><p>List ZIA Shadow IT custom tags</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_bulk_update_shadow_it_apps</span></code></p></td>
+<td><p>Bulk update sanction state and/or custom tags on ZIA Shadow IT applications</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_policy</span></code></p></td>
+<td><p>List the ZIA policy-engine cloud-application catalog (canonical enum strings used by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, Advanced Settings)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code></p></td>
+<td><p>List the ZIA cloud-application catalog scoped to SSL Inspection rules (canonical enum strings used by <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> on SSL Inspection rules)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall_rule</span></code></p></td>
 <td><p>Manages ZIA Cloud Firewall Rules</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_geo_search</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall_dns_rule</span></code></p></td>
+<td><p>Manages ZIA Cloud Firewall DNS Rules (list/get/create/update/delete)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall_ips_rule</span></code></p></td>
+<td><p>Manages ZIA Cloud Firewall IPS Rules (list/get/create/update/delete)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_file_type_control_rule</span></code></p></td>
+<td><p>Manages ZIA File Type Control Rules (list/get/create/update/delete) plus <code class="docutils literal notranslate"><span class="pre">zia_list_file_type_categories</span></code>. Friendly cloud-application names on <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code> are auto-resolved to canonical enums.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_sandbox_rule</span></code></p></td>
+<td><p>Manages ZIA Sandbox Rules (list/get/create/update/delete). Distinct from <code class="docutils literal notranslate"><span class="pre">zia_sandbox_info</span></code> (read-only sandbox reports/quotas).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_time_interval</span></code></p></td>
+<td><p>Manages ZIA Time Intervals (list/get/create/update/delete). Reusable schedule objects (<code class="docutils literal notranslate"><span class="pre">start_time</span></code>/<code class="docutils literal notranslate"><span class="pre">end_time</span></code> in minutes from midnight; <code class="docutils literal notranslate"><span class="pre">days_of_week</span></code> accepts <code class="docutils literal notranslate"><span class="pre">EVERYDAY</span></code>, <code class="docutils literal notranslate"><span class="pre">SUN</span></code>-<code class="docutils literal notranslate"><span class="pre">SAT</span></code>) referenced by policy rules via the <code class="docutils literal notranslate"><span class="pre">time_windows</span></code> field.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_geo_search</span></code></p></td>
 <td><p>Performs geographical lookup actions using the ZIA Locations API</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_gre_range</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_gre_range</span></code></p></td>
 <td><p>Tool for discovering available GRE internal IP ranges in ZIA</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_gre_tunnels</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_gre_tunnels</span></code></p></td>
 <td><p>Tool for managing ZIA GRE Tunnels and associated static IPs</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_ip_destination_groups</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_ip_destination_groups</span></code></p></td>
 <td><p>Manages ZIA IP Destination Groups</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_ip_source_group</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_ip_source_group</span></code></p></td>
 <td><p>Performs CRUD operations on ZIA IP Source Groups</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_user_groups</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_user_groups</span></code></p></td>
 <td><p>Lists and retrieves ZIA User Groups with pagination, filtering and sorting</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_user_departments</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_user_departments</span></code></p></td>
 <td><p>Lists and retrieves ZIA User Departments with pagination, filtering and sorting</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_users</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_users</span></code></p></td>
 <td><p>Lists and retrieves ZIA Users with filtering and pagination</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_location_management</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_location_management</span></code></p></td>
 <td><p>Tool for managing ZIA Locations</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_network_app_group</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_network_app_group</span></code></p></td>
 <td><p>Manages ZIA Network Application Groups</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_rule_labels</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_rule_labels</span></code></p></td>
 <td><p>Tool for managing ZIA Rule Labels</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_sandbox_info</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_sandbox_info</span></code></p></td>
 <td><p>Tool for retrieving ZIA Sandbox information</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_static_ips</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_static_ips</span></code></p></td>
 <td><p>Tool for managing ZIA Static IP addresses</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_url_categories</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_url_categories</span></code></p></td>
 <td><p>Tool for managing ZIA URL Categories</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_vpn_credentials</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_vpn_credentials</span></code></p></td>
 <td><p>Tool for managing ZIA VPN Credentials</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zia_ssl_inspection_rules</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zia_ssl_inspection_rules</span></code></p></td>
 <td><p>Tool for managing ZIA SSL Inspection Rules</p></td>
 </tr>
 </tbody>
@@ -397,12 +432,6 @@
 <p>Tool to check or activate ZIA configuration changes.</p>
 <p><strong>Parameters:</strong></p>
 <dl class="field-list simple">
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zia”)</p>
 </dd>
@@ -441,12 +470,6 @@
 <dt class="field-even">type search<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[str]</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zia”)</p>
 </dd>
@@ -478,12 +501,6 @@
 </dd>
 <dt class="field-even">type category_id<span class="colon">:</span></dt>
 <dd class="field-even"><p>str, optional</p>
-</dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
 </dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zia”)</p>
@@ -517,12 +534,6 @@
 <dt class="field-even">type rule_id<span class="colon">:</span></dt>
 <dd class="field-even"><p>str, optional</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zia”)</p>
 </dd>
@@ -543,12 +554,6 @@
 <p>Tool for retrieving ZIA Sandbox information.</p>
 <p><strong>Parameters:</strong></p>
 <dl class="field-list simple">
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “zia”)</p>
 </dd>
@@ -563,32 +568,61 @@
 <blockquote>
 <div><p>sandbox_info = zia_sandbox_info()</p>
 </div></blockquote>
+</section>
+<section id="two-cloud-application-catalogs">
+<h3>Two Cloud-Application Catalogs<a class="headerlink" href="#two-cloud-application-catalogs" title="Link to this heading">¶</a></h3>
+<p>ZIA exposes the cloud-application catalog through two distinct API surfaces.
+Picking the right tool matters — the catalogs are not interchangeable.</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 35.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Catalog</p></th>
+<th class="head"><p>Tools</p></th>
+<th class="head"><p>Identifier returned</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Shadow IT analytics</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_apps</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_list_shadow_it_custom_tags</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_bulk_update_shadow_it_apps</span></code></p></td>
+<td><p>Numeric <code class="docutils literal notranslate"><span class="pre">id</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">655377</span></code>), friendly <code class="docutils literal notranslate"><span class="pre">name</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Sharepoint</span> <span class="pre">Online</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Policy-engine catalog</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_policy</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code></p></td>
+<td><p>Canonical <code class="docutils literal notranslate"><span class="pre">app</span></code> enum (e.g. <code class="docutils literal notranslate"><span class="pre">SHAREPOINT_ONLINE</span></code>), display <code class="docutils literal notranslate"><span class="pre">app_name</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Policy resources — SSL Inspection, Web DLP, Cloud App Control, File Type
+Control, Bandwidth Classes, Advanced Settings — accept <strong>only</strong> the canonical
+<code class="docutils literal notranslate"><span class="pre">app</span></code> enum from the policy-engine catalog in their <code class="docutils literal notranslate"><span class="pre">cloud_applications</span></code>
+field. Passing a Shadow IT numeric ID or a friendly display name causes ZIA
+to silently coerce the value to <code class="docutils literal notranslate"><span class="pre">NONE</span></code>.</p>
+<p>The SSL Inspection create/update tools (<code class="docutils literal notranslate"><span class="pre">zia_create_ssl_inspection_rule</span></code>,
+<code class="docutils literal notranslate"><span class="pre">zia_update_ssl_inspection_rule</span></code>) include an in-process resolver that
+auto-translates friendly names to canonical enums via
+<code class="docutils literal notranslate"><span class="pre">zia_list_cloud_app_ssl_policy</span></code> before sending the API call. The resolution
+is cached for 5 minutes and surfaced back to the caller in a
+<code class="docutils literal notranslate"><span class="pre">_cloud_applications_resolution</span></code> field on the response. Set
+<code class="docutils literal notranslate"><span class="pre">resolve_cloud_apps=False</span></code> to opt out.</p>
 <p>For complete documentation of all ZIA tools, see the individual tool pages.</p>
 </section>
 </section>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
-<p>ZIA tools support both OneAPI and Legacy authentication methods:</p>
-<p><strong>OneAPI Authentication:</strong>
-- Uses OAuth2 client credentials
-- Requires the following environment variables:</p>
+<p>ZIA tools authenticate through <strong>OneAPI</strong> (OAuth2 client credentials).
+Required environment variables:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></li>
-</ul>
-</div></blockquote>
-<p><strong>Legacy Authentication:</strong>
-- Uses username, password, and API key
-- Requires the following environment variables:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZIA_USERNAME</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZIA_PASSWORD</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZIA_API_KEY</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZIA_CLOUD</span></code></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -680,6 +714,7 @@
 <li><a class="reference internal" href="#zia-url-categories">zia_url_categories</a></li>
 <li><a class="reference internal" href="#zia-cloud-firewall-rule">zia_cloud_firewall_rule</a></li>
 <li><a class="reference internal" href="#zia-sandbox-info">zia_sandbox_info</a></li>
+<li><a class="reference internal" href="#two-cloud-application-catalogs">Two Cloud-Application Catalogs</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#authentication">Authentication</a></li>
@@ -696,7 +731,7 @@
       
     </aside>
   </div>
-</div><script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>

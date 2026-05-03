@@ -210,17 +210,25 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -274,14 +282,61 @@
           <section id="client-api">
 <h1>Client API<a class="headerlink" href="#client-api" title="Link to this heading">¶</a></h1>
 <p>The Zscaler client wrapper and authentication handling.</p>
-<dl class="py function" id="module-zscaler_mcp.client">
+<p id="module-zscaler_mcp.client">Zscaler SDK client factory (OneAPI).</p>
+<p>All Zscaler products are accessed through the unified OneAPI client
+(<cite>zscaler.ZscalerClient</cite>), authenticated against ZIdentity using a single set
+of credentials:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code> (or <code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code> for JWT auth)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code> (required when calling ZPA tools)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code> (optional; defaults to production)</p></li>
+</ul>
+</div></blockquote>
+<dl class="py function">
 <dt class="sig sig-object py" id="zscaler_mcp.client.get_zscaler_client">
-<span class="sig-name descname"><span class="pre">get_zscaler_client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_secret</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">customer_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vanity_domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">private_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_secret</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secret_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cloud</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_agent_comment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/client.html#get_zscaler_client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.client.get_zscaler_client" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">get_zscaler_client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_secret</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">customer_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vanity_domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">private_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cloud</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_agent_comment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/client.html#get_zscaler_client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.client.get_zscaler_client" title="Link to this definition">¶</a></dt>
+<dd><p>Return an authenticated OneAPI ZscalerClient.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client_id</strong> – OAuth client ID. Falls back to <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>.</p></li>
+<li><p><strong>client_secret</strong> – OAuth client secret. Falls back to <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>.</p></li>
+<li><p><strong>customer_id</strong> – Zscaler customer/tenant ID. Falls back to <code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code>.
+Required only when <code class="docutils literal notranslate"><span class="pre">service=&quot;zpa&quot;</span></code>.</p></li>
+<li><p><strong>vanity_domain</strong> – ZIdentity vanity domain. Falls back to <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>.</p></li>
+<li><p><strong>private_key</strong> – OAuth private key for JWT-based auth (used in place of
+<code class="docutils literal notranslate"><span class="pre">client_secret</span></code>). Falls back to <code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code>.</p></li>
+<li><p><strong>cloud</strong> – Zscaler cloud environment override (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;BETA&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;zscalertwo&quot;</span></code>). Falls back to <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code>.</p></li>
+<li><p><strong>service</strong> – Optional service hint used by tool modules to signal which
+Zscaler product they are calling (<code class="docutils literal notranslate"><span class="pre">&quot;zpa&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;zia&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;zdx&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;zcc&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;ztw&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;zid&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;zeasm&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;zins&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;zms&quot;</span></code>). The OneAPI client itself is universal; this hint is
+only used to enforce the ZPA-specific <code class="docutils literal notranslate"><span class="pre">customer_id</span></code> requirement.</p></li>
+<li><p><strong>user_agent_comment</strong> – Optional suffix appended to the User-Agent header
+(e.g. <code class="docutils literal notranslate"><span class="pre">&quot;Claude</span> <span class="pre">Desktop</span> <span class="pre">1.2024.10.23&quot;</span></code>). Falls back to
+<code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_USER_AGENT_COMMENT</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An authenticated <code class="xref py py-class docutils literal notranslate"><span class="pre">zscaler.ZscalerClient</span></code> instance.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – when one or more required OneAPI credentials are missing.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – when neither <code class="docutils literal notranslate"><span class="pre">client_secret</span></code> nor <code class="docutils literal notranslate"><span class="pre">private_key</span></code> is provided.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <section id="client-configuration">
 <h2>Client Configuration<a class="headerlink" href="#client-configuration" title="Link to this heading">¶</a></h2>
-<p>The client supports both OneAPI and Legacy API authentication methods.</p>
+<p>The client uses <strong>OneAPI</strong> authentication through ZIdentity. All Zscaler
+products are reached through the unified <code class="docutils literal notranslate"><span class="pre">zscaler.ZscalerClient</span></code>.</p>
 <section id="oneapi-authentication">
 <h3>OneAPI Authentication<a class="headerlink" href="#oneapi-authentication" title="Link to this heading">¶</a></h3>
 <div class="table-wrapper colwidths-given docutils container" id="id1">
@@ -308,7 +363,7 @@
 <td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">customer_id</span></code></p></td>
-<td><p>Zscaler Customer ID</p></td>
+<td><p>Zscaler Customer ID (required when calling ZPA tools)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vanity_domain</span></code></p></td>
@@ -316,197 +371,16 @@
 <td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">private_key</span></code></p></td>
-<td><p>OAuth Private Key (alternative to client_secret)</p></td>
+<td><p>PEM-encoded private key for JWT auth (alternative to <code class="docutils literal notranslate"><span class="pre">client_secret</span></code>)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_PRIVATE_KEY</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
-<td><p>Zscaler Cloud Environment</p></td>
+<td><p>Cloud override (e.g. <code class="docutils literal notranslate"><span class="pre">BETA</span></code>, <code class="docutils literal notranslate"><span class="pre">zscalertwo</span></code>); omit for production</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-</section>
-<section id="legacy-api-authentication">
-<h3>Legacy API Authentication<a class="headerlink" href="#legacy-api-authentication" title="Link to this heading">¶</a></h3>
-<p>Legacy authentication supports individual service credentials:</p>
-<section id="zia-legacy">
-<h4>ZIA Legacy<a class="headerlink" href="#zia-legacy" title="Link to this heading">¶</a></h4>
-<div class="table-wrapper colwidths-given docutils container" id="id2">
-<table class="docutils align-default" id="id2">
-<caption><span class="caption-text">ZIA Legacy Authentication</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
-<colgroup>
-<col style="width: 20.0%" />
-<col style="width: 40.0%" />
-<col style="width: 40.0%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Environment Variable</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">username</span></code></p></td>
-<td><p>ZIA Username</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZIA_USERNAME</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">password</span></code></p></td>
-<td><p>ZIA Password</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZIA_PASSWORD</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">api_key</span></code></p></td>
-<td><p>ZIA API Key</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZIA_API_KEY</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
-<td><p>ZIA Cloud Environment</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZIA_CLOUD</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="zpa-legacy">
-<h4>ZPA Legacy<a class="headerlink" href="#zpa-legacy" title="Link to this heading">¶</a></h4>
-<div class="table-wrapper colwidths-given docutils container" id="id3">
-<table class="docutils align-default" id="id3">
-<caption><span class="caption-text">ZPA Legacy Authentication</span><a class="headerlink" href="#id3" title="Link to this table">¶</a></caption>
-<colgroup>
-<col style="width: 20.0%" />
-<col style="width: 40.0%" />
-<col style="width: 40.0%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Environment Variable</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">client_id</span></code></p></td>
-<td><p>ZPA Client ID</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_ID</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">client_secret</span></code></p></td>
-<td><p>ZPA Client Secret</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZPA_CLIENT_SECRET</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">customer_id</span></code></p></td>
-<td><p>ZPA Customer ID</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZPA_CUSTOMER_ID</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
-<td><p>ZPA Cloud Environment</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZPA_CLOUD</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="zcc-legacy">
-<h4>ZCC Legacy<a class="headerlink" href="#zcc-legacy" title="Link to this heading">¶</a></h4>
-<div class="table-wrapper colwidths-given docutils container" id="id4">
-<table class="docutils align-default" id="id4">
-<caption><span class="caption-text">ZCC Legacy Authentication</span><a class="headerlink" href="#id4" title="Link to this table">¶</a></caption>
-<colgroup>
-<col style="width: 20.0%" />
-<col style="width: 40.0%" />
-<col style="width: 40.0%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Environment Variable</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">api_key</span></code></p></td>
-<td><p>ZCC API Key</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_ID</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">secret_key</span></code></p></td>
-<td><p>ZCC Secret Key</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLIENT_ID</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
-<td><p>ZCC Cloud Environment</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZCC_CLOUD</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="zdx-legacy">
-<h4>ZDX Legacy<a class="headerlink" href="#zdx-legacy" title="Link to this heading">¶</a></h4>
-<div class="table-wrapper colwidths-given docutils container" id="id5">
-<table class="docutils align-default" id="id5">
-<caption><span class="caption-text">ZDX Legacy Authentication</span><a class="headerlink" href="#id5" title="Link to this table">¶</a></caption>
-<colgroup>
-<col style="width: 20.0%" />
-<col style="width: 40.0%" />
-<col style="width: 40.0%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Environment Variable</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">key_id</span></code></p></td>
-<td><p>ZDX Key ID</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_ID</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">key_secret</span></code></p></td>
-<td><p>ZDX Key Secret</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZDX_CLIENT_SECRET</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
-<td><p>ZDX Cloud Environment</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZDX_CLOUD</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="ztw-legacy">
-<h4>ZTW Legacy<a class="headerlink" href="#ztw-legacy" title="Link to this heading">¶</a></h4>
-<div class="table-wrapper colwidths-given docutils container" id="id6">
-<table class="docutils align-default" id="id6">
-<caption><span class="caption-text">ZTW Legacy Authentication</span><a class="headerlink" href="#id6" title="Link to this table">¶</a></caption>
-<colgroup>
-<col style="width: 20.0%" />
-<col style="width: 40.0%" />
-<col style="width: 40.0%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Environment Variable</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">username</span></code></p></td>
-<td><p>ZTW Username</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZTW_USERNAME</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">password</span></code></p></td>
-<td><p>ZTW Password</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZTW_PASSWORD</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">api_key</span></code></p></td>
-<td><p>ZTW API Key</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZTW_API_KEY</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cloud</span></code></p></td>
-<td><p>ZTW Cloud Environment</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ZTW_CLOUD</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
 </section>
 </section>
 <section id="usage-examples">
@@ -523,33 +397,15 @@
     <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span><span class="p">,</span>
     <span class="n">client_secret</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span><span class="p">,</span>
     <span class="n">customer_id</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span><span class="p">,</span>
-    <span class="n">vanity_domain</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</section>
-<section id="legacy-client">
-<h3>Legacy Client<a class="headerlink" href="#legacy-client" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
-
-<span class="c1"># ZIA Legacy</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span>
-    <span class="n">use_legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">service</span><span class="o">=</span><span class="s2">&quot;zia&quot;</span><span class="p">,</span>
-    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;your_username&quot;</span><span class="p">,</span>
-    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;your_api_key&quot;</span><span class="p">,</span>
-    <span class="n">cloud</span><span class="o">=</span><span class="s2">&quot;your_cloud&quot;</span>
+    <span class="n">vanity_domain</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># ZPA Legacy</span>
+<span class="c1"># JWT-based auth (private key in place of client secret)</span>
 <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span>
-    <span class="n">use_legacy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">service</span><span class="o">=</span><span class="s2">&quot;zpa&quot;</span><span class="p">,</span>
     <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span><span class="p">,</span>
-    <span class="n">client_secret</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span><span class="p">,</span>
+    <span class="n">private_key</span><span class="o">=</span><span class="s2">&quot;-----BEGIN PRIVATE KEY-----...&quot;</span><span class="p">,</span>
     <span class="n">customer_id</span><span class="o">=</span><span class="s2">&quot;your_customer_id&quot;</span><span class="p">,</span>
-    <span class="n">cloud</span><span class="o">=</span><span class="s2">&quot;your_cloud&quot;</span>
+    <span class="n">vanity_domain</span><span class="o">=</span><span class="s2">&quot;your_vanity_domain&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -616,19 +472,10 @@
 <li><a class="reference internal" href="#zscaler_mcp.client.get_zscaler_client"><code class="docutils literal notranslate"><span class="pre">get_zscaler_client()</span></code></a></li>
 <li><a class="reference internal" href="#client-configuration">Client Configuration</a><ul>
 <li><a class="reference internal" href="#oneapi-authentication">OneAPI Authentication</a></li>
-<li><a class="reference internal" href="#legacy-api-authentication">Legacy API Authentication</a><ul>
-<li><a class="reference internal" href="#zia-legacy">ZIA Legacy</a></li>
-<li><a class="reference internal" href="#zpa-legacy">ZPA Legacy</a></li>
-<li><a class="reference internal" href="#zcc-legacy">ZCC Legacy</a></li>
-<li><a class="reference internal" href="#zdx-legacy">ZDX Legacy</a></li>
-<li><a class="reference internal" href="#ztw-legacy">ZTW Legacy</a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#usage-examples">Usage Examples</a><ul>
 <li><a class="reference internal" href="#oneapi-client">OneAPI Client</a></li>
-<li><a class="reference internal" href="#legacy-client">Legacy Client</a></li>
 </ul>
 </li>
 </ul>
@@ -642,7 +489,7 @@
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>

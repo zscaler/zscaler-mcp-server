@@ -15,7 +15,6 @@ Each tool in the Zscaler Integrations MCP Server follows a consistent structure:
        # Tool-specific parameters
        param1: Optional[str] = None,
        param2: Optional[int] = None,
-       use_legacy: bool = False,
        service: str = "service_name",
    ) -> Union[dict, List[dict]]:
        """
@@ -39,9 +38,6 @@ All tools share common parameters:
    * - ``action``
      - ``Literal``
      - Operation to perform (read, read_lite, create, update, delete)
-   * - ``use_legacy``
-     - ``bool``
-     - Whether to use the legacy API (default: False)
    * - ``service``
      - ``str``
      - The service to use (default: service-specific)
@@ -263,12 +259,36 @@ ZTW Tools
 ZIdentity Tools
 ~~~~~~~~~~~~~~~
 
-.. automodule:: zscaler_mcp.tools.zidentity.groups
+.. automodule:: zscaler_mcp.tools.zid.groups
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: zscaler_mcp.tools.zidentity.users
+.. automodule:: zscaler_mcp.tools.zid.users
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+EASM Tools
+~~~~~~~~~~
+
+External Attack Surface Management (EASM) tools for monitoring your organization's internet-facing assets.
+
+.. note::
+
+   EASM tools are **read-only**. EASM does not require ``ZSCALER_CUSTOMER_ID``.
+
+.. automodule:: zscaler_mcp.tools.easm.organizations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: zscaler_mcp.tools.easm.findings
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: zscaler_mcp.tools.easm.lookalike_domains
    :members:
    :undoc-members:
    :show-inheritance:

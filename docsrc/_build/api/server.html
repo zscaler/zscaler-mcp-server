@@ -210,17 +210,25 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -278,6 +286,21 @@
 <p>This module provides the main server class for the Zscaler Integrations MCP Server
 and serves as the entry point for the application.</p>
 <dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.server.SourceIPMiddleware">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SourceIPMiddleware</span></span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#SourceIPMiddleware"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.SourceIPMiddleware" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>ASGI middleware that restricts access by client source IP.</p>
+<p>When ZSCALER_MCP_ALLOWED_SOURCE_IPS is set, only requests from those
+IPs / CIDRs are accepted.  Everything else gets 403.</p>
+<p>Health-check paths are exempt so load-balancer probes still work.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="zscaler_mcp.server.SourceIPMiddleware.SKIP_PATHS">
+<span class="sig-name descname"><span class="pre">SKIP_PATHS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({'/health',</span> <span class="pre">'/healthz',</span> <span class="pre">'/ready'})</span></em><a class="headerlink" href="#zscaler_mcp.server.SourceIPMiddleware.SKIP_PATHS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZscalerMCPServer</span></span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
@@ -285,15 +308,13 @@ and serves as the entry point for the application.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.get_available_services">
 <span class="sig-name descname"><span class="pre">get_available_services</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer.get_available_services"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer.get_available_services" title="Link to this definition">¶</a></dt>
-<dd><p>Get information about available services.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Available services</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>]]</p>
-</dd>
-</dl>
+<dd><p>Get information about available and unavailable services and tools.</p>
+<p>Returns a dict with services that are loaded and callable (with
+an accurate count of currently-registered tools), any services
+that are present but currently have zero callable tools because
+the OneAPI credentials are not entitled to them, services
+excluded by configuration, and any disabled tool patterns. The
+AI agent should treat the returned counts as authoritative.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -325,6 +346,106 @@ and serves as the entry point for the application.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.zscaler_enable_toolset">
+<span class="sig-name descname"><span class="pre">zscaler_enable_toolset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">toolset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer.zscaler_enable_toolset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_enable_toolset" title="Link to this definition">¶</a></dt>
+<dd><p>Mark a toolset as enabled at runtime and register its tools.</p>
+<p>After this call, the toolset’s tools become available for the
+rest of the session. Existing tools and previously-enabled
+toolsets are NOT re-registered (they remain available).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>toolset</strong> – A toolset id (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;zia_url_filtering&quot;</span></code>).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{&quot;toolset&quot;:</span> <span class="pre">&lt;id&gt;,</span> <span class="pre">&quot;newly_registered&quot;:</span> <span class="pre">&lt;count&gt;,</span> <span class="pre">&quot;status&quot;:</span> <span class="pre">&quot;...&quot;}</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.zscaler_get_toolset_tools">
+<span class="sig-name descname"><span class="pre">zscaler_get_toolset_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">toolset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_contains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description_contains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer.zscaler_get_toolset_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_get_toolset_tools" title="Link to this definition">¶</a></dt>
+<dd><p>List the tools that belong to a given toolset, with availability info.</p>
+<p>Use this after <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> to inspect what a
+toolset contains and confirm a specific tool is callable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>toolset</strong> – A toolset id (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;zia_url_filtering&quot;</span></code>). See
+<code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code> for the full set of valid ids.</p></li>
+<li><p><strong>name_contains</strong> – Optional case-insensitive substring filter
+on tool name (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;create&quot;</span></code> to narrow to write
+tools).</p></li>
+<li><p><strong>description_contains</strong> – Optional case-insensitive substring
+filter on tool description.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>List of dicts with keys <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">description</span></code>,
+<code class="docutils literal notranslate"><span class="pre">type</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;read&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;write&quot;</span></code>), <code class="docutils literal notranslate"><span class="pre">available</span></code>, and
+(when <code class="docutils literal notranslate"><span class="pre">available</span></code> is False) <code class="docutils literal notranslate"><span class="pre">unavailable_reason</span></code>.
+Returns <code class="docutils literal notranslate"><span class="pre">[{&quot;error&quot;:</span> <span class="pre">&quot;...&quot;}]</span></code> for unknown toolset ids.</p>
+<p>Treat <code class="docutils literal notranslate"><span class="pre">available:</span> <span class="pre">false</span></code> results as authoritative — the
+tool exists in the catalog but cannot be called as
+configured (typically because the OneAPI credentials are
+not entitled to that product, the toolset is not enabled
+in this session, or write tools are disabled). Report the
+situation to the user instead of retrying.</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.server.ZscalerMCPServer.zscaler_list_toolsets">
+<span class="sig-name descname"><span class="pre">zscaler_list_toolsets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name_contains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description_contains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#ZscalerMCPServer.zscaler_list_toolsets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_list_toolsets" title="Link to this definition">¶</a></dt>
+<dd><p>List Zscaler toolsets — the primary entry point for tool discovery.</p>
+<p>Call this FIRST for any user request that needs to find a
+Zscaler tool. Toolsets are logical groupings of related tools
+(one per resource family per service, e.g. <code class="docutils literal notranslate"><span class="pre">zia_url_filtering</span></code>
+for URL filtering rules, <code class="docutils literal notranslate"><span class="pre">zpa_segment_groups</span></code> for ZPA segment
+groups). Each row tells you whether the group is currently
+loaded, how many tools it contains, and whether you can enable
+it in this session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name_contains</strong> – Optional case-insensitive substring filter on
+the toolset id (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;segment&quot;</span></code> finds
+<code class="docutils literal notranslate"><span class="pre">zpa_segment_groups</span></code>).</p></li>
+<li><p><strong>description_contains</strong> – Optional case-insensitive substring
+filter on the toolset description (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;firewall&quot;</span></code>
+finds every firewall-related toolset across services).</p></li>
+<li><p><strong>service</strong> – Optional exact-match filter on the owning service
+code (<code class="docutils literal notranslate"><span class="pre">zia</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx</span></code>, <code class="docutils literal notranslate"><span class="pre">zcc</span></code>, <code class="docutils literal notranslate"><span class="pre">ztw</span></code>,
+<code class="docutils literal notranslate"><span class="pre">zid</span></code>, <code class="docutils literal notranslate"><span class="pre">zeasm</span></code>, <code class="docutils literal notranslate"><span class="pre">zins</span></code>, <code class="docutils literal notranslate"><span class="pre">zms</span></code>, <code class="docutils literal notranslate"><span class="pre">meta</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>List of dicts with keys <code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">service</span></code>, <code class="docutils literal notranslate"><span class="pre">description</span></code>,
+<code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">currently_enabled</span></code>, <code class="docutils literal notranslate"><span class="pre">tool_count</span></code>,
+<code class="docutils literal notranslate"><span class="pre">can_enable</span></code> and (when <code class="docutils literal notranslate"><span class="pre">can_enable</span></code> is False)
+<code class="docutils literal notranslate"><span class="pre">unavailable_reason</span></code>. Returns <code class="docutils literal notranslate"><span class="pre">[{&quot;status&quot;:</span>
+<span class="pre">&quot;no_results&quot;,</span> <span class="pre">...}]</span></code> when filters match nothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">can_enable</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> when the OneAPI credentials are
+not entitled to the toolset’s product — calling
+<code class="docutils literal notranslate"><span class="pre">zscaler_enable_toolset</span></code> would be refused. Treat this as
+authoritative and report it to the user instead of retrying.</p>
+</p>
+</dd>
+</dl>
+<p>Typical flow: call this first to find the right toolset, then
+<code class="docutils literal notranslate"><span class="pre">zscaler_get_toolset_tools(toolset=&lt;id&gt;)</span></code> to drill into the
+specific tools it contains.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="zscaler_mcp.server.generate_auth_token">
+<span class="sig-name descname"><span class="pre">generate_auth_token</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'basic'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/server.html#generate_auth_token"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.server.generate_auth_token" title="Link to this definition">¶</a></dt>
+<dd><p>Generate an auth token and print ready-to-use MCP client config snippets.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -551,12 +672,20 @@ and serves as the entry point for the application.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Server API</a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.server.SourceIPMiddleware"><code class="docutils literal notranslate"><span class="pre">SourceIPMiddleware</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.server.SourceIPMiddleware.SKIP_PATHS"><code class="docutils literal notranslate"><span class="pre">SourceIPMiddleware.SKIP_PATHS</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer</span></code></a><ul>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.get_available_services"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.get_available_services()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.run"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.run()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_check_connectivity"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.zscaler_check_connectivity()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_enable_toolset"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.zscaler_enable_toolset()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_get_toolset_tools"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.zscaler_get_toolset_tools()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.server.ZscalerMCPServer.zscaler_list_toolsets"><code class="docutils literal notranslate"><span class="pre">ZscalerMCPServer.zscaler_list_toolsets()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#zscaler_mcp.server.generate_auth_token"><code class="docutils literal notranslate"><span class="pre">generate_auth_token()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.list_available_tools"><code class="docutils literal notranslate"><span class="pre">list_available_tools()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 <li><a class="reference internal" href="#zscaler_mcp.server.parse_args"><code class="docutils literal notranslate"><span class="pre">parse_args()</span></code></a></li>
@@ -584,7 +713,7 @@ and serves as the entry point for the application.</p>
       
     </aside>
   </div>
-</div><script src="../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
