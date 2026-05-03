@@ -210,13 +210,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
@@ -294,7 +302,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.BaseService.register_tools">
-<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#BaseService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.BaseService.register_tools" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#BaseService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.BaseService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register tools with the MCP server.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -303,6 +311,11 @@
 <li><p><strong>enabled_tools</strong> – Set of enabled tool names (if None, all tools are enabled)</p></li>
 <li><p><strong>enable_write_tools</strong> – Whether to enable write tools (default: False)</p></li>
 <li><p><strong>write_tools</strong> – Explicit allowlist of write tools (supports wildcards). Requires enable_write_tools=True.</p></li>
+<li><p><strong>disabled_tools</strong> – Set of tool name patterns to exclude (supports wildcards via fnmatch).</p></li>
+<li><p><strong>selected_toolsets</strong> – Set of toolset ids (e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;zia_url_filtering&quot;}</span></code>) that
+this service is allowed to register tools for. <code class="docutils literal notranslate"><span class="pre">None</span></code> disables
+toolset filtering. The <code class="docutils literal notranslate"><span class="pre">meta</span></code> toolset is always exempt. See
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">zscaler_mcp.common.toolsets</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -317,7 +330,7 @@
 <p>Zscaler Client Connector (ZCC) service.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZCCService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZCCService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZCCService.register_tools" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZCCService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZCCService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZCC tools with the server.</p>
 </dd></dl>
 
@@ -330,7 +343,7 @@
 <p>Zscaler Digital Experience (ZDX) service.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZDXService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZDXService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZDXService.register_tools" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZDXService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZDXService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZDX tools with the server.</p>
 </dd></dl>
 
@@ -343,7 +356,7 @@
 <p>Zscaler External Attack Surface Management (EASM) service.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZEASMService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZEASMService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZEASMService.register_tools" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZEASMService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZEASMService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register EASM tools with the server.</p>
 </dd></dl>
 
@@ -356,28 +369,28 @@
 <p>Zscaler Internet Access (ZIA) service.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZIAService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIAService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIAService.register_tools" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIAService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIAService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZIA tools with the server.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="zscaler_mcp.services.ZIdentityService">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZIdentityService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIdentityService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIdentityService" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZIDService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZIDService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIDService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIDService" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
 <p>Zscaler ZIdentity service.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="zscaler_mcp.services.ZIdentityService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIdentityService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIdentityService.register_tools" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZIDService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZIDService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZIDService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZIdentity tools with the server.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="zscaler_mcp.services.ZInsightsService">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZInsightsService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZInsightsService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZInsightsService" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZINSService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZINSService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZINSService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZINSService" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
 <p>Zscaler Z-Insights Analytics service.</p>
 <p>Provides analytics and reporting capabilities through the Z-Insights GraphQL API.
@@ -390,9 +403,34 @@ All tools in this service are read-only operations.</p>
 - SHADOW_IT: Unsanctioned application discovery
 - IOT: IoT device visibility and statistics</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="zscaler_mcp.services.ZInsightsService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZInsightsService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZInsightsService.register_tools" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZINSService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZINSService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZINSService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register Z-Insights tools with the server.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZMSService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZMSService</span></span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZMSService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZMSService" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#zscaler_mcp.services.BaseService" title="zscaler_mcp.services.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseService</span></code></a></p>
+<p>Zscaler Microsegmentation (ZMS) service.</p>
+<p>Provides read-only tools for managing and inspecting microsegmentation
+deployments through the ZMS GraphQL API.</p>
+<p>Available domains in the ZMS API:
+- AGENTS: Agent inventory, connection status, and version statistics
+- AGENT_GROUPS: Agent group management and TOTP secrets
+- RESOURCES: Workload inventory and protection status
+- RESOURCE_GROUPS: Resource group membership and protection status
+- POLICY_RULES: Microsegmentation policy rules and defaults
+- APP_ZONES: Application zone definitions
+- APP_CATALOG: Discovered application catalog
+- NONCES: Provisioning key management
+- TAGS: Tag namespace, key, and value hierarchy</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="zscaler_mcp.services.ZMSService.register_tools">
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZMSService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZMSService.register_tools" title="Link to this definition">¶</a></dt>
+<dd><p>Register ZMS tools with the server.</p>
 </dd></dl>
 
 </dd></dl>
@@ -404,7 +442,7 @@ All tools in this service are read-only operations.</p>
 <p>Zscaler Private Access (ZPA) service.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZPAService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZPAService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZPAService.register_tools" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZPAService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZPAService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZPA tools with the server.</p>
 </dd></dl>
 
@@ -417,7 +455,7 @@ All tools in this service are read-only operations.</p>
 <p>Zscaler Cloud &amp; Branch Connector (ZTW) service.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="zscaler_mcp.services.ZTWService.register_tools">
-<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZTWService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZTWService.register_tools" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">server</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_tools</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selected_toolsets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/zscaler_mcp/services.html#ZTWService.register_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#zscaler_mcp.services.ZTWService.register_tools" title="Link to this definition">¶</a></dt>
 <dd><p>Register ZTW tools with the server.</p>
 </dd></dl>
 
@@ -835,7 +873,7 @@ All tools in this service are read-only operations.</p>
 All tools in this service query historical data with a 24-48 hour processing delay.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Z-Insights requires OneAPI authentication (OAuth2). Legacy API keys are not supported.
+<p>Z-Insights uses OneAPI authentication (OAuth2).
 Data queries should use time ranges that end at least 2 days ago.</p>
 </div>
 <p><strong>Available Domains:</strong></p>
@@ -945,7 +983,7 @@ Data queries should use time ranges that end at least 2 days ago.</p>
 <span class="n">ztw_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">ztw</span>
 
 <span class="c1"># Access ZIdentity service</span>
-<span class="n">zidentity_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zidentity</span>
+<span class="n">zid_service</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zid</span>
 </pre></div>
 </div>
 </section>
@@ -973,11 +1011,10 @@ Data queries should use time ranges that end at least 2 days ago.</p>
 </section>
 <section id="z-insights-analytics">
 <h3>Z-Insights Analytics<a class="headerlink" href="#z-insights-analytics" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Z-Insights requires OneAPI (OAuth2) authentication</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Z-Insights authenticates via OneAPI (OAuth2)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
-<span class="c1"># Get client with OneAPI (not legacy)</span>
-<span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="s2">&quot;zinsights&quot;</span><span class="p">)</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="s2">&quot;zins&quot;</span><span class="p">)</span>
 
 <span class="c1"># Get web traffic by location for the past week</span>
 <span class="c1"># Using days_ago approach (recommended)</span>
@@ -989,7 +1026,7 @@ Data queries should use time ranges that end at least 2 days ago.</p>
 <span class="n">start_time</span> <span class="o">=</span> <span class="n">current_time_ms</span> <span class="o">-</span> <span class="p">(</span><span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># 7 days ago</span>
 
 <span class="c1"># Get traffic by location</span>
-<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zinsights</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_traffic_by_location</span><span class="p">(</span>
+<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zins</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_traffic_by_location</span><span class="p">(</span>
     <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
     <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
     <span class="n">traffic_unit</span><span class="o">=</span><span class="s2">&quot;TRANSACTIONS&quot;</span><span class="p">,</span>
@@ -997,7 +1034,7 @@ Data queries should use time ranges that end at least 2 days ago.</p>
 <span class="p">)</span>
 
 <span class="c1"># Get threat categories</span>
-<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zinsights</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_threat_super_categories</span><span class="p">(</span>
+<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zins</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_threat_super_categories</span><span class="p">(</span>
     <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
     <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
     <span class="n">traffic_unit</span><span class="o">=</span><span class="s2">&quot;TRANSACTIONS&quot;</span><span class="p">,</span>
@@ -1005,7 +1042,7 @@ Data queries should use time ranges that end at least 2 days ago.</p>
 <span class="p">)</span>
 
 <span class="c1"># Get web protocols distribution</span>
-<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zinsights</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_protocols</span><span class="p">(</span>
+<span class="n">entries</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zins</span><span class="o">.</span><span class="n">web_traffic</span><span class="o">.</span><span class="n">get_protocols</span><span class="p">(</span>
     <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
     <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">,</span>
     <span class="n">traffic_unit</span><span class="o">=</span><span class="s2">&quot;BYTES&quot;</span><span class="p">,</span>
@@ -1094,12 +1131,16 @@ Data queries should use time ranges that end at least 2 days ago.</p>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZIAService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIAService.register_tools()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#zscaler_mcp.services.ZIdentityService"><code class="docutils literal notranslate"><span class="pre">ZIdentityService</span></code></a><ul>
-<li><a class="reference internal" href="#zscaler_mcp.services.ZIdentityService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIdentityService.register_tools()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZIDService"><code class="docutils literal notranslate"><span class="pre">ZIDService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZIDService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZIDService.register_tools()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#zscaler_mcp.services.ZInsightsService"><code class="docutils literal notranslate"><span class="pre">ZInsightsService</span></code></a><ul>
-<li><a class="reference internal" href="#zscaler_mcp.services.ZInsightsService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZInsightsService.register_tools()</span></code></a></li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZINSService"><code class="docutils literal notranslate"><span class="pre">ZINSService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZINSService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZINSService.register_tools()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZMSService"><code class="docutils literal notranslate"><span class="pre">ZMSService</span></code></a><ul>
+<li><a class="reference internal" href="#zscaler_mcp.services.ZMSService.register_tools"><code class="docutils literal notranslate"><span class="pre">ZMSService.register_tools()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#zscaler_mcp.services.ZPAService"><code class="docutils literal notranslate"><span class="pre">ZPAService</span></code></a><ul>

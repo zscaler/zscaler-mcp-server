@@ -69,8 +69,6 @@ List all active applications configured in ZDX.
 :type page_size: Optional[int]
 :param search: The search string used to partially match
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zdx")
 :type service: str
 
@@ -93,8 +91,6 @@ Retrieve ZDX metrics for an application (PFT, DNS, availability).
 :type app_id: str
 :param metric_type: Type of metric to retrieve
 :type metric_type: str
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zdx")
 :type service: str
 
@@ -119,8 +115,6 @@ Discover ZDX devices using various filters.
 :type page_size: Optional[int]
 :param search: The search string used to partially match
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zdx")
 :type service: str
 
@@ -143,8 +137,6 @@ List ongoing alerts, get alert details, or list affected devices.
 :type action: str
 :param alert_id: The ID of the alert for "read_alert" and "read_affected_devices" actions
 :type alert_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zdx")
 :type service: str
 
@@ -161,24 +153,13 @@ For complete documentation of all ZDX tools, see the individual tool pages.
 Authentication
 --------------
 
-ZDX tools support both OneAPI and Legacy authentication methods:
-
-**OneAPI Authentication:**
-- Uses OAuth2 client credentials
-- Requires the following environment variables:
+ZDX tools authenticate through **OneAPI** (OAuth2 client credentials).
+Required environment variables:
 
   * ``ZSCALER_CLIENT_ID``
   * ``ZSCALER_CLIENT_SECRET``
   * ``ZSCALER_VANITY_DOMAIN``
   * ``ZSCALER_CLOUD``
-
-**Legacy Authentication:**
-- Uses username, password, and API key
-- Requires the following environment variables:
-
-  * ``ZDX_CLIENT_ID``
-  * ``ZDX_CLIENT_SECRET``
-  * ``ZDX_CLOUD``
 
 Common Use Cases
 ----------------

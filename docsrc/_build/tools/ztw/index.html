@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Zscaler Identity (Zidentity) Tools" href="../zidentity/index.html" /><link rel="prev" title="Zscaler Digital Experience (ZDX) Tools" href="../zdx/index.html" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Zscaler Identity (Zidentity) Tools" href="../zid/index.html" /><link rel="prev" title="Zscaler Digital Experience (ZDX) Tools" href="../zdx/index.html" />
         <link rel="prefetch" href="../../_static/logo.svg" as="image" />
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
@@ -210,13 +210,21 @@
 <li class="toctree-l2"><a class="reference internal" href="../zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -348,12 +356,6 @@
 <dt class="field-even">type ip_addresses<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[List[str]]</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “ztw”)</p>
 </dd>
@@ -409,12 +411,6 @@
 <dt class="field-even">type ip_addresses<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[List[str]]</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “ztw”)</p>
 </dd>
@@ -464,12 +460,6 @@
 </dd>
 <dt class="field-even">type ip_addresses<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[List[str]]</p>
-</dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
 </dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “ztw”)</p>
@@ -525,12 +515,6 @@
 </dd>
 <dt class="field-even">type services<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[List[dict]]</p>
-</dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
 </dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “ztw”)</p>
@@ -589,12 +573,6 @@
 </dd>
 <dt class="field-even">type search<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[str]</p>
-</dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
 </dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “ztw”)</p>
@@ -670,12 +648,6 @@
 <dt class="field-even">type version<span class="colon">:</span></dt>
 <dd class="field-even"><p>Optional[int]</p>
 </dd>
-<dt class="field-odd">param use_legacy<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Whether to use the legacy API (default: False)</p>
-</dd>
-<dt class="field-even">type use_legacy<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
 <dt class="field-odd">param service<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The service to use (default: “ztw”)</p>
 </dd>
@@ -697,27 +669,14 @@
 </section>
 <section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
-<p>ZTW tools support both OneAPI and Legacy authentication methods:</p>
-<p><strong>OneAPI Authentication:</strong>
-- Uses OAuth2 client credentials
-- Requires the following environment variables:</p>
+<p>ZTW tools authenticate through <strong>OneAPI</strong> (OAuth2 client credentials).
+Required environment variables:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></li>
-</ul>
-</div></blockquote>
-<p><strong>Legacy Authentication:</strong>
-- Uses username, password, and API key
-- Requires the following environment variables:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ZTW_USERNAME</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZTW_PASSWORD</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZTW_API_KEY</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ZTW_CLOUD</span></code></p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -748,7 +707,7 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../zidentity/index.html">
+          <a class="next-page" href="../zid/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
