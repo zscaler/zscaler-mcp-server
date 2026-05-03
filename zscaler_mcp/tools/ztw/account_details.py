@@ -20,7 +20,6 @@ def ztw_list_public_account_details(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """List public cloud account details from Zscaler Cloud & Branch Connector (ZTW).
@@ -29,7 +28,6 @@ def ztw_list_public_account_details(
     Args:
         page: Optional page offset for paginated results.
         page_size: Optional page size (default 250, maximum 1000).
-        use_legacy: Whether to use the legacy API (default: False).
         service: The service to use (default: "ztw").
 
     Returns:
@@ -39,7 +37,7 @@ def ztw_list_public_account_details(
         Exception: If the SDK reports an error.
     """
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.ztw.account_details
 
     query_params: Dict[str, object] = {}

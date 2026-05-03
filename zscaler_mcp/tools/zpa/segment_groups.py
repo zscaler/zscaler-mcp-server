@@ -11,7 +11,17 @@ from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zpa_list_segment_groups(
-    search: Annotated[Optional[str], Field(description="Search term for listing groups.")] = None,
+    search: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring match on the segment group's `name` field. "
+                "Returns the full set of matches in this tenant — no fuzzy matching, no "
+                "synonym expansion. An empty list means no segment group name contains "
+                "this string; do not retry with split keywords or no filter."
+            )
+        ),
+    ] = None,
     page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
     page_size: Annotated[Optional[str], Field(description="Items per page for pagination.")] = None,
     microtenant_id: Annotated[
@@ -21,14 +31,13 @@ def zpa_list_segment_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA segment groups with optional filtering and pagination.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sg = client.zpa.segment_groups
 
     qp = {"microtenant_id": microtenant_id}
@@ -51,14 +60,13 @@ def zpa_get_segment_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA segment group by ID."""
     if not group_id:
         raise ValueError("group_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sg = client.zpa.segment_groups
 
     result, _, err = sg.get_group(group_id, query_params={"microtenant_id": microtenant_id})
@@ -81,14 +89,13 @@ def zpa_create_segment_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA segment group."""
     if not name:
         raise ValueError("name is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sg = client.zpa.segment_groups
 
     body = {"name": name, "description": description, "enabled": enabled}
@@ -111,14 +118,13 @@ def zpa_update_segment_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA segment group."""
     if not group_id:
         raise ValueError("group_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sg = client.zpa.segment_groups
 
     body = {"name": name, "description": description, "enabled": enabled}
@@ -136,7 +142,6 @@ def zpa_delete_segment_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -159,7 +164,7 @@ def zpa_delete_segment_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sg = client.zpa.segment_groups
 
     _, _, err = sg.delete_group(group_id, microtenant_id=microtenant_id)

@@ -956,6 +956,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_instance = MagicMock()
@@ -994,6 +996,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_instance = MagicMock()
@@ -1019,6 +1023,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.services = ["zia"]
         mock_args.tools = []
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         with (
@@ -1070,6 +1076,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_server_cls.side_effect = RuntimeError("oops")
@@ -1097,6 +1105,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_server_cls.side_effect = ValueError("bad config")
@@ -1124,6 +1134,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_server_cls.side_effect = KeyboardInterrupt()
@@ -1151,6 +1163,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_server_cls.side_effect = Exception("unexpected")
@@ -1188,6 +1202,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = True
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_instance = MagicMock()
@@ -1226,6 +1242,8 @@ class TestMainFunction(unittest.TestCase):
         mock_args.log_tool_calls = False
         mock_args.list_tools = False
         mock_args.generate_auth_token = None
+        mock_args.generate_docs = False
+        mock_args.check_docs = False
         mock_parse.return_value = mock_args
 
         mock_instance = MagicMock()

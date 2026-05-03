@@ -22,7 +22,6 @@ def zia_list_gre_ranges(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List:
     """
@@ -33,7 +32,7 @@ def zia_list_gre_ranges(
     This is a read-only operation that returns available GRE ranges.
     If no filters are provided, returns all available ranges.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     gre_api = client.zia.gre_tunnel
 
     query_params = {}

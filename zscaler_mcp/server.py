@@ -8,7 +8,7 @@ and serves as the entry point for the application.
 import argparse
 import os
 import sys
-from typing import Dict, Optional, Set
+from typing import Dict, List, Optional, Set
 
 import uvicorn
 from dotenv import load_dotenv
@@ -18,6 +18,20 @@ from mcp.types import ToolAnnotations
 
 from zscaler_mcp import services
 from zscaler_mcp.common.logging import configure_logging, get_logger, log_security_warning
+
+
+def _safe_toolset_for(tool_name: str) -> Optional[str]:
+    """Return the toolset id for a tool name, or ``None`` if unmapped.
+
+    Used by :meth:`ZscalerMCPServer.zscaler_enable_toolset` so an
+    unmapped tool silently skips registration instead of raising.
+    """
+    from zscaler_mcp.common.toolsets import toolset_for_tool
+
+    try:
+        return toolset_for_tool(tool_name)
+    except KeyError:
+        return None
 
 # Import version from package metadata
 try:
@@ -215,6 +229,87 @@ class SourceIPMiddleware:
         await self.app(scope, receive, send)
 
 
+def _log_tool_surface(server: "ZscalerMCPServer") -> None:
+    """Log a tool-surface banner: toolsets, entitlement filter, audit logging.
+
+    This block is companion to the security posture banner and surfaces
+    the configuration that determines *which* tools the server will
+    expose to clients. It deliberately avoids logging anything that
+    identifies the tenant (no client_id, vanity domain, or customer ID)
+    so the banner is safe to ship to centralised log stores.
+    """
+    w = 72
+    bar = "=" * w
+
+    try:
+        from zscaler_mcp.common.toolsets import META_TOOLSET_ID, TOOLSETS
+
+        total_registered = len(TOOLSETS.all_ids())
+    except Exception:  # pragma: no cover - defensive
+        META_TOOLSET_ID = "meta"
+        total_registered = 0
+
+    selected = server.selected_toolsets or set()
+    active_count = len(selected)
+    non_meta = sorted(s for s in selected if s != META_TOOLSET_ID)
+    if not non_meta:
+        toolset_detail = "(meta only)"
+    elif len(non_meta) <= 4:
+        toolset_detail = ", ".join(non_meta)
+    else:
+        toolset_detail = ", ".join(non_meta[:4]) + f", +{len(non_meta) - 4} more"
+
+    state = server.entitlement_filter_state
+    if state == "disabled":
+        ent_line = "DISABLED (operator opt-out)"
+        ent_detail = None
+    elif state == "skipped":
+        ent_line = "SKIPPED (filter not applied)"
+        ent_detail = server.entitlement_filter_summary
+    elif state == "error":
+        ent_line = "ERROR (filter not applied)"
+        ent_detail = server.entitlement_filter_summary
+    else:
+        kept = server.entitlement_kept_count
+        removed = server.entitlement_removed_count
+        if kept is None:
+            ent_line = "ENABLED"
+        elif removed:
+            ent_line = f"ENABLED (kept {kept}, removed {removed})"
+        else:
+            ent_line = f"ENABLED (kept {kept}, removed 0)"
+        if server.entitled_services:
+            ent_detail = "Entitled services: " + ", ".join(server.entitled_services)
+        else:
+            ent_detail = None
+
+    try:
+        from zscaler_mcp.common.tool_helpers import is_tool_call_logging_enabled
+
+        audit_status = "ENABLED" if is_tool_call_logging_enabled() else "DISABLED"
+    except Exception:  # pragma: no cover - defensive
+        audit_status = "UNKNOWN"
+
+    try:
+        from zscaler_mcp.common.sanitize import is_sanitization_enabled
+
+        sanitize_status = "ENABLED" if is_sanitization_enabled() else "DISABLED (operator opt-out)"
+    except Exception:  # pragma: no cover - defensive
+        sanitize_status = "UNKNOWN"
+
+    logger.info(bar)
+    logger.info("  ZSCALER MCP SERVER — TOOL SURFACE")
+    logger.info("")
+    logger.info("  Toolsets:           %d active / %d registered", active_count, total_registered)
+    logger.info("    Active:           %s", toolset_detail)
+    logger.info("  Entitlement Filter: %s", ent_line)
+    if ent_detail:
+        logger.info("    %s", ent_detail)
+    logger.info("  Output Sanitizer:   %s", sanitize_status)
+    logger.info("  Audit Logging:      %s", audit_status)
+    logger.info(bar)
+
+
 def _log_security_posture(
     transport: str,
     scheme: str,
@@ -222,8 +317,15 @@ def _log_security_posture(
     port: int,
     tls_kwargs: dict,
     fastmcp_auth: object = None,
+    server: "ZscalerMCPServer | None" = None,
 ) -> None:
-    """Log a consolidated security posture banner at startup."""
+    """Log a consolidated security posture banner at startup.
+
+    When ``server`` is provided, an additional "TOOL SURFACE" block is
+    emitted below the security posture summarising toolset selection,
+    OneAPI entitlement filter outcome, and audit logging state. The
+    block is omitted (no error) when ``server`` is ``None``.
+    """
     w = 72
     bar = "=" * w
 
@@ -312,6 +414,9 @@ def _log_security_posture(
     logger.info("  Source IP ACL:  %s", src_ip_status)
     logger.info("  Confirmations:  %s", confirm_status)
     logger.info(bar)
+
+    if server is not None:
+        _log_tool_surface(server)
 
 
 def _validate_host_config(host: str) -> None:
@@ -418,8 +523,10 @@ class ZscalerMCPServer:
         write_tools: Optional[Set[str]] = None,
         disabled_tools: Optional[Set[str]] = None,
         disabled_services: Optional[Set[str]] = None,
+        toolsets: Optional[Set[str]] = None,
         host: Optional[str] = None,
         auth: Optional[object] = None,
+        disable_entitlement_filter: bool = False,
     ):
         """Initialize the Zscaler Integrations MCP Server.
 
@@ -437,6 +544,12 @@ class ZscalerMCPServer:
             write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.
             disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch).
             disabled_services: Set of service names to exclude from enabled services.
+            toolsets: Set of toolset ids to enable (e.g. ``{"zia_url_filtering",
+                "zpa_app_segments"}``). Special values ``"default"`` and ``"all"``
+                are accepted in the input set and expanded against the catalog.
+                When ``None``, every toolset whose owning service is currently
+                enabled is selected (preserves today's behaviour).
+                See :mod:`zscaler_mcp.common.toolsets`.
             host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.
             auth: A ``fastmcp.server.auth.AuthProvider`` instance (e.g.
                 ``OIDCProxy``, ``OAuthProxy``, or a custom ``AuthProvider`` subclass)
@@ -457,6 +570,14 @@ class ZscalerMCPServer:
                     )
                     server = ZscalerMCPServer(auth=auth)
                     server.run("streamable-http")
+            disable_entitlement_filter: When ``True``, skip the OneAPI
+                entitlement filter that trims ``selected_toolsets`` down
+                to the products the configured OneAPI credentials are
+                actually entitled to. Use this as an emergency override
+                when the filter is misbehaving (e.g. unusual JWT
+                payloads). Defaults to ``False``.
+                Equivalent CLI flag: ``--no-entitlement-filter``.
+                Equivalent env var: ``ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true``.
         """
         # Store configuration
         self.client_id = client_id
@@ -480,6 +601,128 @@ class ZscalerMCPServer:
         # Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol
         configure_logging(debug=self.debug, use_stderr=True)
         logger = get_logger(__name__)
+
+        # Resolve the toolset selection. Three layers:
+        #   1. Explicit ``toolsets`` argument (CLI / env / programmatic).
+        #      Supports the "default" and "all" keywords.
+        #   2. Fall back to "every toolset whose owning service is in
+        #      enabled_services" — preserves today's behaviour for users
+        #      who don't pass --toolsets at all.
+        #   3. The "meta" toolset is always selected (force-added by
+        #      ToolsetCatalog.resolve()) so cross-service discovery tools
+        #      stay loaded regardless.
+        from zscaler_mcp.common.toolsets import (
+            META_TOOLSET_ID,
+            TOOLSETS,
+            resolve_toolset_selection,
+        )
+
+        if toolsets:
+            self.selected_toolsets, unknown = resolve_toolset_selection(toolsets)
+            if unknown:
+                logger.warning(
+                    "Unknown toolset id(s) in --toolsets: %s. Known toolsets: %s",
+                    ", ".join(sorted(unknown)),
+                    ", ".join(TOOLSETS.all_ids()),
+                )
+        else:
+            self.selected_toolsets = {
+                ts.id
+                for ts in TOOLSETS.values()
+                if ts.service in self.enabled_services or ts.id == META_TOOLSET_ID
+            }
+        self._toolset_catalog = TOOLSETS
+
+        # OneAPI entitlement filter — trim the selected toolsets down to
+        # the products the configured OneAPI credentials are actually
+        # entitled to. Cache-first / cold-fetch / non-fatal. The filter
+        # is skipped entirely if:
+        #   * disable_entitlement_filter is True, or
+        #   * ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true in the env, or
+        #   * any failure occurs (missing creds, network, decode, etc.).
+        env_optout = os.getenv("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", "").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+        self.disable_entitlement_filter = bool(disable_entitlement_filter or env_optout)
+        # Track the filter outcome for the security posture banner. One of:
+        #   "disabled"           — operator opted out (CLI flag / env var)
+        #   "applied"            — filter ran and trimmed (or confirmed) the set
+        #   "skipped: <reason>"  — filter ran but bailed (no creds, decode error, ...)
+        #   "error: <Exception>" — defensive catch-all
+        self.entitlement_filter_state: str = "disabled" if self.disable_entitlement_filter else "applied"
+        self.entitlement_filter_summary: Optional[str] = None
+        self.entitlement_kept_count: Optional[int] = None
+        self.entitlement_removed_count: Optional[int] = None
+        self.entitled_services: Optional[List[str]] = None
+
+        if self.disable_entitlement_filter:
+            logger.info(
+                "OneAPI entitlement filter disabled by configuration; "
+                "all selected toolsets will load."
+            )
+        else:
+            try:
+                from zscaler_mcp.common.entitlements import apply_entitlement_filter
+
+                pre_filter_count = len(self.selected_toolsets)
+                filtered, status = apply_entitlement_filter(
+                    self.selected_toolsets,
+                )
+                self.entitlement_filter_summary = status
+                if status and status.startswith("entitlement filter skipped"):
+                    self.entitlement_filter_state = "skipped"
+                if filtered is not None and filtered != self.selected_toolsets:
+                    removed = sorted(self.selected_toolsets - filtered)
+                    self.selected_toolsets = filtered
+                    self.entitlement_kept_count = len(filtered)
+                    self.entitlement_removed_count = len(removed)
+                    logger.info(status)
+                elif status:
+                    # Filter ran but didn't change anything — could be
+                    # "all entitled" or "skipped because <reason>".
+                    if status.startswith("entitlement filter skipped"):
+                        logger.warning(status)
+                    else:
+                        logger.info(status)
+                        self.entitlement_kept_count = pre_filter_count
+                        self.entitlement_removed_count = 0
+
+                # Cache-only lookup of the entitled service codes for the
+                # security posture banner. The token was just fetched (and
+                # cached) by apply_entitlement_filter above, so this is
+                # essentially free; on any failure we just leave the field
+                # unset and the banner shows "(unavailable)".
+                if self.entitlement_filter_state == "applied":
+                    try:
+                        from zscaler_mcp.common.entitlements import (
+                            decode_oneapi_token,
+                            extract_entitled_services,
+                            obtain_oneapi_token,
+                        )
+
+                        token, _ = obtain_oneapi_token()
+                        if token:
+                            payload = decode_oneapi_token(token)
+                            if payload:
+                                self.entitled_services = sorted(
+                                    extract_entitled_services(payload)
+                                )
+                    except Exception as exc:  # pragma: no cover - defensive
+                        logger.debug(
+                            "Could not resolve entitled services for banner: %s", exc
+                        )
+            except Exception as exc:
+                logger.warning(
+                    "Entitlement filter raised %s; skipping (all selected "
+                    "toolsets will load).",
+                    exc.__class__.__name__,
+                )
+                self.entitlement_filter_state = "error"
+                self.entitlement_filter_summary = (
+                    f"entitlement filter error: {exc.__class__.__name__}"
+                )
 
         # Log security posture
         logger.info("Initializing Zscaler Integrations MCP Server")
@@ -526,7 +769,7 @@ class ZscalerMCPServer:
         transport_security = _get_transport_security(host=host)
         self.server = FastMCP(
             name="Zscaler Integrations MCP Server",
-            instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
+            instructions=self._compose_server_instructions(),
             debug=self.debug,
             log_level="DEBUG" if self.debug else "INFO",
             transport_security=transport_security,
@@ -571,7 +814,9 @@ class ZscalerMCPServer:
         """
         from zscaler_mcp.common.tool_helpers import _wrap_with_audit
 
-        # Register core tools directly
+        # Register core tools directly. These belong to the ``meta``
+        # toolset and are never filtered out — the agent always needs
+        # connectivity checks and discovery.
         self.server.add_tool(
             _wrap_with_audit(self.zscaler_check_connectivity, "zscaler_check_connectivity"),
             name="zscaler_check_connectivity",
@@ -583,29 +828,67 @@ class ZscalerMCPServer:
             _wrap_with_audit(self.get_available_services, "zscaler_get_available_services"),
             name="zscaler_get_available_services",
             description=(
-                "List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, ZMS, etc.) "
-                "and their tool counts. Call this FIRST when unsure which services or tools "
-                "are available, or when a tool search returns no relevant results."
+                "Service-level overview of what is loaded in this "
+                "session: which Zscaler services are callable, which "
+                "are present but have zero callable tools because the "
+                "OneAPI credentials are not entitled to them, and "
+                "which were excluded by configuration. For tool-level "
+                "discovery, prefer zscaler_list_toolsets. Treat the "
+                "result as authoritative."
             ),
             annotations=ToolAnnotations(readOnlyHint=True),
         )
 
         self.server.add_tool(
-            _wrap_with_audit(self.search_tools, "zscaler_search_tools"),
-            name="zscaler_search_tools",
+            _wrap_with_audit(self.zscaler_list_toolsets, "zscaler_list_toolsets"),
+            name="zscaler_list_toolsets",
             description=(
-                "Search the Zscaler MCP tool registry by name, description, or service. "
-                "Use this to find specific tools or capabilities across all Zscaler services "
-                "(ZIA, ZPA, ZDX, ZCC, ZTW, ZMS, ZIdentity, EASM, Z-Insights). "
-                "Accepts a JMESPath query for advanced filtering/projection. "
-                "Call this when you need to find the right tool for a task, discover "
-                "available capabilities, or when fuzzy tool search returns irrelevant results. "
-                "Examples: find firewall tools, list device tools, discover policy capabilities."
+                "PRIMARY tool-discovery entry point. Call this FIRST "
+                "for any user request that needs to find a Zscaler "
+                "tool. Returns the toolsets this server organises tools "
+                "into (one per resource family per service, e.g. "
+                "'zia_url_filtering', 'zpa_segment_groups'). Each row "
+                "tells you whether the group is currently loaded, how "
+                "many tools it contains, and whether it can be enabled "
+                "in this session. Supports name / description / service "
+                "substring filters so you can scope the result. Treat "
+                "'can_enable: false' as authoritative — the OneAPI "
+                "credentials cannot access that product, do not retry."
             ),
             annotations=ToolAnnotations(readOnlyHint=True),
         )
 
-        tool_count = 3  # the tools added above
+        self.server.add_tool(
+            _wrap_with_audit(self.zscaler_get_toolset_tools, "zscaler_get_toolset_tools"),
+            name="zscaler_get_toolset_tools",
+            description=(
+                "Drill into a specific toolset to see its tools and "
+                "whether each one can be called right now. Use after "
+                "zscaler_list_toolsets has identified the relevant "
+                "toolset. Each result row has 'available' and (when "
+                "false) 'unavailable_reason'. Treat 'available: false' "
+                "as authoritative and report the situation to the user "
+                "instead of attempting to call the tool. Supports name "
+                "/ description substring filters to narrow the result."
+            ),
+            annotations=ToolAnnotations(readOnlyHint=True),
+        )
+
+        self.server.add_tool(
+            _wrap_with_audit(self.zscaler_enable_toolset, "zscaler_enable_toolset"),
+            name="zscaler_enable_toolset",
+            description=(
+                "Activate a toolset that was registered but not loaded "
+                "at startup, so its tools become callable for the rest "
+                "of the session. Refuses with status 'not_entitled' if "
+                "the toolset belongs to a product the configured OneAPI "
+                "credentials cannot access — in that case, report the "
+                "result to the user and do not retry."
+            ),
+            annotations=ToolAnnotations(readOnlyHint=True),
+        )
+
+        tool_count = 5  # 2 core meta tools + 3 toolset discovery tools
 
         # Register tools from services
         for service in self.services.values():
@@ -618,6 +901,7 @@ class ZscalerMCPServer:
                         enable_write_tools=self.enable_write_tools,
                         write_tools=self.write_tools,
                         disabled_tools=self.disabled_tools,
+                        selected_toolsets=self.selected_toolsets,
                     )
                 else:
                     service.register_tools(
@@ -625,6 +909,7 @@ class ZscalerMCPServer:
                         enable_write_tools=self.enable_write_tools,
                         write_tools=self.write_tools,
                         disabled_tools=self.disabled_tools,
+                        selected_toolsets=self.selected_toolsets,
                     )
 
                 # Count tools (read + write)
@@ -680,109 +965,529 @@ class ZscalerMCPServer:
             logger.error("Connectivity check failed: %s", e)
             return {"connected": False}
 
-    def get_available_services(self) -> Dict[str, object]:
-        """Get information about available and disabled services/tools.
+    # ------------------------------------------------------------------
+    # Toolset support
+    # ------------------------------------------------------------------
 
-        Returns a dict with enabled services (and their registered tool
-        count), any explicitly disabled services, and any disabled tool
-        patterns so the AI agent can inform the user instead of searching
-        for tools that don't exist.
+    def _compose_server_instructions(self) -> str:
+        """Build the MCP ``instructions`` string from the active toolsets.
+
+        Composes a base preamble + one snippet per enabled toolset whose
+        metadata defines an ``instructions`` callable. Mirrors GitHub's
+        ``generateInstructions`` pattern so per-toolset guidance reaches
+        the agent only when those tools are loaded.
         """
+        from zscaler_mcp.common.toolsets import TOOLSETS
+
+        base = (
+            "This server exposes Zscaler tools across ZIA, ZPA, ZDX, "
+            "ZCC, ZTW, ZIdentity, EASM, Z-Insights, and ZMS. Tools "
+            "are organised into toolsets — one logical grouping per "
+            "resource family per service.\n\n"
+            "Tool discovery flow (use this for any user request that "
+            "needs to find a Zscaler tool):\n"
+            "  1. Call zscaler_list_toolsets first. Pass "
+            "name_contains, description_contains, or service to "
+            "scope the result (e.g. name_contains='segment' to find "
+            "the ZPA segment-group toolset).\n"
+            "  2. If a row has can_enable: false, the OneAPI "
+            "credentials in this session cannot access that "
+            "product. Stop and report this to the user — do not "
+            "call zscaler_enable_toolset, do not retry, do not "
+            "look for workarounds.\n"
+            "  3. Otherwise call zscaler_get_toolset_tools(toolset="
+            "<id>) to see the specific tools and confirm "
+            "availability per tool.\n"
+            "  4. If a tool's available flag is false, treat the "
+            "reason as authoritative and report it to the user.\n\n"
+            "For a session-level overview of which services are "
+            "callable, call zscaler_get_available_services."
+        )
+
+        snippets: List[str] = [base]
+        seen: Set[str] = set()
+        for tsid in sorted(self.selected_toolsets):
+            ts = TOOLSETS.get(tsid)
+            if ts is None or ts.instructions is None:
+                continue
+            try:
+                snippet = ts.instructions(TOOLSETS)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed to render instructions for toolset %s: %s", tsid, exc
+                )
+                continue
+            snippet = (snippet or "").strip()
+            if not snippet or snippet in seen:
+                continue
+            seen.add(snippet)
+            snippets.append(snippet)
+
+        return "\n\n".join(snippets)
+
+    def zscaler_list_toolsets(
+        self,
+        name_contains: Optional[str] = None,
+        description_contains: Optional[str] = None,
+        service: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """List Zscaler toolsets — the primary entry point for tool discovery.
+
+        Call this FIRST for any user request that needs to find a
+        Zscaler tool. Toolsets are logical groupings of related tools
+        (one per resource family per service, e.g. ``zia_url_filtering``
+        for URL filtering rules, ``zpa_segment_groups`` for ZPA segment
+        groups). Each row tells you whether the group is currently
+        loaded, how many tools it contains, and whether you can enable
+        it in this session.
+
+        Args:
+            name_contains: Optional case-insensitive substring filter on
+                the toolset id (e.g. ``"segment"`` finds
+                ``zpa_segment_groups``).
+            description_contains: Optional case-insensitive substring
+                filter on the toolset description (e.g. ``"firewall"``
+                finds every firewall-related toolset across services).
+            service: Optional exact-match filter on the owning service
+                code (``zia``, ``zpa``, ``zdx``, ``zcc``, ``ztw``,
+                ``zid``, ``zeasm``, ``zins``, ``zms``, ``meta``).
+
+        Returns:
+            List of dicts with keys ``id``, ``service``, ``description``,
+            ``default``, ``currently_enabled``, ``tool_count``,
+            ``can_enable`` and (when ``can_enable`` is False)
+            ``unavailable_reason``. Returns ``[{"status":
+            "no_results", ...}]`` when filters match nothing.
+
+            ``can_enable`` is ``False`` when the OneAPI credentials are
+            not entitled to the toolset's product — calling
+            ``zscaler_enable_toolset`` would be refused. Treat this as
+            authoritative and report it to the user instead of retrying.
+
+        Typical flow: call this first to find the right toolset, then
+        ``zscaler_get_toolset_tools(toolset=<id>)`` to drill into the
+        specific tools it contains.
+        """
+        from zscaler_mcp.common.toolsets import TOOLSETS, toolset_for_tool
+
+        counts: Dict[str, int] = {}
+        for svc in self.services.values():
+            for tool_def in list(getattr(svc, "read_tools", [])) + list(
+                getattr(svc, "write_tools", [])
+            ):
+                try:
+                    tsid = toolset_for_tool(tool_def["name"])
+                except KeyError:
+                    continue
+                counts[tsid] = counts.get(tsid, 0) + 1
+
+        ent_state = getattr(self, "entitlement_filter_state", None)
+        entitled = getattr(self, "entitled_services", None)
+
+        rows: List[Dict[str, object]] = []
+        for tsid in TOOLSETS.all_ids():
+            ts = TOOLSETS.get(tsid)
+            if ts is None:
+                continue
+            row: Dict[str, object] = {
+                "id": ts.id,
+                "service": ts.service,
+                "description": ts.description,
+                "default": ts.default,
+                "currently_enabled": tsid in self.selected_toolsets,
+                "tool_count": counts.get(tsid, 0),
+                "can_enable": True,
+            }
+            if (
+                ent_state == "applied"
+                and entitled is not None
+                and ts.service not in entitled
+                and ts.service != "meta"
+            ):
+                row["can_enable"] = False
+                row["unavailable_reason"] = (
+                    "OneAPI credentials are not entitled to this product"
+                )
+            rows.append(row)
+
+        if service:
+            svc_lower = service.lower()
+            rows = [r for r in rows if r["service"] == svc_lower]
+
+        if name_contains:
+            needle = name_contains.lower()
+            rows = [r for r in rows if needle in r["id"].lower()]
+
+        if description_contains:
+            needle = description_contains.lower()
+            rows = [r for r in rows if needle in str(r["description"]).lower()]
+
+        if not rows:
+            return [
+                {
+                    "status": "no_results",
+                    "message": (
+                        "No toolset matched the filters. Call "
+                        "zscaler_list_toolsets with no arguments to see "
+                        "the full catalog."
+                    ),
+                }
+            ]
+        return rows
+
+    def zscaler_get_toolset_tools(
+        self,
+        toolset: str,
+        name_contains: Optional[str] = None,
+        description_contains: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """List the tools that belong to a given toolset, with availability info.
+
+        Use this after ``zscaler_list_toolsets`` to inspect what a
+        toolset contains and confirm a specific tool is callable.
+
+        Args:
+            toolset: A toolset id (e.g. ``"zia_url_filtering"``). See
+                ``zscaler_list_toolsets`` for the full set of valid ids.
+            name_contains: Optional case-insensitive substring filter
+                on tool name (e.g. ``"create"`` to narrow to write
+                tools).
+            description_contains: Optional case-insensitive substring
+                filter on tool description.
+
+        Returns:
+            List of dicts with keys ``name``, ``description``,
+            ``type`` (``"read"`` / ``"write"``), ``available``, and
+            (when ``available`` is False) ``unavailable_reason``.
+            Returns ``[{"error": "..."}]`` for unknown toolset ids.
+
+            Treat ``available: false`` results as authoritative — the
+            tool exists in the catalog but cannot be called as
+            configured (typically because the OneAPI credentials are
+            not entitled to that product, the toolset is not enabled
+            in this session, or write tools are disabled). Report the
+            situation to the user instead of retrying.
+        """
+        from zscaler_mcp.common.toolsets import TOOLSETS, toolset_for_tool
+
+        if not TOOLSETS.has(toolset):
+            return [{
+                "error": (
+                    f"Unknown toolset id: {toolset!r}. Call zscaler_list_toolsets "
+                    "to see the valid ids."
+                ),
+            }]
+
+        rows: List[Dict[str, object]] = []
+        for svc in self.services.values():
+            for kind_attr, kind_label in (
+                ("read_tools", "read"),
+                ("write_tools", "write"),
+            ):
+                for tool_def in getattr(svc, kind_attr, []):
+                    try:
+                        if toolset_for_tool(tool_def["name"]) != toolset:
+                            continue
+                    except KeyError:
+                        continue
+                    available, reason = self._tool_availability(
+                        tool_def["name"], kind_label
+                    )
+                    row: Dict[str, object] = {
+                        "name": tool_def["name"],
+                        "description": tool_def["description"],
+                        "type": kind_label,
+                        "available": available,
+                    }
+                    if not available:
+                        row["unavailable_reason"] = reason
+                    rows.append(row)
+
+        if name_contains:
+            needle = name_contains.lower()
+            rows = [r for r in rows if needle in str(r["name"]).lower()]
+
+        if description_contains:
+            needle = description_contains.lower()
+            rows = [r for r in rows if needle in str(r["description"]).lower()]
+
+        return sorted(rows, key=lambda r: str(r["name"]))
+
+    def zscaler_enable_toolset(self, toolset: str) -> Dict[str, object]:
+        """Mark a toolset as enabled at runtime and register its tools.
+
+        After this call, the toolset's tools become available for the
+        rest of the session. Existing tools and previously-enabled
+        toolsets are NOT re-registered (they remain available).
+
+        Args:
+            toolset: A toolset id (e.g. ``"zia_url_filtering"``).
+
+        Returns:
+            ``{"toolset": <id>, "newly_registered": <count>, "status": "..."}``.
+        """
+        from zscaler_mcp.common.toolsets import TOOLSETS
+        from zscaler_mcp.common.tool_helpers import (
+            register_read_tools,
+            register_write_tools,
+        )
+
+        if not TOOLSETS.has(toolset):
+            return {
+                "toolset": toolset,
+                "newly_registered": 0,
+                "status": "error",
+                "error": (
+                    f"Unknown toolset id: {toolset!r}. "
+                    "Call zscaler_list_toolsets to see valid ids."
+                ),
+            }
+
+        if toolset in self.selected_toolsets:
+            return {
+                "toolset": toolset,
+                "newly_registered": 0,
+                "status": "already_enabled",
+            }
+
+        # Refuse to enable a toolset whose product the OneAPI
+        # credentials are not entitled to. Tools would fail at call
+        # time anyway and the agent would loop. Be authoritative here.
+        ts_meta = TOOLSETS.get(toolset)
+        ent_state = getattr(self, "entitlement_filter_state", None)
+        entitled = getattr(self, "entitled_services", None)
+        if (
+            ent_state == "applied"
+            and entitled is not None
+            and ts_meta is not None
+            and ts_meta.service not in entitled
+        ):
+            return {
+                "toolset": toolset,
+                "newly_registered": 0,
+                "status": "not_entitled",
+                "error": (
+                    f"Toolset {toolset!r} belongs to service "
+                    f"{ts_meta.service!r}, which the configured OneAPI "
+                    "credentials are not entitled to. Inform the user "
+                    "that the credentials in use cannot access this "
+                    f"product (entitled products: {', '.join(entitled)}). "
+                    "Do not retry — switching credentials at the "
+                    "MCP-client level requires restarting the server "
+                    "with different ZSCALER_CLIENT_ID / "
+                    "ZSCALER_CLIENT_SECRET values."
+                ),
+            }
+
+        # Find the per-service tool dicts that belong to this toolset and
+        # register only those. We hand register_*_tools a *single-toolset*
+        # selected_toolsets so its existing precedence logic kicks in
+        # naturally for the disabled/exclude/enabled-tools filters.
+        single = {toolset}
+        registered = 0
+        for service in self.services.values():
+            read = [
+                t for t in getattr(service, "read_tools", [])
+                if _safe_toolset_for(t["name"]) == toolset
+            ]
+            write = [
+                t for t in getattr(service, "write_tools", [])
+                if _safe_toolset_for(t["name"]) == toolset
+            ]
+            if read:
+                registered += register_read_tools(
+                    self.server, read,
+                    enabled_tools=self.enabled_tools or None,
+                    disabled_tools=self.disabled_tools,
+                    selected_toolsets=single,
+                )
+            if write:
+                registered += register_write_tools(
+                    self.server, write,
+                    enabled_tools=self.enabled_tools or None,
+                    enable_write_tools=self.enable_write_tools,
+                    write_tools=self.write_tools,
+                    disabled_tools=self.disabled_tools,
+                    selected_toolsets=single,
+                )
+
+        self.selected_toolsets.add(toolset)
+        # FastMCP doesn't expose a public hook to emit
+        # notifications/tools/list_changed; many clients re-list tools on
+        # the next request anyway. Document the limitation rather than
+        # touch private state.
+        return {
+            "toolset": toolset,
+            "newly_registered": registered,
+            "status": "enabled",
+        }
+
+    def get_available_services(self) -> Dict[str, object]:
+        """Get information about available and unavailable services and tools.
+
+        Returns a dict with services that are loaded and callable (with
+        an accurate count of currently-registered tools), any services
+        that are present but currently have zero callable tools because
+        the OneAPI credentials are not entitled to them, services
+        excluded by configuration, and any disabled tool patterns. The
+        AI agent should treat the returned counts as authoritative.
+        """
+        import fnmatch as _fnmatch
+
+        from zscaler_mcp.common.toolsets import META_TOOLSET_ID, TOOLSETS, toolset_for_tool
+
         all_names = set(services.get_service_names())
-        enabled = {}
-        for name in sorted(self.enabled_services):
-            svc = self.services.get(name)
-            tool_count = len(svc.read_tools) + len(svc.write_tools) if svc else 0
-            enabled[name] = {"tool_count": tool_count}
+
+        # Count tools that are actually callable in this session — i.e.
+        # the tool's toolset is in self.selected_toolsets *and* it
+        # passes the per-tool registration filters. Anything stripped
+        # by the entitlement filter, --disabled-tools, or read-only
+        # mode is excluded so the agent gets the truth, not the
+        # configured maximum.
+        active_count_by_service: Dict[str, int] = {}
+        for svc_name, svc in self.services.items():
+            count = 0
+            for kind in ("read_tools", "write_tools"):
+                for tool_def in getattr(svc, kind, []):
+                    name = tool_def["name"]
+                    try:
+                        tsid = toolset_for_tool(name)
+                    except KeyError:
+                        tsid = None
+                    if tsid and tsid not in self.selected_toolsets:
+                        continue
+                    if kind == "write_tools":
+                        if not self.enable_write_tools:
+                            continue
+                        if self.write_tools and not any(
+                            _fnmatch.fnmatch(name, pat) for pat in self.write_tools
+                        ):
+                            continue
+                    if self.disabled_tools and any(
+                        _fnmatch.fnmatch(name, pat) for pat in self.disabled_tools
+                    ):
+                        continue
+                    count += 1
+            active_count_by_service[svc_name] = count
+
+        enabled = {
+            name: {"tool_count": active_count_by_service.get(name, 0)}
+            for name in sorted(self.enabled_services)
+            if active_count_by_service.get(name, 0) > 0
+        }
+
+        # A service that is configured-on but has zero active tools is
+        # almost always the entitlement filter at work (or every toolset
+        # got stripped some other way). Surface it explicitly so the
+        # agent doesn't fall back to "let me search harder".
+        unavailable_due_to_entitlement = sorted(
+            name for name in self.enabled_services
+            if active_count_by_service.get(name, 0) == 0
+        )
 
         disabled_svc = sorted(all_names - self.enabled_services)
 
         result: Dict[str, object] = {"enabled_services": enabled}
 
         notes = []
+        if unavailable_due_to_entitlement:
+            result["unavailable_services"] = unavailable_due_to_entitlement
+            ent_state = getattr(self, "entitlement_filter_state", None)
+            entitled = getattr(self, "entitled_services", None) or []
+            if ent_state == "applied" and entitled:
+                notes.append(
+                    "Services in 'unavailable_services' are present but have "
+                    "zero callable tools in this session because the OneAPI "
+                    "credentials are only entitled to: "
+                    f"{', '.join(entitled)}. Inform the user that the "
+                    "credentials in use are not entitled to those services. "
+                    "Do NOT attempt to enable a toolset for an unavailable "
+                    "service — it will be refused."
+                )
+            else:
+                notes.append(
+                    "Services in 'unavailable_services' have no callable "
+                    "tools in this session (toolset selection or other "
+                    "filtering excluded them). Inform the user the service "
+                    "is not available rather than searching for workarounds."
+                )
+
         if disabled_svc:
             result["disabled_services"] = disabled_svc
             notes.append(
-                "Disabled services have been explicitly excluded. "
-                "Their tools are not registered and cannot be called. "
-                "If a user asks about a disabled service, inform them "
-                "that it has been disabled by the server administrator."
+                "Services in 'disabled_services' have been explicitly "
+                "excluded by the server administrator. Their tools are "
+                "not registered and cannot be called."
             )
 
         if self.disabled_tools:
             result["disabled_tool_patterns"] = sorted(self.disabled_tools)
             notes.append(
-                "Disabled tool patterns use fnmatch wildcards. "
-                "Any tool whose name matches a pattern is excluded and cannot be called. "
-                "For example, 'zcc_list_device*' blocks zcc_list_devices and zcc_list_devices_lite. "
-                "If a user asks for a disabled tool, inform them it has been "
-                "disabled by the server administrator."
+                "Tool patterns in 'disabled_tool_patterns' have been "
+                "blocked by the administrator. Any tool whose name "
+                "matches a pattern (fnmatch wildcards) is excluded."
             )
+
+        # Tell the agent how many toolsets are active so it doesn't
+        # get its hopes up from raw catalog totals.
+        result["active_toolsets"] = sorted(
+            t for t in self.selected_toolsets if t != META_TOOLSET_ID
+        )
+        result["total_toolsets_in_catalog"] = len(TOOLSETS.all_ids())
 
         if notes:
             result["note"] = " ".join(notes)
         return result
 
-    def search_tools(
-        self,
-        name_contains: Optional[str] = None,
-        description_contains: Optional[str] = None,
-        service: Optional[str] = None,
-        query: Optional[str] = None,
-    ) -> list:
-        """Search the tool registry for tools matching the given criteria.
+    def _tool_availability(self, name: str, kind: str) -> tuple[bool, Optional[str]]:
+        """Decide whether a registered tool can actually be called this session.
 
-        Builds a searchable catalog of all registered tools and applies
-        optional filters. Supports JMESPath for advanced queries.
+        Returns ``(available, reason)``. ``reason`` is ``None`` when
+        ``available`` is ``True``; otherwise it is a short, user-facing
+        sentence explaining why the tool is not callable.
 
-        Args:
-            name_contains: Substring filter on tool name (case-insensitive).
-            description_contains: Substring filter on tool description (case-insensitive).
-            service: Filter by service prefix (e.g., 'zia', 'zpa', 'zms').
-            query: JMESPath expression for advanced filtering/projection.
-                Applied after name/description/service filters.
-
-        Returns:
-            List of matching tools with name, description, service, and type.
+        Used by ``zscaler_get_toolset_tools`` to surface entitlement /
+        toolset / write / disabled-tools state on each result row so
+        the agent gets one authoritative answer instead of probing.
         """
-        catalog = []
-        for svc_name, svc in sorted(self.services.items()):
-            for tool_def in getattr(svc, "read_tools", []):
-                catalog.append({
-                    "name": tool_def["name"],
-                    "description": tool_def["description"],
-                    "service": svc_name,
-                    "type": "read",
-                })
-            for tool_def in getattr(svc, "write_tools", []):
-                catalog.append({
-                    "name": tool_def["name"],
-                    "description": tool_def["description"],
-                    "service": svc_name,
-                    "type": "write",
-                })
+        import fnmatch as _fnmatch
 
-        if service:
-            svc_lower = service.lower()
-            catalog = [t for t in catalog if t["service"] == svc_lower]
+        from zscaler_mcp.common.toolsets import toolset_for_tool
 
-        if name_contains:
-            needle = name_contains.lower()
-            catalog = [t for t in catalog if needle in t["name"].lower()]
+        try:
+            tsid = toolset_for_tool(name)
+        except KeyError:
+            tsid = None
 
-        if description_contains:
-            needle = description_contains.lower()
-            catalog = [t for t in catalog if needle in t["description"].lower()]
+        if tsid and tsid not in self.selected_toolsets:
+            ent_state = getattr(self, "entitlement_filter_state", None)
+            entitled = getattr(self, "entitled_services", None)
+            if ent_state == "applied" and entitled is not None:
+                svc_for_tool = name.split("_", 1)[0] if "_" in name else None
+                if svc_for_tool and svc_for_tool not in entitled:
+                    return (
+                        False,
+                        "OneAPI credentials are not entitled to this product",
+                    )
+            return (
+                False,
+                f"Toolset '{tsid}' is not enabled in this session",
+            )
 
-        if query:
-            from zscaler_mcp.common.jmespath_utils import apply_jmespath
+        if kind == "write":
+            if not self.enable_write_tools:
+                return False, "Write tools are disabled (server is read-only)"
+            if self.write_tools and not any(
+                _fnmatch.fnmatch(name, pat) for pat in self.write_tools
+            ):
+                return False, "Write tool is not in the configured allowlist"
 
-            catalog = apply_jmespath(catalog, query)
+        if self.disabled_tools and any(
+            _fnmatch.fnmatch(name, pat) for pat in self.disabled_tools
+        ):
+            return False, "Tool has been disabled by the administrator"
 
-        if not catalog:
-            return [{"status": "no_results", "message": "No tools matched the search criteria."}]
-
-        return catalog
+        return True, None
 
     def _build_fastmcp_auth_app(self, transport: str):
         """Build an ASGI app with a fastmcp AuthProvider handling authentication.
@@ -967,6 +1672,7 @@ class ZscalerMCPServer:
             _log_security_posture(
                 transport, scheme, host, port, tls_kwargs,
                 fastmcp_auth=self._fastmcp_auth,
+                server=self,
             )
 
             uvicorn.run(
@@ -1229,8 +1935,37 @@ def parse_args():
         default=os.environ.get("ZSCALER_MCP_DISABLED_TOOLS"),
         metavar="TOOL1,TOOL2,...",
         help="Comma-separated list of tools to exclude. Supports wildcards "
-        "(e.g., 'zcc_*' excludes all ZCC tools, 'zcc_devices_csv_exporter' excludes one tool). "
+        "(e.g., 'zcc_*' excludes all ZCC tools, 'zia_list_devices' excludes one tool). "
         "(env: ZSCALER_MCP_DISABLED_TOOLS)",
+    )
+
+    # Toolset selection
+    parser.add_argument(
+        "--toolsets",
+        default=os.environ.get("ZSCALER_MCP_TOOLSETS"),
+        metavar="TOOLSET1,TOOLSET2,...",
+        help=(
+            "Comma-separated list of toolsets to enable (e.g. "
+            "'zia_url_filtering,zpa_app_segments'). Special values: "
+            "'default' expands to the toolsets marked default-on; "
+            "'all' enables every toolset. When unspecified, every toolset "
+            "belonging to a currently-enabled service is loaded "
+            "(preserves today's behaviour). The 'meta' toolset is always "
+            "loaded. (env: ZSCALER_MCP_TOOLSETS)"
+        ),
+    )
+
+    parser.add_argument(
+        "--no-entitlement-filter",
+        action="store_true",
+        default=os.environ.get("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", "").lower()
+        in ("true", "1", "yes"),
+        help=(
+            "Skip the OneAPI entitlement filter that trims toolsets down to "
+            "the products the configured ZSCALER_CLIENT_ID is entitled to. "
+            "Use as an emergency override when the filter misbehaves. "
+            "(env: ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER)"
+        ),
     )
 
     # Debug mode
@@ -1340,6 +2075,24 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--generate-docs",
+        action="store_true",
+        help="Regenerate the auto-managed regions of the project's "
+        "Markdown docs (docs/guides/supported-tools.md, README.md, "
+        "docs/guides/toolsets.md) from the live tool inventory, then "
+        "exit. Run this whenever you add, rename, or remove a tool.",
+    )
+
+    parser.add_argument(
+        "--check-docs",
+        action="store_true",
+        help="Check whether the auto-managed Markdown regions are in "
+        "sync with the live tool inventory. Exits 0 if everything is "
+        "current, 1 (with a list of stale files) if --generate-docs "
+        "needs to be run. Designed for CI.",
+    )
+
+    parser.add_argument(
         "--version",
         "-v",
         action="version",
@@ -1434,6 +2187,40 @@ def main():
         generate_auth_token(args.generate_auth_token)
         sys.exit(0)
 
+    if getattr(args, "generate_docs", False):
+        from zscaler_mcp.common import docgen
+
+        written = docgen.generate_docs()
+        if not written:
+            print("All auto-managed doc regions are already up to date.")
+        else:
+            print("Updated auto-managed regions in:")
+            for p in written:
+                try:
+                    rel = p.relative_to(docgen.REPO_ROOT)
+                except ValueError:
+                    rel = p
+                print(f"  {rel}")
+        sys.exit(0)
+
+    if getattr(args, "check_docs", False):
+        from zscaler_mcp.common import docgen
+
+        stale = docgen.check_docs()
+        if not stale:
+            print("Docs are in sync with the live tool inventory.")
+            sys.exit(0)
+        print("The following files have stale auto-managed regions:")
+        for p in stale:
+            try:
+                rel = p.relative_to(docgen.REPO_ROOT)
+            except ValueError:
+                rel = p
+            print(f"  {rel}")
+        print()
+        print("Run `zscaler-mcp --generate-docs` to refresh them.")
+        sys.exit(1)
+
     try:
         # Parse write_tools into a set
         write_tools = None
@@ -1447,6 +2234,10 @@ def main():
         disabled_services = None
         if args.disabled_services:
             disabled_services = set(s.strip() for s in args.disabled_services.split(",") if s.strip())
+
+        toolsets = None
+        if getattr(args, "toolsets", None):
+            toolsets = set(t.strip() for t in args.toolsets.split(",") if t.strip())
 
         # Create and run the server
         server = ZscalerMCPServer(
@@ -1463,6 +2254,8 @@ def main():
             write_tools=write_tools,
             disabled_tools=disabled_tools,
             disabled_services=disabled_services,
+            toolsets=toolsets,
+            disable_entitlement_filter=getattr(args, "no_entitlement_filter", False),
             host=args.host,
         )
         logger.info("Starting server with %s transport", args.transport)

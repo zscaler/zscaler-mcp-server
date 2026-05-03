@@ -4,11 +4,24 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+#
+# `order` and `rank` semantics are shared across every ZIA rule tool —
+# see :mod:`zscaler_mcp.common.zia_helpers`. Both are required by the
+# ZIA API on create; the helpers default `order` to 1 (top of policy
+# table) and `rank` to 7 (lowest, ZIA's documented default) when the
+# caller omits them.
 
 
 def _build_firewall_rule_payload(
@@ -45,6 +58,7 @@ def _build_firewall_rule_payload(
     nw_service_groups: Optional[Union[List[int], str]] = None,
     time_windows: Optional[Union[List[int], str]] = None,
     users: Optional[Union[List[int], str]] = None,
+    workload_groups: Optional[Union[List[int], str]] = None,
 ) -> dict:
     """Build payload for firewall rule operations."""
     payload = {}
@@ -88,6 +102,7 @@ def _build_firewall_rule_payload(
         ("nw_service_groups", nw_service_groups),
         ("time_windows", time_windows),
         ("users", users),
+        ("workload_groups", workload_groups),
     ]:
         if param_value is not None:
             payload[param_name] = parse_list(param_value)
@@ -118,7 +133,6 @@ def zia_list_cloud_firewall_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -132,7 +146,6 @@ def zia_list_cloud_firewall_rules(
 
     Args:
         search (str, optional): Search string for filtering rules by name.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -145,7 +158,7 @@ def zia_list_cloud_firewall_rules(
         Search for rules containing "block":
         >>> rules = zia_list_cloud_firewall_rules(search="block")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     fw = client.zia.cloud_firewall_rules
 
     query_params = {"search": search} if search else {}
@@ -160,7 +173,6 @@ def zia_get_cloud_firewall_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the cloud firewall rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -169,7 +181,6 @@ def zia_get_cloud_firewall_rule(
 
     Args:
         rule_id (int/str): The ID of the cloud firewall rule to retrieve.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -179,7 +190,7 @@ def zia_get_cloud_firewall_rule(
         Get a specific rule:
         >>> rule = zia_get_cloud_firewall_rule(rule_id="12345")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     fw = client.zia.cloud_firewall_rules
 
     rule, _, err = fw.get_rule(rule_id)
@@ -196,15 +207,39 @@ def zia_get_cloud_firewall_rule(
 def zia_create_cloud_firewall_rule(
     name: Annotated[str, Field(description="Rule name (required).")],
     rule_action: Annotated[
-        str, Field(description="Action for the rule. Values: ALLOW, BLOCK, BYPASS, INSPECT")
+        str,
+        Field(
+            description=(
+                "Action for the rule. Allowed values: "
+                "ALLOW, BLOCK_DROP, BLOCK_RESET, BLOCK_ICMP, EVAL_NWAPP. "
+                "ALLOW permits the traffic. BLOCK_DROP silently drops the packet. "
+                "BLOCK_RESET drops the packet and returns a TCP RST to the source. "
+                "BLOCK_ICMP drops the packet and returns an ICMP unreachable. "
+                "EVAL_NWAPP evaluates the connection against the Network Application "
+                "rules (deferred classification — used to chain into nw_applications "
+                "based filtering)."
+            )
+        ),
     ],
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = True,
-    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
+    rank: Annotated[
+        Optional[int],
+        Field(description=RANK_FIELD_DESCRIPTION),
+    ] = None,
     order: Annotated[
-        Optional[int], Field(description="Rule order, defaults to the bottom.")
+        Optional[int],
+        Field(
+            description=(
+                "1-based rule position in the evaluation sequence. ZIA's Cloud "
+                "Firewall API rejects create payloads without `order`; the tool "
+                "defaults to 1 (top) when omitted. Rules are evaluated "
+                "top-to-bottom — set `order` explicitly when placing a new "
+                "rule relative to existing ones."
+            )
+        ),
     ] = None,
     src_ips: Annotated[
         Optional[Union[List[str], str]],
@@ -310,7 +345,10 @@ def zia_create_cloud_firewall_rule(
     users: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for users the rule applies to.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    workload_groups: Annotated[
+        Optional[Union[List[int], str]],
+        Field(description="IDs for workload groups the rule applies to."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -319,7 +357,12 @@ def zia_create_cloud_firewall_rule(
 
     Args:
         name (str): Rule name (required).
-        rule_action (str): Action for the rule. Values: ALLOW, BLOCK, BYPASS, INSPECT.
+        rule_action (str): Action for the rule. Allowed values: ``ALLOW`` (permit
+            the traffic), ``BLOCK_DROP`` (silently drop the packet), ``BLOCK_RESET``
+            (drop the packet and return a TCP RST to the source), ``BLOCK_ICMP``
+            (drop the packet and return an ICMP unreachable), and ``EVAL_NWAPP``
+            (evaluate against the Network Application rules — deferred
+            classification that chains into ``nw_applications``-based filtering).
         description (str, optional): Optional rule description.
         enabled (bool, optional): True to enable rule, False to disable (default: True).
         rank (int, optional): Admin rank of the rule.
@@ -334,11 +377,18 @@ def zia_create_cloud_firewall_rule(
         >>> rule = zia_create_cloud_firewall_rule(
         ...     name="Allow Google DNS",
         ...     rule_action="ALLOW",
+        ...     order=1,
+        ...     rank=7,
         ...     src_ips=["192.168.100.0/24"],
         ...     dest_addresses=["8.8.8.8", "8.8.4.4"],
         ...     enable_full_logging=True
         ... )
     """
+    # Cloud Firewall create rejects payloads missing `order` or `rank`.
+    # Apply documented defaults and validate before assembling the payload.
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
+
     payload = _build_firewall_rule_payload(
         name=name,
         description=description,
@@ -373,9 +423,10 @@ def zia_create_cloud_firewall_rule(
         nw_service_groups=nw_service_groups,
         time_windows=time_windows,
         users=users,
+        workload_groups=workload_groups,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     fw = client.zia.cloud_firewall_rules
 
     rule, _, err = fw.add_rule(**payload)
@@ -392,14 +443,28 @@ def zia_update_cloud_firewall_rule(
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     rule_action: Annotated[
         Optional[str],
-        Field(description="Action for the rule. Values: ALLOW, BLOCK, BYPASS, INSPECT"),
+        Field(
+            description=(
+                "Action for the rule. Allowed values: "
+                "ALLOW, BLOCK_DROP, BLOCK_RESET, BLOCK_ICMP, EVAL_NWAPP."
+            )
+        ),
     ] = None,
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
-    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
+    rank: Annotated[
+        Optional[int],
+        Field(description=RANK_FIELD_DESCRIPTION),
+    ] = None,
     order: Annotated[
-        Optional[int], Field(description="Rule order, defaults to the bottom.")
+        Optional[int],
+        Field(
+            description=(
+                "1-based rule position in the evaluation sequence. When omitted, "
+                "the existing rule's order is preserved."
+            )
+        ),
     ] = None,
     src_ips: Annotated[
         Optional[Union[List[str], str]],
@@ -505,7 +570,10 @@ def zia_update_cloud_firewall_rule(
     users: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for users the rule applies to.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    workload_groups: Annotated[
+        Optional[Union[List[int], str]],
+        Field(description="IDs for workload groups the rule applies to."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -523,10 +591,15 @@ def zia_update_cloud_firewall_rule(
         Update a rule's action:
         >>> rule = zia_update_cloud_firewall_rule(
         ...     rule_id="12345",
-        ...     rule_action="BLOCK",
+        ...     rule_action="BLOCK_DROP",
         ...     enabled=False
         ... )
     """
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
+
     payload = _build_firewall_rule_payload(
         name=name,
         description=description,
@@ -561,9 +634,10 @@ def zia_update_cloud_firewall_rule(
         nw_service_groups=nw_service_groups,
         time_windows=time_windows,
         users=users,
+        workload_groups=workload_groups,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     fw = client.zia.cloud_firewall_rules
 
     rule, _, err = fw.update_rule(rule_id, **payload)
@@ -576,7 +650,6 @@ def zia_delete_cloud_firewall_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the cloud firewall rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -588,7 +661,6 @@ def zia_delete_cloud_firewall_rule(
 
     Args:
         rule_id (int/str): The ID of the cloud firewall rule to delete.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -609,7 +681,7 @@ def zia_delete_cloud_firewall_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     fw = client.zia.cloud_firewall_rules
 
     _, _, err = fw.delete_rule(rule_id)

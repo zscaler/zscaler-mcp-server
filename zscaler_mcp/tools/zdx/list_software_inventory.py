@@ -26,7 +26,6 @@ def zdx_list_software(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -45,7 +44,6 @@ def zdx_list_software(
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
         user_ids: Optional list of user IDs to filter by specific users.
         device_ids: Optional list of device IDs to filter by specific devices.
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -64,7 +62,7 @@ def zdx_list_software(
         Get software for specific devices:
         >>> device_software = zdx_list_software(device_ids=["device1", "device2"])
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:
@@ -101,7 +99,6 @@ def zdx_get_software_details(
     ] = None,
     user_ids: Annotated[Optional[List[str]], Field(description="Filter by user ID(s).")] = None,
     device_ids: Annotated[Optional[List[str]], Field(description="Filter by device ID(s).")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -119,7 +116,6 @@ def zdx_get_software_details(
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
         user_ids: Optional list of user IDs to filter by specific users.
         device_ids: Optional list of device IDs to filter by specific devices.
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -138,7 +134,7 @@ def zdx_get_software_details(
         ...     location_id=["58755"]
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:

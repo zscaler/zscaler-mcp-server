@@ -1,5 +1,12 @@
 # Zscaler Integrations MCP Server Changelog
 
+## Unreleased
+
+### Breaking Changes
+
+- **Removed legacy per-service authentication.** OneAPI is now the only supported authentication mode. The `ZSCALER_USE_LEGACY` environment variable, the `use_legacy` parameter on every tool, the per-service legacy clients (`LegacyZPAClient`, `LegacyZIAClient`, `LegacyZCCClient`, `LegacyZTWClient`, `LegacyZDXClient`), and the per-service credential blocks (`ZPA_*`, `ZIA_*`, `ZCC_*`, `ZTW_*`, `ZDX_*`) have all been removed. All Zscaler products are accessed through the unified ZIdentity OneAPI client (`zscaler.ZscalerClient`). To migrate: set `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`), `ZSCALER_VANITY_DOMAIN`, and `ZSCALER_CUSTOMER_ID` (the last is required only when calling ZPA tools), drop any `use_legacy=true` arguments from your MCP tool calls, and remove `ZSCALER_USE_LEGACY` from your `.env`. Tool, skill, and rule documentation has been updated; the `examples/use_legacy_env_example.py` script has been deleted.
+- **Removed the `zcc_devices_csv_exporter` tool.** Tool registration was already removed in PR #38; this release deletes the tool module (`zscaler_mcp/tools/zcc/download_devices.py`), unit tests (`TestZccDevicesCsvExporter` in `tests/zcc/test_zcc_tools.py`), the e2e fixture (`test_download_devices` in `tests/e2e/test_zcc.py`), and all remaining references in documentation and examples. Use `zcc_list_devices` for device inventory queries.
+
 ## 0.10.5 (April 27, 2026)
 
 ### Notes
@@ -63,7 +70,6 @@
 - [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Extended `.github/set-version.sh` to bump the `version` field in `.claude-plugin/plugin.json` and the pinned `zscaler-mcp@<version>` reference in `.mcp.json` on every `semantic-release` cut.
 
 - [PR #55](https://github.com/zscaler/zscaler-mcp-server/pull/55) - Added `.claude-plugin/plugin.json` and `.mcp.json` to the `assets` list in `.releaserc.json` so `semantic-release` commits the bumped versions back to the repository alongside the other manifests.
-
 
 ## 0.10.3 (April 21, 2026)
 

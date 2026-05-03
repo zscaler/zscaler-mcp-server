@@ -19,14 +19,13 @@ def zia_list_network_app_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """List ZIA network application groups with optional filtering.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     query_params = {"search": search} if search else {}
@@ -41,14 +40,13 @@ def zia_get_network_app_group(
     group_id: Annotated[
         Union[int, str], Field(description="Group ID for the network application group.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Get a specific ZIA network application group by ID."""
     if not group_id:
         raise ValueError("group_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.get_network_app_group(group_id)
@@ -70,7 +68,6 @@ def zia_create_network_app_group(
     description: Annotated[
         Optional[str], Field(description="Group description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Create a new ZIA network application group."""
@@ -83,7 +80,7 @@ def zia_create_network_app_group(
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON for network_applications: {e}")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.add_network_app_group(
@@ -103,7 +100,6 @@ def zia_update_network_app_group(
     description: Annotated[
         Optional[str], Field(description="Group description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Update an existing ZIA network application group."""
@@ -116,7 +112,7 @@ def zia_update_network_app_group(
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON for network_applications: {e}")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.update_network_app_group(
@@ -132,7 +128,6 @@ def zia_update_network_app_group(
 
 def zia_delete_network_app_group(
     group_id: Annotated[Union[int, str], Field(description="Group ID (required).")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -149,7 +144,7 @@ def zia_delete_network_app_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     _, _, err = zia.delete_network_app_group(group_id)

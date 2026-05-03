@@ -158,6 +158,10 @@ class TestListToolsReturnTypeContract(unittest.TestCase):
         from zscaler_mcp.tools.zia.sandbox_rules import zia_list_sandbox_rules
         self._assert_returns_any(zia_list_sandbox_rules)
 
+    def test_zia_list_time_intervals_returns_any(self):
+        from zscaler_mcp.tools.zia.time_intervals import zia_list_time_intervals
+        self._assert_returns_any(zia_list_time_intervals)
+
 
 if __name__ == "__main__":
     unittest.main()

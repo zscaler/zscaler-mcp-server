@@ -21,14 +21,13 @@ def zpa_list_pra_credentials(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA PRA (Privileged Remote Access) credentials.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_credential
 
     qp = query_params or {}
@@ -45,14 +44,13 @@ def zpa_list_pra_credentials(
 def zpa_get_pra_credential(
     credential_id: Annotated[str, Field(description="Credential ID for the PRA credential.")],
     query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA PRA credential by ID."""
     if not credential_id:
         raise ValueError("credential_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_credential
 
     result, _, err = api.get_credential(credential_id, query_params=query_params)
@@ -89,14 +87,13 @@ def zpa_create_pra_credential(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA PRA credential."""
     if not name or not credential_type:
         raise ValueError("Both 'name' and 'credential_type' are required for creation")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_credential
 
     body = {
@@ -153,14 +150,13 @@ def zpa_update_pra_credential(
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
     query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA PRA credential. Note: credential type cannot be changed."""
     if not credential_id:
         raise ValueError("credential_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_credential
 
     # Verify the credential type matches
@@ -206,7 +202,6 @@ def zpa_delete_pra_credential(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -223,7 +218,7 @@ def zpa_delete_pra_credential(
     if not credential_id:
         raise ValueError("credential_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_credential
 
     _, _, err = api.delete_credential(credential_id, microtenant_id=microtenant_id)

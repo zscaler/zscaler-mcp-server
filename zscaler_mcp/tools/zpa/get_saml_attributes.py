@@ -13,7 +13,6 @@ def saml_attribute_manager(
     query_params: Annotated[
         dict, Field(description="Optional filters like search, page, page_size.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], str]:
     """
@@ -33,7 +32,7 @@ def saml_attribute_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     saml_api = client.zpa.saml_attributes
     idp_api = client.zpa.idp

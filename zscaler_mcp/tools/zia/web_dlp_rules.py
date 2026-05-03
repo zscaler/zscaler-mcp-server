@@ -4,6 +4,13 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -43,6 +50,7 @@ def _build_web_dlp_rule_payload(
     time_windows: Optional[Union[List[int], str]] = None,
     users: Optional[Union[List[int], str]] = None,
     url_categories: Optional[Union[List[int], str]] = None,
+    workload_groups: Optional[Union[List[int], str]] = None,
 ) -> dict:
     """Build payload for web DLP rule operations."""
     payload = {}
@@ -103,6 +111,7 @@ def _build_web_dlp_rule_payload(
         ("time_windows", time_windows),
         ("users", users),
         ("url_categories", url_categories),
+        ("workload_groups", workload_groups),
     ]:
         if param_value is not None:
             payload[param_name] = parse_list(param_value)
@@ -123,7 +132,6 @@ def zia_list_web_dlp_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -137,7 +145,6 @@ def zia_list_web_dlp_rules(
 
     Args:
         search (str, optional): Search string for filtering rules by name.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -150,7 +157,7 @@ def zia_list_web_dlp_rules(
         Search for rules containing "block":
         >>> rules = zia_list_web_dlp_rules(search="block")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dlp = client.zia.dlp_web_rules
 
     query_params = {"search": search} if search else {}
@@ -169,7 +176,6 @@ def zia_list_web_dlp_rules_lite(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -180,7 +186,6 @@ def zia_list_web_dlp_rules_lite(
 
     Args:
         search (str, optional): Search string for filtering rules by name.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -190,7 +195,7 @@ def zia_list_web_dlp_rules_lite(
         List rules with name and ID only:
         >>> rules = zia_list_web_dlp_rules_lite()
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dlp = client.zia.dlp_web_rules
 
     query_params = {"search": search} if search else {}
@@ -205,7 +210,6 @@ def zia_get_web_dlp_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the web DLP rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -214,7 +218,6 @@ def zia_get_web_dlp_rule(
 
     Args:
         rule_id (int/str): The ID of the web DLP rule to retrieve.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -224,7 +227,7 @@ def zia_get_web_dlp_rule(
         Get a specific rule:
         >>> rule = zia_get_web_dlp_rule(rule_id="12345")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dlp = client.zia.dlp_web_rules
 
     rule, _, err = dlp.get_rule(rule_id)
@@ -250,7 +253,7 @@ def zia_create_web_dlp_rule(
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = True,
-    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order, defaults to the bottom.")
     ] = None,
@@ -344,7 +347,10 @@ def zia_create_web_dlp_rule(
         Optional[Union[List[int], str]],
         Field(description="IDs for URL categories the rule applies to."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    workload_groups: Annotated[
+        Optional[Union[List[int], str]],
+        Field(description="IDs for workload groups this rule applies to."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -368,6 +374,8 @@ def zia_create_web_dlp_rule(
         ...     dlp_download_scan_enabled=True
         ... )
     """
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_web_dlp_rule_payload(
         name=name,
         description=description,
@@ -400,9 +408,10 @@ def zia_create_web_dlp_rule(
         time_windows=time_windows,
         users=users,
         url_categories=url_categories,
+        workload_groups=workload_groups,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dlp = client.zia.dlp_web_rules
 
     rule, _, err = dlp.add_rule(**payload)
@@ -424,7 +433,7 @@ def zia_update_web_dlp_rule(
     enabled: Annotated[
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
-    rank: Annotated[Optional[int], Field(description="Admin rank of the rule.")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order, defaults to the bottom.")
     ] = None,
@@ -518,7 +527,10 @@ def zia_update_web_dlp_rule(
         Optional[Union[List[int], str]],
         Field(description="IDs for URL categories the rule applies to."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    workload_groups: Annotated[
+        Optional[Union[List[int], str]],
+        Field(description="IDs for workload groups this rule applies to."),
+    ] = None,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -540,6 +552,10 @@ def zia_update_web_dlp_rule(
         ...     enabled=True
         ... )
     """
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_web_dlp_rule_payload(
         name=name,
         description=description,
@@ -572,9 +588,10 @@ def zia_update_web_dlp_rule(
         time_windows=time_windows,
         users=users,
         url_categories=url_categories,
+        workload_groups=workload_groups,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dlp = client.zia.dlp_web_rules
 
     rule, _, err = dlp.update_rule(rule_id, **payload)
@@ -585,7 +602,6 @@ def zia_update_web_dlp_rule(
 
 def zia_delete_web_dlp_rule(
     rule_id: Annotated[Union[int, str], Field(description="The ID of the web DLP rule to delete.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -597,7 +613,6 @@ def zia_delete_web_dlp_rule(
 
     Args:
         rule_id (int/str): The ID of the web DLP rule to delete.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -618,7 +633,7 @@ def zia_delete_web_dlp_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dlp = client.zia.dlp_web_rules
 
     _, _, err = dlp.delete_rule(rule_id)

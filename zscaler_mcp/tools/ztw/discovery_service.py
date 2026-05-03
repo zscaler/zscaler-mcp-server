@@ -10,7 +10,6 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def ztw_get_discovery_settings(
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Dict:
     """
@@ -22,7 +21,6 @@ def ztw_get_discovery_settings(
     external IDs, and other discovery-related parameters.
 
     Args:
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "ztw").
 
     Returns:
@@ -39,12 +37,9 @@ def ztw_get_discovery_settings(
         Get the current discovery service settings:
         >>> settings = ztw_get_discovery_settings()
         >>> print(f"Discovery settings: {settings}")
-
-        Get discovery settings using legacy API:
-        >>> settings = ztw_get_discovery_settings(use_legacy=True)
         >>> print(f"Discovery role: {settings.get('discovery_role', 'N/A')}")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.ztw.discovery_service
 
     settings, _, err = api.get_discovery_settings()

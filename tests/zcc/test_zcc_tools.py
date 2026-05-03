@@ -3,7 +3,6 @@ Unit tests for ZCC (Zscaler Client Connector) tools.
 
 This module tests all ZCC tools:
 - zcc_list_devices (read-only)
-- zcc_devices_csv_exporter (read-only)
 - zcc_list_forwarding_profiles (read-only)
 - zcc_list_trusted_networks (read-only)
 """
@@ -12,7 +11,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from zscaler_mcp.tools.zcc.download_devices import zcc_devices_csv_exporter
 from zscaler_mcp.tools.zcc.list_devices import zcc_list_devices
 from zscaler_mcp.tools.zcc.list_forwarding_profiles import zcc_list_forwarding_profiles
 from zscaler_mcp.tools.zcc.list_trusted_networks import zcc_list_trusted_networks
@@ -134,7 +132,7 @@ class TestZccListDevices:
         result = zcc_list_devices()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zcc")
+        mock_get_client.assert_called_once_with(service="zcc")
         mock_client.zcc.devices.list_devices.assert_called_once_with(query_params={})
         assert len(result) == 3
         assert result[0]["device_id"] == "dev0"
@@ -225,157 +223,6 @@ class TestZccListDevices:
             zcc_list_devices()
         assert "Error listing ZCC devices: API Error" in str(exc_info.value)
 
-    @patch("zscaler_mcp.tools.zcc.list_devices.get_zscaler_client")
-    def test_list_devices_legacy_mode(self, mock_get_client, mock_client, mock_device_list):
-        """Test listing devices using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.list_devices.return_value = (mock_device_list, None, None)
-
-        # Execute
-        result = zcc_list_devices(use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zcc")
-        assert len(result) == 3
-
-
-# =============================================================================
-# ZCC DEVICES CSV EXPORTER TESTS
-# =============================================================================
-
-
-class TestZccDevicesCsvExporter:
-    """Test cases for zcc_devices_csv_exporter function."""
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_devices_csv_default(self, mock_get_client, mock_client):
-        """Test successful CSV export with default dataset (devices)."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_devices.return_value = "devices.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter()
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zcc")
-        mock_client.zcc.devices.download_devices.assert_called_once()
-        call_args = mock_client.zcc.devices.download_devices.call_args
-        assert call_args[1]["query_params"] == {}
-        assert "zcc-devices-" in call_args[1]["filename"]
-        assert result == "devices.csv"
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_service_status_csv(self, mock_get_client, mock_client):
-        """Test CSV export for service_status dataset."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_service_status.return_value = "service_status.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter(dataset="service_status")
-
-        # Verify
-        mock_client.zcc.devices.download_service_status.assert_called_once()
-        call_args = mock_client.zcc.devices.download_service_status.call_args
-        assert "zcc-service-status-" in call_args[1]["filename"]
-        assert result == "service_status.csv"
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_with_os_type_filter(self, mock_get_client, mock_client):
-        """Test CSV export with OS type filter."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_devices.return_value = "devices.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter(os_type="windows")
-
-        # Verify
-        call_args = mock_client.zcc.devices.download_devices.call_args
-        assert call_args[1]["query_params"] == {"os_types": ["windows"]}
-        assert result == "devices.csv"
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_with_registration_type_filter(self, mock_get_client, mock_client):
-        """Test CSV export with registration type filter."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_devices.return_value = "devices.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter(registration_type="registered")
-
-        # Verify
-        call_args = mock_client.zcc.devices.download_devices.call_args
-        assert call_args[1]["query_params"] == {"registration_types": ["registered"]}
-        assert result == "devices.csv"
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_with_custom_filename(self, mock_get_client, mock_client):
-        """Test CSV export with custom filename."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_devices.return_value = "custom.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter(filename="custom.csv")
-
-        # Verify
-        call_args = mock_client.zcc.devices.download_devices.call_args
-        assert call_args[1]["filename"] == "custom.csv"
-        assert result == "custom.csv"
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_with_all_params(self, mock_get_client, mock_client):
-        """Test CSV export with all parameters."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_devices.return_value = "all_params.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter(
-            dataset="devices",
-            os_type="macos",
-            registration_type="unregistered",
-            filename="all_params.csv",
-        )
-
-        # Verify
-        call_args = mock_client.zcc.devices.download_devices.call_args
-        assert call_args[1]["query_params"] == {
-            "os_types": ["macos"],
-            "registration_types": ["unregistered"],
-        }
-        assert call_args[1]["filename"] == "all_params.csv"
-        assert result == "all_params.csv"
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_invalid_dataset(self, mock_get_client, mock_client):
-        """Test CSV export with invalid dataset type."""
-        # Setup
-        mock_get_client.return_value = mock_client
-
-        # Execute & Verify
-        with pytest.raises(ValueError) as exc_info:
-            zcc_devices_csv_exporter(dataset="invalid_dataset")
-        assert "Invalid dataset type" in str(exc_info.value)
-
-    @patch("zscaler_mcp.tools.zcc.download_devices.get_zscaler_client")
-    def test_export_legacy_mode(self, mock_get_client, mock_client):
-        """Test CSV export using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.devices.download_devices.return_value = "devices.csv"
-
-        # Execute
-        result = zcc_devices_csv_exporter(use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zcc")
-        assert result == "devices.csv"
-
 
 # =============================================================================
 # ZCC LIST FORWARDING PROFILES TESTS
@@ -400,7 +247,7 @@ class TestZccListForwardingProfiles:
         result = zcc_list_forwarding_profiles()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zcc")
+        mock_get_client.assert_called_once_with(service="zcc")
         mock_client.zcc.forwarding_profile.list_by_company.assert_called_once_with(query_params={})
         assert len(result) == 3
         assert result[0]["id"] == "prof0"
@@ -478,24 +325,6 @@ class TestZccListForwardingProfiles:
             zcc_list_forwarding_profiles()
         assert "Error listing ZCC forwarding profiles: API Error" in str(exc_info.value)
 
-    @patch("zscaler_mcp.tools.zcc.list_forwarding_profiles.get_zscaler_client")
-    def test_list_profiles_legacy_mode(self, mock_get_client, mock_client, mock_profile_list):
-        """Test listing profiles using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.forwarding_profile.list_by_company.return_value = (
-            mock_profile_list,
-            None,
-            None,
-        )
-
-        # Execute
-        result = zcc_list_forwarding_profiles(use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zcc")
-        assert len(result) == 3
-
 
 # =============================================================================
 # ZCC LIST TRUSTED NETWORKS TESTS
@@ -520,7 +349,7 @@ class TestZccListTrustedNetworks:
         result = zcc_list_trusted_networks()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zcc")
+        mock_get_client.assert_called_once_with(service="zcc")
         mock_client.zcc.trusted_networks.list_by_company.assert_called_once_with(query_params={})
         assert len(result) == 3
         assert result[0]["id"] == "net0"
@@ -597,21 +426,3 @@ class TestZccListTrustedNetworks:
         with pytest.raises(Exception) as exc_info:
             zcc_list_trusted_networks()
         assert "Error listing ZCC trusted networks: API Error" in str(exc_info.value)
-
-    @patch("zscaler_mcp.tools.zcc.list_trusted_networks.get_zscaler_client")
-    def test_list_networks_legacy_mode(self, mock_get_client, mock_client, mock_network_list):
-        """Test listing networks using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zcc.trusted_networks.list_by_company.return_value = (
-            mock_network_list,
-            None,
-            None,
-        )
-
-        # Execute
-        result = zcc_list_trusted_networks(use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zcc")
-        assert len(result) == 3

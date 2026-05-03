@@ -4,7 +4,11 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
-from zscaler_mcp.utils.utils import convert_v1_to_v2_response, convert_v2_to_sdk_format
+from zscaler_mcp.utils.utils import (
+    convert_v1_to_v2_response,
+    convert_v2_to_sdk_format,
+    normalize_v2_rule_response,
+)
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -22,14 +26,13 @@ def zpa_list_access_policy_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict[str, Any]]:
     """List ZPA access policy rules.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "access"
 
@@ -49,14 +52,13 @@ def zpa_get_access_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict[str, Any]:
     """Get a specific ZPA access policy rule by ID."""
     if not rule_id:
         raise ValueError("rule_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "access"
 
@@ -96,14 +98,13 @@ def zpa_create_access_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict[str, Any]:
     """Create a new ZPA access policy rule."""
     if not all([name, action_type]):
         raise ValueError("'name' and 'action_type' are required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
 
     # Convert input conditions to SDK format
@@ -123,10 +124,10 @@ def zpa_create_access_policy_rule(
     if microtenant_id:
         payload["microtenant_id"] = microtenant_id
 
-    created, _, err = api.add_access_rule_v2(**payload)
+    created, response, err = api.add_access_rule_v2(**payload)
     if err:
         raise Exception(f"Failed to create access policy rule: {err}")
-    return created.as_dict()
+    return normalize_v2_rule_response(created, response)
 
 
 def zpa_update_access_policy_rule(
@@ -150,14 +151,13 @@ def zpa_update_access_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict[str, Any]:
     """Update an existing ZPA access policy rule."""
     if not rule_id:
         raise ValueError("'rule_id' is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
 
     # Convert input conditions to SDK format
@@ -177,14 +177,10 @@ def zpa_update_access_policy_rule(
     if microtenant_id:
         payload["microtenant_id"] = microtenant_id
 
-    updated, _, err = api.update_access_rule_v2(rule_id, **payload)
+    updated, response, err = api.update_access_rule_v2(rule_id, **payload)
     if err:
         raise Exception(f"Failed to update access policy rule {rule_id}: {err}")
-
-    rule_data = updated.as_dict()
-    if "conditions" in rule_data:
-        rule_data["conditions"] = convert_v1_to_v2_response(rule_data["conditions"])
-    return rule_data
+    return normalize_v2_rule_response(updated, response)
 
 
 def zpa_delete_access_policy_rule(
@@ -192,7 +188,6 @@ def zpa_delete_access_policy_rule(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -209,7 +204,7 @@ def zpa_delete_access_policy_rule(
     if not rule_id:
         raise ValueError("'rule_id' is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.policies
     policy_type = "access"
 

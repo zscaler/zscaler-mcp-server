@@ -7,7 +7,7 @@ alwaysApply: true
 
 1. All ZMS operations use GraphQL queries via `POST /zms/graphql`. There are no mutations — ZMS is read-only.
 2. Every query requires `ZSCALER_CUSTOMER_ID`, automatically resolved from the environment.
-3. ZMS only works with OneAPI credentials. The `use_legacy` parameter has no effect.
+3. All Zscaler tools — ZMS included — authenticate exclusively through OneAPI against ZIdentity using the unified `ZSCALER_*` credentials.
 4. Two pagination patterns exist: some domains use `page`/`pageSize` (agents, agent_groups, nonces), others use `pageNum`/`pageSize` (resources, resource_groups, policy_rules, app_zones, app_catalog, tags).
 5. `eyez_id` is the unique identifier for agents, agent groups, and nonces — not a numeric ID.
 6. Tag hierarchy is three levels: namespace → key → value. Navigate top-down to list tag values.

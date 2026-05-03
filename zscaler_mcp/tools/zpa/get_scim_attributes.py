@@ -12,7 +12,6 @@ def scim_attribute_manager(
     ] = None,
     attribute_id: Annotated[str, Field(description="ID of a specific SCIM attribute.")] = None,
     query_params: Annotated[dict, Field(description="Pagination or search filters.")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], dict, str]:
     """
@@ -38,7 +37,7 @@ def scim_attribute_manager(
     if not idp_name:
         raise ValueError("idp_name is required for SCIM attribute discovery.")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     idp_api = client.zpa.idp
     scim_api = client.zpa.scim_attributes

@@ -195,6 +195,7 @@ memory-bank/
 #  These contain user-specific data and should not be committed to version control
 .cursorignore
 .cursorindexingignore
+.cursor
 .claude/
 .anthropic/
 .openai/

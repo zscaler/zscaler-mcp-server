@@ -14,8 +14,6 @@ Available Tools
      - Description
    * - ``zcc_list_devices``
      - Retrieves ZCC device enrollment information from the Client Connector Portal
-   * - ``zcc_devices_csv_exporter``
-     - Downloads ZCC device information or service status as a CSV file
    * - ``zcc_list_trusted_networks``
      - Returns the list of Trusted Networks By Company ID in the Client Connector Portal
    * - ``zcc_list_forwarding_profiles``
@@ -37,8 +35,6 @@ Retrieves ZCC device enrollment information from the Zscaler Client Connector Po
 :type page_size: Optional[int]
 :param search: The search string used to partially match
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zcc")
 :type service: str
 
@@ -49,28 +45,6 @@ Retrieves ZCC device enrollment information from the Zscaler Client Connector Po
 .. code-block:: python
 
    devices = zcc_list_devices(page=1, page_size=50, search="laptop")
-
-zcc_devices_csv_exporter
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Downloads ZCC device information or service status as a CSV file.
-
-**Parameters:**
-
-:param export_type: Type of export ("devices" or "service_status")
-:type export_type: str
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
-:param service: The service to use (default: "zcc")
-:type service: str
-
-**Returns:**
-- CSV file content as string
-
-**Example:**
-.. code-block:: python
-
-   csv_data = zcc_devices_csv_exporter(export_type="devices")
 
 zcc_list_trusted_networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -85,8 +59,6 @@ Returns the list of Trusted Networks By Company ID in the Client Connector Porta
 :type page_size: Optional[int]
 :param search: The search string used to partially match
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zcc")
 :type service: str
 
@@ -111,8 +83,6 @@ Returns the list of Forwarding Profiles By Company ID in the Client Connector Po
 :type page_size: Optional[int]
 :param search: The search string used to partially match
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zcc")
 :type service: str
 
@@ -127,24 +97,13 @@ Returns the list of Forwarding Profiles By Company ID in the Client Connector Po
 Authentication
 --------------
 
-ZCC tools support both OneAPI and Legacy authentication methods:
-
-**OneAPI Authentication:**
-- Uses OAuth2 client credentials
-- Requires the following environment variables:
+ZCC tools authenticate through **OneAPI** (OAuth2 client credentials).
+Required environment variables:
 
   * ``ZSCALER_CLIENT_ID``
   * ``ZSCALER_CLIENT_SECRET``
   * ``ZSCALER_VANITY_DOMAIN``
   * ``ZSCALER_CLOUD``
-
-**Legacy Authentication:**
-- Uses API key and secret key
-- Requires the following environment variables:
-
-  * ``ZCC_CLIENT_ID``
-  * ``ZCC_CLIENT_SECRET``
-  * ``ZCC_CLOUD``
 
 Common Use Cases
 ----------------

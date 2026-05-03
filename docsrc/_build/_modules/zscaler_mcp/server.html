@@ -220,6 +220,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
@@ -279,7 +283,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
@@ -289,6 +293,20 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_logging</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">log_security_warning</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_safe_toolset_for</span><span class="p">(</span><span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the toolset id for a tool name, or ``None`` if unmapped.</span>
+
+<span class="sd">    Used by :meth:`ZscalerMCPServer.zscaler_enable_toolset` so an</span>
+<span class="sd">    unmapped tool silently skips registration instead of raising.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">toolset_for_tool</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">toolset_for_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
 
 <span class="c1"># Import version from package metadata</span>
 <span class="k">try</span><span class="p">:</span>
@@ -489,6 +507,87 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_tool_surface</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="s2">&quot;ZscalerMCPServer&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a tool-surface banner: toolsets, entitlement filter, audit logging.</span>
+
+<span class="sd">    This block is companion to the security posture banner and surfaces</span>
+<span class="sd">    the configuration that determines *which* tools the server will</span>
+<span class="sd">    expose to clients. It deliberately avoids logging anything that</span>
+<span class="sd">    identifies the tenant (no client_id, vanity domain, or customer ID)</span>
+<span class="sd">    so the banner is safe to ship to centralised log stores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="mi">72</span>
+    <span class="n">bar</span> <span class="o">=</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="n">w</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">META_TOOLSET_ID</span><span class="p">,</span> <span class="n">TOOLSETS</span>
+
+        <span class="n">total_registered</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">TOOLSETS</span><span class="o">.</span><span class="n">all_ids</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - defensive</span>
+        <span class="n">META_TOOLSET_ID</span> <span class="o">=</span> <span class="s2">&quot;meta&quot;</span>
+        <span class="n">total_registered</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">selected</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">selected_toolsets</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">active_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+    <span class="n">non_meta</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="n">META_TOOLSET_ID</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">non_meta</span><span class="p">:</span>
+        <span class="n">toolset_detail</span> <span class="o">=</span> <span class="s2">&quot;(meta only)&quot;</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">non_meta</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">toolset_detail</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">non_meta</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">toolset_detail</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">non_meta</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;, +</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">non_meta</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">4</span><span class="si">}</span><span class="s2"> more&quot;</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">entitlement_filter_state</span>
+    <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="s2">&quot;disabled&quot;</span><span class="p">:</span>
+        <span class="n">ent_line</span> <span class="o">=</span> <span class="s2">&quot;DISABLED (operator opt-out)&quot;</span>
+        <span class="n">ent_detail</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s2">&quot;skipped&quot;</span><span class="p">:</span>
+        <span class="n">ent_line</span> <span class="o">=</span> <span class="s2">&quot;SKIPPED (filter not applied)&quot;</span>
+        <span class="n">ent_detail</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">entitlement_filter_summary</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span>
+        <span class="n">ent_line</span> <span class="o">=</span> <span class="s2">&quot;ERROR (filter not applied)&quot;</span>
+        <span class="n">ent_detail</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">entitlement_filter_summary</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">kept</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">entitlement_kept_count</span>
+        <span class="n">removed</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">entitlement_removed_count</span>
+        <span class="k">if</span> <span class="n">kept</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ent_line</span> <span class="o">=</span> <span class="s2">&quot;ENABLED&quot;</span>
+        <span class="k">elif</span> <span class="n">removed</span><span class="p">:</span>
+            <span class="n">ent_line</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;ENABLED (kept </span><span class="si">{</span><span class="n">kept</span><span class="si">}</span><span class="s2">, removed </span><span class="si">{</span><span class="n">removed</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ent_line</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;ENABLED (kept </span><span class="si">{</span><span class="n">kept</span><span class="si">}</span><span class="s2">, removed 0)&quot;</span>
+        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">entitled_services</span><span class="p">:</span>
+            <span class="n">ent_detail</span> <span class="o">=</span> <span class="s2">&quot;Entitled services: &quot;</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">entitled_services</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ent_detail</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_tool_call_logging_enabled</span>
+
+        <span class="n">audit_status</span> <span class="o">=</span> <span class="s2">&quot;ENABLED&quot;</span> <span class="k">if</span> <span class="n">is_tool_call_logging_enabled</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;DISABLED&quot;</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - defensive</span>
+        <span class="n">audit_status</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.sanitize</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_sanitization_enabled</span>
+
+        <span class="n">sanitize_status</span> <span class="o">=</span> <span class="s2">&quot;ENABLED&quot;</span> <span class="k">if</span> <span class="n">is_sanitization_enabled</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;DISABLED (operator opt-out)&quot;</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - defensive</span>
+        <span class="n">sanitize_status</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  ZSCALER MCP SERVER — TOOL SURFACE&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Toolsets:           </span><span class="si">%d</span><span class="s2"> active / </span><span class="si">%d</span><span class="s2"> registered&quot;</span><span class="p">,</span> <span class="n">active_count</span><span class="p">,</span> <span class="n">total_registered</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    Active:           </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">toolset_detail</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Entitlement Filter: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ent_line</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ent_detail</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ent_detail</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Output Sanitizer:   </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">sanitize_status</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Audit Logging:      </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">audit_status</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_log_security_posture</span><span class="p">(</span>
     <span class="n">transport</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -496,8 +595,15 @@
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">tls_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">fastmcp_auth</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">server</span><span class="p">:</span> <span class="s2">&quot;ZscalerMCPServer | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a consolidated security posture banner at startup.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a consolidated security posture banner at startup.</span>
+
+<span class="sd">    When ``server`` is provided, an additional &quot;TOOL SURFACE&quot; block is</span>
+<span class="sd">    emitted below the security posture summarising toolset selection,</span>
+<span class="sd">    OneAPI entitlement filter outcome, and audit logging state. The</span>
+<span class="sd">    block is omitted (no error) when ``server`` is ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">w</span> <span class="o">=</span> <span class="mi">72</span>
     <span class="n">bar</span> <span class="o">=</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="n">w</span>
 
@@ -586,6 +692,9 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Source IP ACL:  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">src_ip_status</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;  Confirmations:  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">confirm_status</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">server</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_log_tool_surface</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_validate_host_config</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -694,8 +803,10 @@
         <span class="n">write_tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">disabled_tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">disabled_services</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">toolsets</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">auth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">disable_entitlement_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Zscaler Integrations MCP Server.</span>
 
@@ -713,6 +824,12 @@
 <span class="sd">            write_tools: Explicit allowlist of write tools to enable. Supports wildcards. Requires enable_write_tools=True.</span>
 <span class="sd">            disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch).</span>
 <span class="sd">            disabled_services: Set of service names to exclude from enabled services.</span>
+<span class="sd">            toolsets: Set of toolset ids to enable (e.g. ``{&quot;zia_url_filtering&quot;,</span>
+<span class="sd">                &quot;zpa_app_segments&quot;}``). Special values ``&quot;default&quot;`` and ``&quot;all&quot;``</span>
+<span class="sd">                are accepted in the input set and expanded against the catalog.</span>
+<span class="sd">                When ``None``, every toolset whose owning service is currently</span>
+<span class="sd">                enabled is selected (preserves today&#39;s behaviour).</span>
+<span class="sd">                See :mod:`zscaler_mcp.common.toolsets`.</span>
 <span class="sd">            host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.</span>
 <span class="sd">            auth: A ``fastmcp.server.auth.AuthProvider`` instance (e.g.</span>
 <span class="sd">                ``OIDCProxy``, ``OAuthProxy``, or a custom ``AuthProvider`` subclass)</span>
@@ -733,6 +850,14 @@
 <span class="sd">                    )</span>
 <span class="sd">                    server = ZscalerMCPServer(auth=auth)</span>
 <span class="sd">                    server.run(&quot;streamable-http&quot;)</span>
+<span class="sd">            disable_entitlement_filter: When ``True``, skip the OneAPI</span>
+<span class="sd">                entitlement filter that trims ``selected_toolsets`` down</span>
+<span class="sd">                to the products the configured OneAPI credentials are</span>
+<span class="sd">                actually entitled to. Use this as an emergency override</span>
+<span class="sd">                when the filter is misbehaving (e.g. unusual JWT</span>
+<span class="sd">                payloads). Defaults to ``False``.</span>
+<span class="sd">                Equivalent CLI flag: ``--no-entitlement-filter``.</span>
+<span class="sd">                Equivalent env var: ``ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Store configuration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
@@ -756,6 +881,128 @@
         <span class="c1"># Configure logging - use stderr for stdio transport to avoid interfering with MCP protocol</span>
         <span class="n">configure_logging</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span> <span class="n">use_stderr</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1"># Resolve the toolset selection. Three layers:</span>
+        <span class="c1">#   1. Explicit ``toolsets`` argument (CLI / env / programmatic).</span>
+        <span class="c1">#      Supports the &quot;default&quot; and &quot;all&quot; keywords.</span>
+        <span class="c1">#   2. Fall back to &quot;every toolset whose owning service is in</span>
+        <span class="c1">#      enabled_services&quot; — preserves today&#39;s behaviour for users</span>
+        <span class="c1">#      who don&#39;t pass --toolsets at all.</span>
+        <span class="c1">#   3. The &quot;meta&quot; toolset is always selected (force-added by</span>
+        <span class="c1">#      ToolsetCatalog.resolve()) so cross-service discovery tools</span>
+        <span class="c1">#      stay loaded regardless.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">META_TOOLSET_ID</span><span class="p">,</span>
+            <span class="n">TOOLSETS</span><span class="p">,</span>
+            <span class="n">resolve_toolset_selection</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">toolsets</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">,</span> <span class="n">unknown</span> <span class="o">=</span> <span class="n">resolve_toolset_selection</span><span class="p">(</span><span class="n">toolsets</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Unknown toolset id(s) in --toolsets: </span><span class="si">%s</span><span class="s2">. Known toolsets: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)),</span>
+                    <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">TOOLSETS</span><span class="o">.</span><span class="n">all_ids</span><span class="p">()),</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">ts</span><span class="o">.</span><span class="n">id</span>
+                <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">ts</span><span class="o">.</span><span class="n">service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span> <span class="ow">or</span> <span class="n">ts</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">META_TOOLSET_ID</span>
+            <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_toolset_catalog</span> <span class="o">=</span> <span class="n">TOOLSETS</span>
+
+        <span class="c1"># OneAPI entitlement filter — trim the selected toolsets down to</span>
+        <span class="c1"># the products the configured OneAPI credentials are actually</span>
+        <span class="c1"># entitled to. Cache-first / cold-fetch / non-fatal. The filter</span>
+        <span class="c1"># is skipped entirely if:</span>
+        <span class="c1">#   * disable_entitlement_filter is True, or</span>
+        <span class="c1">#   * ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true in the env, or</span>
+        <span class="c1">#   * any failure occurs (missing creds, network, decode, etc.).</span>
+        <span class="n">env_optout</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;yes&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">disable_entitlement_filter</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">disable_entitlement_filter</span> <span class="ow">or</span> <span class="n">env_optout</span><span class="p">)</span>
+        <span class="c1"># Track the filter outcome for the security posture banner. One of:</span>
+        <span class="c1">#   &quot;disabled&quot;           — operator opted out (CLI flag / env var)</span>
+        <span class="c1">#   &quot;applied&quot;            — filter ran and trimmed (or confirmed) the set</span>
+        <span class="c1">#   &quot;skipped: &lt;reason&gt;&quot;  — filter ran but bailed (no creds, decode error, ...)</span>
+        <span class="c1">#   &quot;error: &lt;Exception&gt;&quot; — defensive catch-all</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_state</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;disabled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disable_entitlement_filter</span> <span class="k">else</span> <span class="s2">&quot;applied&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_kept_count</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_removed_count</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entitled_services</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disable_entitlement_filter</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;OneAPI entitlement filter disabled by configuration; &quot;</span>
+                <span class="s2">&quot;all selected toolsets will load.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.entitlements</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_entitlement_filter</span>
+
+                <span class="n">pre_filter_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">)</span>
+                <span class="n">filtered</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">apply_entitlement_filter</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_summary</span> <span class="o">=</span> <span class="n">status</span>
+                <span class="k">if</span> <span class="n">status</span> <span class="ow">and</span> <span class="n">status</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;entitlement filter skipped&quot;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_state</span> <span class="o">=</span> <span class="s2">&quot;skipped&quot;</span>
+                <span class="k">if</span> <span class="n">filtered</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">filtered</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">:</span>
+                    <span class="n">removed</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span> <span class="o">-</span> <span class="n">filtered</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span> <span class="o">=</span> <span class="n">filtered</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_kept_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filtered</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_removed_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">removed</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">status</span><span class="p">:</span>
+                    <span class="c1"># Filter ran but didn&#39;t change anything — could be</span>
+                    <span class="c1"># &quot;all entitled&quot; or &quot;skipped because &lt;reason&gt;&quot;.</span>
+                    <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;entitlement filter skipped&quot;</span><span class="p">):</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_kept_count</span> <span class="o">=</span> <span class="n">pre_filter_count</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_removed_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="c1"># Cache-only lookup of the entitled service codes for the</span>
+                <span class="c1"># security posture banner. The token was just fetched (and</span>
+                <span class="c1"># cached) by apply_entitlement_filter above, so this is</span>
+                <span class="c1"># essentially free; on any failure we just leave the field</span>
+                <span class="c1"># unset and the banner shows &quot;(unavailable)&quot;.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_state</span> <span class="o">==</span> <span class="s2">&quot;applied&quot;</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.entitlements</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                            <span class="n">decode_oneapi_token</span><span class="p">,</span>
+                            <span class="n">extract_entitled_services</span><span class="p">,</span>
+                            <span class="n">obtain_oneapi_token</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                        <span class="n">token</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">obtain_oneapi_token</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+                            <span class="n">payload</span> <span class="o">=</span> <span class="n">decode_oneapi_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">payload</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">entitled_services</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                                    <span class="n">extract_entitled_services</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+                                <span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - defensive</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s2">&quot;Could not resolve entitled services for banner: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span>
+                        <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Entitlement filter raised </span><span class="si">%s</span><span class="s2">; skipping (all selected &quot;</span>
+                    <span class="s2">&quot;toolsets will load).&quot;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_state</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">entitlement_filter_summary</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;entitlement filter error: </span><span class="si">{</span><span class="n">exc</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
 
         <span class="c1"># Log security posture</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing Zscaler Integrations MCP Server&quot;</span><span class="p">)</span>
@@ -802,7 +1049,7 @@
         <span class="n">transport_security</span> <span class="o">=</span> <span class="n">_get_transport_security</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Zscaler Integrations MCP Server&quot;</span><span class="p">,</span>
-            <span class="n">instructions</span><span class="o">=</span><span class="s2">&quot;This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.&quot;</span><span class="p">,</span>
+            <span class="n">instructions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compose_server_instructions</span><span class="p">(),</span>
             <span class="n">debug</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
             <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="k">else</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
             <span class="n">transport_security</span><span class="o">=</span><span class="n">transport_security</span><span class="p">,</span>
@@ -847,7 +1094,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_wrap_with_audit</span>
 
-        <span class="c1"># Register core tools directly</span>
+        <span class="c1"># Register core tools directly. These belong to the ``meta``</span>
+        <span class="c1"># toolset and are never filtered out — the agent always needs</span>
+        <span class="c1"># connectivity checks and discovery.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
             <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zscaler_check_connectivity</span><span class="p">,</span> <span class="s2">&quot;zscaler_check_connectivity&quot;</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_check_connectivity&quot;</span><span class="p">,</span>
@@ -859,29 +1108,67 @@
             <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_available_services</span><span class="p">,</span> <span class="s2">&quot;zscaler_get_available_services&quot;</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_get_available_services&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">&quot;List enabled and disabled Zscaler services (ZCC, ZDX, ZPA, ZIA, ZTW, ZMS, etc.) &quot;</span>
-                <span class="s2">&quot;and their tool counts. Call this FIRST when unsure which services or tools &quot;</span>
-                <span class="s2">&quot;are available, or when a tool search returns no relevant results.&quot;</span>
+                <span class="s2">&quot;Service-level overview of what is loaded in this &quot;</span>
+                <span class="s2">&quot;session: which Zscaler services are callable, which &quot;</span>
+                <span class="s2">&quot;are present but have zero callable tools because the &quot;</span>
+                <span class="s2">&quot;OneAPI credentials are not entitled to them, and &quot;</span>
+                <span class="s2">&quot;which were excluded by configuration. For tool-level &quot;</span>
+                <span class="s2">&quot;discovery, prefer zscaler_list_toolsets. Treat the &quot;</span>
+                <span class="s2">&quot;result as authoritative.&quot;</span>
             <span class="p">),</span>
             <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
-            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">search_tools</span><span class="p">,</span> <span class="s2">&quot;zscaler_search_tools&quot;</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_search_tools&quot;</span><span class="p">,</span>
+            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zscaler_list_toolsets</span><span class="p">,</span> <span class="s2">&quot;zscaler_list_toolsets&quot;</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_list_toolsets&quot;</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">&quot;Search the Zscaler MCP tool registry by name, description, or service. &quot;</span>
-                <span class="s2">&quot;Use this to find specific tools or capabilities across all Zscaler services &quot;</span>
-                <span class="s2">&quot;(ZIA, ZPA, ZDX, ZCC, ZTW, ZMS, ZIdentity, EASM, Z-Insights). &quot;</span>
-                <span class="s2">&quot;Accepts a JMESPath query for advanced filtering/projection. &quot;</span>
-                <span class="s2">&quot;Call this when you need to find the right tool for a task, discover &quot;</span>
-                <span class="s2">&quot;available capabilities, or when fuzzy tool search returns irrelevant results. &quot;</span>
-                <span class="s2">&quot;Examples: find firewall tools, list device tools, discover policy capabilities.&quot;</span>
+                <span class="s2">&quot;PRIMARY tool-discovery entry point. Call this FIRST &quot;</span>
+                <span class="s2">&quot;for any user request that needs to find a Zscaler &quot;</span>
+                <span class="s2">&quot;tool. Returns the toolsets this server organises tools &quot;</span>
+                <span class="s2">&quot;into (one per resource family per service, e.g. &quot;</span>
+                <span class="s2">&quot;&#39;zia_url_filtering&#39;, &#39;zpa_segment_groups&#39;). Each row &quot;</span>
+                <span class="s2">&quot;tells you whether the group is currently loaded, how &quot;</span>
+                <span class="s2">&quot;many tools it contains, and whether it can be enabled &quot;</span>
+                <span class="s2">&quot;in this session. Supports name / description / service &quot;</span>
+                <span class="s2">&quot;substring filters so you can scope the result. Treat &quot;</span>
+                <span class="s2">&quot;&#39;can_enable: false&#39; as authoritative — the OneAPI &quot;</span>
+                <span class="s2">&quot;credentials cannot access that product, do not retry.&quot;</span>
             <span class="p">),</span>
             <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span>
 
-        <span class="n">tool_count</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># the tools added above</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
+            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zscaler_get_toolset_tools</span><span class="p">,</span> <span class="s2">&quot;zscaler_get_toolset_tools&quot;</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_get_toolset_tools&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Drill into a specific toolset to see its tools and &quot;</span>
+                <span class="s2">&quot;whether each one can be called right now. Use after &quot;</span>
+                <span class="s2">&quot;zscaler_list_toolsets has identified the relevant &quot;</span>
+                <span class="s2">&quot;toolset. Each result row has &#39;available&#39; and (when &quot;</span>
+                <span class="s2">&quot;false) &#39;unavailable_reason&#39;. Treat &#39;available: false&#39; &quot;</span>
+                <span class="s2">&quot;as authoritative and report the situation to the user &quot;</span>
+                <span class="s2">&quot;instead of attempting to call the tool. Supports name &quot;</span>
+                <span class="s2">&quot;/ description substring filters to narrow the result.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">add_tool</span><span class="p">(</span>
+            <span class="n">_wrap_with_audit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zscaler_enable_toolset</span><span class="p">,</span> <span class="s2">&quot;zscaler_enable_toolset&quot;</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;zscaler_enable_toolset&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Activate a toolset that was registered but not loaded &quot;</span>
+                <span class="s2">&quot;at startup, so its tools become callable for the rest &quot;</span>
+                <span class="s2">&quot;of the session. Refuses with status &#39;not_entitled&#39; if &quot;</span>
+                <span class="s2">&quot;the toolset belongs to a product the configured OneAPI &quot;</span>
+                <span class="s2">&quot;credentials cannot access — in that case, report the &quot;</span>
+                <span class="s2">&quot;result to the user and do not retry.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">annotations</span><span class="o">=</span><span class="n">ToolAnnotations</span><span class="p">(</span><span class="n">readOnlyHint</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">tool_count</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># 2 core meta tools + 3 toolset discovery tools</span>
 
         <span class="c1"># Register tools from services</span>
         <span class="k">for</span> <span class="n">service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -894,6 +1181,7 @@
                         <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
                         <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span>
                         <span class="n">disabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">,</span>
+                        <span class="n">selected_toolsets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">service</span><span class="o">.</span><span class="n">register_tools</span><span class="p">(</span>
@@ -901,6 +1189,7 @@
                         <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
                         <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span>
                         <span class="n">disabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">,</span>
+                        <span class="n">selected_toolsets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">,</span>
                     <span class="p">)</span>
 
                 <span class="c1"># Count tools (read + write)</span>
@@ -959,115 +1248,541 @@
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;connected&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span></div>
 
 
+    <span class="c1"># ------------------------------------------------------------------</span>
+    <span class="c1"># Toolset support</span>
+    <span class="c1"># ------------------------------------------------------------------</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compose_server_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the MCP ``instructions`` string from the active toolsets.</span>
+
+<span class="sd">        Composes a base preamble + one snippet per enabled toolset whose</span>
+<span class="sd">        metadata defines an ``instructions`` callable. Mirrors GitHub&#39;s</span>
+<span class="sd">        ``generateInstructions`` pattern so per-toolset guidance reaches</span>
+<span class="sd">        the agent only when those tools are loaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOOLSETS</span>
+
+        <span class="n">base</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;This server exposes Zscaler tools across ZIA, ZPA, ZDX, &quot;</span>
+            <span class="s2">&quot;ZCC, ZTW, ZIdentity, EASM, Z-Insights, and ZMS. Tools &quot;</span>
+            <span class="s2">&quot;are organised into toolsets — one logical grouping per &quot;</span>
+            <span class="s2">&quot;resource family per service.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Tool discovery flow (use this for any user request that &quot;</span>
+            <span class="s2">&quot;needs to find a Zscaler tool):</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  1. Call zscaler_list_toolsets first. Pass &quot;</span>
+            <span class="s2">&quot;name_contains, description_contains, or service to &quot;</span>
+            <span class="s2">&quot;scope the result (e.g. name_contains=&#39;segment&#39; to find &quot;</span>
+            <span class="s2">&quot;the ZPA segment-group toolset).</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  2. If a row has can_enable: false, the OneAPI &quot;</span>
+            <span class="s2">&quot;credentials in this session cannot access that &quot;</span>
+            <span class="s2">&quot;product. Stop and report this to the user — do not &quot;</span>
+            <span class="s2">&quot;call zscaler_enable_toolset, do not retry, do not &quot;</span>
+            <span class="s2">&quot;look for workarounds.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  3. Otherwise call zscaler_get_toolset_tools(toolset=&quot;</span>
+            <span class="s2">&quot;&lt;id&gt;) to see the specific tools and confirm &quot;</span>
+            <span class="s2">&quot;availability per tool.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;  4. If a tool&#39;s available flag is false, treat the &quot;</span>
+            <span class="s2">&quot;reason as authoritative and report it to the user.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;For a session-level overview of which services are &quot;</span>
+            <span class="s2">&quot;callable, call zscaler_get_available_services.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">snippets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">base</span><span class="p">]</span>
+        <span class="n">seen</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tsid</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">):</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tsid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ts</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ts</span><span class="o">.</span><span class="n">instructions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">snippet</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">instructions</span><span class="p">(</span><span class="n">TOOLSETS</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - defensive</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;Failed to render instructions for toolset </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tsid</span><span class="p">,</span> <span class="n">exc</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">snippet</span> <span class="o">=</span> <span class="p">(</span><span class="n">snippet</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">snippet</span> <span class="ow">or</span> <span class="n">snippet</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">snippet</span><span class="p">)</span>
+            <span class="n">snippets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">snippet</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">snippets</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ZscalerMCPServer.zscaler_list_toolsets">
+<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.zscaler_list_toolsets">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zscaler_list_toolsets</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List Zscaler toolsets — the primary entry point for tool discovery.</span>
+
+<span class="sd">        Call this FIRST for any user request that needs to find a</span>
+<span class="sd">        Zscaler tool. Toolsets are logical groupings of related tools</span>
+<span class="sd">        (one per resource family per service, e.g. ``zia_url_filtering``</span>
+<span class="sd">        for URL filtering rules, ``zpa_segment_groups`` for ZPA segment</span>
+<span class="sd">        groups). Each row tells you whether the group is currently</span>
+<span class="sd">        loaded, how many tools it contains, and whether you can enable</span>
+<span class="sd">        it in this session.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name_contains: Optional case-insensitive substring filter on</span>
+<span class="sd">                the toolset id (e.g. ``&quot;segment&quot;`` finds</span>
+<span class="sd">                ``zpa_segment_groups``).</span>
+<span class="sd">            description_contains: Optional case-insensitive substring</span>
+<span class="sd">                filter on the toolset description (e.g. ``&quot;firewall&quot;``</span>
+<span class="sd">                finds every firewall-related toolset across services).</span>
+<span class="sd">            service: Optional exact-match filter on the owning service</span>
+<span class="sd">                code (``zia``, ``zpa``, ``zdx``, ``zcc``, ``ztw``,</span>
+<span class="sd">                ``zid``, ``zeasm``, ``zins``, ``zms``, ``meta``).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of dicts with keys ``id``, ``service``, ``description``,</span>
+<span class="sd">            ``default``, ``currently_enabled``, ``tool_count``,</span>
+<span class="sd">            ``can_enable`` and (when ``can_enable`` is False)</span>
+<span class="sd">            ``unavailable_reason``. Returns ``[{&quot;status&quot;:</span>
+<span class="sd">            &quot;no_results&quot;, ...}]`` when filters match nothing.</span>
+
+<span class="sd">            ``can_enable`` is ``False`` when the OneAPI credentials are</span>
+<span class="sd">            not entitled to the toolset&#39;s product — calling</span>
+<span class="sd">            ``zscaler_enable_toolset`` would be refused. Treat this as</span>
+<span class="sd">            authoritative and report it to the user instead of retrying.</span>
+
+<span class="sd">        Typical flow: call this first to find the right toolset, then</span>
+<span class="sd">        ``zscaler_get_toolset_tools(toolset=&lt;id&gt;)`` to drill into the</span>
+<span class="sd">        specific tools it contains.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOOLSETS</span><span class="p">,</span> <span class="n">toolset_for_tool</span>
+
+        <span class="n">counts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">svc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">tsid</span> <span class="o">=</span> <span class="n">toolset_for_tool</span><span class="p">(</span><span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">tsid</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tsid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">ent_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitlement_filter_state&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">entitled</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitled_services&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tsid</span> <span class="ow">in</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">all_ids</span><span class="p">():</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tsid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">service</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">default</span><span class="p">,</span>
+                <span class="s2">&quot;currently_enabled&quot;</span><span class="p">:</span> <span class="n">tsid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">,</span>
+                <span class="s2">&quot;tool_count&quot;</span><span class="p">:</span> <span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tsid</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="s2">&quot;can_enable&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">ent_state</span> <span class="o">==</span> <span class="s2">&quot;applied&quot;</span>
+                <span class="ow">and</span> <span class="n">entitled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="n">ts</span><span class="o">.</span><span class="n">service</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">entitled</span>
+                <span class="ow">and</span> <span class="n">ts</span><span class="o">.</span><span class="n">service</span> <span class="o">!=</span> <span class="s2">&quot;meta&quot;</span>
+            <span class="p">):</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;can_enable&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">&quot;unavailable_reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;OneAPI credentials are not entitled to this product&quot;</span>
+                <span class="p">)</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">service</span><span class="p">:</span>
+            <span class="n">svc_lower</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;service&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">svc_lower</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">name_contains</span><span class="p">:</span>
+            <span class="n">needle</span> <span class="o">=</span> <span class="n">name_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="n">description_contains</span><span class="p">:</span>
+            <span class="n">needle</span> <span class="o">=</span> <span class="n">description_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;no_results&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="s2">&quot;No toolset matched the filters. Call &quot;</span>
+                        <span class="s2">&quot;zscaler_list_toolsets with no arguments to see &quot;</span>
+                        <span class="s2">&quot;the full catalog.&quot;</span>
+                    <span class="p">),</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">rows</span></div>
+
+
+<div class="viewcode-block" id="ZscalerMCPServer.zscaler_get_toolset_tools">
+<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.zscaler_get_toolset_tools">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zscaler_get_toolset_tools</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">toolset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">name_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">description_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List the tools that belong to a given toolset, with availability info.</span>
+
+<span class="sd">        Use this after ``zscaler_list_toolsets`` to inspect what a</span>
+<span class="sd">        toolset contains and confirm a specific tool is callable.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            toolset: A toolset id (e.g. ``&quot;zia_url_filtering&quot;``). See</span>
+<span class="sd">                ``zscaler_list_toolsets`` for the full set of valid ids.</span>
+<span class="sd">            name_contains: Optional case-insensitive substring filter</span>
+<span class="sd">                on tool name (e.g. ``&quot;create&quot;`` to narrow to write</span>
+<span class="sd">                tools).</span>
+<span class="sd">            description_contains: Optional case-insensitive substring</span>
+<span class="sd">                filter on tool description.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of dicts with keys ``name``, ``description``,</span>
+<span class="sd">            ``type`` (``&quot;read&quot;`` / ``&quot;write&quot;``), ``available``, and</span>
+<span class="sd">            (when ``available`` is False) ``unavailable_reason``.</span>
+<span class="sd">            Returns ``[{&quot;error&quot;: &quot;...&quot;}]`` for unknown toolset ids.</span>
+
+<span class="sd">            Treat ``available: false`` results as authoritative — the</span>
+<span class="sd">            tool exists in the catalog but cannot be called as</span>
+<span class="sd">            configured (typically because the OneAPI credentials are</span>
+<span class="sd">            not entitled to that product, the toolset is not enabled</span>
+<span class="sd">            in this session, or write tools are disabled). Report the</span>
+<span class="sd">            situation to the user instead of retrying.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOOLSETS</span><span class="p">,</span> <span class="n">toolset_for_tool</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">toolset</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[{</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unknown toolset id: </span><span class="si">{</span><span class="n">toolset</span><span class="si">!r}</span><span class="s2">. Call zscaler_list_toolsets &quot;</span>
+                    <span class="s2">&quot;to see the valid ids.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">}]</span>
+
+        <span class="n">rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">svc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">kind_attr</span><span class="p">,</span> <span class="n">kind_label</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="p">(</span><span class="s2">&quot;read_tools&quot;</span><span class="p">,</span> <span class="s2">&quot;read&quot;</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;write_tools&quot;</span><span class="p">,</span> <span class="s2">&quot;write&quot;</span><span class="p">),</span>
+            <span class="p">):</span>
+                <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="n">kind_attr</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">toolset_for_tool</span><span class="p">(</span><span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span> <span class="o">!=</span> <span class="n">toolset</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">available</span><span class="p">,</span> <span class="n">reason</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tool_availability</span><span class="p">(</span>
+                        <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">kind_label</span>
+                    <span class="p">)</span>
+                    <span class="n">row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">kind_label</span><span class="p">,</span>
+                        <span class="s2">&quot;available&quot;</span><span class="p">:</span> <span class="n">available</span><span class="p">,</span>
+                    <span class="p">}</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">available</span><span class="p">:</span>
+                        <span class="n">row</span><span class="p">[</span><span class="s2">&quot;unavailable_reason&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
+                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">name_contains</span><span class="p">:</span>
+            <span class="n">needle</span> <span class="o">=</span> <span class="n">name_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="n">description_contains</span><span class="p">:</span>
+            <span class="n">needle</span> <span class="o">=</span> <span class="n">description_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="ZscalerMCPServer.zscaler_enable_toolset">
+<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.zscaler_enable_toolset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zscaler_enable_toolset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">toolset</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mark a toolset as enabled at runtime and register its tools.</span>
+
+<span class="sd">        After this call, the toolset&#39;s tools become available for the</span>
+<span class="sd">        rest of the session. Existing tools and previously-enabled</span>
+<span class="sd">        toolsets are NOT re-registered (they remain available).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            toolset: A toolset id (e.g. ``&quot;zia_url_filtering&quot;``).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``{&quot;toolset&quot;: &lt;id&gt;, &quot;newly_registered&quot;: &lt;count&gt;, &quot;status&quot;: &quot;...&quot;}``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOOLSETS</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.tool_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">register_read_tools</span><span class="p">,</span>
+            <span class="n">register_write_tools</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">toolset</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;toolset&quot;</span><span class="p">:</span> <span class="n">toolset</span><span class="p">,</span>
+                <span class="s2">&quot;newly_registered&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unknown toolset id: </span><span class="si">{</span><span class="n">toolset</span><span class="si">!r}</span><span class="s2">. &quot;</span>
+                    <span class="s2">&quot;Call zscaler_list_toolsets to see valid ids.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">toolset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;toolset&quot;</span><span class="p">:</span> <span class="n">toolset</span><span class="p">,</span>
+                <span class="s2">&quot;newly_registered&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;already_enabled&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Refuse to enable a toolset whose product the OneAPI</span>
+        <span class="c1"># credentials are not entitled to. Tools would fail at call</span>
+        <span class="c1"># time anyway and the agent would loop. Be authoritative here.</span>
+        <span class="n">ts_meta</span> <span class="o">=</span> <span class="n">TOOLSETS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">toolset</span><span class="p">)</span>
+        <span class="n">ent_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitlement_filter_state&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">entitled</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitled_services&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">ent_state</span> <span class="o">==</span> <span class="s2">&quot;applied&quot;</span>
+            <span class="ow">and</span> <span class="n">entitled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">ts_meta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">ts_meta</span><span class="o">.</span><span class="n">service</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">entitled</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;toolset&quot;</span><span class="p">:</span> <span class="n">toolset</span><span class="p">,</span>
+                <span class="s2">&quot;newly_registered&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;not_entitled&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Toolset </span><span class="si">{</span><span class="n">toolset</span><span class="si">!r}</span><span class="s2"> belongs to service &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ts_meta</span><span class="o">.</span><span class="n">service</span><span class="si">!r}</span><span class="s2">, which the configured OneAPI &quot;</span>
+                    <span class="s2">&quot;credentials are not entitled to. Inform the user &quot;</span>
+                    <span class="s2">&quot;that the credentials in use cannot access this &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;product (entitled products: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">entitled</span><span class="p">)</span><span class="si">}</span><span class="s2">). &quot;</span>
+                    <span class="s2">&quot;Do not retry — switching credentials at the &quot;</span>
+                    <span class="s2">&quot;MCP-client level requires restarting the server &quot;</span>
+                    <span class="s2">&quot;with different ZSCALER_CLIENT_ID / &quot;</span>
+                    <span class="s2">&quot;ZSCALER_CLIENT_SECRET values.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Find the per-service tool dicts that belong to this toolset and</span>
+        <span class="c1"># register only those. We hand register_*_tools a *single-toolset*</span>
+        <span class="c1"># selected_toolsets so its existing precedence logic kicks in</span>
+        <span class="c1"># naturally for the disabled/exclude/enabled-tools filters.</span>
+        <span class="n">single</span> <span class="o">=</span> <span class="p">{</span><span class="n">toolset</span><span class="p">}</span>
+        <span class="n">registered</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">service</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">read</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">if</span> <span class="n">_safe_toolset_for</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="n">toolset</span>
+            <span class="p">]</span>
+            <span class="n">write</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">if</span> <span class="n">_safe_toolset_for</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="n">toolset</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">read</span><span class="p">:</span>
+                <span class="n">registered</span> <span class="o">+=</span> <span class="n">register_read_tools</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span> <span class="n">read</span><span class="p">,</span>
+                    <span class="n">enabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">disabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">,</span>
+                    <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">single</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">write</span><span class="p">:</span>
+                <span class="n">registered</span> <span class="o">+=</span> <span class="n">register_write_tools</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="p">,</span> <span class="n">write</span><span class="p">,</span>
+                    <span class="n">enabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_tools</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">enable_write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">,</span>
+                    <span class="n">write_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span><span class="p">,</span>
+                    <span class="n">disabled_tools</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">,</span>
+                    <span class="n">selected_toolsets</span><span class="o">=</span><span class="n">single</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">toolset</span><span class="p">)</span>
+        <span class="c1"># FastMCP doesn&#39;t expose a public hook to emit</span>
+        <span class="c1"># notifications/tools/list_changed; many clients re-list tools on</span>
+        <span class="c1"># the next request anyway. Document the limitation rather than</span>
+        <span class="c1"># touch private state.</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;toolset&quot;</span><span class="p">:</span> <span class="n">toolset</span><span class="p">,</span>
+            <span class="s2">&quot;newly_registered&quot;</span><span class="p">:</span> <span class="n">registered</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;enabled&quot;</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
 <div class="viewcode-block" id="ZscalerMCPServer.get_available_services">
 <a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.get_available_services">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_available_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get information about available and disabled services/tools.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get information about available and unavailable services and tools.</span>
 
-<span class="sd">        Returns a dict with enabled services (and their registered tool</span>
-<span class="sd">        count), any explicitly disabled services, and any disabled tool</span>
-<span class="sd">        patterns so the AI agent can inform the user instead of searching</span>
-<span class="sd">        for tools that don&#39;t exist.</span>
+<span class="sd">        Returns a dict with services that are loaded and callable (with</span>
+<span class="sd">        an accurate count of currently-registered tools), any services</span>
+<span class="sd">        that are present but currently have zero callable tools because</span>
+<span class="sd">        the OneAPI credentials are not entitled to them, services</span>
+<span class="sd">        excluded by configuration, and any disabled tool patterns. The</span>
+<span class="sd">        AI agent should treat the returned counts as authoritative.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_fnmatch</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">META_TOOLSET_ID</span><span class="p">,</span> <span class="n">TOOLSETS</span><span class="p">,</span> <span class="n">toolset_for_tool</span>
+
         <span class="n">all_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">services</span><span class="o">.</span><span class="n">get_service_names</span><span class="p">())</span>
-        <span class="n">enabled</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span><span class="p">):</span>
-            <span class="n">svc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-            <span class="n">tool_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">svc</span><span class="o">.</span><span class="n">read_tools</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">svc</span><span class="o">.</span><span class="n">write_tools</span><span class="p">)</span> <span class="k">if</span> <span class="n">svc</span> <span class="k">else</span> <span class="mi">0</span>
-            <span class="n">enabled</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tool_count&quot;</span><span class="p">:</span> <span class="n">tool_count</span><span class="p">}</span>
+
+        <span class="c1"># Count tools that are actually callable in this session — i.e.</span>
+        <span class="c1"># the tool&#39;s toolset is in self.selected_toolsets *and* it</span>
+        <span class="c1"># passes the per-tool registration filters. Anything stripped</span>
+        <span class="c1"># by the entitlement filter, --disabled-tools, or read-only</span>
+        <span class="c1"># mode is excluded so the agent gets the truth, not the</span>
+        <span class="c1"># configured maximum.</span>
+        <span class="n">active_count_by_service</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">svc_name</span><span class="p">,</span> <span class="n">svc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;read_tools&quot;</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">tsid</span> <span class="o">=</span> <span class="n">toolset_for_tool</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                        <span class="n">tsid</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">if</span> <span class="n">tsid</span> <span class="ow">and</span> <span class="n">tsid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span>
+                            <span class="n">_fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">pat</span><span class="p">)</span> <span class="k">for</span> <span class="n">pat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span>
+                        <span class="p">):</span>
+                            <span class="k">continue</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+                        <span class="n">_fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">pat</span><span class="p">)</span> <span class="k">for</span> <span class="n">pat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span>
+                    <span class="p">):</span>
+                        <span class="k">continue</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">active_count_by_service</span><span class="p">[</span><span class="n">svc_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+
+        <span class="n">enabled</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;tool_count&quot;</span><span class="p">:</span> <span class="n">active_count_by_service</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)}</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">active_count_by_service</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="p">}</span>
+
+        <span class="c1"># A service that is configured-on but has zero active tools is</span>
+        <span class="c1"># almost always the entitlement filter at work (or every toolset</span>
+        <span class="c1"># got stripped some other way). Surface it explicitly so the</span>
+        <span class="c1"># agent doesn&#39;t fall back to &quot;let me search harder&quot;.</span>
+        <span class="n">unavailable_due_to_entitlement</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span>
+            <span class="k">if</span> <span class="n">active_count_by_service</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="p">)</span>
 
         <span class="n">disabled_svc</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">all_names</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled_services</span><span class="p">)</span>
 
         <span class="n">result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;enabled_services&quot;</span><span class="p">:</span> <span class="n">enabled</span><span class="p">}</span>
 
         <span class="n">notes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">unavailable_due_to_entitlement</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;unavailable_services&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unavailable_due_to_entitlement</span>
+            <span class="n">ent_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitlement_filter_state&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">entitled</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitled_services&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">ent_state</span> <span class="o">==</span> <span class="s2">&quot;applied&quot;</span> <span class="ow">and</span> <span class="n">entitled</span><span class="p">:</span>
+                <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="s2">&quot;Services in &#39;unavailable_services&#39; are present but have &quot;</span>
+                    <span class="s2">&quot;zero callable tools in this session because the OneAPI &quot;</span>
+                    <span class="s2">&quot;credentials are only entitled to: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">entitled</span><span class="p">)</span><span class="si">}</span><span class="s2">. Inform the user that the &quot;</span>
+                    <span class="s2">&quot;credentials in use are not entitled to those services. &quot;</span>
+                    <span class="s2">&quot;Do NOT attempt to enable a toolset for an unavailable &quot;</span>
+                    <span class="s2">&quot;service — it will be refused.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="s2">&quot;Services in &#39;unavailable_services&#39; have no callable &quot;</span>
+                    <span class="s2">&quot;tools in this session (toolset selection or other &quot;</span>
+                    <span class="s2">&quot;filtering excluded them). Inform the user the service &quot;</span>
+                    <span class="s2">&quot;is not available rather than searching for workarounds.&quot;</span>
+                <span class="p">)</span>
+
         <span class="k">if</span> <span class="n">disabled_svc</span><span class="p">:</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;disabled_services&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">disabled_svc</span>
             <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;Disabled services have been explicitly excluded. &quot;</span>
-                <span class="s2">&quot;Their tools are not registered and cannot be called. &quot;</span>
-                <span class="s2">&quot;If a user asks about a disabled service, inform them &quot;</span>
-                <span class="s2">&quot;that it has been disabled by the server administrator.&quot;</span>
+                <span class="s2">&quot;Services in &#39;disabled_services&#39; have been explicitly &quot;</span>
+                <span class="s2">&quot;excluded by the server administrator. Their tools are &quot;</span>
+                <span class="s2">&quot;not registered and cannot be called.&quot;</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">:</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;disabled_tool_patterns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span><span class="p">)</span>
             <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;Disabled tool patterns use fnmatch wildcards. &quot;</span>
-                <span class="s2">&quot;Any tool whose name matches a pattern is excluded and cannot be called. &quot;</span>
-                <span class="s2">&quot;For example, &#39;zcc_list_device*&#39; blocks zcc_list_devices and zcc_list_devices_lite. &quot;</span>
-                <span class="s2">&quot;If a user asks for a disabled tool, inform them it has been &quot;</span>
-                <span class="s2">&quot;disabled by the server administrator.&quot;</span>
+                <span class="s2">&quot;Tool patterns in &#39;disabled_tool_patterns&#39; have been &quot;</span>
+                <span class="s2">&quot;blocked by the administrator. Any tool whose name &quot;</span>
+                <span class="s2">&quot;matches a pattern (fnmatch wildcards) is excluded.&quot;</span>
             <span class="p">)</span>
+
+        <span class="c1"># Tell the agent how many toolsets are active so it doesn&#39;t</span>
+        <span class="c1"># get its hopes up from raw catalog totals.</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;active_toolsets&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span> <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="n">META_TOOLSET_ID</span>
+        <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;total_toolsets_in_catalog&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">TOOLSETS</span><span class="o">.</span><span class="n">all_ids</span><span class="p">())</span>
 
         <span class="k">if</span> <span class="n">notes</span><span class="p">:</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;note&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">notes</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 
-<div class="viewcode-block" id="ZscalerMCPServer.search_tools">
-<a class="viewcode-back" href="../../api/server.html#zscaler_mcp.server.ZscalerMCPServer.search_tools">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">search_tools</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">name_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">description_contains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search the tool registry for tools matching the given criteria.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_tool_availability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decide whether a registered tool can actually be called this session.</span>
 
-<span class="sd">        Builds a searchable catalog of all registered tools and applies</span>
-<span class="sd">        optional filters. Supports JMESPath for advanced queries.</span>
+<span class="sd">        Returns ``(available, reason)``. ``reason`` is ``None`` when</span>
+<span class="sd">        ``available`` is ``True``; otherwise it is a short, user-facing</span>
+<span class="sd">        sentence explaining why the tool is not callable.</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            name_contains: Substring filter on tool name (case-insensitive).</span>
-<span class="sd">            description_contains: Substring filter on tool description (case-insensitive).</span>
-<span class="sd">            service: Filter by service prefix (e.g., &#39;zia&#39;, &#39;zpa&#39;, &#39;zms&#39;).</span>
-<span class="sd">            query: JMESPath expression for advanced filtering/projection.</span>
-<span class="sd">                Applied after name/description/service filters.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            List of matching tools with name, description, service, and type.</span>
+<span class="sd">        Used by ``zscaler_get_toolset_tools`` to surface entitlement /</span>
+<span class="sd">        toolset / write / disabled-tools state on each result row so</span>
+<span class="sd">        the agent gets one authoritative answer instead of probing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">catalog</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">svc_name</span><span class="p">,</span> <span class="n">svc</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-            <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="s2">&quot;read_tools&quot;</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="n">catalog</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="n">svc_name</span><span class="p">,</span>
-                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span>
-                <span class="p">})</span>
-            <span class="k">for</span> <span class="n">tool_def</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">svc</span><span class="p">,</span> <span class="s2">&quot;write_tools&quot;</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="n">catalog</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">tool_def</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="n">svc_name</span><span class="p">,</span>
-                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;write&quot;</span><span class="p">,</span>
-                <span class="p">})</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_fnmatch</span>
 
-        <span class="k">if</span> <span class="n">service</span><span class="p">:</span>
-            <span class="n">svc_lower</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="n">catalog</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">catalog</span> <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;service&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">svc_lower</span><span class="p">]</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.toolsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">toolset_for_tool</span>
 
-        <span class="k">if</span> <span class="n">name_contains</span><span class="p">:</span>
-            <span class="n">needle</span> <span class="o">=</span> <span class="n">name_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="n">catalog</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">catalog</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tsid</span> <span class="o">=</span> <span class="n">toolset_for_tool</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">tsid</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="k">if</span> <span class="n">description_contains</span><span class="p">:</span>
-            <span class="n">needle</span> <span class="o">=</span> <span class="n">description_contains</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="n">catalog</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">catalog</span> <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">tsid</span> <span class="ow">and</span> <span class="n">tsid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_toolsets</span><span class="p">:</span>
+            <span class="n">ent_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitlement_filter_state&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">entitled</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;entitled_services&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ent_state</span> <span class="o">==</span> <span class="s2">&quot;applied&quot;</span> <span class="ow">and</span> <span class="n">entitled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">svc_for_tool</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;_&quot;</span> <span class="ow">in</span> <span class="n">name</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">svc_for_tool</span> <span class="ow">and</span> <span class="n">svc_for_tool</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">entitled</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">(</span>
+                        <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;OneAPI credentials are not entitled to this product&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="kc">False</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;Toolset &#39;</span><span class="si">{</span><span class="n">tsid</span><span class="si">}</span><span class="s2">&#39; is not enabled in this session&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">query</span><span class="p">:</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.common.jmespath_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_jmespath</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;write&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_write_tools</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Write tools are disabled (server is read-only)&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="n">_fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">pat</span><span class="p">)</span> <span class="k">for</span> <span class="n">pat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_tools</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Write tool is not in the configured allowlist&quot;</span>
 
-            <span class="n">catalog</span> <span class="o">=</span> <span class="n">apply_jmespath</span><span class="p">(</span><span class="n">catalog</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="n">_fnmatch</span><span class="o">.</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">pat</span><span class="p">)</span> <span class="k">for</span> <span class="n">pat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_tools</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Tool has been disabled by the administrator&quot;</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">catalog</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;no_results&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;No tools matched the search criteria.&quot;</span><span class="p">}]</span>
-
-        <span class="k">return</span> <span class="n">catalog</span></div>
-
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_fastmcp_auth_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transport</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build an ASGI app with a fastmcp AuthProvider handling authentication.</span>
@@ -1254,6 +1969,7 @@
             <span class="n">_log_security_posture</span><span class="p">(</span>
                 <span class="n">transport</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">tls_kwargs</span><span class="p">,</span>
                 <span class="n">fastmcp_auth</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fastmcp_auth</span><span class="p">,</span>
+                <span class="n">server</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -1532,8 +2248,37 @@
         <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLED_TOOLS&quot;</span><span class="p">),</span>
         <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TOOL1,TOOL2,...&quot;</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated list of tools to exclude. Supports wildcards &quot;</span>
-        <span class="s2">&quot;(e.g., &#39;zcc_*&#39; excludes all ZCC tools, &#39;zcc_devices_csv_exporter&#39; excludes one tool). &quot;</span>
+        <span class="s2">&quot;(e.g., &#39;zcc_*&#39; excludes all ZCC tools, &#39;zia_list_devices&#39; excludes one tool). &quot;</span>
         <span class="s2">&quot;(env: ZSCALER_MCP_DISABLED_TOOLS)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Toolset selection</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--toolsets&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_TOOLSETS&quot;</span><span class="p">),</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TOOLSET1,TOOLSET2,...&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Comma-separated list of toolsets to enable (e.g. &quot;</span>
+            <span class="s2">&quot;&#39;zia_url_filtering,zpa_app_segments&#39;). Special values: &quot;</span>
+            <span class="s2">&quot;&#39;default&#39; expands to the toolsets marked default-on; &quot;</span>
+            <span class="s2">&quot;&#39;all&#39; enables every toolset. When unspecified, every toolset &quot;</span>
+            <span class="s2">&quot;belonging to a currently-enabled service is loaded &quot;</span>
+            <span class="s2">&quot;(preserves today&#39;s behaviour). The &#39;meta&#39; toolset is always &quot;</span>
+            <span class="s2">&quot;loaded. (env: ZSCALER_MCP_TOOLSETS)&quot;</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--no-entitlement-filter&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">),</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Skip the OneAPI entitlement filter that trims toolsets down to &quot;</span>
+            <span class="s2">&quot;the products the configured ZSCALER_CLIENT_ID is entitled to. &quot;</span>
+            <span class="s2">&quot;Use as an emergency override when the filter misbehaves. &quot;</span>
+            <span class="s2">&quot;(env: ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER)&quot;</span>
+        <span class="p">),</span>
     <span class="p">)</span>
 
     <span class="c1"># Debug mode</span>
@@ -1754,6 +2499,10 @@
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">disabled_services</span><span class="p">:</span>
             <span class="n">disabled_services</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">disabled_services</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 
+        <span class="n">toolsets</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;toolsets&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">toolsets</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">toolsets</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
         <span class="c1"># Create and run the server</span>
         <span class="n">server</span> <span class="o">=</span> <span class="n">ZscalerMCPServer</span><span class="p">(</span>
             <span class="n">client_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
@@ -1769,6 +2518,8 @@
             <span class="n">write_tools</span><span class="o">=</span><span class="n">write_tools</span><span class="p">,</span>
             <span class="n">disabled_tools</span><span class="o">=</span><span class="n">disabled_tools</span><span class="p">,</span>
             <span class="n">disabled_services</span><span class="o">=</span><span class="n">disabled_services</span><span class="p">,</span>
+            <span class="n">toolsets</span><span class="o">=</span><span class="n">toolsets</span><span class="p">,</span>
+            <span class="n">disable_entitlement_filter</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="s2">&quot;no_entitlement_filter&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
             <span class="n">host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting server with </span><span class="si">%s</span><span class="s2"> transport&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">transport</span><span class="p">)</span>

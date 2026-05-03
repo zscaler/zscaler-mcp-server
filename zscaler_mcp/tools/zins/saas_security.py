@@ -89,7 +89,7 @@ def zins_get_casb_app_report(
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.saas_security.get_casb_app_report(
         start_time=resolved_start,

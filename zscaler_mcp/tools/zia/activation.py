@@ -10,11 +10,10 @@ from zscaler_mcp.client import get_zscaler_client
 
 
 def zia_get_activation_status(
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> str:
     """Get the current ZIA configuration activation status."""
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     config_api = client.zia.activate
 
     status_obj, _, err = config_api.status()
@@ -29,7 +28,6 @@ def zia_get_activation_status(
 
 
 def zia_activate_configuration(
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> str:
     """
@@ -42,7 +40,7 @@ def zia_activate_configuration(
     - PENDING: Configuration changes are pending and activation will be triggered.
     - INPROGRESS: Another activation is already in progress.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     config_api = client.zia.activate
 
     status_obj, _, err = config_api.status()

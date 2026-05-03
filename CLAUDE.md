@@ -2,6 +2,8 @@
 
 300+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
 
+> **Cross-tool conventions.** The most-violated rules in this repo are mirrored — same content, different formats — at `.cursor/rules/zscaler-conventions.mdc` (auto-applied in Cursor) and `.claude/CONVENTIONS.md` (Claude Code). The full convention set lives below in this file; the mirrors exist so the rules survive even if this file is trimmed and so a Cursor session always loads them. **Helper-file convention** is in [Helper File Convention (DO NOT FRAGMENT)](#helper-file-convention-do-not-fragment) below — read it before adding any new file under `zscaler_mcp/common/`.
+
 ## Architecture Overview
 
 ### Core Components
@@ -11,7 +13,7 @@ zscaler_mcp/
 ├── server.py          # ZscalerMCPServer class, CLI entrypoint, security posture logging
 ├── services.py        # Service registry + 9 concrete service classes (ZPA, ZIA, ZDX, ZCC, ZTW, ZIdentity, ZEASM, ZInsights, ZMS)
 ├── auth.py            # Auth middleware factory (JWT, API-key, Zscaler, OAuthProxy stub)
-├── client.py          # Zscaler SDK client factory (OneAPI + legacy credential flows)
+├── client.py          # Zscaler SDK client factory (OneAPI only — single ZIdentity-based credential flow)
 ├── security.py        # HTTP security warnings (TLS, plaintext)
 ├── cloud/
 │   └── gcp_secrets.py   # GCP Secret Manager credential loader (opt-in via ZSCALER_MCP_GCP_SECRET_MANAGER=true)
@@ -60,8 +62,7 @@ The server has two independent auth systems:
    - **Entra ID guide**: `docs/deployment/entra-id-oidcproxy.md` — step-by-step with screenshots. Key difference: `audience` must be the client ID (Entra sets `aud` to client_id in ID tokens, unlike Auth0 which uses an API identifier)
 
 2. **Zscaler API Authentication** (`client.py`) — controls how the server talks to Zscaler APIs
-   - OneAPI credentials (`ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc.)
-   - Legacy per-service credentials (ZPA, ZIA, ZCC, ZDX, ZTW)
+   - OneAPI credentials only (`ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET` or `ZSCALER_PRIVATE_KEY`, `ZSCALER_VANITY_DOMAIN`, `ZSCALER_CUSTOMER_ID` for ZPA)
    - Client is created lazily on first tool call, not at server startup
 
 ## Tool Naming & Discovery
@@ -88,21 +89,33 @@ Two independent exclusion mechanisms, applied at registration time (not runtime)
 
 The `zscaler_get_available_services` tool exposes disabled services to the AI agent so it can inform users instead of searching for workarounds.
 
+## Toolsets
+
+Tools are grouped into named **toolsets** (registered in `zscaler_mcp/common/toolsets.py`). Toolsets let users load only the slice of tools the agent actually needs — e.g. `zia_url_filtering` (5 tools) instead of every tool from every service (~280). The full design and catalog live in `docs/guides/toolsets.md`; the highlights for working in this codebase:
+
+- **29 toolsets** today: ZIA is split into ~15 sub-toolsets (one per rule family + locations + admin + categories etc.), ZPA into 6 (`zpa_app_segments`, `zpa_policy`, `zpa_connectors`, `zpa_idp`, `zpa_microtenants`, `zpa_misc`), and one toolset each for ZDX, ZCC, ZTW, ZIdentity, EASM, Z-Insights, ZMS. The always-on `meta` toolset holds the cross-service tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, plus the three discovery tools below).
+- **Tagging is centralized.** Don't add a `toolset` field to dicts in `services.py`. Map a new tool name in `_TOOL_TOOLSET_OVERRIDES` (exact match) or `_TOOLSET_PREFIX_RULES` (predicate, first-match-wins) inside `toolsets.py`. The test `tests/test_toolsets.py::TestToolsetForTool::test_every_registered_tool_resolves` enforces this mapping is exhaustive.
+- **Selection layers** (resolved in `ZscalerMCPServer.__init__`): explicit `--toolsets` / `ZSCALER_MCP_TOOLSETS` (supports `default` and `all` keywords) → fall back to "every toolset whose service is in `enabled_services`" (preserves today's behaviour). Filter precedence: `disabled_tools` > toolset selection > `enabled_tools` allowlist > `write_tools` allowlist.
+- **Per-toolset instructions.** Each toolset can carry an `instructions` callable. At server startup `_compose_server_instructions()` calls each enabled toolset's snippet and concatenates them into the FastMCP `instructions` field — sent to the agent only when the matching tools are loaded. Snippets shared across multiple toolsets (e.g. the rule-family `order`/`rank` reminder bound to all 5 ZIA rule toolsets) are de-duplicated.
+- **Three discovery meta-tools** (always loaded): `zscaler_list_toolsets` (catalog with currently-enabled status + tool counts), `zscaler_get_toolset_tools` (member tools of a toolset), `zscaler_enable_toolset` (register a toolset's tools at runtime). The runtime-enable path uses the same `register_read_tools`/`register_write_tools` codepath as startup, so all filter precedence still applies.
+- **OneAPI entitlement filter** (always-on, opt-out via `--no-entitlement-filter` / `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true`). After the operator-driven `selected_toolsets` is resolved, `zscaler_mcp/common/entitlements.py::apply_entitlement_filter` exchanges the configured OneAPI credentials for a bearer token and intersects the selection with the products listed in the `service-info[].prd` claim. Cache-first: in `ZSCALER_MCP_AUTH_MODE=zscaler` the auth-middleware cache is reused (no extra `/oauth2/v1/token` call); otherwise it cold-fetches via `auth.fetch_oneapi_token`. Roles (`rnm`) are intentionally ignored — only product entitlement is reliable. Failure mode is non-fatal: missing creds, decode failure, network error, or empty `service-info` all log a single WARN line and the selection passes through unchanged. The `meta` toolset is always preserved.
+- **Deferred to a follow-up:** HTTP header overrides (`X-MCP-Toolsets`) and URL-path shortcuts (`/mcp/x/{toolsets}/readonly`) — both require per-request server architecture (FastMCP transport surgery).
+
 ## Critical Gotchas
 
 - **ZIA requires activation.** After any ZIA create/update/delete, call `zia_activate_configuration()`. Changes are staged until activation. Forgetting this is the #1 source of "my change didn't work" issues.
-- **`use_legacy` parameter.** Every tool has a `use_legacy` parameter that defaults to `False`. Do NOT change it unless the user explicitly asks for legacy API behavior.
+- **OneAPI is the only supported authentication mode.** Every tool authenticates against ZIdentity through `zscaler.ZscalerClient` using the unified `ZSCALER_CLIENT_ID` / `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`) / `ZSCALER_VANITY_DOMAIN` / `ZSCALER_CUSTOMER_ID` (ZPA only) credentials.
 - **ZDX is read-only.** ZDX tools only query data. There are no create/update/delete operations except for deep traces (`zdx_start_deep_trace`).
 - **ZDX `since` parameter is in hours**, not timestamps. Default is 2 hours. Example: `since=24` means "last 24 hours."
 - **IDs are strings**, even when they look numeric. Always pass IDs as strings.
 - **ZPA dependency chain matters.** To onboard an application: create app connector group -> create server group (references connector group) -> create segment group -> create application segment (references server and segment groups) -> create access policy rule. Skipping dependencies causes cryptic 400 errors.
 - **ZIA dependency chain for locations.** To onboard a location: create static IP -> create VPN credential (references static IP) -> create location (references VPN credential and static IP). The location won't work without the traffic forwarding prerequisites.
-- **ZIA policy-rule updates are PUT, not PATCH.** Every ZIA `update_*_rule` tool ultimately maps to a PUT under the hood (full-replace). Tools silently backfill the required `name` and `order` from the existing rule when a partial payload is supplied, so partial updates "just work" — but any other field omitted from the payload may be reset by the API. When in doubt, fetch the rule first and merge changes into the existing payload. Tools using this pattern: `zia_update_ssl_inspection_rule`, `zia_update_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_ips_rule`, `zia_update_file_type_control_rule`, `zia_update_sandbox_rule`.
+- **ZIA policy-rule updates are PUT, not PATCH.** Every ZIA `update_*_rule` tool ultimately maps to a PUT under the hood (full-replace). Tools silently backfill the required `name` and `order` from the existing rule when a partial payload is supplied, so partial updates "just work" — but any other field omitted from the payload may be reset by the API. When in doubt, fetch the rule first and merge changes into the existing payload. Tools using this pattern: `zia_update_ssl_inspection_rule`, `zia_update_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_ips_rule`, `zia_update_file_type_control_rule`, `zia_update_sandbox_rule`. The same backfill pattern is applied to `zia_update_time_interval` for the `name`, `start_time`, `end_time`, and `days_of_week` fields.
 - **ZIA cloud-application catalogs are NOT interchangeable.** Two distinct catalogs exist:
   - **Shadow IT analytics catalog** (`zia_list_shadow_it_apps`, `zia_list_shadow_it_custom_tags`, `zia_bulk_update_shadow_it_apps`) — friendly names + numeric IDs, used for analytics/sanctioning.
   - **Policy-engine catalog** (`zia_list_cloud_app_policy`, `zia_list_cloud_app_ssl_policy`) — canonical `UPPER_SNAKE_CASE` enum strings used by SSL Inspection, Web DLP, Cloud App Control, File Type Control rules.
-  - The `cloud_applications` field on policy rules expects canonical enums. Tools that accept friendly names (`zia_create_ssl_inspection_rule`, `zia_update_ssl_inspection_rule`, `zia_create_file_type_control_rule`, `zia_update_file_type_control_rule`, `zia_list_cloud_app_control_actions`) auto-resolve them via `zscaler_mcp/common/zia_cloud_app_resolver.py` (5-minute in-process cache, strict mode), surfacing the audit trail in `_cloud_applications_resolution`. See `skills/zia/resolve-cloud-app-enum/SKILL.md`.
-- **DNS rules use `applications`, not `cloud_applications`.** The `applications` field on `zia_create/update_cloud_firewall_dns_rule` refers to DNS tunnels and network applications — it is **not** the cloud-app enum catalog and is **not** wired to the resolver.
+  - The `cloud_applications` field on policy rules expects canonical enums. Tools that accept friendly names (`zia_create_ssl_inspection_rule`, `zia_update_ssl_inspection_rule`, `zia_create_file_type_control_rule`, `zia_update_file_type_control_rule`, `zia_create_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_dns_rule` (where the field is named `applications`), `zia_list_cloud_app_control_actions`) auto-resolve them via `zscaler_mcp/common/zia_helpers.py::resolve_cloud_applications` (5-minute in-process cache, strict mode), surfacing the audit trail in `_cloud_applications_resolution`. See `skills/zia/look-up-cloud-app-name/SKILL.md`.
+- **DNS rules expose the cloud-app catalog as `applications`, not `cloud_applications`.** Same canonical ZIA app names (`ONEDRIVE`, `GOOGLE_DRIVE`, `CLOUDFLARE_DOH`, etc.) used by SSL Inspection / Web DLP / FTC / CAC — the field is just named `applications` on this rule type. The resolver IS wired here: `zia_create/update_cloud_firewall_dns_rule` auto-resolve friendly names through `resolve_cloud_applications` exactly like SSL Inspection does, surfacing the audit trail in `_cloud_applications_resolution`. The DNS-related sub-categories (DNS tunnels, network apps, DNS-over-HTTPS providers) are part of that same catalog, not a separate vocabulary.
 - **ZIA Sandbox rules vs sandbox reports.** `zia_*_sandbox_rule` tools manage Sandbox **policy rules** (write). `zia_get_sandbox_*` tools (`quota`, `report`, `behavioral_analysis`, `file_hash_count`) are read-only sandbox **report/quota** tools. Don't confuse the two.
 
 ## ZIA (Zscaler Internet Access)
@@ -121,8 +134,9 @@ ZIA is the largest service in the server. Tool modules are organized one-resourc
 | Web DLP | `web_dlp_rules.py` | `zia_list_web_dlp_rules`, `zia_list_web_dlp_rules_lite`, `zia_get_web_dlp_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
 | File Type Control | `file_type_control_rules.py` | `zia_list_file_type_control_rules`, `zia_get_file_type_control_rule`, `zia_list_file_type_categories` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Cloud-app auto-resolver |
 | Sandbox Rules | `sandbox_rules.py` | `zia_list_sandbox_rules`, `zia_get_sandbox_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Distinct from sandbox **reports** in `get_sandbox_info.py` |
+| Time Intervals | `time_intervals.py` | `zia_list_time_intervals`, `zia_get_time_interval` | `zia_create_time_interval`, `zia_update_time_interval`, `zia_delete_time_interval` | Reusable schedule object referenced by all rule types via the `time_windows` field. `start_time`/`end_time` are minutes from midnight (0-1439); `days_of_week` accepts `EVERYDAY`, `SUN`-`SAT`. |
 
-All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill required identifiers on update.
+All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). The `zia_update_time_interval` tool applies the same pattern for `name`, `start_time`, `end_time`, and `days_of_week`. Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill required identifiers on update.
 
 ## ZMS (Zscaler Microsegmentation)
 
@@ -134,7 +148,6 @@ ZMS tools use the ZMS GraphQL API (`/zms/graphql`) for querying microsegmentatio
 - **Customer-scoped**: Every query requires `ZSCALER_CUSTOMER_ID` (automatically resolved from env)
 - **Paginated responses**: Results use `nodes[]` + `pageInfo { pageNumber, pageSize, totalCount, totalPages }`
 - **Two pagination patterns**: Some domains use `page`/`pageSize` (agents, agent_groups, nonces); others use `pageNum`/`pageSize` (resources, resource_groups, policy_rules, app_zones, app_catalog, tags)
-- **No legacy mode**: ZMS only works with OneAPI credentials — the `use_legacy` parameter has no effect
 
 ### ZMS Domains (9 domains, 20 tools)
 
@@ -199,29 +212,46 @@ Standard [JMESPath](https://jmespath.org/) syntax. Field names are **snake_case*
 ### Adding JMESPath to a New List Tool
 
 1. Import: `from zscaler_mcp.common.jmespath_utils import apply_jmespath`
-2. Add `query` parameter before `service`/`use_legacy` in the signature
+2. Add `query` parameter before `service` in the signature
 3. Wrap the success return: `return apply_jmespath(results, query)`
 4. **Declare the return type as `Any`** — never `List[dict]` / `List[str]`. JMESPath expressions like `length(@)`, `[*].name`, or `sum(...)` produce scalars or differently-shaped lists; a strict element type causes the MCP/Pydantic output validator to reject the response, which forces the AI agent to narrate around the error and exposes implementation details (JMESPath, validation failures) to the user. Document the happy-path shape in the docstring instead.
 5. Update the tool description in `services.py` to mention JMESPath support
 
 ### Response Style for AI Agents
 
-When a tool returns a JMESPath-projected scalar (most commonly a count from `length(@)`), respond to the user with **only the answer in plain language** — never expose the JMESPath expression, the wrapper list, or any underlying validation behavior. Examples:
+The user is asking a **business question**. Tool plumbing — JMESPath, server-side `search` keys, pagination, output validation, type coercion, fallback retries — is internal optimization. Never narrate it.
 
-- User: *"how many ZIA DNS rules exist?"* → Agent: *"There are **19** ZIA DNS firewall rules in the tenant."*  ❌ Do **not** say "The JMESPath `length(@)` returned 19 before hitting the validation error — so there are 19 rules." That leaks implementation mechanics.
-- User: *"list the names of my SSL inspection rules"* → Agent lists the names. ❌ Do not mention "I projected `[*].name`."
+**Plain-language answers only.** Translate tool output into the answer the admin actually wanted.
 
-The user is asking a business question; the JMESPath query is an internal optimization. Never narrate it.
+**Empty list responses are authoritative — do not fan out retries.** The `search` parameter on every `*_list_*` tool is a server-side substring match on the resource's `name` field. **An empty result means the resource does not exist by that name. Stop.** Do NOT then re-call the same tool with split keywords, broader JMESPath projections, larger `page_size`, no filter, or a different projection "to double-check" — each costs a round trip and adds zero information. The single allowed follow-up is asking the user to clarify the name.
 
-### Tool Discovery via JMESPath
+- ❌ Five calls in sequence: `search="DataCenter Switches SSH"` → empty → `query="[?contains(name,'DataCenter') || contains(name,'SSH')]"` → `query="[*].{id,name}", page_size=200` → unfiltered list → "let me drop the projection in case it's too aggressive".
+- ✅ One call: `search="DataCenter Switches SSH"` → empty → *"I can't find an application segment named `DataCenter Switches SSH`. Want me to use a different name?"*
 
-The `zscaler_search_tools` meta-tool exposes the full tool registry as a searchable list with JMESPath filtering. This is designed for AI agents working with deferred tool loading (Claude Desktop, Cursor) where fuzzy search returns irrelevant results. Examples:
+**Don't narrate strategy pivots.** If the first call returns nothing or fails and a retry is genuinely warranted, retry quietly. The user cares whether you found the answer, not which knob you turned.
 
-```text
-zscaler_search_tools(query="[?contains(description, 'firewall')]")
-zscaler_search_tools(query="[?starts_with(name, 'zms_')]")
-zscaler_search_tools(query="[?contains(name, 'list') && contains(description, 'device')]")
-```
+- ❌ *"The `search` filter came back empty. The tool's `search` may not be a substring match. Let me list without the filter and apply JMESPath instead so I'm not relying on server-side fuzzy matching."*
+- ✅ *"I didn't find a connector group by that name. Here's what's in the tenant: …"*  (or just proceed silently to the second attempt and report the final answer)
+
+**Don't claim a tool doesn't exist without checking.** If a `*_get_*` / `*_create_*` / `*_update_*` / `*_delete_*` tool is visible, the matching `*_list_*` almost certainly exists too — search the registry by service prefix and verb before declaring a gap. False "no such tool" claims send admins down the wrong path. Concrete examples of correct list tools that have been mis-claimed as missing: `zpa_list_app_connector_groups`, `zpa_list_segment_groups`, `zpa_list_application_segments`.
+
+**Don't expose internal field names or validators.** Pydantic messages, MCP output-validator errors, and SDK tuple shapes (`(result, response, err)`) are noise. Convert them into a one-line user-facing summary.
+
+**Examples of plain-language responses:**
+
+- User: *"how many ZIA DNS rules exist?"* → Agent: *"There are **19** ZIA DNS firewall rules in the tenant."*  ❌ Do **not** say *"The JMESPath `length(@)` returned 19 before hitting the validation error — so there are 19 rules."*
+- User: *"list the names of my SSL inspection rules"* → Agent lists the names. ❌ Do not mention *"I projected `[*].name`."*
+- User: *"create the segment"* and the lookup returns empty → Agent: *"I can't find any application segment named X. Want me to create one or use a different name?"* ❌ Do **not** say *"The `search` filter returned zero rows; possibly server-side substring mismatch."*
+
+### Tool Discovery via Toolsets
+
+Tool discovery for AI agents goes through the always-on toolset meta-tools, **not** JMESPath against the tool catalog. The flow is:
+
+1. `zscaler_list_toolsets(name_contains=..., description_contains=..., service=...)` — find the relevant toolset (logical grouping per resource family per service). Each row carries `currently_enabled`, `tool_count`, `can_enable`, and (when `can_enable: false`) `unavailable_reason`.
+2. `zscaler_get_toolset_tools(toolset=..., name_contains=..., description_contains=...)` — drill into a toolset to confirm a specific tool is callable. Each row carries `available` and (when `available: false`) `unavailable_reason`.
+3. `zscaler_get_available_services` — service-level overview when you need a one-shot "what is loaded right now". Use for status, not as a discovery primitive.
+
+A `zscaler_search_tools` meta-tool existed in earlier versions; it was removed because it duplicated the toolset discovery path and encouraged the agent to second-guess `available: false` results. The JMESPath helper that powered it lives on (and is still exported by `zscaler_mcp/common/jmespath_utils.py`) — it remains the post-processing engine for the optional `query` parameter on every `*_list_*` tool that returns paginated tenant data.
 
 ## Write Operations — Safety Rules
 
@@ -258,15 +288,16 @@ Always ask the user for scope before running broad ZDX queries on large tenants.
 
 Required env vars (set in `.env`):
 
-- `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, `ZSCALER_CUSTOMER_ID`, `ZSCALER_VANITY_DOMAIN` — OneAPI credentials from ZIdentity console
+- `ZSCALER_CLIENT_ID` — OneAPI client ID from the ZIdentity console
+- `ZSCALER_CLIENT_SECRET` — OneAPI client secret (or `ZSCALER_PRIVATE_KEY` for JWT-based auth)
+- `ZSCALER_VANITY_DOMAIN` — ZIdentity vanity domain (e.g. `acme.zsapi.net`)
+- `ZSCALER_CUSTOMER_ID` — Zscaler customer/tenant ID; required when calling ZPA tools
 
-Optional legacy credentials:
+Optional:
 
-- ZPA: `ZPA_CLIENT_ID`, `ZPA_CLIENT_SECRET`, `ZPA_CUSTOMER_ID`, `ZPA_CLOUD`
-- ZIA: `ZIA_USERNAME`, `ZIA_PASSWORD`, `ZIA_API_KEY`, `ZIA_CLOUD`
-- ZCC: `ZCC_CLIENT_ID`, `ZCC_CLIENT_SECRET`, `ZCC_CLOUD`
-- ZTW: `ZTW_USERNAME`, `ZTW_PASSWORD`, `ZTW_API_KEY`, `ZTW_CLOUD`
-- ZDX: `ZDX_CLIENT_ID`, `ZDX_CLIENT_SECRET`, `ZDX_CLOUD`
+- `ZSCALER_PRIVATE_KEY` — PEM-encoded private key for JWT auth (used in place of `ZSCALER_CLIENT_SECRET`)
+- `ZSCALER_CLOUD` — cloud override (e.g. `BETA`, `zscalertwo`)
+- `ZSCALER_MCP_USER_AGENT_COMMENT` — appended to the SDK's `User-Agent` header
 
 Server & security env vars:
 
@@ -280,12 +311,15 @@ Server & security env vars:
 - `ZSCALER_MCP_ALLOWED_SOURCE_IPS` — Comma-separated allowed client IPs/CIDRs
 - `ZSCALER_MCP_DISABLED_TOOLS` — Comma-separated tool patterns to exclude (wildcards via fnmatch)
 - `ZSCALER_MCP_DISABLED_SERVICES` — Comma-separated service names to exclude
+- `ZSCALER_MCP_TOOLSETS` — Comma-separated toolset ids to enable (e.g. `zia_url_filtering,zpa_app_segments`). Special values: `default` (curated default-on subset) and `all` (every toolset). When unset, every toolset whose service is enabled is loaded. The `meta` toolset is always loaded. See `docs/guides/toolsets.md`.
+- `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` — Skip the OneAPI entitlement filter (`true`/`false`). When `false` (default), the server intersects the selected toolsets with the products entitled by the OneAPI bearer token (`service-info[].prd`). Set `true` as an emergency override.
 - `ZSCALER_MCP_WRITE_ENABLED` — Enable write tools (`true`/`false`)
 - `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
 - `ZSCALER_MCP_SKIP_CONFIRMATIONS` — Skip HMAC confirmation for destructive ops (`true`/`false`)
 - `ZSCALER_MCP_CONFIRMATION_TTL` — Confirmation token TTL in seconds (default 300)
 - `ZSCALER_MCP_DISABLE_HOST_VALIDATION` — Disable host header checks (`true`/`false`)
 - `ZSCALER_MCP_LOG_TOOL_CALLS` — Enable tool-call audit logging (`true`/`false`)
+- `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` — Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / code-fence stripping). On by default. Use only for diagnostics — disabling it removes a prompt-injection defense layer. (`true`/`false`)
 
 ## CLI Flags
 
@@ -293,9 +327,13 @@ Server & security env vars:
 - `--services` — Comma-separated services to enable (e.g., `zia,zpa,zdx`)
 - `--disabled-services` — Comma-separated services to exclude (e.g., `zcc,zdx`)
 - `--disabled-tools` — Comma-separated tool patterns to exclude (wildcards: `"zcc_*,zia_list_device*"`)
+- `--toolsets` — Comma-separated toolset ids to enable. Use `default` for the curated default-on subset, `all` for everything (e.g. `"zia_url_filtering,zpa_app_segments"` or `"default"`). See `docs/guides/toolsets.md`.
+- `--no-entitlement-filter` — Skip the OneAPI entitlement filter that trims `selected_toolsets` to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only; the filter is non-fatal by default and skips itself on any failure.
 - `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
 - `--generate-auth-token` — Generate an API key for MCP client authentication
 - `--list-tools` — List all available tools and exit
+- `--generate-docs` — Refresh the auto-generated regions of `docs/guides/supported-tools.md`, `README.md`, and `docs/guides/toolsets.md` from the live tool inventory, then exit. Run after adding/renaming/removing a tool. See "Auto-generated docs" under Development.
+- `--check-docs` — Exit 0 if every auto-generated Markdown region is in sync with the live tool inventory; exit 1 (with a list of stale files) otherwise. Designed for CI.
 - `--user-agent-comment` — Custom User-Agent suffix for API calls
 - `--host` — HTTP bind address (default `127.0.0.1`)
 - `--port` — HTTP listen port (default `8000`)
@@ -329,8 +367,42 @@ Sensitive parameters (password, secret, token, key, credential, and any paramete
 ### Implementation
 
 - **`zscaler_mcp/common/tool_helpers.py`** — `_wrap_with_audit()` wraps every tool function at registration time. The wrapper is a no-op when logging is disabled (zero overhead).
-- The audit wrapper covers all tools: service tools (via `register_read_tools`/`register_write_tools`) and core meta-tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, `zscaler_search_tools`).
+- The audit wrapper covers all tools: service tools (via `register_read_tools`/`register_write_tools`) and the always-on meta-tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, `zscaler_list_toolsets`, `zscaler_get_toolset_tools`, `zscaler_enable_toolset`).
 - Uses a dedicated logger (`zscaler_mcp.audit`) so log output can be filtered independently.
+
+## Output Sanitization
+
+Defense-in-depth against prompt-injection payloads embedded in admin-editable Zscaler resources. Free-form fields like rule descriptions, label descriptions, location names, and custom URL category names are returned to the agent as-is by the Zscaler APIs. If an attacker — or a careless admin — stuffs invisible Unicode characters, raw HTML, or fake code fences into one of those fields, the agent that consumes the tool response can be tricked into following injected instructions.
+
+The server therefore runs every string in every tool result through a three-stage sanitizer **before it leaves the wire**.
+
+### Three Stages
+
+1. **Invisible / control-character stripping.** Removes zero-width characters (ZWSP, ZWJ, ZWNJ, word joiner, invisible times/separator/plus), the full BiDi control range (LRO, RLO, LRE, RLE, PDF, LRI, RLI, FSI, PDI, LTR/RTL marks), Arabic letter mark, soft hyphen, BOM, and any unassigned/private/format-category codepoint. NBSP (U+00A0) is normalised to a regular space. Tab, LF, and CR survive (multi-line descriptions are legitimate).
+2. **HTML / Markdown sanitization.** Uses [`bleach`](https://bleach.readthedocs.io/) (Mozilla's de-facto Python equivalent of `bluemonday`) configured with an empty tag/attribute allowlist — every HTML tag and HTML comment is stripped; printable text is kept. A regex pass collapses Markdown image syntax `![alt](url)` to `alt` (so embedded URLs never reach the agent) and Markdown link syntax `[text](url)` to `text (url)` (URL is visible but no longer a directive).
+3. **Code-fence info-string filtering.** Markdown fenced blocks (` ``` ` and `~~~`) whose info-string contains role/override tokens (`system`, `user`, `assistant`, `tool`, `function`, `developer`, `ignore`, `override`, `instruction`, `prompt`, `role`) get their info-string rewritten to `text`. The code body itself is preserved. Empty info-strings and legitimate language tags (`python`, `json`, …) pass through.
+
+Sanitization is applied recursively to dicts, lists, and tuples. Dict keys are **not** sanitized (they're machine-defined field names; touching them would break callers that index by key). Bounded recursion (depth 32) protects against pathological structures.
+
+### Wiring
+
+`_wrap_with_audit()` in `zscaler_mcp/common/tool_helpers.py` always passes results through `sanitize_value()`. Every tool — read, write, or meta — inherits the defense for free. Sanitization runs even when audit logging is off; the audit wrapper is no longer "no-op when logging disabled" (it is now "no-op for logging when logging disabled, but always sanitizes").
+
+### Opt-Out
+
+Sanitization is **on by default**. Operators can disable it for diagnostics:
+
+```bash
+export ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION=true
+```
+
+Disabling sanitization removes a defense-in-depth layer; only do this temporarily and under audit. There is no CLI flag — this is intentional, the env var makes the choice deliberate.
+
+### Implementation
+
+- **`zscaler_mcp/common/sanitize.py`** — `sanitize_text()` for single strings, `sanitize_value()` for recursive traversal, plus three private stage functions (`_strip_invisible`, `_sanitize_html_markdown`, `_sanitize_code_fences`).
+- **`tests/test_sanitize.py`** — 46 tests covering golden injection inputs (RLO override, ZWSP, embedded `<script>`, fake `system` fence, etc.) and integration through the audit wrapper.
+- Dependency: `bleach>=6.2.0` (added to `pyproject.toml`).
 
 ## Development
 
@@ -349,6 +421,7 @@ Sensitive parameters (password, secret, token, key, credential, and any paramete
 2. Add the tool definition to the service class in `services.py` (in `read_tools` or `write_tools` list)
 3. Import the tool function in the service class's `register_tools` method
 4. The tool is automatically picked up by `register_read_tools()` / `register_write_tools()` and respects all filtering (enabled_tools, disabled_tools, write_tools)
+5. **Refresh generated docs**: run `make generate-docs` (or `zscaler-mcp --generate-docs`) and commit the resulting changes to `docs/guides/supported-tools.md`, `README.md`, and `docs/guides/toolsets.md`. CI runs `--check-docs` and will fail the build if the committed docs are stale. See "Auto-generated docs" below.
 
 ### Adding a New Service
 
@@ -357,6 +430,47 @@ Sensitive parameters (password, secret, token, key, credential, and any paramete
 3. Implement `register_tools()` method
 4. Add the service to `_AVAILABLE_SERVICES` registry at the bottom of `services.py`
 5. Create tool modules under `zscaler_mcp/tools/{service_name}/`
+
+### Auto-generated docs
+
+Three Markdown files are partially auto-generated from the live tool inventory. Edits to the generated regions are overwritten — change the source instead and re-run the generator:
+
+| File | Region marker | Source of truth |
+|------|---------------|-----------------|
+| `docs/guides/supported-tools.md` | `<!-- generated:start tools -->` | Tool descriptions in `zscaler_mcp/services.py` (`read_tools` / `write_tools` lists). |
+| `README.md` | `<!-- generated:start service-summary -->` | Per-service tool counts derived from the same source. |
+| `docs/guides/toolsets.md` | `<!-- generated:start toolset-catalog -->` | Toolset metadata in `zscaler_mcp/common/toolsets.py` + per-toolset tool counts from the inventory. |
+
+Outside the marker pairs, every file is fully hand-written and the generator never touches it.
+
+**Commands:**
+
+- `make generate-docs` (or `zscaler-mcp --generate-docs`) — regenerate all three regions in place. Idempotent: re-running with no source changes performs no file writes.
+- `make check-docs` (or `zscaler-mcp --check-docs`) — exit 0 when docs are in sync, exit 1 + list of stale files otherwise. Designed for CI; wired into `.github/workflows/tests.yml` as a dedicated step before the test suite runs.
+
+**Implementation:** `zscaler_mcp/common/docgen.py`. The generator instantiates each service with `zscaler_client=None` (mirroring the pattern already used by `parse_args` for `--list-tools`) so the SDK isn't needed at doc-generation time. Adding a new auto-generated region: append a `(path, region_name, renderer_fn)` tuple to `TARGETS`, insert the matching marker pair in the file, and add a renderer test in `tests/test_docgen.py`. Tests assert that the committed docs are always in sync (`TestRepoIsInSync::test_committed_docs_are_in_sync`).
+
+### Helper File Convention (DO NOT FRAGMENT)
+
+To keep the codebase organized, helper modules follow strict rules. **Read this before creating ANY new helper file.**
+
+**Where helpers live (3 buckets — and only 3):**
+
+1. **`zscaler_mcp/common/`** — cross-cutting helpers shared between tools.
+   - **One helper file per service**: `zia_helpers.py`, `zpa_helpers.py`, `zdx_helpers.py`, etc. (create on first need).
+   - **Shared (cross-product) infra modules** that already exist: `elicitation.py` (HMAC tokens), `jmespath_utils.py`, `logging.py`, `tool_helpers.py` (registration). Don't add a new file here unless it's genuinely cross-product infra.
+2. **`zscaler_mcp/utils/utils.py`** — low-level, product-agnostic utilities (e.g. `parse_list`, condition-format converters). Append, don't fragment.
+3. **Inside the tool module itself** — helpers used by exactly one module belong as private functions in that module (`_build_*_payload`, `_validate_*`).
+
+**Rules:**
+
+- **DO NOT** create per-feature helper modules like `zia_rule_helpers.py`, `zia_cloud_app_resolver.py`, `zia_time_interval_helpers.py`. Add new functions/constants as a new section in the existing `zia_helpers.py` (use `# ====` section headers).
+- **DO NOT** mix products in one file. ZIA helpers go in `zia_helpers.py`, ZPA helpers go in `zpa_helpers.py`. Cross-product helpers go in the shared infra modules in `common/`.
+- **Split a service helper file only when** (a) it grows past ~600 lines, OR (b) a new section needs heavy external deps the rest of the file doesn't share. When splitting, name the new file by the helper category, not the consumer (e.g. `zia_pagination.py`, not `zia_user_groups_helpers.py`).
+- **Public API**: every helper file exposes its surface via `__all__` so callers know what's intended for import.
+- **Imports**: tool modules import from the helper file via the canonical name `from zscaler_mcp.common.{service}_helpers import ...`. Don't re-export through `common/__init__.py`.
+
+**When in doubt, extend `{service}_helpers.py`.** Adding a new file requires explicit justification.
 
 ### Key Design Decisions
 
@@ -569,7 +683,7 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 ## Skills
 
-20 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by description match. Organized by service: `skills/zpa/` (6), `skills/zia/` (5), `skills/zdx/` (6), `skills/easm/` (1), `skills/zins/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
+37 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by description match. Organized by service: `skills/zpa/` (8), `skills/zia/` (12), `skills/zdx/` (6), `skills/zms/` (5), `skills/zins/` (4), `skills/easm/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
 
 ## Platform Integrations
 

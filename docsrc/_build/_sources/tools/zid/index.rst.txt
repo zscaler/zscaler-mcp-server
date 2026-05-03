@@ -33,8 +33,6 @@ Retrieves Zidentity user information.
 :type page_size: Optional[int]
 :param search: Search string for filtering users
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zid")
 :type service: str
 
@@ -59,8 +57,6 @@ Retrieves Zidentity group information.
 :type page_size: Optional[int]
 :param search: Search string for filtering groups
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zid")
 :type service: str
 

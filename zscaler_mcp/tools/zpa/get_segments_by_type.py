@@ -17,7 +17,6 @@ def app_segments_by_type_manager(
         dict,
         Field(description="Optional filters like 'search', 'page_size', or 'microtenant_id'."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], str]:
     """
@@ -36,7 +35,7 @@ def app_segments_by_type_manager(
             "Invalid application_type. Must be one of 'BROWSER_ACCESS', 'INSPECT', or 'SECURE_REMOTE_ACCESS'."
         )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     api = client.zpa.app_segment_by_type
     query_params = query_params or {}

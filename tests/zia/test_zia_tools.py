@@ -8,6 +8,7 @@ list_users, list_user_groups, list_user_departments,
 static_ips, vpn_credentials, gre_tunnels, get_sandbox_info.
 """
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -86,6 +87,221 @@ class TestZiaUrlCategories:
 
         with pytest.raises(Exception):
             zia_list_url_categories()
+
+    # --- Predefined-category resolution + safety guards -------------------
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_get_url_category_predefined_by_canonical_id(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_get_url_category_predefined
+
+        mock_client = MagicMock()
+        finance = _mock_obj(
+            {"id": "FINANCE", "configured_name": "Finance", "custom_category": False}
+        )
+        mock_client.zia.url_categories.get_category.return_value = (finance, None, None)
+        mock_get_client.return_value = mock_client
+
+        result = zia_get_url_category_predefined(name="FINANCE")
+
+        assert result["id"] == "FINANCE"
+        assert result["custom_category"] is False
+        mock_client.zia.url_categories.get_category.assert_called_once_with(
+            category_id="FINANCE"
+        )
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_get_url_category_predefined_by_display_name(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_get_url_category_predefined
+
+        mock_client = MagicMock()
+        # Direct GET fails because "Finance" isn't a canonical ID — fall
+        # through to the catalog scan.
+        mock_client.zia.url_categories.get_category.return_value = (None, None, "not found")
+        catalog = [
+            _mock_obj({"id": "CUSTOM_01", "configured_name": "My News", "custom_category": True}),
+            _mock_obj({"id": "FINANCE", "configured_name": "Finance", "custom_category": False}),
+        ]
+        mock_client.zia.url_categories.list_categories.return_value = (catalog, None, None)
+        mock_get_client.return_value = mock_client
+
+        result = zia_get_url_category_predefined(name="finance")
+
+        assert result["id"] == "FINANCE"
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_get_url_category_predefined_refuses_custom(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_get_url_category_predefined
+
+        mock_client = MagicMock()
+        custom = _mock_obj(
+            {"id": "CUSTOM_01", "configured_name": "My Custom", "custom_category": True}
+        )
+        mock_client.zia.url_categories.get_category.return_value = (custom, None, None)
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="custom URL category"):
+            zia_get_url_category_predefined(name="CUSTOM_01")
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_get_url_category_predefined_not_found(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_get_url_category_predefined
+
+        mock_client = MagicMock()
+        mock_client.zia.url_categories.get_category.return_value = (None, None, "not found")
+        mock_client.zia.url_categories.list_categories.return_value = ([], None, None)
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="did not match any predefined"):
+            zia_get_url_category_predefined(name="NOPE")
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_update_url_category_predefined_full_replace(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_update_url_category_predefined
+
+        mock_client = MagicMock()
+        existing = _mock_obj(
+            {"id": "FINANCE", "configured_name": "Finance", "custom_category": False}
+        )
+        updated = _mock_obj(
+            {
+                "id": "FINANCE",
+                "configured_name": "Finance",
+                "custom_category": False,
+                "keywords": ["bank", "ledger"],
+            }
+        )
+        mock_client.zia.url_categories.get_category.return_value = (existing, None, None)
+        mock_client.zia.url_categories.update_url_category.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        result = zia_update_url_category_predefined(
+            name="Finance",
+            keywords=["bank", "ledger"],
+        )
+
+        assert result["keywords"] == ["bank", "ledger"]
+        # configured_name was silently backfilled from the existing category.
+        mock_client.zia.url_categories.update_url_category.assert_called_once_with(
+            category_id="FINANCE",
+            configured_name="Finance",
+            keywords=["bank", "ledger"],
+        )
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_update_url_category_predefined_explicit_configured_name(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_update_url_category_predefined
+
+        mock_client = MagicMock()
+        existing = _mock_obj(
+            {"id": "FINANCE", "configured_name": "Finance", "custom_category": False}
+        )
+        updated = _mock_obj({"id": "FINANCE", "configured_name": "Finance"})
+        mock_client.zia.url_categories.get_category.return_value = (existing, None, None)
+        mock_client.zia.url_categories.update_url_category.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        zia_update_url_category_predefined(
+            name="FINANCE",
+            configured_name="Finance",
+            urls=["a.com", "b.com"],
+            ip_ranges=["10.0.0.0/24"],
+        )
+
+        mock_client.zia.url_categories.update_url_category.assert_called_once_with(
+            category_id="FINANCE",
+            configured_name="Finance",
+            urls=["a.com", "b.com"],
+            ip_ranges=["10.0.0.0/24"],
+        )
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_update_url_category_predefined_refuses_custom(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_update_url_category_predefined
+
+        mock_client = MagicMock()
+        custom = _mock_obj(
+            {"id": "CUSTOM_01", "configured_name": "My Custom", "custom_category": True}
+        )
+        mock_client.zia.url_categories.get_category.return_value = (custom, None, None)
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="custom URL category"):
+            zia_update_url_category_predefined(name="CUSTOM_01", keywords=["x"])
+        mock_client.zia.url_categories.update_url_category.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_update_url_category_refuses_predefined(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_update_url_category
+
+        mock_client = MagicMock()
+        finance = _mock_obj(
+            {"id": "FINANCE", "configured_name": "Finance", "custom_category": False}
+        )
+        mock_client.zia.url_categories.get_category.return_value = (finance, None, None)
+        mock_get_client.return_value = mock_client
+
+        with pytest.raises(ValueError, match="predefined URL category"):
+            zia_update_url_category(
+                category_id="FINANCE",
+                configured_name="Finance",
+                urls=["x.com"],
+            )
+        mock_client.zia.url_categories.update_url_category.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_update_url_category_allows_custom(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_update_url_category
+
+        mock_client = MagicMock()
+        custom = _mock_obj(
+            {"id": "CUSTOM_01", "configured_name": "My Custom", "custom_category": True}
+        )
+        updated = _mock_obj({"id": "CUSTOM_01", "configured_name": "My Custom"})
+        mock_client.zia.url_categories.get_category.return_value = (custom, None, None)
+        mock_client.zia.url_categories.update_url_category.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        zia_update_url_category(
+            category_id="CUSTOM_01",
+            configured_name="My Custom",
+            urls=["x.com"],
+        )
+        mock_client.zia.url_categories.update_url_category.assert_called_once()
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_delete_url_category_refuses_predefined(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_delete_url_category
+
+        mock_client = MagicMock()
+        finance = _mock_obj(
+            {"id": "FINANCE", "configured_name": "Finance", "custom_category": False}
+        )
+        mock_client.zia.url_categories.get_category.return_value = (finance, None, None)
+        mock_get_client.return_value = mock_client
+
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            with pytest.raises(ValueError, match="predefined URL category"):
+                zia_delete_url_category(category_id="FINANCE")
+        mock_client.zia.url_categories.delete_category.assert_not_called()
+
+    @patch("zscaler_mcp.tools.zia.url_categories.get_zscaler_client")
+    def test_delete_url_category_allows_custom(self, mock_get_client):
+        from zscaler_mcp.tools.zia.url_categories import zia_delete_url_category
+
+        mock_client = MagicMock()
+        custom = _mock_obj(
+            {"id": "CUSTOM_01", "configured_name": "My Custom", "custom_category": True}
+        )
+        mock_client.zia.url_categories.get_category.return_value = (custom, None, None)
+        mock_client.zia.url_categories.delete_category.return_value = (None, None, None)
+        mock_get_client.return_value = mock_client
+
+        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
+            result = zia_delete_url_category(category_id="CUSTOM_01")
+        assert "CUSTOM_01" in result
+        mock_client.zia.url_categories.delete_category.assert_called_once_with(
+            category_id="CUSTOM_01"
+        )
 
 
 # ============================================================================

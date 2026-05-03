@@ -19,14 +19,13 @@ def ztw_list_ip_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """List ZTW IP groups with optional search filtering.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ztw = client.ztw.ip_groups
 
     query_params = {"search": search} if search else {}
@@ -45,14 +44,13 @@ def ztw_list_ip_groups_lite(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """List ZTW IP groups (lightweight version) with optional search filtering.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ztw = client.ztw.ip_groups
 
     query_params = {"search": search} if search else {}
@@ -77,7 +75,6 @@ def ztw_create_ip_group(
     description: Annotated[
         Optional[str], Field(description="Group description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Dict:
     """Create a new ZTW IP group."""
@@ -91,7 +88,7 @@ def ztw_create_ip_group(
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON for ip_addresses: {e}")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ztw = client.ztw.ip_groups
 
     group, _, err = ztw.add_ip_group(name=name, description=description, ip_addresses=ip_addresses)
@@ -102,7 +99,6 @@ def ztw_create_ip_group(
 
 def ztw_delete_ip_group(
     group_id: Annotated[Union[int, str], Field(description="Group ID (required).")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
     kwargs: str = "{}",
 ) -> str:
@@ -125,7 +121,7 @@ def ztw_delete_ip_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ztw = client.ztw.ip_groups
 
     _, _, err = ztw.delete_ip_group(group_id)

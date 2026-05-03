@@ -59,7 +59,6 @@ def zia_list_network_apps(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
@@ -76,7 +75,6 @@ def zia_list_network_apps(
             Examples: "ICMP", "HTTP", "FTP", "SSH"
         locale: Get localized descriptions in the specified language.
             Supported locales: 'en-US', 'de-DE', 'es-ES', 'fr-FR', 'ja-JP', 'zh-CN'
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -130,7 +128,7 @@ def zia_list_network_apps(
         >>> predefined = [app for app in all_apps if app.get('type') == 'PREDEFINED']
         >>> print(f"Total predefined applications: {len(predefined)}")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     query_params = {}
@@ -158,7 +156,6 @@ def zia_get_network_app(
             description="The unique ID of the network application to retrieve (e.g., 'ICMP_ANY', 'HTTP', 'HTTPS')."
         ),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -176,7 +173,6 @@ def zia_get_network_app(
             - "HTTPS": HTTPS protocol
             - "FTP": FTP protocol
             - "SSH": SSH protocol
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -222,7 +218,7 @@ def zia_get_network_app(
     if not app_id:
         raise ValueError("app_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     app, _, err = zia.get_network_app(app_id)

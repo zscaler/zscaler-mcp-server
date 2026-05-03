@@ -65,7 +65,7 @@ def zins_get_iot_device_stats(
     """
     validate_limit(limit)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     stats, response, err = client.zins.iot.get_device_stats(limit=limit)
 

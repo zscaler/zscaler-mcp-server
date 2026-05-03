@@ -19,7 +19,15 @@ from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 def zpa_list_application_segments(
     search: Annotated[
-        Optional[str], Field(description="Search term for filtering segments.")
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring match on the application segment's `name` field. "
+                "Returns the full set of matches in this tenant — no fuzzy matching, no "
+                "synonym expansion. An empty list means no segment name contains this "
+                "string; do not retry with split keywords or no filter."
+            )
+        ),
     ] = None,
     page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
     page_size: Annotated[Optional[str], Field(description="Number of items per page.")] = None,
@@ -30,7 +38,6 @@ def zpa_list_application_segments(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """
@@ -46,7 +53,6 @@ def zpa_list_application_segments(
         page_size: Number of items per page
         microtenant_id: Optional microtenant ID for scoping
         query: JMESPath expression for client-side filtering/projection
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -56,7 +62,7 @@ def zpa_list_application_segments(
         >>> segments = zpa_list_application_segments()
         >>> segments = zpa_list_application_segments(search="production")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     query_params = {"microtenant_id": microtenant_id}
@@ -80,7 +86,6 @@ def zpa_get_application_segment(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """
@@ -91,7 +96,6 @@ def zpa_get_application_segment(
     Args:
         segment_id: ID of the segment to retrieve (required)
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -103,7 +107,7 @@ def zpa_get_application_segment(
     if not segment_id:
         raise ValueError("segment_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     segment, _, err = api.get_segment(segment_id, query_params={"microtenant_id": microtenant_id})
@@ -130,10 +134,10 @@ def zpa_create_application_segment(
     tcp_port_range: Annotated[Optional[List[dict]], Field(description="TCP port ranges.")] = None,
     udp_port_range: Annotated[Optional[List[dict]], Field(description="UDP port ranges.")] = None,
     tcp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="TCP port ranges (legacy format).")
+        Optional[List[str]], Field(description="TCP port ranges as a flat string list.")
     ] = None,
     udp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="UDP port ranges (legacy format).")
+        Optional[List[str]], Field(description="UDP port ranges as a flat string list.")
     ] = None,
     bypass_type: Annotated[Optional[str], Field(description="Bypass type for the segment.")] = None,
     health_check_type: Annotated[Optional[str], Field(description="Health check type.")] = None,
@@ -152,7 +156,6 @@ def zpa_create_application_segment(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """
@@ -169,8 +172,8 @@ def zpa_create_application_segment(
         server_group_ids: List of server group IDs
         tcp_port_range: TCP port ranges [{"from": "80", "to": "80"}]
         udp_port_range: UDP port ranges
-        tcp_port_ranges: TCP port ranges in legacy format ["80", "443"]
-        udp_port_ranges: UDP port ranges in legacy format
+        tcp_port_ranges: TCP port ranges as a flat string list ["80", "443"]
+        udp_port_ranges: UDP port ranges as a flat string list
         bypass_type: Bypass type for the segment
         health_check_type: Health check type
         health_reporting: Health reporting configuration
@@ -178,7 +181,6 @@ def zpa_create_application_segment(
         passive_health_enabled: Whether passive health checking is enabled
         clientless_app_ids: List of clientless app IDs
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -202,12 +204,12 @@ def zpa_create_application_segment(
     if (tcp_port_range and tcp_port_ranges) or (udp_port_range and udp_port_ranges):
         raise ValueError(
             "Use either structured port ranges (tcp_port_range/udp_port_range) "
-            "or legacy string ranges (tcp_port_ranges/udp_port_ranges), not both."
+            "or flat string ranges (tcp_port_ranges/udp_port_ranges), not both."
         )
     if not any([tcp_port_range, udp_port_range, tcp_port_ranges, udp_port_ranges]):
         raise ValueError("At least one port configuration must be provided (TCP or UDP).")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     body = {
@@ -260,10 +262,10 @@ def zpa_update_application_segment(
     tcp_port_range: Annotated[Optional[List[dict]], Field(description="TCP port ranges.")] = None,
     udp_port_range: Annotated[Optional[List[dict]], Field(description="UDP port ranges.")] = None,
     tcp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="TCP port ranges (legacy format).")
+        Optional[List[str]], Field(description="TCP port ranges as a flat string list.")
     ] = None,
     udp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="UDP port ranges (legacy format).")
+        Optional[List[str]], Field(description="UDP port ranges as a flat string list.")
     ] = None,
     bypass_type: Annotated[Optional[str], Field(description="Bypass type for the segment.")] = None,
     health_check_type: Annotated[Optional[str], Field(description="Health check type.")] = None,
@@ -282,7 +284,6 @@ def zpa_update_application_segment(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """
@@ -300,8 +301,8 @@ def zpa_update_application_segment(
         server_group_ids: New list of server group IDs
         tcp_port_range: TCP port ranges
         udp_port_range: UDP port ranges
-        tcp_port_ranges: TCP port ranges in legacy format
-        udp_port_ranges: UDP port ranges in legacy format
+        tcp_port_ranges: TCP port ranges as a flat string list
+        udp_port_ranges: UDP port ranges as a flat string list
         bypass_type: Bypass type for the segment
         health_check_type: Health check type
         health_reporting: Health reporting configuration
@@ -309,7 +310,6 @@ def zpa_update_application_segment(
         passive_health_enabled: Whether passive health checking is enabled
         clientless_app_ids: List of clientless app IDs
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -327,10 +327,10 @@ def zpa_update_application_segment(
     if (tcp_port_range and tcp_port_ranges) or (udp_port_range and udp_port_ranges):
         raise ValueError(
             "Use either structured port ranges (tcp_port_range/udp_port_range) "
-            "or legacy string ranges (tcp_port_ranges/udp_port_ranges), not both."
+            "or flat string ranges (tcp_port_ranges/udp_port_ranges), not both."
         )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     body = {
@@ -373,7 +373,6 @@ def zpa_delete_application_segment(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -386,7 +385,6 @@ def zpa_delete_application_segment(
     Args:
         segment_id: ID of the segment to delete (required)
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -409,7 +407,7 @@ def zpa_delete_application_segment(
     if not segment_id:
         raise ValueError("segment_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     _, _, err = api.delete_segment(segment_id, microtenant_id=microtenant_id)

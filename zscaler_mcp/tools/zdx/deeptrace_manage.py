@@ -38,7 +38,6 @@ def zdx_start_deeptrace(
             description="Whether to probe the device for CPU, memory, disk, and network metrics."
         ),
     ] = True,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -64,7 +63,6 @@ def zdx_start_deeptrace(
         cloudpath_probe_id: The Cloudpath probe ID (integer, e.g. 266958). Get from zdx_list_cloudpath_probes.
         session_length_minutes: Duration in minutes (default 5). Supported: 5, 15, 30, 60.
         probe_device: Whether to probe the device (default True).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -89,7 +87,7 @@ def zdx_start_deeptrace(
                probe_device=True
            )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     sdk_kwargs = {
         "session_name": session_name,
@@ -112,7 +110,6 @@ def zdx_start_deeptrace(
 def zdx_delete_deeptrace(
     device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
     trace_id: Annotated[str, Field(description="The unique ID for the deeptrace to delete.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
     kwargs: str = "{}",
 ) -> str:
@@ -125,7 +122,6 @@ def zdx_delete_deeptrace(
     Args:
         device_id: The unique ID for the ZDX device (required).
         trace_id: The unique ID for the deeptrace to delete (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -154,7 +150,7 @@ def zdx_delete_deeptrace(
     if not trace_id:
         raise ValueError("trace_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     _, _, err = client.zdx.troubleshooting.delete_deeptrace(device_id, trace_id)
     if err:

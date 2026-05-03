@@ -94,7 +94,7 @@ def zins_get_shadow_it_apps(
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.shadow_it.get_apps(
         start_time=resolved_start,
@@ -187,7 +187,7 @@ def zins_get_shadow_it_summary(
 
     validate_time_range(resolved_start, resolved_end)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     summary, response, err = client.zins.shadow_it.get_shadow_it_summary(
         start_time=resolved_start,

@@ -40,3 +40,15 @@ def pytest_collection_modifyitems(config, items):
 def verbosity_level(request):
     """Return the verbosity level from pytest config."""
     return request.config.option.verbose
+
+
+@pytest.fixture(autouse=True)
+def _disable_entitlement_filter_by_default(monkeypatch):
+    """Globally disable the OneAPI entitlement filter for unit tests.
+
+    The filter calls out to ZIdentity at server startup. For unit tests
+    that build a ``ZscalerMCPServer`` we don't want either the network
+    call or the warning noise. Tests that *exercise* the filter override
+    this with ``monkeypatch.delenv("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", raising=False)``.
+    """
+    monkeypatch.setenv("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", "true")
