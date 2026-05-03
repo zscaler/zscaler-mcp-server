@@ -209,17 +209,25 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zidentity/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../integrations/index.html">Platform Integrations</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/configuration.html">Configuration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guides/azure-deployment.html">Azure Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/support.html">Support Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../guides/release-notes.html">Release Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../guides/contributing.html">Contributing Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -271,25 +279,61 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">zscaler_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_zscaler_client</span>
 
+<span class="c1"># Maximum page_size accepted by the ZIA list_groups endpoint.</span>
+<span class="c1"># Used internally when `name` is provided so we can pull a wide page</span>
+<span class="c1"># and do client-side normalized matching without making the agent</span>
+<span class="c1"># wrestle with pagination.</span>
+<span class="n">_MAX_PAGE_SIZE</span> <span class="o">=</span> <span class="mi">1000</span>
+
 
 <div class="viewcode-block" id="zia_user_group_manager">
 <a class="viewcode-back" href="../../../../api/tools.html#zscaler_mcp.tools.zia.list_user_groups.zia_user_group_manager">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">zia_user_group_manager</span><span class="p">(</span>
     <span class="n">action</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Operation to perform. Use &#39;read&#39; to paginate/filter groups or fetch a single group by ID.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Operation to perform. Use &#39;read&#39; to paginate/filter groups or fetch a single group by ID.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;read&quot;</span><span class="p">,</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the user group. When provided, returns a single group; otherwise returns a list of groups.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;ID of the user group. When provided, returns a single group; otherwise returns a list of groups.&quot;</span>
+        <span class="p">),</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Case-insensitive substring match on the group&#39;s name field. &quot;</span>
+                <span class="s2">&quot;Resolved client-side AFTER fetching the full group list, so &quot;</span>
+                <span class="s2">&quot;names like &#39;A000&#39;, &#39;a000&#39;, &#39;HR&#39;, &#39;finance&#39; all match &quot;</span>
+                <span class="s2">&quot;regardless of the underlying name&#39;s casing. Use this when you &quot;</span>
+                <span class="s2">&quot;have a literal group name from the admin and just need to &quot;</span>
+                <span class="s2">&quot;find its ID. The server-side `search` parameter is unreliable &quot;</span>
+                <span class="s2">&quot;for groups (it sometimes matches user login IDs instead of &quot;</span>
+                <span class="s2">&quot;group names) — prefer `name` for find-by-name workflows.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">search</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search string to match against a group&#39;s name or other applicable attributes.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">&quot;Server-side query forwarded to the ZIA list_groups endpoint. &quot;</span>
+                <span class="s2">&quot;ZIA&#39;s documented behavior here is unreliable (the API has &quot;</span>
+                <span class="s2">&quot;been observed to match against user login IDs rather than &quot;</span>
+                <span class="s2">&quot;group names). Prefer `name` for case-insensitive substring &quot;</span>
+                <span class="s2">&quot;matching on the group&#39;s name. Use `search` only when you &quot;</span>
+                <span class="s2">&quot;specifically need the server-side semantics.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">defined_by</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;String value defined by the group name or other applicable attributes. Used to further filter results.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;String value defined by the group name or other applicable attributes. Used to further filter results.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">page</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
@@ -301,71 +345,79 @@
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">sort_by</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;expiry&quot;</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="s2">&quot;external_id&quot;</span><span class="p">,</span> <span class="s2">&quot;rank&quot;</span><span class="p">,</span> <span class="s2">&quot;mod_time&quot;</span><span class="p">]],</span>
-        <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Sort field for listing groups. Supported: id, name, expiry, status, external_id, rank, mod_time.&quot;</span><span class="p">),</span>
+        <span class="n">Field</span><span class="p">(</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Sort field for listing groups. Supported: id, name, expiry, status, external_id, rank, mod_time.&quot;</span>
+        <span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">sort_order</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;asc&quot;</span><span class="p">,</span> <span class="s2">&quot;desc&quot;</span><span class="p">,</span> <span class="s2">&quot;rule_execution&quot;</span><span class="p">]],</span>
         <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Sort order for listing groups. Supported: asc, desc, rule_execution.&quot;</span><span class="p">),</span>
     <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">use_legacy</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="nb">bool</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether to use the legacy API.&quot;</span><span class="p">)</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Zscaler service name. Always &#39;zia&#39; for this tool.&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
+    <span class="n">service</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Zscaler service name. Always &#39;zia&#39; for this tool.&quot;</span><span class="p">)</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;zia&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    ZIA User Groups manager using the Python SDK.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ZIA User Groups manager (read-only) using the Python SDK.</span>
 
 <span class="sd">    This tool exposes read operations for ZIA User Groups via the SDK methods</span>
-<span class="sd">    `list_groups(query_params)` and `get_group(group_id)`.</span>
+<span class="sd">    ``list_groups(query_params)`` and ``get_group(group_id)``.</span>
 
-<span class="sd">    Supported actions:</span>
-<span class="sd">    - &quot;read&quot;: Retrieves a paginated list of user groups with optional filters and sorting.</span>
-<span class="sd">    - &quot;read&quot;: Retrieves a single user group by its unique identifier.</span>
+<span class="sd">    Lookup semantics:</span>
 
-<span class="sd">    Parameters:</span>
-<span class="sd">    - action: One of [&quot;list&quot;, &quot;get&quot;]. Defaults to &quot;list&quot;.</span>
-<span class="sd">    - group_id: Required when action is &quot;get&quot;. The unique user group ID (int or str).</span>
-<span class="sd">    - search: Optional search string to match against a group&#39;s name or other applicable attributes.</span>
-<span class="sd">    - defined_by: Optional string filter defined by the group name or applicable attributes.</span>
-<span class="sd">    - page: Optional page offset for pagination.</span>
-<span class="sd">    - page_size: Optional page size for pagination. The SDK&#39;s default is 100; maximum is 1000.</span>
-<span class="sd">    - sort_by: Optional sort field. Supported values: &quot;id&quot;, &quot;name&quot;, &quot;expiry&quot;, &quot;status&quot;, &quot;external_id&quot;, &quot;rank&quot;, &quot;mod_time&quot;.</span>
-<span class="sd">    - sort_order: Optional sort order. Supported values: &quot;asc&quot;, &quot;desc&quot;, &quot;rule_execution&quot;.</span>
-<span class="sd">    - use_legacy: Whether to use the legacy client implementation.</span>
-<span class="sd">    - service: Zscaler service. Use &quot;zia&quot;.</span>
+<span class="sd">    - ``group_id`` → fetch a single group by ID. Highest precedence.</span>
+<span class="sd">    - ``name`` → fetch all groups (paginated server-side at 1000/page) and</span>
+<span class="sd">      filter **client-side** by case-insensitive substring match on the</span>
+<span class="sd">      ``name`` field. This bypasses the unreliable server-side ``search``</span>
+<span class="sd">      behavior. Recommended for find-by-name workflows where the admin gives</span>
+<span class="sd">      a literal group name like &quot;A000&quot; or &quot;Finance&quot;.</span>
+<span class="sd">    - ``search`` / ``defined_by`` → forwarded to the ZIA API. Use only when</span>
+<span class="sd">      you specifically need server-side semantics. Note: ZIA&#39;s ``search`` on</span>
+<span class="sd">      this endpoint has been observed to match against user login IDs</span>
+<span class="sd">      rather than group names, so empty results may not mean &quot;no group with</span>
+<span class="sd">      this name exists&quot;.</span>
+<span class="sd">    - No filters → list all groups (paginated).</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">    - For action &quot;read&quot;: List[dict] — each element represents a user group as a dictionary.</span>
-<span class="sd">    - For action &quot;read&quot;: dict — the user group represented as a dictionary.</span>
+<span class="sd">        - Single dict when ``group_id`` is provided.</span>
+<span class="sd">        - List of dicts otherwise.</span>
 
 <span class="sd">    Examples:</span>
-<span class="sd">    </span>
-<span class="sd">    - List groups with larger page size and by name search</span>
-<span class="sd">      &gt;&gt;&gt; zia_user_group_manager(</span>
-<span class="sd">      ...     action=&quot;read&quot;,</span>
-<span class="sd">      ...     search=&quot;Engineering&quot;,</span>
-<span class="sd">      ...     page=1,</span>
-<span class="sd">      ...     page_size=500,</span>
-<span class="sd">      ...     sort_by=&quot;name&quot;,</span>
-<span class="sd">      ...     sort_order=&quot;asc&quot;,</span>
-<span class="sd">      ... )</span>
 
-<span class="sd">    - Get a single group by ID</span>
-<span class="sd">      &gt;&gt;&gt; zia_user_group_manager(action=&quot;read&quot;, group_id=&quot;545225&quot;)</span>
+<span class="sd">        Find a group by literal admin-supplied name (most common):</span>
+
+<span class="sd">        &gt;&gt;&gt; zia_user_group_manager(action=&quot;read&quot;, name=&quot;A000&quot;)</span>
+
+<span class="sd">        Get a single group by ID:</span>
+
+<span class="sd">        &gt;&gt;&gt; zia_user_group_manager(action=&quot;read&quot;, group_id=&quot;545225&quot;)</span>
+
+<span class="sd">        List with sort:</span>
+
+<span class="sd">        &gt;&gt;&gt; zia_user_group_manager(action=&quot;read&quot;, page_size=500, sort_by=&quot;name&quot;, sort_order=&quot;asc&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">use_legacy</span><span class="o">=</span><span class="n">use_legacy</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">get_zscaler_client</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="n">service</span><span class="p">)</span>
     <span class="n">zia</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zia</span><span class="o">.</span><span class="n">user_management</span>
 
-    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
-        <span class="c1"># If group_id is provided, get a single group</span>
-        <span class="k">if</span> <span class="n">group_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">group</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_id</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error retrieving user group </span><span class="si">{</span><span class="n">group_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">group</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
-        
-        <span class="c1"># Otherwise, list groups with optional filters</span>
-        <span class="n">query_params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">action</span> <span class="o">!=</span> <span class="s2">&quot;read&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported action: </span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">group_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">group</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">group_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error retrieving user group </span><span class="si">{</span><span class="n">group_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">group</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`name` must be a non-empty string when provided.&quot;</span><span class="p">)</span>
+
+    <span class="n">query_params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># When `name` is supplied we deliberately skip the server-side `search`</span>
+    <span class="c1"># parameter (its behavior on this endpoint is unreliable) and pull the</span>
+    <span class="c1"># widest page we can so the client-side substring match is authoritative.</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;page_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_MAX_PAGE_SIZE</span>
+    <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">search</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;search&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">search</span>
         <span class="k">if</span> <span class="n">defined_by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -375,20 +427,28 @@
         <span class="k">if</span> <span class="n">page_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">page_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;page_size must be a positive integer&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">page_size</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;page_size cannot exceed 1000&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">page_size</span> <span class="o">&gt;</span> <span class="n">_MAX_PAGE_SIZE</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;page_size cannot exceed </span><span class="si">{</span><span class="n">_MAX_PAGE_SIZE</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;page_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_size</span>
         <span class="k">if</span> <span class="n">sort_by</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;sort_by&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort_by</span>
         <span class="k">if</span> <span class="n">sort_order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;sort_order&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort_order</span>
 
-        <span class="n">groups</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">list_groups</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error listing user groups: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">]</span>
+    <span class="n">groups</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">zia</span><span class="o">.</span><span class="n">list_groups</span><span class="p">(</span><span class="n">query_params</span><span class="o">=</span><span class="n">query_params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error listing user groups: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported action: </span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="p">(</span><span class="n">groups</span> <span class="ow">or</span> <span class="p">[])]</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">needle</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">results</span>
+            <span class="k">if</span> <span class="n">needle</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
 
 </pre></div>
         </article>
@@ -422,7 +482,7 @@
       
     </aside>
   </div>
-</div><script src="../../../../_static/documentation_options.js?v=938c9ccc"></script>
+</div><script src="../../../../_static/documentation_options.js?v=b9afe91b"></script>
     <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>

@@ -1,0 +1,667 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Azure Deployment" href="azure-deployment.html" /><link rel="prev" title="GCP Compute Engine VM Deployment" href="gcp-compute-engine-vm.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>GCP ADK Agent Deployment</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/guides/gcp-adk-agent.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="gcp-adk-agent-deployment">
+<span id="gcp-adk-agent"></span><h1>GCP ADK Agent Deployment<a class="headerlink" href="#gcp-adk-agent-deployment" title="Link to this heading">¶</a></h1>
+<p>This guide walks you through deploying the <strong>Zscaler ADK Agent</strong> — a Gemini-powered AI agent built with the <a class="reference external" href="https://google.github.io/adk-docs/">Google Agent Development Kit</a> that uses the Zscaler MCP Server as its tool backend. Unlike the standalone MCP server deployments (Cloud Run, GKE, Compute Engine VM), the ADK agent <strong>embeds</strong> the MCP server as a co-located subprocess inside the agent container.</p>
+<p>End users interact with the agent through natural language (“List all ZPA application segments”, “Show me ZIA firewall rules for the Finance department”). The Gemini model interprets the request, decides which Zscaler tools to call, executes them via the embedded MCP server, and returns a natural-language response.</p>
+<p>The unified <code class="docutils literal notranslate"><span class="pre">adk_agent_operations.py</span></code> script supports four deployment targets:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Local development</strong></p></td>
+<td><p>Run on your workstation with <code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">web</span></code> and a <code class="docutils literal notranslate"><span class="pre">GOOGLE_API_KEY</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Google Cloud Run</strong></p></td>
+<td><p>Deploy as a managed container with built-in web UI (Cloud Build → Artifact Registry → Cloud Run)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Vertex AI Agent Engine</strong></p></td>
+<td><p>Fully managed agent hosting on Vertex AI</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Google Agentspace</strong></p></td>
+<td><p>Register an existing Agent Engine deployment in your enterprise agent catalog</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h2>
+<p>The MCP server is <strong>not</strong> a separate service — it runs as a child process inside the agent container, communicating over stdio.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌─── Container / Host ───────────────────────────────────────────┐
+│                                                                 │
+│  ┌─── Process 1: ADK Agent (Python) ──────────────────────┐    │
+│  │  Gemini model + function calling                         │    │
+│  │  Listens on HTTP :8080 (Cloud Run) or :8000 (local)      │    │
+│  └────────────────┬───────────────────────────────────────┘    │
+│                   │ stdin/stdout (stdio transport)               │
+│  ┌────────────────▼───────────────────────────────────────┐    │
+│  │  Process 2: zscaler-mcp (subprocess)                    │    │
+│  │  280+ tools, Zscaler SDK → Zscaler APIs                 │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+</pre></div>
+</div>
+<p>This is different from the standalone MCP server deployments (<a class="reference internal" href="gcp-cloud-run.html"><span class="doc">GCP Cloud Run Deployment</span></a>, <a class="reference internal" href="gcp-gke.html"><span class="doc">GCP GKE Deployment</span></a>, <a class="reference internal" href="gcp-compute-engine-vm.html"><span class="doc">GCP Compute Engine VM Deployment</span></a>), where the MCP server runs as its own networked service and external clients (Claude Desktop, Cursor) connect remotely over HTTPS.</p>
+<p>When the ADK agent process starts, it spawns <code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span></code> via <code class="docutils literal notranslate"><span class="pre">uvx</span></code>, the <code class="docutils literal notranslate"><span class="pre">CachedMCPToolset</span></code> discovers and caches all available tools, and the agent begins answering user requests.</p>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Python 3.11 or higher</p></li>
+<li><p><a class="reference external" href="https://google.github.io/adk-docs/">Google ADK</a> installed (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">google-adk</span></code>)</p></li>
+<li><p><a class="reference external" href="https://docs.astral.sh/uv/">uv</a> installed (used internally to run <code class="docutils literal notranslate"><span class="pre">uvx</span> <span class="pre">zscaler-mcp</span></code>)</p></li>
+<li><p>Zscaler OneAPI credentials (<code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code>)</p></li>
+<li><p>For <strong>local</strong> development: a Google API key from <a class="reference external" href="https://aistudio.google.com/app/apikey">Google AI Studio</a></p></li>
+<li><p>For <strong>Cloud Run / Agent Engine / Agentspace</strong>: a GCP project with billing enabled and the <code class="docutils literal notranslate"><span class="pre">gcloud</span></code> CLI authenticated</p></li>
+</ul>
+<section id="required-gcp-apis-cloud-run-agent-engine-agentspace">
+<h3>Required GCP APIs (Cloud Run / Agent Engine / Agentspace)<a class="headerlink" href="#required-gcp-apis-cloud-run-agent-engine-agentspace" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gcloud<span class="w"> </span>services<span class="w"> </span><span class="nb">enable</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>run.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>artifactregistry.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>aiplatform.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>cloudbuild.googleapis.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--project<span class="w"> </span>YOUR_PROJECT_ID
+</pre></div>
+</div>
+</section>
+<section id="required-iam-roles-cloud-run-agent-engine">
+<h3>Required IAM Roles (Cloud Run / Agent Engine)<a class="headerlink" href="#required-iam-roles-cloud-run-agent-engine" title="Link to this heading">¶</a></h3>
+<p>The default Compute Engine service account (<code class="docutils literal notranslate"><span class="pre">PROJECT_NUMBER-compute&#64;developer.gserviceaccount.com</span></code>) needs:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Role</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">roles/storage.admin</span></code></p></td>
+<td><p>Cloud Build uploads source to Cloud Storage</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">roles/artifactregistry.writer</span></code></p></td>
+<td><p>Cloud Build pushes the container image to Artifact Registry</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">roles/aiplatform.user</span></code></p></td>
+<td><p>Cloud Run service calls Gemini via Vertex AI</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PROJECT_ID</span><span class="o">=</span><span class="s2">&quot;your-project&quot;</span>
+<span class="nv">PROJECT_NUMBER</span><span class="o">=</span><span class="k">$(</span>gcloud<span class="w"> </span>projects<span class="w"> </span>describe<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span>--format<span class="o">=</span><span class="s2">&quot;value(projectNumber)&quot;</span><span class="k">)</span>
+<span class="nv">SA</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PROJECT_NUMBER</span><span class="si">}</span><span class="s2">-compute@developer.gserviceaccount.com&quot;</span>
+
+gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:</span><span class="nv">$SA</span><span class="s2">&quot;</span><span class="w"> </span>--role<span class="o">=</span><span class="s2">&quot;roles/storage.admin&quot;</span>
+gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:</span><span class="nv">$SA</span><span class="s2">&quot;</span><span class="w"> </span>--role<span class="o">=</span><span class="s2">&quot;roles/artifactregistry.writer&quot;</span>
+gcloud<span class="w"> </span>projects<span class="w"> </span>add-iam-policy-binding<span class="w"> </span><span class="nv">$PROJECT_ID</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--member<span class="o">=</span><span class="s2">&quot;serviceAccount:</span><span class="nv">$SA</span><span class="s2">&quot;</span><span class="w"> </span>--role<span class="o">=</span><span class="s2">&quot;roles/aiplatform.user&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
+<p>Step 1 — Create the agent <code class="docutils literal notranslate"><span class="pre">.env</span></code> file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/adk
+cp<span class="w"> </span>zscaler_agent/env.properties<span class="w"> </span>zscaler_agent/.env
+</pre></div>
+</div>
+<p>Or run the operations script with no arguments to auto-create it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>adk_agent_operations.py
+</pre></div>
+</div>
+<p>Step 2 — Edit <code class="docutils literal notranslate"><span class="pre">zscaler_agent/.env</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Google ADK Configuration</span>
+<span class="nv">GOOGLE_GENAI_USE_VERTEXAI</span><span class="o">=</span>False
+<span class="nv">GOOGLE_API_KEY</span><span class="o">=</span>your-google-api-key
+<span class="nv">GOOGLE_MODEL</span><span class="o">=</span>gemini-2.5-flash
+
+<span class="c1"># Zscaler OneAPI Credentials</span>
+<span class="nv">ZSCALER_CLIENT_ID</span><span class="o">=</span>your-client-id
+<span class="nv">ZSCALER_CLIENT_SECRET</span><span class="o">=</span>your-client-secret
+<span class="nv">ZSCALER_VANITY_DOMAIN</span><span class="o">=</span>your-vanity-domain
+<span class="nv">ZSCALER_CUSTOMER_ID</span><span class="o">=</span>your-customer-id
+<span class="nv">ZSCALER_CLOUD</span><span class="o">=</span>
+
+<span class="c1"># Optional: scope which MCP services / tools the agent can use</span>
+<span class="nv">ZSCALER_MCP_SERVICES</span><span class="o">=</span><span class="w">             </span><span class="c1"># e.g. zia,zpa,zdx (empty = all)</span>
+<span class="nv">ZSCALER_MCP_WRITE_ENABLED</span><span class="o">=</span><span class="w">        </span><span class="c1"># true/false (default: false)</span>
+<span class="nv">ZSCALER_MCP_WRITE_TOOLS</span><span class="o">=</span><span class="w">          </span><span class="c1"># e.g. zpa_*,zia_*</span>
+
+<span class="c1"># Deployment (Cloud Run / Agent Engine / Agentspace)</span>
+<span class="nv">PROJECT_ID</span><span class="o">=</span>your-gcp-project
+<span class="nv">REGION</span><span class="o">=</span>us-central1
+<span class="nv">AGENT_ENGINE_STAGING_BUCKET</span><span class="o">=</span><span class="w">      </span><span class="c1"># gs://your-bucket (Agent Engine only)</span>
+
+<span class="c1"># Agentspace (optional)</span>
+<span class="nv">PROJECT_NUMBER</span><span class="o">=</span>
+<span class="nv">AGENT_LOCATION</span><span class="o">=</span>
+<span class="nv">REASONING_ENGINE_NUMBER</span><span class="o">=</span>
+<span class="nv">AGENT_SPACE_APP_NAME</span><span class="o">=</span>
+</pre></div>
+</div>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/google/adk
+python<span class="w"> </span>adk_agent_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+<p>The script presents a numbered menu — select the deployment target. It then validates required env vars, collects target-specific configuration, shows a deployment summary, and asks for confirmation before executing.</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deploy</span></code></p></td>
+<td><p>Interactive guided deployment (Local, Cloud Run, Agent Engine, or Agentspace)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">status</span></code></p></td>
+<td><p>Show current deployment status (URL, revision, etc.)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">logs</span></code></p></td>
+<td><p>Stream agent logs (Cloud Run / Agent Engine)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">destroy</span></code></p></td>
+<td><p>Tear down deployed resources</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">destroy</span> <span class="pre">-y</span></code></p></td>
+<td><p>Non-interactive teardown</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="local-development">
+<h3>Local Development<a class="headerlink" href="#local-development" title="Link to this heading">¶</a></h3>
+<p>Runs <code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">web</span></code> locally using your <code class="docutils literal notranslate"><span class="pre">GOOGLE_API_KEY</span></code>. The agent UI is available at <code class="docutils literal notranslate"><span class="pre">http://localhost:8000</span></code>. No GCP project or IAM setup required.</p>
+</section>
+<section id="cloud-run">
+<h3>Cloud Run<a class="headerlink" href="#cloud-run" title="Link to this heading">¶</a></h3>
+<p>Builds the agent container from source via Cloud Build, pushes to Artifact Registry, and deploys to Cloud Run with the service name <code class="docutils literal notranslate"><span class="pre">zscaler-agent-service</span></code>. The script:</p>
+<ol class="arabic simple">
+<li><p>Backs up your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file</p></li>
+<li><p>Removes <code class="docutils literal notranslate"><span class="pre">GOOGLE_API_KEY</span></code> and sets <code class="docutils literal notranslate"><span class="pre">GOOGLE_GENAI_USE_VERTEXAI=True</span></code> (Cloud Run uses Vertex AI for Gemini, not the public API)</p></li>
+<li><p>Runs <code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">deploy</span> <span class="pre">cloud_run</span></code></p></li>
+<li><p>Saves deployment state for <code class="docutils literal notranslate"><span class="pre">status</span></code> / <code class="docutils literal notranslate"><span class="pre">logs</span></code> / <code class="docutils literal notranslate"><span class="pre">destroy</span></code> operations</p></li>
+<li><p>Restores your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file on exit (success or failure)</p></li>
+</ol>
+</section>
+<section id="vertex-ai-agent-engine">
+<h3>Vertex AI Agent Engine<a class="headerlink" href="#vertex-ai-agent-engine" title="Link to this heading">¶</a></h3>
+<p>Deploys to Vertex AI Agent Engine with display name <code class="docutils literal notranslate"><span class="pre">zscaler_agent</span></code>. Requires <code class="docutils literal notranslate"><span class="pre">AGENT_ENGINE_STAGING_BUCKET</span></code> set to a <code class="docutils literal notranslate"><span class="pre">gs://</span></code> bucket the deploy can stage artifacts into.</p>
+</section>
+<section id="google-agentspace">
+<h3>Google Agentspace<a class="headerlink" href="#google-agentspace" title="Link to this heading">¶</a></h3>
+<p>Registers an existing Agent Engine deployment with Google Agentspace via the Discovery Engine API. Requires the deployment to already exist, plus <code class="docutils literal notranslate"><span class="pre">PROJECT_NUMBER</span></code>, <code class="docutils literal notranslate"><span class="pre">REASONING_ENGINE_NUMBER</span></code>, and <code class="docutils literal notranslate"><span class="pre">AGENT_SPACE_APP_NAME</span></code> populated in <code class="docutils literal notranslate"><span class="pre">.env</span></code>.</p>
+</section>
+</section>
+<section id="authentication-mcp-server-security">
+<h2>Authentication &amp; MCP Server Security<a class="headerlink" href="#authentication-mcp-server-security" title="Link to this heading">¶</a></h2>
+<p>Because the MCP server runs as an in-process subprocess (stdio transport), the standard MCP HTTP auth modes (JWT, API key, OIDCProxy) <strong>do not apply</strong> in local mode — there is no HTTP surface to authenticate against. Cloud Run and Agent Engine deployments expose the agent (not the MCP server) over HTTPS through GCP’s infrastructure.</p>
+<p>Recommended security configuration for <strong>Cloud Run / Agent Engine</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_MCP_ALLOW_HTTP</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">ZSCALER_MCP_AUTH_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">ZSCALER_MCP_DISABLE_HOST_VALIDATION</span><span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+<p>These are needed because:</p>
+<ul class="simple">
+<li><p>Cloud Run terminates TLS at the load balancer; the agent → MCP subprocess communication happens over local stdio (no HTTP), but if you ever switch transports, plain HTTP must be allowed.</p></li>
+<li><p>The MCP server’s HTTP auth would conflict with Cloud Run’s IAM-mediated access; let Cloud Run’s identity layer handle inbound auth.</p></li>
+<li><p>Host validation is unnecessary when the agent is the only client.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">adk_agent_operations.py</span></code> script warns about unconfigured security vars during deployment to help catch misconfigurations.</p>
+<section id="cloud-run-enterprise-gcp-iam">
+<h3>Cloud Run + Enterprise GCP IAM<a class="headerlink" href="#cloud-run-enterprise-gcp-iam" title="Link to this heading">¶</a></h3>
+<p>Enterprise GCP organizations enforcing <code class="docutils literal notranslate"><span class="pre">constraints/iam.allowedPolicyMemberDomains</span></code> will block <code class="docutils literal notranslate"><span class="pre">allUsers</span></code> access to Cloud Run. When deploying, answer <code class="docutils literal notranslate"><span class="pre">N</span></code> to “Allow unauthenticated invocations” and access the agent via:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Grant yourself invoker access</span>
+gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"> </span>add-iam-policy-binding<span class="w"> </span>zscaler-agent-service<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>REGION<span class="w"> </span>--member<span class="o">=</span><span class="s2">&quot;user:YOUR_EMAIL&quot;</span><span class="w"> </span>--role<span class="o">=</span><span class="s2">&quot;roles/run.invoker&quot;</span>
+
+<span class="c1"># Access via local proxy (handles IAM auth transparently)</span>
+gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"> </span>proxy<span class="w"> </span>zscaler-agent-service<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>REGION<span class="w"> </span>--project<span class="w"> </span>YOUR_PROJECT_ID
+<span class="c1"># Then open http://localhost:8080</span>
+</pre></div>
+</div>
+<p>For multi-user access in enterprise orgs, place the Cloud Run service behind an external HTTPS Load Balancer with <a class="reference external" href="https://cloud.google.com/iap/docs/enabling-cloud-run">Identity-Aware Proxy</a> enabled and grant <code class="docutils literal notranslate"><span class="pre">roles/iap.httpsResourceAccessor</span></code> to the appropriate principals (a domain like <code class="docutils literal notranslate"><span class="pre">domain:yourcompany.com</span></code>, an IdP group, or individual users).</p>
+</section>
+</section>
+<section id="delete-operation-confirmation-hmac">
+<h2>Delete-Operation Confirmation (HMAC)<a class="headerlink" href="#delete-operation-confirmation-hmac" title="Link to this heading">¶</a></h2>
+<p>Delete tools are protected by the MCP server’s cryptographic HMAC-SHA256 confirmation flow. When the agent calls a delete tool, the MCP server returns a <code class="docutils literal notranslate"><span class="pre">CONFIRMATION</span> <span class="pre">REQUIRED</span></code> message with a time-limited HMAC token. The agent presents the details to the user; on approval, the agent re-calls the tool with <code class="docutils literal notranslate"><span class="pre">kwargs='{&quot;confirmation_token&quot;:</span> <span class="pre">&quot;&lt;token&gt;&quot;}'</span></code>. The server verifies the token is bound to the exact tool name, parameters, and hasn’t expired before executing.</p>
+<p>This is transport-agnostic — it works the same in stdio (ADK), SSE, and streamable-http modes.</p>
+<p>To disable confirmations for automation / CI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ZSCALER_MCP_SKIP_CONFIRMATIONS</span><span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+<p>Keep confirmations enabled for production deployments.</p>
+</section>
+<section id="example-prompts">
+<h2>Example Prompts<a class="headerlink" href="#example-prompts" title="Link to this heading">¶</a></h2>
+<p>Once the agent is running:</p>
+<ul class="simple">
+<li><p>“List all ZPA application segments”</p></li>
+<li><p>“Show me ZIA firewall rules for the Finance department”</p></li>
+<li><p>“What ZDX alerts are currently active?”</p></li>
+<li><p>“List EASM findings for my organization”</p></li>
+<li><p>“Show me shadow IT applications with high risk scores”</p></li>
+<li><p>“Check ZCC device enrollment status for my organization”</p></li>
+<li><p>“List all microsegmentation policy rules”</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
+<p><strong>``mcp-remote`` / ``adk web`` complains about missing ``uvx``</strong> — install <code class="docutils literal notranslate"><span class="pre">uv</span></code> (<code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">uv</span></code> on macOS or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">uv</span></code>).</p>
+<p><strong>Cloud Run deployment fails with ``permission denied`` on Cloud Build</strong> — confirm the project’s default Compute Engine service account has <code class="docutils literal notranslate"><span class="pre">roles/storage.admin</span></code> and <code class="docutils literal notranslate"><span class="pre">roles/artifactregistry.writer</span></code>. The Cloud Build UI usually surfaces the exact resource being denied.</p>
+<p><strong>Cloud Run service returns 401 to all requests</strong> — your org likely enforces <code class="docutils literal notranslate"><span class="pre">constraints/iam.allowedPolicyMemberDomains</span></code>. Either deploy to an unauthenticated-friendly project, or follow the enterprise pattern above (deploy with <code class="docutils literal notranslate"><span class="pre">--no-allow-unauthenticated</span></code> + per-user invoker bindings, accessed via <code class="docutils literal notranslate"><span class="pre">gcloud</span> <span class="pre">run</span> <span class="pre">services</span> <span class="pre">proxy</span></code>).</p>
+<p><strong>Agent stalls indefinitely on a delete operation</strong> — this happens when ADK’s built-in <code class="docutils literal notranslate"><span class="pre">require_confirmation</span></code> is enabled but the client (e.g. <code class="docutils literal notranslate"><span class="pre">adk</span> <span class="pre">web</span></code>) doesn’t implement the <code class="docutils literal notranslate"><span class="pre">adk_request_confirmation</span></code> protocol. The integration uses the MCP server’s HMAC confirmation flow instead (<code class="docutils literal notranslate"><span class="pre">CachedMCPToolset(require_confirmation=False)</span></code>); if you customized this back to <code class="docutils literal notranslate"><span class="pre">True</span></code>, switch back.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/google/adk">integrations/google/adk/</a> — full ADK integration source, agent definition, and env templates</p></li>
+<li><p><a class="reference internal" href="gcp-cloud-run.html"><span class="doc">GCP Cloud Run Deployment</span></a>, <a class="reference internal" href="gcp-gke.html"><span class="doc">GCP GKE Deployment</span></a>, <a class="reference internal" href="gcp-compute-engine-vm.html"><span class="doc">GCP Compute Engine VM Deployment</span></a> — standalone MCP server deployment guides (different architecture — see “Architecture” above)</p></li>
+<li><p><a class="reference external" href="https://google.github.io/adk-docs/">Google ADK Documentation</a></p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview">Vertex AI Agent Engine</a></p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/agentspace">Google Agentspace</a></p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="azure-deployment.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Azure Deployment</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="gcp-compute-engine-vm.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">GCP Compute Engine VM Deployment</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">GCP ADK Agent Deployment</a><ul>
+<li><a class="reference internal" href="#architecture">Architecture</a></li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li><a class="reference internal" href="#required-gcp-apis-cloud-run-agent-engine-agentspace">Required GCP APIs (Cloud Run / Agent Engine / Agentspace)</a></li>
+<li><a class="reference internal" href="#required-iam-roles-cloud-run-agent-engine">Required IAM Roles (Cloud Run / Agent Engine)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li><a class="reference internal" href="#local-development">Local Development</a></li>
+<li><a class="reference internal" href="#cloud-run">Cloud Run</a></li>
+<li><a class="reference internal" href="#vertex-ai-agent-engine">Vertex AI Agent Engine</a></li>
+<li><a class="reference internal" href="#google-agentspace">Google Agentspace</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#authentication-mcp-server-security">Authentication &amp; MCP Server Security</a><ul>
+<li><a class="reference internal" href="#cloud-run-enterprise-gcp-iam">Cloud Run + Enterprise GCP IAM</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#delete-operation-confirmation-hmac">Delete-Operation Confirmation (HMAC)</a></li>
+<li><a class="reference internal" href="#example-prompts">Example Prompts</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
