@@ -22,10 +22,6 @@ def trusted_network_manager(
         dict,
         Field(description="Optional query parameters for filtering results."),
     ] = None,
-    use_legacy: Annotated[
-        bool,
-        Field(description="Whether to use the legacy API."),
-    ] = False,
     service: Annotated[
         str,
         Field(description="The service to use."),
@@ -48,7 +44,7 @@ def trusted_network_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.trusted_networks
     query_params = query_params or {}
 

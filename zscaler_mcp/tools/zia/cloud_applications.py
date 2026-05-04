@@ -24,6 +24,12 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    APP_CLASS_FIELD_DESCRIPTION,
+    CLOUD_APP_CLASSES,
+    parent_for_app_class,
+    validate_app_class,
+)
 
 # =============================================================================
 # READ-ONLY OPERATIONS
@@ -64,12 +70,7 @@ def zia_list_cloud_app_policy(
     ] = None,
     app_class: Annotated[
         Optional[str],
-        Field(
-            description=(
-                "Filter by application category (e.g. 'WEB_MAIL', "
-                "'ENTERPRISE_COLLABORATION', 'FILE_SHARE')."
-            )
-        ),
+        Field(description=APP_CLASS_FIELD_DESCRIPTION),
     ] = None,
     page: Annotated[
         Optional[int], Field(description="Page offset for pagination.")
@@ -92,7 +93,6 @@ def zia_list_cloud_app_policy(
             )
         ),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """List the ZIA policy-engine cloud-application catalog.
@@ -105,15 +105,32 @@ def zia_list_cloud_app_policy(
     Supports both server-side filtering (``search``, ``app_class``,
     ``group_results``) and client-side JMESPath projection (``query``).
 
+    When the user describes a *kind* of application — "all webmail apps",
+    "every AI/ML tool", "the file-sharing services" — pass ``app_class``
+    set to the matching canonical category (for example ``WEBMAIL``,
+    ``AI_ML``, ``FILE_SHARE``). The full set of valid categories is
+    enumerated in
+    :data:`zscaler_mcp.common.zia_helpers.CLOUD_APP_CLASSES` and surfaced
+    in the ``app_class`` parameter description.
+
     Tip: when looking up the right enum to feed into an SSL inspection or
     DLP rule, prefer ``zia_list_cloud_app_ssl_policy`` if the target rule is
     SSL-inspection-scoped — its catalog can differ slightly from the generic
     policy catalog returned here.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    canonical_class = validate_app_class(app_class, service=service)
+    # The catalog query parameter uses the catalog vocabulary
+    # (``STREAMING``, ``WEB_MAIL``), not the policy vocabulary
+    # (``STREAMING_MEDIA``, ``WEBMAIL``). Translate after validation
+    # so callers can pass either form.
+    catalog_class = parent_for_app_class(canonical_class)
+
+    client = get_zscaler_client(service=service)
     cloud_apps = client.zia.cloud_applications
 
-    query_params = _build_query_params(search, page, page_size, app_class, group_results)
+    query_params = _build_query_params(
+        search, page, page_size, catalog_class, group_results
+    )
 
     apps, _, err = cloud_apps.list_cloud_app_policy(query_params=query_params)
     if err:
@@ -135,7 +152,7 @@ def zia_list_cloud_app_ssl_policy(
     ] = None,
     app_class: Annotated[
         Optional[str],
-        Field(description="Filter by application category."),
+        Field(description=APP_CLASS_FIELD_DESCRIPTION),
     ] = None,
     page: Annotated[
         Optional[int], Field(description="Page offset for pagination.")
@@ -157,7 +174,6 @@ def zia_list_cloud_app_ssl_policy(
             )
         ),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """List the ZIA cloud-application catalog scoped to SSL Inspection rules.
@@ -170,14 +186,33 @@ def zia_list_cloud_app_ssl_policy(
     This is the right tool to call when answering "what enum should I pass
     into ``cloud_applications`` for SharePoint Online / OneDrive / Box / …?"
     because it returns the exact strings the SSL Inspection API will accept.
+
+    Use ``app_class`` to filter by category when the user describes a
+    *kind* of application (e.g. ``AI_ML``, ``WEBMAIL``, ``FILE_SHARE``).
+    See :data:`zscaler_mcp.common.zia_helpers.CLOUD_APP_CLASSES` for the
+    canonical set.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    canonical_class = validate_app_class(app_class, service=service)
+    catalog_class = parent_for_app_class(canonical_class)
+
+    client = get_zscaler_client(service=service)
     cloud_apps = client.zia.cloud_applications
 
-    query_params = _build_query_params(search, page, page_size, app_class, group_results)
+    query_params = _build_query_params(
+        search, page, page_size, catalog_class, group_results
+    )
 
     apps, _, err = cloud_apps.list_cloud_app_ssl_policy(query_params=query_params)
     if err:
         raise Exception(f"Failed to list cloud application SSL policies: {err}")
     results = [app.as_dict() for app in apps]
     return apply_jmespath(results, query)
+
+
+# Re-export so callers/tests can introspect the canonical category list
+# directly from the tool module.
+__all__ = [
+    "zia_list_cloud_app_policy",
+    "zia_list_cloud_app_ssl_policy",
+    "CLOUD_APP_CLASSES",
+]

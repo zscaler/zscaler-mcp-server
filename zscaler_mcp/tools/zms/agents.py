@@ -42,10 +42,6 @@ def zms_list_agents(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List Zscaler Microsegmentation (ZMS) agents with pagination and search.
@@ -64,7 +60,7 @@ def zms_list_agents(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,
@@ -96,10 +92,6 @@ def zms_get_agent_connection_status_statistics(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get aggregated connection status statistics for ZMS agents.
@@ -114,7 +106,7 @@ def zms_get_agent_connection_status_statistics(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {"customer_id": customer_id}
     if search is not None:
@@ -138,10 +130,6 @@ def zms_get_agent_version_statistics(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get aggregated version statistics for ZMS agents.
@@ -157,7 +145,7 @@ def zms_get_agent_version_statistics(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {"customer_id": customer_id}
     if search is not None:

@@ -21,14 +21,13 @@ def zpa_list_pra_portals(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA PRA (Privileged Remote Access) portals.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_portal
 
     qp = query_params or {}
@@ -47,14 +46,13 @@ def zpa_get_pra_portal(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA PRA portal by ID."""
     if not portal_id:
         raise ValueError("portal_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_portal
 
     result, _, err = api.get_portal(portal_id, query_params={"microtenant_id": microtenant_id})
@@ -88,14 +86,13 @@ def zpa_create_pra_portal(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA PRA portal."""
     if not all([name, domain]):
         raise ValueError("Both 'name' and 'domain' are required for portal creation")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_portal
 
     # Attempt to resolve certificate ID by name if not directly provided
@@ -147,14 +144,13 @@ def zpa_update_pra_portal(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA PRA portal."""
     if not portal_id:
         raise ValueError("portal_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_portal
 
     update_fields = {
@@ -180,7 +176,6 @@ def zpa_delete_pra_portal(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -197,7 +192,7 @@ def zpa_delete_pra_portal(
     if not portal_id:
         raise ValueError("portal_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.pra_portal
 
     _, _, err = api.delete_portal(portal_id, microtenant_id=microtenant_id)

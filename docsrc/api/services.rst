@@ -263,7 +263,7 @@ All tools in this service query historical data with a 24-48 hour processing del
 
 .. note::
 
-   Z-Insights requires OneAPI authentication (OAuth2). Legacy API keys are not supported.
+   Z-Insights uses OneAPI authentication (OAuth2).
    Data queries should use time ranges that end at least 2 days ago.
 
 **Available Domains:**
@@ -380,11 +380,10 @@ Z-Insights Analytics
 
 .. code-block:: python
 
-   # Z-Insights requires OneAPI (OAuth2) authentication
+   # Z-Insights authenticates via OneAPI (OAuth2)
    from zscaler_mcp.client import get_zscaler_client
 
-   # Get client with OneAPI (not legacy)
-   client = get_zscaler_client(use_legacy=False, service="zins")
+   client = get_zscaler_client(service="zins")
 
    # Get web traffic by location for the past week
    # Using days_ago approach (recommended)

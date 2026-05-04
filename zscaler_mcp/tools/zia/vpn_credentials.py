@@ -18,14 +18,13 @@ def zia_list_vpn_credentials(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """List ZIA VPN credentials.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_vpn_credentials
 
     credentials, _, err = api.list_vpn_credentials(query_params=query_params)
@@ -37,14 +36,13 @@ def zia_list_vpn_credentials(
 
 def zia_get_vpn_credential(
     credential_id: Annotated[int, Field(description="Credential ID.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Get a specific ZIA VPN credential by ID."""
     if not credential_id:
         raise ValueError("credential_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_vpn_credentials
 
     result, _, err = api.get_vpn_credential(credential_id)
@@ -70,7 +68,6 @@ def zia_create_vpn_credential(
     comments: Annotated[
         Optional[str], Field(description="Optional comments for the credential.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Create a new ZIA VPN credential."""
@@ -79,7 +76,7 @@ def zia_create_vpn_credential(
     if not pre_shared_key:
         raise ValueError("pre_shared_key is required for VPN credential creation")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_vpn_credentials
 
     body = {
@@ -108,14 +105,13 @@ def zia_update_vpn_credential(
     comments: Annotated[
         Optional[str], Field(description="Optional comments for the credential.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """Update an existing ZIA VPN credential. Note: fqdn/ip_address cannot be changed."""
     if not credential_id:
         raise ValueError("credential_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_vpn_credentials
 
     update_fields = {
@@ -130,7 +126,6 @@ def zia_update_vpn_credential(
 
 def zia_delete_vpn_credential(
     credential_id: Annotated[int, Field(description="Credential ID (required).")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -147,7 +142,7 @@ def zia_delete_vpn_credential(
     if not credential_id:
         raise ValueError("credential_id is required for deletion")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zia.traffic_vpn_credentials
 
     _, _, err = api.delete_vpn_credential(credential_id)

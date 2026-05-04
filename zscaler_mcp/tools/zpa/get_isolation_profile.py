@@ -10,7 +10,6 @@ def isolation_profile_manager(
     name: Annotated[
         str, Field(description="Full name of the isolation profile to search for.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], dict, str]:
     """
@@ -37,7 +36,7 @@ def isolation_profile_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported for isolation profiles.")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     profiles, _, err = client.zpa.cbi_profile.list_cbi_profiles()
     if err:

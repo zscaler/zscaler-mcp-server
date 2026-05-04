@@ -20,7 +20,6 @@ def zia_geo_search_tool(
     prefix: Annotated[
         Optional[str], Field(description="Required if action is city_prefix_search")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Union[dict, List[dict], str]:
     """
@@ -55,7 +54,7 @@ def zia_geo_search_tool(
         - If city_prefix_search returns a large number of results, ensure your prefix is specific to reduce latency.
         - The returned objects are flattened using `.as_dict()` for compatibility with JSON serialization.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     if action == "geo_by_coordinates":
         if latitude is None or longitude is None:

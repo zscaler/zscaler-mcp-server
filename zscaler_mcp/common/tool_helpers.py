@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Set
 from mcp.types import ToolAnnotations
 
 from zscaler_mcp.common.logging import get_logger
+from zscaler_mcp.common.sanitize import is_sanitization_enabled, sanitize_value
+from zscaler_mcp.common.toolsets import META_TOOLSET_ID, toolset_for_tool
 
 logger = get_logger(__name__)
 audit_logger = get_logger("zscaler_mcp.audit")
@@ -25,6 +27,11 @@ def enable_tool_call_logging():
     global _log_tool_calls_enabled
     _log_tool_calls_enabled = True
     audit_logger.info("Tool-call audit logging enabled")
+
+
+def is_tool_call_logging_enabled() -> bool:
+    """Return True if per-tool-call audit logging has been enabled."""
+    return _log_tool_calls_enabled
 
 
 def _sanitize_args(kwargs: dict) -> dict:
@@ -59,12 +66,32 @@ def _summarize_result(result) -> str:
     return str(type(result).__name__)
 
 
+def _maybe_sanitize(result):
+    """Apply output sanitization unless globally disabled.
+
+    Centralised here so every wrapped tool — read or write, audited
+    or not — passes through the same defense. Sanitization itself is
+    a no-op when the env-var toggle is off (see
+    :mod:`zscaler_mcp.common.sanitize`).
+    """
+    if not is_sanitization_enabled():
+        return result
+    return sanitize_value(result)
+
+
 def _wrap_with_audit(func, tool_name: str):
-    """Wrap a tool function with audit logging."""
+    """Wrap a tool function with output sanitization and (optional) audit logging.
+
+    Sanitization is always applied to the return value (it's a cheap,
+    on-by-default defense against prompt-injection payloads embedded
+    in admin-editable Zscaler resource fields). Audit logging is
+    only emitted when ``--log-tool-calls`` /
+    ``ZSCALER_MCP_LOG_TOOL_CALLS=true`` is active.
+    """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if not _log_tool_calls_enabled:
-            return func(*args, **kwargs)
+            return _maybe_sanitize(func(*args, **kwargs))
 
         safe_args = _sanitize_args(kwargs)
         audit_logger.info("[TOOL CALL] %s | args: %s", tool_name, safe_args)
@@ -72,6 +99,7 @@ def _wrap_with_audit(func, tool_name: str):
         t0 = time.monotonic()
         try:
             result = func(*args, **kwargs)
+            result = _maybe_sanitize(result)
             elapsed_ms = (time.monotonic() - t0) * 1000
             summary = _summarize_result(result)
             audit_logger.info(
@@ -89,49 +117,83 @@ def _wrap_with_audit(func, tool_name: str):
     return wrapper
 
 
+def _is_in_selected_toolset(
+    tool_name: str, selected_toolsets: Optional[Set[str]]
+) -> bool:
+    """Decide whether a tool passes the active toolset filter.
+
+    Rules:
+        * ``selected_toolsets is None`` → no filter; always allowed.
+        * The ``meta`` toolset is always allowed (its tools are core
+          infrastructure: connectivity check, discovery, search).
+        * Otherwise the tool's toolset id (resolved via
+          :func:`toolset_for_tool`) must be in ``selected_toolsets``.
+
+    A KeyError raised by :func:`toolset_for_tool` is logged at WARNING
+    and the tool is dropped — an unmapped tool is a bug, but we'd
+    rather hide it than crash the entire server at registration time.
+    """
+    if selected_toolsets is None:
+        return True
+    try:
+        tsid = toolset_for_tool(tool_name)
+    except KeyError as exc:
+        logger.warning("Tool %s has no toolset mapping; dropping. %s", tool_name, exc)
+        return False
+    if tsid == META_TOOLSET_ID:
+        return True
+    return tsid in selected_toolsets
+
+
 def register_read_tools(
     server,
     tools: List[Dict[str, any]],
     enabled_tools: Optional[Set[str]] = None,
     disabled_tools: Optional[Set[str]] = None,
+    selected_toolsets: Optional[Set[str]] = None,
 ) -> int:
     """Register read-only tools.
 
     Read-only tools are always registered regardless of write mode settings.
     These tools perform safe operations that only retrieve information.
 
+    Filter precedence (most restrictive wins):
+        1. ``disabled_tools`` (fnmatch patterns) — always excluded.
+        2. ``selected_toolsets`` — only tools whose toolset is in this
+           set survive (``meta`` toolset is always exempt).
+        3. ``enabled_tools`` — explicit name allowlist (additive intent;
+           narrows further when both are given).
+
     Args:
-        server: The MCP server instance
-        tools: List of tool definitions with 'func', 'name', 'description'
-        enabled_tools: Set of enabled tool names (if None, all tools are enabled)
-        disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch)
+        server: The MCP server instance.
+        tools: List of tool definitions with 'func', 'name', 'description'.
+        enabled_tools: Set of enabled tool names (if None, all tools are
+            allowed by name).
+        disabled_tools: Set of tool name patterns to exclude (supports
+            wildcards via fnmatch).
+        selected_toolsets: Set of toolset ids (e.g. ``{"zia_url_filtering",
+            "zpa_app_segments"}``) to include. ``None`` disables toolset
+            filtering. The ``meta`` toolset is always exempt.
 
     Returns:
-        Number of tools registered
-
-    Example:
-        read_tools = [
-            {
-                "func": zpa_list_application_segments,
-                "name": "zpa_list_application_segments",
-                "description": "List ZPA application segments (read-only)"
-            }
-        ]
-        count = register_read_tools(server, read_tools)
+        Number of tools registered.
     """
     count = 0
     for tool_def in tools:
         tool_name = tool_def["name"]
 
-        # Skip if not in enabled_tools (when enabled_tools is specified)
-        if enabled_tools and tool_name not in enabled_tools:
-            logger.debug(f"Skipping read tool (not enabled): {tool_name}")
-            continue
-
         if disabled_tools and any(
             fnmatch.fnmatch(tool_name, pattern) for pattern in disabled_tools
         ):
             logger.debug(f"Skipping read tool (excluded by --disabled-tools): {tool_name}")
+            continue
+
+        if not _is_in_selected_toolset(tool_name, selected_toolsets):
+            logger.debug(f"Skipping read tool (not in selected toolsets): {tool_name}")
+            continue
+
+        if enabled_tools and tool_name not in enabled_tools:
+            logger.debug(f"Skipping read tool (not in --enabled-tools): {tool_name}")
             continue
 
         fn = _wrap_with_audit(tool_def["func"], tool_name)
@@ -156,6 +218,7 @@ def register_write_tools(
     enable_write_tools: bool = False,
     write_tools: Optional[Set[str]] = None,
     disabled_tools: Optional[Set[str]] = None,
+    selected_toolsets: Optional[Set[str]] = None,
 ) -> int:
     """Register write tools (only if enable_write_tools is True).
 
@@ -215,15 +278,18 @@ def register_write_tools(
     for tool_def in tools:
         tool_name = tool_def["name"]
 
-        # Skip if not in enabled_tools (when enabled_tools is specified)
-        if enabled_tools and tool_name not in enabled_tools:
-            logger.debug(f"Skipping write tool (not in enabled_tools): {tool_name}")
-            continue
-
         if disabled_tools and any(
             fnmatch.fnmatch(tool_name, pattern) for pattern in disabled_tools
         ):
             logger.debug(f"Skipping write tool (excluded by --disabled-tools): {tool_name}")
+            continue
+
+        if not _is_in_selected_toolset(tool_name, selected_toolsets):
+            logger.debug(f"Skipping write tool (not in selected toolsets): {tool_name}")
+            continue
+
+        if enabled_tools and tool_name not in enabled_tools:
+            logger.debug(f"Skipping write tool (not in --enabled-tools): {tool_name}")
             continue
 
         # Check write_tools allowlist (supports wildcards)

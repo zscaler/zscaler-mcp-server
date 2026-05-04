@@ -260,8 +260,8 @@ These rules have no effect until re-enabled.
 
 ## When NOT to Use This Skill
 
-- Creating or modifying URL categories -- use `zia_create_url_category` or `zia_update_url_category` directly
-- Adding/removing URLs from a category -- use `zia_add_urls_to_category` or `zia_remove_urls_from_category`
+- Creating or modifying URL categories -- pick the right tool for the flavour. Custom: `zia_create_url_category`, `zia_update_url_category` (full PUT), `zia_delete_url_category`. Predefined (Zscaler-curated, e.g. `FINANCE`, `NEWS_AND_MEDIA`): `zia_get_url_category_predefined`, `zia_update_url_category_predefined` (full PUT). The custom-only tools refuse predefined IDs at the safety-guard layer.
+- Adding/removing URLs from a category -- use `zia_add_urls_to_category` or `zia_remove_urls_from_category`. Both work transparently on custom *and* predefined categories (they use the SDK's `?action=ADD_TO_LIST` / `?action=REMOVE_FROM_LIST` endpoints, which preserve Zscaler's curated list on predefined categories).
 - Creating new filtering rules -- use `zia_create_url_filtering_rule` directly
 - Investigating SSL bypass specifically -- use the "audit-ssl-inspection-bypass" skill
 

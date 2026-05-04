@@ -35,7 +35,6 @@ def zdx_list_alerts(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -54,7 +53,6 @@ def zdx_list_alerts(
         since: Optional number of hours to look back (default 2 hours, max 14 days).
         offset: Optional pagination offset for getting next batch of results.
         limit: Optional number of items to return per request (minimum 1).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -76,7 +74,7 @@ def zdx_list_alerts(
         Get alerts with pagination:
         >>> alerts = zdx_list_alerts(limit=50, offset="next_offset_value")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:
@@ -109,7 +107,6 @@ def zdx_list_alerts(
 
 def zdx_get_alert(
     alert_id: Annotated[str, Field(description="The unique ID for the alert.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -122,7 +119,6 @@ def zdx_get_alert(
 
     Args:
         alert_id: The unique ID for the alert (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -135,7 +131,7 @@ def zdx_get_alert(
         Get detailed information for a specific alert:
         >>> alert = zdx_get_alert(alert_id="7473160764821179371")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     result, _, err = client.zdx.alerts.get_alert(alert_id)
     if err:
@@ -177,7 +173,6 @@ def zdx_list_alert_affected_devices(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -198,7 +193,6 @@ def zdx_list_alert_affected_devices(
         since: Optional number of hours to look back (default 2 hours, max 14 days).
         offset: Optional pagination offset for getting next batch of results.
         limit: Optional number of items to return per request (minimum 1).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -230,7 +224,7 @@ def zdx_list_alert_affected_devices(
         ...     location_groups=[1, 2]
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:

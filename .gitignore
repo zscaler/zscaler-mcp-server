@@ -70,7 +70,14 @@ instance/
 .scrapy
 
 # Sphinx documentation
+# Source lives in docsrc/; rendered HTML/doctrees under docsrc/_build* are
+# build artifacts and should never be committed. The deployable HTML for
+# GitHub Pages lives at docs/ and is published by `make docs-github`.
 docs/_build/
+docsrc/_build/
+docsrc/_build_clean/
+docsrc/_build/doctrees/
+docsrc/_build/html/
 
 # PyBuilder
 .pybuilder/
@@ -195,6 +202,7 @@ memory-bank/
 #  These contain user-specific data and should not be committed to version control
 .cursorignore
 .cursorindexingignore
+.cursor
 .claude/
 .anthropic/
 .openai/

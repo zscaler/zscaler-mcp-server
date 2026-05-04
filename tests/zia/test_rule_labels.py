@@ -81,7 +81,7 @@ class TestZiaListRuleLabels:
         result = zia_list_rule_labels()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
+        mock_get_client.assert_called_once_with(service="zia")
         mock_client.zia.rule_labels.list_labels.assert_called_once_with(query_params={})
         assert len(result) == 3
         assert result[0]["name"] == "Label 0"
@@ -115,20 +115,6 @@ class TestZiaListRuleLabels:
             zia_list_rule_labels()
         assert "List failed: API Error" in str(exc_info.value)
 
-    @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
-    def test_list_labels_legacy_mode(self, mock_get_client, mock_client, mock_label_list):
-        """Test listing labels using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zia.rule_labels.list_labels.return_value = (mock_label_list, None, None)
-
-        # Execute
-        result = zia_list_rule_labels(use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zia")
-        assert len(result) == 3
-
 
 class TestZiaGetRuleLabel:
     """Test cases for zia_get_rule_label function."""
@@ -144,7 +130,7 @@ class TestZiaGetRuleLabel:
         result = zia_get_rule_label(label_id=12345)
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
+        mock_get_client.assert_called_once_with(service="zia")
         mock_client.zia.rule_labels.get_label.assert_called_once_with(label_id=12345)
         assert result["id"] == 12345
         assert result["name"] == "Test Label"
@@ -169,20 +155,6 @@ class TestZiaGetRuleLabel:
             zia_get_rule_label(label_id=None)
         assert "label_id is required" in str(exc_info.value)
 
-    @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
-    def test_get_label_legacy_mode(self, mock_get_client, mock_client, mock_label):
-        """Test getting label using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.zia.rule_labels.get_label.return_value = (mock_label, None, None)
-
-        # Execute
-        result = zia_get_rule_label(label_id=12345, use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zia")
-        assert result["id"] == 12345
-
 
 # =============================================================================
 # WRITE OPERATIONS TESTS
@@ -203,7 +175,7 @@ class TestZiaCreateRuleLabel:
         result = zia_create_rule_label(name="Test Label", description="Test Description")
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
+        mock_get_client.assert_called_once_with(service="zia")
         mock_client.zia.rule_labels.add_label.assert_called_once_with(
             name="Test Label", description="Test Description"
         )
@@ -258,7 +230,7 @@ class TestZiaUpdateRuleLabel:
         result = zia_update_rule_label(label_id=12345, name="Updated Name")
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
+        mock_get_client.assert_called_once_with(service="zia")
         mock_client.zia.rule_labels.update_label.assert_called_once_with(
             label_id=12345, name="Updated Name"
         )
@@ -349,7 +321,7 @@ class TestZiaDeleteRuleLabel:
         with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
             result = zia_delete_rule_label(label_id=12345)
 
-        mock_get_client.assert_called_once_with(use_legacy=False, service="zia")
+        mock_get_client.assert_called_once_with(service="zia")
         mock_client.zia.rule_labels.delete_label.assert_called_once_with(label_id=12345)
         assert result == "Deleted rule label 12345"
 
@@ -368,18 +340,6 @@ class TestZiaDeleteRuleLabel:
         """Test deleting label without label_id — confirmation message shown first."""
         result = zia_delete_rule_label(label_id=None)
         assert isinstance(result, str)
-
-    @patch("zscaler_mcp.tools.zia.rule_labels.get_zscaler_client")
-    def test_delete_label_legacy_mode(self, mock_get_client, mock_client):
-        """Test deleting label using legacy API."""
-        mock_get_client.return_value = mock_client
-        mock_client.zia.rule_labels.delete_label.return_value = (None, None, None)
-
-        with patch.dict(os.environ, {"ZSCALER_MCP_SKIP_CONFIRMATIONS": "true"}):
-            result = zia_delete_rule_label(label_id=12345, use_legacy=True)
-
-        mock_get_client.assert_called_once_with(use_legacy=True, service="zia")
-        assert result == "Deleted rule label 12345"
 
 
 # =============================================================================

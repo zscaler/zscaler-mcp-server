@@ -16,7 +16,6 @@ def zcc_list_forwarding_profiles(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zcc",
 ) -> Union[List[dict], str]:
     """
@@ -27,7 +26,6 @@ def zcc_list_forwarding_profiles(
         page (int, optional): Specifies the page offset.
         page_size (int, optional): Specifies the page size.
         search (str, optional): The search string used to partially match.
-        use_legacy (bool): Whether to use the legacy API. Defaults to False.
         service (str): The service to use. Defaults to "zcc".
 
     Returns:
@@ -51,7 +49,7 @@ def zcc_list_forwarding_profiles(
         >>> profiles = zcc_list_forwarding_profiles(search="production")
         >>> print(f"Found {len(profiles)} profiles matching 'production'")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if page is not None:

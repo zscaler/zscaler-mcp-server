@@ -39,7 +39,7 @@ def zeasm_list_organizations(
         >>> for org in orgs['results']:
         ...     print(f"  {org['id']}: {org['name']}")
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     orgs, _, err = client.zeasm.organizations.list_organizations()
     if err:

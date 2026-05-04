@@ -98,10 +98,6 @@ def zms_list_resources(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List Zscaler Microsegmentation (ZMS) resources with pagination and filtering.
@@ -123,7 +119,7 @@ def zms_list_resources(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,
@@ -162,10 +158,6 @@ def zms_get_resource_protection_status(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get protection status summary for ZMS resources.
@@ -181,7 +173,7 @@ def zms_get_resource_protection_status(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     result, response, err = client.zms.resources.get_resource_protection_status(
         customer_id=customer_id,
@@ -201,10 +193,6 @@ def zms_get_metadata(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get event metadata for ZMS resources.
@@ -219,7 +207,7 @@ def zms_get_metadata(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     result, response, err = client.zms.resources.get_metadata(
         customer_id=customer_id,

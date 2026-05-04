@@ -8,7 +8,6 @@ from zscaler_mcp.client import get_zscaler_client
 def zdx_get_deeptrace_health_metrics(
     device_id: Annotated[str, Field(description="The unique ID for the ZDX device.")],
     trace_id: Annotated[str, Field(description="The unique ID for the deeptrace session.")],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -22,7 +21,6 @@ def zdx_get_deeptrace_health_metrics(
     Args:
         device_id: The unique ID for the ZDX device (required).
         trace_id: The unique ID for the deeptrace session (required).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -38,7 +36,7 @@ def zdx_get_deeptrace_health_metrics(
         ...     trace_id="trace456"
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     result, _, err = client.zdx.troubleshooting.get_deeptrace_health_metrics(device_id, trace_id)
     if err:

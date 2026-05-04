@@ -80,7 +80,7 @@ See the individual steering files for complete tool lists with parameters.
 5. **ZDX `since` parameter is in hours**, not timestamps. Default is 2 hours. Example: `since=24` means "last 24 hours."
 6. **Policy rules are evaluated top-to-bottom.** Order matters for ZPA access policies and ZIA firewall/URL/SSL/DLP rules.
 7. **IDs are strings**, even when they look numeric.
-8. **`use_legacy` parameter** exists on every tool, defaults to `False`. Do not change it.
+8. **OneAPI-only authentication.** Every tool authenticates via `zscaler.ZscalerClient` against ZIdentity using the unified `ZSCALER_CLIENT_ID` / `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`) / `ZSCALER_VANITY_DOMAIN` / `ZSCALER_CUSTOMER_ID` (ZPA only) credentials.
 
 ## Common Workflows
 
@@ -147,7 +147,6 @@ Load steering: easm
 - **Skip activation** — ZIA changes are invisible until activated
 - **Create ZPA resources out of order** — Causes cryptic 400 errors
 - **Run broad ZDX queries on large tenants** — Always ask for scope first
-- **Change `use_legacy` parameter** — Leave it at `False` unless explicitly asked
 - **Delete resources without checking dependencies** — App segments referenced by policy rules can't be deleted
 
 ## Troubleshooting

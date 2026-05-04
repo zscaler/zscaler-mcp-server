@@ -12,7 +12,15 @@ from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 def zpa_list_app_connectors(
     search: Annotated[
-        Optional[str], Field(description="Search term for filtering results by connector name.")
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring match on the connector's `name` field. "
+                "Returns the full set of matches in this tenant — no fuzzy matching, no "
+                "synonym expansion. An empty list means no connector name contains this "
+                "string; do not retry with split keywords or no filter."
+            )
+        ),
     ] = None,
     page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
     page_size: Annotated[
@@ -25,14 +33,13 @@ def zpa_list_app_connectors(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA app connectors with optional filtering and pagination. Returns connector status, version, group membership, and health information.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connectors
 
     qp = {}
@@ -57,14 +64,13 @@ def zpa_get_app_connector(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA app connector by ID. Returns detailed connector information including runtime status, version, control connection state, and associated connector group."""
     if not connector_id:
         raise ValueError("connector_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connectors
 
     qp = {}
@@ -94,14 +100,13 @@ def zpa_update_app_connector(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA app connector. Can be used to enable/disable a connector or change its name/description."""
     if not connector_id:
         raise ValueError("connector_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connectors
 
     body = {}
@@ -127,7 +132,6 @@ def zpa_delete_app_connector(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -143,7 +147,7 @@ def zpa_delete_app_connector(
     if not connector_id:
         raise ValueError("connector_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connectors
 
     _, _, err = api.delete_connector(connector_id, microtenant_id=microtenant_id)
@@ -157,7 +161,6 @@ def zpa_bulk_delete_app_connectors(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -173,7 +176,7 @@ def zpa_bulk_delete_app_connectors(
     if not connector_ids:
         raise ValueError("connector_ids is required and must not be empty")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connectors
 
     _, _, err = api.bulk_delete_connectors(connector_ids, microtenant_id=microtenant_id)

@@ -43,7 +43,6 @@ def zia_user_department_manager(
         Optional[Literal["asc", "desc", "rule_execution"]],
         Field(description="Sort order for listing departments."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[
         str, Field(description="Zscaler service name. Always 'zia' for this tool.")
     ] = "zia",
@@ -68,7 +67,6 @@ def zia_user_department_manager(
     - page_size: Optional page size for pagination. The SDK's default is 100; maximum is 1000.
     - sort_by: Optional sort field. Supported values: "id", "name", "expiry", "status", "external_id", "rank".
     - sort_order: Optional sort order. Supported values: "asc", "desc", "rule_execution".
-    - use_legacy: Whether to use the legacy client implementation.
     - service: Zscaler service. Use "zia".
 
     Returns:
@@ -94,7 +92,7 @@ def zia_user_department_manager(
     - Get a department by ID using the lite endpoint
       >>> zia_user_department_manager(action="get_lite", department_id="99999")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.user_management
 
     if action == "read":

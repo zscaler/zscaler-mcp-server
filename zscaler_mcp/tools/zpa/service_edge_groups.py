@@ -23,14 +23,13 @@ def zpa_list_service_edge_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA service edge groups with optional filtering and pagination.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.service_edge_group
 
     qp = query_params or {}
@@ -49,14 +48,13 @@ def zpa_get_service_edge_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA service edge group by ID."""
     if not group_id:
         raise ValueError("group_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.service_edge_group
 
     group, _, err = api.get_service_edge_group(
@@ -120,14 +118,13 @@ def zpa_create_service_edge_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA service edge group."""
     if not all([name, latitude, longitude, location]):
         raise ValueError("name, latitude, longitude, and location are required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     # Validate and convert country code if provided
     if country_code:
@@ -219,14 +216,13 @@ def zpa_update_service_edge_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Update an existing ZPA service edge group."""
     if not group_id:
         raise ValueError("group_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     # Validate and convert country code if provided
     if country_code:
@@ -274,7 +270,6 @@ def zpa_delete_service_edge_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -291,7 +286,7 @@ def zpa_delete_service_edge_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.service_edge_group
 
     _, _, err = api.delete_service_edge_group(group_id, microtenant_id=microtenant_id)

@@ -55,10 +55,6 @@ def zms_list_resource_groups(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List Zscaler Microsegmentation (ZMS) resource groups with pagination and filtering.
@@ -81,7 +77,7 @@ def zms_list_resource_groups(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,
@@ -119,10 +115,6 @@ def zms_get_resource_group_members(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get members of a specific ZMS resource group.
@@ -139,7 +131,7 @@ def zms_get_resource_group_members(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     result, response, err = client.zms.resource_groups.get_resource_group_members(
         customer_id=customer_id,
@@ -168,10 +160,6 @@ def zms_get_resource_group_protection_status(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     Get protection status summary for ZMS resource groups.
@@ -187,7 +175,7 @@ def zms_get_resource_group_protection_status(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     result, response, err = client.zms.resource_groups.get_resource_group_protection_status(
         customer_id=customer_id,

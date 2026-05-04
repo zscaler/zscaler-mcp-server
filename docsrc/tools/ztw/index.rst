@@ -45,8 +45,6 @@ Manages ZTW IP Destination Groups with full CRUD operations.
 :type description: Optional[str]
 :param ip_addresses: List of IP addresses for create/update operations
 :type ip_addresses: Optional[List[str]]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "ztw")
 :type service: str
 
@@ -82,8 +80,6 @@ Manages ZTW IP Pool Groups with full CRUD operations.
 :type description: Optional[str]
 :param ip_addresses: List of IP addresses for create/update operations
 :type ip_addresses: Optional[List[str]]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "ztw")
 :type service: str
 
@@ -114,8 +110,6 @@ Manages ZTW IP Source Groups with full CRUD operations.
 :type description: Optional[str]
 :param ip_addresses: List of IP addresses for create/update operations
 :type ip_addresses: Optional[List[str]]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "ztw")
 :type service: str
 
@@ -151,8 +145,6 @@ Manages ZTW Network Service Groups with full CRUD operations.
 :type description: Optional[str]
 :param services: List of network services for create/update operations
 :type services: Optional[List[dict]]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "ztw")
 :type service: str
 
@@ -191,8 +183,6 @@ List all existing admin roles in Zscaler Cloud & Branch Connector (ZTW).
 :type role_ids: Optional[List[str]]
 :param search: Search string to filter roles by name
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "ztw")
 :type service: str
 
@@ -231,8 +221,6 @@ List all existing admin users or get details for a specific admin user in Zscale
 :type page_size: Optional[int]
 :param version: Specifies admins from a backup version
 :type version: Optional[int]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "ztw")
 :type service: str
 
@@ -252,25 +240,13 @@ List all existing admin users or get details for a specific admin user in Zscale
 Authentication
 --------------
 
-ZTW tools support both OneAPI and Legacy authentication methods:
-
-**OneAPI Authentication:**
-- Uses OAuth2 client credentials
-- Requires the following environment variables:
+ZTW tools authenticate through **OneAPI** (OAuth2 client credentials).
+Required environment variables:
 
   * ``ZSCALER_CLIENT_ID``
   * ``ZSCALER_CLIENT_SECRET``
   * ``ZSCALER_VANITY_DOMAIN``
   * ``ZSCALER_CLOUD``
-
-**Legacy Authentication:**
-- Uses username, password, and API key
-- Requires the following environment variables:
-
-  * ``ZTW_USERNAME``
-  * ``ZTW_PASSWORD``
-  * ``ZTW_API_KEY``
-  * ``ZTW_CLOUD``
 
 Common Use Cases
 ----------------

@@ -2,8 +2,9 @@
 Tests for zscaler_mcp.common.elicitation — cryptographic confirmation tokens.
 
 Covers HMAC token generation/validation, canonical payload construction,
-legacy confirmed=true handling, token expiry, parameter tampering detection,
-the skip-confirmations escape hatch, and CWE-345 resource-binding regression.
+the historical confirmed=true acknowledgment shape, token expiry, parameter
+tampering detection, the skip-confirmations escape hatch, and CWE-345
+resource-binding regression.
 """
 
 import ast
@@ -46,11 +47,6 @@ class TestCanonicalPayload:
         result = _canonical_payload("t", params)
         assert "service" not in result
         assert "kwargs" not in result
-
-    def test_strips_use_legacy(self):
-        params = {"name": "foo", "use_legacy": True}
-        result = _canonical_payload("t", params)
-        assert "use_legacy" not in result
 
     def test_includes_tool_name_prefix(self):
         result = _canonical_payload("zpa_delete_segment", {"id": "123"})
@@ -161,17 +157,17 @@ class TestExtractConfirmedFromKwargs:
         result = extract_confirmed_from_kwargs('{"confirmation_token": "xyz"}')
         assert result == "xyz"
 
-    def test_legacy_confirmed_true_dict(self):
+    def test_deprecated_bool_confirmed_true_dict(self):
         result = extract_confirmed_from_kwargs({"confirmed": True})
-        assert result == "__legacy_confirmed__"
+        assert result == "__deprecated_bool_confirmed__"
 
-    def test_legacy_confirm_true_dict(self):
+    def test_deprecated_bool_confirm_true_dict(self):
         result = extract_confirmed_from_kwargs({"confirm": True})
-        assert result == "__legacy_confirmed__"
+        assert result == "__deprecated_bool_confirmed__"
 
-    def test_legacy_confirmed_json_string(self):
+    def test_deprecated_bool_confirmed_json_string(self):
         result = extract_confirmed_from_kwargs('{"confirmed": true}')
-        assert result == "__legacy_confirmed__"
+        assert result == "__deprecated_bool_confirmed__"
 
     def test_empty_string(self):
         assert extract_confirmed_from_kwargs("") is None
@@ -283,8 +279,8 @@ class TestCheckConfirmation:
         result = check_confirmation("tool", False, {"id": "1"})
         assert result is not None
 
-    def test_legacy_confirmed_reprompts(self):
-        result = check_confirmation("tool", "__legacy_confirmed__", {"id": "1"})
+    def test_deprecated_bool_confirmed_reprompts(self):
+        result = check_confirmation("tool", "__deprecated_bool_confirmed__", {"id": "1"})
         assert result is not None
         assert "confirmation_token" in result
 

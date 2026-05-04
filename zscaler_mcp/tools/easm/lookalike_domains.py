@@ -40,7 +40,7 @@ def zeasm_list_lookalike_domains(
         >>> for domain in domains['results']:
         ...     print(f"  {domain['domain_name']}")
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     domains, _, err = client.zeasm.lookalike_domains.list_lookalike_domains(org_id=org_id)
     if err:
@@ -78,7 +78,7 @@ def zeasm_get_lookalike_domain(
         ... )
         >>> print(details)
     """
-    client = get_zscaler_client(use_legacy=False, service=service)
+    client = get_zscaler_client(service=service)
 
     domain, _, err = client.zeasm.lookalike_domains.get_lookalike_domain(
         org_id=org_id, lookalike_raw=lookalike_raw

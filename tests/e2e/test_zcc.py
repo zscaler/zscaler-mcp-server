@@ -156,60 +156,6 @@ class TestZCCModuleE2E(BaseE2ETest):
             assertions,
         )
 
-    def test_download_devices(self):
-        """Verify the agent can download device data."""
-
-        async def test_logic():
-            fixtures = [
-                {
-                    "operation": "download_devices",
-                    "validator": lambda kwargs: True,
-                    "response": {
-                        "status_code": 200,
-                        "body": {
-                            "download_url": "https://api.zscaler.com/download/devices/export-12345.csv",
-                            "file_size": "2.5MB",
-                            "expires_at": "2024-01-16T10:30:00Z",
-                            "device_count": 500,
-                            "format": "CSV",
-                        },
-                    },
-                },
-            ]
-
-            # Set up the mock for Zscaler SDK structure
-            self._mock_api_instance.zcc.devices.download_devices.side_effect = (
-                self._create_mock_api_side_effect(fixtures)
-            )
-
-            prompt = "Download device data in CSV format"
-            return await self._run_agent_stream(prompt)
-
-        def assertions(tools, result):
-            # If we get a pickle error, just check that we get some response
-            if "pickle" in result.lower() or "mock" in result.lower():
-                self.assertIsInstance(result, str)
-                self.assertGreater(len(result), 0, "Expected non-empty result")
-                return
-
-            self.assertGreaterEqual(len(tools), 1, "Expected at least 1 tool call")
-
-            # Check that the result contains information about download
-            result_lower = result.lower()
-            self.assertTrue(
-                "download" in result_lower
-                or "csv" in result_lower
-                or "export" in result_lower
-                or "mock" in result_lower,
-                f"Expected download information in result: {result}",
-            )
-
-        self.run_test_with_retries(
-            "test_download_devices",
-            test_logic,
-            assertions,
-        )
-
     def test_get_devices_by_status(self):
         """Verify the agent can retrieve devices filtered by status."""
 

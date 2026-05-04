@@ -36,7 +36,6 @@ def zdx_list_devices(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -58,7 +57,6 @@ def zdx_list_devices(
         geo_id: Optional list of geolocation IDs to filter devices by.
         since: Optional number of hours to look back for device data (default 2 hours).
         offset: Optional pagination offset for getting next batch of results.
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -77,7 +75,7 @@ def zdx_list_devices(
         List devices by location:
         >>> devices = zdx_list_devices(location_id=["loc123"])
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if emails:
@@ -129,7 +127,6 @@ def zdx_get_device(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -144,7 +141,6 @@ def zdx_get_device(
         department_id: Optional list of department IDs to filter by.
         geo_id: Optional list of geolocation IDs to filter by.
         since: Optional number of hours to look back for device data (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -160,7 +156,7 @@ def zdx_get_device(
         Get device with location filter:
         >>> device = zdx_get_device(device_id="device123", location_id=["loc456"])
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:

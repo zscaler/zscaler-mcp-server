@@ -58,10 +58,6 @@ def zms_list_policy_rules(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List Zscaler Microsegmentation (ZMS) policy rules with pagination and filtering.
@@ -84,7 +80,7 @@ def zms_list_policy_rules(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,
@@ -123,10 +119,6 @@ def zms_list_default_policy_rules(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List default policy rules for Zscaler Microsegmentation (ZMS).
@@ -145,7 +137,7 @@ def zms_list_default_policy_rules(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     result, response, err = client.zms.policy_rules.list_default_policy_rules(
         customer_id=customer_id,

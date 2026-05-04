@@ -32,7 +32,6 @@ def ztw_list_admins(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Union[List[dict], dict, str]:
     """
@@ -49,7 +48,6 @@ def ztw_list_admins(
         page (int, optional): The page offset to return.
         page_size (int, optional): The number of records to return per page.
         version (int, optional): Specifies the admins from a backup version.
-        use_legacy (bool): Whether to use the legacy API. Defaults to False.
         service (str): The service to use. Defaults to "ztw".
 
     Returns:
@@ -92,7 +90,7 @@ def ztw_list_admins(
         >>> admins = ztw_list_admins(version=1)
         >>> print(f"Found {len(admins)} admins from backup version 1")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     if action == "get_admin":
         if not admin_id:
