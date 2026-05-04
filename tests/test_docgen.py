@@ -211,8 +211,8 @@ class TestEndToEndOnTempCopy(unittest.TestCase):
     """
 
     def test_check_then_generate_then_check_clean(self):
-        import tempfile
         import shutil
+        import tempfile
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmproot = Path(tmpdir)

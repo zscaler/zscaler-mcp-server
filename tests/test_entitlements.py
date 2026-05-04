@@ -16,7 +16,6 @@ from zscaler_mcp.common.entitlements import (
 )
 from zscaler_mcp.common.toolsets import META_TOOLSET_ID, TOOLSETS
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -305,9 +304,8 @@ class TestServerIntegration:
         assert META_TOOLSET_ID in server.selected_toolsets
 
     def test_filter_failure_is_non_fatal(self, monkeypatch):
-        from zscaler_mcp.server import ZscalerMCPServer
-
         import zscaler_mcp.common.entitlements as ent_mod
+        from zscaler_mcp.server import ZscalerMCPServer
 
         monkeypatch.setattr(
             ent_mod,
@@ -322,9 +320,8 @@ class TestServerIntegration:
     def test_filter_preserves_meta_toolset_when_token_entitles_only_unrelated_products(
         self, monkeypatch
     ):
-        from zscaler_mcp.server import ZscalerMCPServer
-
         import zscaler_mcp.common.entitlements as ent_mod
+        from zscaler_mcp.server import ZscalerMCPServer
 
         # Token entitles ZPA only, but the user only asked for ZIA toolsets.
         # Result: nothing user-requested survives, but META_TOOLSET_ID

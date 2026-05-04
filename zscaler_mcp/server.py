@@ -1226,11 +1226,11 @@ class ZscalerMCPServer:
         Returns:
             ``{"toolset": <id>, "newly_registered": <count>, "status": "..."}``.
         """
-        from zscaler_mcp.common.toolsets import TOOLSETS
         from zscaler_mcp.common.tool_helpers import (
             register_read_tools,
             register_write_tools,
         )
+        from zscaler_mcp.common.toolsets import TOOLSETS
 
         if not TOOLSETS.has(toolset):
             return {
