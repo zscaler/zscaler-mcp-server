@@ -28,7 +28,6 @@ def ztw_list_public_cloud_info(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """List Zscaler Public Cloud (ZTW) accounts with optional filtering.
@@ -42,7 +41,6 @@ def ztw_list_public_cloud_info(
         page_size: Number of results per page (default 100, maximum 1000).
         search: Optional search filter applied to account metadata.
         cloud_type: Optional cloud provider filter (AWS, AZURE, or GCP).
-        use_legacy: Whether to use the legacy API (default: False).
         service: The service to use (default: "ztw").
 
     Returns:
@@ -52,7 +50,7 @@ def ztw_list_public_cloud_info(
         Exception: If the Zscaler SDK reports an error.
     """
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.ztw.public_cloud_info
 
     query_params: Dict[str, object] = {}

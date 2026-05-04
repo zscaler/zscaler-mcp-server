@@ -50,8 +50,6 @@ ZCC Features
      - Description
    * - ``zcc_list_devices``
      - Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal
-   * - ``zcc_devices_csv_exporter``
-     - Downloads ZCC device information or service status as a CSV file
    * - ``zcc_list_trusted_networks``
      - Returns the list of Trusted Networks By Company ID in the Client Connector Portal
    * - ``zcc_list_forwarding_profiles``
@@ -380,7 +378,7 @@ Then edit `.env` with your Zscaler API credentials:
 **Optional Configuration:**
 
 - ``ZSCALER_CLOUD``: (Optional) Zscaler cloud environment (e.g., ``beta``) - Required when interacting with Beta Tenant ONLY.
-- ``ZSCALER_USE_LEGACY``: Enable legacy API mode (``true``/``false``, default: ``false``)
+- ``ZSCALER_PRIVATE_KEY``: (Optional) PEM-encoded private key for JWT-based OneAPI auth, used in place of ``ZSCALER_CLIENT_SECRET``.
 - ``ZSCALER_MCP_SERVICES``: Comma-separated list of services to enable (default: all services)
 - ``ZSCALER_MCP_TRANSPORT``: Transport method - ``stdio``, ``sse``, or ``streamable-http`` (default: ``stdio``)
 - ``ZSCALER_MCP_DEBUG``: Enable debug logging - ``true`` or ``false`` (default: ``false``)
@@ -528,7 +526,7 @@ See :ref:`platform-integrations` for detailed setup instructions for each platfo
 Zscaler API Credentials & Authentication
 ----------------------------------------
 
-The Zscaler Integrations MCP Server supports two authentication methods: OneAPI (recommended) and Legacy API. Choose the method that best fits your setup.
+The Zscaler Integrations MCP Server uses **OneAPI** authentication exclusively. A single set of ZIdentity credentials authenticates the server to every Zscaler product.
 
 Zscaler OneAPI Authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -571,9 +569,6 @@ You can provide credentials via the ``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECR
    * - ``cloud``
      - The Zidentity cloud to authenticate to i.e ``beta``
      - ``ZSCALER_CLOUD``
-   * - ``use_legacy``
-     - Whether to use legacy API clients instead of OneAPI. Can be set to ``true`` or ``false``.
-     - ``ZSCALER_USE_LEGACY``
 
 Container Usage
 ---------------

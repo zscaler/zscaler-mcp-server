@@ -79,7 +79,6 @@ Tests for Zscaler Digital Experience functionality:
 Tests for Zscaler Client Connector functionality:
 - ✅ Devices (`test_get_devices`)
 - ✅ Device Details (`test_get_device_details`)
-- ✅ Download Devices (`test_download_devices`)
 - ✅ Devices by Status (`test_get_devices_by_status`)
 - ✅ Devices by User (`test_get_devices_by_user`)
 - ✅ Device Statistics (`test_get_device_statistics`)

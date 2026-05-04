@@ -20,6 +20,13 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -106,7 +113,6 @@ def zia_list_sandbox_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Any:
     """
@@ -120,7 +126,7 @@ def zia_list_sandbox_rules(
     Returns:
         list[dict]: Sandbox rule records.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sb = client.zia.sandbox_rules
 
     query_params = {"search": search} if search else {}
@@ -135,7 +141,6 @@ def zia_get_sandbox_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the Sandbox rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -144,7 +149,7 @@ def zia_get_sandbox_rule(
     Returns:
         dict: The Sandbox rule record.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sb = client.zia.sandbox_rules
 
     rule, _, err = sb.get_rule(rule_id)
@@ -171,7 +176,7 @@ def zia_create_sandbox_rule(
     ],
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = True,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
     order: Annotated[Optional[int], Field(description="Rule order; defaults to bottom.")] = None,
     first_time_enable: Annotated[
         Optional[bool],
@@ -236,7 +241,6 @@ def zia_create_sandbox_rule(
     time_windows: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for time windows.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -247,6 +251,8 @@ def zia_create_sandbox_rule(
     Returns:
         dict: The created Sandbox rule.
     """
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_sandbox_rule_payload(
         name=name,
         description=description,
@@ -271,7 +277,7 @@ def zia_create_sandbox_rule(
         time_windows=time_windows,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sb = client.zia.sandbox_rules
 
     rule, _, err = sb.add_rule(**payload)
@@ -287,7 +293,7 @@ def zia_update_sandbox_rule(
     name: Annotated[Optional[str], Field(description="Rule name (max 31 chars).")] = None,
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = None,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
     order: Annotated[Optional[int], Field(description="Rule order.")] = None,
     ba_rule_action: Annotated[
         Optional[str],
@@ -342,7 +348,6 @@ def zia_update_sandbox_rule(
     time_windows: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for time windows.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -357,6 +362,10 @@ def zia_update_sandbox_rule(
     Returns:
         dict: The updated Sandbox rule.
     """
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_sandbox_rule_payload(
         name=name,
         description=description,
@@ -381,7 +390,7 @@ def zia_update_sandbox_rule(
         time_windows=time_windows,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sb = client.zia.sandbox_rules
 
     if "name" not in payload or "order" not in payload:
@@ -404,7 +413,6 @@ def zia_delete_sandbox_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the Sandbox rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -426,7 +434,7 @@ def zia_delete_sandbox_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     sb = client.zia.sandbox_rules
 
     _, _, err = sb.delete_rule(rule_id)

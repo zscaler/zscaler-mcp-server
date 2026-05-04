@@ -14,7 +14,6 @@ def posture_profile_manager(
     query_params: Annotated[
         dict, Field(description="Optional filters (e.g., search, pagination).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[dict, List[dict], str]:
     """
@@ -32,7 +31,7 @@ def posture_profile_manager(
     Returns:
         dict | list[dict] | str
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     api = client.zpa.posture_profiles
 

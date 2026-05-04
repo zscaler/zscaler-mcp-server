@@ -66,7 +66,6 @@ def zia_list_network_svc_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
@@ -79,7 +78,6 @@ def zia_list_network_svc_groups(
 
     Args:
         search: Filter results by name or description substring match.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -99,7 +97,7 @@ def zia_list_network_svc_groups(
         >>> # Search for email-related service groups
         >>> email_groups = zia_list_network_svc_groups(search="email")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     query_params = {}
@@ -120,7 +118,6 @@ def zia_get_network_svc_group(
         Union[int, str],
         Field(description="The unique ID of the network service group to retrieve."),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -131,7 +128,6 @@ def zia_get_network_svc_group(
 
     Args:
         group_id: The unique identifier of the network service group.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -158,7 +154,7 @@ def zia_get_network_svc_group(
     if not group_id:
         raise ValueError("group_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     group, _, err = zia.get_network_svc_group(group_id)
@@ -217,7 +213,6 @@ def zia_create_network_svc_group(
     description: Annotated[
         Optional[str], Field(description="Description for the network service group (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -232,7 +227,6 @@ def zia_create_network_svc_group(
         service_ids: List of network service IDs to include in the group.
             Use zia_list_network_services() to get available service IDs.
         description: Optional description for the group.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -279,7 +273,7 @@ def zia_create_network_svc_group(
     if not parsed_service_ids:
         raise ValueError("service_ids must contain at least one network service ID")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     kwargs = {"name": name, "service_ids": parsed_service_ids}
@@ -314,7 +308,6 @@ def zia_update_network_svc_group(
     description: Annotated[
         Optional[str], Field(description="Updated description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -329,7 +322,6 @@ def zia_update_network_svc_group(
         name: Updated name for the group (required).
         service_ids: Optional updated list of service IDs. If provided, replaces all existing services.
         description: Optional updated description.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -372,7 +364,7 @@ def zia_update_network_svc_group(
 
     parsed_service_ids = _parse_service_ids(service_ids) if service_ids else None
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     kwargs = {"name": name}
@@ -392,7 +384,6 @@ def zia_delete_network_svc_group(
         Union[int, str],
         Field(description="The unique ID of the network service group to delete (required)."),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -407,7 +398,6 @@ def zia_delete_network_svc_group(
 
     Args:
         group_id: The unique ID of the network service group to delete (required).
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
         kwargs: JSON string for internal confirmation handling.
 
@@ -440,7 +430,7 @@ def zia_delete_network_svc_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     _, _, err = zia.delete_network_svc_group(group_id)

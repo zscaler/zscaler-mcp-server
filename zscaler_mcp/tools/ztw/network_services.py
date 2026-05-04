@@ -31,7 +31,6 @@ def ztw_list_network_services(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """List network services configured in Zscaler Cloud & Branch Connector (ZTW).
@@ -41,7 +40,6 @@ def ztw_list_network_services(
         protocol: Optional network protocol filter.
         search: Optional search term for service name or description.
         locale: Optional locale code to localize descriptions.
-        use_legacy: Whether to use the legacy API (default: False).
         service: The service to use (default: "ztw").
 
     Returns:
@@ -51,7 +49,7 @@ def ztw_list_network_services(
         Exception: If the SDK returns an error response.
     """
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.ztw.nw_service
 
     query_params: Dict[str, object] = {}

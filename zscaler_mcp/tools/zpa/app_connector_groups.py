@@ -6,6 +6,47 @@ from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.utils.utils import validate_and_convert_country_code_iso
 
+DEFAULT_ENROLLMENT_CERT_NAME = "Connector"
+
+
+def _resolve_enrollment_cert_id(
+    client,
+    enrollment_cert_id: Optional[str],
+    enrollment_cert_name: Optional[str],
+    *,
+    default_name: str = DEFAULT_ENROLLMENT_CERT_NAME,
+) -> Optional[str]:
+    """Resolve the enrollment_cert_id to attach to an App Connector Group.
+
+    Resolution order:
+
+    1. If ``enrollment_cert_id`` is supplied explicitly, use it as-is.
+    2. Otherwise, look up the enrollment certificate by name (using
+       ``enrollment_cert_name`` if provided, else ``default_name``).
+       The default for App Connector Groups is the Zscaler-shipped
+       ``"Connector"`` certificate.
+
+    Returns the resolved ID, or raises ``ValueError`` if the named
+    certificate cannot be found in the tenant.
+    """
+    if enrollment_cert_id:
+        return enrollment_cert_id
+
+    name = enrollment_cert_name or default_name
+    api = client.zpa.enrollment_certificates
+    certs, _, err = api.list_enrolment(query_params={"search": name})
+    if err:
+        raise Exception(f"Failed to look up enrollment certificate '{name}': {err}")
+
+    matches = [c for c in (certs or []) if c.name and c.name.lower() == name.lower()]
+    if not matches:
+        raise ValueError(
+            f"Enrollment certificate '{name}' not found in this tenant. "
+            f"Pass enrollment_cert_id=<id> explicitly or create the certificate first."
+        )
+    return matches[0].id
+
+
 # =============================================================================
 # READ-ONLY OPERATIONS
 # =============================================================================
@@ -13,7 +54,15 @@ from zscaler_mcp.utils.utils import validate_and_convert_country_code_iso
 
 def zpa_list_app_connector_groups(
     search: Annotated[
-        Optional[str], Field(description="Search term for filtering results.")
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring match on the connector group's `name` field. "
+                "Returns the full set of matches in this tenant — no fuzzy matching, no "
+                "synonym expansion. An empty list means no connector group name contains "
+                "this string; do not retry with split keywords or no filter."
+            )
+        ),
     ] = None,
     page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
     page_size: Annotated[Optional[str], Field(description="Number of items per page.")] = None,
@@ -24,14 +73,13 @@ def zpa_list_app_connector_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA app connector groups with optional filtering and pagination.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connector_groups
 
     qp = {"microtenant_id": microtenant_id}
@@ -54,14 +102,13 @@ def zpa_get_app_connector_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA app connector group by ID."""
     if not group_id:
         raise ValueError("group_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connector_groups
 
     group, _, err = api.get_connector_group(
@@ -113,24 +160,55 @@ def zpa_create_app_connector_group(
         Optional[str], Field(description="Upgrade time in seconds.")
     ] = None,
     version_profile: Annotated[Optional[str], Field(description="Version profile.")] = None,
+    enrollment_cert_id: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Enrollment certificate ID to attach to the connector group. "
+                "Optional — if omitted, the tool resolves the tenant's standard "
+                "'Connector' enrollment certificate automatically. Pass this only "
+                "when you need a non-default certificate."
+            )
+        ),
+    ] = None,
+    enrollment_cert_name: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Enrollment certificate name to look up (alternative to enrollment_cert_id). "
+                "Defaults to 'Connector' — the Zscaler-shipped certificate used by App Connectors. "
+                "Use 'Service Edge' only if onboarding a Service Edge group instead."
+            )
+        ),
+    ] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
-    """Create a new ZPA app connector group."""
+    """Create a new ZPA app connector group.
+
+    The ZPA API requires the connector group to be bound to an enrollment
+    certificate (``enrollmentCertId``). This tool resolves the tenant's
+    standard ``Connector`` certificate automatically when none is supplied,
+    so the caller does not need to pre-fetch the ID.
+    """
     if not name:
         raise ValueError("name is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
-    # Validate and convert country code if provided
     if country_code:
         try:
             country_code = validate_and_convert_country_code_iso(country_code)
         except ValueError as e:
             raise ValueError(f"Invalid country code: {e}")
+
+    resolved_cert_id = _resolve_enrollment_cert_id(
+        client,
+        enrollment_cert_id=enrollment_cert_id,
+        enrollment_cert_name=enrollment_cert_name,
+    )
 
     api = client.zpa.app_connector_groups
 
@@ -151,6 +229,7 @@ def zpa_create_app_connector_group(
         "upgrade_day": upgrade_day,
         "upgrade_time_in_secs": upgrade_time_in_secs,
         "version_profile": version_profile,
+        "enrollment_cert_id": resolved_cert_id,
     }
     if microtenant_id:
         body["microtenant_id"] = microtenant_id
@@ -198,24 +277,56 @@ def zpa_update_app_connector_group(
         Optional[str], Field(description="Upgrade time in seconds.")
     ] = None,
     version_profile: Annotated[Optional[str], Field(description="Version profile.")] = None,
+    enrollment_cert_id: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Enrollment certificate ID to attach. Optional — if both this and "
+                "enrollment_cert_name are omitted, the existing certificate on the "
+                "connector group is preserved (no change). Pass this only when "
+                "rotating certificates."
+            )
+        ),
+    ] = None,
+    enrollment_cert_name: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Enrollment certificate name to look up (alternative to enrollment_cert_id). "
+                "Common values: 'Connector', 'Service Edge'. Only used if explicitly provided."
+            )
+        ),
+    ] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
-    """Update an existing ZPA app connector group."""
+    """Update an existing ZPA app connector group.
+
+    The enrollment certificate is preserved as-is unless the caller explicitly
+    passes ``enrollment_cert_id`` or ``enrollment_cert_name``. This avoids
+    silently rotating the cert on a running connector group during unrelated
+    edits.
+    """
     if not group_id:
         raise ValueError("group_id is required for update")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
-    # Validate and convert country code if provided
     if country_code:
         try:
             country_code = validate_and_convert_country_code_iso(country_code)
         except ValueError as e:
             raise ValueError(f"Invalid country code: {e}")
+
+    resolved_cert_id: Optional[str] = None
+    if enrollment_cert_id or enrollment_cert_name:
+        resolved_cert_id = _resolve_enrollment_cert_id(
+            client,
+            enrollment_cert_id=enrollment_cert_id,
+            enrollment_cert_name=enrollment_cert_name,
+        )
 
     api = client.zpa.app_connector_groups
 
@@ -237,6 +348,8 @@ def zpa_update_app_connector_group(
         "upgrade_time_in_secs": upgrade_time_in_secs,
         "version_profile": version_profile,
     }
+    if resolved_cert_id is not None:
+        body["enrollment_cert_id"] = resolved_cert_id
     if microtenant_id:
         body["microtenant_id"] = microtenant_id
 
@@ -251,7 +364,6 @@ def zpa_delete_app_connector_group(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -268,7 +380,7 @@ def zpa_delete_app_connector_group(
     if not group_id:
         raise ValueError("group_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.app_connector_groups
 
     _, _, err = api.delete_connector_group(group_id, microtenant_id=microtenant_id)

@@ -13,9 +13,15 @@ updates safe, ``zia_update_cloud_firewall_dns_rule`` silently backfills
 ``name`` and ``order`` from the existing rule when the caller does not
 supply them — same pattern as ssl_inspection.
 
-The ``applications`` attribute on DNS rules refers to *DNS tunnels and
-network applications*, NOT the policy-engine cloud-app catalog used by
-SSL Inspection and File Type Control. No cloud-app resolver is wired here.
+The ``applications`` attribute on DNS rules accepts the same canonical
+ZIA cloud-application names used by SSL Inspection / Web DLP / File Type
+Control / Cloud App Control — the field is just named ``applications``
+on this rule type instead of ``cloud_applications``. The DNS-related
+sub-categories (DNS tunnels, network apps, DNS-over-HTTPS providers)
+live inside that same catalog. Friendly display names supplied by the
+caller (e.g. "OneDrive", "Cloudflare DoH") are auto-resolved to canonical
+names via :func:`zscaler_mcp.common.zia_helpers.resolve_cloud_applications`
+before the API call.
 """
 
 from typing import Annotated, Any, List, Optional, Union
@@ -24,11 +30,57 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
+from zscaler_mcp.common.zia_helpers import (
+    ORDER_FIELD_DESCRIPTION,
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    resolve_cloud_applications,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
+
+def _resolve_cloud_apps_in_place(
+    applications: Optional[Union[List[str], str]],
+    *,
+    service: str,
+) -> tuple[Optional[List[str]], Optional[dict]]:
+    """Translate friendly cloud-app inputs to canonical names.
+
+    Returns ``(resolved, audit)``. ``audit`` is ``None`` when the inputs
+    were already canonical (no transformation happened) or when no inputs
+    were provided. Mirrors the helper used by ssl_inspection.py and
+    file_type_control_rules.py — kept as its own function (rather than
+    imported from a sibling) to avoid cross-tool import churn.
+    """
+    if applications is None:
+        return None, None
+
+    parsed = parse_list(applications)
+    if not parsed:
+        return parsed, None
+
+    resolved, audit = resolve_cloud_applications(
+        parsed,
+        scope="policy",
+        service=service,
+        strict=True,
+    )
+
+    transformed = False
+    for original, info in audit["resolved"].items():
+        enums = info["enums"]
+        if info["match"] != "canonical" or [original] != enums:
+            transformed = True
+            break
+
+    return resolved, (audit if transformed else None)
 
 
 def _build_dns_rule_payload(
@@ -149,7 +201,6 @@ def zia_list_cloud_firewall_dns_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Any:
     """
@@ -168,7 +219,7 @@ def zia_list_cloud_firewall_dns_rules(
         >>> rules = zia_list_cloud_firewall_dns_rules(search="block")
         >>> rules = zia_list_cloud_firewall_dns_rules(query="[].{id: id, name: name, action: action}")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dns = client.zia.cloud_firewall_dns
 
     query_params = {"search": search} if search else {}
@@ -183,7 +234,6 @@ def zia_get_cloud_firewall_dns_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the Cloud Firewall DNS rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -192,7 +242,7 @@ def zia_get_cloud_firewall_dns_rule(
     Returns:
         dict: The Cloud Firewall DNS rule record.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dns = client.zia.cloud_firewall_dns
 
     rule, _, err = dns.get_rule(rule_id)
@@ -221,8 +271,8 @@ def zia_create_cloud_firewall_dns_rule(
     ],
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = True,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
-    order: Annotated[Optional[int], Field(description="Rule order; defaults to bottom.")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
+    order: Annotated[Optional[int], Field(description=ORDER_FIELD_DESCRIPTION)] = None,
     redirect_ip: Annotated[
         Optional[str],
         Field(description="Redirect target IP address when the action is REDIR_*."),
@@ -259,9 +309,13 @@ def zia_create_cloud_firewall_dns_rule(
         Optional[Union[List[str], str]],
         Field(
             description=(
-                "DNS tunnels and network applications the rule applies to. "
-                "These are DNS-app strings, NOT the policy-engine cloud-app "
-                "catalog used by SSL Inspection. Accepts JSON string or list."
+                "Cloud applications the DNS rule applies to. Accepts the same "
+                "canonical ZIA app names used by SSL Inspection / Web DLP / "
+                "File Type Control / Cloud App Control (e.g. ONEDRIVE, "
+                "GOOGLE_DRIVE, CLOUDFLARE_DOH) — DNS just exposes the field as "
+                "`applications` instead of `cloud_applications`. Friendly "
+                "names (e.g. \"OneDrive\", \"Cloudflare DoH\") are auto-"
+                "resolved to canonical names. Accepts JSON string or list."
             )
         ),
     ] = None,
@@ -340,7 +394,17 @@ def zia_create_cloud_firewall_dns_rule(
     labels: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for labels.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    resolve_cloud_apps: Annotated[
+        bool,
+        Field(
+            description=(
+                "When True (default), friendly cloud-application names "
+                "supplied in `applications` are resolved to canonical ZIA app "
+                "names via the policy-engine cloud-app catalog. Set False to "
+                "pass values through unchanged (advanced)."
+            )
+        ),
+    ] = True,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -349,8 +413,18 @@ def zia_create_cloud_firewall_dns_rule(
     This is a write operation that requires the ``--enable-write-tools`` flag.
 
     Returns:
-        dict: The created Cloud Firewall DNS rule.
+        dict: The created Cloud Firewall DNS rule. If friendly cloud-app
+        names supplied in ``applications`` were resolved,
+        ``_cloud_applications_resolution`` is included for audit.
     """
+    cloud_apps_audit: Optional[dict] = None
+    if resolve_cloud_apps and applications is not None:
+        applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
+            applications, service=service
+        )
+
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_dns_rule_payload(
         name=name,
         description=description,
@@ -392,13 +466,16 @@ def zia_create_cloud_firewall_dns_rule(
         labels=labels,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dns = client.zia.cloud_firewall_dns
 
     rule, _, err = dns.add_rule(**payload)
     if err:
         raise Exception(f"Failed to create Cloud Firewall DNS rule: {err}")
-    return rule.as_dict()
+    result = rule.as_dict()
+    if cloud_apps_audit:
+        result["_cloud_applications_resolution"] = cloud_apps_audit
+    return result
 
 
 def zia_update_cloud_firewall_dns_rule(
@@ -408,8 +485,8 @@ def zia_update_cloud_firewall_dns_rule(
     name: Annotated[Optional[str], Field(description="Rule name (max 31 chars).")] = None,
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = None,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
-    order: Annotated[Optional[int], Field(description="Rule order.")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
+    order: Annotated[Optional[int], Field(description=ORDER_FIELD_DESCRIPTION)] = None,
     rule_action: Annotated[
         Optional[str],
         Field(
@@ -438,7 +515,14 @@ def zia_update_cloud_firewall_dns_rule(
     ] = None,
     applications: Annotated[
         Optional[Union[List[str], str]],
-        Field(description="DNS tunnels/network applications. Accepts JSON string or list."),
+        Field(
+            description=(
+                "Cloud applications the DNS rule applies to. Same canonical "
+                "ZIA app names as SSL Inspection / Web DLP / FTC / CAC use in "
+                "their `cloud_applications` field. Friendly names are auto-"
+                "resolved. Accepts JSON string or list."
+            )
+        ),
     ] = None,
     application_groups: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for DNS application groups.")
@@ -515,7 +599,17 @@ def zia_update_cloud_firewall_dns_rule(
     labels: Annotated[
         Optional[Union[List[int], str]], Field(description="IDs for labels.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
+    resolve_cloud_apps: Annotated[
+        bool,
+        Field(
+            description=(
+                "When True (default), friendly cloud-application names "
+                "supplied in `applications` are resolved to canonical ZIA app "
+                "names via the policy-engine cloud-app catalog. Set False to "
+                "pass values through unchanged (advanced)."
+            )
+        ),
+    ] = True,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -528,8 +622,20 @@ def zia_update_cloud_firewall_dns_rule(
     the caller does not supply them, so partial updates "just work".
 
     Returns:
-        dict: The updated Cloud Firewall DNS rule.
+        dict: The updated Cloud Firewall DNS rule. If friendly cloud-app
+        names supplied in ``applications`` were resolved,
+        ``_cloud_applications_resolution`` is included for audit.
     """
+    cloud_apps_audit: Optional[dict] = None
+    if resolve_cloud_apps and applications is not None:
+        applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
+            applications, service=service
+        )
+
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_dns_rule_payload(
         name=name,
         description=description,
@@ -571,7 +677,7 @@ def zia_update_cloud_firewall_dns_rule(
         labels=labels,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dns = client.zia.cloud_firewall_dns
 
     if "name" not in payload or "order" not in payload:
@@ -587,14 +693,16 @@ def zia_update_cloud_firewall_dns_rule(
     rule, _, err = dns.update_rule(rule_id, **payload)
     if err:
         raise Exception(f"Failed to update Cloud Firewall DNS rule {rule_id}: {err}")
-    return rule.as_dict()
+    result = rule.as_dict()
+    if cloud_apps_audit:
+        result["_cloud_applications_resolution"] = cloud_apps_audit
+    return result
 
 
 def zia_delete_cloud_firewall_dns_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the Cloud Firewall DNS rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -616,7 +724,7 @@ def zia_delete_cloud_firewall_dns_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     dns = client.zia.cloud_firewall_dns
 
     _, _, err = dns.delete_rule(rule_id)

@@ -16,7 +16,7 @@ for the same pattern.
 The ``cloud_applications`` attribute follows the policy-engine cloud-app
 catalog. Friendly display names supplied by users (e.g. "OneDrive", "Google
 Drive") are auto-resolved to canonical enum tokens (``ONEDRIVE``, ``GDRIVE``)
-via :func:`zscaler_mcp.common.zia_cloud_app_resolver.resolve_cloud_applications`
+via :func:`zscaler_mcp.common.zia_helpers.resolve_cloud_applications`
 before the API call.
 
 Related Tools:
@@ -31,7 +31,14 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
-from zscaler_mcp.common.zia_cloud_app_resolver import resolve_cloud_applications
+from zscaler_mcp.common.zia_helpers import (
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    resolve_cloud_applications,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 # ============================================================================
@@ -42,7 +49,6 @@ from zscaler_mcp.utils.utils import parse_list
 def _resolve_cloud_apps_in_place(
     cloud_applications: Optional[Union[List[str], str]],
     *,
-    use_legacy: bool,
     service: str,
 ) -> tuple[Optional[List[str]], Optional[dict]]:
     """Translate friendly cloud-app inputs to canonical enums.
@@ -61,7 +67,6 @@ def _resolve_cloud_apps_in_place(
     resolved, audit = resolve_cloud_applications(
         parsed,
         scope="policy",
-        use_legacy=use_legacy,
         service=service,
         strict=True,
     )
@@ -175,7 +180,6 @@ def zia_list_file_type_control_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Any:
     """
@@ -189,7 +193,6 @@ def zia_list_file_type_control_rules(
     Args:
         search (str, optional): Server-side filter on rule name.
         query (str, optional): JMESPath expression for client-side filtering.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -205,7 +208,7 @@ def zia_list_file_type_control_rules(
         Project just name + action via JMESPath:
         >>> rules = zia_list_file_type_control_rules(query="[].{name: name, action: filtering_action}")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ftc = client.zia.file_type_control_rule
 
     query_params = {"search": search} if search else {}
@@ -220,7 +223,6 @@ def zia_get_file_type_control_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the File Type Control rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -228,13 +230,12 @@ def zia_get_file_type_control_rule(
 
     Args:
         rule_id (int/str): The ID of the rule.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
         dict: The File Type Control rule record.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ftc = client.zia.file_type_control_rule
 
     rule, _, err = ftc.get_rule(rule_id)
@@ -263,7 +264,6 @@ def zia_list_file_type_categories(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Any:
     """
@@ -277,13 +277,12 @@ def zia_list_file_type_categories(
             Values: ``ZSCALERDLP``, ``EXTERNALDLP``, ``FILETYPECATEGORYFORFILETYPECONTROL``.
         exclude_custom_file_types (bool, optional): Exclude custom file types.
         query (str, optional): JMESPath expression for client-side filtering.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
         list[dict]: File-type category records.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ftc = client.zia.file_type_control_rule
 
     query_params: dict = {}
@@ -316,7 +315,7 @@ def zia_create_file_type_control_rule(
     ],
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = True,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
     order: Annotated[Optional[int], Field(description="Rule order; defaults to bottom.")] = None,
     operation: Annotated[
         Optional[str],
@@ -424,7 +423,6 @@ def zia_create_file_type_control_rule(
             )
         ),
     ] = True,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -439,9 +437,11 @@ def zia_create_file_type_control_rule(
     cloud_apps_audit: Optional[dict] = None
     if resolve_cloud_apps and cloud_applications is not None:
         cloud_applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
-            cloud_applications, use_legacy=use_legacy, service=service
+            cloud_applications, service=service
         )
 
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_file_type_control_rule_payload(
         name=name,
         description=description,
@@ -474,7 +474,7 @@ def zia_create_file_type_control_rule(
         zpa_app_segments=zpa_app_segments,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ftc = client.zia.file_type_control_rule
 
     rule, _, err = ftc.add_rule(**payload)
@@ -493,7 +493,7 @@ def zia_update_file_type_control_rule(
     name: Annotated[Optional[str], Field(description="Rule name (max 31 chars).")] = None,
     description: Annotated[Optional[str], Field(description="Optional rule description.")] = None,
     enabled: Annotated[Optional[bool], Field(description="True to enable, False to disable.")] = None,
-    rank: Annotated[Optional[int], Field(description="Admin rank (1-7).")] = None,
+    rank: Annotated[Optional[int], Field(description=RANK_FIELD_DESCRIPTION)] = None,
     order: Annotated[Optional[int], Field(description="Rule order; defaults to bottom.")] = None,
     filtering_action: Annotated[
         Optional[str],
@@ -579,7 +579,6 @@ def zia_update_file_type_control_rule(
             )
         ),
     ] = True,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -600,9 +599,13 @@ def zia_update_file_type_control_rule(
     cloud_apps_audit: Optional[dict] = None
     if resolve_cloud_apps and cloud_applications is not None:
         cloud_applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
-            cloud_applications, use_legacy=use_legacy, service=service
+            cloud_applications, service=service
         )
 
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_file_type_control_rule_payload(
         name=name,
         description=description,
@@ -635,7 +638,7 @@ def zia_update_file_type_control_rule(
         zpa_app_segments=zpa_app_segments,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ftc = client.zia.file_type_control_rule
 
     if "name" not in payload or "order" not in payload:
@@ -661,7 +664,6 @@ def zia_delete_file_type_control_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the File Type Control rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -683,7 +685,7 @@ def zia_delete_file_type_control_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ftc = client.zia.file_type_control_rule
 
     _, _, err = ftc.delete_rule(rule_id)

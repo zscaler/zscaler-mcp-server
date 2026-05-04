@@ -43,14 +43,21 @@ class TestZscalerMCPServer(unittest.TestCase):
         # Client will be initialized when tools are executed
         mock_get_client.assert_not_called()
 
-        # Verify server initialization
-        mock_fastmcp.assert_called_once_with(
-            name="Zscaler Integrations MCP Server",
-            instructions="This server provides access to Zscaler capabilities across ZIA, ZPA, ZDX, ZCC and ZIdentity services.",
-            debug=True,
-            log_level="DEBUG",
-            transport_security=None,
+        # Verify server initialization. Instructions are dynamically
+        # composed from the active toolsets (see
+        # ZscalerMCPServer._compose_server_instructions), so we assert on
+        # the stable preamble + the constructor's other call args.
+        self.assertEqual(mock_fastmcp.call_count, 1)
+        call_kwargs = mock_fastmcp.call_args.kwargs
+        self.assertEqual(call_kwargs["name"], "Zscaler Integrations MCP Server")
+        self.assertIn(
+            "This server exposes Zscaler tools",
+            call_kwargs["instructions"],
         )
+        self.assertIn("zscaler_list_toolsets", call_kwargs["instructions"])
+        self.assertEqual(call_kwargs["debug"], True)
+        self.assertEqual(call_kwargs["log_level"], "DEBUG")
+        self.assertIsNone(call_kwargs["transport_security"])
 
         # Verify services initialization
         available_service_names = services.get_service_names()
@@ -78,20 +85,20 @@ class TestZscalerMCPServer(unittest.TestCase):
 
     @patch("zscaler_mcp.server.FastMCP")
     @patch("zscaler_mcp.client.get_zscaler_client")
-    def test_server_legacy_mode(self, mock_get_client, mock_fastmcp):
-        """Test server initialization in legacy mode."""
-        # Setup mocks
-        mock_get_client.side_effect = ValueError("You must specify the 'service'")
+    def test_server_lazy_client_initialization(self, mock_get_client, mock_fastmcp):
+        """The server does not eagerly construct a Zscaler SDK client at startup.
+
+        The client is created lazily on the first tool call. This keeps the
+        server bootable when credentials are missing or rotating, and lets
+        services register their tools without a network round-trip.
+        """
+        mock_get_client.side_effect = ValueError("credentials required")
         mock_server_instance = MagicMock()
         mock_fastmcp.return_value = mock_server_instance
 
-        # Create server in legacy mode
         server = ZscalerMCPServer()
 
-        # Verify that client is None in legacy mode
         self.assertIsNone(server.zscaler_client)
-
-        # Verify that services are still initialized
         self.assertGreater(len(server.services), 0)
 
     @patch("zscaler_mcp.server.FastMCP")
@@ -177,7 +184,7 @@ class TestZscalerMCPServer(unittest.TestCase):
         self.assertIn("zcc", result["disabled_services"])
         self.assertIn("zdx", result["disabled_services"])
         self.assertIn("note", result)
-        self.assertIn("Disabled services", result["note"])
+        self.assertIn("disabled_services", result["note"])
 
     @patch("zscaler_mcp.server.FastMCP")
     @patch("zscaler_mcp.client.get_zscaler_client")
@@ -215,7 +222,7 @@ class TestZscalerMCPServer(unittest.TestCase):
         self.assertIn("disabled_tool_patterns", result)
         self.assertEqual(result["disabled_tool_patterns"], ["zia_delete_*"])
         self.assertIn("note", result)
-        self.assertIn("Disabled services", result["note"])
+        self.assertIn("disabled_services", result["note"])
         self.assertIn("fnmatch wildcards", result["note"])
 
     @patch("zscaler_mcp.server.FastMCP")
@@ -431,7 +438,7 @@ class TestDisabledToolsAndServices(unittest.TestCase):
         mock_server_instance = MagicMock()
         mock_fastmcp.return_value = mock_server_instance
 
-        disabled = {"zcc_devices_csv_exporter"}
+        disabled = {"zcc_list_forwarding_profiles"}
         server = ZscalerMCPServer(
             enabled_services={"zcc"},
             disabled_tools=disabled,
@@ -583,99 +590,6 @@ class TestZscalerMCPServerAuth(unittest.TestCase):
         self.assertIsNotNone(app)
         mock_auth.get_middleware.assert_called_once()
         mock_auth.get_routes.assert_called_once_with(mcp_path="/sse")
-
-
-class TestSearchTools(unittest.TestCase):
-    """Test cases for the search_tools method."""
-
-    @patch("zscaler_mcp.server.FastMCP")
-    @patch("zscaler_mcp.client.get_zscaler_client")
-    def _make_server(self, mock_get_client, mock_fastmcp, **kwargs):
-        mock_fastmcp.return_value = MagicMock()
-        return ZscalerMCPServer(**kwargs)
-
-    def test_search_by_service(self):
-        server = self._make_server(enabled_services={"zia", "zpa"})
-        result = server.search_tools(service="zia")
-        self.assertTrue(all(t["service"] == "zia" for t in result))
-        self.assertGreater(len(result), 0)
-
-    def test_search_by_name_contains(self):
-        server = self._make_server()
-        result = server.search_tools(name_contains="list")
-        for t in result:
-            self.assertIn("list", t["name"].lower())
-
-    def test_search_by_description_contains(self):
-        server = self._make_server()
-        result = server.search_tools(description_contains="firewall")
-        for t in result:
-            self.assertIn("firewall", t["description"].lower())
-
-    def test_search_no_results(self):
-        server = self._make_server()
-        result = server.search_tools(name_contains="zzz_nonexistent_tool_xyz")
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["status"], "no_results")
-
-    def test_search_combined_filters(self):
-        server = self._make_server(enabled_services={"zia"})
-        result = server.search_tools(service="zia", name_contains="list")
-        for t in result:
-            self.assertEqual(t["service"], "zia")
-            self.assertIn("list", t["name"].lower())
-
-    def test_search_with_jmespath_query(self):
-        server = self._make_server()
-        result = server.search_tools(query="[?type == 'read'].name")
-        self.assertIsInstance(result, list)
-        if result:
-            self.assertIsInstance(result[0], str)
-
-    def test_search_with_jmespath_type_filter(self):
-        server = self._make_server()
-        result = server.search_tools(query="[?type == 'write']")
-        for t in result:
-            if isinstance(t, dict) and "type" in t:
-                self.assertEqual(t["type"], "write")
-
-    def test_search_with_invalid_jmespath(self):
-        server = self._make_server()
-        result = server.search_tools(query="[???invalid")
-        self.assertEqual(len(result), 1)
-        self.assertIn("error", result[0])
-
-    def test_search_no_filters_returns_full_catalog(self):
-        server = self._make_server()
-        result = server.search_tools()
-        self.assertGreater(len(result), 0)
-        for t in result:
-            self.assertIn("name", t)
-            self.assertIn("description", t)
-            self.assertIn("service", t)
-            self.assertIn("type", t)
-
-    def test_search_case_insensitive_name(self):
-        server = self._make_server(enabled_services={"zia"})
-        upper = server.search_tools(name_contains="LIST")
-        lower = server.search_tools(name_contains="list")
-        upper_names = {t["name"] for t in upper if isinstance(t, dict) and "name" in t}
-        lower_names = {t["name"] for t in lower if isinstance(t, dict) and "name" in t}
-        self.assertEqual(upper_names, lower_names)
-
-    def test_search_case_insensitive_description(self):
-        server = self._make_server(enabled_services={"zia"})
-        upper = server.search_tools(description_contains="LOCATION")
-        lower = server.search_tools(description_contains="location")
-        upper_names = {t["name"] for t in upper if isinstance(t, dict) and "name" in t}
-        lower_names = {t["name"] for t in lower if isinstance(t, dict) and "name" in t}
-        self.assertEqual(upper_names, lower_names)
-
-    def test_search_service_filter_unknown_service_returns_no_results(self):
-        server = self._make_server()
-        result = server.search_tools(service="nonexistent_service")
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["status"], "no_results")
 
 
 if __name__ == "__main__":

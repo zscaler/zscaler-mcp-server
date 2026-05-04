@@ -32,7 +32,6 @@ def ztw_list_roles(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> Union[List[dict], str]:
     """
@@ -45,7 +44,6 @@ def ztw_list_roles(
         include_api_roles (bool, optional): Include or exclude API role information in the list. Default is True.
         role_ids (List[str], optional): Include or exclude role ID information in the list.
         search (str, optional): Search string to filter roles by name.
-        use_legacy (bool): Whether to use the legacy API. Defaults to False.
         service (str): The service to use. Defaults to "ztw".
 
     Returns:
@@ -78,7 +76,7 @@ def ztw_list_roles(
         >>> roles = ztw_list_roles(role_ids=["123456789", "987654321"])
         >>> print(f"Found {len(roles)} specific roles")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if include_auditor_role is not None:

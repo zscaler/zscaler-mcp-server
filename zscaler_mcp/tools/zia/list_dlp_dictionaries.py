@@ -26,7 +26,6 @@ def zia_dlp_dictionary_manager(
             description="Optional search filter for listing dictionaries by name or description."
         ),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Union[dict, List[dict]]:
     """
@@ -40,7 +39,6 @@ def zia_dlp_dictionary_manager(
         action (str): Operation to perform: read (list all or retrieve specific by dict_id), read_lite (list with minimal data).
         dict_id (int/str, optional): Optional dictionary ID to retrieve a specific dictionary.
         search (str, optional): Search string to match against dictionary name or description.
-        use_legacy (bool, optional): Whether to use the legacy API (default: False).
         service (str, optional): The service to use (default: "zia").
 
     Returns:
@@ -73,7 +71,7 @@ def zia_dlp_dictionary_manager(
         - Custom dictionaries can be created with specific patterns and phrases.
         - Dictionaries are used by DLP engines to create detection rules.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     dlp_dict = client.zia.dlp_dictionary
 

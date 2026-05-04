@@ -87,7 +87,7 @@ def zins_get_firewall_by_action(
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.firewall.get_traffic_by_action(
         start_time=resolved_start,
@@ -175,7 +175,7 @@ def zins_get_firewall_by_location(
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.firewall.get_traffic_by_location(
         start_time=resolved_start,
@@ -263,7 +263,7 @@ def zins_get_firewall_network_services(
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
 
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.firewall.get_network_services(
         start_time=resolved_start,

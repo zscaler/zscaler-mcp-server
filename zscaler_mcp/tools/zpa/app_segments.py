@@ -5,7 +5,7 @@ This module provides verb-based tools for managing ZPA application segments.
 All related operations are grouped in this single file for maintainability.
 """
 
-from typing import Annotated, Dict, List, Optional
+from typing import Annotated, Dict, List, Literal, Optional
 
 from pydantic import Field
 
@@ -19,7 +19,15 @@ from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 def zpa_list_application_segments(
     search: Annotated[
-        Optional[str], Field(description="Search term for filtering segments.")
+        Optional[str],
+        Field(
+            description=(
+                "Server-side substring match on the application segment's `name` field. "
+                "Returns the full set of matches in this tenant — no fuzzy matching, no "
+                "synonym expansion. An empty list means no segment name contains this "
+                "string; do not retry with split keywords or no filter."
+            )
+        ),
     ] = None,
     page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
     page_size: Annotated[Optional[str], Field(description="Number of items per page.")] = None,
@@ -30,7 +38,6 @@ def zpa_list_application_segments(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """
@@ -46,7 +53,6 @@ def zpa_list_application_segments(
         page_size: Number of items per page
         microtenant_id: Optional microtenant ID for scoping
         query: JMESPath expression for client-side filtering/projection
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -56,7 +62,7 @@ def zpa_list_application_segments(
         >>> segments = zpa_list_application_segments()
         >>> segments = zpa_list_application_segments(search="production")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     query_params = {"microtenant_id": microtenant_id}
@@ -80,7 +86,6 @@ def zpa_get_application_segment(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """
@@ -91,7 +96,6 @@ def zpa_get_application_segment(
     Args:
         segment_id: ID of the segment to retrieve (required)
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -103,7 +107,7 @@ def zpa_get_application_segment(
     if not segment_id:
         raise ValueError("segment_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     segment, _, err = api.get_segment(segment_id, query_params={"microtenant_id": microtenant_id})
@@ -130,10 +134,10 @@ def zpa_create_application_segment(
     tcp_port_range: Annotated[Optional[List[dict]], Field(description="TCP port ranges.")] = None,
     udp_port_range: Annotated[Optional[List[dict]], Field(description="UDP port ranges.")] = None,
     tcp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="TCP port ranges (legacy format).")
+        Optional[List[str]], Field(description="TCP port ranges as a flat string list.")
     ] = None,
     udp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="UDP port ranges (legacy format).")
+        Optional[List[str]], Field(description="UDP port ranges as a flat string list.")
     ] = None,
     bypass_type: Annotated[Optional[str], Field(description="Bypass type for the segment.")] = None,
     health_check_type: Annotated[Optional[str], Field(description="Health check type.")] = None,
@@ -149,10 +153,106 @@ def zpa_create_application_segment(
     clientless_app_ids: Annotated[
         Optional[List[dict]], Field(description="List of clientless app IDs.")
     ] = None,
+    icmp_access_type: Annotated[
+        Optional[Literal["NONE", "PING", "PING_TRACEROUTING"]],
+        Field(
+            description=(
+                "Controls whether the application segment responds to ICMP. "
+                "`NONE` disables ICMP, `PING` allows ping, `PING_TRACEROUTING` allows "
+                "ping plus traceroute. Defaults to `NONE` server-side when omitted."
+            )
+        ),
+    ] = None,
+    double_encrypt: Annotated[
+        Optional[bool],
+        Field(description="Enable double encryption for the segment."),
+    ] = None,
+    config_space: Annotated[
+        Optional[Literal["DEFAULT", "SIEM"]],
+        Field(
+            description="Configuration space for the segment. `DEFAULT` for normal app segments."
+        ),
+    ] = None,
+    ip_anchored: Annotated[
+        Optional[bool],
+        Field(description="Whether the application segment is IP-anchored."),
+    ] = None,
+    bypass_on_reauth: Annotated[
+        Optional[bool],
+        Field(description="Bypass the application segment when the user re-authenticates."),
+    ] = None,
+    inspect_traffic_with_zia: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Enable Source IP Anchoring — forwards traffic from this segment through "
+                "ZIA for inspection. Requires a corresponding ZIA configuration."
+            )
+        ),
+    ] = None,
+    use_in_dr_mode: Annotated[
+        Optional[bool],
+        Field(description="Enable this segment in Disaster Recovery (DR) mode."),
+    ] = None,
+    tcp_keep_alive: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Enable TCP keep-alive for the segment. API expects a string flag "
+                "(`'1'` to enable, `'0'` to disable)."
+            )
+        ),
+    ] = None,
+    select_connector_close_to_app: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Prefer App Connectors that are network-close to the application "
+                "(rather than network-close to the user)."
+            )
+        ),
+    ] = None,
+    match_style: Annotated[
+        Optional[Literal["INCLUSIVE", "EXCLUSIVE"]],
+        Field(
+            description=(
+                "Domain-name matching style. `INCLUSIVE` (default) matches any listed "
+                "domain; `EXCLUSIVE` requires an exact match for the FQDN."
+            )
+        ),
+    ] = None,
+    adp_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable AppProtection Discovery (ADP) on this segment."),
+    ] = None,
+    auto_app_protect_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable auto-AppProtection (recommended profiles auto-applied)."),
+    ] = None,
+    api_protection_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable API protection on this segment."),
+    ] = None,
+    fqdn_dns_check: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Validate that the segment's domain names resolve via DNS before "
+                "the API accepts the configuration."
+            )
+        ),
+    ] = None,
+    weighted_load_balancing: Annotated[
+        Optional[bool],
+        Field(description="Enable weighted load balancing across server groups."),
+    ] = None,
+    extranet_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable Extranet (`zpnErId`) consumption for this segment."),
+    ] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """
@@ -169,16 +269,31 @@ def zpa_create_application_segment(
         server_group_ids: List of server group IDs
         tcp_port_range: TCP port ranges [{"from": "80", "to": "80"}]
         udp_port_range: UDP port ranges
-        tcp_port_ranges: TCP port ranges in legacy format ["80", "443"]
-        udp_port_ranges: UDP port ranges in legacy format
+        tcp_port_ranges: TCP port ranges as a flat string list ["80", "443"]
+        udp_port_ranges: UDP port ranges as a flat string list
         bypass_type: Bypass type for the segment
         health_check_type: Health check type
         health_reporting: Health reporting configuration
         is_cname_enabled: Whether CNAME is enabled
         passive_health_enabled: Whether passive health checking is enabled
         clientless_app_ids: List of clientless app IDs
+        icmp_access_type: ICMP behaviour: "NONE", "PING", or "PING_TRACEROUTING"
+        double_encrypt: Enable double encryption for the segment
+        config_space: Configuration space ("DEFAULT" or "SIEM")
+        ip_anchored: Whether the segment is IP-anchored
+        bypass_on_reauth: Bypass on user re-authentication
+        inspect_traffic_with_zia: Forward segment traffic through ZIA (Source IP Anchoring)
+        use_in_dr_mode: Enable in Disaster Recovery mode
+        tcp_keep_alive: TCP keep-alive flag ("1" enable / "0" disable)
+        select_connector_close_to_app: Prefer App Connectors close to the app vs. user
+        match_style: Domain matching style ("INCLUSIVE" or "EXCLUSIVE")
+        adp_enabled: Enable AppProtection Discovery
+        auto_app_protect_enabled: Enable auto-AppProtection
+        api_protection_enabled: Enable API protection
+        fqdn_dns_check: Validate domain names resolve via DNS
+        weighted_load_balancing: Enable weighted load balancing
+        extranet_enabled: Enable Extranet for this segment
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -191,6 +306,14 @@ def zpa_create_application_segment(
         ...     domain_names=["app.example.com"],
         ...     tcp_port_range=[{"from": "443", "to": "443"}]
         ... )
+        >>> segment = zpa_create_application_segment(
+        ...     name="Internal API",
+        ...     segment_group_id="123456",
+        ...     domain_names=["api.internal"],
+        ...     tcp_port_ranges=["443", "443"],
+        ...     icmp_access_type="PING",
+        ...     inspect_traffic_with_zia=True,
+        ... )
     """
     # Validate required fields
     if not name:
@@ -202,12 +325,12 @@ def zpa_create_application_segment(
     if (tcp_port_range and tcp_port_ranges) or (udp_port_range and udp_port_ranges):
         raise ValueError(
             "Use either structured port ranges (tcp_port_range/udp_port_range) "
-            "or legacy string ranges (tcp_port_ranges/udp_port_ranges), not both."
+            "or flat string ranges (tcp_port_ranges/udp_port_ranges), not both."
         )
     if not any([tcp_port_range, udp_port_range, tcp_port_ranges, udp_port_ranges]):
         raise ValueError("At least one port configuration must be provided (TCP or UDP).")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     body = {
@@ -223,6 +346,22 @@ def zpa_create_application_segment(
         "is_cname_enabled": is_cname_enabled,
         "passive_health_enabled": passive_health_enabled,
         "clientless_app_ids": clientless_app_ids,
+        "icmp_access_type": icmp_access_type,
+        "double_encrypt": double_encrypt,
+        "config_space": config_space,
+        "ip_anchored": ip_anchored,
+        "bypass_on_reauth": bypass_on_reauth,
+        "inspect_traffic_with_zia": inspect_traffic_with_zia,
+        "use_in_dr_mode": use_in_dr_mode,
+        "tcp_keep_alive": tcp_keep_alive,
+        "select_connector_close_to_app": select_connector_close_to_app,
+        "match_style": match_style,
+        "adp_enabled": adp_enabled,
+        "auto_app_protect_enabled": auto_app_protect_enabled,
+        "api_protection_enabled": api_protection_enabled,
+        "fqdn_dns_check": fqdn_dns_check,
+        "weighted_load_balancing": weighted_load_balancing,
+        "extranet_enabled": extranet_enabled,
     }
 
     if tcp_port_range:
@@ -260,10 +399,10 @@ def zpa_update_application_segment(
     tcp_port_range: Annotated[Optional[List[dict]], Field(description="TCP port ranges.")] = None,
     udp_port_range: Annotated[Optional[List[dict]], Field(description="UDP port ranges.")] = None,
     tcp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="TCP port ranges (legacy format).")
+        Optional[List[str]], Field(description="TCP port ranges as a flat string list.")
     ] = None,
     udp_port_ranges: Annotated[
-        Optional[List[str]], Field(description="UDP port ranges (legacy format).")
+        Optional[List[str]], Field(description="UDP port ranges as a flat string list.")
     ] = None,
     bypass_type: Annotated[Optional[str], Field(description="Bypass type for the segment.")] = None,
     health_check_type: Annotated[Optional[str], Field(description="Health check type.")] = None,
@@ -279,10 +418,93 @@ def zpa_update_application_segment(
     clientless_app_ids: Annotated[
         Optional[List[dict]], Field(description="List of clientless app IDs.")
     ] = None,
+    icmp_access_type: Annotated[
+        Optional[Literal["NONE", "PING", "PING_TRACEROUTING"]],
+        Field(
+            description=(
+                "Controls whether the application segment responds to ICMP. "
+                "`NONE` disables ICMP, `PING` allows ping, `PING_TRACEROUTING` allows "
+                "ping plus traceroute."
+            )
+        ),
+    ] = None,
+    double_encrypt: Annotated[
+        Optional[bool],
+        Field(description="Enable double encryption for the segment."),
+    ] = None,
+    config_space: Annotated[
+        Optional[Literal["DEFAULT", "SIEM"]],
+        Field(description="Configuration space for the segment."),
+    ] = None,
+    ip_anchored: Annotated[
+        Optional[bool],
+        Field(description="Whether the application segment is IP-anchored."),
+    ] = None,
+    bypass_on_reauth: Annotated[
+        Optional[bool],
+        Field(description="Bypass the application segment when the user re-authenticates."),
+    ] = None,
+    inspect_traffic_with_zia: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Forward segment traffic through ZIA for inspection (Source IP Anchoring)."
+            )
+        ),
+    ] = None,
+    use_in_dr_mode: Annotated[
+        Optional[bool],
+        Field(description="Enable this segment in Disaster Recovery (DR) mode."),
+    ] = None,
+    tcp_keep_alive: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Enable TCP keep-alive for the segment. API expects a string flag "
+                "(`'1'` to enable, `'0'` to disable)."
+            )
+        ),
+    ] = None,
+    select_connector_close_to_app: Annotated[
+        Optional[bool],
+        Field(
+            description=(
+                "Prefer App Connectors that are network-close to the application "
+                "(rather than network-close to the user)."
+            )
+        ),
+    ] = None,
+    match_style: Annotated[
+        Optional[Literal["INCLUSIVE", "EXCLUSIVE"]],
+        Field(description="Domain-name matching style (`INCLUSIVE` or `EXCLUSIVE`)."),
+    ] = None,
+    adp_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable AppProtection Discovery (ADP) on this segment."),
+    ] = None,
+    auto_app_protect_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable auto-AppProtection."),
+    ] = None,
+    api_protection_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable API protection on this segment."),
+    ] = None,
+    fqdn_dns_check: Annotated[
+        Optional[bool],
+        Field(description="Validate that the segment's domain names resolve via DNS."),
+    ] = None,
+    weighted_load_balancing: Annotated[
+        Optional[bool],
+        Field(description="Enable weighted load balancing across server groups."),
+    ] = None,
+    extranet_enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable Extranet (`zpnErId`) consumption for this segment."),
+    ] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """
@@ -300,16 +522,31 @@ def zpa_update_application_segment(
         server_group_ids: New list of server group IDs
         tcp_port_range: TCP port ranges
         udp_port_range: UDP port ranges
-        tcp_port_ranges: TCP port ranges in legacy format
-        udp_port_ranges: UDP port ranges in legacy format
+        tcp_port_ranges: TCP port ranges as a flat string list
+        udp_port_ranges: UDP port ranges as a flat string list
         bypass_type: Bypass type for the segment
         health_check_type: Health check type
         health_reporting: Health reporting configuration
         is_cname_enabled: Whether CNAME is enabled
         passive_health_enabled: Whether passive health checking is enabled
         clientless_app_ids: List of clientless app IDs
+        icmp_access_type: ICMP behaviour: "NONE", "PING", or "PING_TRACEROUTING"
+        double_encrypt: Enable double encryption for the segment
+        config_space: Configuration space ("DEFAULT" or "SIEM")
+        ip_anchored: Whether the segment is IP-anchored
+        bypass_on_reauth: Bypass on user re-authentication
+        inspect_traffic_with_zia: Forward segment traffic through ZIA (Source IP Anchoring)
+        use_in_dr_mode: Enable in Disaster Recovery mode
+        tcp_keep_alive: TCP keep-alive flag ("1" enable / "0" disable)
+        select_connector_close_to_app: Prefer App Connectors close to the app vs. user
+        match_style: Domain matching style ("INCLUSIVE" or "EXCLUSIVE")
+        adp_enabled: Enable AppProtection Discovery
+        auto_app_protect_enabled: Enable auto-AppProtection
+        api_protection_enabled: Enable API protection
+        fqdn_dns_check: Validate domain names resolve via DNS
+        weighted_load_balancing: Enable weighted load balancing
+        extranet_enabled: Enable Extranet for this segment
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -320,6 +557,11 @@ def zpa_update_application_segment(
         ...     segment_id="123456",
         ...     name="Updated Production App"
         ... )
+        >>> segment = zpa_update_application_segment(
+        ...     segment_id="123456",
+        ...     icmp_access_type="PING",
+        ...     inspect_traffic_with_zia=True,
+        ... )
     """
     if not segment_id:
         raise ValueError("segment_id is required for update")
@@ -327,10 +569,10 @@ def zpa_update_application_segment(
     if (tcp_port_range and tcp_port_ranges) or (udp_port_range and udp_port_ranges):
         raise ValueError(
             "Use either structured port ranges (tcp_port_range/udp_port_range) "
-            "or legacy string ranges (tcp_port_ranges/udp_port_ranges), not both."
+            "or flat string ranges (tcp_port_ranges/udp_port_ranges), not both."
         )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     body = {
@@ -346,6 +588,22 @@ def zpa_update_application_segment(
         "is_cname_enabled": is_cname_enabled,
         "passive_health_enabled": passive_health_enabled,
         "clientless_app_ids": clientless_app_ids,
+        "icmp_access_type": icmp_access_type,
+        "double_encrypt": double_encrypt,
+        "config_space": config_space,
+        "ip_anchored": ip_anchored,
+        "bypass_on_reauth": bypass_on_reauth,
+        "inspect_traffic_with_zia": inspect_traffic_with_zia,
+        "use_in_dr_mode": use_in_dr_mode,
+        "tcp_keep_alive": tcp_keep_alive,
+        "select_connector_close_to_app": select_connector_close_to_app,
+        "match_style": match_style,
+        "adp_enabled": adp_enabled,
+        "auto_app_protect_enabled": auto_app_protect_enabled,
+        "api_protection_enabled": api_protection_enabled,
+        "fqdn_dns_check": fqdn_dns_check,
+        "weighted_load_balancing": weighted_load_balancing,
+        "extranet_enabled": extranet_enabled,
     }
 
     if tcp_port_range:
@@ -373,7 +631,6 @@ def zpa_delete_application_segment(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -386,7 +643,6 @@ def zpa_delete_application_segment(
     Args:
         segment_id: ID of the segment to delete (required)
         microtenant_id: Optional microtenant ID for scoping
-        use_legacy: Whether to use legacy API (default: False)
         service: Service to use (default: "zpa")
 
     Returns:
@@ -409,7 +665,7 @@ def zpa_delete_application_segment(
     if not segment_id:
         raise ValueError("segment_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.application_segment
 
     _, _, err = api.delete_segment(segment_id, microtenant_id=microtenant_id)

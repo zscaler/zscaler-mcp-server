@@ -27,9 +27,9 @@ class TestRegisterReadToolsDisabled(unittest.TestCase):
         self.assertEqual(self.server.add_tool.call_count, 2)
 
     def test_exact_name_excluded(self):
-        tools = _make_tools("zcc_devices_csv_exporter", "zcc_list_devices")
+        tools = _make_tools("zcc_export_data", "zcc_list_devices")
         count = register_read_tools(
-            self.server, tools, disabled_tools={"zcc_devices_csv_exporter"}
+            self.server, tools, disabled_tools={"zcc_export_data"}
         )
         self.assertEqual(count, 1)
         registered_name = self.server.add_tool.call_args[1]["name"]

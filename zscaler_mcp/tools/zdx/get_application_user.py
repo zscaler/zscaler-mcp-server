@@ -34,7 +34,6 @@ def zdx_list_application_users(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -52,7 +51,6 @@ def zdx_list_application_users(
         department_id: Optional list of department IDs to filter by specific departments.
         geo_id: Optional list of geolocation IDs to filter by geographic regions.
         since: Optional number of hours to look back for user data (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -71,7 +69,7 @@ def zdx_list_application_users(
         ...     score_bucket="poor"
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if score_bucket:
@@ -104,7 +102,6 @@ def zdx_get_application_user(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> Dict[str, Any]:
     """
@@ -118,7 +115,6 @@ def zdx_get_application_user(
         app_id: The unique ID for the ZDX application (required).
         user_id: The unique ID for the ZDX user (required).
         since: Optional number of hours to look back for user data (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -134,7 +130,7 @@ def zdx_get_application_user(
         ...     user_id="24328827"
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if since:

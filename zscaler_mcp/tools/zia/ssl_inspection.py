@@ -5,14 +5,20 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
-from zscaler_mcp.common.zia_cloud_app_resolver import resolve_cloud_applications
+from zscaler_mcp.common.zia_helpers import (
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    resolve_cloud_applications,
+    validate_order,
+    validate_rank,
+)
 from zscaler_mcp.utils.utils import parse_list
 
 
 def _resolve_cloud_apps_in_place(
     cloud_applications: Optional[Union[List[str], str]],
     *,
-    use_legacy: bool,
     service: str,
 ) -> tuple[Optional[List[str]], Optional[dict]]:
     """Translate friendly cloud-app inputs to canonical enums.
@@ -33,7 +39,6 @@ def _resolve_cloud_apps_in_place(
     resolved, audit = resolve_cloud_applications(
         parsed,
         scope="ssl",
-        use_legacy=use_legacy,
         service=service,
         strict=True,
     )
@@ -77,7 +82,6 @@ def _build_ssl_inspection_rule_payload(
     locations: Optional[Union[List[int], str]] = None,
     location_groups: Optional[Union[List[int], str]] = None,
     proxy_gateways: Optional[Union[List[int], str]] = None,
-    time_windows: Optional[Union[List[int], str]] = None,
     workload_groups: Optional[Union[List[int], str]] = None,
     zpa_app_segments: Optional[Union[List[int], str]] = None,
 ) -> dict:
@@ -125,7 +129,6 @@ def _build_ssl_inspection_rule_payload(
         ("locations", locations),
         ("location_groups", location_groups),
         ("proxy_gateways", proxy_gateways),
-        ("time_windows", time_windows),
         ("workload_groups", workload_groups),
         ("zpa_app_segments", zpa_app_segments),
     ]:
@@ -156,7 +159,6 @@ def zia_list_ssl_inspection_rules(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[dict]:
     """
@@ -171,15 +173,14 @@ def zia_list_ssl_inspection_rules(
     (by allowing certain traffic to bypass inspection).
 
     Rules are evaluated in order, and the first matching rule determines the action taken.
-    Common actions include:
-    - DO_NOT_INSPECT: Bypass SSL inspection for matching traffic
-    - INSPECT: Decrypt and inspect SSL/TLS traffic
-    - DO_NOT_DECRYPT: Do not decrypt but may apply other policies
+    Valid actions are exactly:
+    - BLOCK: Block the SSL/TLS connection.
+    - DECRYPT: Decrypt and inspect SSL/TLS traffic.
+    - DO_NOT_DECRYPT: Do not decrypt the connection (may still apply non-payload policies).
 
     Args:
         search (str, optional): Search string for filtering rules by name.
             The search is case-insensitive and matches against rule names.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -189,8 +190,8 @@ def zia_list_ssl_inspection_rules(
             - description: Rule description
             - state: Rule state (ENABLED/DISABLED)
             - order: Rule order/priority
-            - rank: Admin rank (1-7)
-            - action: Action configuration (DO_NOT_INSPECT, INSPECT, etc.)
+            - rank: Admin rank (0-7, where 0 is highest and 7 is lowest)
+            - action: Action configuration (BLOCK, DECRYPT, DO_NOT_DECRYPT)
             - Matching criteria (cloud_applications, url_categories, groups, etc.)
 
     Example:
@@ -208,7 +209,7 @@ def zia_list_ssl_inspection_rules(
         >>> enabled_rules = [r for r in all_rules if r.get('state') == 'ENABLED']
         >>> print(f"Found {len(enabled_rules)} enabled rules")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 
     query = {"search": search} if search else {}
@@ -223,7 +224,6 @@ def zia_get_ssl_inspection_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the SSL inspection rule to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -239,7 +239,6 @@ def zia_get_ssl_inspection_rule(
     Args:
         rule_id (int/str): The ID of the SSL inspection rule to retrieve.
             This is the unique identifier assigned when the rule was created.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -249,7 +248,7 @@ def zia_get_ssl_inspection_rule(
             - description: Additional information about the rule
             - state: Rule state (ENABLED or DISABLED)
             - order: Rule order/priority in the evaluation sequence
-            - rank: Admin rank (1-7, where 7 is the highest)
+            - rank: Admin rank (0-7, where 0 is highest and 7 is lowest; default 7)
             - action: Action configuration object with type and sub-actions
             - predefined: Whether the rule is predefined by Zscaler
             - default_rule: Whether this is the default SSL inspection rule
@@ -265,7 +264,6 @@ def zia_get_ssl_inspection_rule(
                 - labels: List of label IDs
                 - dest_ip_groups: List of destination IP group IDs
                 - source_ip_groups: List of source IP group IDs
-                - time_windows: List of time window IDs
                 - device_trust_levels: List of device trust levels
                 - platforms: List of platform types
                 - user_agent_types: List of user agent types
@@ -297,7 +295,7 @@ def zia_get_ssl_inspection_rule(
         >>> print(f"Rank: {rule.get('rank')}")
         >>> print(f"Predefined: {rule.get('predefined', False)}")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 
     rule, _, err = ssl_inspection.get_rule(rule_id)
@@ -318,7 +316,7 @@ def zia_create_ssl_inspection_rule(
         Field(
             description=(
                 "Action configuration for the rule (required). Can be a dictionary or JSON string. "
-                "Action types: DO_NOT_INSPECT, INSPECT, DO_NOT_DECRYPT. "
+                "Allowed action types: BLOCK, DECRYPT, DO_NOT_DECRYPT. "
                 'Example: {"type": "DO_NOT_DECRYPT", "do_not_decrypt_sub_actions": {...}}'
             )
         ),
@@ -328,7 +326,7 @@ def zia_create_ssl_inspection_rule(
         Optional[bool], Field(description="True to enable rule, False to disable (default: True).")
     ] = True,
     rank: Annotated[
-        Optional[int], Field(description="Admin rank of the rule (1-7, where 7 is the highest).")
+        Optional[int], Field(description=RANK_FIELD_DESCRIPTION)
     ] = None,
     order: Annotated[
         Optional[int], Field(description="Rule order/priority, defaults to the bottom of the list.")
@@ -448,10 +446,6 @@ def zia_create_ssl_inspection_rule(
             description="IDs for proxy chaining gateways for which this rule is applicable. Accepts JSON string or list."
         ),
     ] = None,
-    time_windows: Annotated[
-        Optional[Union[List[int], str]],
-        Field(description="IDs for time windows the rule applies to. Accepts JSON string or list."),
-    ] = None,
     workload_groups: Annotated[
         Optional[Union[List[int], str]],
         Field(
@@ -475,7 +469,6 @@ def zia_create_ssl_inspection_rule(
             )
         ),
     ] = True,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -500,10 +493,10 @@ def zia_create_ssl_inspection_rule(
     Args:
         name (str): Rule name (required, max 31 characters).
         action (dict/str): Action configuration (required). Can be a dictionary or JSON string.
-            Common action types:
-            - DO_NOT_INSPECT: Bypass SSL inspection for matching traffic
-            - INSPECT: Decrypt and inspect SSL/TLS traffic
-            - DO_NOT_DECRYPT: Do not decrypt but may apply other policies
+            Allowed action types:
+            - BLOCK: Block the SSL/TLS connection.
+            - DECRYPT: Decrypt and inspect SSL/TLS traffic.
+            - DO_NOT_DECRYPT: Do not decrypt the connection (may still apply non-payload policies).
 
             Action structure example:
             {
@@ -516,7 +509,7 @@ def zia_create_ssl_inspection_rule(
             }
         description (str, optional): Optional rule description.
         enabled (bool, optional): True to enable rule, False to disable (default: True).
-        rank (int, optional): Admin rank of the rule (1-7, where 7 is the highest).
+        rank (int, optional): Admin rank of the rule (0-7, where 0 is highest, 7 is lowest; default 7).
         order (int, optional): Rule order/priority, defaults to the bottom of the list.
         road_warrior_for_kerberos (bool, optional): If True, applies to remote users using PAC with Kerberos.
         predefined (bool, optional): Indicates that the rule is predefined.
@@ -539,11 +532,15 @@ def zia_create_ssl_inspection_rule(
         locations (list/int/str, optional): IDs for locations.
         location_groups (list/int/str, optional): IDs for location groups.
         proxy_gateways (list/int/str, optional): IDs for proxy chaining gateways.
-        time_windows (list/int/str, optional): IDs for time windows.
         workload_groups (list/int/str, optional): IDs for workload groups.
         zpa_app_segments (list/int/str, optional): IDs for ZPA Application Segments.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
+
+    Note:
+        SSL Inspection rules do NOT support a recurring time-of-day schedule.
+        There is no ``time_windows`` parameter for this rule type. For
+        time-of-day enforcement, attach the schedule to a different rule type
+        (Cloud Firewall Filtering, URL Filtering, Cloud App Control, etc.).
 
     Returns:
         dict: The created SSL inspection rule object with all its properties.
@@ -564,7 +561,7 @@ def zia_create_ssl_inspection_rule(
         ...             "min_tls_version": "SERVER_TLS_1_0"
         ...         }
         ...     },
-        ...     description="Bypass SSL inspection for specific apps",
+        ...     description="Do not decrypt for specific apps",
         ...     enabled=True,
         ...     order=1,
         ...     rank=7,
@@ -577,20 +574,20 @@ def zia_create_ssl_inspection_rule(
         ...     departments=[68759308]
         ... )
 
-        Create a simple DO_NOT_INSPECT rule:
+        Create a BLOCK rule for risky SSL traffic:
         >>> rule = zia_create_ssl_inspection_rule(
-        ...     name="Bypass Banking Apps",
-        ...     action={"type": "DO_NOT_INSPECT"},
-        ...     description="Bypass SSL inspection for banking applications",
-        ...     cloud_applications=["BANKING", "FINANCIAL_SERVICES"],
+        ...     name="Block Risky SSL",
+        ...     action={"type": "BLOCK"},
+        ...     description="Block SSL connections to risky destinations",
+        ...     url_categories=["OTHER_ADULT_MATERIAL"],
         ...     enabled=True,
         ...     rank=7
         ... )
 
-        Create with device and platform criteria (IMPORTANT: use Python lists, not JSON strings):
+        Create a DECRYPT rule for high-trust devices (IMPORTANT: use Python lists, not JSON strings):
         >>> rule = zia_create_ssl_inspection_rule(
         ...     name="High Trust Devices",
-        ...     action={"type": "INSPECT"},
+        ...     action={"type": "DECRYPT"},
         ...     platforms=["SCAN_WINDOWS", "SCAN_MACOS"],
         ...     device_trust_levels=["HIGH_TRUST", "MEDIUM_TRUST"],
         ...     groups=[12345, 67890],
@@ -601,7 +598,7 @@ def zia_create_ssl_inspection_rule(
         Create with user and location scoping:
         >>> rule = zia_create_ssl_inspection_rule(
         ...     name="Corporate Users Only",
-        ...     action={"type": "INSPECT"},
+        ...     action={"type": "DECRYPT"},
         ...     groups=[95016183],
         ...     users=[95016194],
         ...     locations=[12345, 67890],
@@ -614,9 +611,11 @@ def zia_create_ssl_inspection_rule(
     cloud_apps_audit: Optional[dict] = None
     if resolve_cloud_apps and cloud_applications is not None:
         cloud_applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
-            cloud_applications, use_legacy=use_legacy, service=service
+            cloud_applications, service=service
         )
 
+    rank = apply_default_rank(rank)
+    order = apply_default_order(order)
     payload = _build_ssl_inspection_rule_payload(
         name=name,
         action=action,
@@ -642,12 +641,11 @@ def zia_create_ssl_inspection_rule(
         locations=locations,
         location_groups=location_groups,
         proxy_gateways=proxy_gateways,
-        time_windows=time_windows,
         workload_groups=workload_groups,
         zpa_app_segments=zpa_app_segments,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 
     rule, _, err = ssl_inspection.add_rule(**payload)
@@ -670,7 +668,7 @@ def zia_update_ssl_inspection_rule(
         Field(
             description=(
                 "Action configuration for the rule. Can be a dictionary or JSON string. "
-                "Action types: DO_NOT_INSPECT, INSPECT, DO_NOT_DECRYPT. "
+                "Allowed action types: BLOCK, DECRYPT, DO_NOT_DECRYPT. "
                 'Example: {"type": "DO_NOT_DECRYPT", "do_not_decrypt_sub_actions": {...}}'
             )
         ),
@@ -680,7 +678,7 @@ def zia_update_ssl_inspection_rule(
         Optional[bool], Field(description="True to enable rule, False to disable.")
     ] = None,
     rank: Annotated[
-        Optional[int], Field(description="Admin rank of the rule (1-7, where 7 is the highest).")
+        Optional[int], Field(description=RANK_FIELD_DESCRIPTION)
     ] = None,
     order: Annotated[Optional[int], Field(description="Rule order/priority.")] = None,
     road_warrior_for_kerberos: Annotated[
@@ -798,10 +796,6 @@ def zia_update_ssl_inspection_rule(
             description="IDs for proxy chaining gateways for which this rule is applicable. Accepts JSON string or list."
         ),
     ] = None,
-    time_windows: Annotated[
-        Optional[Union[List[int], str]],
-        Field(description="IDs for time windows the rule applies to. Accepts JSON string or list."),
-    ] = None,
     workload_groups: Annotated[
         Optional[Union[List[int], str]],
         Field(
@@ -825,7 +819,6 @@ def zia_update_ssl_inspection_rule(
             )
         ),
     ] = True,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> dict:
     """
@@ -849,10 +842,10 @@ def zia_update_ssl_inspection_rule(
         rule_id (int/str): The ID of the SSL inspection rule to update (required).
         name (str, optional): Rule name (max 31 characters).
         action (dict/str, optional): Action configuration. Can be a dictionary or JSON string.
-            Common action types:
-            - DO_NOT_INSPECT: Bypass SSL inspection for matching traffic
-            - INSPECT: Decrypt and inspect SSL/TLS traffic
-            - DO_NOT_DECRYPT: Do not decrypt but may apply other policies
+            Allowed action types:
+            - BLOCK: Block the SSL/TLS connection.
+            - DECRYPT: Decrypt and inspect SSL/TLS traffic.
+            - DO_NOT_DECRYPT: Do not decrypt the connection (may still apply non-payload policies).
 
             Action structure example:
             {
@@ -865,7 +858,7 @@ def zia_update_ssl_inspection_rule(
             }
         description (str, optional): Optional rule description.
         enabled (bool, optional): True to enable rule, False to disable.
-        rank (int, optional): Admin rank of the rule (1-7, where 7 is the highest).
+        rank (int, optional): Admin rank of the rule (0-7, where 0 is highest, 7 is lowest; default 7).
         order (int, optional): Rule order/priority in the evaluation sequence.
         road_warrior_for_kerberos (bool, optional): If True, applies to remote users using PAC with Kerberos.
         predefined (bool, optional): Indicates that the rule is predefined.
@@ -888,10 +881,8 @@ def zia_update_ssl_inspection_rule(
         locations (list/int/str, optional): IDs for locations.
         location_groups (list/int/str, optional): IDs for location groups.
         proxy_gateways (list/int/str, optional): IDs for proxy chaining gateways.
-        time_windows (list/int/str, optional): IDs for time windows.
         workload_groups (list/int/str, optional): IDs for workload groups.
         zpa_app_segments (list/int/str, optional): IDs for ZPA Application Segments.
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -934,10 +925,10 @@ def zia_update_ssl_inspection_rule(
         ...     description="Temporarily disabled"
         ... )
 
-        Update action to DO_NOT_INSPECT:
+        Update action to BLOCK:
         >>> rule = zia_update_ssl_inspection_rule(
         ...     rule_id="67890",
-        ...     action={"type": "DO_NOT_INSPECT"}
+        ...     action={"type": "BLOCK"}
         ... )
 
         Update matching criteria with lists (IMPORTANT: use Python lists, not JSON strings):
@@ -968,9 +959,13 @@ def zia_update_ssl_inspection_rule(
     cloud_apps_audit: Optional[dict] = None
     if resolve_cloud_apps and cloud_applications is not None:
         cloud_applications, cloud_apps_audit = _resolve_cloud_apps_in_place(
-            cloud_applications, use_legacy=use_legacy, service=service
+            cloud_applications, service=service
         )
 
+    if rank is not None:
+        rank = validate_rank(rank)
+    if order is not None:
+        order = validate_order(order)
     payload = _build_ssl_inspection_rule_payload(
         name=name,
         action=action,
@@ -996,12 +991,11 @@ def zia_update_ssl_inspection_rule(
         locations=locations,
         location_groups=location_groups,
         proxy_gateways=proxy_gateways,
-        time_windows=time_windows,
         workload_groups=workload_groups,
         zpa_app_segments=zpa_app_segments,
     )
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 
     # ZIA's SSL Inspection update endpoint is a PUT (full replacement) under
@@ -1032,7 +1026,6 @@ def zia_delete_ssl_inspection_rule(
     rule_id: Annotated[
         Union[int, str], Field(description="The ID of the SSL inspection rule to delete.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -1053,7 +1046,6 @@ def zia_delete_ssl_inspection_rule(
         rule_id (int/str): The unique identifier for the SSL inspection rule to delete.
             This is the ID assigned when the rule was created. You can find rule IDs
             by listing all rules using zia_list_ssl_inspection_rules().
-        use_legacy (bool): Whether to use the legacy API (default: False).
         service (str): The service to use (default: "zia").
 
     Returns:
@@ -1094,7 +1086,7 @@ def zia_delete_ssl_inspection_rule(
     if confirmation_check:
         return confirmation_check
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ssl_inspection = client.zia.ssl_inspection_rules
 
     _, _, err = ssl_inspection.delete_rule(rule_id)

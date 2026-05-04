@@ -11,7 +11,6 @@ def zdx_get_web_probes(
     since: Annotated[
         Optional[int], Field(description="Number of hours to look back (default 2h).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -29,7 +28,6 @@ def zdx_get_web_probes(
         device_id: The unique ID for the ZDX device (required).
         app_id: The unique ID for the application (required).
         since: Number of hours to look back (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -42,7 +40,7 @@ def zdx_get_web_probes(
         Get web probes for an app on a device:
         >>> probes = zdx_get_web_probes(device_id="155462842", app_id="3")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if since:

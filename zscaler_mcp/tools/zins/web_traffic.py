@@ -125,9 +125,7 @@ def zins_get_web_traffic_by_location(
     validate_trend_interval(trend_interval)
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     # Build kwargs for the SDK call (use resolved timestamps)
     kwargs = {
@@ -245,9 +243,7 @@ def zins_get_web_traffic_no_grouping(
     validate_dlp_engine_filter(dlp_engine_filter)
     validate_action_filter(action_filter)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     # Build kwargs for the SDK call
     kwargs = {
@@ -340,9 +336,7 @@ def zins_get_web_protocols(
     validate_traffic_unit(traffic_unit)
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.web_traffic.get_protocols(
         start_time=resolved_start,
@@ -423,9 +417,7 @@ def zins_get_threat_super_categories(
     validate_traffic_unit(traffic_unit)
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.web_traffic.get_threat_super_categories(
         start_time=resolved_start,
@@ -512,9 +504,7 @@ def zins_get_threat_class(
     validate_traffic_unit(traffic_unit)
     validate_time_range(resolved_start, resolved_end)
     validate_limit(limit)
-
-    # Get client - Z-Insights only supports OneAPI (not legacy)
-    client = get_zscaler_client(use_legacy=False, service="zins")
+    client = get_zscaler_client(service="zins")
 
     entries, response, err = client.zins.web_traffic.get_threat_class(
         start_time=resolved_start,

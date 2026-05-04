@@ -57,8 +57,33 @@ from zscaler_mcp.common.jmespath_utils import apply_jmespath
 
 
 def zia_list_network_services(
+    name: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Case-insensitive substring match on the network service's "
+                "`name` field. Resolved client-side AFTER fetching the full "
+                "service catalog, so 'http', 'HTTP', and 'Http' all match the "
+                "predefined `HTTP` service. Use this when the admin gives a "
+                "literal service name in any casing (e.g. 'http', 'ftp', "
+                "'dns') and you just need to find its ID. Recommended for "
+                "find-by-name workflows over `search` (which is server-side "
+                "and case-sensitive against the canonical uppercase names)."
+            )
+        ),
+    ] = None,
     search: Annotated[
-        Optional[str], Field(description="Search string to filter by service name or description.")
+        Optional[str],
+        Field(
+            description=(
+                "Server-side query forwarded to the ZIA list_network_services "
+                "endpoint. Matches against name and description, but is "
+                "effectively case-sensitive against ZIA's canonical uppercase "
+                "service names — so `search='http'` will NOT match the "
+                "predefined `HTTP` service. Prefer `name` for case-insensitive "
+                "lookups; use `search` only when you need server-side semantics."
+            )
+        ),
     ] = None,
     protocol: Annotated[
         Optional[str],
@@ -76,28 +101,37 @@ def zia_list_network_services(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
     List ZIA network services with optional filtering.
 
-    Supports JMESPath client-side filtering via the query parameter.
+    Lookup semantics:
 
-    Network services define custom services based on TCP/UDP port combinations
-    that can be used in Cloud Firewall policies.
+    - ``name`` → fetch the full service catalog (server-side without `search`)
+      and filter **client-side** by case-insensitive substring match on the
+      ``name`` field. Recommended when the admin gives a literal service
+      name in any casing (e.g. "http", "ftp", "dns"). This is the right
+      knob for find-by-name workflows because ZIA's canonical service names
+      are uppercase enums (e.g. `HTTP`, `FTP`, `DNS`) and the server-side
+      `search` will not match lowercase or mixed-case input.
+    - ``search`` → forwarded to the ZIA API. Server-side, effectively
+      case-sensitive. Use only when you need server-side semantics.
+    - ``protocol`` / ``locale`` → standard server-side filters.
+    - ``query`` → JMESPath projection applied after all of the above.
 
     Args:
-        search: Filter results by name or description substring match.
+        name: Case-insensitive substring match on the service name (client-side).
+        search: Server-side query (case-sensitive, forwarded as-is).
         protocol: Filter by network protocol (ICMP, TCP, UDP, GRE, ESP, OTHER).
         locale: Get localized descriptions in the specified language.
-        use_legacy: Whether to use legacy API (default: False).
+        query: JMESPath expression applied client-side to the result list.
         service: The service identifier (default: "zia").
 
     Returns:
         List of network service dictionaries containing:
         - id: Unique identifier for the service
-        - name: Name of the network service
+        - name: Name of the network service (canonical uppercase, e.g. `HTTP`)
         - description: Description of the service
         - type: Service type (STANDARD, PREDEFINED, CUSTOM)
         - srcTcpPorts: List of source TCP port ranges
@@ -107,23 +141,34 @@ def zia_list_network_services(
         - isNameL10nTag: Whether name is a localization tag
 
     Examples:
-        >>> # List all network services
-        >>> services = zia_list_network_services()
+        Find HTTP service by friendly admin-supplied name (most common):
 
-        >>> # Search for FTP-related services
-        >>> ftp_services = zia_list_network_services(search="FTP")
+        >>> matches = zia_list_network_services(name="http")
+        >>> # matches[0]["id"] is the ID for the predefined HTTP service
 
-        >>> # Filter by TCP protocol
+        List all services then JMESPath:
+
+        >>> services = zia_list_network_services(query="[?type=='PREDEFINED'].{id: id, name: name}")
+
+        Filter by TCP protocol:
+
         >>> tcp_services = zia_list_network_services(protocol="TCP")
 
-        >>> # Get French descriptions
+        Get French descriptions:
+
         >>> services_fr = zia_list_network_services(locale="fr-FR")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
+    if name is not None and not str(name).strip():
+        raise ValueError("`name` must be a non-empty string when provided.")
+
     query_params = {}
-    if search:
+    # When `name` is supplied we deliberately skip server-side `search` (it
+    # is case-sensitive against the canonical uppercase names) and let the
+    # client-side substring match do the work.
+    if name is None and search:
         query_params["search"] = search
     if protocol:
         valid_protocols = {"ICMP", "TCP", "UDP", "GRE", "ESP", "OTHER"}
@@ -140,7 +185,15 @@ def zia_list_network_services(
     )
     if err:
         raise Exception(f"Failed to list network services: {err}")
-    results = [s.as_dict() for s in services]
+    results = [s.as_dict() for s in (services or [])]
+
+    if name is not None:
+        needle = str(name).strip().lower()
+        results = [
+            s for s in results
+            if needle in str(s.get("name", "")).lower()
+        ]
+
     return apply_jmespath(results, query)
 
 
@@ -148,7 +201,6 @@ def zia_get_network_service(
     service_id: Annotated[
         Union[int, str], Field(description="The unique ID of the network service to retrieve.")
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -159,7 +211,6 @@ def zia_get_network_service(
 
     Args:
         service_id: The unique identifier of the network service.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -180,7 +231,7 @@ def zia_get_network_service(
     if not service_id:
         raise ValueError("service_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     network_service, _, err = zia.get_network_service(service_id)
@@ -247,7 +298,6 @@ def zia_create_network_service(
     description: Annotated[
         Optional[str], Field(description="Description for the network service (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -265,7 +315,6 @@ def zia_create_network_service(
             - Start port: Starting port number
             - End port: (Optional) Ending port for ranges
         description: Optional description for the service.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -325,7 +374,7 @@ def zia_create_network_service(
         if protocol.lower() not in ("tcp", "udp"):
             raise ValueError(f"Invalid protocol '{protocol}'. Must be 'tcp' or 'udp'.")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     kwargs = {"name": name}
@@ -357,7 +406,6 @@ def zia_update_network_service(
     description: Annotated[
         Optional[str], Field(description="Updated description (optional).")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> Dict:
     """
@@ -375,7 +423,6 @@ def zia_update_network_service(
         name: Updated name for the service (required).
         ports: Optional new port definitions. If provided, replaces all existing ports.
         description: Optional updated description.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -421,7 +468,7 @@ def zia_update_network_service(
             if protocol.lower() not in ("tcp", "udp"):
                 raise ValueError(f"Invalid protocol '{protocol}'. Must be 'tcp' or 'udp'.")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     kwargs = {"name": name}
@@ -441,7 +488,6 @@ def zia_delete_network_service(
         Union[int, str],
         Field(description="The unique ID of the network service to delete (required)."),
     ],
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
     kwargs: str = "{}",
 ) -> str:
@@ -457,7 +503,6 @@ def zia_delete_network_service(
 
     Args:
         service_id: The unique ID of the network service to delete (required).
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
         kwargs: JSON string for internal confirmation handling.
 
@@ -490,7 +535,7 @@ def zia_delete_network_service(
     if not service_id:
         raise ValueError("service_id is required for delete")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.cloud_firewall
 
     _, _, err = zia.delete_network_service(service_id)

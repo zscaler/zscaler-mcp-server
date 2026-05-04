@@ -38,6 +38,8 @@ Available Tools
      - Manages ZIA File Type Control Rules (list/get/create/update/delete) plus ``zia_list_file_type_categories``. Friendly cloud-application names on ``cloud_applications`` are auto-resolved to canonical enums.
    * - ``zia_sandbox_rule``
      - Manages ZIA Sandbox Rules (list/get/create/update/delete). Distinct from ``zia_sandbox_info`` (read-only sandbox reports/quotas).
+   * - ``zia_time_interval``
+     - Manages ZIA Time Intervals (list/get/create/update/delete). Reusable schedule objects (``start_time``/``end_time`` in minutes from midnight; ``days_of_week`` accepts ``EVERYDAY``, ``SUN``-``SAT``) referenced by policy rules via the ``time_windows`` field.
    * - ``zia_geo_search``
      - Performs geographical lookup actions using the ZIA Locations API
    * - ``zia_gre_range``
@@ -101,8 +103,6 @@ Tool to check or activate ZIA configuration changes.
 
 **Parameters:**
 
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zia")
 :type service: str
 
@@ -127,8 +127,6 @@ Lists and retrieves ZIA User Groups with pagination, filtering and sorting.
 :type page_size: Optional[int]
 :param search: The search string used to partially match
 :type search: Optional[str]
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zia")
 :type service: str
 
@@ -151,8 +149,6 @@ Tool for managing ZIA URL Categories.
 :type action: str
 :param category_id: The ID of the category for "read", "update", "delete" actions
 :type category_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zia")
 :type service: str
 
@@ -175,8 +171,6 @@ Manages ZIA Cloud Firewall Rules.
 :type action: str
 :param rule_id: The ID of the rule for "read", "update", "delete" actions
 :type rule_id: str, optional
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zia")
 :type service: str
 
@@ -195,8 +189,6 @@ Tool for retrieving ZIA Sandbox information.
 
 **Parameters:**
 
-:param use_legacy: Whether to use the legacy API (default: False)
-:type use_legacy: bool
 :param service: The service to use (default: "zia")
 :type service: str
 
@@ -247,25 +239,13 @@ For complete documentation of all ZIA tools, see the individual tool pages.
 Authentication
 --------------
 
-ZIA tools support both OneAPI and Legacy authentication methods:
-
-**OneAPI Authentication:**
-- Uses OAuth2 client credentials
-- Requires the following environment variables:
+ZIA tools authenticate through **OneAPI** (OAuth2 client credentials).
+Required environment variables:
 
   * ``ZSCALER_CLIENT_ID``
   * ``ZSCALER_CLIENT_SECRET``
   * ``ZSCALER_VANITY_DOMAIN``
   * ``ZSCALER_CLOUD``
-
-**Legacy Authentication:**
-- Uses username, password, and API key
-- Requires the following environment variables:
-
-  * ``ZIA_USERNAME``
-  * ``ZIA_PASSWORD``
-  * ``ZIA_API_KEY``
-  * ``ZIA_CLOUD``
 
 Common Use Cases
 ----------------

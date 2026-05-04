@@ -34,6 +34,9 @@ jobs:
           uv sync --extra dev
           uv pip install pytest pytest-cov pytest-asyncio
 
+      - name: Check auto-generated docs are in sync with the live tool inventory
+        run: uv run python -m zscaler_mcp.server --check-docs
+
       - name: Run tests with coverage
         run: |
           uv run pytest \

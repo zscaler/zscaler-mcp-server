@@ -17,7 +17,11 @@ class BaseService(ABC):
         """Initialize the service with a Zscaler client.
 
         Args:
-            zscaler_client: The Zscaler client instance (can be None in legacy mode)
+            zscaler_client: The Zscaler OneAPI client instance, or ``None``.
+                The server does not eagerly construct a client at startup;
+                tools call :func:`zscaler_mcp.client.get_zscaler_client`
+                lazily on first invocation, so a missing client at register
+                time is expected and not an error.
         """
         self.zscaler_client = zscaler_client
         self.tools = []  # Kept for backward compatibility during migration
@@ -27,7 +31,8 @@ class BaseService(ABC):
 
     @abstractmethod
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register tools with the MCP server.
 
@@ -37,6 +42,10 @@ class BaseService(ABC):
             enable_write_tools: Whether to enable write tools (default: False)
             write_tools: Explicit allowlist of write tools (supports wildcards). Requires enable_write_tools=True.
             disabled_tools: Set of tool name patterns to exclude (supports wildcards via fnmatch).
+            selected_toolsets: Set of toolset ids (e.g. ``{"zia_url_filtering"}``) that
+                this service is allowed to register tools for. ``None`` disables
+                toolset filtering. The ``meta`` toolset is always exempt. See
+                :mod:`zscaler_mcp.common.toolsets`.
         """
         pass
 
@@ -82,15 +91,17 @@ class ZCCService(BaseService):
         self.write_tools = []  # ZCC has no write operations
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZCC tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register verb-based tools with proper annotations (all read-only)
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(f"ZCC Service: Registered {read_count} read tools, {write_count} write tools")
@@ -302,15 +313,17 @@ class ZDXService(BaseService):
         ]
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZDX tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register verb-based tools with proper annotations (all read-only)
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(f"ZDX Service: Registered {read_count} read tools, {write_count} write tools")
@@ -458,12 +471,12 @@ class ZPAService(BaseService):
             {
                 "func": zpa_list_app_connector_groups,
                 "name": "zpa_list_app_connector_groups",
-                "description": "List ZPA app connector groups (read-only) Supports JMESPath client-side filtering via the query parameter.",
+                "description": "List ZPA App Connector Groups (read-only). Returns every connector group in the tenant — id, name, location, country, enrollment cert, server-group memberships. Use this to discover existing connector groups before creating server groups (which require an app_connector_group_id) or before onboarding an application. Supports name search and JMESPath client-side filtering via the query parameter.",
             },
             {
                 "func": zpa_get_app_connector_group,
                 "name": "zpa_get_app_connector_group",
-                "description": "Get a specific ZPA app connector group by ID (read-only)",
+                "description": "Get a specific ZPA App Connector Group by ID (read-only). Returns the full record including the enrollmentCertId, server-group memberships, and connector membership.",
             },
             {
                 "func": zpa_list_app_connectors,
@@ -895,15 +908,17 @@ class ZPAService(BaseService):
         ]
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZPA tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register verb-based tools with proper annotations
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(f"ZPA Service: Registered {read_count} read tools, {write_count} write tools")
@@ -926,7 +941,14 @@ class ZIAService(BaseService):
             zia_delete_auth_exempt_urls,
             zia_list_auth_exempt_urls,
         )
-        from .tools.zia.cloud_app_control import zia_list_cloud_app_control_actions
+        from .tools.zia.cloud_app_control import (
+            zia_create_cloud_app_control_rule,
+            zia_delete_cloud_app_control_rule,
+            zia_get_cloud_app_control_rule,
+            zia_list_cloud_app_control_actions,
+            zia_list_cloud_app_control_rules,
+            zia_update_cloud_app_control_rule,
+        )
         from .tools.zia.cloud_applications import (
             zia_list_cloud_app_policy,
             zia_list_cloud_app_ssl_policy,
@@ -1002,6 +1024,8 @@ class ZIAService(BaseService):
             zia_create_location,
             zia_delete_location,
             zia_get_location,
+            zia_get_location_group,
+            zia_list_location_groups,
             zia_list_locations,
             zia_update_location,
         )
@@ -1063,14 +1087,23 @@ class ZIAService(BaseService):
             zia_list_static_ips,
             zia_update_static_ip,
         )
+        from .tools.zia.time_intervals import (
+            zia_create_time_interval,
+            zia_delete_time_interval,
+            zia_get_time_interval,
+            zia_list_time_intervals,
+            zia_update_time_interval,
+        )
         from .tools.zia.url_categories import (
             zia_add_urls_to_category,
             zia_create_url_category,
             zia_delete_url_category,
             zia_get_url_category,
+            zia_get_url_category_predefined,
             zia_list_url_categories,
             zia_remove_urls_from_category,
             zia_update_url_category,
+            zia_update_url_category_predefined,
             zia_url_lookup,
         )
         from .tools.zia.url_filtering_rules import (
@@ -1094,6 +1127,10 @@ class ZIAService(BaseService):
             zia_list_web_dlp_rules,
             zia_list_web_dlp_rules_lite,
             zia_update_web_dlp_rule,
+        )
+        from .tools.zia.workload_groups import (
+            zia_get_workload_group,
+            zia_list_workload_groups,
         )
 
         # Read-only tools
@@ -1168,7 +1205,15 @@ class ZIAService(BaseService):
             {
                 "func": zia_user_group_manager,
                 "name": "get_zia_user_groups",
-                "description": "Manage ZIA user groups for access control and policy assignment (read-only)",
+                "description": (
+                    "Read ZIA user groups for access control and policy assignment. "
+                    "Pass `name=\"<literal admin-supplied name>\"` (e.g. `name=\"A000\"`) "
+                    "for a case-insensitive substring match resolved client-side — "
+                    "this is the right knob for find-by-name workflows. "
+                    "Pass `group_id=` to fetch a single group. The `search` "
+                    "parameter forwards to the ZIA API and is unreliable for "
+                    "name-based lookups; prefer `name`."
+                ),
             },
             {
                 "func": zia_users_manager,
@@ -1223,7 +1268,18 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_network_services,
                 "name": "zia_list_network_services",
-                "description": "List ZIA network services with optional filtering by protocol or search (read-only) Supports JMESPath client-side filtering via the query parameter.",
+                "description": (
+                    "List ZIA network services (read-only). Pass "
+                    "`name=\"<friendly admin-supplied name>\"` (e.g. `name=\"http\"`, "
+                    "`name=\"ftp\"`, `name=\"dns\"`) for a case-insensitive "
+                    "substring match resolved client-side — this is the right "
+                    "knob when the admin gives a service name in any casing. "
+                    "ZIA's canonical service names are uppercase enums "
+                    "(`HTTP`, `FTP`, `DNS`, ...), so server-side `search` is "
+                    "case-sensitive and unreliable for friendly inputs. Also "
+                    "supports `protocol` / `locale` filters and JMESPath "
+                    "projection via `query`."
+                ),
             },
             {
                 "func": zia_get_network_service,
@@ -1253,6 +1309,16 @@ class ZIAService(BaseService):
                 "description": "Get a specific ZIA URL category by ID (read-only)",
             },
             {
+                "func": zia_get_url_category_predefined,
+                "name": "zia_get_url_category_predefined",
+                "description": (
+                    "Get a Zscaler-curated predefined URL category by canonical ID "
+                    "(e.g. 'FINANCE') or display name (e.g. 'Finance'). "
+                    "Case-insensitive. Refuses custom categories — use "
+                    "zia_get_url_category for those (read-only)."
+                ),
+            },
+            {
                 "func": zia_url_lookup,
                 "name": "zia_url_lookup",
                 "description": "Look up URL category for given URLs (read-only)",
@@ -1278,6 +1344,42 @@ class ZIAService(BaseService):
                 "func": zia_get_location,
                 "name": "zia_get_location",
                 "description": "Get a specific ZIA location by ID (read-only)",
+            },
+            # Location Groups (referenced as location_groups operand on every ZIA rule resource)
+            {
+                "func": zia_list_location_groups,
+                "name": "zia_list_location_groups",
+                "description": (
+                    "List ZIA location groups, referenced by ID on the location_groups "
+                    "operand of every ZIA rule resource (Cloud Firewall, DNS, IPS, URL "
+                    "Filtering, SSL Inspection, Web DLP, File Type Control, Sandbox, "
+                    "Cloud App Control). Read-only — the public ZIA API does not expose "
+                    "location group create/update/delete. Supports name/search/group_type "
+                    "filters and JMESPath via the query parameter."
+                ),
+            },
+            {
+                "func": zia_get_location_group,
+                "name": "zia_get_location_group",
+                "description": "Get a specific ZIA location group by ID (read-only)",
+            },
+            # Workload Groups (referenced as workload_groups operand on Cloud Firewall, URL Filtering, SSL Inspection, Web DLP)
+            {
+                "func": zia_list_workload_groups,
+                "name": "zia_list_workload_groups",
+                "description": (
+                    "List ZIA workload groups, referenced by ID on the workload_groups "
+                    "operand of Cloud Firewall, URL Filtering, SSL Inspection, and "
+                    "Web DLP rules. Read-only — workload group authoring (with its "
+                    "expression DSL) is intentionally left to the ZIA UI. The ZIA list "
+                    "endpoint has no server-side name filter; pair with JMESPath query "
+                    "(e.g. \"[?name=='WG-AWS-Prod']\") to look up a group by name."
+                ),
+            },
+            {
+                "func": zia_get_workload_group,
+                "name": "zia_get_workload_group",
+                "description": "Get a specific ZIA workload group by ID (read-only)",
             },
             # VPN Credentials
             {
@@ -1350,18 +1452,28 @@ class ZIAService(BaseService):
             {
                 "func": zia_list_cloud_app_policy,
                 "name": "zia_list_cloud_app_policy",
-                "description": "List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule's cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.",
+                "description": "List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule's cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter. Pass app_class to narrow the catalog by category when the user describes a kind of app instead of a specific one — valid values: SOCIAL_NETWORKING, STREAMING_MEDIA, WEBMAIL, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, SALES_AND_MARKETING, SYSTEM_AND_DEVELOPMENT, CONSUMER, HOSTING_PROVIDER, IT_SERVICES, FILE_SHARE, DNS_OVER_HTTPS, HUMAN_RESOURCES, LEGAL, HEALTH_CARE, FINANCE, CUSTOM_CAPP, AI_ML.",
             },
             {
                 "func": zia_list_cloud_app_ssl_policy,
                 "name": "zia_list_cloud_app_ssl_policy",
-                "description": "List the ZIA cloud-application catalog scoped to SSL Inspection rules — returns the canonical enum strings the SSL Inspection API will accept in the cloud_applications field (e.g. ONEDRIVE, SHAREPOINT_ONLINE). Use this to resolve enum names before creating or updating SSL Inspection rules. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter.",
+                "description": "List the ZIA cloud-application catalog scoped to SSL Inspection rules — returns the canonical enum strings the SSL Inspection API will accept in the cloud_applications field (e.g. ONEDRIVE, SHAREPOINT_ONLINE). Use this to resolve enum names before creating or updating SSL Inspection rules. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter. Pass app_class to narrow the catalog by category when the user describes a kind of app — valid values: SOCIAL_NETWORKING, STREAMING_MEDIA, WEBMAIL, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, SALES_AND_MARKETING, SYSTEM_AND_DEVELOPMENT, CONSUMER, HOSTING_PROVIDER, IT_SERVICES, FILE_SHARE, DNS_OVER_HTTPS, HUMAN_RESOURCES, LEGAL, HEALTH_CARE, FINANCE, CUSTOM_CAPP, AI_ML.",
             },
             # Cloud App Control
             {
                 "func": zia_list_cloud_app_control_actions,
                 "name": "zia_list_cloud_app_control_actions",
-                "description": "List granular actions supported for a Cloud App Control rule type (read-only) Supports JMESPath client-side filtering via the query parameter.",
+                "description": "List the granular Cloud App Control (CAC) actions available for a cloud application — answers 'what actions can I control for <app>?', 'list actions for Azure DevOps', 'what can I block on Dropbox', 'show me available actions for ChatGPT'. Takes a single cloud_app (canonical enum like AZURE_DEVOPS or friendly name like 'Azure DevOps'); the tool auto-resolves the name, looks up its category (rule type), and returns the category's full action set. Actions are CATEGORY-LEVEL not per-app — every app in SYSTEM_AND_DEVELOPMENT shares the same actions, every app in AI_ML shares its own set, etc. The tool also handles a ZIA API quirk where calling list_available_actions(rule_type, [some_app]) sometimes returns empty because not every app is a 'representative' for its category — when that happens, it transparently walks other apps in the same category until one surfaces the action set. Returns a dict with: cloud_app, resolved_app, category, category_name, actions, actions_surfaced_via (which app finally produced the actions), and probe_attempts. Use the optional rule_type parameter only to override the auto-detected category; use query (JMESPath) to project just the actions list (e.g. 'actions') or filter them (e.g. 'actions[?contains(@, ``BLOCK``)]').",
+            },
+            {
+                "func": zia_list_cloud_app_control_rules,
+                "name": "zia_list_cloud_app_control_rules",
+                "description": "List ZIA Cloud App Control rules for a specific rule_type (category). The CAC API is category-scoped, so rule_type is REQUIRED — pass one of WEBMAIL, STREAMING_MEDIA, FILE_SHARE, AI_ML, SYSTEM_AND_DEVELOPMENT, SOCIAL_NETWORKING, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, etc. To list across multiple categories, call this once per category. If the user names an app instead of a category, call zia_list_cloud_app_control_actions(cloud_app=...) first to discover the right rule_type. Supports server-side `search` (substring on rule name) and JMESPath client-side filtering via the `query` parameter.",
+            },
+            {
+                "func": zia_get_cloud_app_control_rule,
+                "name": "zia_get_cloud_app_control_rule",
+                "description": "Get a specific ZIA Cloud App Control rule by rule_type AND rule_id (read-only). Both arguments are required because the CAC API is category-scoped — rule_id alone is not sufficient. If you only know the app name, call zia_list_cloud_app_control_actions(cloud_app=...) first to discover the rule_type.",
             },
             # Device Management
             {
@@ -1453,6 +1565,17 @@ class ZIAService(BaseService):
                 "func": zia_get_sandbox_rule,
                 "name": "zia_get_sandbox_rule",
                 "description": "Get a specific ZIA Sandbox rule by ID (read-only)",
+            },
+            # Time Intervals
+            {
+                "func": zia_list_time_intervals,
+                "name": "zia_list_time_intervals",
+                "description": "List ZIA Time Intervals (recurring time-of-day / day-of-week schedules referenced by policy rules via the time_windows field). Read-only. Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_time_interval,
+                "name": "zia_get_time_interval",
+                "description": "Get a specific ZIA Time Interval by ID (read-only).",
             },
         ]
 
@@ -1611,12 +1734,35 @@ class ZIAService(BaseService):
             {
                 "func": zia_update_url_category,
                 "name": "zia_update_url_category",
-                "description": "Update an existing ZIA URL category (write operation)",
+                "description": (
+                    "Update an existing custom ZIA URL category (full PUT, write "
+                    "operation). Refuses predefined categories — use "
+                    "zia_update_url_category_predefined for those, or "
+                    "zia_add_urls_to_category / zia_remove_urls_from_category for "
+                    "incremental URL/IP-range changes."
+                ),
+            },
+            {
+                "func": zia_update_url_category_predefined,
+                "name": "zia_update_url_category_predefined",
+                "description": (
+                    "Update a Zscaler-curated predefined URL category (full PUT, "
+                    "write operation). Same field surface as zia_update_url_category. "
+                    "Resolves the category by canonical ID ('FINANCE') or display "
+                    "name ('Finance') and silently backfills configured_name from "
+                    "the existing category when omitted. For incremental URL/IP-range "
+                    "mutations prefer zia_add_urls_to_category / "
+                    "zia_remove_urls_from_category — both work on predefined IDs."
+                ),
             },
             {
                 "func": zia_delete_url_category,
                 "name": "zia_delete_url_category",
-                "description": "Delete a ZIA URL category (destructive operation)",
+                "description": (
+                    "Delete a custom ZIA URL category (destructive operation). "
+                    "Refuses predefined categories — those are Zscaler-curated and "
+                    "cannot be deleted via the API."
+                ),
             },
             {
                 "func": zia_add_urls_to_category,
@@ -1741,12 +1887,12 @@ class ZIAService(BaseService):
             {
                 "func": zia_create_cloud_firewall_dns_rule,
                 "name": "zia_create_cloud_firewall_dns_rule",
-                "description": "Create a new ZIA cloud firewall DNS rule (write operation)",
+                "description": "Create a new ZIA cloud firewall DNS rule (write operation). The `applications` field accepts the same canonical ZIA cloud-app names used by SSL Inspection / Web DLP / FTC / CAC in their `cloud_applications` field — DNS just exposes the field as `applications`. Friendly names (e.g. \"OneDrive\", \"Cloudflare DoH\") are auto-resolved.",
             },
             {
                 "func": zia_update_cloud_firewall_dns_rule,
                 "name": "zia_update_cloud_firewall_dns_rule",
-                "description": "Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied.",
+                "description": "Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. The `applications` field accepts canonical ZIA cloud-app names (same catalog as SSL/DLP/FTC/CAC's `cloud_applications`) and auto-resolves friendly names.",
             },
             {
                 "func": zia_delete_cloud_firewall_dns_rule,
@@ -1768,6 +1914,22 @@ class ZIAService(BaseService):
                 "func": zia_delete_cloud_firewall_ips_rule,
                 "name": "zia_delete_cloud_firewall_ips_rule",
                 "description": "Delete a ZIA cloud firewall IPS rule (destructive operation)",
+            },
+            # Cloud App Control Rules
+            {
+                "func": zia_create_cloud_app_control_rule,
+                "name": "zia_create_cloud_app_control_rule",
+                "description": "Create a new ZIA Cloud App Control (CAC) rule (write operation). The CAC API is category-scoped — rule_type is REQUIRED (e.g. WEBMAIL, FILE_SHARE, AI_ML, SYSTEM_AND_DEVELOPMENT). Workflow: first call zia_list_cloud_app_control_actions(cloud_app=<app>) to discover both the correct rule_type (returned as `category`) AND the valid `actions` enums for that app, then pass those into this tool together with `name`, `cloud_applications`, and any scoping fields (groups, departments, locations, etc.). Friendly cloud-application names like 'Dropbox' are auto-resolved to canonical enums (DROPBOX). Note: the SDK kwarg for the apps list is `applications` but this tool surfaces it as `cloud_applications` for consistency with other ZIA rule families.",
+            },
+            {
+                "func": zia_update_cloud_app_control_rule,
+                "name": "zia_update_cloud_app_control_rule",
+                "description": "Update an existing ZIA Cloud App Control (CAC) rule (write operation). Both rule_type AND rule_id are required (the CAC API is category-scoped). Update is a PUT under the hood — `name` is silently backfilled from the existing rule when not supplied so partial updates work safely. Friendly cloud-application names are auto-resolved to canonical enums.",
+            },
+            {
+                "func": zia_delete_cloud_app_control_rule,
+                "name": "zia_delete_cloud_app_control_rule",
+                "description": "Delete a ZIA Cloud App Control (CAC) rule by rule_type and rule_id (destructive operation). Both arguments are required because the CAC API is category-scoped. Requires HMAC confirmation token.",
             },
             # File Type Control Rules
             {
@@ -1801,18 +1963,36 @@ class ZIAService(BaseService):
                 "name": "zia_delete_sandbox_rule",
                 "description": "Delete a ZIA Sandbox rule (destructive operation)",
             },
+            # Time Intervals
+            {
+                "func": zia_create_time_interval,
+                "name": "zia_create_time_interval",
+                "description": "Create a new ZIA Time Interval (reusable schedule referenced by policy rules via the time_windows field). start_time/end_time are minutes from midnight (0-1439). days_of_week accepts EVERYDAY, SUN, MON, TUE, WED, THU, FRI, SAT.",
+            },
+            {
+                "func": zia_update_time_interval,
+                "name": "zia_update_time_interval",
+                "description": "Update an existing ZIA Time Interval (write operation). Update is a PUT — name, start_time, end_time, and days_of_week are silently backfilled from the existing record when not supplied.",
+            },
+            {
+                "func": zia_delete_time_interval,
+                "name": "zia_delete_time_interval",
+                "description": "Delete a ZIA Time Interval (destructive operation). Will fail if the Time Interval is currently referenced by any policy rule.",
+            },
         ]
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZIA tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register verb-based tools with proper annotations
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(f"ZIA Service: Registered {read_count} read tools, {write_count} write tools")
@@ -1954,15 +2134,17 @@ class ZTWService(BaseService):
         ]
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZTW tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register verb-based tools with proper annotations
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(f"ZTW Service: Registered {read_count} read tools, {write_count} write tools")
@@ -2046,15 +2228,17 @@ class ZIDService(BaseService):
         self.write_tools = []  # ZIdentity has no write operations
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZIdentity tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register verb-based tools with proper annotations (all read-only)
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(
@@ -2125,15 +2309,17 @@ class ZEASMService(BaseService):
         self.write_tools = []  # EASM has no write operations
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register EASM tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register read-only tools
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(f"EASM Service: Registered {read_count} read tools, {write_count} write tools")
@@ -2338,15 +2524,17 @@ class ZINSService(BaseService):
         self.write_tools = []
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register Z-Insights tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
         # Register read-only tools
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(
@@ -2604,14 +2792,16 @@ class ZMSService(BaseService):
         self.write_tools = []
 
     def register_tools(
-        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None
+        self, server, enabled_tools=None, enable_write_tools=False, write_tools=None, disabled_tools=None,
+        selected_toolsets=None,
     ):
         """Register ZMS tools with the server."""
         from zscaler_mcp.common.tool_helpers import register_read_tools, register_write_tools
 
-        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools)
+        read_count = register_read_tools(server, self.read_tools, enabled_tools, disabled_tools=disabled_tools, selected_toolsets=selected_toolsets)
         write_count = register_write_tools(
-            server, self.write_tools, enabled_tools, enable_write_tools, write_tools, disabled_tools=disabled_tools
+            server, self.write_tools, enabled_tools, enable_write_tools, write_tools,
+            disabled_tools=disabled_tools, selected_toolsets=selected_toolsets,
         )
 
         logger.info(

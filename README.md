@@ -13,6 +13,9 @@
 
 -> **Disclaimer:** Please refer to our [General Support Statement](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/support.md) before proceeding with the use of this provider. You can also refer to our [troubleshooting guide](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/TROUBLESHOOTING.md) for guidance on typical problems.
 
+> [!IMPORTANT]
+> **🚧 Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/zscaler/zscaler-mcp-server/issues) to help shape the final release.
+
 ## 📄 Table of contents
 
 - [📺 Overview](#overview)
@@ -28,9 +31,7 @@
   - [Service Configuration](#service-configuration)
   - [Additional Command Line Options](#additional-command-line-options)
 - [Zscaler API Credentials & Authentication](#zscaler-api-credentials-authentication)
-  - [Quick Start: Choose Your Authentication Method](#quick-start-choose-your-authentication-method)
-  - [OneAPI Authentication (Recommended)](#oneapi-authentication-recommended)
-  - [Legacy API Authentication](#legacy-api-authentication)
+  - [OneAPI Authentication](#oneapi-authentication)
   - [Authentication Troubleshooting](#authentication-troubleshooting)
   - [MCP Server Configuration](#mcp-server-configuration)
 - [As a Library](#as-a-library)
@@ -201,19 +202,70 @@ This design allows AI assistants (Claude, Cursor, GitHub Copilot) to:
 
 ### Security Layers
 
-The server implements multiple layers of security (defense-in-depth):
+The server implements multiple layers of security (defense-in-depth). The first nine **apply on every transport, including stdio** — they govern which tools are exposed and how dangerous calls are confirmed. The remaining HTTP-only layers (TLS, host-header validation, source-IP ACL, MCP client authentication) are described in the [Network-Level Controls](#network-level-controls-http-only) section further down.
 
-1. **Read-Only Tools Always Enabled**: Safe `list_*` and `get_*` operations are always available (110+ tools)
-2. **Default Write Mode Disabled**: Write tools are disabled unless explicitly enabled via `--enable-write-tools`
-3. **Mandatory Allowlist**: Write operations require explicit `--write-tools` allowlist (wildcard support)
-4. **Verb-Based Tool Naming**: Each tool clearly indicates its purpose (`list`, `get`, `create`, `update`, `delete`)
-5. **Tool Metadata Annotations**: All tools are annotated with `readOnlyHint` or `destructiveHint` for AI agent frameworks
-6. **AI Agent Confirmation**: All write tools marked with `destructiveHint=True` trigger permission dialogs in AI assistants
-7. **Double Confirmation for DELETE**: Delete operations require both permission dialog AND server-side confirmation (extra protection for irreversible actions)
-8. **Environment Variable Control**: `ZSCALER_MCP_WRITE_ENABLED` and `ZSCALER_MCP_WRITE_TOOLS` can be managed centrally
-9. **Audit Logging**: All operations are logged for tracking and compliance
+1. **Read-Only Tools Always Enabled**: Safe `list_*` and `get_*` operations are always available (110+ tools).
+2. **Default Write Mode Disabled**: Write tools are disabled unless explicitly enabled via `--enable-write-tools`.
+3. **Mandatory Allowlist**: Write operations require explicit `--write-tools` allowlist (wildcard support).
+4. **OneAPI Entitlement Filter**: At startup, toolsets for products the OneAPI credentials cannot call are silently dropped (see [OneAPI Entitlement Filter](#oneapi-entitlement-filter) below).
+5. **Toolset Selection**: Optionally narrow the registered tool surface to a specific slice (e.g. `--toolsets zia_url_filtering,zpa_app_segments`). See the [Toolsets](#toolsets) section below.
+6. **Verb-Based Tool Naming**: Each tool clearly indicates its purpose (`list`, `get`, `create`, `update`, `delete`).
+7. **Tool Metadata Annotations**: All tools are annotated with `readOnlyHint` or `destructiveHint` for AI agent frameworks.
+8. **AI Agent Confirmation**: All write tools marked with `destructiveHint=True` trigger permission dialogs in AI assistants.
+9. **Double Confirmation for DELETE**: Delete operations require both the agent's permission dialog AND a server-side cryptographic confirmation token (HMAC-SHA256, single-use, 5-minute TTL). This makes prompt-injection attacks against destructive actions ineffective.
+10. **Environment Variable Control**: `ZSCALER_MCP_WRITE_ENABLED`, `ZSCALER_MCP_WRITE_TOOLS`, `ZSCALER_MCP_TOOLSETS`, `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`, and the disable lists can all be managed centrally without code changes.
+11. **Output Sanitization**: Every string in every tool result is run through a three-stage sanitizer before reaching the agent — invisible/control characters (BiDi overrides, zero-width chars, BOM, soft hyphen) are stripped, raw HTML and HTML comments are removed (via `bleach`), Markdown link/image syntax is neutralised so embedded URLs cannot be smuggled to the agent, and Markdown code-fence info-strings containing role-impersonation tokens (`system`, `assistant`, `tool`, `ignore`, …) are collapsed to a neutral `text` tag. This defends against prompt-injection payloads that an attacker — or a careless admin — might embed in editable Zscaler resources (rule descriptions, location names, label descriptions, etc.). On by default. Opt-out with `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION=true` (use only for diagnostics).
+12. **Audit Logging**: When `--log-tool-calls` / `ZSCALER_MCP_LOG_TOOL_CALLS=true` is set, every tool invocation is logged with its arguments (sensitive values redacted), duration, and a result summary.
 
-This multi-layered approach ensures that even if one security control is bypassed, others remain in place to prevent unauthorized operations.
+This multi-layered approach ensures that even if one security control is bypassed, others remain in place to prevent unauthorized operations. Layers 1-12 above apply equally to `stdio`, `sse`, and `streamable-http`.
+
+### Toolsets
+
+Tools are grouped into named **toolsets** so you can load only the slice an agent actually needs (e.g. `zia_url_filtering` (5 tools) instead of every tool from every service (~280)). Toolsets reduce the agent's context cost and improve tool-selection accuracy. The `meta` toolset (server discovery) is always loaded.
+
+```bash
+# Load just two slices
+zscaler-mcp --toolsets zia_url_filtering,zpa_app_segments
+
+# Or use the curated default-on subset
+zscaler-mcp --toolsets default
+
+# Or load every registered toolset explicitly
+zscaler-mcp --toolsets all
+
+# Equivalent via environment variable
+export ZSCALER_MCP_TOOLSETS="zia_url_filtering,zpa_app_segments"
+```
+
+When `--toolsets` is unspecified, every toolset whose service is enabled is loaded (preserves the historical default).
+
+The agent can also enable additional toolsets at runtime through the always-on `zscaler_list_toolsets`, `zscaler_get_toolset_tools`, and `zscaler_enable_toolset` tools.
+
+For the full catalog (29 toolsets across all services), filter precedence rules, per-toolset agent guidance, and the complete reference, see [docs/guides/toolsets.md](docs/guides/toolsets.md).
+
+### OneAPI Entitlement Filter
+
+After your toolset selection resolves, the server reads the product entitlements from the OneAPI bearer token issued for your `ZSCALER_CLIENT_ID` and silently drops toolsets for products the credentials cannot call. If your OneAPI client is only entitled to ZIA and ZPA, every `zdx_*` / `zcc_*` / `ztw_*` / `zid_*` / `zeasm_*` / `zins_*` / `zms_*` toolset is filtered out at startup — even with `--toolsets all`.
+
+This prevents an agent from discovering tools whose first call would only ever return `401 Unauthorized`. The filter applies on every transport, including `stdio`.
+
+When the filter runs you'll see one log line at startup, for example:
+
+```text
+entitlement filter applied: entitled services=['zia', 'zpa'], kept 12 toolset(s), removed 17 toolset(s)
+```
+
+The filter is **non-fatal**. If credentials are missing, the token endpoint is unreachable, the token doesn't decode, or the token has no recognizable product entitlements, the server logs a single WARN line and starts normally with the user-selected toolsets unchanged.
+
+To bypass the filter (for example, while diagnosing an unusual token shape):
+
+```bash
+zscaler-mcp --no-entitlement-filter
+# or
+export ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true
+```
+
+Only **product entitlement** is honoured — not role names. The server defers per-action permission enforcement to the live API; the entitlement filter only ensures we don't *advertise* tools for products the client has zero access to.
 
 ### Cryptographic Confirmation for Destructive Actions
 
@@ -227,7 +279,13 @@ To bypass confirmations in automated testing or CI/CD environments:
 export ZSCALER_MCP_SKIP_CONFIRMATIONS=true
 ```
 
-### HTTPS/TLS Support
+### Network-Level Controls (HTTP only)
+
+The next four subsections — TLS, source-IP allowlist, host-header validation, and the `.env` plaintext-secret scanner — apply only to the HTTP transports (`sse`, `streamable-http`). They control **who can reach the server over the network**. They are independent of the tool-level controls listed in [Security Layers](#security-layers) above (read-only mode, write allowlist, toolsets, entitlement filter, HMAC confirmations), which apply on every transport including `stdio`.
+
+The corresponding *MCP client authentication* (Bearer / Basic / OAuth 2.1) is a fifth network-level layer covered in detail in the [MCP Client Authentication](#-mcp-client-authentication) section further below.
+
+#### HTTPS/TLS Support
 
 **HTTPS is required by default** for non-localhost deployments. The server will refuse to start on a non-localhost interface without TLS certificates unless you explicitly set `ZSCALER_MCP_ALLOW_HTTP=true`.
 
@@ -249,7 +307,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -node
   -subj "/CN=localhost"
 ```
 
-### Source IP Access Control
+#### Source IP Access Control
 
 You can restrict which client IPs are allowed to connect using `ZSCALER_MCP_ALLOWED_SOURCE_IPS`. When unset (the default), source IP filtering is disabled and deferred to upstream controls (firewall rules, AWS Security Groups, etc.).
 
@@ -263,7 +321,7 @@ ZSCALER_MCP_ALLOWED_SOURCE_IPS=0.0.0.0/0
 
 Supports individual IPv4/IPv6 addresses, CIDR notation, and the wildcard `0.0.0.0/0`. Health-check endpoints (`/health`, `/healthz`, `/ready`) are exempt so load-balancer probes continue to work. Requests from disallowed IPs receive `403 Forbidden`.
 
-### .env File Security Warning
+#### .env File Security Warning
 
 When starting with HTTP transports, the server automatically scans any `.env` file in the working directory for plaintext secrets (values containing `SECRET`, `PASSWORD`, `KEY`, or `TOKEN`). If detected, a security warning is logged recommending the use of a secrets manager or environment variables instead.
 
@@ -440,19 +498,26 @@ When `auth=` is provided:
 
 ## Supported Tools
 
-The Zscaler Integrations MCP Server provides **300+ tools** for all major Zscaler services:
+<!-- The table below is auto-generated by `zscaler-mcp --generate-docs`. Edit
+     descriptions in `zscaler_mcp/services.py` and re-run the generator. -->
+
+<!-- generated:start service-summary -->
+
+The Zscaler Integrations MCP Server provides **339 tools** for all major Zscaler services:
 
 | Service | Description | Tools |
 |---------|-------------|-------|
-| **ZIA** | Zscaler Internet Access - Security policies | 106 read/write |
-| **ZPA** | Zscaler Private Access - Application access | 88 read/write |
-| **ZDX** | Zscaler Digital Experience - Monitoring & analytics | 31 read-only |
-| **ZMS** | Zscaler Microsegmentation - Agents, resources, policies | 20 read-only |
+| **ZIA** | Zscaler Internet Access — Security policies | 145 read/write |
+| **ZPA** | Zscaler Private Access — Application access | 88 read/write |
+| **ZDX** | Zscaler Digital Experience — Monitoring & analytics | 31 read/write |
+| **ZMS** | Zscaler Microsegmentation — Agents, resources, policies | 20 read-only |
 | **ZTW** | Zscaler Workload Segmentation | 19 read/write |
-| **Z-Insights** | Analytics - Web traffic, cyber incidents, shadow IT | 16 read-only |
-| **ZIdentity** | Identity & access management | 10 read-only |
+| **Z-Insights** | Z-Insights analytics — Web traffic, cyber incidents, shadow IT | 16 read-only |
+| **ZIdentity** | ZIdentity — Identity & access management | 10 read-only |
 | **EASM** | External Attack Surface Management | 7 read-only |
-| **ZCC** | Zscaler Client Connector - Device management | 4 read-only |
+| **ZCC** | Zscaler Client Connector — Device management | 3 read-only |
+
+<!-- generated:end service-summary -->
 
 📖 **[View Complete Tools Reference →](docs/guides/supported-tools.md)**
 
@@ -486,7 +551,7 @@ Then edit `.env` with your Zscaler API credentials:
 **Optional Configuration:**
 
 - `ZSCALER_CLOUD`: (Optional) Zscaler cloud environment (e.g., `beta`) - Required when interacting with Beta Tenant ONLY.
-- `ZSCALER_USE_LEGACY`: Enable legacy API mode (`true`/`false`, default: `false`)
+- `ZSCALER_PRIVATE_KEY`: (Optional) PEM-encoded private key for JWT-based OneAPI auth, used in place of `ZSCALER_CLIENT_SECRET`.
 - `ZSCALER_MCP_SERVICES`: Comma-separated list of services to enable (default: all services)
 - `ZSCALER_MCP_TRANSPORT`: Transport method - `stdio`, `sse`, or `streamable-http` (default: `stdio`)
 - `ZSCALER_MCP_DEBUG`: Enable debug logging - `true` or `false` (default: `false`)
@@ -619,8 +684,8 @@ When you want to keep most tools available but exclude a few, use `--disabled-to
 Both flags support **wildcards** via [fnmatch](https://docs.python.org/3/library/fnmatch.html) patterns.
 
 ```bash
-# Exclude a single tool (e.g., rate-limited CSV export)
-zscaler-mcp --disabled-tools zcc_devices_csv_exporter
+# Exclude a single tool
+zscaler-mcp --disabled-tools zia_list_devices
 
 # Exclude all tools from a service prefix
 zscaler-mcp --disabled-tools "zcc_*"
@@ -632,13 +697,13 @@ zscaler-mcp --disabled-tools "zcc_*,zdx_list_devices"
 zscaler-mcp --disabled-services zcc,zdx
 
 # Combine: keep all services but exclude specific tools
-zscaler-mcp --disabled-tools "zcc_devices_csv_exporter,zdx_*_analysis"
+zscaler-mcp --disabled-tools "zia_list_devices,zdx_*_analysis"
 ```
 
 Environment variables:
 
 ```bash
-export ZSCALER_MCP_DISABLED_TOOLS="zcc_devices_csv_exporter,zdx_*"
+export ZSCALER_MCP_DISABLED_TOOLS="zia_list_devices,zdx_*"
 export ZSCALER_MCP_DISABLED_SERVICES="zcc"
 ```
 
@@ -670,8 +735,11 @@ Available command-line flags:
 - `--disabled-services`: Comma-separated list of services to exclude (e.g., `zcc,zdx`)
 - `--tools`: Comma-separated list of specific tools to enable
 - `--disabled-tools`: Comma-separated list of tools to exclude, supports wildcards (e.g., `zcc_*,zdx_list_devices`)
+- `--toolsets`: Comma-separated toolset ids to enable (e.g. `zia_url_filtering,zpa_app_segments`). Special values: `default` (curated default-on subset), `all` (every toolset). When unspecified, every toolset whose service is enabled is loaded. See [docs/guides/toolsets.md](docs/guides/toolsets.md).
+- `--no-entitlement-filter`: Skip the OneAPI entitlement filter that trims toolsets to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only — the filter is non-fatal by default.
 - `--enable-write-tools`: Enable write operations (disabled by default for safety)
 - `--write-tools`: Mandatory allowlist of write tool patterns (e.g., `"zpa_create_*,zpa_delete_*"`)
+- `--log-tool-calls`: Enable per-tool-call audit logging (tool name, redacted arguments, duration, result summary)
 - `--debug`: Enable debug logging
 - `--host`: Host for HTTP transports (default: `127.0.0.1`)
 - `--port`: Port for HTTP transports (default: `8000`)
@@ -688,67 +756,28 @@ Available command-line flags:
 
 ## Zscaler API Credentials & Authentication
 
-The Zscaler Integrations MCP Server supports two authentication methods: **OneAPI (recommended)** and **Legacy API**. You must choose **ONE** method - do not mix them.
+The Zscaler Integrations MCP Server uses **OneAPI** authentication exclusively. A single set of credentials authenticates the server to every Zscaler product (ZIA, ZPA, ZCC, ZDX, ZTW, ZIdentity, ZMS, Z-Insights, EASM).
 
-> [!IMPORTANT]
-> **⚠️ CRITICAL: Choose ONE Authentication Method**
->
-> - **OneAPI**: Single credential set for ALL services (ZIA, ZPA, ZCC, ZDX)
-> - **Legacy**: Separate credentials required for EACH service
-> - **DO NOT** set both OneAPI and Legacy credentials simultaneously
-> - **DO NOT** set `ZSCALER_USE_LEGACY=true` if using OneAPI
-
-### Quick Start: Choose Your Authentication Method
-
-#### Option A: OneAPI (Recommended - Single Credential Set)
-
-- ✅ **One set of credentials** works for ALL services (ZIA, ZPA, ZCC, ZDX, ZTW)
-- ✅ Modern OAuth2.0 authentication via Zidentity
-- ✅ Easier to manage and maintain
-- ✅ Default authentication method (no flag needed)
-- **Use this if:** You have access to Zidentity console and want simplicity
-
-#### Option B: Legacy Mode (Per-Service Credentials)
-
-- ⚠️ **Separate credentials** required for each service you want to use
-- ⚠️ Different authentication methods per service (OAuth for ZPA, API key for ZIA, etc.)
-- ⚠️ Must set `ZSCALER_USE_LEGACY=true` environment variable
-- **Use this if:** You don't have OneAPI access or need per-service credential management
-
-#### Decision Tree
-
-```text
-Do you have access to Zidentity console?
-├─ YES → Use OneAPI (Option A)
-└─ NO  → Use Legacy Mode (Option B)
-```
-
----
-
-### OneAPI Authentication (Recommended)
-
-OneAPI provides a single set of credentials that authenticate to all Zscaler services. This is the default and recommended method.
+### OneAPI Authentication
 
 #### Prerequisites
 
-Before using OneAPI, you need to:
-
-1. Create an API Client in the [Zidentity platform](https://help.zscaler.com/zidentity/about-api-clients)
-2. Obtain your credentials: `clientId`, `clientSecret`, `customerId`, and `vanityDomain`
-3. Learn more: [Understanding OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi)
+1. Create an API Client in the [ZIdentity platform](https://help.zscaler.com/zidentity/about-api-clients).
+2. Obtain your `clientId`, `clientSecret` (or `privateKey` for JWT), `customerId`, and `vanityDomain`.
+3. Learn more: [Understanding OneAPI](https://help.zscaler.com/oneapi/understanding-oneapi).
 
 #### Quick Setup
 
-Create a `.env` file in your project root (or where you'll run the MCP server):
+Create a `.env` file in your project root (or wherever you start the MCP server):
 
 ```env
-# OneAPI Credentials (Required)
+# OneAPI credentials (required)
 ZSCALER_CLIENT_ID=your_client_id
 ZSCALER_CLIENT_SECRET=your_client_secret
 ZSCALER_CUSTOMER_ID=your_customer_id
 ZSCALER_VANITY_DOMAIN=your_vanity_domain
 
-# Optional: Only required for Beta tenants
+# Optional: only required when targeting the Beta tenant
 ZSCALER_CLOUD=beta
 ```
 
@@ -758,171 +787,32 @@ ZSCALER_CLOUD=beta
 
 | Environment Variable | Required | Description |
 |---------------------|----------|-------------|
-| `ZSCALER_CLIENT_ID` | Yes | Zscaler OAuth client ID from Zidentity console |
-| `ZSCALER_CLIENT_SECRET` | Yes | Zscaler OAuth client secret from Zidentity console |
-| `ZSCALER_CUSTOMER_ID` | Yes | Zscaler customer ID |
+| `ZSCALER_CLIENT_ID` | Yes | OneAPI client ID from the ZIdentity console |
+| `ZSCALER_CLIENT_SECRET` | Yes (or `ZSCALER_PRIVATE_KEY`) | OneAPI client secret |
+| `ZSCALER_CUSTOMER_ID` | Yes (for ZPA tools) | Zscaler customer/tenant ID |
 | `ZSCALER_VANITY_DOMAIN` | Yes | Your organization's vanity domain (e.g., `acme`) |
-| `ZSCALER_CLOUD` | No | Zscaler cloud environment (e.g., `beta`). **Only required for Beta tenants** |
-| `ZSCALER_PRIVATE_KEY` | No | OAuth private key for JWT-based authentication (alternative to client secret) |
+| `ZSCALER_CLOUD` | No | Cloud override (e.g., `beta`, `zscalertwo`); omit for production |
+| `ZSCALER_PRIVATE_KEY` | No | PEM-encoded private key for JWT auth (used in place of `ZSCALER_CLIENT_SECRET`) |
 
 #### Verification
 
-After setting up your `.env` file, test the connection:
+After populating `.env`, start the server:
 
 ```bash
-# Test with a simple command
 zscaler-mcp
 ```
 
-If authentication is successful, the server will start without errors. If you see authentication errors, verify:
-
-- All required environment variables are set correctly
-- Your API client has the necessary permissions in Zidentity
-- Your credentials are valid and not expired
-
----
-
-### Legacy API Authentication
-
-Legacy mode requires separate credentials for each Zscaler service. This method is only needed if you don't have access to OneAPI.
-
-> [!WARNING]
-> **⚠️ IMPORTANT**: When using Legacy mode:
->
-> - You **MUST** set `ZSCALER_USE_LEGACY=true` in your `.env` file
-> - You **MUST** provide credentials for each service you want to use
-> - OneAPI credentials are **ignored** when `ZSCALER_USE_LEGACY=true` is set
-> - Clients are created on-demand when tools are called (not at startup)
-
-#### Quick Setup
-
-Create a `.env` file with the following structure:
-
-```env
-# Enable Legacy Mode (REQUIRED - set once at the top)
-ZSCALER_USE_LEGACY=true
-
-# ZPA Legacy Credentials (if using ZPA)
-ZPA_CLIENT_ID=your_zpa_client_id
-ZPA_CLIENT_SECRET=your_zpa_client_secret
-ZPA_CUSTOMER_ID=your_zpa_customer_id
-ZPA_CLOUD=BETA
-
-# ZIA Legacy Credentials (if using ZIA)
-ZIA_USERNAME=your_zia_username
-ZIA_PASSWORD=your_zia_password
-ZIA_API_KEY=your_zia_api_key
-ZIA_CLOUD=zscalertwo
-
-# ZCC Legacy Credentials (if using ZCC)
-ZCC_CLIENT_ID=your_zcc_client_id
-ZCC_CLIENT_SECRET=your_zcc_client_secret
-ZCC_CLOUD=zscalertwo
-
-# ZDX Legacy Credentials (if using ZDX)
-ZDX_CLIENT_ID=your_zdx_client_id
-ZDX_CLIENT_SECRET=your_zdx_client_secret
-ZDX_CLOUD=zscalertwo
-```
-
-⚠️ **Security**: Do not commit `.env` to source control. Add it to your `.gitignore`.
-
-#### Legacy Authentication by Service
-
-##### ZPA Legacy Authentication
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZPA_CLIENT_ID` | Yes | ZPA API client ID from ZPA console |
-| `ZPA_CLIENT_SECRET` | Yes | ZPA API client secret from ZPA console |
-| `ZPA_CUSTOMER_ID` | Yes | ZPA tenant ID (found in Administration > Company menu) |
-| `ZPA_CLOUD` | Yes | Zscaler cloud for ZPA tenancy (e.g., `BETA`, `zscalertwo`) |
-| `ZPA_MICROTENANT_ID` | No | ZPA microtenant ID (if using microtenants) |
-
-**Where to find ZPA credentials:**
-
-- API Client ID/Secret: ZPA console > Configuration & Control > Public API > API Keys
-- Customer ID: ZPA console > Administration > Company
-
-##### ZIA Legacy Authentication
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZIA_USERNAME` | Yes | ZIA API admin email address |
-| `ZIA_PASSWORD` | Yes | ZIA API admin password |
-| `ZIA_API_KEY` | Yes | ZIA obfuscated API key (from obfuscateApiKey() method) |
-| `ZIA_CLOUD` | Yes | Zscaler cloud name (see supported clouds below) |
-
-**Supported ZIA Cloud Environments:**
-
-- `zscaler`, `zscalerone`, `zscalertwo`, `zscalerthree`
-- `zscloud`, `zscalerbeta`, `zscalergov`, `zscalerten`, `zspreview`
-
-**Where to find ZIA credentials:**
-
-- Username/Password: Your ZIA admin account
-- API Key: ZIA Admin Portal > Administration > API Key Management
-
-##### ZCC Legacy Authentication
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZCC_CLIENT_ID` | Yes | ZCC API key (Mobile Portal) |
-| `ZCC_CLIENT_SECRET` | Yes | ZCC secret key (Mobile Portal) |
-| `ZCC_CLOUD` | Yes | Zscaler cloud name (see supported clouds below) |
-
-> **NOTE**: `ZCC_CLOUD` is required and identifies the correct API gateway.
-
-**Supported ZCC Cloud Environments:**
-
-- `zscaler`, `zscalerone`, `zscalertwo`, `zscalerthree`
-- `zscloud`, `zscalerbeta`, `zscalergov`, `zscalerten`, `zspreview`
-
-##### ZDX Legacy Authentication
-
-| Environment Variable | Required | Description |
-|---------------------|----------|-------------|
-| `ZDX_CLIENT_ID` | Yes | ZDX key ID |
-| `ZDX_CLIENT_SECRET` | Yes | ZDX secret key |
-| `ZDX_CLOUD` | Yes | Zscaler cloud name prefix |
-
-**Where to find ZDX credentials:**
-
-- ZDX Portal > API Keys section
-
-#### Legacy Mode Behavior
-
-When `ZSCALER_USE_LEGACY=true`:
-
-- All tools use legacy API clients by default
-- You can override per-tool by setting `use_legacy: false` in tool parameters
-- The MCP server initializes without creating clients at startup
-- Clients are created on-demand when individual tools are called
-- This allows the server to work with different legacy services without requiring a specific service during initialization
+If credentials are valid, the server starts cleanly. The Zscaler SDK client is created lazily on the first tool call, so missing or rotating credentials surface as a clear error message at call time rather than blocking server startup.
 
 ---
 
 ### Authentication Troubleshooting
 
-**Common Issues:**
-
-1. **"Authentication failed" errors:**
-   - Verify all required environment variables are set
-   - Check that credentials are correct and not expired
-   - Ensure you're using the correct cloud environment
-
-2. **"Legacy credentials ignored" warning:**
-   - This is normal when using OneAPI mode
-   - Legacy credentials are only loaded when `ZSCALER_USE_LEGACY=true`
-
-3. **"OneAPI credentials ignored" warning:**
-   - This is normal when using Legacy mode
-   - OneAPI credentials are only used when `ZSCALER_USE_LEGACY` is not set or is `false`
-
-4. **Mixed authentication errors:**
-   - **DO NOT** set both OneAPI and Legacy credentials
-   - **DO NOT** set `ZSCALER_USE_LEGACY=true` if using OneAPI
-   - Choose ONE method and stick with it
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `Zscaler SDK failed to initialize due to missing OneAPI credentials: [...]` | One or more of `ZSCALER_CLIENT_ID`, `ZSCALER_VANITY_DOMAIN`, or (for ZPA) `ZSCALER_CUSTOMER_ID` is unset or empty. | Set the listed env vars in `.env` or your shell. |
+| `You must provide either ZSCALER_CLIENT_SECRET or ZSCALER_PRIVATE_KEY for the OneAPI client.` | Both auth materials are absent. | Set one of `ZSCALER_CLIENT_SECRET` or `ZSCALER_PRIVATE_KEY`. |
+| 401/403 from a Zscaler API at tool-call time | API client lacks the scope for that product, or credentials are revoked. | Verify the OneAPI client's permissions in the ZIdentity console; rotate credentials if necessary. |
 
 ### MCP Server Configuration
 
@@ -934,7 +824,7 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_SERVICES` | `""` | Comma-separated list of services to enable (empty = all services). Supported values: `zcc`, `zdx`, `zia`, `zid`, `zpa`, `ztw` |
 | `ZSCALER_MCP_TOOLS` | `""` | Comma-separated list of specific tools to enable (empty = all tools) |
 | `ZSCALER_MCP_DISABLED_SERVICES` | `""` | Comma-separated list of services to exclude (e.g., `zcc,zdx`). Takes precedence over `ZSCALER_MCP_SERVICES`. |
-| `ZSCALER_MCP_DISABLED_TOOLS` | `""` | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zcc_devices_csv_exporter`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
+| `ZSCALER_MCP_DISABLED_TOOLS` | `""` | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zia_list_devices`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
 | `ZSCALER_MCP_WRITE_ENABLED` | `false` | Enable write operations (`true`/`false`). When `false`, only read-only tools are available. Set to `true` or use `--enable-write-tools` flag to unlock write mode. |
 | `ZSCALER_MCP_WRITE_TOOLS` | `""` | **MANDATORY** comma-separated allowlist of write tools (supports wildcards like `zpa_*`). Requires `ZSCALER_MCP_WRITE_ENABLED=true`. If empty when write mode enabled, 0 write tools registered. |
 | `ZSCALER_MCP_DEBUG` | `false` | Enable debug logging (`true`/`false`) |
@@ -950,6 +840,7 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | `""` | Comma-separated list of allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). When unset, source IP filtering is disabled (defer to firewall/security groups). Set to `0.0.0.0/0` to allow all. |
 | `ZSCALER_MCP_SKIP_CONFIRMATIONS` | `false` | Skip cryptographic confirmation for destructive actions (testing/CI only). |
 | `ZSCALER_MCP_CONFIRMATION_TTL` | `300` | HMAC confirmation token lifetime in seconds (default: 5 minutes). |
+| `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` | `false` | Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / Markdown / code-fence stripping). Sanitization is on by default; only set this for diagnostics — disabling it removes a prompt-injection defense layer. |
 | `ZSCALER_MCP_USER_AGENT_COMMENT` | `""` | Additional information to include in User-Agent comment section |
 
 #### User-Agent Header
@@ -1505,9 +1396,8 @@ For full documentation on all integrations, see the [Platform Integrations Guide
    - Check file permissions (should be readable)
 
 3. **"Authentication failed"**
-   - Verify all required environment variables are in `.env`
+   - Verify all required OneAPI environment variables are in `.env`
    - Check that credentials are correct and not expired
-   - Ensure you're using the correct authentication method (OneAPI vs Legacy)
 
 4. **"Tools not appearing"**
    - Some agents require you to enable tools in their UI

@@ -114,7 +114,7 @@ class TestZtwIpDestinationGroups:
         result = ztw_list_ip_destination_groups()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
+        mock_get_client.assert_called_once_with(service="ztw")
         mock_client.ztw.ip_destination_groups.list_ip_destination_groups.assert_called_once_with(
             query_params={}
         )
@@ -303,7 +303,7 @@ class TestZtwIpGroups:
         result = ztw_list_ip_groups()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
+        mock_get_client.assert_called_once_with(service="ztw")
         mock_client.ztw.ip_groups.list_ip_groups.assert_called_once_with(query_params={})
         assert len(result) == 3
 
@@ -416,7 +416,7 @@ class TestZtwIpSourceGroups:
         result = ztw_list_ip_source_groups()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
+        mock_get_client.assert_called_once_with(service="ztw")
         mock_client.ztw.ip_source_groups.list_ip_source_groups.assert_called_once_with(
             query_params={}
         )
@@ -521,7 +521,7 @@ class TestZtwAdmins:
         result = ztw_list_admins()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
+        mock_get_client.assert_called_once_with(service="ztw")
         mock_client.ztw.admin_users.list_admins.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["username"] == "admin@example.com"
@@ -634,7 +634,7 @@ class TestZtwRoles:
         result = ztw_list_roles()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
+        mock_get_client.assert_called_once_with(service="ztw")
         mock_client.ztw.admin_roles.list_roles.assert_called_once_with(query_params={})
         assert len(result) == 2
         assert result[0]["name"] == "Super Admin"
@@ -715,7 +715,7 @@ class TestZtwNetworkServiceGroups:
         result = ztw_list_network_service_groups()
 
         # Verify
-        mock_get_client.assert_called_once_with(use_legacy=False, service="ztw")
+        mock_get_client.assert_called_once_with(service="ztw")
         mock_client.ztw.nw_service_groups.list_network_svc_groups.assert_called_once_with(
             query_params={}
         )
@@ -752,16 +752,3 @@ class TestZtwNetworkServiceGroups:
         with pytest.raises(Exception) as exc_info:
             ztw_list_network_service_groups()
         assert "Error listing network service groups: API Error" in str(exc_info.value)
-
-    @patch("zscaler_mcp.tools.ztw.network_service_groups.get_zscaler_client")
-    def test_list_network_service_groups_legacy_mode(self, mock_get_client, mock_client):
-        """Test listing network service groups using legacy API."""
-        # Setup
-        mock_get_client.return_value = mock_client
-        mock_client.ztw.nw_service_groups.list_network_svc_groups.return_value = ([], None, None)
-
-        # Execute
-        ztw_list_network_service_groups(use_legacy=True)
-
-        # Verify
-        mock_get_client.assert_called_once_with(use_legacy=True, service="ztw")

@@ -21,7 +21,6 @@ def ztw_list_network_service_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "ztw",
 ) -> List[Dict]:
     """
@@ -35,7 +34,7 @@ def ztw_list_network_service_groups(
     Note: This is a read-only operation. Network service groups cannot be created,
     updated, or deleted through this tool.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     ztw = client.ztw.nw_service_groups
 
     query_params = {"search": search} if search else {}

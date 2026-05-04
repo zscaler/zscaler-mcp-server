@@ -52,10 +52,6 @@ def zms_list_tag_namespaces(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List Zscaler Microsegmentation (ZMS) tag namespaces with pagination and filtering.
@@ -76,7 +72,7 @@ def zms_list_tag_namespaces(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,
@@ -136,10 +132,6 @@ def zms_list_tag_keys(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List tag keys within a specific ZMS tag namespace with filtering.
@@ -158,7 +150,7 @@ def zms_list_tag_keys(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,
@@ -222,10 +214,6 @@ def zms_list_tag_values(
         Optional[str],
         Field(description="The service to use."),
     ] = None,
-    use_legacy: Annotated[
-        Optional[bool],
-        Field(description="Whether to use the legacy API."),
-    ] = False,
 ) -> List[Dict[str, Any]]:
     """
     List tag values for a specific ZMS tag key with filtering.
@@ -244,7 +232,7 @@ def zms_list_tag_values(
     if not customer_id:
         return [{"error": "ZSCALER_CUSTOMER_ID environment variable is required for ZMS tools."}]
 
-    client = get_zscaler_client(use_legacy=use_legacy, service="zms")
+    client = get_zscaler_client(service="zms")
 
     kwargs: Dict[str, Any] = {
         "customer_id": customer_id,

@@ -9,7 +9,7 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 ## Critical Gotchas
 
 - **ZIA requires activation.** After any ZIA create/update/delete, call `zia_activate_configuration()`. Changes are staged until activation. Forgetting this is the #1 source of "my change didn't work" issues.
-- **`use_legacy` parameter.** Every tool has a `use_legacy` parameter that defaults to `False`. Do NOT change it unless the user explicitly asks for legacy API behavior.
+- **OneAPI is the only supported authentication mode.** All tools authenticate via `zscaler.ZscalerClient` against ZIdentity using the unified `ZSCALER_CLIENT_ID` / `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`) / `ZSCALER_VANITY_DOMAIN` / `ZSCALER_CUSTOMER_ID` (ZPA only) credentials.
 - **ZDX is read-only.** ZDX tools only query data. There are no create/update/delete operations except for deep traces (`zdx_start_deep_trace`).
 - **ZDX `since` parameter is in hours**, not timestamps. Default is 2 hours. Example: `since=24` means "last 24 hours."
 - **IDs are strings**, even when they look numeric. Always pass IDs as strings.
@@ -44,15 +44,16 @@ Always ask the user for scope before running broad ZDX queries on large tenants.
 
 Required env vars (set in `.env`):
 
-- `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, `ZSCALER_CUSTOMER_ID`, `ZSCALER_VANITY_DOMAIN` — OneAPI credentials from ZIdentity console
+- `ZSCALER_CLIENT_ID` — OneAPI client ID from the ZIdentity console
+- `ZSCALER_CLIENT_SECRET` — OneAPI client secret (or `ZSCALER_PRIVATE_KEY` for JWT-based auth)
+- `ZSCALER_VANITY_DOMAIN` — ZIdentity vanity domain (e.g. `acme.zsapi.net`)
+- `ZSCALER_CUSTOMER_ID` — Zscaler customer/tenant ID; required when calling ZPA tools
 
-Optional legacy credentials:
+Optional:
 
-- ZPA: `ZPA_CLIENT_ID`, `ZPA_CLIENT_SECRET`, `ZPA_CUSTOMER_ID`, `ZPA_CLOUD`
-- ZIA: `ZIA_USERNAME`, `ZIA_PASSWORD`, `ZIA_API_KEY`, `ZIA_CLOUD`
-- ZCC: `ZCC_CLIENT_ID`, `ZCC_CLIENT_SECRET`, `ZCC_CLOUD`
-- ZTW: `ZTW_USERNAME`, `ZTW_PASSWORD`, `ZTW_API_KEY`, `ZTW_CLOUD`
-- ZDX: `ZDX_CLIENT_ID`, `ZDX_CLIENT_SECRET`, `ZDX_CLOUD`
+- `ZSCALER_PRIVATE_KEY` — PEM-encoded private key for JWT auth (used in place of `ZSCALER_CLIENT_SECRET`)
+- `ZSCALER_CLOUD` — cloud override (e.g. `BETA`, `zscalertwo`)
+- `ZSCALER_MCP_USER_AGENT_COMMENT` — appended to the SDK's `User-Agent` header
 
 Server & security env vars:
 

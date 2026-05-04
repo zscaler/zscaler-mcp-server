@@ -40,6 +40,118 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Process-wide registry of ZscalerAuthProvider instances.
+#
+# The entitlement filter (zscaler_mcp.common.entitlements) consults this
+# registry at server startup to look up an already-cached OneAPI bearer
+# token before issuing its own /oauth2/v1/token call. This avoids
+# duplicating the call the auth middleware already made when the user
+# authenticates via Zscaler mode.
+# ---------------------------------------------------------------------------
+
+_zscaler_providers: list = []
+_zscaler_providers_lock = threading.Lock()
+
+
+def _register_zscaler_provider(provider: "ZscalerAuthProvider") -> None:
+    with _zscaler_providers_lock:
+        _zscaler_providers.append(provider)
+
+
+def get_registered_zscaler_providers() -> list:
+    """Return a snapshot of every registered :class:`ZscalerAuthProvider`.
+
+    Used by :mod:`zscaler_mcp.common.entitlements` to discover any
+    already-cached bearer token. Returning a copy keeps the internal
+    list private from callers.
+    """
+    with _zscaler_providers_lock:
+        return list(_zscaler_providers)
+
+
+# ---------------------------------------------------------------------------
+# Reusable OneAPI token-fetch helper.
+#
+# Centralized so both ZscalerAuthProvider (per-request validation) and
+# the entitlement filter (one-shot at startup) hit the same code path.
+# ---------------------------------------------------------------------------
+
+
+def _build_token_url(vanity_domain: str, cloud: str = "production") -> str:
+    """Return the ZIdentity ``/oauth2/v1/token`` URL for a given vanity/cloud.
+
+    Mirrors the URL builder used by :class:`ZscalerAuthProvider` so that
+    cache-lookup keys and direct fetch URLs stay in lock-step.
+    """
+    cloud = (cloud or "production").lower().strip()
+    if cloud == "production":
+        return f"https://{vanity_domain}.zslogin.net/oauth2/v1/token"
+    return f"https://{vanity_domain}.zslogin{cloud}.net/oauth2/v1/token"
+
+
+def fetch_oneapi_token(
+    client_id: str,
+    client_secret: str,
+    vanity_domain: str,
+    cloud: str = "production",
+    *,
+    timeout: float = 30.0,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Exchange OneAPI credentials for a bearer token.
+
+    Performs a synchronous POST to ZIdentity's ``/oauth2/v1/token``
+    endpoint and returns ``(access_token, error_message)``. Exactly one
+    of the two return values is non-``None``.
+
+    This is intentionally a free function (not a method) so callers
+    that don't need a full :class:`ZscalerAuthProvider` lifecycle (e.g.
+    the entitlement filter at server startup) can use it directly.
+    """
+    import requests as http_requests
+
+    if not client_id or not client_secret or not vanity_domain:
+        return None, "Missing required OneAPI credentials"
+
+    token_url = _build_token_url(vanity_domain, cloud)
+    form_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "audience": "https://api.zscaler.com",
+    }
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+
+    try:
+        resp = http_requests.post(token_url, data=form_data, headers=headers, timeout=timeout)
+    except http_requests.Timeout:
+        return None, "OneAPI /token request timed out"
+    except http_requests.ConnectionError as exc:
+        logger.debug("Cannot reach OneAPI auth endpoint %s: %s", token_url, exc)
+        return None, f"Cannot reach OneAPI auth endpoint ({exc.__class__.__name__})"
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.debug("OneAPI /token request failed: %s", exc)
+        return None, f"OneAPI /token request failed: {exc}"
+
+    if resp.status_code == 200:
+        try:
+            data = resp.json()
+        except ValueError:
+            return None, "Invalid JSON response from OneAPI /token"
+        token = data.get("access_token", "")
+        if not token:
+            return None, "OneAPI /token response did not include access_token"
+        return token, None
+
+    if resp.status_code in (400, 401, 403):
+        return None, "Invalid OneAPI credentials"
+
+    return None, f"OneAPI /token returned HTTP {resp.status_code}"
+
+
+# ---------------------------------------------------------------------------
 # Auth Provider Interface
 # ---------------------------------------------------------------------------
 
@@ -279,12 +391,46 @@ class ZscalerAuthProvider(AuthProvider):
         self._cache: Dict[str, Tuple[float, str]] = {}
         self._cache_lock = threading.Lock()
 
+        # Register this provider so other components (entitlement filter)
+        # can look up cached tokens without making redundant /token calls.
+        _register_zscaler_provider(self)
+
         logger.info(
             "Zscaler OneAPI auth provider initialized (domain=%s, cloud=%s, token_url=%s)",
             self._vanity_domain,
             self._cloud,
             self._token_url,
         )
+
+    @property
+    def vanity_domain(self) -> str:
+        """The configured vanity domain (read-only public accessor)."""
+        return self._vanity_domain
+
+    @property
+    def cloud(self) -> str:
+        """The configured cloud environment (read-only public accessor)."""
+        return self._cloud
+
+    def get_cached_token(self, client_id: str, client_secret: str) -> Optional[str]:
+        """Return the cached bearer token for the given creds, or ``None``.
+
+        Used by the entitlement filter to avoid a redundant ``/token`` call
+        in ``zscaler`` MCP-auth mode where the auth middleware has already
+        validated and cached a token for these credentials.
+
+        Returns the token string if a non-expired entry exists, otherwise
+        ``None`` (without removing the entry — read-only).
+        """
+        cred_hash = self._credential_hash(client_id, client_secret)
+        with self._cache_lock:
+            entry = self._cache.get(cred_hash)
+            if entry is None:
+                return None
+            valid_until, access_token = entry
+            if time.time() < valid_until:
+                return access_token
+            return None
 
     @property
     def scheme(self) -> str:
@@ -314,66 +460,36 @@ class ZscalerAuthProvider(AuthProvider):
     def _validate_against_zscaler(
         self, client_id: str, client_secret: str
     ) -> Tuple[bool, Optional[str]]:
-        """Call Zscaler's /oauth2/v1/token to validate credentials."""
-        import requests as http_requests
+        """Call Zscaler's /oauth2/v1/token to validate credentials.
 
-        form_data = {
-            "grant_type": "client_credentials",
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "audience": "https://api.zscaler.com",
-        }
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-
-        try:
-            resp = http_requests.post(
-                self._token_url,
-                data=form_data,
-                headers=headers,
-                timeout=30,
-            )
-        except http_requests.Timeout:
-            return False, "Zscaler authentication timed out"
-        except http_requests.ConnectionError as e:
-            logger.error("Cannot reach Zscaler auth endpoint %s: %s", self._token_url, e)
-            return False, "Cannot reach Zscaler authentication service"
-        except Exception as e:
-            logger.error("Zscaler authentication request failed: %s", e)
-            return False, f"Authentication request failed: {e}"
-
-        if resp.status_code == 200:
-            try:
-                data = resp.json()
-            except ValueError:
-                return False, "Invalid response from Zscaler auth service"
-
-            expires_in = data.get("expires_in", 3600)
-            access_token = data.get("access_token", "")
-
-            cred_hash = self._credential_hash(client_id, client_secret)
-            valid_until = time.time() + expires_in - self.CACHE_EXPIRY_BUFFER_SECONDS
-
-            with self._cache_lock:
-                self._cache[cred_hash] = (valid_until, access_token)
-
-            logger.debug(
-                "Zscaler credentials validated (client_id=%s..., expires_in=%ds)",
-                client_id[:8],
-                expires_in,
-            )
-            return True, None
-
-        if resp.status_code in (400, 401, 403):
-            return False, "Invalid Zscaler credentials"
-
-        logger.error(
-            "Zscaler /token returned unexpected HTTP %d",
-            resp.status_code,
+        Delegates the actual HTTP exchange to :func:`fetch_oneapi_token`
+        (the same helper the entitlement filter uses) and then caches
+        the token for subsequent MCP requests.
+        """
+        access_token, error = fetch_oneapi_token(
+            client_id=client_id,
+            client_secret=client_secret,
+            vanity_domain=self._vanity_domain,
+            cloud=self._cloud,
         )
-        return False, f"Zscaler authentication failed (HTTP {resp.status_code})"
+        if error or not access_token:
+            return False, error or "Authentication failed"
+
+        # Token TTL isn't returned by fetch_oneapi_token (we keep its
+        # surface minimal). Use the conservative default of 1 hour minus
+        # the buffer — the next MCP request will simply re-validate if
+        # the real TTL was shorter.
+        cred_hash = self._credential_hash(client_id, client_secret)
+        valid_until = time.time() + 3600 - self.CACHE_EXPIRY_BUFFER_SECONDS
+
+        with self._cache_lock:
+            self._cache[cred_hash] = (valid_until, access_token)
+
+        logger.debug(
+            "Zscaler credentials validated (client_id=%s...)",
+            client_id[:8],
+        )
+        return True, None
 
     def _extract_credentials_from_headers(self, headers_list: list) -> Optional[Tuple[str, str]]:
         """Extract credentials from X-Zscaler-Client-ID / X-Zscaler-Client-Secret headers."""

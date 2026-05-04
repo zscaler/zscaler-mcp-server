@@ -140,6 +140,8 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_list_file_type_categories` | List file-type categories |
 | `zia_list_sandbox_rules` | List Sandbox rules |
 | `zia_get_sandbox_rule` | Get specific Sandbox rule |
+| `zia_list_time_intervals` | List Time Intervals (recurring schedules referenced by rules via `time_windows`) |
+| `zia_get_time_interval` | Get specific Time Interval |
 | `zia_list_url_categories` | List URL categories |
 | `zia_get_url_category` | Get specific URL category |
 | `zia_url_lookup` | Classify a URL into categories |
@@ -216,6 +218,9 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_create_sandbox_rule` | Create Sandbox rule |
 | `zia_update_sandbox_rule` | Update Sandbox rule (PUT — name/order silently backfilled) |
 | `zia_delete_sandbox_rule` | Delete Sandbox rule |
+| `zia_create_time_interval` | Create Time Interval (`start_time`/`end_time` minutes from midnight 0-1439; `days_of_week`: `EVERYDAY`, `SUN`-`SAT`) |
+| `zia_update_time_interval` | Update Time Interval (PUT — name/start_time/end_time/days_of_week silently backfilled) |
+| `zia_delete_time_interval` | Delete Time Interval (fails if referenced by any rule) |
 | `zia_create_url_category` | Create custom URL category |
 | `zia_update_url_category` | Update URL category |
 | `zia_delete_url_category` | Delete custom URL category |

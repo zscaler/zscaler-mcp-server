@@ -16,7 +16,6 @@ def zdx_list_cloudpath_probes(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -35,7 +34,6 @@ def zdx_list_cloudpath_probes(
         device_id: The unique ID for the ZDX device (required).
         app_id: The unique ID for the application (required).
         since: Number of hours to look back (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -48,7 +46,7 @@ def zdx_list_cloudpath_probes(
         Get cloud path probes for an app on a device:
         >>> probes = zdx_list_cloudpath_probes(device_id="155462842", app_id="3")
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if since:

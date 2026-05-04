@@ -11,6 +11,6 @@ When working with Zscaler MCP tools:
 2. Service prefixes: `zia_`, `zpa_`, `zdx_`, `zcc_`, `easm_`, `zins_`, `zid_`, `ztw_`, `zms_`. Use the prefix to discover tools for a given service.
 3. Call `zscaler_get_available_services` first to check which services are enabled before searching for tools.
 4. IDs are always strings, even when they look numeric. Always pass IDs as strings.
-5. The `use_legacy` parameter defaults to `False` on every tool. Do not change it unless the user explicitly asks for legacy API behavior.
+5. All tools authenticate through OneAPI (`zscaler.ZscalerClient`) against ZIdentity using the unified `ZSCALER_CLIENT_ID` / `ZSCALER_CLIENT_SECRET` (or `ZSCALER_PRIVATE_KEY`) / `ZSCALER_VANITY_DOMAIN` / `ZSCALER_CUSTOMER_ID` (ZPA only) credentials.
 6. Always list/get resources first to understand current state before creating or modifying them.
 7. List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.

@@ -23,7 +23,6 @@ def zdx_list_applications(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zdx",
 ) -> List[Dict[str, Any]]:
     """
@@ -38,7 +37,6 @@ def zdx_list_applications(
         department_id: Optional list of department IDs to filter applications by specific departments.
         geo_id: Optional list of geolocation IDs to filter applications by geographic regions.
         since: Optional number of hours to look back for application data (default 2 hours).
-        use_legacy: Whether to use the legacy API (default False).
         service: The Zscaler service to use (default "zdx").
 
     Returns:
@@ -57,7 +55,7 @@ def zdx_list_applications(
         List applications for the past 10 hours:
         >>> applications = zdx_list_applications(since=10)
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {}
     if location_id:

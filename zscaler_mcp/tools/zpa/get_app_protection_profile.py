@@ -13,7 +13,6 @@ def app_protection_profile_manager(
             description="Name of the profile to match. If provided, only profiles with matching name will be returned."
         ),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Union[List[dict], dict]:
     """
@@ -32,7 +31,7 @@ def app_protection_profile_manager(
     if action != "read":
         raise ValueError("Only 'read' action is supported")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
 
     query_params = {"search": name} if name else {}
 

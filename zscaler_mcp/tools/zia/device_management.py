@@ -74,7 +74,6 @@ def zia_list_device_groups(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
@@ -92,7 +91,6 @@ def zia_list_device_groups(
         include_pseudo_groups: When True, includes system-generated groups
             for Zscaler Client Connector (ZCC) and Cloud Browser Isolation (CBI).
             Set to False to only see user-created groups.
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -128,7 +126,7 @@ def zia_list_device_groups(
         ...     include_pseudo_groups=True
         ... )
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.device_management
 
     query_params = {}
@@ -185,7 +183,6 @@ def zia_list_devices(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
@@ -206,7 +203,6 @@ def zia_list_devices(
             Set to False to exclude virtual CBI devices from results.
         page: Page number for paginated results (1-based indexing).
         page_size: Number of results per page (default: 100, max: 1000).
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -253,7 +249,7 @@ def zia_list_devices(
         - Keep track of result count to know when you've reached the last page
         - If len(results) < page_size, you've reached the last page
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.device_management
 
     query_params = {}
@@ -298,7 +294,6 @@ def zia_list_devices_lite(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zia",
 ) -> List[Dict]:
     """
@@ -314,7 +309,6 @@ def zia_list_devices_lite(
     - Validating device existence
 
     Args:
-        use_legacy: Whether to use legacy API (default: False).
         service: The service identifier (default: "zia").
 
     Returns:
@@ -345,7 +339,7 @@ def zia_list_devices_lite(
         zia_list_devices() when you only need device identifiers. Use this
         for lookups and zia_list_devices() when you need full device details.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     zia = client.zia.device_management
 
     devices, _, err = zia.list_device_lite()

@@ -59,6 +59,8 @@ help:
 	@echo "$(COLOR_OK)  docs-clean                    Clean documentation build artifacts$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-install-deps             Install documentation dependencies$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-github                   Build docs and copy to docs/ for GitHub Pages$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  generate-docs                 Refresh auto-managed Markdown regions from the live tool inventory$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  check-docs                    Fail if any auto-managed Markdown region is stale (CI guardrail)$(COLOR_NONE)"
 
 clean: clean-build clean-pyc clean-test
 
@@ -174,4 +176,15 @@ docs-install-deps:
 docs-github:
 	cd docsrc && python -m sphinx -b html . _build && cp -a _build/. ../docs
 
-.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-github
+# Tool-inventory documentation (separate from Sphinx — Sphinx renders
+# Markdown into HTML; these targets keep the underlying Markdown in
+# sync with the live tool inventory).
+generate-docs:
+	@echo "$(COLOR_WARNING)Refreshing auto-managed Markdown regions...$(COLOR_NONE)"
+	python -m zscaler_mcp.server --generate-docs
+
+check-docs:
+	@echo "$(COLOR_WARNING)Checking auto-managed Markdown regions are in sync with live tool inventory...$(COLOR_NONE)"
+	@python -m zscaler_mcp.server --check-docs
+
+.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-github generate-docs check-docs

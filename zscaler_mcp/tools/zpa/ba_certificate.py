@@ -21,14 +21,13 @@ def zpa_list_ba_certificates(
         Optional[str],
         Field(description="JMESPath expression for client-side filtering/projection of results."),
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> List[Dict]:
     """List ZPA Browser Access (BA) certificates.
 
     Supports JMESPath client-side filtering via the query parameter.
     """
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.certificates
 
     qp = query_params or {}
@@ -48,14 +47,13 @@ def zpa_get_ba_certificate(
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
     query_params: Annotated[Optional[Dict], Field(description="Optional query parameters.")] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Get a specific ZPA Browser Access certificate by ID."""
     if not certificate_id:
         raise ValueError("certificate_id is required")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.certificates
 
     qp = query_params or {}
@@ -79,14 +77,13 @@ def zpa_create_ba_certificate(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
 ) -> Dict:
     """Create a new ZPA Browser Access certificate."""
     if not name or not cert_blob:
         raise ValueError("Both name and cert_blob are required for certificate creation")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.certificates
 
     body = {"name": name, "cert_blob": cert_blob}
@@ -104,7 +101,6 @@ def zpa_delete_ba_certificate(
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
-    use_legacy: Annotated[bool, Field(description="Whether to use the legacy API.")] = False,
     service: Annotated[str, Field(description="The service to use.")] = "zpa",
     kwargs: str = "{}",
 ) -> str:
@@ -121,7 +117,7 @@ def zpa_delete_ba_certificate(
     if not certificate_id:
         raise ValueError("certificate_id is required for deletion")
 
-    client = get_zscaler_client(use_legacy=use_legacy, service=service)
+    client = get_zscaler_client(service=service)
     api = client.zpa.certificates
 
     _, _, err = api.delete_certificate(certificate_id, microtenant_id=microtenant_id)

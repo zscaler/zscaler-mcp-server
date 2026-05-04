@@ -78,37 +78,65 @@ The Zscaler MCP Server has two independent authentication layers:
 
 ## Transport Modes
 
-The MCP protocol supports three transport mechanisms. Your choice of transport determines whether authentication is relevant.
+The MCP protocol supports three transport mechanisms. Your choice of transport determines what kind of access protection applies — but it does **not** change which tools are exposed or how destructive operations are confirmed. Those controls apply on every transport (see [Tool-Level Controls](#tool-level-controls-every-transport) below).
 
-| Transport | Protocol | Auth Applicable | Use Case |
-|-----------|----------|-----------------|----------|
-| `stdio` | stdin/stdout JSON-RPC | No | Local process — Claude Desktop, Cursor (default) |
-| `sse` | HTTP Server-Sent Events | Yes | Remote/shared server, legacy MCP clients |
-| `streamable-http` | HTTP with streaming | Yes | Remote/shared server, recommended for HTTP |
+| Transport | Protocol | What gates access | Recommended for |
+|-----------|----------|-------------------|-----------------|
+| `stdio` | stdin/stdout JSON-RPC | OS process isolation (the client is a parent process) | Local single-user setups — Claude Desktop, Cursor (default) |
+| `sse` | HTTP Server-Sent Events | MCP client auth + Host header validation + Source IP ACL + TLS | Remote/shared server, older MCP clients |
+| `streamable-http` | HTTP with streaming | MCP client auth + Host header validation + Source IP ACL + TLS | Remote/shared server, **recommended for HTTP** |
 
 ### stdio (Default)
 
-The client spawns the server as a child process. Communication happens over stdin/stdout. Security is inherited from OS-level process isolation — no network exposure, no authentication needed.
+The client spawns the server as a child process. Communication happens over stdin/stdout. Access protection is inherited from OS-level process isolation — anyone who can spawn the process already has access to your `.env` and your filesystem, so a network-level auth check would not add anything.
 
 ```text
 Client (Claude/Cursor) ──stdin/stdout──> Server process
 ```
 
+What stdio still protects against:
+
+- Tools you didn't allowlist for write mode are not exposed (read-only by default).
+- Tools whose product the OneAPI token isn't entitled to are filtered out at startup.
+- Destructive operations still require the cryptographic confirmation token (HMAC-SHA256).
+- Toolset selection (`--toolsets`, `ZSCALER_MCP_TOOLSETS`) still trims the tool surface.
+- The `--disabled-tools` and `--disabled-services` exclusions still apply.
+
+What stdio does **not** protect against: nothing network-related — there is no network surface to defend.
+
 ### streamable-http / sse
 
-The server runs as an HTTP service. Clients connect over the network. The server is exposed on a port, so authentication is strongly recommended.
+The server runs as an HTTP service. Clients connect over the network. The server is exposed on a port, so the network-level controls become relevant: MCP client authentication, TLS, host header validation, source IP ACLs. These layers gate **who can connect**; they are independent of the tool-level controls described in the next section, which gate **what those connected clients can call**.
 
 ```text
 Client (Claude/Cursor) ──HTTP──> localhost:8000/mcp ──> Server
 ```
 
-**Rule of thumb:** Use `stdio` for single-user local setups. Use `streamable-http` when the server is shared, remote, or you need authentication.
+**Rule of thumb:** Use `stdio` for single-user local setups. Use `streamable-http` when the server is shared, remote, or you need network-level authentication.
+
+---
+
+## Tool-Level Controls (every transport)
+
+Independent of transport choice, the following controls determine **which tools are exposed and how dangerous calls are confirmed**. Every one of them works identically on `stdio`, `sse`, and `streamable-http`.
+
+| Control | What it does | Configured by |
+|---------|--------------|---------------|
+| **Read-only by default** | No write tools (`*_create_*`, `*_update_*`, `*_delete_*`) are registered unless you explicitly enable write mode. | `--enable-write-tools` / `ZSCALER_MCP_WRITE_ENABLED=true` |
+| **Mandatory write allowlist** | Even with write mode enabled, no write tool is registered without a matching pattern. There is no "enable all writes" backdoor. | `--write-tools "zpa_create_*,zia_update_*"` / `ZSCALER_MCP_WRITE_TOOLS` |
+| **Disabled tools / services** | Hard-exclude individual tools (with wildcards) or whole services from the registry. Wins over every other filter. | `--disabled-tools`, `--disabled-services` / `ZSCALER_MCP_DISABLED_TOOLS`, `ZSCALER_MCP_DISABLED_SERVICES` |
+| **Toolsets** | Load only the slice of tools an agent actually needs (e.g. `zia_url_filtering` + `zpa_app_segments` instead of all 280+ tools). Reduces context cost and improves agent accuracy. See [docs/guides/toolsets.md](../guides/toolsets.md). | `--toolsets`, `ZSCALER_MCP_TOOLSETS` (special values: `default`, `all`) |
+| **OneAPI entitlement filter** | At startup, the server reads the product entitlements from the OneAPI bearer token and silently drops toolsets for products the credentials cannot call. Prevents the agent from discovering tools whose first call would only ever return 401. | On by default; opt out with `--no-entitlement-filter` / `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true`. |
+| **Cryptographic destructive-op confirmation** | Every delete tool returns an HMAC-SHA256 token instead of executing; the agent must re-call with that token within 5 minutes. Defeats prompt-injection attempts to bypass user confirmation. | On by default; bypass for CI with `ZSCALER_MCP_SKIP_CONFIRMATIONS=true`. |
+| **Tool-call audit logging** | Every tool invocation is logged with arguments (sensitive params redacted), duration, and result summary. | `--log-tool-calls` / `ZSCALER_MCP_LOG_TOOL_CALLS=true` |
+
+These controls compose. The order in which they're applied to each tool is documented in detail in [Filter precedence](../guides/toolsets.md#filter-precedence).
 
 ---
 
 ## Authentication Modes
 
-Authentication only applies to HTTP-based transports (`sse` and `streamable-http`). When using `stdio`, no authentication is enforced.
+> **Scope.** This section is exclusively about *MCP client authentication* — the network-level check that decides which clients can connect to the server. It only applies to HTTP-based transports (`sse` and `streamable-http`). When using `stdio`, no MCP client authentication is enforced because there is no network surface; the tool-level controls above still apply.
 
 ### No Authentication (Default)
 
@@ -449,11 +477,11 @@ The server is now running at `http://localhost:8000/mcp`.
 **Excluding specific tools or services** — use `--disabled-tools` or `--disabled-services` to exclude tools/services without listing every tool you want to keep:
 
 ```bash
-# Exclude a rate-limited tool
+# Exclude a single tool
 docker run -d --restart=unless-stopped --name zscaler-mcp-server \
   -p 8000:8000 --env-file .env zscaler-mcp-server:latest \
   --transport streamable-http --host 0.0.0.0 --port 8000 \
-  --disabled-tools "zcc_devices_csv_exporter"
+  --disabled-tools "zia_list_devices"
 
 # Exclude all tools from a service prefix (wildcards supported)
 docker run -d --restart=unless-stopped --name zscaler-mcp-server \
@@ -471,7 +499,7 @@ docker run -d --restart=unless-stopped --name zscaler-mcp-server \
 You can also set these via environment variables in your `.env` file:
 
 ```text
-ZSCALER_MCP_DISABLED_TOOLS=zcc_devices_csv_exporter
+ZSCALER_MCP_DISABLED_TOOLS=zia_list_devices
 ZSCALER_MCP_DISABLED_SERVICES=zcc
 ```
 
@@ -1670,9 +1698,12 @@ These are always required, regardless of Layer 1 auth settings.
 | `ZSCALER_MCP_SERVICES` | No | all | Comma-separated list of services to enable |
 | `ZSCALER_MCP_TOOLS` | No | all | Comma-separated list of tools to enable |
 | `ZSCALER_MCP_DISABLED_SERVICES` | No | — | Comma-separated list of services to exclude (e.g., `zcc,zdx`). Takes precedence over `ZSCALER_MCP_SERVICES`. |
-| `ZSCALER_MCP_DISABLED_TOOLS` | No | — | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zcc_devices_csv_exporter`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
+| `ZSCALER_MCP_DISABLED_TOOLS` | No | — | Comma-separated list of tools to exclude. Supports wildcards (e.g., `zcc_*,zia_list_devices`). Takes precedence over `ZSCALER_MCP_TOOLS`. |
+| `ZSCALER_MCP_TOOLSETS` | No | — | Comma-separated toolset ids to enable (e.g. `zia_url_filtering,zpa_app_segments`). Special values: `default` (curated default-on subset), `all` (every toolset). When unset, every toolset whose service is enabled is loaded. The `meta` toolset is always loaded. See [Toolsets guide](../guides/toolsets.md). |
+| `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` | No | `false` | Skip the OneAPI entitlement filter that trims toolsets to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Set to `true` only as an emergency override; the filter is non-fatal by default. |
 | `ZSCALER_MCP_WRITE_ENABLED` | No | `false` | Enable write operations (create, update, delete) |
 | `ZSCALER_MCP_WRITE_TOOLS` | No | — | Comma-separated allowlist of write tools (supports wildcards) |
+| `ZSCALER_MCP_LOG_TOOL_CALLS` | No | `false` | Enable per-tool-call audit logging (tool name, arguments with sensitive values redacted, duration, result summary). |
 | `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | No | `false` | Disable Host header validation (use when exposing on EC2/public IP) |
 | `ZSCALER_MCP_ALLOWED_HOSTS` | No | — | Comma-separated allowed Host values, e.g. `34.201.19.115:*,localhost:*` |
 | `ZSCALER_MCP_TLS_CERTFILE` | No | — | Path to TLS certificate (PEM). Enables HTTPS when set with `TLS_KEYFILE`. |
