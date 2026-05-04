@@ -23,6 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
+from zscaler_mcp.common.tool_helpers import _is_in_selected_toolset
 from zscaler_mcp.common.toolsets import (
     META_TOOLSET_ID,
     TOOLSETS,
@@ -31,8 +32,6 @@ from zscaler_mcp.common.toolsets import (
     resolve_toolset_selection,
     toolset_for_tool,
 )
-from zscaler_mcp.common.tool_helpers import _is_in_selected_toolset
-
 
 # ----------------------------------------------------------------------------
 # Catalog primitives

@@ -29,7 +29,6 @@ import pytest
 
 from zscaler_mcp.utils.utils import convert_v2_to_sdk_format
 
-
 # ---------------------------------------------------------------------------
 # ID-typed objects → bare 2-tuple, list of IDs
 # ---------------------------------------------------------------------------

@@ -22,7 +22,6 @@ from zscaler_mcp.utils.utils import (
     normalize_v2_rule_response,
 )
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REAL_RESPONSE_FIXTURE = REPO_ROOT / "local_dev" / "response_payload.json"
 
