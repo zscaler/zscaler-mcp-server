@@ -52,6 +52,10 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 
 - [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - Added new ZPA skills: `create-conditional-access-rule`, `create-session-duration-rule`. Updated `create-forwarding-policy-rule` and `create-timeout-policy-rule`.
 
+### Bug Fixes
+
+- [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - [Issue #58](https://github.com/zscaler/zscaler-mcp-server/issues/58) — `zpa_create_application_segment` and `zpa_update_application_segment` now expose 16 SDK-supported fields that were previously dropped: `icmp_access_type`, `double_encrypt`, `config_space`, `ip_anchored`, `bypass_on_reauth`, `inspect_traffic_with_zia`, `use_in_dr_mode`, `tcp_keep_alive`, `select_connector_close_to_app`, `match_style`, `adp_enabled`, `auto_app_protect_enabled`, `api_protection_enabled`, `fqdn_dns_check`, `weighted_load_balancing`, `extranet_enabled`. Enum-typed fields use `Literal` for agent-side validation; all fields default to `None` so omitting them preserves existing API values on update.
+
 ### Documentation
 
 - [PR #59](https://github.com/zscaler/zscaler-mcp-server/pull/59) - New `docs/guides/toolsets.md` covering toolset selection, filter precedence, the OneAPI entitlement filter, per-toolset system instructions, the runtime discovery tools, and contributor steps for adding a new toolset.

@@ -42,6 +42,10 @@ Zscaler Integrations MCP Server Changelog
 
 `PR #59 <https://github.com/zscaler/zscaler-mcp-server/pull/59>`_ - Helper-file consolidation: per-feature ZIA helper modules (e.g. ``zia_cloud_app_resolver.py``) were collapsed into a single ``zscaler_mcp/common/zia_helpers.py`` per the helper-file convention documented in ``CLAUDE.md``. No public API changes.
 
+### Bug Fixes
+
+`PR #59 <https://github.com/zscaler/zscaler-mcp-server/pull/59>`_ - `Issue #58 <https://github.com/zscaler/zscaler-mcp-server/issues/58>`_ — ``zpa_create_application_segment`` and ``zpa_update_application_segment`` now expose 16 SDK-supported fields that were previously dropped: ``icmp_access_type``, ``double_encrypt``, ``config_space``, ``ip_anchored``, ``bypass_on_reauth``, ``inspect_traffic_with_zia``, ``use_in_dr_mode``, ``tcp_keep_alive``, ``select_connector_close_to_app``, ``match_style``, ``adp_enabled``, ``auto_app_protect_enabled``, ``api_protection_enabled``, ``fqdn_dns_check``, ``weighted_load_balancing``, ``extranet_enabled``. Enum-typed fields use ``Literal`` for agent-side validation; all fields default to ``None`` so omitting them preserves existing API values on update.
+
 ### Documentation
 
 `PR #59 <https://github.com/zscaler/zscaler-mcp-server/pull/59>`_ - New ``docs/guides/toolsets.md`` covering toolset selection, filter precedence, the OneAPI entitlement filter (with an interaction-with-``--toolsets`` matrix), per-toolset system instructions, the runtime discovery tools, and the contributor steps for adding a new toolset.
