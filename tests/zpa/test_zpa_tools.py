@@ -59,7 +59,6 @@ def _mock_obj(data: dict):
 
 
 class TestZpaAppSegments:
-
     @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
     def test_list_application_segments(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.app_segments import zpa_list_application_segments
@@ -123,10 +122,138 @@ class TestZpaAppSegments:
         mock_get_client.return_value = mock_client
 
         result = zpa_create_application_segment(
-            name="NewApp", segment_group_id="sg1", domain_names=["app.example.com"],
+            name="NewApp",
+            segment_group_id="sg1",
+            domain_names=["app.example.com"],
             tcp_port_ranges=["443", "443"],
         )
         assert result["id"] == "new1"
+
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_create_application_segment_forwards_extended_fields(
+        self, mock_get_client, mock_client
+    ):
+        """Newly added SDK-parity fields must reach the SDK on create.
+
+        Regression for GitHub issue #58 — the tool used to silently drop
+        icmp_access_type and friends because they weren't declared as parameters.
+        """
+        from zscaler_mcp.tools.zpa.app_segments import zpa_create_application_segment
+
+        created = _mock_obj({"id": "new2", "name": "NewApp2"})
+        mock_client.zpa.application_segment.add_segment.return_value = (created, None, None)
+        mock_get_client.return_value = mock_client
+
+        zpa_create_application_segment(
+            name="NewApp2",
+            segment_group_id="sg1",
+            domain_names=["app.example.com"],
+            tcp_port_ranges=["443", "443"],
+            icmp_access_type="PING",
+            double_encrypt=True,
+            config_space="DEFAULT",
+            ip_anchored=False,
+            bypass_on_reauth=False,
+            inspect_traffic_with_zia=True,
+            use_in_dr_mode=False,
+            tcp_keep_alive="1",
+            select_connector_close_to_app=True,
+            match_style="EXCLUSIVE",
+            adp_enabled=True,
+            auto_app_protect_enabled=False,
+            api_protection_enabled=True,
+            fqdn_dns_check=True,
+            weighted_load_balancing=False,
+            extranet_enabled=False,
+        )
+
+        kwargs = mock_client.zpa.application_segment.add_segment.call_args.kwargs
+        assert kwargs["icmp_access_type"] == "PING"
+        assert kwargs["double_encrypt"] is True
+        assert kwargs["config_space"] == "DEFAULT"
+        assert kwargs["ip_anchored"] is False
+        assert kwargs["bypass_on_reauth"] is False
+        assert kwargs["inspect_traffic_with_zia"] is True
+        assert kwargs["use_in_dr_mode"] is False
+        assert kwargs["tcp_keep_alive"] == "1"
+        assert kwargs["select_connector_close_to_app"] is True
+        assert kwargs["match_style"] == "EXCLUSIVE"
+        assert kwargs["adp_enabled"] is True
+        assert kwargs["auto_app_protect_enabled"] is False
+        assert kwargs["api_protection_enabled"] is True
+        assert kwargs["fqdn_dns_check"] is True
+        assert kwargs["weighted_load_balancing"] is False
+        assert kwargs["extranet_enabled"] is False
+
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_create_application_segment_omits_extended_fields_when_unset(
+        self, mock_get_client, mock_client
+    ):
+        """Omitting the new fields must forward them as None (no implicit defaults)."""
+        from zscaler_mcp.tools.zpa.app_segments import zpa_create_application_segment
+
+        created = _mock_obj({"id": "new3", "name": "NewApp3"})
+        mock_client.zpa.application_segment.add_segment.return_value = (created, None, None)
+        mock_get_client.return_value = mock_client
+
+        zpa_create_application_segment(
+            name="NewApp3",
+            segment_group_id="sg1",
+            domain_names=["app.example.com"],
+            tcp_port_ranges=["443", "443"],
+        )
+
+        kwargs = mock_client.zpa.application_segment.add_segment.call_args.kwargs
+        for field in (
+            "icmp_access_type",
+            "double_encrypt",
+            "config_space",
+            "ip_anchored",
+            "bypass_on_reauth",
+            "inspect_traffic_with_zia",
+            "use_in_dr_mode",
+            "tcp_keep_alive",
+            "select_connector_close_to_app",
+            "match_style",
+            "adp_enabled",
+            "auto_app_protect_enabled",
+            "api_protection_enabled",
+            "fqdn_dns_check",
+            "weighted_load_balancing",
+            "extranet_enabled",
+        ):
+            assert kwargs[field] is None, f"{field} should default to None when unset"
+
+    @patch("zscaler_mcp.tools.zpa.app_segments.get_zscaler_client")
+    def test_update_application_segment_forwards_extended_fields(
+        self, mock_get_client, mock_client
+    ):
+        """Newly added SDK-parity fields must reach the SDK on update too."""
+        from zscaler_mcp.tools.zpa.app_segments import zpa_update_application_segment
+
+        updated = _mock_obj({"id": "seg1", "name": "Updated"})
+        mock_client.zpa.application_segment.update_segment.return_value = (updated, None, None)
+        mock_get_client.return_value = mock_client
+
+        zpa_update_application_segment(
+            segment_id="seg1",
+            icmp_access_type="PING_TRACEROUTING",
+            inspect_traffic_with_zia=True,
+            tcp_keep_alive="1",
+            adp_enabled=True,
+            fqdn_dns_check=True,
+        )
+
+        args, kwargs = mock_client.zpa.application_segment.update_segment.call_args
+        assert args[0] == "seg1"
+        assert kwargs["icmp_access_type"] == "PING_TRACEROUTING"
+        assert kwargs["inspect_traffic_with_zia"] is True
+        assert kwargs["tcp_keep_alive"] == "1"
+        assert kwargs["adp_enabled"] is True
+        assert kwargs["fqdn_dns_check"] is True
+        # Untouched extended fields stay None
+        assert kwargs["double_encrypt"] is None
+        assert kwargs["match_style"] is None
 
 
 # ============================================================================
@@ -135,7 +262,6 @@ class TestZpaAppSegments:
 
 
 class TestZpaSegmentGroups:
-
     @patch("zscaler_mcp.tools.zpa.segment_groups.get_zscaler_client")
     def test_list_segment_groups(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.segment_groups import zpa_list_segment_groups
@@ -186,7 +312,6 @@ class TestZpaSegmentGroups:
 
 
 class TestZpaServerGroups:
-
     @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
     def test_list_server_groups(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.server_groups import zpa_list_server_groups
@@ -225,9 +350,7 @@ class TestZpaServerGroups:
         assert "server_ids" not in kwargs
 
     @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
-    def test_create_server_group_rejects_empty_connector_groups(
-        self, mock_get_client, mock_client
-    ):
+    def test_create_server_group_rejects_empty_connector_groups(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.server_groups import zpa_create_server_group
 
         mock_get_client.return_value = mock_client
@@ -245,9 +368,7 @@ class TestZpaServerGroups:
 
         mock_get_client.return_value = mock_client
 
-        with pytest.raises(
-            ValueError, match="dynamic_discovery=False requires server_ids"
-        ):
+        with pytest.raises(ValueError, match="dynamic_discovery=False requires server_ids"):
             zpa_create_server_group(
                 name="StaticSG",
                 app_connector_group_ids=["acg1"],
@@ -281,9 +402,7 @@ class TestZpaServerGroups:
         assert kwargs["server_ids"] == ["srv-1", "srv-2"]
 
     @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
-    def test_update_server_group_partial_does_not_clobber_lists(
-        self, mock_get_client, mock_client
-    ):
+    def test_update_server_group_partial_does_not_clobber_lists(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.server_groups import zpa_update_server_group
 
         mock_client.zpa.server_groups.update_group.return_value = (
@@ -302,9 +421,7 @@ class TestZpaServerGroups:
         assert "dynamic_discovery" not in kwargs
 
     @patch("zscaler_mcp.tools.zpa.server_groups.get_zscaler_client")
-    def test_update_server_group_rejects_empty_connector_groups(
-        self, mock_get_client, mock_client
-    ):
+    def test_update_server_group_rejects_empty_connector_groups(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.server_groups import zpa_update_server_group
 
         mock_get_client.return_value = mock_client
@@ -325,9 +442,7 @@ class TestZpaServerGroups:
         mock_client.zpa.server_groups.get_group.return_value = (existing, None, None)
         mock_get_client.return_value = mock_client
 
-        with pytest.raises(
-            ValueError, match="dynamic_discovery=False requires server_ids"
-        ):
+        with pytest.raises(ValueError, match="dynamic_discovery=False requires server_ids"):
             zpa_update_server_group(group_id="sg9", dynamic_discovery=False)
 
         mock_client.zpa.server_groups.update_group.assert_not_called()
@@ -371,13 +486,16 @@ class TestZpaServerGroups:
 
 
 class TestZpaAppConnectorGroups:
-
     @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
     def test_list_app_connector_groups(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.app_connector_groups import zpa_list_app_connector_groups
 
         groups = [_mock_obj({"id": f"acg{i}", "name": f"ACG {i}"}) for i in range(2)]
-        mock_client.zpa.app_connector_groups.list_connector_groups.return_value = (groups, None, None)
+        mock_client.zpa.app_connector_groups.list_connector_groups.return_value = (
+            groups,
+            None,
+            None,
+        )
         mock_get_client.return_value = mock_client
 
         result = zpa_list_app_connector_groups()
@@ -458,9 +576,7 @@ class TestZpaAppConnectorGroups:
         assert kwargs["enrollment_cert_id"] == "explicit-id-9"
 
     @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
-    def test_create_app_connector_group_with_custom_cert_name(
-        self, mock_get_client, mock_client
-    ):
+    def test_create_app_connector_group_with_custom_cert_name(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.app_connector_groups import zpa_create_app_connector_group
 
         custom = self._cert("svc-edge-cert-77", "Service Edge")
@@ -476,9 +592,7 @@ class TestZpaAppConnectorGroups:
         )
         mock_get_client.return_value = mock_client
 
-        zpa_create_app_connector_group(
-            name="Edge-Group", enrollment_cert_name="Service Edge"
-        )
+        zpa_create_app_connector_group(name="Edge-Group", enrollment_cert_name="Service Edge")
 
         mock_client.zpa.enrollment_certificates.list_enrolment.assert_called_once_with(
             query_params={"search": "Service Edge"}
@@ -487,9 +601,7 @@ class TestZpaAppConnectorGroups:
         assert kwargs["enrollment_cert_id"] == "svc-edge-cert-77"
 
     @patch("zscaler_mcp.tools.zpa.app_connector_groups.get_zscaler_client")
-    def test_create_app_connector_group_cert_not_found_raises(
-        self, mock_get_client, mock_client
-    ):
+    def test_create_app_connector_group_cert_not_found_raises(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.app_connector_groups import zpa_create_app_connector_group
 
         mock_client.zpa.enrollment_certificates.list_enrolment.return_value = (
@@ -538,9 +650,7 @@ class TestZpaAppConnectorGroups:
         )
         mock_get_client.return_value = mock_client
 
-        zpa_update_app_connector_group(
-            group_id="acg9", enrollment_cert_name="Connector"
-        )
+        zpa_update_app_connector_group(group_id="acg9", enrollment_cert_name="Connector")
 
         _args, kwargs = mock_client.zpa.app_connector_groups.update_connector_group.call_args
         assert kwargs["enrollment_cert_id"] == "rotated-cert-1"
@@ -549,7 +659,11 @@ class TestZpaAppConnectorGroups:
     def test_list_app_connector_groups_error(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.app_connector_groups import zpa_list_app_connector_groups
 
-        mock_client.zpa.app_connector_groups.list_connector_groups.return_value = (None, None, "Err")
+        mock_client.zpa.app_connector_groups.list_connector_groups.return_value = (
+            None,
+            None,
+            "Err",
+        )
         mock_get_client.return_value = mock_client
 
         with pytest.raises(Exception):
@@ -562,7 +676,6 @@ class TestZpaAppConnectorGroups:
 
 
 class TestZpaAppConnectors:
-
     @patch("zscaler_mcp.tools.zpa.app_connectors.get_zscaler_client")
     def test_list_app_connectors(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.app_connectors import zpa_list_app_connectors
@@ -602,7 +715,6 @@ class TestZpaAppConnectors:
 
 
 class TestZpaApplicationServers:
-
     @patch("zscaler_mcp.tools.zpa.application_servers.get_zscaler_client")
     def test_list_application_servers(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.application_servers import zpa_list_application_servers
@@ -653,7 +765,6 @@ class TestZpaApplicationServers:
 
 
 class TestZpaBaCertificates:
-
     @patch("zscaler_mcp.tools.zpa.ba_certificate.get_zscaler_client")
     def test_list_ba_certificates(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.ba_certificate import zpa_list_ba_certificates
@@ -693,13 +804,16 @@ class TestZpaBaCertificates:
 
 
 class TestZpaServiceEdgeGroups:
-
     @patch("zscaler_mcp.tools.zpa.service_edge_groups.get_zscaler_client")
     def test_list_service_edge_groups(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.service_edge_groups import zpa_list_service_edge_groups
 
         groups = [_mock_obj({"id": f"seg{i}", "name": f"SE {i}"}) for i in range(2)]
-        mock_client.zpa.service_edge_group.list_service_edge_groups.return_value = (groups, None, None)
+        mock_client.zpa.service_edge_group.list_service_edge_groups.return_value = (
+            groups,
+            None,
+            None,
+        )
         mock_get_client.return_value = mock_client
 
         result = zpa_list_service_edge_groups()
@@ -720,7 +834,11 @@ class TestZpaServiceEdgeGroups:
     def test_list_service_edge_groups_error(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.service_edge_groups import zpa_list_service_edge_groups
 
-        mock_client.zpa.service_edge_group.list_service_edge_groups.return_value = (None, None, "Err")
+        mock_client.zpa.service_edge_group.list_service_edge_groups.return_value = (
+            None,
+            None,
+            "Err",
+        )
         mock_get_client.return_value = mock_client
 
         with pytest.raises(Exception):
@@ -733,7 +851,6 @@ class TestZpaServiceEdgeGroups:
 
 
 class TestZpaProvisioningKeys:
-
     @patch("zscaler_mcp.tools.zpa.provisioning_key.get_zscaler_client")
     def test_list_provisioning_keys(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.provisioning_key import zpa_list_provisioning_keys
@@ -773,7 +890,6 @@ class TestZpaProvisioningKeys:
 
 
 class TestZpaPraPortals:
-
     @patch("zscaler_mcp.tools.zpa.pra_portal.get_zscaler_client")
     def test_list_pra_portals(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.pra_portal import zpa_list_pra_portals
@@ -813,7 +929,6 @@ class TestZpaPraPortals:
 
 
 class TestZpaPraCredentials:
-
     @patch("zscaler_mcp.tools.zpa.pra_credential.get_zscaler_client")
     def test_list_pra_credentials(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.pra_credential import zpa_list_pra_credentials
@@ -853,7 +968,6 @@ class TestZpaPraCredentials:
 
 
 class TestZpaAccessPolicyRules:
-
     @patch("zscaler_mcp.tools.zpa.access_policy_rules.get_zscaler_client")
     def test_list_access_policy_rules(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.access_policy_rules import zpa_list_access_policy_rules
@@ -893,7 +1007,6 @@ class TestZpaAccessPolicyRules:
 
 
 class TestZpaForwardingPolicyRules:
-
     @patch("zscaler_mcp.tools.zpa.access_forwarding_rules.get_zscaler_client")
     def test_list_forwarding_policy_rules(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.access_forwarding_rules import zpa_list_forwarding_policy_rules
@@ -933,7 +1046,6 @@ class TestZpaForwardingPolicyRules:
 
 
 class TestZpaTimeoutPolicyRules:
-
     @patch("zscaler_mcp.tools.zpa.access_timeout_rules.get_zscaler_client")
     def test_list_timeout_policy_rules(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.access_timeout_rules import zpa_list_timeout_policy_rules
@@ -963,7 +1075,6 @@ class TestZpaTimeoutPolicyRules:
 
 
 class TestZpaIsolationPolicyRules:
-
     @patch("zscaler_mcp.tools.zpa.access_isolation_rules.get_zscaler_client")
     def test_list_isolation_policy_rules(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.access_isolation_rules import zpa_list_isolation_policy_rules
@@ -993,7 +1104,6 @@ class TestZpaIsolationPolicyRules:
 
 
 class TestZpaAppProtectionRules:
-
     @patch("zscaler_mcp.tools.zpa.access_app_protection_rules.get_zscaler_client")
     def test_list_app_protection_rules(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.access_app_protection_rules import zpa_list_app_protection_rules
@@ -1023,7 +1133,6 @@ class TestZpaAppProtectionRules:
 
 
 class TestZpaPostureProfiles:
-
     @patch("zscaler_mcp.tools.zpa.get_posture_profiles.get_zscaler_client")
     def test_list_posture_profiles(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.get_posture_profiles import posture_profile_manager
@@ -1056,7 +1165,6 @@ class TestZpaPostureProfiles:
 
 
 class TestZpaTrustedNetworks:
-
     @patch("zscaler_mcp.tools.zpa.get_trusted_networks.get_zscaler_client")
     def test_list_trusted_networks(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.get_trusted_networks import trusted_network_manager
@@ -1078,7 +1186,6 @@ class TestZpaTrustedNetworks:
 
 
 class TestZpaEnrollmentCertificates:
-
     @patch("zscaler_mcp.tools.zpa.get_enrollment_certificate.get_zscaler_client")
     def test_list_enrollment_certificates(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.get_enrollment_certificate import enrollment_certificate_manager
@@ -1092,7 +1199,6 @@ class TestZpaEnrollmentCertificates:
 
 
 class TestZpaSegmentsByType:
-
     @patch("zscaler_mcp.tools.zpa.get_segments_by_type.get_zscaler_client")
     def test_get_segments_by_type(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.get_segments_by_type import app_segments_by_type_manager
@@ -1106,12 +1212,14 @@ class TestZpaSegmentsByType:
 
 
 class TestZpaIsolationProfiles:
-
     @patch("zscaler_mcp.tools.zpa.get_isolation_profile.get_zscaler_client")
     def test_list_isolation_profiles(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.get_isolation_profile import isolation_profile_manager
 
-        profiles = [_mock_obj({"id": "ip1", "name": "Default"}), _mock_obj({"id": "ip2", "name": "Custom"})]
+        profiles = [
+            _mock_obj({"id": "ip1", "name": "Default"}),
+            _mock_obj({"id": "ip2", "name": "Custom"}),
+        ]
         mock_client.zpa.cbi_profile.list_cbi_profiles.return_value = (profiles, None, None)
         mock_get_client.return_value = mock_client
 
@@ -1128,7 +1236,6 @@ class TestZpaIsolationProfiles:
 
 
 class TestZpaAppProtectionProfiles:
-
     @patch("zscaler_mcp.tools.zpa.get_app_protection_profile.get_zscaler_client")
     def test_list_app_protection_profiles(self, mock_get_client, mock_client):
         from zscaler_mcp.tools.zpa.get_app_protection_profile import app_protection_profile_manager
@@ -1158,7 +1265,6 @@ class TestZpaAppProtectionProfiles:
 
 
 class TestZPAServiceRegistration:
-
     def test_zpa_service_exists_in_registry(self):
         from zscaler_mcp.services import get_available_services, get_service_names
 
