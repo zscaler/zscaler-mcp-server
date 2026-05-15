@@ -4,6 +4,15 @@
 
 ZIdentity is Zscaler's centralized identity management platform. It provides user and group management across all Zscaler services, and is the source of truth for identity data used in ZPA access policies, ZIA user-based rules, and ZDX user correlation.
 
+## Available Skills
+
+There are no ZIdentity-specific skills today — the tools are used as building blocks inside other skills (especially ZPA access policy creation and cross-product troubleshooting). When the user asks an identity question that spans services, prefer:
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Cross-product troubleshoot | `skills/cross-product/troubleshoot-user-connectivity/SKILL.md` | "Why can't user X reach app Y?" — uses ZIdentity + ZPA + ZIA + ZDX + ZCC together |
+| Create access policy rule | `skills/zpa/create-access-policy-rule/SKILL.md` | Identity-conditioned ZPA rules (uses SCIM groups, SAML attributes — resolve via ZIdentity first) |
+
 ## Key Concepts
 
 - **Users**: Identity records for individuals. Includes profile data, email, status, and group memberships.

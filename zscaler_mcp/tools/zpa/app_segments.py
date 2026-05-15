@@ -150,9 +150,6 @@ def zpa_create_application_segment(
     passive_health_enabled: Annotated[
         Optional[bool], Field(description="Whether passive health checking is enabled.")
     ] = None,
-    clientless_app_ids: Annotated[
-        Optional[List[dict]], Field(description="List of clientless app IDs.")
-    ] = None,
     icmp_access_type: Annotated[
         Optional[Literal["NONE", "PING", "PING_TRACEROUTING"]],
         Field(
@@ -276,7 +273,6 @@ def zpa_create_application_segment(
         health_reporting: Health reporting configuration
         is_cname_enabled: Whether CNAME is enabled
         passive_health_enabled: Whether passive health checking is enabled
-        clientless_app_ids: List of clientless app IDs
         icmp_access_type: ICMP behaviour: "NONE", "PING", or "PING_TRACEROUTING"
         double_encrypt: Enable double encryption for the segment
         config_space: Configuration space ("DEFAULT" or "SIEM")
@@ -345,7 +341,6 @@ def zpa_create_application_segment(
         "health_reporting": health_reporting,
         "is_cname_enabled": is_cname_enabled,
         "passive_health_enabled": passive_health_enabled,
-        "clientless_app_ids": clientless_app_ids,
         "icmp_access_type": icmp_access_type,
         "double_encrypt": double_encrypt,
         "config_space": config_space,
@@ -414,9 +409,6 @@ def zpa_update_application_segment(
     ] = None,
     passive_health_enabled: Annotated[
         Optional[bool], Field(description="Whether passive health checking is enabled.")
-    ] = None,
-    clientless_app_ids: Annotated[
-        Optional[List[dict]], Field(description="List of clientless app IDs.")
     ] = None,
     icmp_access_type: Annotated[
         Optional[Literal["NONE", "PING", "PING_TRACEROUTING"]],
@@ -529,7 +521,6 @@ def zpa_update_application_segment(
         health_reporting: Health reporting configuration
         is_cname_enabled: Whether CNAME is enabled
         passive_health_enabled: Whether passive health checking is enabled
-        clientless_app_ids: List of clientless app IDs
         icmp_access_type: ICMP behaviour: "NONE", "PING", or "PING_TRACEROUTING"
         double_encrypt: Enable double encryption for the segment
         config_space: Configuration space ("DEFAULT" or "SIEM")
@@ -587,7 +578,6 @@ def zpa_update_application_segment(
         "health_reporting": health_reporting,
         "is_cname_enabled": is_cname_enabled,
         "passive_health_enabled": passive_health_enabled,
-        "clientless_app_ids": clientless_app_ids,
         "icmp_access_type": icmp_access_type,
         "double_encrypt": double_encrypt,
         "config_space": config_space,

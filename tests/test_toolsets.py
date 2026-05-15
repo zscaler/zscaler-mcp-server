@@ -149,7 +149,7 @@ class TestToolsetForTool:
             ("zia_activate_configuration", "zia_admin"),
             ("zia_url_lookup", "zia_url_categories"),
             ("zia_geo_search", "zia_locations"),
-            ("zia_list_devices", "zia_users"),
+            ("zia_list_devices", "zia_devices"),
             ("zia_list_shadow_it_apps", "zia_shadow_it"),
             ("zia_list_cloud_app_policy", "zia_cloud_app_control"),
             # prefix rules
@@ -171,16 +171,82 @@ class TestToolsetForTool:
             ("zia_create_network_service", "zia_cloud_firewall"),
             ("zia_create_ip_destination_group", "zia_cloud_firewall"),
             # ZPA prefix rules
-            ("zpa_create_access_policy_rule", "zpa_policy"),
+            # Access policies have their own dedicated toolset; every
+            # other policy-rule family stays under zpa_policy.
+            ("zpa_create_access_policy_rule", "zpa_access_policies"),
+            ("zpa_list_access_policy_rules", "zpa_access_policies"),
             ("zpa_create_app_protection_rule", "zpa_policy"),
-            ("zpa_create_app_connector_group", "zpa_connectors"),
-            ("zpa_create_service_edge_group", "zpa_connectors"),
+            ("zpa_create_forwarding_policy_rule", "zpa_policy"),
+            ("zpa_create_isolation_policy_rule", "zpa_policy"),
+            ("zpa_create_timeout_policy_rule", "zpa_policy"),
+            # `_app_connector_group` precedes `_app_connector` in the
+            # prefix rule list, so connector groups land in their own
+            # toolset while individual connectors stay under zpa_connectors.
+            ("zpa_create_app_connector_group", "zpa_app_connector_groups"),
+            ("zpa_update_app_connector", "zpa_connectors"),
+            ("get_zpa_enrollment_certificate", "zpa_connectors"),
+            # Service edge groups and provisioning keys split out of the
+            # connectors umbrella into their own dedicated toolsets.
+            ("zpa_create_service_edge_group", "zpa_service_edge_groups"),
+            ("zpa_list_service_edge_groups", "zpa_service_edge_groups"),
+            ("zpa_create_provisioning_key", "zpa_provisioning_keys"),
+            ("zpa_list_provisioning_keys", "zpa_provisioning_keys"),
+            # Application segments stay in zpa_app_segments; segment
+            # groups and server groups (shared operands referenced by
+            # both app segments and access policies) split into their
+            # own toolsets.
             ("zpa_create_application_segment", "zpa_app_segments"),
-            ("zpa_create_segment_group", "zpa_app_segments"),
-            ("zpa_create_server_group", "zpa_app_segments"),
-            # bare-service fallbacks
+            ("get_zpa_app_segments_by_type", "zpa_app_segments"),
+            ("zpa_create_segment_group", "zpa_segment_groups"),
+            ("zpa_list_segment_groups", "zpa_segment_groups"),
+            ("zpa_create_server_group", "zpa_server_groups"),
+            ("zpa_list_server_groups", "zpa_server_groups"),
+            # Dedicated ZPA resource-family toolsets split out in PR #63
+            ("zpa_create_application_server", "zpa_application_servers"),
+            ("zpa_create_ba_certificate", "zpa_ba_certificates"),
+            ("zpa_create_pra_credential", "zpa_pra"),
+            ("zpa_create_pra_portal", "zpa_pra"),
+            # Dedicated ZIA resource-family toolsets split out in PR #63
+            ("zia_list_devices_lite", "zia_devices"),
+            ("zia_list_device_groups", "zia_devices"),
+            ("zia_add_auth_exempt_urls", "zia_authentication_settings"),
+            ("zia_create_rule_label", "zia_rule_labels"),
+            # ATP Malware Protection (PR #65) — explicit overrides because
+            # `zia_*_malware_settings` lacks the `_atp_` infix and would
+            # otherwise fall through to a generic prefix rule.
+            ("zia_get_atp_malware_policy", "zia_atp_malware"),
+            ("zia_update_atp_malware_protocols", "zia_atp_malware"),
+            ("zia_get_malware_settings", "zia_atp_malware"),
+            ("zia_update_malware_settings", "zia_atp_malware"),
+            # Advanced Settings (PR #65) — tenant-wide singleton in its
+            # own toolset via explicit overrides.
+            ("zia_get_advanced_settings", "zia_advanced_settings"),
+            ("zia_update_advanced_settings", "zia_advanced_settings"),
+            # ZPA legacy `get_zpa_*` reads moved out of zpa_idp / zpa_misc
+            ("get_zpa_isolation_profile", "zpa_isolation"),
+            ("get_zpa_posture_profile", "zpa_posture"),
+            ("get_zpa_trusted_network", "zpa_trusted_networks"),
+            ("get_zpa_app_protection_profile", "zpa_app_protection"),
+            # Dedicated ZDX resource-family toolsets split out in PR #63
+            ("zdx_list_alerts", "zdx_alerts"),
+            ("zdx_list_alert_affected_devices", "zdx_alerts"),
+            ("zdx_list_historical_alerts", "zdx_alerts"),
+            ("zdx_list_departments", "zdx_locations"),
+            ("zdx_list_locations", "zdx_locations"),
+            ("zdx_list_software", "zdx_software_inventory"),
+            ("zdx_get_software_details", "zdx_software_inventory"),
+            ("zdx_list_devices", "zdx_reports"),
+            ("zdx_list_applications", "zdx_reports"),
+            ("zdx_get_application_metric", "zdx_reports"),
+            ("zdx_get_web_probes", "zdx_reports"),
+            ("zdx_list_cloudpath_probes", "zdx_reports"),
+            ("zdx_list_device_deep_traces", "zdx_troubleshooting"),
+            ("zdx_get_deeptrace_events", "zdx_troubleshooting"),
+            ("zdx_get_analysis", "zdx_troubleshooting"),
+            ("zdx_start_deeptrace", "zdx_troubleshooting"),
+            # bare-service fallbacks (ZDX is intentionally NOT here — see
+            # the ZDX prefix-rule block in toolsets.py)
             ("zcc_list_devices", "zcc"),
-            ("zdx_list_devices", "zdx"),
             ("zid_list_users", "zid"),
             ("zeasm_list_findings", "zeasm"),
             ("zins_get_threat_class", "zins"),
@@ -305,7 +371,7 @@ class TestServerToolsetIntegration:
         all_ids = TOOLSETS.all_ids()
         assert len(s.selected_toolsets) < len(all_ids)
         # Core toolsets are present
-        for must_have in ("meta", "zia_url_filtering", "zpa_app_segments", "zdx", "zcc"):
+        for must_have in ("meta", "zia_url_filtering", "zpa_app_segments", "zdx_alerts", "zcc"):
             assert must_have in s.selected_toolsets
 
     def test_all_keyword_loads_every_toolset(self):
@@ -461,9 +527,12 @@ class TestEntitlementAwareMetaTools:
 
     def test_get_toolset_tools_marks_entitlement_stripped_as_unavailable(self):
         s = self._stripped_zpa_server()
-        # zpa_create_segment_group lives in the zpa_app_segments toolset.
+        # zpa_create_segment_group lives in the dedicated
+        # zpa_segment_groups toolset (split from zpa_app_segments in
+        # PR #63 because segment groups are referenced by both
+        # application segments AND access policy rules).
         results = s.zscaler_get_toolset_tools(
-            "zpa_app_segments", name_contains="create_segment_group"
+            "zpa_segment_groups", name_contains="create_segment_group"
         )
         assert results, "get_toolset_tools must surface the tool, not return empty"
         hits = [r for r in results if r.get("name") == "zpa_create_segment_group"]

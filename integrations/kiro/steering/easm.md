@@ -4,6 +4,14 @@
 
 EASM provides continuous discovery and monitoring of your organization's external attack surface — internet-facing assets, exposed services, vulnerabilities, misconfigurations, and lookalike domains used for brand impersonation.
 
+## Available Skills
+
+Kiro should prefer the **guided skill** below for any attack-surface review request. It auto-activates on description match and drives the full inventory → findings → lookalike domain workflow end-to-end.
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Review attack surface | `skills/easm/review-attack-surface/SKILL.md` | "Review our external attack surface", "What are our critical/high EASM findings?", "Brand impersonation / lookalike domain review" |
+
 ## Key Concepts
 
 - **Organizations**: EASM tenant organizations (multi-org support for enterprises)

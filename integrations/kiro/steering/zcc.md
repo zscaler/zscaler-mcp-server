@@ -2,13 +2,24 @@
 
 ## Overview
 
-ZCC is the endpoint agent that connects users to the Zscaler Zero Trust Exchange. It runs on user devices and routes traffic through ZPA (for private apps) and ZIA (for internet/SaaS). ZCC provides device enrollment status, forwarding profiles, and trusted network configuration.
+ZCC is the endpoint agent that connects users to the Zscaler Zero Trust Exchange. It runs on user devices and routes traffic through ZPA (for private apps) and ZIA (for internet/SaaS). ZCC provides device enrollment status, forwarding profiles, trusted network configuration, and per-device OTP/passcode retrieval for support workflows.
+
+## Available Skills
+
+Kiro should prefer the **guided skill** below when a user's intent matches. It drives the right tool sequence end-to-end with appropriate confirmations.
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Generate logout OTP | `skills/zcc/generate-logout-otp/SKILL.md` | "I need a logout OTP for user X", "Generate a ZCC passcode so this user can sign out", "ZCC won't let the user log out without a code" |
+
+Cross-product fallback: ZCC enrollment is usually the first thing to check in connectivity issues — for full-stack diagnosis use `skills/cross-product/troubleshoot-user-connectivity/SKILL.md`.
 
 ## Key Concepts
 
 - **Devices**: Endpoints with ZCC installed — includes enrollment status, OS, version, and last-seen information
 - **Trusted Networks**: Network definitions where ZCC behavior may differ (e.g., corporate LAN may bypass certain tunnels)
 - **Forwarding Profiles**: Define how traffic is routed through Zscaler (which traffic goes to ZPA vs ZIA vs direct)
+- **Device OTP**: One-time passcode for a specific user/device. Required by ZCC for actions like sign-out, removal, and disable when the admin has not pre-shared an unlock password. Retrieved via `zcc_get_device_otp`.
 - **CSV Export**: Bulk device data export for analysis and reporting
 
 ## Common Workflows
@@ -47,6 +58,18 @@ ZCC data is the starting point for cross-product troubleshooting:
    - ZIA: zia_list_url_filtering_rules → Check internet access policies
 ```
 
+### Generate a Sign-Out / Removal OTP
+
+When a user contacts the helpdesk asking to sign out of ZCC and the admin has not pre-shared an unlock password, retrieve a one-time passcode for that device:
+
+```
+1. zcc_list_devices                → Confirm the user has an enrolled device and grab the device identifier
+2. zcc_get_device_otp(udid=<udid>) → Returns the OTP / passcode block for that device
+3. Share the appropriate code with the user (logout, removal, disable, anti-tamper) over an authenticated channel
+```
+
+The skill `skills/zcc/generate-logout-otp/SKILL.md` walks through identifier resolution (email → device row → udid) and the safest disclosure pattern.
+
 ## Available Tools
 
 | Tool | Description |
@@ -54,6 +77,7 @@ ZCC data is the starting point for cross-product troubleshooting:
 | `zcc_list_devices` | List all enrolled devices with status |
 | `zcc_list_trusted_networks` | List trusted network definitions |
 | `zcc_list_forwarding_profiles` | List forwarding profiles |
+| `zcc_get_device_otp` | Retrieve the OTP / passcode block for a specific enrolled device (logout, removal, disable, anti-tamper) |
 
 All ZCC tools are **read-only**.
 

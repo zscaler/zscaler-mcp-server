@@ -4,6 +4,7 @@
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
 [![Documentation Status](https://readthedocs.org/projects/zscaler-mcp-server/badge/?version=latest)](https://zscaler-mcp-server.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/zscaler/zscaler-mcp-server/graph/badge.svg?token=9HwNcw4Q4h)](https://codecov.io/gh/zscaler/zscaler-mcp-server)
+[![GitHub commit activity](https://img.shields.io/badge/commit-activity-blue)](https://github.com/zscaler/zscaler-mcp-server/graphs/commit-activity)
 [![License](https://img.shields.io/github/license/zscaler/zscaler-mcp-server.svg)](https://github.com/zscaler/zscaler-mcp-server)
 [![Zscaler Community](https://img.shields.io/badge/zscaler-community-blue)](https://community.zscaler.com/)
 
@@ -503,19 +504,19 @@ When `auth=` is provided:
 
 <!-- generated:start service-summary -->
 
-The Zscaler Integrations MCP Server provides **339 tools** for all major Zscaler services:
+The Zscaler Integrations MCP Server provides **370 tools** for all major Zscaler services:
 
 | Service | Description | Tools |
 |---------|-------------|-------|
-| **ZIA** | Zscaler Internet Access — Security policies | 145 read/write |
-| **ZPA** | Zscaler Private Access — Application access | 88 read/write |
+| **ZIA** | Zscaler Internet Access — Security policies | 159 read/write |
+| **ZPA** | Zscaler Private Access — Application access | 104 read/write |
 | **ZDX** | Zscaler Digital Experience — Monitoring & analytics | 31 read/write |
 | **ZMS** | Zscaler Microsegmentation — Agents, resources, policies | 20 read-only |
 | **ZTW** | Zscaler Workload Segmentation | 19 read/write |
 | **Z-Insights** | Z-Insights analytics — Web traffic, cyber incidents, shadow IT | 16 read-only |
 | **ZIdentity** | ZIdentity — Identity & access management | 10 read-only |
 | **EASM** | External Attack Surface Management | 7 read-only |
-| **ZCC** | Zscaler Client Connector — Device management | 3 read-only |
+| **ZCC** | Zscaler Client Connector — Device management | 4 read-only |
 
 <!-- generated:end service-summary -->
 

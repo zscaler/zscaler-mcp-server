@@ -4,6 +4,21 @@
 
 ZDX provides end-to-end visibility into user digital experience — application health, device performance, network path analysis, and alerting. It helps IT teams proactively detect and troubleshoot issues before users report them.
 
+## Available Skills
+
+Kiro should prefer **guided skills** over ad-hoc workflows whenever a user's intent matches one of the skills below. Each skill is a multi-step playbook that auto-activates on description match and drives the right tool sequence end-to-end — including the mandatory `.docx` + interactive `.html` report artifacts. When a request maps cleanly to a skill, load the SKILL.md and follow it; otherwise fall back to the ad-hoc workflows further down.
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Troubleshoot user experience | `skills/zdx/troubleshoot-user-experience/SKILL.md` | "User reports app X is slow", "Investigate one user's digital experience" |
+| Analyze application health | `skills/zdx/analyze-application-health/SKILL.md` | "Which apps are degraded?", "Org-wide application health review" |
+| Investigate alerts | `skills/zdx/investigate-alerts/SKILL.md` | "Triage active ZDX alerts", "Look at this alert's affected devices and timeline" |
+| Diagnose deep trace | `skills/zdx/diagnose-deeptrace/SKILL.md` | "Run a deep trace on this device", "Analyze a completed deep trace session" |
+| Audit software inventory | `skills/zdx/audit-software-inventory/SKILL.md` | "Patch compliance check", "Which devices are running outdated Chrome / Zoom / …?" |
+| Compare location experience | `skills/zdx/compare-location-experience/SKILL.md` | "Compare digital experience across offices", "Rank sites by ZDX score" |
+
+Cross-product fallback: when ZDX is the diagnostic entry point but the root cause is likely in ZPA / ZIA / ZCC, prefer `skills/cross-product/troubleshoot-user-connectivity/SKILL.md`.
+
 ## Read/Write Operations
 
 Most ZDX tools are **read-only query operations**. The following tools are **write operations** that require the `--enable-write-tools` flag:

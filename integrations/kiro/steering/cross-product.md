@@ -4,6 +4,21 @@
 
 Many Zscaler issues span multiple services. A user connectivity problem might involve ZCC (agent status), ZDX (experience metrics), ZPA (private app access), and ZIA (internet access policies). This steering guide covers cross-product investigation workflows.
 
+## Available Skills
+
+For the canonical end-to-end investigation, **prefer the guided skill** below over rebuilding the workflow from scratch — it covers ZCC enrollment, ZDX experience, ZPA policy/connector, and ZIA URL/SSL/DLP correlation in a single playbook with a structured root-cause report.
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Troubleshoot user connectivity | `skills/cross-product/troubleshoot-user-connectivity/SKILL.md` | "User X can't reach app Y", "Multiple users are reporting slow access", "Connectivity issue with unknown root cause spanning ZCC/ZDX/ZPA/ZIA" |
+
+When the investigation narrows to a single service, hand off to that service's steering file and skills:
+
+- **ZDX scores look bad** → `skills/zdx/troubleshoot-user-experience/SKILL.md`, `skills/zdx/diagnose-deeptrace/SKILL.md`
+- **ZPA access denied / connector unhealthy** → `skills/zpa/troubleshoot-app-connector/SKILL.md`, `skills/zpa/create-access-policy-rule/SKILL.md`
+- **ZIA URL blocked / SSL break** → `skills/zia/check-user-url-access/SKILL.md`, `skills/zia/audit-ssl-inspection-bypass/SKILL.md`
+- **Org-wide threats / incidents** → `skills/zins/investigate-security-incident/SKILL.md`
+
 ## When to Use Cross-Product Troubleshooting
 
 - User reports "I can't access an application" (could be ZPA policy, ZIA block, ZCC issue, or network problem)
