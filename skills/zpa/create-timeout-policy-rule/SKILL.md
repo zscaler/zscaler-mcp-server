@@ -51,6 +51,33 @@ The only supported action is `RE_AUTH` -- when the timeout is reached, the user 
 
 ---
 
+## Baseline Values (recommended)
+
+Reference: ZPA Baseline Recommendations v1.0 §Timeout Policies Recommendations.
+
+### Authentication timeout (`reauth_timeout`)
+
+| Profile | Value | Rationale |
+|---|---|---|
+| **Default — high-security environment** | `"24 Hours"` | Daily MFA / SSO revalidation. |
+| **Default — convenience-focused** | `"3 Days"` to `"7 Days"` | Lower friction for low-risk tenants. |
+| **Service accounts (documented exception)** | `"30 Days"` or `"Never"` | Only with explicit security exception and inventory tracking. |
+
+Apply a single global authentication-timeout rule and add narrow per-group exceptions only when justified.
+
+### Idle timeout (`reauth_idle_timeout`) — per app class
+
+| App class | Value | Why |
+|---|---|---|
+| Non-sensitive apps | `"15 Minutes"` to `"30 Minutes"` | Frees connector resources, low security risk. |
+| Sensitive apps (Finance, HR, regulated) | `"10 Minutes"` to `"15 Minutes"` | Tighter idle window for crown-jewel apps. |
+| Long-lived sessions (RDP, SSH, DB) | `"30 Minutes"` to `"60 Minutes"` | Avoids dropping interactive shells mid-session. |
+| Background services / API agents / monitoring | `"Never"` | Disable idle so automated clients don't reconnect on every poll. |
+
+**Anti-pattern:** Avoid `reauth_idle_timeout` below `"10 Minutes"` — causes constant tunnel reconnects and poor user experience.
+
+---
+
 ## Condition Object Types
 
 Timeout policies support a subset of condition types.

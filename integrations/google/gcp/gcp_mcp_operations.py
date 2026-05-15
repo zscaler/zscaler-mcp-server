@@ -45,6 +45,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 # ── Constants ─────────────────────────────────────────────────────────────
@@ -85,6 +88,7 @@ YELLOW = "\033[1;33m" if COLOURS else ""
 BLUE = "\033[0;34m" if COLOURS else ""
 SKY_BLUE = "\033[34;01m" if COLOURS else ""
 BOLD = "\033[1m" if COLOURS else ""
+DIM = "\033[2m" if COLOURS else ""
 NC = "\033[0m" if COLOURS else ""
 
 ZSCALER_LOGO = f"""{SKY_BLUE}
@@ -401,6 +405,26 @@ def _collect_credentials() -> dict:
             ok(f"JWT Issuer: {jwt_issuer}")
         jwt_audience = _prompt("JWT Audience", default=jwt_audience)
 
+        # Token-minting credentials — used to obtain a Bearer JWT so client
+        # configs (Claude, Cursor) ship with a working Authorization header.
+        # Supports any OAuth2 provider that accepts client_credentials grant.
+        # Falls back gracefully: configs get a placeholder if these are absent.
+        token_endpoint = resolve(env, "TOKEN_ENDPOINT")
+        token_client_id = resolve(env, "TOKEN_CLIENT_ID")
+        token_client_secret = resolve(env, "TOKEN_CLIENT_SECRET")
+        # Optional explicit scope (Cognito/Okta/Keycloak style); when present
+        # we issue a form-encoded request and skip the Auth0 audience body.
+        token_scope = resolve(env, "TOKEN_SCOPE")
+
+        # Common convention: AUTH0_DOMAIN → derive endpoint automatically.
+        auth0_domain = resolve(env, "AUTH0_DOMAIN")
+        if not token_endpoint and auth0_domain:
+            token_endpoint = f"https://{auth0_domain}/oauth/token"
+        if not token_client_id:
+            token_client_id = resolve(env, "AUTH0_CLIENT_ID")
+        if not token_client_secret:
+            token_client_secret = resolve(env, "AUTH0_CLIENT_SECRET")
+
     elif auth_mode == "api-key":
         info("API Key configuration")
         api_key = resolve(env, "ZSCALER_MCP_AUTH_API_KEY")
@@ -452,6 +476,10 @@ def _collect_credentials() -> dict:
         "jwks_uri": jwks_uri,
         "jwt_issuer": jwt_issuer,
         "jwt_audience": jwt_audience,
+        "token_endpoint": token_endpoint if auth_mode == "jwt" else "",
+        "token_client_id": token_client_id if auth_mode == "jwt" else "",
+        "token_client_secret": token_client_secret if auth_mode == "jwt" else "",
+        "token_scope": token_scope if auth_mode == "jwt" else "",
         "api_key": api_key,
         "write_enabled": write_enabled,
         "write_tools": write_tools,
@@ -570,15 +598,109 @@ def _setup_secret_manager(project: str, creds: dict) -> None:
     print()
 
 
+def _mint_bearer_token(creds: dict) -> str | None:
+    """Mint a Bearer token via OAuth2 ``client_credentials`` grant.
+
+    Two dialects are supported, picked from the configured fields:
+
+    * **scope-based (RFC 6749 / Cognito / Okta / Keycloak / Entra ID)** —
+      triggered by ``TOKEN_SCOPE`` or by a token endpoint that looks like
+      one of those IdPs. Body is form-encoded; credentials go in the
+      ``Authorization: Basic`` header.
+
+    * **audience-based (Auth0)** — fallback when no scope is configured.
+      Body is JSON with ``audience`` + credentials inline. This is the
+      original behaviour and the legacy ``.env`` shape continues to work.
+
+    Returns the ``access_token`` string, or ``None`` on any failure
+    (logged as a warning so the surrounding deploy keeps going).
+    """
+    token_endpoint = (creds.get("token_endpoint") or "").strip()
+    client_id = (creds.get("token_client_id") or "").strip()
+    client_secret = (creds.get("token_client_secret") or "").strip()
+    audience = (creds.get("jwt_audience") or "").strip()
+    scope = (creds.get("token_scope") or "").strip()
+
+    if not (token_endpoint and client_id and client_secret):
+        return None
+
+    cognito_like_hosts = ("amazoncognito.com", "okta.com", "keycloak", "microsoftonline.com")
+    use_form_style = bool(scope) or any(h in token_endpoint for h in cognito_like_hosts)
+
+    if use_form_style:
+        fields = [("grant_type", "client_credentials")]
+        if scope:
+            fields.append(("scope", scope))
+        elif audience:
+            # Edge case: Auth0 also accepts form-encoded + audience field.
+            fields.append(("audience", audience))
+        body = urllib.parse.urlencode(fields).encode()
+        basic = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        req = urllib.request.Request(
+            token_endpoint,
+            data=body,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": f"Basic {basic}",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+    else:
+        if not audience:
+            warn("  Token mint skipped: neither TOKEN_SCOPE nor ZSCALER_MCP_AUTH_AUDIENCE set")
+            return None
+        payload = json.dumps({
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "audience": audience,
+            "grant_type": "client_credentials",
+        }).encode()
+        req = urllib.request.Request(
+            token_endpoint,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="replace") if exc.fp else ""
+        warn(f"  Token mint failed: HTTP {exc.code} {exc.reason} — {detail[:200]}")
+        return None
+    except urllib.error.URLError as exc:
+        warn(f"  Token mint failed: {exc}")
+        return None
+
+    token = body.get("access_token")
+    if not token:
+        warn("  Token response missing access_token")
+        return None
+
+    expires_in = int(body.get("expires_in", 0) or 0)
+    if expires_in:
+        hours, mins = divmod(expires_in // 60, 60)
+        ok(f"  Bearer token minted (expires in ~{hours}h{mins:02d}m)")
+    else:
+        ok("  Bearer token minted")
+    return token
+
+
 def _build_auth_header(creds: dict) -> str | None:
     auth_mode = creds["auth_mode"]
     if auth_mode == "api-key":
         return f"Bearer {creds['api_key']}"
-    elif auth_mode == "zscaler":
+    if auth_mode == "zscaler":
         b64 = base64.b64encode(
             f"{creds['zscaler_client_id']}:{creds['zscaler_client_secret']}".encode()
         ).decode()
         return f"Basic {b64}"
+    if auth_mode == "jwt":
+        token = _mint_bearer_token(creds)
+        if token:
+            return f"Bearer {token}"
     return None
 
 
@@ -1462,6 +1584,97 @@ def op_status(args: argparse.Namespace) -> None:
 # ════════════════════════════════════════════════════════════════════════
 
 
+def _print_cloud_run_logs(service_name: str, project: str) -> None:
+    """Pull last 24h of Cloud Run logs and print one line per event.
+
+    Format: HH:MM:SS  SEVERITY  MESSAGE
+    Order: chronological (oldest first), so the latest events are at the
+    bottom of the terminal — closest to your prompt, like `tail`.
+    """
+    log_filter = (
+        f'resource.type="cloud_run_revision" '
+        f'AND resource.labels.service_name="{service_name}"'
+    )
+    info(
+        f"  $ gcloud logging read '{log_filter[:60]}...' "
+        f"--project {project} --freshness 24h"
+    )
+    r = subprocess.run(
+        [
+            "gcloud", "logging", "read", log_filter,
+            "--project", project,
+            "--freshness", "24h",
+            "--order", "desc",
+            "--format", "json",
+        ],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        error(f"gcloud failed: {r.stderr.strip()}")
+        return
+    try:
+        entries = json.loads(r.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        error(f"Could not parse gcloud output as JSON: {exc}")
+        return
+
+    if not entries:
+        warn("No log entries in the last 24h.")
+        return
+
+    # gcloud returned newest-first; flip so latest appears at the bottom.
+    entries.reverse()
+
+    sev_colour = {
+        "DEBUG":    DIM,
+        "INFO":     "",
+        "NOTICE":   BLUE,
+        "WARNING":  YELLOW,
+        "ERROR":    RED,
+        "CRITICAL": RED + BOLD,
+        "ALERT":    RED + BOLD,
+        "EMERGENCY": RED + BOLD,
+    }
+
+    for entry in entries:
+        ts = entry.get("timestamp", "")
+        # 2026-05-15T01:13:02.690123456Z → 01:13:02.690
+        clock = ""
+        if "T" in ts:
+            tail = ts.split("T", 1)[1]
+            clock = tail.split("Z", 1)[0][:12]
+
+        severity = entry.get("severity", "INFO") or "INFO"
+
+        # Extract the payload — Python apps log via jsonPayload, Cloud Run's
+        # built-in HTTP access logs come through textPayload.
+        msg = ""
+        text_payload = entry.get("textPayload")
+        json_payload = entry.get("jsonPayload") or {}
+        if text_payload:
+            msg = str(text_payload).rstrip()
+        elif isinstance(json_payload, dict):
+            msg = (
+                json_payload.get("message")
+                or json_payload.get("msg")
+                or json.dumps(json_payload, separators=(",", ":"))
+            )
+            msg = str(msg).rstrip()
+        else:
+            http_request = entry.get("httpRequest") or {}
+            if http_request:
+                method = http_request.get("requestMethod", "")
+                url = http_request.get("requestUrl", "")
+                status = http_request.get("status", "")
+                msg = f"{method} {url} → {status}"
+
+        if not msg:
+            continue
+
+        colour = sev_colour.get(severity, "")
+        print(f"{DIM}{clock}{NC}  {colour}{severity:<8}{NC}  {msg}")
+
+
 def op_logs(args: argparse.Namespace) -> None:
     """Stream logs."""
     state = _load_state()
@@ -1472,14 +1685,10 @@ def op_logs(args: argparse.Namespace) -> None:
 
     if deployment_type == "cloud_run":
         service_name = state.get("service_name", SERVER_NAME)
-        region = state.get("region", "")
         project = state.get("project", "")
-        info(f"Streaming logs for Cloud Run service '{service_name}'...")
+        info(f"Reading last 24h of logs for Cloud Run service '{service_name}'...")
         print()
-        run_gcloud([
-            "run", "services", "logs", "read", service_name,
-            "--region", region, "--project", project, "--limit", "100",
-        ], check=False)
+        _print_cloud_run_logs(service_name, project)
 
     elif deployment_type == "gke":
         namespace = state.get("namespace", "default")

@@ -59,6 +59,36 @@ Each condition block must contain a **single object type**. Multiple condition b
 
 ## Workflow
 
+### Step 0: Identify the Rule Class (baseline alignment)
+
+Reference: ZPA Baseline Recommendations v1.0 §Access Policy Construction (A–H). Before building conditions, identify which rule class this fits — that determines **where** the rule belongs in the policy order and **which** conditions are mandatory.
+
+| Order | Class | Action | Mandatory criteria | Notes |
+|---|---|---|---|---|
+| 1 | **A. Deception** (if licensed) | `ALLOW` | Predefined criteria | Tenant feature — auto-provisioned. Do **not** modify the default rule. |
+| 2 | **B. Machine Tunnel allow** | `ALLOW` | `CLIENT_TYPE = zpn_client_type_machine_tunnel` + `APP` (specific) + minimum `POSTURE` | For AD DCs, SCCM, patch services. |
+| 3 | **B'. Machine Tunnel block-rest** | `DENY` | `CLIENT_TYPE = zpn_client_type_machine_tunnel` | Stops machine traffic from inheriting user rules. |
+| 4 | **C. Contractor allow** | `ALLOW` | `SCIM_GROUP` (Contractors) + `APP` + `CLIENT_TYPE` + `POSTURE` | Tightly scoped to approved apps only. |
+| 5 | **C'. Contractor block-rest** | `DENY` | `SCIM_GROUP` (Contractors) | Prevents contractor inheritance of employee rules. |
+| 6 | **D. Posture remediation allow** | `ALLOW` | `APP` (remediation segment) + `CLIENT_TYPE` | Lets non-compliant devices reach the remediation app only. |
+| 7 + N | **D'. Posture block per-OS** | `DENY` | `POSTURE` (failed) + `PLATFORM` (Windows / macOS / iOS / Android / Linux) | **One rule per OS** — see "Per-OS posture gotcha" below. |
+| Mid | **E. Critical app allow** | `ALLOW` | `SCIM_GROUP` + `APP` (crown-jewel) + `CLIENT_TYPE` (ZCC only) + `POSTURE` | Apply optional extra posture checks (cert, registry). |
+| Mid | **E'. Critical app block-rest** | `DENY` | `APP` (crown-jewel) only | Defense-in-depth even though E only allows approved users. |
+| After E | **F. Standard internal apps** | `ALLOW` | `SCIM_GROUP` (employees) + `APP` + `CLIENT_TYPE` | Baseline access for non-sensitive apps. |
+| Near bottom | **G. Discovery wildcard catch-all** | `ALLOW` | `APP` (wildcard discovery segment) + `SCIM_GROUP` | Discovery only — never above critical apps. |
+| **Bottom** | **H. Block-All explicit** | `DENY` | None — match all | Improves logging and audit clarity beyond ZPA's implicit deny. |
+
+#### Per-OS posture gotcha
+
+Defining a posture-block rule for only Windows leaves macOS, iOS, Android, and Linux **implicitly allowed** even when their device posture has failed. The doc is explicit about this on page 30: create one block rule per OS in use, each with its own `POSTURE` and `PLATFORM` criteria. This is the #1 posture-enforcement mistake.
+
+#### When NOT to use this skill
+
+- Building a baseline policy from scratch (multiple classes at once) — defer to a future bulk-build skill, or chain calls to this skill once per class.
+- Auditing policy alignment — use the `audit-baseline-compliance` skill.
+
+---
+
 ### Step 1: Gather Requirements
 
 Ask the administrator:

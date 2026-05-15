@@ -1,0 +1,492 @@
+{
+  "audited_at": "2026-05-07T14:32:00Z",
+  "inventory": "Inventoried: 4 connector groups, 23 connectors, 12 server groups, 8 segment groups, 30 application segments, 14 access policy rules, 3 forwarding policy rules, 2 timeout policy rules, 2 LSS configs.",
+  "findings": [
+    {
+      "id": "sg-no-ac-group",
+      "category": "ServerGroups",
+      "severity": "critical",
+      "title": "Server group has no app connector group bound",
+      "evidence": [
+        "sg-finance-prod (id 72057594037961234)",
+        "sg-legacy-erp (id 72057594037961567)"
+      ],
+      "docRef": "\u00a7Server Groups, page 14",
+      "remediation": "Bind at least one app connector group to each server group, otherwise traffic destined for the bound application segments will fail to forward. Use the zpa/update-server-group skill.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "CM-6",
+          "CM-2"
+        ],
+        "cisV8": [
+          "4.1"
+        ]
+      }
+    },
+    {
+      "id": "seg-double-wildcard",
+      "category": "Segments",
+      "severity": "critical",
+      "title": "Application segment uses an overly broad wildcard domain",
+      "evidence": [
+        "seg-discovery-catchall (domain *.* )"
+      ],
+      "docRef": "\u00a7Application Segments, page 22",
+      "remediation": "Replace `*.*` with explicit FQDNs or a `*.<your-domain>` wildcard. A double-wildcard segment will match every DNS query and steal traffic intended for other segments.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-4",
+          "AC-6",
+          "SC-7"
+        ],
+        "cisV8": [
+          "4.1",
+          "12.2"
+        ]
+      }
+    },
+    {
+      "id": "ap-block-all-bottom",
+      "category": "AccessPolicy",
+      "severity": "critical",
+      "title": "Access policy is missing a final deny-all rule",
+      "evidence": [
+        "Last rule in policy: rule-allow-corp-vpn-fallback (action ALLOW)"
+      ],
+      "docRef": "\u00a7Access Policy class H, page 28",
+      "remediation": "Add an explicit DENY rule at the bottom of the access policy with no scoping conditions. Without it, evaluation falls through to the implicit allow on some legacy ZCC builds. Use the zpa/create-access-policy-rule skill.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-3",
+          "AC-6",
+          "AC-4"
+        ],
+        "cisV8": [
+          "6.7",
+          "4.1"
+        ]
+      }
+    },
+    {
+      "id": "ap-posture-per-os",
+      "category": "AccessPolicy",
+      "severity": "critical",
+      "title": "POSTURE rule does not cover all five OS platforms",
+      "evidence": [
+        "rule-require-posture-windows (covers: Windows, macOS \u2014 missing: iOS, Android, Linux)"
+      ],
+      "docRef": "\u00a7Posture profiles per platform, page 30",
+      "remediation": "Add the same POSTURE condition for the missing platforms, or scope the rule to a CLIENT_TYPE that excludes them. Otherwise iOS, Android, and Linux clients silently bypass this posture check.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "IA-3",
+          "CM-6",
+          "AC-3"
+        ],
+        "cisV8": [
+          "4.7",
+          "13.1"
+        ]
+      }
+    },
+    {
+      "id": "fp-no-double-wildcard",
+      "category": "ForwardingPolicy",
+      "severity": "critical",
+      "title": "Forwarding policy contains an overly broad INTERCEPT rule",
+      "evidence": [
+        "fwd-intercept-everything (matches CIDR 10.0.0.0/8)"
+      ],
+      "docRef": "\u00a7Forwarding Policy, page 36",
+      "remediation": "Scope INTERCEPT rules to specific app segments or narrower CIDRs. Intercepting an entire /8 forwards far more user traffic into ZPA than intended and can mask outbound issues.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-4",
+          "CA-3",
+          "SC-7"
+        ],
+        "cisV8": [
+          "12.2"
+        ]
+      }
+    },
+    {
+      "id": "acg-n-plus-one",
+      "category": "Connectors",
+      "severity": "warning",
+      "title": "App connector group runs below N+1 redundancy",
+      "evidence": [
+        "acg-emea-west (1 connector)",
+        "acg-apac-singapore (1 connector)"
+      ],
+      "docRef": "\u00a7App Connectors Redundancy and Scaling, page 11",
+      "remediation": "Deploy a second connector in each group so a single instance failure does not break access. Live load (CPU / bandwidth) is in the Cannot Audit section \u2014 confirm sizing from your hypervisor metrics.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "CP-2",
+          "CP-7",
+          "SC-5"
+        ],
+        "cisV8": [
+          "11.1",
+          "11.2"
+        ]
+      }
+    },
+    {
+      "id": "acg-cert-expiring",
+      "category": "Connectors",
+      "severity": "warning",
+      "title": "Connector enrollment certificates expiring within 30 days",
+      "evidence": [
+        "connector-emea-west-01 (expires 2026-05-21)",
+        "connector-apac-sg-02 (expires 2026-05-29)"
+      ],
+      "docRef": "\u00a7Connector Enrollment Certificate, page 13",
+      "remediation": "Re-enroll the affected connectors before expiry to avoid a sudden tunnel drop. The current enrollment cert is exposed on the connector group detail; renewal is automatic for connectors that re-checkin in time.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SC-12",
+          "SC-17"
+        ],
+        "cisV8": [
+          "3.11",
+          "12.6"
+        ]
+      }
+    },
+    {
+      "id": "sg-overly-broad",
+      "category": "ServerGroups",
+      "severity": "warning",
+      "title": "Server group binds every app connector group in the tenant",
+      "evidence": [
+        "sg-internal-tools (binds all 4 connector groups)"
+      ],
+      "docRef": "\u00a7Server Groups, page 15",
+      "remediation": "Limit each server group to the connector groups that are actually closest to the backend hosts. Binding all groups defeats geo-routing and can produce noisy health alarms.",
+      "heuristic": true,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-4",
+          "SC-7"
+        ],
+        "cisV8": [
+          "4.1",
+          "12.2"
+        ]
+      }
+    },
+    {
+      "id": "seg-health-discovery",
+      "category": "Segments",
+      "severity": "warning",
+      "title": "Discovery wildcard segment has health reporting enabled",
+      "evidence": [
+        "seg-discovery-internal (domain *.corp.acme.local, health_reporting=ON_ACCESS)"
+      ],
+      "docRef": "\u00a7Health Reporting Recommendations, page 23",
+      "remediation": "Set `health_reporting` to `NONE` on discovery / wildcard segments. Health probing every wildcard target floods the connectors and produces a stream of false negatives.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "CM-7",
+          "AU-12"
+        ],
+        "cisV8": [
+          "8.2"
+        ]
+      }
+    },
+    {
+      "id": "ap-contractor-pair",
+      "category": "AccessPolicy",
+      "severity": "warning",
+      "title": "Contractor SCIM group is allowed without a paired block-rest rule",
+      "evidence": [
+        "rule-allow-contractors-jira (SCIM group: contractors-eng)"
+      ],
+      "docRef": "\u00a7Access Policy class C/C', page 26",
+      "remediation": "Add a paired DENY rule for the same SCIM group so that contractors only reach the explicitly allowed segments. Without it, the broader rules below this allow may grant unintended access.",
+      "heuristic": true,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-2",
+          "AC-3",
+          "AC-6"
+        ],
+        "cisV8": [
+          "6.1",
+          "6.2"
+        ]
+      }
+    },
+    {
+      "id": "fp-bypass-coverage",
+      "category": "ForwardingPolicy",
+      "severity": "warning",
+      "title": "Canonical bypass list is incomplete",
+      "evidence": [
+        "Missing: *.windowsupdate.microsoft.com",
+        "Missing: ocsp.* (OCSP CRL responders)"
+      ],
+      "docRef": "\u00a7Canonical Bypass List, page 37",
+      "remediation": "Add BYPASS rules for the missing canonical destinations so that Windows Update and OCSP/CRL traffic does not get forwarded into ZPA and stalled by inspection. Use the zpa/create-forwarding-policy-rule skill.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SC-7",
+          "CA-3"
+        ],
+        "cisV8": [
+          "12.2"
+        ]
+      }
+    },
+    {
+      "id": "tp-auth-range",
+      "category": "TimeoutPolicy",
+      "severity": "warning",
+      "title": "Reauth timeout is outside the recommended 24h\u20137d window",
+      "evidence": [
+        "tp-default (reauth_timeout=30 days)"
+      ],
+      "docRef": "\u00a7Timeout Policies, page 38",
+      "remediation": "Reduce `reauth_timeout` to between 24 hours and 7 days, depending on how strict the user re-verification cadence needs to be. 30 days is well outside the baseline window.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-12",
+          "IA-11"
+        ],
+        "cisV8": [
+          "6.4"
+        ]
+      }
+    },
+    {
+      "id": "lss-tls-enabled",
+      "category": "LSS",
+      "severity": "warning",
+      "title": "LSS config streams logs over plain TCP",
+      "evidence": [
+        "lss-audit-to-splunk (use_tls=false, host=splunk-hf.acme.local:5514)"
+      ],
+      "docRef": "\u00a7Log Streaming Service, page 39",
+      "remediation": "Enable TLS on the LSS config and re-deploy the LSS connector with the corresponding root CA. Plain TCP between the LSS connector and the SIEM forwarder is only acceptable inside fully isolated networks.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SC-8",
+          "SC-13"
+        ],
+        "cisV8": [
+          "3.10"
+        ]
+      }
+    },
+    {
+      "id": "lss-baseline-feeds",
+      "category": "LSS",
+      "severity": "warning",
+      "title": "Baseline LSS feeds are not all configured",
+      "evidence": [
+        "Configured: zpn_trans_log (User Activity), zpn_audit_log (Audit Logs)",
+        "Missing: zpn_auth_log (User Status)",
+        "Missing: zpn_ast_auth_log (App Connector Status)",
+        "Missing: zpn_ast_comprehensive_stats (App Connector Metrics)"
+      ],
+      "docRef": "\u00a7Log Streaming Service, page 39",
+      "remediation": "Add LSS configs for the missing baseline feeds so the SIEM has a complete picture (user status changes, connector health, and connector metrics). Each feed is a separate LSS config.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AU-2",
+          "AU-3",
+          "AU-12"
+        ],
+        "cisV8": [
+          "8.2",
+          "8.5"
+        ]
+      }
+    },
+    {
+      "id": "acg-geo-coords",
+      "category": "Connectors",
+      "severity": "info",
+      "title": "App connector group is missing geo-routing coordinates",
+      "evidence": [
+        "acg-apac-singapore (latitude/longitude empty)"
+      ],
+      "docRef": "\u00a7Geo-routing, page 12",
+      "remediation": "Populate latitude and longitude on every connector group so that ZCC can pick the closest entry point. The default routing fallback is acceptable but produces longer tail latencies.",
+      "heuristic": false
+    },
+    {
+      "id": "seg-ip-only",
+      "category": "Segments",
+      "severity": "info",
+      "title": "Application segments addressed only by IP / CIDR",
+      "evidence": [
+        "seg-legacy-jenkins (10.42.7.18)",
+        "seg-legacy-jira (10.42.7.21)"
+      ],
+      "docRef": "\u00a7Application Segments, page 21",
+      "remediation": "Migrate IP-only segments to FQDNs once the backend hosts have stable DNS. FQDN segments survive backend re-IPs and pair correctly with dynamic discovery server groups.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "CM-8"
+        ],
+        "cisV8": [
+          "2.1"
+        ]
+      }
+    },
+    {
+      "id": "ap-deception-present",
+      "category": "AccessPolicy",
+      "severity": "info",
+      "title": "Deception rule is present in the access policy",
+      "evidence": [
+        "rule-deception-decoy-honeypot (auto-provisioned)"
+      ],
+      "docRef": "\u00a7Access Policy class A, page 25",
+      "remediation": "Informational. Deception rules are auto-provisioned when the Deception license is enabled. Do not modify or remove unless coordinating with your Zscaler Deception admin.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SC-26",
+          "SI-4"
+        ],
+        "cisV8": [
+          "13.6"
+        ]
+      }
+    },
+    {
+      "id": "lss-filter-applied",
+      "category": "LSS",
+      "severity": "info",
+      "title": "LSS config has no status-code filter applied",
+      "evidence": [
+        "lss-audit-to-splunk (filter is empty \u2014 streams every status code)"
+      ],
+      "docRef": "\u00a7Log Streaming Service, page 40",
+      "remediation": "Apply a status-code allowlist to limit catch-all streaming. Streaming every code can inflate SIEM ingest cost without improving signal \u2014 start with the codes the SIEM detection rules actually use.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AU-4"
+        ],
+        "cisV8": [
+          "8.3"
+        ]
+      }
+    },
+    {
+      "id": "ca-connector-cpu",
+      "category": "CannotAudit",
+      "severity": "cannotAudit",
+      "title": "Per-connector CPU / memory / throughput",
+      "evidence": [],
+      "docRef": "\u00a7App Connectors Redundancy and Scaling, page 11",
+      "remediation": "No telemetry API. Use hypervisor / cloud-provider metrics out-of-band to confirm each connector has headroom \u2014 the N+1 check above counts connectors only, not load.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SI-4",
+          "AU-12"
+        ],
+        "cisV8": [
+          "8.11"
+        ]
+      }
+    },
+    {
+      "id": "ca-app-probes",
+      "category": "CannotAudit",
+      "severity": "cannotAudit",
+      "title": "App probe results / per-target reachability",
+      "evidence": [],
+      "docRef": "\u00a7Health Reporting Recommendations, page 19",
+      "remediation": "No health API. The audit can only verify the configured `health_reporting` mode, not whether the probes are succeeding. Confirm reachability through the ZPA admin portal.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SI-4",
+          "CP-2"
+        ],
+        "cisV8": [
+          "11.1"
+        ]
+      }
+    },
+    {
+      "id": "ca-lss-delivery",
+      "category": "CannotAudit",
+      "severity": "cannotAudit",
+      "title": "LSS log delivery / drops / SIEM ingestion health",
+      "evidence": [],
+      "docRef": "\u00a7Log Streaming Service Recommendations, page 39",
+      "remediation": "LSS API is configuration-only. Monitor delivery, drops, and ingest lag from the SIEM side \u2014 Zscaler does not surface in-flight LSS telemetry.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AU-5",
+          "AU-9"
+        ],
+        "cisV8": [
+          "8.2",
+          "8.5"
+        ]
+      }
+    },
+    {
+      "id": "ca-bandwidth",
+      "category": "CannotAudit",
+      "severity": "cannotAudit",
+      "title": "AC group bandwidth utilization (live N+1 sizing)",
+      "evidence": [],
+      "docRef": "\u00a7App Connectors Redundancy and Scaling, page 11",
+      "remediation": "No traffic-stats API. The N+1 check counts connectors only \u2014 confirm bandwidth headroom through your hypervisor or cloud provider's network metrics.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "SC-5",
+          "CP-2"
+        ],
+        "cisV8": [
+          "11.1"
+        ]
+      }
+    },
+    {
+      "id": "ca-sessions",
+      "category": "CannotAudit",
+      "severity": "cannotAudit",
+      "title": "Active session counts per app segment (idle-timeout sizing)",
+      "evidence": [],
+      "docRef": "\u00a7Timeout Policies Recommendations, page 38",
+      "remediation": "No session-stats API. Idle-timeout sizing in this audit is informed by app class only, not measured load. Pull session counts from the ZPA admin portal if you need to tune timeouts to actual usage.",
+      "heuristic": false,
+      "frameworks": {
+        "nist80053r5": [
+          "AC-12",
+          "SI-4"
+        ],
+        "cisV8": [
+          "6.4"
+        ]
+      }
+    }
+  ]
+}

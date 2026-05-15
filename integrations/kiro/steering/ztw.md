@@ -4,6 +4,10 @@
 
 ZTW provides micro-segmentation for workloads across hybrid and multi-cloud environments, enabling zero trust security for east-west traffic. It manages IP groups, network services, and discovery settings for workload communication control.
 
+## Available Skills
+
+There are no ZTW-specific skills today; the workflows below are the canonical guidance. If the user is asking about east-west / lateral-movement workload protection on **agent-based** workloads, consider whether they actually mean **ZMS** (Zscaler Microsegmentation, agent-based) — there is a dedicated `zms.md` steering file and 5 ZMS skills for that surface.
+
 ## Key Concepts
 
 - **IP Groups**: Logical groupings of IP addresses (general-purpose grouping)

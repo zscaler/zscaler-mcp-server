@@ -4,6 +4,26 @@
 
 ZPA provides zero trust network access (ZTNA) to private applications without exposing them to the internet. It replaces traditional VPNs with a direct-to-app architecture using app connectors and service edges.
 
+## Available Skills
+
+Kiro should prefer **guided skills** over ad-hoc workflows whenever a user's intent matches one of the skills below. Each skill is a multi-step playbook (frontmatter `description` triggers auto-activation) that drives the right tool sequence end-to-end. When a request maps cleanly to a skill, load the SKILL.md and follow it; otherwise fall back to the ad-hoc workflows further down.
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Onboard application | `skills/zpa/application_segment-onboard/SKILL.md` | "Onboard a new private app", "Publish an internal application", "Create a ZPA application segment with connectors and policy" |
+| Onboard Browser Access app | `skills/zpa/application_segment-ba-onboard/SKILL.md` | "Publish an internal web app via the browser", "Add a Browser Access app", "BA segment with certificate" |
+| Onboard PRA app | `skills/zpa/application_segment-pra-onboard/SKILL.md` | "Add a privileged access app (RDP/SSH/VNC)", "Onboard a PRA application", "Build a PRA portal + credential + segment" |
+| Audit baseline compliance | `skills/zpa/audit-baseline-compliance/SKILL.md` | "Audit my ZPA tenant against the Zscaler baseline", "Run a ZPA baseline / posture review", "Generate a ZPA configuration audit report" |
+| Create access policy rule | `skills/zpa/create-access-policy-rule/SKILL.md` | "Create an access policy", "Grant a SCIM group access to an app", "Build an access rule with SAML/SCIM/POSTURE conditions" |
+| Create conditional access rule | `skills/zpa/create-conditional-access-rule/SKILL.md` | "Require posture + trusted network + group for access", "Conditional access rule combining identity + device + location" |
+| Create forwarding policy rule | `skills/zpa/create-forwarding-policy-rule/SKILL.md` | "Route this traffic through ZPA / bypass / intercept", "Create a client forwarding rule" |
+| Create server group | `skills/zpa/create-server-group/SKILL.md` | "Create a ZPA server group", "Bind servers to a connector group" |
+| Create session duration rule | `skills/zpa/create-session-duration-rule/SKILL.md` | "Force re-auth every N hours", "Create a session-duration timeout rule" |
+| Create timeout policy rule | `skills/zpa/create-timeout-policy-rule/SKILL.md` | "Set the idle timeout for an app", "Create a timeout policy rule" |
+| Troubleshoot app connector | `skills/zpa/troubleshoot-app-connector/SKILL.md` | "Connector won't enroll", "Connector keeps disconnecting", "Diagnose a sick app connector / Public Service Edge" |
+
+Cross-product fallback: when the request involves both ZPA and another service (ZIA, ZDX, ZCC), prefer `skills/cross-product/troubleshoot-user-connectivity/SKILL.md`.
+
 ## Key Concepts
 
 - **Application Segments**: Define which private applications are accessible (domains, IPs, ports)
@@ -63,20 +83,21 @@ Always check for existing resources before creating new ones. Use `zpa_list_*` t
 
 ### Access Policy Review
 ```
-1. zpa_list_access_policy_rules     → List all access rules (evaluated top-to-bottom)
-2. zpa_get_access_policy_rule       → Get specific rule details including conditions
-3. posture_profile_manager          → Check device posture requirements (action="read")
-4. trusted_network_manager          → View trusted network definitions (action="read")
-5. saml_attribute_manager           → List SAML attributes for identity conditions (action="read")
-6. scim_group_manager               → List SCIM groups for group-based access (action="read")
+1. zpa_list_access_policy_rules → List all access rules (evaluated top-to-bottom)
+2. zpa_get_access_policy_rule   → Get specific rule details including conditions
+3. get_zpa_posture_profile      → Check device posture requirements
+4. get_zpa_trusted_network      → View trusted network definitions
+5. get_zpa_saml_attribute       → List SAML attributes for identity conditions
+6. get_zpa_scim_group           → List SCIM groups for group-based access
 ```
 
 ### Infrastructure Status
 ```
 1. zpa_list_app_connector_groups → List connector groups and their health
-2. zpa_list_service_edge_groups  → List service edge groups
-3. zpa_list_provisioning_keys    → Check available provisioning keys
-4. zpa_list_application_servers  → View individual application servers
+2. zpa_list_app_connectors       → Inspect individual connectors and their state
+3. zpa_list_service_edge_groups  → List service edge groups
+4. zpa_list_provisioning_keys    → Check available provisioning keys
+5. zpa_list_application_servers  → View individual application servers
 ```
 
 ### PRA (Privileged Remote Access)
@@ -93,6 +114,34 @@ Always check for existing resources before creating new ones. Use `zpa_list_*` t
 1. zpa_list_ba_certificates → List browser access certificates
 2. zpa_get_ba_certificate   → Get certificate details
 3. zpa_create_ba_certificate → Upload a new certificate
+```
+
+### Browser Access & PRA Application Segments
+
+BA and PRA application segments are **separate resources** from standard application segments. Use the typed list/get tools when working with them — they expose the BA/PRA-specific fields the standard tools do not.
+
+```
+# Browser Access
+zpa_list_application_segments_ba / zpa_get_application_segment_ba
+zpa_create_application_segment_ba / zpa_update_application_segment_ba / zpa_delete_application_segment_ba
+
+# Privileged Remote Access (RDP / SSH / VNC)
+zpa_list_application_segments_pra / zpa_get_application_segment_pra
+zpa_create_application_segment_pra / zpa_update_application_segment_pra / zpa_delete_application_segment_pra
+```
+
+To enumerate application segments scoped by type without separate calls, use `get_zpa_app_segments_by_type` (accepts `BROWSER_ACCESS`, `INSPECT`, `SECURE_REMOTE_ACCESS`).
+
+### Log Streaming Service (LSS)
+
+ZPA LSS streams audit, access, and user-status data out of the tenant. Read-only inspection is available:
+
+```
+1. zpa_list_lss_configs    → List configured LSS receivers
+2. zpa_get_lss_config      → Get a specific LSS config
+3. zpa_list_lss_log_types  → Discover supported log types
+4. zpa_get_lss_log_format  → Inspect the field schema for a given log type
+5. zpa_list_lss_status_codes / zpa_list_lss_client_types → Reference catalogs
 ```
 
 ## Access Policy Condition Types
@@ -132,12 +181,19 @@ Access policy rules use conditions to determine who gets access. Each condition 
 |------|-------------|
 | `zpa_list_application_segments` | List all application segments |
 | `zpa_get_application_segment` | Get specific application segment |
+| `zpa_list_application_segments_ba` | List Browser Access (BA) application segments |
+| `zpa_get_application_segment_ba` | Get specific BA application segment |
+| `zpa_list_application_segments_pra` | List Privileged Remote Access (PRA) application segments |
+| `zpa_get_application_segment_pra` | Get specific PRA application segment |
+| `get_zpa_app_segments_by_type` | Retrieve app segments by type (`BROWSER_ACCESS`, `INSPECT`, `SECURE_REMOTE_ACCESS`) |
 | `zpa_list_segment_groups` | List segment groups |
 | `zpa_get_segment_group` | Get specific segment group |
 | `zpa_list_server_groups` | List server groups |
 | `zpa_get_server_group` | Get specific server group |
 | `zpa_list_app_connector_groups` | List app connector groups |
 | `zpa_get_app_connector_group` | Get specific connector group |
+| `zpa_list_app_connectors` | List individual app connectors |
+| `zpa_get_app_connector` | Get specific app connector |
 | `zpa_list_service_edge_groups` | List service edge groups |
 | `zpa_get_service_edge_group` | Get specific service edge group |
 | `zpa_list_application_servers` | List application servers |
@@ -160,15 +216,20 @@ Access policy rules use conditions to determine who gets access. Each condition 
 | `zpa_get_pra_credential` | Get specific PRA credential |
 | `zpa_list_ba_certificates` | List browser access certificates |
 | `zpa_get_ba_certificate` | Get specific BA certificate |
-| `posture_profile_manager` | Retrieve posture profiles (action="read") |
-| `trusted_network_manager` | Retrieve trusted networks (action="read") |
-| `saml_attribute_manager` | Retrieve SAML attributes (action="read") |
-| `scim_group_manager` | Retrieve SCIM groups (action="read") |
-| `scim_attribute_manager` | Retrieve SCIM attributes (action="read") |
-| `enrollment_certificate_manager` | Retrieve enrollment certificates (action="read") |
-| `isolation_profile_manager` | Retrieve isolation profiles (action="read") |
-| `app_protection_profile_manager` | Retrieve app protection profiles (action="read") |
-| `app_segments_by_type_manager` | Retrieve app segments by type (BROWSER_ACCESS, INSPECT, SECURE_REMOTE_ACCESS) |
+| `get_zpa_posture_profile` | Retrieve posture profiles |
+| `get_zpa_trusted_network` | Retrieve trusted networks |
+| `get_zpa_saml_attribute` | Retrieve SAML attributes |
+| `get_zpa_scim_group` | Retrieve SCIM groups |
+| `get_zpa_scim_attribute` | Retrieve SCIM attributes |
+| `get_zpa_enrollment_certificate` | Retrieve enrollment certificates |
+| `get_zpa_isolation_profile` | Retrieve isolation profiles |
+| `get_zpa_app_protection_profile` | Retrieve app protection profiles |
+| `zpa_list_lss_configs` | List LSS (Log Streaming Service) configurations |
+| `zpa_get_lss_config` | Get specific LSS configuration |
+| `zpa_list_lss_log_types` | List supported LSS log types |
+| `zpa_get_lss_log_format` | Inspect field schema for a given LSS log type |
+| `zpa_list_lss_status_codes` | List LSS status code catalog |
+| `zpa_list_lss_client_types` | List LSS client-type catalog |
 
 ### Write Operations (Require --enable-write-tools)
 | Tool | Description |
@@ -176,6 +237,12 @@ Access policy rules use conditions to determine who gets access. Each condition 
 | `zpa_create_application_segment` | Create application segment |
 | `zpa_update_application_segment` | Update application segment |
 | `zpa_delete_application_segment` | Delete application segment |
+| `zpa_create_application_segment_ba` | Create Browser Access application segment |
+| `zpa_update_application_segment_ba` | Update Browser Access application segment |
+| `zpa_delete_application_segment_ba` | Delete Browser Access application segment |
+| `zpa_create_application_segment_pra` | Create PRA application segment |
+| `zpa_update_application_segment_pra` | Update PRA application segment |
+| `zpa_delete_application_segment_pra` | Delete PRA application segment |
 | `zpa_create_segment_group` | Create segment group |
 | `zpa_update_segment_group` | Update segment group |
 | `zpa_delete_segment_group` | Delete segment group |
@@ -185,6 +252,9 @@ Access policy rules use conditions to determine who gets access. Each condition 
 | `zpa_create_app_connector_group` | Create app connector group |
 | `zpa_update_app_connector_group` | Update app connector group |
 | `zpa_delete_app_connector_group` | Delete app connector group |
+| `zpa_update_app_connector` | Update a single app connector |
+| `zpa_delete_app_connector` | Delete a single app connector |
+| `zpa_bulk_delete_app_connectors` | Bulk-delete app connectors |
 | `zpa_create_application_server` | Create application server |
 | `zpa_update_application_server` | Update application server |
 | `zpa_delete_application_server` | Delete application server |
@@ -234,5 +304,5 @@ When answering the admin, give the **business answer in plain language**. Tool p
 2. **Policy rule ordering matters** — Access policy rules are evaluated top-to-bottom. New rules are appended at the end. Verify placement after creation.
 3. **Always start with discovery** — Use `zpa_list_*` tools to understand current state before making changes.
 4. **Check dependencies before deletion** — Application segments referenced by policy rules cannot be deleted until the policy reference is removed.
-5. **Look up identity attributes before creating policy rules** — Use `saml_attribute_manager`, `scim_group_manager`, and `posture_profile_manager` to get the correct IDs for conditions.
+5. **Look up identity attributes before creating policy rules** — Use `get_zpa_saml_attribute`, `get_zpa_scim_group`, and `get_zpa_posture_profile` to get the correct IDs for conditions.
 6. **Confirm before write operations** — Always explain proposed changes and get explicit user confirmation.

@@ -362,7 +362,7 @@ The application "<domain>" was not found in:
 
 Possible causes:
 - The application has not been onboarded to ZPA yet
-  → Use the "onboard-application" ZPA skill to set it up
+  → Use the "application_segment-onboard" ZPA skill to set it up
 - The domain name the user is accessing differs from what's configured
   → Verify the exact URL the user is trying to reach
 - DNS resolution is pointing to a different host
@@ -386,7 +386,7 @@ Recommended investigation order: Start with #1 (access policy).
 
 ## When NOT to Use This Skill
 
-- Just creating an application (not troubleshooting) -- use "onboard-application" ZPA skill
+- Just creating an application (not troubleshooting) -- use "application_segment-onboard" ZPA skill
 - Auditing SSL rules (not user-specific) -- use "audit-ssl-inspection-bypass" ZIA skill
 - Investigating a URL category broadly -- use "investigate-url-category" ZIA skill
 - Checking only ZIA policy for a user -- use "check-user-url-access" ZIA skill
