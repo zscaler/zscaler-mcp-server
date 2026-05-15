@@ -652,7 +652,7 @@ INFO:zscaler_mcp.config:ZSCALER_SECRET_NAME not set - using credentials from env
 
 Once the AgentCore Gateway is up, you can point any MCP-compatible client at it. The Gateway exposes a standard **Streamable HTTP** MCP endpoint at:
 
-```
+```text
 https://<gateway-id>.gateway.bedrock-agentcore.<region>.amazonaws.com/mcp
 ```
 
