@@ -2071,7 +2071,7 @@ class ZIAService(BaseService):
             {
                 "func": zia_update_malware_settings,
                 "name": "zia_update_malware_settings",
-                "description": "Update the full ZIA Malware Protection threat-class settings block (write operation, PUT-replace). Any of the 16 *_blocked / *_capture booleans omitted from the payload is reset to False by the API — always call zia_get_malware_settings first, mutate the fields you want to change, then pass the full dict back here. Unknown keys are silently dropped (only the 16 documented snake_case fields are round-tripped). After a successful update, call zia_activate_configuration to apply the change.",
+                "description": "Update the full ZIA Malware Protection threat-class settings block (write operation, PUT-replace). Any of the 16 `*_blocked` / `*_capture` booleans omitted from the payload is reset to False by the API — always call zia_get_malware_settings first, mutate the fields you want to change, then pass the full dict back here. Unknown keys are silently dropped (only the 16 documented snake_case fields are round-tripped). After a successful update, call zia_activate_configuration to apply the change.",
             },
             # Auth Exempt URLs
             {
