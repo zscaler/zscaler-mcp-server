@@ -77,13 +77,22 @@ class TestStreamableHttpTransport(unittest.TestCase):
         with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
             server.run("streamable-http")
 
-        # Verify uvicorn was called with default parameters
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app,
-            host="127.0.0.1",
-            port=8000,
-            log_level="info",
+        # Verify uvicorn was called with default parameters. The app is wrapped
+        # by transport hardening middleware (StripTrailingSlash → NormalizeContentType
+        # → mock_app), so we assert kwargs and the wrapping shape rather than identity.
+        mock_uvicorn.run.assert_called_once()
+        self.assertEqual(
+            mock_uvicorn.run.call_args.kwargs,
+            {"host": "127.0.0.1", "port": 8000, "log_level": "info"},
         )
+        wrapped_app = mock_uvicorn.run.call_args.args[0]
+        from zscaler_mcp.auth import (
+            NormalizeContentTypeMiddleware,
+            StripTrailingSlashMiddleware,
+        )
+        self.assertIsInstance(wrapped_app, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped_app.app, NormalizeContentTypeMiddleware)
+        self.assertIs(wrapped_app.app.app, mock_app)
 
     @patch("zscaler_mcp.server.FastMCP")
     @patch("zscaler_mcp.client.get_zscaler_client")
@@ -144,12 +153,13 @@ class TestStreamableHttpTransport(unittest.TestCase):
         ):
             server.run("streamable-http", host="192.168.1.100", port=9000)
 
-        # Verify uvicorn was called with custom parameters
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app,
-            host="192.168.1.100",
-            port=9000,
-            log_level="debug",
+        # Verify uvicorn was called with custom parameters (kwargs-only;
+        # the positional app arg is wrapped by transport hardening — see
+        # test_streamable_http_default_parameters for the shape assertion).
+        mock_uvicorn.run.assert_called_once()
+        self.assertEqual(
+            mock_uvicorn.run.call_args.kwargs,
+            {"host": "192.168.1.100", "port": 9000, "log_level": "debug"},
         )
 
     @patch("zscaler_mcp.server.FastMCP")
@@ -176,12 +186,10 @@ class TestStreamableHttpTransport(unittest.TestCase):
         with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
             server_debug.run("streamable-http")
 
-        # Verify debug log level
-        mock_uvicorn.run.assert_called_with(
-            mock_app,
-            host="127.0.0.1",
-            port=8000,
-            log_level="debug",
+        # Verify debug log level (kwargs-only — app is wrapped by hardening).
+        self.assertEqual(
+            mock_uvicorn.run.call_args.kwargs,
+            {"host": "127.0.0.1", "port": 8000, "log_level": "debug"},
         )
 
         # Reset mock
@@ -192,12 +200,10 @@ class TestStreamableHttpTransport(unittest.TestCase):
         with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
             server_info.run("streamable-http")
 
-        # Verify info log level
-        mock_uvicorn.run.assert_called_with(
-            mock_app,
-            host="127.0.0.1",
-            port=8000,
-            log_level="info",
+        # Verify info log level (kwargs-only — app is wrapped by hardening).
+        self.assertEqual(
+            mock_uvicorn.run.call_args.kwargs,
+            {"host": "127.0.0.1", "port": 8000, "log_level": "info"},
         )
 
     @patch("zscaler_mcp.server.FastMCP")
@@ -265,12 +271,13 @@ class TestStreamableHttpTransport(unittest.TestCase):
         with patch.dict(os.environ, {"ZSCALER_MCP_AUTH_ENABLED": "false"}):
             server.run("sse")
 
-        # Verify uvicorn was called with default parameters
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app,
-            host="127.0.0.1",
-            port=8000,
-            log_level="info",
+        # Verify uvicorn was called with default parameters (kwargs-only;
+        # the app is wrapped by transport hardening — see streamable-http
+        # test for the wrapping shape assertion).
+        mock_uvicorn.run.assert_called_once()
+        self.assertEqual(
+            mock_uvicorn.run.call_args.kwargs,
+            {"host": "127.0.0.1", "port": 8000, "log_level": "info"},
         )
 
     @patch("zscaler_mcp.server.FastMCP")
@@ -305,12 +312,12 @@ class TestStreamableHttpTransport(unittest.TestCase):
         ):
             server.run("sse", host="10.0.0.1", port=9090)
 
-        # Verify uvicorn was called with custom parameters
-        mock_uvicorn.run.assert_called_once_with(
-            mock_app,
-            host="10.0.0.1",
-            port=9090,
-            log_level="debug",
+        # Verify uvicorn was called with custom parameters (kwargs-only;
+        # the app is wrapped by transport hardening).
+        mock_uvicorn.run.assert_called_once()
+        self.assertEqual(
+            mock_uvicorn.run.call_args.kwargs,
+            {"host": "10.0.0.1", "port": 9090, "log_level": "debug"},
         )
 
     @patch("zscaler_mcp.server.FastMCP")

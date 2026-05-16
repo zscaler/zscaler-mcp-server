@@ -504,11 +504,11 @@ When `auth=` is provided:
 
 <!-- generated:start service-summary -->
 
-The Zscaler Integrations MCP Server provides **380 tools** for all major Zscaler services:
+The Zscaler Integrations MCP Server provides **382 tools** for all major Zscaler services:
 
 | Service | Description | Tools |
 |---------|-------------|-------|
-| **ZIA** | Zscaler Internet Access — Security policies | 164 read/write |
+| **ZIA** | Zscaler Internet Access — Security policies | 166 read/write |
 | **ZPA** | Zscaler Private Access — Application access | 109 read/write |
 | **ZDX** | Zscaler Digital Experience — Monitoring & analytics | 31 read/write |
 | **ZMS** | Zscaler Microsegmentation — Agents, resources, policies | 20 read-only |

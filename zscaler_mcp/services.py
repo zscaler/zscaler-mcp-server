@@ -1199,6 +1199,10 @@ class ZIAService(BaseService):
             zia_list_locations,
             zia_update_location,
         )
+        from .tools.zia.mobile_threat_settings import (
+            zia_get_mobile_advanced_settings,
+            zia_update_mobile_advanced_settings,
+        )
         from .tools.zia.network_app_groups import (
             zia_create_network_app_group,
             zia_delete_network_app_group,
@@ -1606,6 +1610,12 @@ class ZIAService(BaseService):
                 "func": zia_get_advanced_settings,
                 "name": "zia_get_advanced_settings",
                 "description": "Get the full ZIA Advanced Settings block (read-only) — ~50 knobs surfaced under Administration → Advanced Settings, including authentication / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6) with their include/exempt URL / app / category lists, Office 365 one-click (enable_office365), UI session timeout (ui_session_timeout — seconds), surrogate IP enforcement, HTTP tunnel tracking (track_http_tunnel_on_http_ports, block_http_tunnel_on_non_http_ports), domain-fronting block, cascade URL filtering, policy for unauthenticated traffic, admin rank access, HTTP/2 non-browser traffic, ECS-for-all, dynamic user risk, CONNECT-host / SNI mismatch handling, and SIPA XFF header insertion. Always call this before zia_update_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            # Mobile Advanced Threat Settings (tenant-wide singleton governing the Mobile Malware Protection policy applied to mobile-client traffic)
+            {
+                "func": zia_get_mobile_advanced_settings,
+                "name": "zia_get_mobile_advanced_settings",
+                "description": "Get the ZIA Mobile Advanced Threat Settings block (read-only) — the tenant-wide singleton that governs the Mobile Malware Protection policy applied to traffic from mobile clients (iOS / Android via the Zscaler Client Connector). Returns 8 boolean knobs: block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers. Always call this before zia_update_mobile_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
             },
             # ATP Policy Settings (tenant-wide singletons: full ATP policy block + bypass URL list)
             {
@@ -2097,6 +2107,12 @@ class ZIAService(BaseService):
                 "func": zia_update_advanced_settings,
                 "name": "zia_update_advanced_settings",
                 "description": "Update the ZIA Advanced Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default (or [] for list fields). Always call zia_get_advanced_settings first, mutate the fields you want to change, then pass the full dict back here. Tunes the same surface as Administration → Advanced Settings in the ZIA Admin Portal: auth / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6), Office 365 one-click, UI session timeout, surrogate IP, HTTP tunnel handling, domain-fronting block, HTTP/2, ECS-for-all, dynamic user risk, SNI / CONNECT-host mismatch handling, SIPA XFF insertion, etc. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            # Mobile Advanced Threat Settings (tenant-wide singleton — Mobile Malware Protection policy)
+            {
+                "func": zia_update_mobile_advanced_settings,
+                "name": "zia_update_mobile_advanced_settings",
+                "description": "Update the ZIA Mobile Advanced Threat Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default. Always call zia_get_mobile_advanced_settings first, mutate the boolean knobs you want to change (block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers), then pass the full dict back here. After a successful update, call zia_activate_configuration to apply the change.",
             },
             {
                 "func": zia_update_atp_security_exceptions,
