@@ -134,6 +134,7 @@ ZIA is the largest service in the server. Tool modules are organized one-resourc
 | Cloud Firewall | `cloud_firewall_rules.py` | `zia_list_cloud_firewall_rules`, `zia_get_cloud_firewall_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
 | Cloud Firewall DNS | `cloud_firewall_dns_rules.py` | `zia_list_cloud_firewall_dns_rules`, `zia_get_cloud_firewall_dns_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | `applications` ≠ cloud-app enum |
 | Cloud Firewall IPS | `cloud_firewall_ips_rules.py` | `zia_list_cloud_firewall_ips_rules`, `zia_get_cloud_firewall_ips_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
+| Custom IPS Signatures | `ips_signature_rules.py` | `zia_list_ips_signature_rules`, `zia_get_ips_signature_rule` | `zia_create_ips_signature_rule`, `zia_update_ips_signature_rule`, `zia_delete_ips_signature_rule` | Snort/Suricata-style signature **definitions** (not policy rules — distinct from Cloud Firewall IPS above). Tiny field set (`name`, `description`, `rule_text`); the SDK pre-flight-validates `rule_text` on create against the dynamic-validation endpoint and surfaces syntax / duplicate-`sid` errors as `ValueError` before any tenant-side write. Update is PUT-replace; the tool backfills `name` + `rule_text` (the load-bearing fields here, instead of the usual `name` + `order`) when the caller omits them. Lives in the `zia_cloud_firewall` toolset alongside the Cloud Firewall IPS policy-rule family via explicit overrides — admins working on intrusion prevention typically want the **what to detect** (signature) and **when to enforce** (policy rule) surfaces loaded together. |
 | URL Filtering | `url_filtering_rules.py` | `zia_list_url_filtering_rules`, `zia_get_url_filtering_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
 | SSL Inspection | `ssl_inspection.py` | `zia_list_ssl_inspection_rules`, `zia_get_ssl_inspection_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Cloud-app auto-resolver |
 | Web DLP | `web_dlp_rules.py` | `zia_list_web_dlp_rules`, `zia_list_web_dlp_rules_lite`, `zia_get_web_dlp_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
@@ -141,7 +142,7 @@ ZIA is the largest service in the server. Tool modules are organized one-resourc
 | Sandbox Rules | `sandbox_rules.py` | `zia_list_sandbox_rules`, `zia_get_sandbox_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Distinct from sandbox **reports** in `get_sandbox_info.py` |
 | Time Intervals | `time_intervals.py` | `zia_list_time_intervals`, `zia_get_time_interval` | `zia_create_time_interval`, `zia_update_time_interval`, `zia_delete_time_interval` | Reusable schedule object referenced by all rule types via the `time_windows` field. `start_time`/`end_time` are minutes from midnight (0-1439); `days_of_week` accepts `EVERYDAY`, `SUN`-`SAT`. |
 
-All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). The `zia_update_time_interval` tool applies the same pattern for `name`, `start_time`, `end_time`, and `days_of_week`. Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill required identifiers on update.
+All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). The `zia_update_time_interval` tool applies the same pattern for `name`, `start_time`, `end_time`, and `days_of_week`. The `zia_update_ips_signature_rule` tool applies it for `name` and `rule_text` — IPS signatures have no `order` field, so the load-bearing pair shifts to the identifying name and the signature body itself. Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill the load-bearing identifying fields on update.
 
 ### ZIA Tenant-Wide Singletons (ATP Policy + Malware Protection + Advanced Settings)
 
@@ -364,7 +365,20 @@ Server & security env vars:
 - `--host` — HTTP bind address (default `127.0.0.1`)
 - `--port` — HTTP listen port (default `8000`)
 - `--log-tool-calls` — Enable tool-call audit logging (logs tool name, args, duration, result summary)
+- `--dotenv-path` — Explicit path to the `.env` file to load. Overrides the default search (project root + CWD). Recorded in the PID file so `zscaler-mcp reload` / `restart` re-read the same source. (env: `ZSCALER_MCP_DOTENV_PATH`)
+- `--pid-file` — Override the PID file location used by the lifecycle subcommands. Defaults to `/var/run/zscaler-mcp.pid` (or `/tmp/zscaler-mcp.pid` if `/var/run` is not writable). Set per instance when running multiple servers on the same host. (env: `ZSCALER_MCP_PID_FILE`)
 - `--version` — Print version and exit
+
+### Lifecycle Subcommands
+
+In addition to the top-level flags above, the CLI exposes four subcommands for managing a running server. They are mutually exclusive with the serve path — running `zscaler-mcp` with no subcommand starts the server as before.
+
+- `zscaler-mcp reload` — Soft reload (SIGHUP). Re-reads `.env` and re-applies env-driven toggles. MCP sessions and the listening socket survive.
+- `zscaler-mcp restart` — Hard restart (SIGUSR2). Re-reads `.env`, then `os.execvp`'s a fresh Python interpreter with the original argv. Same PID, fresh memory, fresh env. Sessions die — clients reconnect.
+- `zscaler-mcp status` — Print PID, uptime, transport, port, and `.env` path of the running server (or report none running).
+- `zscaler-mcp stop` — Clean shutdown (SIGTERM, no respawn). Same signal Docker uses, so the running server has no SIGTERM handler installed and falls through to FastMCP/uvicorn's default shutdown.
+
+See **Process Lifecycle Management** below for the full design.
 
 ## Tool-Call Audit Logging
 
@@ -429,6 +443,104 @@ Disabling sanitization removes a defense-in-depth layer; only do this temporaril
 - **`zscaler_mcp/common/sanitize.py`** — `sanitize_text()` for single strings, `sanitize_value()` for recursive traversal, plus three private stage functions (`_strip_invisible`, `_sanitize_html_markdown`, `_sanitize_code_fences`).
 - **`tests/test_sanitize.py`** — 46 tests covering golden injection inputs (RLO override, ZWSP, embedded `<script>`, fake `system` fence, etc.) and integration through the audit wrapper.
 - Dependency: `bleach>=6.2.0` (added to `pyproject.toml`).
+
+## Process Lifecycle Management
+
+Operators can reconfigure a running server (locally or inside a Docker container) without recreating the container, via four CLI subcommands: `zscaler-mcp reload`, `zscaler-mcp restart`, `zscaler-mcp status`, `zscaler-mcp stop`.
+
+### Design
+
+When the server starts (after `parse_args()` succeeds, before `server.run()`), it writes a JSON PID file containing the running PID, start time, transport, host:port, the resolved `.env` path, the original `argv`, and the Python interpreter path. Two signal handlers are then installed in the running server:
+
+- **SIGHUP → soft reload.** Re-reads `.env` with `override=True` (so stale values get replaced), then re-applies env-driven runtime toggles (currently: `ZSCALER_MCP_LOG_TOOL_CALLS`). The Zscaler SDK client has no module-level cache — it's created on every tool call — so once new credentials land in `os.environ`, the next tool call already picks them up. The auth-middleware token cache is keyed by credential hash, so credential rotation naturally misses old entries and re-validates against the new values. **MCP sessions and the listening socket survive.** This is the right path when you only changed a knob (audit logging, log level, a non-credential env var).
+- **SIGUSR2 → hard restart.** Re-reads `.env` into `os.environ` (so the child inherits fresh values immediately), removes the PID file, then `os.execvp`'s a fresh Python interpreter with the original `argv`. **Same PID** (Docker doesn't notice the swap), fresh memory, fresh env, fresh module imports, fresh entitlement-filter result. **Sessions die — clients reconnect.** This is the right path when you rotated credentials, changed `--toolsets` selection, flipped `--enable-write-tools`, swapped vanity domain, etc. — anything that's read once at startup.
+- **SIGTERM / SIGINT → not handled.** Deliberately. The standard FastMCP/uvicorn signal handling kicks in, which is what `docker stop`, `systemctl stop`, and Ctrl+C all expect. `zscaler-mcp stop` simply sends SIGTERM and lets that path do its job.
+
+The atexit-registered cleanup removes the PID file on clean shutdown so `zscaler-mcp status` doesn't lie about a dead PID.
+
+### Env-source classification (the "what will actually change?" question)
+
+The reload/restart messaging — and the `status` output — is gated by `_classify_env_source()` so the CLI tells the truth instead of always claiming it will "re-read .env". The classifier checks two things: the `dotenv_path` recorded in the PID file (set at server startup), and whether a `.env` exists in any of the default search paths now (which catches the `docker cp` workflow). Four branches:
+
+| `dotenv_path` in PID file | File exists at that path? | Default-path `.env` present now? | Label | What `reload`/`restart` actually does |
+|---|---|---|---|---|
+| Set | Yes | n/a | `live` (or `live (bind-mounted)` if path is `/app/.env`) | Re-reads the file, picks up host-side edits, then execs |
+| Set | No | Yes | `fresh-discovery` | SIGHUP no-ops, but `restart` execs a fresh process that re-discovers and loads the newly-placed `.env`. **`docker cp` workflow.** |
+| Set | No | No | `missing` | Logs a warning, skips the re-read, execs with same `os.environ`. Common case: container started with `--env-file` only, no bind mount, no `docker cp`. |
+| `None` | n/a | Yes | `fresh-discovery` | Same as above — fresh process discovers the `.env` placed since startup. |
+| `None` | n/a | No | `none` | Skips the re-read entirely. Common case: AgentCore deployments using Secrets Manager, or any deploy that uses container env-vars without a `.env` file. |
+
+The "missing" and "none" branches are explicitly NOT a bug — they reflect the underlying constraint that env vars in a running container's PID 1 are immutable from outside the container unless you bind-mount a file PID 1 can re-read (or you inject one with `docker cp`). The CLI surfaces this fact instead of silently claiming success. AgentCore deploys (`none` branch) still benefit from `restart`: re-importing `zscaler_mcp.config` triggers a fresh Secrets Manager fetch on the new process boot, picking up rotated secrets there.
+
+### Why Docker `--env-file` snapshots survive container `stop`/`start`
+
+A common mental-model bug worth pinning here: `docker run --env-file=./.env ...` reads the host `.env` **once** at `docker run` time and copies the resolved `KEY=VALUE` pairs into the container's `Config.Env` metadata (visible via `docker inspect`). After that moment, the container has **no link** to the host file — you could delete `./.env` on the host and the container still holds the values. `docker stop && docker start <same-container>` reuses `Config.Env` from the metadata; **it does NOT re-read the host file**. The only ways to change `Config.Env` are (a) `docker rm` + `docker run` (full recreate, picks up the current host `.env`), or (b) bind-mount the file inside so PID 1 can re-read it on reload/restart. Likewise, `docker exec <ctr> sh -c 'export FOO=bar'` mutates a transient child shell's env — PID 1's env is untouched, since no Unix API lets one process write another's environment.
+
+### Updating env vars in a running container — three workflows
+
+| Workflow | Recreates container? | Picks up env changes? | When to use |
+|---|---|---|---|
+| **A.** `docker rm -f && docker run --env-file=./.env ...` | Yes | Yes (Docker re-reads host `.env` at run-time) | Always works. Disruptive — active sessions die, image cache cold for that container. |
+| **B.** Bind-mount `.env` at `/app/.env` once, then `zscaler-mcp restart` after every host-side edit | No (one-time setup) | Yes (PID 1 re-reads `/app/.env` on every restart) | Recommended long-term workflow. Default in `scripts/setup-mcp-server.py`. |
+| **C.** `docker cp ./.env <container>:/app/.env && docker exec <container> zscaler-mcp restart` | No | Yes (fresh execvp'd process re-discovers `/app/.env`) | Easiest one-off fix for an already-running container without a bind mount. No setup change required. |
+
+Workflow C is what makes `restart` valuable for containers that are already running without a bind mount — the operator doesn't have to recreate just to swap a credential. The "fresh-discovery" classifier branch is what tells the operator this is about to work.
+
+### PID file location
+
+In priority order:
+
+1. `--pid-file <path>` / `ZSCALER_MCP_PID_FILE`
+2. `/var/run/zscaler-mcp.pid` (typical inside containers running as a user with write access there)
+3. `/tmp/zscaler-mcp.pid`
+4. `~/.zscaler-mcp/server.pid` (auto-created)
+
+For multiple instances on the same host (e.g. one per port), set `ZSCALER_MCP_PID_FILE=/tmp/zscaler-mcp-8001.pid` per instance.
+
+### .env file resolution
+
+`zscaler_mcp/server.py::_resolve_dotenv_path()` resolves the `.env` source in this order, then records the absolute path in the PID file so reload/restart re-read the same source:
+
+1. `--dotenv-path <path>` / `ZSCALER_MCP_DOTENV_PATH`
+2. `<project_root>/.env` (editable install)
+3. `<cwd>/.env`
+
+The first-pass load happens **before** `parse_args()` (so env-var defaults resolve correctly); the path is then re-resolved after parsing to honour `--dotenv-path` and the final value lands in the PID file.
+
+### Container deployment
+
+For `zscaler-mcp restart` to pick up live `.env` edits inside a container, the `.env` file must be **bind-mounted** (not just passed via `--env-file`, which snapshots values at container start). The `scripts/setup-mcp-server.py` setup script defaults to bind-mounting:
+
+```bash
+docker run -d --name zscaler-mcp-server \
+  --env-file /path/to/.env \                           # boot-time injection
+  -v /path/to/.env:/app/.env:ro \                      # live re-read on restart
+  -e ZSCALER_MCP_DOTENV_PATH=/app/.env \
+  zscaler/zscaler-mcp-server:latest --transport streamable-http
+```
+
+Then to apply a config change:
+
+```bash
+$EDITOR /path/to/.env                                  # edit on the host
+docker exec zscaler-mcp-server zscaler-mcp restart     # re-read + execvp inside container
+```
+
+Same workflow for `reload` (cheap, sessions survive) when only a runtime toggle changed.
+
+Operators who want the snapshot-only behaviour can opt out via `setup-mcp-server.py --legacy-env-file`.
+
+### Cross-platform
+
+SIGHUP and SIGUSR2 are Unix-only. On Windows the `reload`/`restart` subcommands print a clear error and exit 2; `status` works (just reads the PID file); `stop` falls back to SIGTERM. Native Windows operators must restart their supervisor (Docker Desktop, NSSM, etc.) directly. Container deployments are unaffected — the container OS is Linux.
+
+### Implementation
+
+- **`zscaler_mcp/lifecycle.py`** — PID-file dataclass + read/write/remove, signal-handler installer (`install_serve_handlers`), four `cmd_*` subcommand entry points (`cmd_reload`, `cmd_restart`, `cmd_status`, `cmd_stop`), argparse subparser registration (`register_subparsers`), and the soft-reload helper (`_do_soft_reload`).
+- **`zscaler_mcp/server.py::_resolve_dotenv_path()`** — single source of truth for `.env` discovery, recorded in the PID file.
+- **`zscaler_mcp/server.py::main()`** — wires lifecycle: short-circuits to `lifecycle.dispatch()` for subcommands, otherwise writes the PID file + installs handlers + atexit-registers cleanup before calling `server.run()`.
+- **`zscaler_mcp/common/tool_helpers.py::refresh_tool_call_logging()`** — re-applies the `ZSCALER_MCP_LOG_TOOL_CALLS` toggle from current `os.environ`. Called by the SIGHUP handler.
+- **`tests/test_lifecycle.py`** — 45 tests covering PID-file round-trip, default-path resolution, every subcommand against missing/stale/live PID files, the SIGHUP-triggered env reload (raises the signal against `os.getpid()` and asserts the env update lands), env-source classification (every branch including the `docker cp`-fed `fresh-discovery` path), reload/restart messaging accuracy, and argparse integration.
 
 ## Development
 

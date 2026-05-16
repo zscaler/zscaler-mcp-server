@@ -57,7 +57,7 @@ dev = [
   "black",
   "mypy",
   "ipython",
-  "ruff",
+  "ruff>=0.15.13",
   "pycountry",
   "pytest-asyncio>=0.21.0",
   "langchain-openai>=0.3.28",

@@ -25,7 +25,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## ZIA — Internet Access
 
-81 read-only tools, 78 write tools.
+83 read-only tools, 81 write tools.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
@@ -50,6 +50,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_get_gre_tunnel` | `zia_locations` | Read-only | Get a specific ZIA GRE tunnel by ID (read-only) |
 | `zia_get_ip_destination_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA IP destination group by ID (read-only) |
 | `zia_get_ip_source_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA IP source group by ID (read-only) |
+| `zia_get_ips_signature_rule` | `zia_cloud_firewall` | Read-only | Get a specific custom ZIA IPS signature rule by ID (read-only). Returns the signature metadata and the raw rule_text Snort/Suricata signature body. |
 | `zia_get_location` | `zia_locations` | Read-only | Get a specific ZIA location by ID (read-only) |
 | `zia_get_location_group` | `zia_locations` | Read-only | Get a specific ZIA location group by ID (read-only) |
 | `zia_get_malware_settings` | `zia_atp_malware` | Read-only | Get the full ZIA Malware Protection threat-class settings block (read-only) — 16 booleans covering virus, trojan, worm, adware, spyware, ransomware, remote-access tool, and unwanted-application enforcement, each with a matching *_capture PCAP toggle. Always call this before zia_update_malware_settings so partial updates can be merged onto the existing payload (the update is PUT-replace; omitted fields are reset to False). Supports JMESPath client-side filtering via the query parameter. |
@@ -90,6 +91,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_list_gre_tunnels` | `zia_locations` | Read-only | List ZIA GRE tunnels (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_ip_destination_groups` | `zia_cloud_firewall` | Read-only | List ZIA IP destination groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_ip_source_groups` | `zia_cloud_firewall` | Read-only | List ZIA IP source groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_ips_signature_rules` | `zia_cloud_firewall` | Read-only | List custom ZIA IPS signature rules (read-only) — Snort/Suricata-style detection signatures authored on the tenant. Distinct from the Cloud Firewall IPS rule family (zia_list_cloud_firewall_ips_rules), which gates *enforcement* of IPS on firewall-matched traffic; signatures describe *what* to detect. Supports pagination via the page / page_size parameters and JMESPath client-side filtering via the query parameter. |
 | `zia_list_location_groups` | `zia_locations` | Read-only | List ZIA location groups, referenced by ID on the location_groups operand of every ZIA rule resource (Cloud Firewall, DNS, IPS, URL Filtering, SSL Inspection, Web DLP, File Type Control, Sandbox, Cloud App Control). Read-only — the public ZIA API does not expose location group create/update/delete. Supports name/search/group_type filters and JMESPath via the query parameter. |
 | `zia_list_locations` | `zia_locations` | Read-only | List ZIA locations (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_network_app_groups` | `zia_cloud_firewall` | Read-only | List ZIA network application groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
@@ -123,6 +125,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_create_gre_tunnel` | `zia_locations` | Write | Create a new ZIA GRE tunnel (write operation) |
 | `zia_create_ip_destination_group` | `zia_cloud_firewall` | Write | Create a new ZIA IP destination group (write operation) |
 | `zia_create_ip_source_group` | `zia_cloud_firewall` | Write | Create a new ZIA IP source group (write operation) |
+| `zia_create_ips_signature_rule` | `zia_cloud_firewall` | Write | Create a custom ZIA IPS signature rule (write operation). The rule_text (Snort/Suricata-style signature with a unique sid:) is server-side validated by the SDK against the ZIA dynamic-validation endpoint *before* the create request is issued — syntactic, semantic, or duplicate-sid errors are surfaced as a ValueError without leaving a stub rule on the tenant. After a successful create, call zia_activate_configuration to apply the change. |
 | `zia_create_location` | `zia_locations` | Write | Create a new ZIA location (write operation) |
 | `zia_create_network_app_group` | `zia_cloud_firewall` | Write | Create a new ZIA network application group (write operation) |
 | `zia_create_network_service` | `zia_cloud_firewall` | Write | Create a new ZIA network service with custom TCP/UDP ports (write operation) |
@@ -146,6 +149,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_delete_gre_tunnel` | `zia_locations` | Write | Delete a ZIA GRE tunnel (destructive operation) |
 | `zia_delete_ip_destination_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP destination group (destructive operation) |
 | `zia_delete_ip_source_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP source group (destructive operation) |
+| `zia_delete_ips_signature_rule` | `zia_cloud_firewall` | Write | Delete a custom ZIA IPS signature rule by ID (destructive operation, requires HMAC double-confirmation). After a successful delete, call zia_activate_configuration to apply the change. |
 | `zia_delete_location` | `zia_locations` | Write | Delete a ZIA location (destructive operation) |
 | `zia_delete_network_app_group` | `zia_cloud_firewall` | Write | Delete a ZIA network application group (destructive operation) |
 | `zia_delete_network_service` | `zia_cloud_firewall` | Write | Delete a ZIA network service (destructive operation) |
@@ -173,6 +177,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_update_file_type_control_rule` | `zia_file_type_control` | Write | Update an existing ZIA File Type Control rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. Friendly cloud-application names are auto-resolved. |
 | `zia_update_ip_destination_group` | `zia_cloud_firewall` | Write | Update an existing ZIA IP destination group (write operation) |
 | `zia_update_ip_source_group` | `zia_cloud_firewall` | Write | Update an existing ZIA IP source group (write operation) |
+| `zia_update_ips_signature_rule` | `zia_cloud_firewall` | Write | Update an existing custom ZIA IPS signature rule (write operation, PUT-replace). Silently backfills the load-bearing fields name and rule_text from the existing record when the caller omits them, so partial updates 'just work'. Server-side validation is NOT re-run on update because the existing-sid check would flag every edit as a duplicate of itself; validate the new rule_text manually before calling. After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_location` | `zia_locations` | Write | Update an existing ZIA location (write operation) |
 | `zia_update_malware_settings` | `zia_atp_malware` | Write | Update the full ZIA Malware Protection threat-class settings block (write operation, PUT-replace). Any of the 16 `*_blocked` / `*_capture` booleans omitted from the payload is reset to False by the API — always call zia_get_malware_settings first, mutate the fields you want to change, then pass the full dict back here. Unknown keys are silently dropped (only the 16 documented snake_case fields are round-tripped). After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_network_app_group` | `zia_cloud_firewall` | Write | Update an existing ZIA network application group (write operation) |
@@ -193,7 +198,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## ZPA — Private Access
 
-51 read-only tools, 53 write tools.
+53 read-only tools, 56 write tools.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
@@ -224,6 +229,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zpa_get_provisioning_key` | `zpa_provisioning_keys` | Read-only | Get a specific ZPA provisioning key by ID (read-only) |
 | `zpa_get_segment_group` | `zpa_segment_groups` | Read-only | Get a specific ZPA segment group by ID (read-only) |
 | `zpa_get_server_group` | `zpa_server_groups` | Read-only | Get a specific ZPA server group by ID (read-only) |
+| `zpa_get_service_edge` | `zpa_service_edge_groups` | Read-only | Get a specific ZPA Service Edge by ID — full record including control-channel state, runtime status, version, location, enrollment certificate, and parent service edge group membership (read-only). |
 | `zpa_get_service_edge_group` | `zpa_service_edge_groups` | Read-only | Get a specific ZPA service edge group by ID (read-only) |
 | `zpa_get_timeout_policy_rule` | `zpa_policy` | Read-only | Get a specific ZPA timeout policy rule by ID (read-only) |
 | `zpa_list_access_policy_rules` | `zpa_access_policies` | Read-only | List ZPA access policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
@@ -247,8 +253,10 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zpa_list_segment_groups` | `zpa_segment_groups` | Read-only | List ZPA segment groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_server_groups` | `zpa_server_groups` | Read-only | List ZPA server groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_service_edge_groups` | `zpa_service_edge_groups` | Read-only | List ZPA service edge groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_service_edges` | `zpa_service_edge_groups` | Read-only | List individual ZPA Service Edges (the cloud-hosted broker instances themselves, distinct from their parent service edge groups). Returns runtime status, version, location, enrollment cert, and `serviceEdgeGroupId`. Use to inventory edges before bulk operations or to verify enrollment after a provisioning key was used. Supports JMESPath client-side filtering via the query parameter (read-only). |
 | `zpa_list_timeout_policy_rules` | `zpa_policy` | Read-only | List ZPA timeout policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_bulk_delete_app_connectors` | `zpa_connectors` | Write | Bulk delete multiple ZPA app connectors (destructive operation) |
+| `zpa_bulk_delete_service_edges` | `zpa_service_edge_groups` | Write | Bulk delete multiple ZPA Service Edges in a single API call (`POST /serviceEdge/bulkDelete`). Each removed edge must be re-provisioned to reconnect (destructive operation, HMAC double-confirmed). |
 | `zpa_create_access_policy_rule` | `zpa_access_policies` | Write | Create a new ZPA access policy rule (write operation) |
 | `zpa_create_app_connector_group` | `zpa_app_connector_groups` | Write | Create a new ZPA app connector group (write operation) |
 | `zpa_create_app_protection_rule` | `zpa_policy` | Write | Create a new ZPA app protection rule (write operation) |
@@ -282,6 +290,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zpa_delete_provisioning_key` | `zpa_provisioning_keys` | Write | Delete a ZPA provisioning key (destructive operation) |
 | `zpa_delete_segment_group` | `zpa_segment_groups` | Write | Delete a ZPA segment group (destructive operation) |
 | `zpa_delete_server_group` | `zpa_server_groups` | Write | Delete a ZPA server group (destructive operation) |
+| `zpa_delete_service_edge` | `zpa_service_edge_groups` | Write | Delete a single ZPA Service Edge — removes the edge from the ZPA cloud; it must be re-provisioned with a fresh provisioning key to reconnect (destructive operation, HMAC double-confirmed). |
 | `zpa_delete_service_edge_group` | `zpa_service_edge_groups` | Write | Delete a ZPA service edge group (destructive operation) |
 | `zpa_delete_timeout_policy_rule` | `zpa_policy` | Write | Delete a ZPA timeout policy rule (destructive operation) |
 | `zpa_update_access_policy_rule` | `zpa_access_policies` | Write | Update an existing ZPA access policy rule (write operation) |
@@ -299,6 +308,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zpa_update_provisioning_key` | `zpa_provisioning_keys` | Write | Update an existing ZPA provisioning key (write operation) |
 | `zpa_update_segment_group` | `zpa_segment_groups` | Write | Update an existing ZPA segment group (write operation) |
 | `zpa_update_server_group` | `zpa_server_groups` | Write | Update an existing ZPA server group (write operation) |
+| `zpa_update_service_edge` | `zpa_service_edge_groups` | Write | Update an existing ZPA Service Edge — enable/disable, rename, or refresh description. Group re-membership and provisioning-key assignment go through the Service Edge Group / Provisioning Key tools instead (write operation). |
 | `zpa_update_service_edge_group` | `zpa_service_edge_groups` | Write | Update an existing ZPA service edge group (write operation) |
 | `zpa_update_timeout_policy_rule` | `zpa_policy` | Write | Update an existing ZPA timeout policy rule (write operation) |
 

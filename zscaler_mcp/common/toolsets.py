@@ -710,10 +710,16 @@ TOOLSETS.register(ToolsetMetadata(
     id="zpa_service_edge_groups",
     service="zpa",
     description=(
-        "ZPA service edge groups (CRUD): zpa_list_service_edge_groups, "
-        "zpa_get_service_edge_group, zpa_create_service_edge_group, "
-        "zpa_update_service_edge_group, zpa_delete_service_edge_group. "
-        "Cloud-hosted alternatives to on-prem app connectors."
+        "ZPA service edges and service edge groups — the cloud-hosted "
+        "broker family (CRUD on groups + read/update/delete on the "
+        "individual edge instances). Group tools: "
+        "zpa_list_service_edge_groups, zpa_get_service_edge_group, "
+        "zpa_create_service_edge_group, zpa_update_service_edge_group, "
+        "zpa_delete_service_edge_group. Individual edge tools: "
+        "zpa_list_service_edges, zpa_get_service_edge, "
+        "zpa_update_service_edge, zpa_delete_service_edge, "
+        "zpa_bulk_delete_service_edges. Edges are enrolled into a group "
+        "via the bootstrap tokens managed in zpa_provisioning_keys."
     ),
     default=True,
 ))
@@ -1111,6 +1117,21 @@ _TOOL_TOOLSET_OVERRIDES: Dict[str, str] = {
     # rule.
     "zia_get_advanced_settings": "zia_advanced_settings",
     "zia_update_advanced_settings": "zia_advanced_settings",
+
+    # ZIA: Custom IPS signature rules (Snort/Suricata-style detection
+    # signatures) — pinned to the `zia_cloud_firewall` toolset so they
+    # load alongside the Cloud Firewall IPS *policy* rule family
+    # (zia_*_cloud_firewall_ips_rule), since admins working on
+    # intrusion prevention typically want both surfaces — the
+    # signature ("what to detect") and the policy rule ("when to
+    # enforce") — available in the same session. Explicit overrides
+    # because the `_ips_signature_rule[s]` infix doesn't match the
+    # existing `_cloud_firewall_*` prefix rules.
+    "zia_list_ips_signature_rules": "zia_cloud_firewall",
+    "zia_get_ips_signature_rule": "zia_cloud_firewall",
+    "zia_create_ips_signature_rule": "zia_cloud_firewall",
+    "zia_update_ips_signature_rule": "zia_cloud_firewall",
+    "zia_delete_ips_signature_rule": "zia_cloud_firewall",
 
     # ZIA: cookie-auth exempt URL list — its own dedicated
     # zia_authentication_settings toolset (covered by the
