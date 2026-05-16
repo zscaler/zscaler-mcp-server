@@ -65,6 +65,7 @@ class ZCCService(BaseService):
     def __init__(self, zscaler_client):
         super().__init__(zscaler_client)
         # Import ZCC tools (all read-only)
+        from .tools.zcc.get_otp import zcc_get_device_otp
         from .tools.zcc.list_devices import zcc_list_devices
         from .tools.zcc.list_forwarding_profiles import zcc_list_forwarding_profiles
         from .tools.zcc.list_trusted_networks import zcc_list_trusted_networks
@@ -85,6 +86,11 @@ class ZCCService(BaseService):
                 "func": zcc_list_forwarding_profiles,
                 "name": "zcc_list_forwarding_profiles",
                 "description": "Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zcc_get_device_otp,
+                "name": "zcc_get_device_otp",
+                "description": "Get the One-Time Password (OTP) bundle for a Zscaler Client Connector device — includes logout_otp (One-Time Logout Password), exit_otp, uninstall_otp, revert_otp, and per-service disable OTPs (zia_disable_otp, zpa_disable_otp, zdx_disable_otp, zdp_disable_otp, anti_tempering_disable_otp, deception_settings_otp). Requires the device's udid (look it up via zcc_list_devices). The returned values are sensitive short-lived credentials — treat them like passwords (read-only).",
             },
         ]
 
@@ -391,6 +397,20 @@ class ZPAService(BaseService):
             zpa_list_application_segments,
             zpa_update_application_segment,
         )
+        from .tools.zpa.app_segments_ba import (
+            zpa_create_application_segment_ba,
+            zpa_delete_application_segment_ba,
+            zpa_get_application_segment_ba,
+            zpa_list_application_segments_ba,
+            zpa_update_application_segment_ba,
+        )
+        from .tools.zpa.app_segments_pra import (
+            zpa_create_application_segment_pra,
+            zpa_delete_application_segment_pra,
+            zpa_get_application_segment_pra,
+            zpa_list_application_segments_pra,
+            zpa_update_application_segment_pra,
+        )
         from .tools.zpa.application_servers import (
             zpa_create_application_server,
             zpa_delete_application_server,
@@ -413,6 +433,14 @@ class ZPAService(BaseService):
         from .tools.zpa.get_scim_groups import scim_group_manager
         from .tools.zpa.get_segments_by_type import app_segments_by_type_manager
         from .tools.zpa.get_trusted_networks import trusted_network_manager
+        from .tools.zpa.lss import (
+            zpa_get_lss_config,
+            zpa_get_lss_log_format,
+            zpa_list_lss_client_types,
+            zpa_list_lss_configs,
+            zpa_list_lss_log_types,
+            zpa_list_lss_status_codes,
+        )
         from .tools.zpa.pra_credential import (
             zpa_create_pra_credential,
             zpa_delete_pra_credential,
@@ -455,6 +483,13 @@ class ZPAService(BaseService):
             zpa_list_service_edge_groups,
             zpa_update_service_edge_group,
         )
+        from .tools.zpa.service_edges import (
+            zpa_bulk_delete_service_edges,
+            zpa_delete_service_edge,
+            zpa_get_service_edge,
+            zpa_list_service_edges,
+            zpa_update_service_edge,
+        )
 
         # Define read-only tools
         self.read_tools = [
@@ -467,6 +502,26 @@ class ZPAService(BaseService):
                 "func": zpa_get_application_segment,
                 "name": "zpa_get_application_segment",
                 "description": "Get a specific ZPA application segment by ID (read-only)",
+            },
+            {
+                "func": zpa_list_application_segments_ba,
+                "name": "zpa_list_application_segments_ba",
+                "description": "List ZPA Browser Access (BA) application segments — the BA-specific counterpart of zpa_list_application_segments. Use only when the admin asks about Browser Access. Supports JMESPath client-side filtering via the query parameter (read-only).",
+            },
+            {
+                "func": zpa_get_application_segment_ba,
+                "name": "zpa_get_application_segment_ba",
+                "description": "Get a specific ZPA Browser Access (BA) application segment by ID, including its common_apps_dto.apps_config block (read-only). Use only when the admin asks about Browser Access.",
+            },
+            {
+                "func": zpa_list_application_segments_pra,
+                "name": "zpa_list_application_segments_pra",
+                "description": "List ZPA Privileged Remote Access (PRA) application segments — the PRA-specific counterpart of zpa_list_application_segments for RDP/SSH targets brokered through the PRA portal. Use only when the admin asks about Privileged Remote Access (RDP/SSH). Supports JMESPath client-side filtering via the query parameter (read-only).",
+            },
+            {
+                "func": zpa_get_application_segment_pra,
+                "name": "zpa_get_application_segment_pra",
+                "description": "Get a specific ZPA Privileged Remote Access (PRA) application segment by ID, including its common_apps_dto.apps_config block of RDP/SSH targets (read-only). Use only when the admin asks about Privileged Remote Access.",
             },
             {
                 "func": zpa_list_app_connector_groups,
@@ -527,6 +582,16 @@ class ZPAService(BaseService):
                 "func": zpa_get_service_edge_group,
                 "name": "zpa_get_service_edge_group",
                 "description": "Get a specific ZPA service edge group by ID (read-only)",
+            },
+            {
+                "func": zpa_list_service_edges,
+                "name": "zpa_list_service_edges",
+                "description": "List individual ZPA Service Edges (the cloud-hosted broker instances themselves, distinct from their parent service edge groups). Returns runtime status, version, location, enrollment cert, and `serviceEdgeGroupId`. Use to inventory edges before bulk operations or to verify enrollment after a provisioning key was used. Supports JMESPath client-side filtering via the query parameter (read-only).",
+            },
+            {
+                "func": zpa_get_service_edge,
+                "name": "zpa_get_service_edge",
+                "description": "Get a specific ZPA Service Edge by ID — full record including control-channel state, runtime status, version, location, enrollment certificate, and parent service edge group membership (read-only).",
             },
             {
                 "func": zpa_list_ba_certificates,
@@ -666,6 +731,41 @@ class ZPAService(BaseService):
                 "name": "get_zpa_trusted_network",
                 "description": "Manage ZPA Trusted Networks (read-only)",
             },
+            # Log Streaming Service (LSS) — read-only configuration audit surface.
+            # The LSS API is configuration-only: it exposes the LSS config records
+            # plus metadata catalogs (log types, status codes, client types, log
+            # formats). It does NOT stream or query log content; that ships from
+            # the LSS Connector to the SIEM out-of-band.
+            {
+                "func": zpa_list_lss_configs,
+                "name": "zpa_list_lss_configs",
+                "description": "List ZPA Log Streaming Service (LSS) configurations — each record routes a log feed (User Activity, User Status, Audit, App Connector Status/Metrics, Browser Access, Web Inspection, etc.) from ZPA to a customer-side LSS Connector / SIEM. Read-only configuration; does not return log content. Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zpa_get_lss_config,
+                "name": "zpa_get_lss_config",
+                "description": "Get a specific ZPA LSS configuration by ID, including source log type, log format template, destination host/port, TLS setting, associated App Connector Groups, policy-rule scope, and filter status codes (read-only).",
+            },
+            {
+                "func": zpa_list_lss_log_types,
+                "name": "zpa_list_lss_log_types",
+                "description": "List the human-readable LSS source log types supported by ZPA (e.g. user_activity, user_status, audit_logs, app_connector_status, app_connector_metrics, browser_access, web_inspection, private_svc_edge_status). Use these values when authoring an LSS config or when verifying baseline log-feed coverage (read-only).",
+            },
+            {
+                "func": zpa_get_lss_log_format,
+                "name": "zpa_get_lss_log_format",
+                "description": "Get the pre-configured LSS log format templates (csv / json / tsv) for a given source log type. Useful for confirming exactly which fields ZPA serializes into the SIEM stream (read-only).",
+            },
+            {
+                "func": zpa_list_lss_status_codes,
+                "name": "zpa_list_lss_status_codes",
+                "description": "List ZPA LSS session status codes used in LSS config filters. Returns code → metadata (including which log types each code applies to). Use when authoring a status-code filter or when interpreting a streamed event (read-only).",
+            },
+            {
+                "func": zpa_list_lss_client_types,
+                "name": "zpa_list_lss_client_types",
+                "description": "List ZPA LSS client types for the current customer (e.g. web_browser, client_connector, machine_tunnel, zpa_lss). Returns the human-readable name → internal identifier mapping used in LSS policy-rule conditions (read-only).",
+            },
         ]
 
         # Define write tools
@@ -684,6 +784,36 @@ class ZPAService(BaseService):
                 "func": zpa_delete_application_segment,
                 "name": "zpa_delete_application_segment",
                 "description": "Delete a ZPA application segment (destructive operation)",
+            },
+            {
+                "func": zpa_create_application_segment_ba,
+                "name": "zpa_create_application_segment_ba",
+                "description": "Create a ZPA Browser Access (BA) application segment — wraps the apps_config payload into common_apps_dto.apps_config and validates each app's domain against the segment's domain_names. Use only when the admin asks for Browser Access (write operation).",
+            },
+            {
+                "func": zpa_update_application_segment_ba,
+                "name": "zpa_update_application_segment_ba",
+                "description": "Update an existing ZPA Browser Access (BA) application segment. Omitting apps_config leaves the published BA apps unchanged; supplying it triggers an SDK-side diff that creates new BA apps, preserves matching ones, and removes BA apps whose domain is no longer listed (write operation).",
+            },
+            {
+                "func": zpa_delete_application_segment_ba,
+                "name": "zpa_delete_application_segment_ba",
+                "description": "Delete a ZPA Browser Access (BA) application segment. Use only when the admin explicitly asks to delete a Browser Access segment (destructive operation).",
+            },
+            {
+                "func": zpa_create_application_segment_pra,
+                "name": "zpa_create_application_segment_pra",
+                "description": "Create a ZPA Privileged Remote Access (PRA) application segment for RDP/SSH targets brokered through the PRA portal — wraps the apps_config payload into common_apps_dto.apps_config and validates each app's domain, protocol (RDP/SSH), and connection_security (RDP-only). Use only when the admin asks for Privileged Remote Access (write operation).",
+            },
+            {
+                "func": zpa_update_application_segment_pra,
+                "name": "zpa_update_application_segment_pra",
+                "description": "Update an existing ZPA Privileged Remote Access (PRA) application segment. Omitting apps_config leaves the published RDP/SSH apps unchanged; supplying it triggers an SDK-side diff that creates new PRA apps, preserves matching ones, and removes PRA apps whose domain is no longer listed (write operation).",
+            },
+            {
+                "func": zpa_delete_application_segment_pra,
+                "name": "zpa_delete_application_segment_pra",
+                "description": "Delete a ZPA Privileged Remote Access (PRA) application segment. Use only when the admin explicitly asks to delete a PRA segment. Does not delete the related pra_credential or pra_portal resources (destructive operation).",
             },
             {
                 "func": zpa_create_app_connector_group,
@@ -774,6 +904,21 @@ class ZPAService(BaseService):
                 "func": zpa_delete_service_edge_group,
                 "name": "zpa_delete_service_edge_group",
                 "description": "Delete a ZPA service edge group (destructive operation)",
+            },
+            {
+                "func": zpa_update_service_edge,
+                "name": "zpa_update_service_edge",
+                "description": "Update an existing ZPA Service Edge — enable/disable, rename, or refresh description. Group re-membership and provisioning-key assignment go through the Service Edge Group / Provisioning Key tools instead (write operation).",
+            },
+            {
+                "func": zpa_delete_service_edge,
+                "name": "zpa_delete_service_edge",
+                "description": "Delete a single ZPA Service Edge — removes the edge from the ZPA cloud; it must be re-provisioned with a fresh provisioning key to reconnect (destructive operation, HMAC double-confirmed).",
+            },
+            {
+                "func": zpa_bulk_delete_service_edges,
+                "name": "zpa_bulk_delete_service_edges",
+                "description": "Bulk delete multiple ZPA Service Edges in a single API call (`POST /serviceEdge/bulkDelete`). Each removed edge must be re-provisioned to reconnect (destructive operation, HMAC double-confirmed).",
             },
             {
                 "func": zpa_create_ba_certificate,
@@ -931,10 +1076,28 @@ class ZIAService(BaseService):
         super().__init__(zscaler_client)
         # Import all verb-based ZIA tools
         from .tools.zia.activation import zia_activate_configuration, zia_get_activation_status
-        from .tools.zia.atp_malicious_urls import (
+        from .tools.zia.advanced_settings import (
+            zia_get_advanced_settings,
+            zia_update_advanced_settings,
+        )
+        from .tools.zia.atp_malware_protection import (
+            zia_get_atp_malware_inspection,
+            zia_get_atp_malware_policy,
+            zia_get_atp_malware_protocols,
+            zia_get_malware_settings,
+            zia_update_atp_malware_inspection,
+            zia_update_atp_malware_policy,
+            zia_update_atp_malware_protocols,
+            zia_update_malware_settings,
+        )
+        from .tools.zia.atp_settings import (
             zia_add_atp_malicious_urls,
             zia_delete_atp_malicious_urls,
+            zia_get_atp_security_exceptions,
+            zia_get_atp_settings,
             zia_list_atp_malicious_urls,
+            zia_update_atp_security_exceptions,
+            zia_update_atp_settings,
         )
         from .tools.zia.auth_exempt_urls import (
             zia_add_auth_exempt_urls,
@@ -1015,6 +1178,13 @@ class ZIAService(BaseService):
             zia_list_ip_source_groups,
             zia_update_ip_source_group,
         )
+        from .tools.zia.ips_signature_rules import (
+            zia_create_ips_signature_rule,
+            zia_delete_ips_signature_rule,
+            zia_get_ips_signature_rule,
+            zia_list_ips_signature_rules,
+            zia_update_ips_signature_rule,
+        )
         from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
         from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
         from .tools.zia.list_user_departments import zia_user_department_manager
@@ -1028,6 +1198,10 @@ class ZIAService(BaseService):
             zia_list_location_groups,
             zia_list_locations,
             zia_update_location,
+        )
+        from .tools.zia.mobile_threat_settings import (
+            zia_get_mobile_advanced_settings,
+            zia_update_mobile_advanced_settings,
         )
         from .tools.zia.network_app_groups import (
             zia_create_network_app_group,
@@ -1431,6 +1605,50 @@ class ZIAService(BaseService):
                 "name": "zia_list_atp_malicious_urls",
                 "description": "List ZIA ATP malicious URLs (read-only) Supports JMESPath client-side filtering via the query parameter.",
             },
+            # Advanced Settings (tenant-wide singleton — Administration → Advanced Settings)
+            {
+                "func": zia_get_advanced_settings,
+                "name": "zia_get_advanced_settings",
+                "description": "Get the full ZIA Advanced Settings block (read-only) — ~50 knobs surfaced under Administration → Advanced Settings, including authentication / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6) with their include/exempt URL / app / category lists, Office 365 one-click (enable_office365), UI session timeout (ui_session_timeout — seconds), surrogate IP enforcement, HTTP tunnel tracking (track_http_tunnel_on_http_ports, block_http_tunnel_on_non_http_ports), domain-fronting block, cascade URL filtering, policy for unauthenticated traffic, admin rank access, HTTP/2 non-browser traffic, ECS-for-all, dynamic user risk, CONNECT-host / SNI mismatch handling, and SIPA XFF header insertion. Always call this before zia_update_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            # Mobile Advanced Threat Settings (tenant-wide singleton governing the Mobile Malware Protection policy applied to mobile-client traffic)
+            {
+                "func": zia_get_mobile_advanced_settings,
+                "name": "zia_get_mobile_advanced_settings",
+                "description": "Get the ZIA Mobile Advanced Threat Settings block (read-only) — the tenant-wide singleton that governs the Mobile Malware Protection policy applied to traffic from mobile clients (iOS / Android via the Zscaler Client Connector). Returns 8 boolean knobs: block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers. Always call this before zia_update_mobile_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            # ATP Policy Settings (tenant-wide singletons: full ATP policy block + bypass URL list)
+            {
+                "func": zia_get_atp_settings,
+                "name": "zia_get_atp_settings",
+                "description": "Get the full ZIA Advanced Threat Protection (ATP) policy settings block — 50+ knobs covering command-and-control blocking, malware sites, browser exploits, file-format vulnerabilities, phishing, blocked countries, BitTorrent, Tor, crypto-mining, DGA domains, ad/spyware sites, and per-threat capture toggles. Always call this before zia_update_atp_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Read-only. Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_atp_security_exceptions,
+                "name": "zia_get_atp_security_exceptions",
+                "description": "Get the list of URLs currently bypassed by ZIA ATP security exceptions (the ATP-policy bypass list — distinct from the cookie-auth exempt list and the URL-category bypass list). Read-only. Supports JMESPath client-side filtering via the query parameter.",
+            },
+            # ATP Malware Protection Policy (tenant-wide singletons: file-handling toggles, direction inspection, protocol inspection, and the 16-field threat-class block)
+            {
+                "func": zia_get_atp_malware_policy,
+                "name": "zia_get_atp_malware_policy",
+                "description": "Get the ZIA ATP Malware Protection Policy file-handling toggles (read-only). Returns two booleans: block_unscannable_files (block files that cannot be scanned — encrypted archives, corrupt files, unknown formats) and block_password_protected_archive_files. Always call this before zia_update_atp_malware_policy so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_atp_malware_inspection,
+                "name": "zia_get_atp_malware_inspection",
+                "description": "Get the ZIA ATP Malware Protection traffic-direction inspection toggles (read-only). Returns two booleans: inspect_inbound (scan incoming internet traffic for malicious content) and inspect_outbound (scan outgoing traffic). Always call this before zia_update_atp_malware_inspection so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_atp_malware_protocols,
+                "name": "zia_get_atp_malware_protocols",
+                "description": "Get the ZIA ATP Malware Protection protocol-level inspection toggles (read-only). Returns three booleans: inspect_http (scan HTTP — and HTTPS if SSL Inspection is enabled), inspect_ftp_over_http (scan FTP-over-HTTP), inspect_ftp (scan native FTP). Always call this before zia_update_atp_malware_protocols so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_malware_settings,
+                "name": "zia_get_malware_settings",
+                "description": "Get the full ZIA Malware Protection threat-class settings block (read-only) — 16 booleans covering virus, trojan, worm, adware, spyware, ransomware, remote-access tool, and unwanted-application enforcement, each with a matching *_capture PCAP toggle. Always call this before zia_update_malware_settings so partial updates can be merged onto the existing payload (the update is PUT-replace; omitted fields are reset to False). Supports JMESPath client-side filtering via the query parameter.",
+            },
             # Auth Exempt URLs
             {
                 "func": zia_list_auth_exempt_urls,
@@ -1538,6 +1756,18 @@ class ZIAService(BaseService):
                 "func": zia_get_cloud_firewall_ips_rule,
                 "name": "zia_get_cloud_firewall_ips_rule",
                 "description": "Get a specific ZIA cloud firewall IPS rule by ID (read-only)",
+            },
+            # Custom IPS Signature Rules (Snort/Suricata-style detection signatures —
+            # complementary to the Cloud Firewall IPS policy rules above)
+            {
+                "func": zia_list_ips_signature_rules,
+                "name": "zia_list_ips_signature_rules",
+                "description": "List custom ZIA IPS signature rules (read-only) — Snort/Suricata-style detection signatures authored on the tenant. Distinct from the Cloud Firewall IPS rule family (zia_list_cloud_firewall_ips_rules), which gates *enforcement* of IPS on firewall-matched traffic; signatures describe *what* to detect. Supports pagination via the page / page_size parameters and JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_ips_signature_rule,
+                "name": "zia_get_ips_signature_rule",
+                "description": "Get a specific custom ZIA IPS signature rule by ID (read-only). Returns the signature metadata and the raw rule_text Snort/Suricata signature body.",
             },
             # File Type Control Rules
             {
@@ -1866,6 +2096,50 @@ class ZIAService(BaseService):
                 "name": "zia_delete_atp_malicious_urls",
                 "description": "Delete URLs from ZIA ATP malicious URL list (destructive operation)",
             },
+            # ATP Policy Settings (tenant-wide singletons; PUT-replace — fetch first, merge, then write)
+            {
+                "func": zia_update_atp_settings,
+                "name": "zia_update_atp_settings",
+                "description": "Update the ZIA Advanced Threat Protection (ATP) policy settings block (write operation, PUT-replace). Any field omitted from the payload is reset to its API default — always call zia_get_atp_settings first, mutate the fields you want to change, then pass the full dict back here. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            # Advanced Settings (tenant-wide singleton — Administration → Advanced Settings)
+            {
+                "func": zia_update_advanced_settings,
+                "name": "zia_update_advanced_settings",
+                "description": "Update the ZIA Advanced Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default (or [] for list fields). Always call zia_get_advanced_settings first, mutate the fields you want to change, then pass the full dict back here. Tunes the same surface as Administration → Advanced Settings in the ZIA Admin Portal: auth / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6), Office 365 one-click, UI session timeout, surrogate IP, HTTP tunnel handling, domain-fronting block, HTTP/2, ECS-for-all, dynamic user risk, SNI / CONNECT-host mismatch handling, SIPA XFF insertion, etc. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            # Mobile Advanced Threat Settings (tenant-wide singleton — Mobile Malware Protection policy)
+            {
+                "func": zia_update_mobile_advanced_settings,
+                "name": "zia_update_mobile_advanced_settings",
+                "description": "Update the ZIA Mobile Advanced Threat Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default. Always call zia_get_mobile_advanced_settings first, mutate the boolean knobs you want to change (block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers), then pass the full dict back here. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_update_atp_security_exceptions,
+                "name": "zia_update_atp_security_exceptions",
+                "description": "Replace the ZIA ATP security-exception bypass URL list (write operation, PUT-replace). The list provided REPLACES the existing list (it does not merge); pass the full intended set. Fetch the current list via zia_get_atp_security_exceptions first if you only want to add or remove a URL. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            # ATP Malware Protection Policy (tenant-wide singletons backed by zscaler.zia.malware_protection_policy.MalwareProtectionPolicyAPI)
+            {
+                "func": zia_update_atp_malware_policy,
+                "name": "zia_update_atp_malware_policy",
+                "description": "Update the ZIA ATP Malware Protection Policy file-handling toggles (write operation, PUT-replace). Both block_unscannable_files and block_password_protected_archive_files are required; fetch the current state via zia_get_atp_malware_policy first if you only want to change one of them. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_update_atp_malware_inspection,
+                "name": "zia_update_atp_malware_inspection",
+                "description": "Update the ZIA ATP Malware Protection traffic-direction inspection toggles (write operation, PUT-replace). Both inspect_inbound and inspect_outbound are required; fetch the current state via zia_get_atp_malware_inspection first if you only want to change one direction. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_update_atp_malware_protocols,
+                "name": "zia_update_atp_malware_protocols",
+                "description": "Update the ZIA ATP Malware Protection protocol-level inspection toggles (write operation, PUT-replace). All three of inspect_http, inspect_ftp_over_http, and inspect_ftp are required; fetch the current state via zia_get_atp_malware_protocols first if you only want to change one toggle. After a successful update, call zia_activate_configuration to apply the change. NOTE: the SDK has a known response-parsing bug on this endpoint — to return authoritative state, this tool re-fetches via zia_get_atp_malware_protocols after a successful PUT.",
+            },
+            {
+                "func": zia_update_malware_settings,
+                "name": "zia_update_malware_settings",
+                "description": "Update the full ZIA Malware Protection threat-class settings block (write operation, PUT-replace). Any of the 16 `*_blocked` / `*_capture` booleans omitted from the payload is reset to False by the API — always call zia_get_malware_settings first, mutate the fields you want to change, then pass the full dict back here. Unknown keys are silently dropped (only the 16 documented snake_case fields are round-tripped). After a successful update, call zia_activate_configuration to apply the change.",
+            },
             # Auth Exempt URLs
             {
                 "func": zia_add_auth_exempt_urls,
@@ -1914,6 +2188,22 @@ class ZIAService(BaseService):
                 "func": zia_delete_cloud_firewall_ips_rule,
                 "name": "zia_delete_cloud_firewall_ips_rule",
                 "description": "Delete a ZIA cloud firewall IPS rule (destructive operation)",
+            },
+            # Custom IPS Signature Rules (Snort/Suricata-style detection signatures)
+            {
+                "func": zia_create_ips_signature_rule,
+                "name": "zia_create_ips_signature_rule",
+                "description": "Create a custom ZIA IPS signature rule (write operation). The rule_text (Snort/Suricata-style signature with a unique sid:) is server-side validated by the SDK against the ZIA dynamic-validation endpoint *before* the create request is issued — syntactic, semantic, or duplicate-sid errors are surfaced as a ValueError without leaving a stub rule on the tenant. After a successful create, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_update_ips_signature_rule,
+                "name": "zia_update_ips_signature_rule",
+                "description": "Update an existing custom ZIA IPS signature rule (write operation, PUT-replace). Silently backfills the load-bearing fields name and rule_text from the existing record when the caller omits them, so partial updates 'just work'. Server-side validation is NOT re-run on update because the existing-sid check would flag every edit as a duplicate of itself; validate the new rule_text manually before calling. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_delete_ips_signature_rule,
+                "name": "zia_delete_ips_signature_rule",
+                "description": "Delete a custom ZIA IPS signature rule by ID (destructive operation, requires HMAC double-confirmation). After a successful delete, call zia_activate_configuration to apply the change.",
             },
             # Cloud App Control Rules
             {

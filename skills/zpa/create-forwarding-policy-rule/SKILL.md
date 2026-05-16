@@ -27,6 +27,46 @@ Create ZPA client forwarding policy rules that control how the Zscaler Client Co
 
 ---
 
+## Forwarding Policy Design Rules (baseline alignment)
+
+Reference: ZPA Baseline Recommendations v1.0 §Client Forwarding Policy Recommendations.
+
+1. **Always use "Only Forward Allowed Applications" — never the default "Forward to ZPA".** The default exposes the entire ZPA application list to every ZCC-enrolled device, regardless of access-policy permissions.
+2. **Prefer FQDN segments to IP/CIDR.** Use IP only when DNS-based discovery is not feasible (legacy apps).
+3. **Reject overly broad scope.** Never use `*.*` wildcards or CIDRs ≥ /16 (e.g. `10.0.0.0/8`) in forwarding `INTERCEPT` rules — break them into smaller FQDN or per-subnet segments.
+4. **Pair forwarding rules with `SCIM_GROUP` scoping** so users only see and intercept apps they're authorized for.
+5. **Order rules from most specific to least specific.** Place private-app `INTERCEPT` rules above `BYPASS` and discovery rules.
+
+### Canonical Bypass List (recommended)
+
+Reference: doc page 36. These destinations should be bypassed (not intercepted) in every ZPA tenant to avoid breaking ZCC operation, OS updates, IdP/SSO sign-in, and certificate validation:
+
+```text
+# Microsoft 365 / Entra ID / Intune / Windows Update
+*.office365.com
+*.microsoft.com
+login.microsoftonline.com
+*.windowsupdate.microsoft.com
+
+# Apple / iCloud / macOS updates
+*.apple.com
+*.icloud.com
+
+# Certificate revocation
+ocsp.*
+crl.*
+
+# Optional — only if Workspace traffic isn't intentionally tunneled
+*.google.com
+
+# EDR / AV vendor update endpoints
+# (CrowdStrike Falcon, SentinelOne, Microsoft Defender, etc. — confirm with the vendor list)
+```
+
+When creating bypass rules for these, use one rule per logical group (Microsoft, Apple, CRL/OCSP, EDR) so they're easy to audit and update.
+
+---
+
 ## Condition Object Type Reference
 
 Forwarding policies support the same condition object types as access policies. Each condition block must contain a **single object type**. Multiple condition blocks are ANDed together.

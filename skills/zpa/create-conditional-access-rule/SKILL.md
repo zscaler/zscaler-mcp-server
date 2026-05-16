@@ -118,17 +118,17 @@ filter / search / projection you tried:
 - The named application segment was not found. **Do not improvise a
   segment inline from this skill.** App segments depend on a chain
   (App Connector Group → Server Group → Segment Group → App Segment),
-  and that chain is owned by the `zpa-onboard-application` skill. Two
+  and that chain is owned by the `zpa-application_segment-onboard` skill. Two
   valid paths:
   1. *"I can't find an application segment named `<name>`. Want me to
      use a different existing segment?"* — and proceed when the admin
      names one that does exist.
   2. *"I can't find an application segment named `<name>`. To create
-     it, I'll hand off to the `zpa-onboard-application` skill first
+     it, I'll hand off to the `zpa-application_segment-onboard` skill first
      (it walks the connector-group → server-group → segment-group →
      app-segment chain), then come back here to attach the
      conditional-access rule. Want me to proceed?"* — and on yes,
-     trigger `zpa-onboard-application`, then resume Step 3 of this
+     trigger `zpa-application_segment-onboard`, then resume Step 3 of this
      skill with the new app segment ID.
 - The named SCIM group was not found. SCIM groups are provisioned from
   the IdP, not via MCP. Phrase it as: *"I can't find a SCIM group
@@ -297,7 +297,7 @@ move on.
 
 ### Related skills (chain these, don't reinvent them)
 
-- `zpa-onboard-application` — **upstream dependency.** Owns the full
+- `zpa-application_segment-onboard` — **upstream dependency.** Owns the full
   chain: App Connector Group → Server Group → Segment Group → App
   Segment. Trigger this *first* if the named app segment does not yet
   exist; resume this skill afterward with the new segment ID.
@@ -320,7 +320,7 @@ move on.
 **Typical end-to-end chain for a new application + conditional access:**
 
 ```text
-zpa-onboard-application       (creates connector group, server group,
+zpa-application_segment-onboard       (creates connector group, server group,
                                segment group, app segment, base access rule)
         ↓
 zpa-create-conditional-access-rule  (this skill — adds identity + posture +

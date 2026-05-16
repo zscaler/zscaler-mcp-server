@@ -10,6 +10,7 @@ This guide provides complete instructions for deploying the Zscaler MCP Server t
 - [Method 1: CloudFormation Deployment (Recommended)](#method-1-cloudformation-deployment-recommended)
 - [Method 2: Manual AWS CLI Deployment](#method-2-manual-aws-cli-deployment)
 - [Testing Your Deployment](#testing-your-deployment)
+- [Connecting MCP clients to the Gateway (Claude / Cursor / Inspector)](#connecting-mcp-clients-to-the-gateway-claude--cursor--inspector)
 - [Configuring OAuth (Auth0) for AgentCore Identity](#configuring-oauth-auth0-for-agentcore-identity)
 - [Troubleshooting](#troubleshooting)
 
@@ -644,6 +645,178 @@ INFO:zscaler_mcp.config:ZSCALER_SECRET_NAME not set - using credentials from env
 ```
 
 ✅ **Success!** Real data from Zscaler API.
+
+---
+
+## Connecting MCP clients to the Gateway (Claude / Cursor / Inspector)
+
+Once the AgentCore Gateway is up, you can point any MCP-compatible client at it. The Gateway exposes a standard **Streamable HTTP** MCP endpoint at:
+
+```text
+https://<gateway-id>.gateway.bedrock-agentcore.<region>.amazonaws.com/mcp
+```
+
+Authentication is whatever you wired into the Gateway's `CUSTOM_JWT` authorizer at create time (typically Auth0, Cognito, Entra ID, Okta, Ping, etc.). Clients pass the access token as `Authorization: Bearer <token>`.
+
+### Getting a bearer token (Auth0 example)
+
+For Auth0 M2M clients, mint a token with the audience configured on the Gateway:
+
+```bash
+export AUTH0_DOMAIN=<tenant>.auth0.com
+export AUTH0_CLIENT_ID=<m2m-client-id>
+export AUTH0_CLIENT_SECRET=<m2m-client-secret>
+export AUTH0_AUDIENCE=urn:zscaler-mcp:gateway   # whatever you set on the Gateway
+
+TOKEN="$(python local_dev/scripts/get_auth0_gateway_token.py)"
+```
+
+The same flow works for any OIDC IdP — replace the script with whatever your IdP wants for client-credentials.
+
+### Cursor
+
+Cursor speaks Streamable HTTP natively, so the config is short. Edit `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-gateway": {
+      "url": "https://<gateway-id>.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <paste-token>"
+      }
+    }
+  }
+}
+```
+
+Reload the MCP server from Cursor Settings → MCP. You'll see the full Zscaler tool catalog appear (subject to the entitlement filter on the runtime — see [Tool count vs. tools/list pagination](#tool-count-vs-toolslist-pagination) below).
+
+### Claude Desktop
+
+Claude Desktop only speaks **stdio**, so we bridge through the [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) npm package, which translates stdio ⇄ HTTP. Edit `claude_desktop_config.json` (location varies by OS — `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-gateway": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://<gateway-id>.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp",
+        "--header",
+        "Authorization: Bearer <paste-token>",
+        "--header",
+        "MCP-Protocol-Version: 2025-11-25",
+        "--transport",
+        "http-only"
+      ]
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The Zscaler tools should appear in the tool picker (the hammer icon).
+
+#### ⚠️ The `MCP-Protocol-Version` header is mandatory
+
+This is the single most-painful trap when wiring Claude Desktop to AgentCore Gateway. **You must pass `--header "MCP-Protocol-Version: 2025-11-25"` explicitly.**
+
+`mcp-remote` (verified against `0.1.37` and `0.1.38`) successfully negotiates protocol `2025-11-25` during the `initialize` handshake, but on every subsequent HTTP request it sends a hardcoded `MCP-Protocol-Version: 2025-03-26` header. AgentCore Gateway strictly validates that header and rejects unknown versions with:
+
+```text
+HTTP 400 Bad Request — Unsupported MCP protocol version: 2025-03-26
+```
+
+Symptom in Claude Desktop: the server connects (no red error), but the tool list stays empty and `mcp.log` shows the 400 above. Adding the explicit `--header "MCP-Protocol-Version: 2025-11-25"` overrides the buggy hardcoded value and the tool list populates. The `--transport http-only` flag is also required — without it `mcp-remote` defaults to SSE, which AgentCore Gateway doesn't expose.
+
+The same fix applies to any client wrapping `mcp-remote`; track [mcp-remote#TBD](https://github.com/geelen/mcp-remote/issues) for upstream resolution.
+
+### MCP Inspector
+
+The MCP Inspector (`npx @modelcontextprotocol/inspector`) is the fastest way to sanity-check the Gateway interactively.
+
+1. Launch with `npx @modelcontextprotocol/inspector` and open the URL it prints.
+2. In the UI, set **Transport Type** = `Streamable HTTP`.
+3. Set **URL** = `https://<gateway-id>.gateway.bedrock-agentcore.<region>.amazonaws.com/mcp`.
+4. Under **Authentication**, choose `Bearer Token` and paste the token from above.
+5. Open **Configuration** (gear icon) and bump these two values — the AgentCore runtime is cold-start-prone and the defaults will time out on the first call:
+   - **Request Timeout**: `120000` (ms)
+   - **Maximum Total Timeout**: `300000` (ms)
+6. Click **Connect**, then go to the **Tools** tab and **List Tools**.
+
+### Sanity-check from `curl`
+
+For a quick scriptable smoke test (no client install needed):
+
+```bash
+curl -sS -X POST \
+  "https://<gateway-id>.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "MCP-Protocol-Version: 2025-11-25" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+Responses are returned either as plain JSON or as Server-Sent Events (the Gateway picks based on `Accept`). If you see `event: message\ndata: {...}`, parse out the `data:` line.
+
+### Tool count vs. tools/list pagination
+
+**`tools/list` is paginated. A single call returns ~30 tools per page.** This is documented in the [official AgentCore docs](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-using-mcp-list.html) and tripped us up during initial testing — we thought the Gateway was serving a stale 30-tool schema when it was actually just page 1.
+
+To enumerate every tool, follow `result.nextCursor` until it's absent:
+
+```python
+import json, os, urllib.request
+
+GW = "https://<gateway-id>.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp"
+HEADERS = {
+    "Authorization": f"Bearer {os.environ['TOKEN']}",
+    "Content-Type": "application/json",
+    "Accept": "application/json, text/event-stream",
+    "MCP-Protocol-Version": "2025-11-25",
+}
+
+def _decode(raw: str) -> dict:
+    raw = raw.strip()
+    if raw.startswith("{"):
+        return json.loads(raw)
+    return json.loads([l[5:].strip() for l in raw.splitlines() if l.startswith("data:")][-1])
+
+tools, cursor, page = [], None, 0
+while True:
+    page += 1
+    params = {} if cursor is None else {"cursor": cursor}
+    payload = {"jsonrpc": "2.0", "id": page, "method": "tools/list", "params": params}
+    req = urllib.request.Request(GW, data=json.dumps(payload).encode(),
+                                 headers=HEADERS, method="POST")
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        body = _decode(resp.read().decode())
+    tools.extend(body["result"]["tools"])
+    cursor = body["result"].get("nextCursor")
+    if not cursor:
+        break
+
+print(f"Total tools: {len(tools)}")
+```
+
+Real MCP client libraries (`mcp` Python SDK, `mcp-remote`, Cursor, Claude, LangChain `MultiServerMCPClient`, Strands `MCPClient`) all paginate transparently, so this is only a concern when hand-rolling `curl` / `urllib` checks.
+
+#### Why the total may be lower than the tool count in `services.py`
+
+The runtime applies an **OneAPI entitlement filter** at startup — the toolset selection is intersected with the products listed in the OneAPI bearer token's `service-info[].prd` claim. If your `ZSCALER_CLIENT_ID` isn't entitled to ZIA, the ~140 ZIA tools won't be registered. This is the documented, opt-out-able behavior in `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`. The number you should compare against is the runtime's actual registered tools, visible in the CloudWatch startup log:
+
+```text
+selected_toolsets filtered to N by entitlements
+…
+Registered NNN tools
+```
+
+### Gateway-prefixed tool names
+
+The Gateway prepends `<target-name>___` to every tool name. With our default `TargetName: zscaler-mcp`, the runtime's `zpa_list_segment_groups` is exposed as `zscaler-mcp___zpa_list_segment_groups`. Clients must use the prefixed form when calling `tools/call`. AI agent frameworks (Bedrock Agents, Strands, LangChain, etc.) handle this transparently — the prefix only matters when you're invoking tools by hand from `curl` or a notebook.
 
 ---
 

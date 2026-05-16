@@ -50,7 +50,7 @@ zins_get_shadow_it_summary(
     start_days_ago=16,
     end_days_ago=2
 )
-```text
+```
 
 This returns a comprehensive summary including:
 
@@ -80,7 +80,7 @@ zins_get_shadow_it_apps(
     end_days_ago=2,
     limit=50
 )
-```text
+```
 
 Each application entry includes:
 
@@ -93,10 +93,12 @@ Each application entry includes:
 
 **Prioritize by risk:**
 
-1. **High risk + unsanctioned + high data volume** = Immediate attention
-2. **High risk + unsanctioned + low data volume** = Monitor closely
-3. **Low risk + unsanctioned + high data volume** = Review data transfers
-4. **Sanctioned apps** = Verify compliance and proper configuration
+| Risk + Sanctioned State | Data Volume | Action |
+|---|---|---|
+| High risk + unsanctioned | High | Immediate attention — block and investigate uploads |
+| High risk + unsanctioned | Low | Monitor closely; reassess if usage trends up |
+| Low risk + unsanctioned | High | Review data transfers; confirm content is not sensitive |
+| Sanctioned | Any | Verify compliance and proper configuration |
 
 ---
 
@@ -110,7 +112,7 @@ zins_get_casb_app_report(
     end_days_ago=2,
     limit=30
 )
-```text
+```
 
 CASB (Cloud Access Security Broker) provides data and threat protection for data at rest in cloud services. This report shows:
 
@@ -132,7 +134,7 @@ Cross-reference CASB data with shadow IT findings to identify:
 
 ```text
 zins_get_iot_device_stats(limit=50)
-```text
+```
 
 IoT Device Visibility uses AI/ML to automatically detect, identify, and classify IoT devices. Returns:
 
@@ -265,7 +267,20 @@ device type and appropriate network segmentation.
 8. Schedule monthly shadow IT audits
 9. Implement automated alerts for new high-risk app discovery
 10. Review IoT device classifications quarterly
-```text
+```
+
+---
+
+## Validation
+
+Before presenting the final report, sanity-check each tool's response. The four ZINS reads are independent — one of them returning empty does NOT mean the audit failed. It usually means a specific feature isn't licensed or no data exists for the window.
+
+| Tool | Expected shape | If empty / error |
+|---|---|---|
+| `zins_get_shadow_it_summary` | `total_apps`, `total_bytes`, `group_by_app_cat_for_app`, `group_by_risk_index_for_app` | Confirm `start_days_ago`/`end_days_ago` resolve to a supported window of 1, 7, 15, or 30 days. If still empty, verify Z-Insights licensing in the tenant. |
+| `zins_get_shadow_it_apps` | List of apps with `risk_index` and `sanctioned_state` | Widen to a 14- or 30-day window before concluding "no shadow IT exists" — short windows can legitimately be empty on small tenants. |
+| `zins_get_casb_app_report` | List of SaaS apps with usage counts | Verify CASB is licensed and the time range is within 90 days. Do not invent data if CASB returns nothing. |
+| `zins_get_iot_device_stats` | `devices_count`, `iot_devices_count`, `entries` | IoT Device Visibility is a separately-licensed add-on. If unavailable, **note this in the report** rather than treating it as a workflow failure. |
 
 ---
 
@@ -282,7 +297,7 @@ This could mean:
 - The time period may be too narrow -- try a 14-day window
 
 This is a positive finding if app governance policies are in place.
-```text
+```
 
 ### IoT Visibility Not Enabled
 
@@ -295,7 +310,11 @@ Possible causes:
 - Device classification is still in progress
 
 Action: Verify IoT Device Visibility licensing and sensor deployment.
-```text
+```
+
+### Partial Data (Some Calls Succeed, Others Fail)
+
+If one of the four ZINS reads returns an error or empty payload while the others succeed, **present the available sections and clearly flag the gap** — do not fail the whole audit. Most common cause: an add-on (IoT Device Visibility, CASB) is not licensed on the tenant, or the requested window exceeds a per-tool limit. Mark the missing section as "Not available — feature not licensed / data not collected" so the requester can see the scope of what was audited.
 
 ---
 

@@ -25,7 +25,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## ZIA — Internet Access
 
-74 read-only tools, 71 write tools.
+84 read-only tools, 82 write tools.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
@@ -36,6 +36,12 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `get_zia_users` | `zia_users` | Read-only | Manage ZIA users for authentication and access control (read-only) |
 | `zia_geo_search` | `zia_locations` | Read-only | Perform ZIA geographic lookups (coordinates, IP, or city prefix) (read-only) |
 | `zia_get_activation_status` | `zia_admin` | Read-only | Get ZIA configuration activation status (read-only) |
+| `zia_get_advanced_settings` | `zia_advanced_settings` | Read-only | Get the full ZIA Advanced Settings block (read-only) — ~50 knobs surfaced under Administration → Advanced Settings, including authentication / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6) with their include/exempt URL / app / category lists, Office 365 one-click (enable_office365), UI session timeout (ui_session_timeout — seconds), surrogate IP enforcement, HTTP tunnel tracking (track_http_tunnel_on_http_ports, block_http_tunnel_on_non_http_ports), domain-fronting block, cascade URL filtering, policy for unauthenticated traffic, admin rank access, HTTP/2 non-browser traffic, ECS-for-all, dynamic user risk, CONNECT-host / SNI mismatch handling, and SIPA XFF header insertion. Always call this before zia_update_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_atp_malware_inspection` | `zia_atp_malware` | Read-only | Get the ZIA ATP Malware Protection traffic-direction inspection toggles (read-only). Returns two booleans: inspect_inbound (scan incoming internet traffic for malicious content) and inspect_outbound (scan outgoing traffic). Always call this before zia_update_atp_malware_inspection so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_atp_malware_policy` | `zia_atp_malware` | Read-only | Get the ZIA ATP Malware Protection Policy file-handling toggles (read-only). Returns two booleans: block_unscannable_files (block files that cannot be scanned — encrypted archives, corrupt files, unknown formats) and block_password_protected_archive_files. Always call this before zia_update_atp_malware_policy so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_atp_malware_protocols` | `zia_atp_malware` | Read-only | Get the ZIA ATP Malware Protection protocol-level inspection toggles (read-only). Returns three booleans: inspect_http (scan HTTP — and HTTPS if SSL Inspection is enabled), inspect_ftp_over_http (scan FTP-over-HTTP), inspect_ftp (scan native FTP). Always call this before zia_update_atp_malware_protocols so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_atp_security_exceptions` | `zia_atp_policy` | Read-only | Get the list of URLs currently bypassed by ZIA ATP security exceptions (the ATP-policy bypass list — distinct from the cookie-auth exempt list and the URL-category bypass list). Read-only. Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_atp_settings` | `zia_atp_policy` | Read-only | Get the full ZIA Advanced Threat Protection (ATP) policy settings block — 50+ knobs covering command-and-control blocking, malware sites, browser exploits, file-format vulnerabilities, phishing, blocked countries, BitTorrent, Tor, crypto-mining, DGA domains, ad/spyware sites, and per-threat capture toggles. Always call this before zia_update_atp_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Read-only. Supports JMESPath client-side filtering via the query parameter. |
 | `zia_get_cloud_app_control_rule` | `zia_cloud_app_control` | Read-only | Get a specific ZIA Cloud App Control rule by rule_type AND rule_id (read-only). Both arguments are required because the CAC API is category-scoped — rule_id alone is not sufficient. If you only know the app name, call zia_list_cloud_app_control_actions(cloud_app=...) first to discover the rule_type. |
 | `zia_get_cloud_firewall_dns_rule` | `zia_cloud_firewall` | Read-only | Get a specific ZIA cloud firewall DNS rule by ID (read-only) |
 | `zia_get_cloud_firewall_ips_rule` | `zia_cloud_firewall` | Read-only | Get a specific ZIA cloud firewall IPS rule by ID (read-only) |
@@ -44,13 +50,16 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_get_gre_tunnel` | `zia_locations` | Read-only | Get a specific ZIA GRE tunnel by ID (read-only) |
 | `zia_get_ip_destination_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA IP destination group by ID (read-only) |
 | `zia_get_ip_source_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA IP source group by ID (read-only) |
+| `zia_get_ips_signature_rule` | `zia_cloud_firewall` | Read-only | Get a specific custom ZIA IPS signature rule by ID (read-only). Returns the signature metadata and the raw rule_text Snort/Suricata signature body. |
 | `zia_get_location` | `zia_locations` | Read-only | Get a specific ZIA location by ID (read-only) |
 | `zia_get_location_group` | `zia_locations` | Read-only | Get a specific ZIA location group by ID (read-only) |
+| `zia_get_malware_settings` | `zia_atp_malware` | Read-only | Get the full ZIA Malware Protection threat-class settings block (read-only) — 16 booleans covering virus, trojan, worm, adware, spyware, ransomware, remote-access tool, and unwanted-application enforcement, each with a matching *_capture PCAP toggle. Always call this before zia_update_malware_settings so partial updates can be merged onto the existing payload (the update is PUT-replace; omitted fields are reset to False). Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_mobile_advanced_settings` | `zia_threat_settings` | Read-only | Get the ZIA Mobile Advanced Threat Settings block (read-only) — the tenant-wide singleton that governs the Mobile Malware Protection policy applied to traffic from mobile clients (iOS / Android via the Zscaler Client Connector). Returns 8 boolean knobs: block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers. Always call this before zia_update_mobile_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter. |
 | `zia_get_network_app` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network application by ID (read-only) |
 | `zia_get_network_app_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network application group by ID (read-only) |
 | `zia_get_network_service` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network service by ID (read-only) |
 | `zia_get_network_svc_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network service group by ID (read-only) |
-| `zia_get_rule_label` | `zia_admin` | Read-only | Get a specific ZIA rule label by ID (read-only) |
+| `zia_get_rule_label` | `zia_rule_labels` | Read-only | Get a specific ZIA rule label by ID (read-only) |
 | `zia_get_sandbox_behavioral_analysis` | `zia_sandbox` | Read-only | Retrieve sandbox behavioral analysis hash list (read-only) |
 | `zia_get_sandbox_file_hash_count` | `zia_sandbox` | Read-only | Retrieve sandbox file hash usage counts (read-only) |
 | `zia_get_sandbox_quota` | `zia_sandbox` | Read-only | Retrieve current ZIA sandbox quota information (read-only) |
@@ -65,8 +74,8 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_get_vpn_credential` | `zia_locations` | Read-only | Get a specific ZIA VPN credential by ID (read-only) |
 | `zia_get_web_dlp_rule` | `zia_dlp` | Read-only | Get a specific ZIA web DLP rule by ID (read-only) |
 | `zia_get_workload_group` | `zia_workload_groups` | Read-only | Get a specific ZIA workload group by ID (read-only) |
-| `zia_list_atp_malicious_urls` | `zia_url_categories` | Read-only | List ZIA ATP malicious URLs (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zia_list_auth_exempt_urls` | `zia_url_categories` | Read-only | List ZIA authentication exempt URLs (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_atp_malicious_urls` | `zia_atp_policy` | Read-only | List ZIA ATP malicious URLs (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_auth_exempt_urls` | `zia_authentication_settings` | Read-only | List ZIA authentication exempt URLs (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_cloud_app_control_actions` | `zia_cloud_app_control` | Read-only | List the granular Cloud App Control (CAC) actions available for a cloud application — answers 'what actions can I control for <app>?', 'list actions for Azure DevOps', 'what can I block on Dropbox', 'show me available actions for ChatGPT'. Takes a single cloud_app (canonical enum like AZURE_DEVOPS or friendly name like 'Azure DevOps'); the tool auto-resolves the name, looks up its category (rule type), and returns the category's full action set. Actions are CATEGORY-LEVEL not per-app — every app in SYSTEM_AND_DEVELOPMENT shares the same actions, every app in AI_ML shares its own set, etc. The tool also handles a ZIA API quirk where calling list_available_actions(rule_type, [some_app]) sometimes returns empty because not every app is a 'representative' for its category — when that happens, it transparently walks other apps in the same category until one surfaces the action set. Returns a dict with: cloud_app, resolved_app, category, category_name, actions, actions_surfaced_via (which app finally produced the actions), and probe_attempts. Use the optional rule_type parameter only to override the auto-detected category; use query (JMESPath) to project just the actions list (e.g. 'actions') or filter them (e.g. 'actions[?contains(@, ``BLOCK``)]'). |
 | `zia_list_cloud_app_control_rules` | `zia_cloud_app_control` | Read-only | List ZIA Cloud App Control rules for a specific rule_type (category). The CAC API is category-scoped, so rule_type is REQUIRED — pass one of WEBMAIL, STREAMING_MEDIA, FILE_SHARE, AI_ML, SYSTEM_AND_DEVELOPMENT, SOCIAL_NETWORKING, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, etc. To list across multiple categories, call this once per category. If the user names an app instead of a category, call zia_list_cloud_app_control_actions(cloud_app=...) first to discover the right rule_type. Supports server-side `search` (substring on rule name) and JMESPath client-side filtering via the `query` parameter. |
 | `zia_list_cloud_app_policy` | `zia_cloud_app_control` | Read-only | List the ZIA policy-engine cloud-application catalog — canonical enum strings (e.g. ONEDRIVE, ONEDRIVE_PERSONAL, SHAREPOINT_ONLINE) consumed by Web DLP, Cloud App Control, File Type Control, Bandwidth Classes, and Advanced Settings. Use this when you need the exact enum to pass into a policy rule's cloud_applications field. Supports server-side filtering (search, app_class, group_results) and JMESPath via the query parameter. Pass app_class to narrow the catalog by category when the user describes a kind of app instead of a specific one — valid values: SOCIAL_NETWORKING, STREAMING_MEDIA, WEBMAIL, INSTANT_MESSAGING, BUSINESS_PRODUCTIVITY, ENTERPRISE_COLLABORATION, SALES_AND_MARKETING, SYSTEM_AND_DEVELOPMENT, CONSUMER, HOSTING_PROVIDER, IT_SERVICES, FILE_SHARE, DNS_OVER_HTTPS, HUMAN_RESOURCES, LEGAL, HEALTH_CARE, FINANCE, CUSTOM_CAPP, AI_ML. |
@@ -74,22 +83,23 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_list_cloud_firewall_dns_rules` | `zia_cloud_firewall` | Read-only | List ZIA cloud firewall DNS rules (read-only). Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_cloud_firewall_ips_rules` | `zia_cloud_firewall` | Read-only | List ZIA cloud firewall IPS rules (read-only). Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_cloud_firewall_rules` | `zia_cloud_firewall` | Read-only | List ZIA cloud firewall rules with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zia_list_device_groups` | `zia_users` | Read-only | List ZIA device groups with optional device info and pseudo group filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zia_list_devices` | `zia_users` | Read-only | List ZIA devices with filtering by name, user, pagination support (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zia_list_devices_lite` | `zia_users` | Read-only | List ZIA devices in lightweight format (ID, name, owner only) (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_device_groups` | `zia_devices` | Read-only | List ZIA device groups with optional device info and pseudo group filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_devices` | `zia_devices` | Read-only | List ZIA devices with filtering by name, user, pagination support (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_devices_lite` | `zia_devices` | Read-only | List ZIA devices in lightweight format (ID, name, owner only) (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_file_type_categories` | `zia_file_type_control` | Read-only | List ZIA file-type categories (predefined and custom) used by File Type Control and Web DLP rules (read-only). |
 | `zia_list_file_type_control_rules` | `zia_file_type_control` | Read-only | List ZIA File Type Control rules (read-only). Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_gre_ranges` | `zia_locations` | Read-only | List available ZIA GRE IP ranges (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_gre_tunnels` | `zia_locations` | Read-only | List ZIA GRE tunnels (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_ip_destination_groups` | `zia_cloud_firewall` | Read-only | List ZIA IP destination groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_ip_source_groups` | `zia_cloud_firewall` | Read-only | List ZIA IP source groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_ips_signature_rules` | `zia_cloud_firewall` | Read-only | List custom ZIA IPS signature rules (read-only) — Snort/Suricata-style detection signatures authored on the tenant. Distinct from the Cloud Firewall IPS rule family (zia_list_cloud_firewall_ips_rules), which gates *enforcement* of IPS on firewall-matched traffic; signatures describe *what* to detect. Supports pagination via the page / page_size parameters and JMESPath client-side filtering via the query parameter. |
 | `zia_list_location_groups` | `zia_locations` | Read-only | List ZIA location groups, referenced by ID on the location_groups operand of every ZIA rule resource (Cloud Firewall, DNS, IPS, URL Filtering, SSL Inspection, Web DLP, File Type Control, Sandbox, Cloud App Control). Read-only — the public ZIA API does not expose location group create/update/delete. Supports name/search/group_type filters and JMESPath via the query parameter. |
 | `zia_list_locations` | `zia_locations` | Read-only | List ZIA locations (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_network_app_groups` | `zia_cloud_firewall` | Read-only | List ZIA network application groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_network_apps` | `zia_cloud_firewall` | Read-only | List ZIA network applications with optional filtering by search or locale (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_network_services` | `zia_cloud_firewall` | Read-only | List ZIA network services (read-only). Pass `name="<friendly admin-supplied name>"` (e.g. `name="http"`, `name="ftp"`, `name="dns"`) for a case-insensitive substring match resolved client-side — this is the right knob when the admin gives a service name in any casing. ZIA's canonical service names are uppercase enums (`HTTP`, `FTP`, `DNS`, ...), so server-side `search` is case-sensitive and unreliable for friendly inputs. Also supports `protocol` / `locale` filters and JMESPath projection via `query`. |
 | `zia_list_network_svc_groups` | `zia_cloud_firewall` | Read-only | List ZIA network service groups with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zia_list_rule_labels` | `zia_admin` | Read-only | List ZIA rule labels (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zia_list_rule_labels` | `zia_rule_labels` | Read-only | List ZIA rule labels (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_sandbox_rules` | `zia_sandbox` | Read-only | List ZIA Sandbox rules (read-only). Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_shadow_it_apps` | `zia_shadow_it` | Read-only | List ZIA Shadow IT cloud applications — analytics catalog with numeric IDs and friendly names (e.g. 'Sharepoint Online', id 655377). NOT the policy-engine enum catalog. Use zia_list_cloud_app_policy / zia_list_cloud_app_ssl_policy for the canonical enum strings consumed by SSL inspection / DLP / Cloud App Control rules. Supports JMESPath client-side filtering via the query parameter. |
 | `zia_list_shadow_it_custom_tags` | `zia_shadow_it` | Read-only | List ZIA Shadow IT custom tags (read-only). Supports JMESPath client-side filtering via the query parameter. |
@@ -104,8 +114,8 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_list_workload_groups` | `zia_workload_groups` | Read-only | List ZIA workload groups, referenced by ID on the workload_groups operand of Cloud Firewall, URL Filtering, SSL Inspection, and Web DLP rules. Read-only — workload group authoring (with its expression DSL) is intentionally left to the ZIA UI. The ZIA list endpoint has no server-side name filter; pair with JMESPath query (e.g. "[?name=='WG-AWS-Prod']") to look up a group by name. |
 | `zia_url_lookup` | `zia_url_categories` | Read-only | Look up URL category for given URLs (read-only) |
 | `zia_activate_configuration` | `zia_admin` | Write | Activate ZIA configuration changes (write operation) |
-| `zia_add_atp_malicious_urls` | `zia_url_categories` | Write | Add URLs to ZIA ATP malicious URL list (write operation) |
-| `zia_add_auth_exempt_urls` | `zia_url_categories` | Write | Add URLs to ZIA authentication exempt list (write operation) |
+| `zia_add_atp_malicious_urls` | `zia_atp_policy` | Write | Add URLs to ZIA ATP malicious URL list (write operation) |
+| `zia_add_auth_exempt_urls` | `zia_authentication_settings` | Write | Add URLs to ZIA authentication exempt list (write operation) |
 | `zia_add_urls_to_category` | `zia_url_categories` | Write | Add URLs to a ZIA URL category (write operation) |
 | `zia_bulk_update_shadow_it_apps` | `zia_shadow_it` | Write | Bulk update sanction state and/or custom tags on ZIA Shadow IT cloud applications (write operation). |
 | `zia_create_cloud_app_control_rule` | `zia_cloud_app_control` | Write | Create a new ZIA Cloud App Control (CAC) rule (write operation). The CAC API is category-scoped — rule_type is REQUIRED (e.g. WEBMAIL, FILE_SHARE, AI_ML, SYSTEM_AND_DEVELOPMENT). Workflow: first call zia_list_cloud_app_control_actions(cloud_app=<app>) to discover both the correct rule_type (returned as `category`) AND the valid `actions` enums for that app, then pass those into this tool together with `name`, `cloud_applications`, and any scoping fields (groups, departments, locations, etc.). Friendly cloud-application names like 'Dropbox' are auto-resolved to canonical enums (DROPBOX). Note: the SDK kwarg for the apps list is `applications` but this tool surfaces it as `cloud_applications` for consistency with other ZIA rule families. |
@@ -116,11 +126,12 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_create_gre_tunnel` | `zia_locations` | Write | Create a new ZIA GRE tunnel (write operation) |
 | `zia_create_ip_destination_group` | `zia_cloud_firewall` | Write | Create a new ZIA IP destination group (write operation) |
 | `zia_create_ip_source_group` | `zia_cloud_firewall` | Write | Create a new ZIA IP source group (write operation) |
+| `zia_create_ips_signature_rule` | `zia_cloud_firewall` | Write | Create a custom ZIA IPS signature rule (write operation). The rule_text (Snort/Suricata-style signature with a unique sid:) is server-side validated by the SDK against the ZIA dynamic-validation endpoint *before* the create request is issued — syntactic, semantic, or duplicate-sid errors are surfaced as a ValueError without leaving a stub rule on the tenant. After a successful create, call zia_activate_configuration to apply the change. |
 | `zia_create_location` | `zia_locations` | Write | Create a new ZIA location (write operation) |
 | `zia_create_network_app_group` | `zia_cloud_firewall` | Write | Create a new ZIA network application group (write operation) |
 | `zia_create_network_service` | `zia_cloud_firewall` | Write | Create a new ZIA network service with custom TCP/UDP ports (write operation) |
 | `zia_create_network_svc_group` | `zia_cloud_firewall` | Write | Create a new ZIA network service group (write operation) |
-| `zia_create_rule_label` | `zia_admin` | Write | Create a new ZIA rule label (write operation) |
+| `zia_create_rule_label` | `zia_rule_labels` | Write | Create a new ZIA rule label (write operation) |
 | `zia_create_sandbox_rule` | `zia_sandbox` | Write | Create a new ZIA Sandbox rule (write operation) |
 | `zia_create_ssl_inspection_rule` | `zia_ssl_inspection` | Write | Create a new ZIA SSL inspection rule (write operation) |
 | `zia_create_static_ip` | `zia_locations` | Write | Create a new ZIA static IP (write operation) |
@@ -129,8 +140,8 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_create_url_filtering_rule` | `zia_url_filtering` | Write | Create a new ZIA URL filtering rule (write operation) |
 | `zia_create_vpn_credential` | `zia_locations` | Write | Create a new ZIA VPN credential (write operation) |
 | `zia_create_web_dlp_rule` | `zia_dlp` | Write | Create a new ZIA web DLP rule (write operation) |
-| `zia_delete_atp_malicious_urls` | `zia_url_categories` | Write | Delete URLs from ZIA ATP malicious URL list (destructive operation) |
-| `zia_delete_auth_exempt_urls` | `zia_url_categories` | Write | Delete URLs from ZIA authentication exempt list (destructive operation) |
+| `zia_delete_atp_malicious_urls` | `zia_atp_policy` | Write | Delete URLs from ZIA ATP malicious URL list (destructive operation) |
+| `zia_delete_auth_exempt_urls` | `zia_authentication_settings` | Write | Delete URLs from ZIA authentication exempt list (destructive operation) |
 | `zia_delete_cloud_app_control_rule` | `zia_cloud_app_control` | Write | Delete a ZIA Cloud App Control (CAC) rule by rule_type and rule_id (destructive operation). Both arguments are required because the CAC API is category-scoped. Requires HMAC confirmation token. |
 | `zia_delete_cloud_firewall_dns_rule` | `zia_cloud_firewall` | Write | Delete a ZIA cloud firewall DNS rule (destructive operation) |
 | `zia_delete_cloud_firewall_ips_rule` | `zia_cloud_firewall` | Write | Delete a ZIA cloud firewall IPS rule (destructive operation) |
@@ -139,11 +150,12 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_delete_gre_tunnel` | `zia_locations` | Write | Delete a ZIA GRE tunnel (destructive operation) |
 | `zia_delete_ip_destination_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP destination group (destructive operation) |
 | `zia_delete_ip_source_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP source group (destructive operation) |
+| `zia_delete_ips_signature_rule` | `zia_cloud_firewall` | Write | Delete a custom ZIA IPS signature rule by ID (destructive operation, requires HMAC double-confirmation). After a successful delete, call zia_activate_configuration to apply the change. |
 | `zia_delete_location` | `zia_locations` | Write | Delete a ZIA location (destructive operation) |
 | `zia_delete_network_app_group` | `zia_cloud_firewall` | Write | Delete a ZIA network application group (destructive operation) |
 | `zia_delete_network_service` | `zia_cloud_firewall` | Write | Delete a ZIA network service (destructive operation) |
 | `zia_delete_network_svc_group` | `zia_cloud_firewall` | Write | Delete a ZIA network service group (destructive operation) |
-| `zia_delete_rule_label` | `zia_admin` | Write | Delete a ZIA rule label (destructive operation) |
+| `zia_delete_rule_label` | `zia_rule_labels` | Write | Delete a ZIA rule label (destructive operation) |
 | `zia_delete_sandbox_rule` | `zia_sandbox` | Write | Delete a ZIA Sandbox rule (destructive operation) |
 | `zia_delete_ssl_inspection_rule` | `zia_ssl_inspection` | Write | Delete a ZIA SSL inspection rule (destructive operation) |
 | `zia_delete_static_ip` | `zia_locations` | Write | Delete a ZIA static IP (destructive operation) |
@@ -153,6 +165,12 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_delete_vpn_credential` | `zia_locations` | Write | Delete a ZIA VPN credential (destructive operation) |
 | `zia_delete_web_dlp_rule` | `zia_dlp` | Write | Delete a ZIA web DLP rule (destructive operation) |
 | `zia_remove_urls_from_category` | `zia_url_categories` | Write | Remove URLs from a ZIA URL category (write operation) |
+| `zia_update_advanced_settings` | `zia_advanced_settings` | Write | Update the ZIA Advanced Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default (or [] for list fields). Always call zia_get_advanced_settings first, mutate the fields you want to change, then pass the full dict back here. Tunes the same surface as Administration → Advanced Settings in the ZIA Admin Portal: auth / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6), Office 365 one-click, UI session timeout, surrogate IP, HTTP tunnel handling, domain-fronting block, HTTP/2, ECS-for-all, dynamic user risk, SNI / CONNECT-host mismatch handling, SIPA XFF insertion, etc. After a successful update, call zia_activate_configuration to apply the change. |
+| `zia_update_atp_malware_inspection` | `zia_atp_malware` | Write | Update the ZIA ATP Malware Protection traffic-direction inspection toggles (write operation, PUT-replace). Both inspect_inbound and inspect_outbound are required; fetch the current state via zia_get_atp_malware_inspection first if you only want to change one direction. After a successful update, call zia_activate_configuration to apply the change. |
+| `zia_update_atp_malware_policy` | `zia_atp_malware` | Write | Update the ZIA ATP Malware Protection Policy file-handling toggles (write operation, PUT-replace). Both block_unscannable_files and block_password_protected_archive_files are required; fetch the current state via zia_get_atp_malware_policy first if you only want to change one of them. After a successful update, call zia_activate_configuration to apply the change. |
+| `zia_update_atp_malware_protocols` | `zia_atp_malware` | Write | Update the ZIA ATP Malware Protection protocol-level inspection toggles (write operation, PUT-replace). All three of inspect_http, inspect_ftp_over_http, and inspect_ftp are required; fetch the current state via zia_get_atp_malware_protocols first if you only want to change one toggle. After a successful update, call zia_activate_configuration to apply the change. NOTE: the SDK has a known response-parsing bug on this endpoint — to return authoritative state, this tool re-fetches via zia_get_atp_malware_protocols after a successful PUT. |
+| `zia_update_atp_security_exceptions` | `zia_atp_policy` | Write | Replace the ZIA ATP security-exception bypass URL list (write operation, PUT-replace). The list provided REPLACES the existing list (it does not merge); pass the full intended set. Fetch the current list via zia_get_atp_security_exceptions first if you only want to add or remove a URL. After a successful update, call zia_activate_configuration to apply the change. |
+| `zia_update_atp_settings` | `zia_atp_policy` | Write | Update the ZIA Advanced Threat Protection (ATP) policy settings block (write operation, PUT-replace). Any field omitted from the payload is reset to its API default — always call zia_get_atp_settings first, mutate the fields you want to change, then pass the full dict back here. After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_cloud_app_control_rule` | `zia_cloud_app_control` | Write | Update an existing ZIA Cloud App Control (CAC) rule (write operation). Both rule_type AND rule_id are required (the CAC API is category-scoped). Update is a PUT under the hood — `name` is silently backfilled from the existing rule when not supplied so partial updates work safely. Friendly cloud-application names are auto-resolved to canonical enums. |
 | `zia_update_cloud_firewall_dns_rule` | `zia_cloud_firewall` | Write | Update an existing ZIA cloud firewall DNS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. The `applications` field accepts canonical ZIA cloud-app names (same catalog as SSL/DLP/FTC/CAC's `cloud_applications`) and auto-resolves friendly names. |
 | `zia_update_cloud_firewall_ips_rule` | `zia_cloud_firewall` | Write | Update an existing ZIA cloud firewall IPS rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. |
@@ -160,11 +178,14 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_update_file_type_control_rule` | `zia_file_type_control` | Write | Update an existing ZIA File Type Control rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. Friendly cloud-application names are auto-resolved. |
 | `zia_update_ip_destination_group` | `zia_cloud_firewall` | Write | Update an existing ZIA IP destination group (write operation) |
 | `zia_update_ip_source_group` | `zia_cloud_firewall` | Write | Update an existing ZIA IP source group (write operation) |
+| `zia_update_ips_signature_rule` | `zia_cloud_firewall` | Write | Update an existing custom ZIA IPS signature rule (write operation, PUT-replace). Silently backfills the load-bearing fields name and rule_text from the existing record when the caller omits them, so partial updates 'just work'. Server-side validation is NOT re-run on update because the existing-sid check would flag every edit as a duplicate of itself; validate the new rule_text manually before calling. After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_location` | `zia_locations` | Write | Update an existing ZIA location (write operation) |
+| `zia_update_malware_settings` | `zia_atp_malware` | Write | Update the full ZIA Malware Protection threat-class settings block (write operation, PUT-replace). Any of the 16 `*_blocked` / `*_capture` booleans omitted from the payload is reset to False by the API — always call zia_get_malware_settings first, mutate the fields you want to change, then pass the full dict back here. Unknown keys are silently dropped (only the 16 documented snake_case fields are round-tripped). After a successful update, call zia_activate_configuration to apply the change. |
+| `zia_update_mobile_advanced_settings` | `zia_threat_settings` | Write | Update the ZIA Mobile Advanced Threat Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default. Always call zia_get_mobile_advanced_settings first, mutate the boolean knobs you want to change (block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers), then pass the full dict back here. After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_network_app_group` | `zia_cloud_firewall` | Write | Update an existing ZIA network application group (write operation) |
 | `zia_update_network_service` | `zia_cloud_firewall` | Write | Update an existing ZIA network service (write operation) |
 | `zia_update_network_svc_group` | `zia_cloud_firewall` | Write | Update an existing ZIA network service group (write operation) |
-| `zia_update_rule_label` | `zia_admin` | Write | Update an existing ZIA rule label (write operation) |
+| `zia_update_rule_label` | `zia_rule_labels` | Write | Update an existing ZIA rule label (write operation) |
 | `zia_update_sandbox_rule` | `zia_sandbox` | Write | Update an existing ZIA Sandbox rule (write operation). Update is a PUT — name/order are silently backfilled from the existing rule when not supplied. |
 | `zia_update_ssl_inspection_rule` | `zia_ssl_inspection` | Write | Update an existing ZIA SSL inspection rule (write operation) |
 | `zia_update_static_ip` | `zia_locations` | Write | Update an existing ZIA static IP (write operation) |
@@ -179,97 +200,118 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## ZPA — Private Access
 
-41 read-only tools, 47 write tools.
+53 read-only tools, 56 write tools.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
-| `get_zpa_app_protection_profile` | `zpa_misc` | Read-only | Manage ZPA App Protection Profiles (Inspection Profiles) (read-only) |
+| `get_zpa_app_protection_profile` | `zpa_app_protection` | Read-only | Manage ZPA App Protection Profiles (Inspection Profiles) (read-only) |
 | `get_zpa_app_segments_by_type` | `zpa_app_segments` | Read-only | Manage ZPA application segments by type (read-only) |
 | `get_zpa_enrollment_certificate` | `zpa_connectors` | Read-only | Manage ZPA Enrollment Certificates (read-only) |
-| `get_zpa_isolation_profile` | `zpa_idp` | Read-only | Manage ZPA Cloud Browser Isolation (CBI) profiles (read-only) |
-| `get_zpa_posture_profile` | `zpa_idp` | Read-only | Manage ZPA Posture Profiles (read-only) |
+| `get_zpa_isolation_profile` | `zpa_isolation` | Read-only | Manage ZPA Cloud Browser Isolation (CBI) profiles (read-only) |
+| `get_zpa_posture_profile` | `zpa_posture` | Read-only | Manage ZPA Posture Profiles (read-only) |
 | `get_zpa_saml_attribute` | `zpa_idp` | Read-only | Manage ZPA SAML Attributes (read-only) |
 | `get_zpa_scim_attribute` | `zpa_idp` | Read-only | Manage ZPA SCIM Attributes (read-only) |
 | `get_zpa_scim_group` | `zpa_idp` | Read-only | Manage ZPA SCIM Groups (read-only) |
-| `get_zpa_trusted_network` | `zpa_idp` | Read-only | Manage ZPA Trusted Networks (read-only) |
-| `zpa_get_access_policy_rule` | `zpa_policy` | Read-only | Get a specific ZPA access policy rule by ID (read-only) |
+| `get_zpa_trusted_network` | `zpa_trusted_networks` | Read-only | Manage ZPA Trusted Networks (read-only) |
+| `zpa_get_access_policy_rule` | `zpa_access_policies` | Read-only | Get a specific ZPA access policy rule by ID (read-only) |
 | `zpa_get_app_connector` | `zpa_connectors` | Read-only | Get a specific ZPA app connector by ID with runtime status and control connection state (read-only) |
-| `zpa_get_app_connector_group` | `zpa_connectors` | Read-only | Get a specific ZPA App Connector Group by ID (read-only). Returns the full record including the enrollmentCertId, server-group memberships, and connector membership. |
+| `zpa_get_app_connector_group` | `zpa_app_connector_groups` | Read-only | Get a specific ZPA App Connector Group by ID (read-only). Returns the full record including the enrollmentCertId, server-group memberships, and connector membership. |
 | `zpa_get_app_protection_rule` | `zpa_policy` | Read-only | Get a specific ZPA app protection rule by ID (read-only) |
 | `zpa_get_application_segment` | `zpa_app_segments` | Read-only | Get a specific ZPA application segment by ID (read-only) |
-| `zpa_get_application_server` | `zpa_misc` | Read-only | Get a specific ZPA application server by ID (read-only) |
-| `zpa_get_ba_certificate` | `zpa_misc` | Read-only | Get a specific ZPA browser access certificate by ID (read-only) |
+| `zpa_get_application_segment_ba` | `zpa_app_segments` | Read-only | Get a specific ZPA Browser Access (BA) application segment by ID, including its common_apps_dto.apps_config block (read-only). Use only when the admin asks about Browser Access. |
+| `zpa_get_application_segment_pra` | `zpa_app_segments` | Read-only | Get a specific ZPA Privileged Remote Access (PRA) application segment by ID, including its common_apps_dto.apps_config block of RDP/SSH targets (read-only). Use only when the admin asks about Privileged Remote Access. |
+| `zpa_get_application_server` | `zpa_application_servers` | Read-only | Get a specific ZPA application server by ID (read-only) |
+| `zpa_get_ba_certificate` | `zpa_ba_certificates` | Read-only | Get a specific ZPA browser access certificate by ID (read-only) |
 | `zpa_get_forwarding_policy_rule` | `zpa_policy` | Read-only | Get a specific ZPA forwarding policy rule by ID (read-only) |
 | `zpa_get_isolation_policy_rule` | `zpa_policy` | Read-only | Get a specific ZPA isolation policy rule by ID (read-only) |
-| `zpa_get_pra_credential` | `zpa_misc` | Read-only | Get a specific ZPA PRA credential by ID (read-only) |
-| `zpa_get_pra_portal` | `zpa_misc` | Read-only | Get a specific ZPA PRA portal by ID (read-only) |
-| `zpa_get_provisioning_key` | `zpa_connectors` | Read-only | Get a specific ZPA provisioning key by ID (read-only) |
-| `zpa_get_segment_group` | `zpa_app_segments` | Read-only | Get a specific ZPA segment group by ID (read-only) |
-| `zpa_get_server_group` | `zpa_app_segments` | Read-only | Get a specific ZPA server group by ID (read-only) |
-| `zpa_get_service_edge_group` | `zpa_connectors` | Read-only | Get a specific ZPA service edge group by ID (read-only) |
+| `zpa_get_lss_config` | `zpa_misc` | Read-only | Get a specific ZPA LSS configuration by ID, including source log type, log format template, destination host/port, TLS setting, associated App Connector Groups, policy-rule scope, and filter status codes (read-only). |
+| `zpa_get_lss_log_format` | `zpa_misc` | Read-only | Get the pre-configured LSS log format templates (csv / json / tsv) for a given source log type. Useful for confirming exactly which fields ZPA serializes into the SIEM stream (read-only). |
+| `zpa_get_pra_credential` | `zpa_pra` | Read-only | Get a specific ZPA PRA credential by ID (read-only) |
+| `zpa_get_pra_portal` | `zpa_pra` | Read-only | Get a specific ZPA PRA portal by ID (read-only) |
+| `zpa_get_provisioning_key` | `zpa_provisioning_keys` | Read-only | Get a specific ZPA provisioning key by ID (read-only) |
+| `zpa_get_segment_group` | `zpa_segment_groups` | Read-only | Get a specific ZPA segment group by ID (read-only) |
+| `zpa_get_server_group` | `zpa_server_groups` | Read-only | Get a specific ZPA server group by ID (read-only) |
+| `zpa_get_service_edge` | `zpa_service_edge_groups` | Read-only | Get a specific ZPA Service Edge by ID — full record including control-channel state, runtime status, version, location, enrollment certificate, and parent service edge group membership (read-only). |
+| `zpa_get_service_edge_group` | `zpa_service_edge_groups` | Read-only | Get a specific ZPA service edge group by ID (read-only) |
 | `zpa_get_timeout_policy_rule` | `zpa_policy` | Read-only | Get a specific ZPA timeout policy rule by ID (read-only) |
-| `zpa_list_access_policy_rules` | `zpa_policy` | Read-only | List ZPA access policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_app_connector_groups` | `zpa_connectors` | Read-only | List ZPA App Connector Groups (read-only). Returns every connector group in the tenant — id, name, location, country, enrollment cert, server-group memberships. Use this to discover existing connector groups before creating server groups (which require an app_connector_group_id) or before onboarding an application. Supports name search and JMESPath client-side filtering via the query parameter. |
+| `zpa_list_access_policy_rules` | `zpa_access_policies` | Read-only | List ZPA access policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_app_connector_groups` | `zpa_app_connector_groups` | Read-only | List ZPA App Connector Groups (read-only). Returns every connector group in the tenant — id, name, location, country, enrollment cert, server-group memberships. Use this to discover existing connector groups before creating server groups (which require an app_connector_group_id) or before onboarding an application. Supports name search and JMESPath client-side filtering via the query parameter. |
 | `zpa_list_app_connectors` | `zpa_connectors` | Read-only | List ZPA app connectors with status, version, and health information (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_app_protection_rules` | `zpa_policy` | Read-only | List ZPA app protection rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_application_segments` | `zpa_app_segments` | Read-only | List ZPA application segments with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_application_servers` | `zpa_misc` | Read-only | List ZPA application servers (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_ba_certificates` | `zpa_misc` | Read-only | List ZPA browser access certificates (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_application_segments_ba` | `zpa_app_segments` | Read-only | List ZPA Browser Access (BA) application segments — the BA-specific counterpart of zpa_list_application_segments. Use only when the admin asks about Browser Access. Supports JMESPath client-side filtering via the query parameter (read-only). |
+| `zpa_list_application_segments_pra` | `zpa_app_segments` | Read-only | List ZPA Privileged Remote Access (PRA) application segments — the PRA-specific counterpart of zpa_list_application_segments for RDP/SSH targets brokered through the PRA portal. Use only when the admin asks about Privileged Remote Access (RDP/SSH). Supports JMESPath client-side filtering via the query parameter (read-only). |
+| `zpa_list_application_servers` | `zpa_application_servers` | Read-only | List ZPA application servers (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_ba_certificates` | `zpa_ba_certificates` | Read-only | List ZPA browser access certificates (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_forwarding_policy_rules` | `zpa_policy` | Read-only | List ZPA forwarding policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_isolation_policy_rules` | `zpa_policy` | Read-only | List ZPA isolation policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_pra_credentials` | `zpa_misc` | Read-only | List ZPA PRA credentials (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_pra_portals` | `zpa_misc` | Read-only | List ZPA PRA portals (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_provisioning_keys` | `zpa_connectors` | Read-only | List ZPA provisioning keys (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_segment_groups` | `zpa_app_segments` | Read-only | List ZPA segment groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_server_groups` | `zpa_app_segments` | Read-only | List ZPA server groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zpa_list_service_edge_groups` | `zpa_connectors` | Read-only | List ZPA service edge groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_lss_client_types` | `zpa_misc` | Read-only | List ZPA LSS client types for the current customer (e.g. web_browser, client_connector, machine_tunnel, zpa_lss). Returns the human-readable name → internal identifier mapping used in LSS policy-rule conditions (read-only). |
+| `zpa_list_lss_configs` | `zpa_misc` | Read-only | List ZPA Log Streaming Service (LSS) configurations — each record routes a log feed (User Activity, User Status, Audit, App Connector Status/Metrics, Browser Access, Web Inspection, etc.) from ZPA to a customer-side LSS Connector / SIEM. Read-only configuration; does not return log content. Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_lss_log_types` | `zpa_misc` | Read-only | List the human-readable LSS source log types supported by ZPA (e.g. user_activity, user_status, audit_logs, app_connector_status, app_connector_metrics, browser_access, web_inspection, private_svc_edge_status). Use these values when authoring an LSS config or when verifying baseline log-feed coverage (read-only). |
+| `zpa_list_lss_status_codes` | `zpa_misc` | Read-only | List ZPA LSS session status codes used in LSS config filters. Returns code → metadata (including which log types each code applies to). Use when authoring a status-code filter or when interpreting a streamed event (read-only). |
+| `zpa_list_pra_credentials` | `zpa_pra` | Read-only | List ZPA PRA credentials (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_pra_portals` | `zpa_pra` | Read-only | List ZPA PRA portals (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_provisioning_keys` | `zpa_provisioning_keys` | Read-only | List ZPA provisioning keys (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_segment_groups` | `zpa_segment_groups` | Read-only | List ZPA segment groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_server_groups` | `zpa_server_groups` | Read-only | List ZPA server groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_service_edge_groups` | `zpa_service_edge_groups` | Read-only | List ZPA service edge groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_list_service_edges` | `zpa_service_edge_groups` | Read-only | List individual ZPA Service Edges (the cloud-hosted broker instances themselves, distinct from their parent service edge groups). Returns runtime status, version, location, enrollment cert, and `serviceEdgeGroupId`. Use to inventory edges before bulk operations or to verify enrollment after a provisioning key was used. Supports JMESPath client-side filtering via the query parameter (read-only). |
 | `zpa_list_timeout_policy_rules` | `zpa_policy` | Read-only | List ZPA timeout policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_bulk_delete_app_connectors` | `zpa_connectors` | Write | Bulk delete multiple ZPA app connectors (destructive operation) |
-| `zpa_create_access_policy_rule` | `zpa_policy` | Write | Create a new ZPA access policy rule (write operation) |
-| `zpa_create_app_connector_group` | `zpa_connectors` | Write | Create a new ZPA app connector group (write operation) |
+| `zpa_bulk_delete_service_edges` | `zpa_service_edge_groups` | Write | Bulk delete multiple ZPA Service Edges in a single API call (`POST /serviceEdge/bulkDelete`). Each removed edge must be re-provisioned to reconnect (destructive operation, HMAC double-confirmed). |
+| `zpa_create_access_policy_rule` | `zpa_access_policies` | Write | Create a new ZPA access policy rule (write operation) |
+| `zpa_create_app_connector_group` | `zpa_app_connector_groups` | Write | Create a new ZPA app connector group (write operation) |
 | `zpa_create_app_protection_rule` | `zpa_policy` | Write | Create a new ZPA app protection rule (write operation) |
 | `zpa_create_application_segment` | `zpa_app_segments` | Write | Create a new ZPA application segment (write operation) |
-| `zpa_create_application_server` | `zpa_misc` | Write | Create a new ZPA application server (write operation) |
-| `zpa_create_ba_certificate` | `zpa_misc` | Write | Create a new ZPA browser access certificate (write operation) |
+| `zpa_create_application_segment_ba` | `zpa_app_segments` | Write | Create a ZPA Browser Access (BA) application segment — wraps the apps_config payload into common_apps_dto.apps_config and validates each app's domain against the segment's domain_names. Use only when the admin asks for Browser Access (write operation). |
+| `zpa_create_application_segment_pra` | `zpa_app_segments` | Write | Create a ZPA Privileged Remote Access (PRA) application segment for RDP/SSH targets brokered through the PRA portal — wraps the apps_config payload into common_apps_dto.apps_config and validates each app's domain, protocol (RDP/SSH), and connection_security (RDP-only). Use only when the admin asks for Privileged Remote Access (write operation). |
+| `zpa_create_application_server` | `zpa_application_servers` | Write | Create a new ZPA application server (write operation) |
+| `zpa_create_ba_certificate` | `zpa_ba_certificates` | Write | Create a new ZPA browser access certificate (write operation) |
 | `zpa_create_forwarding_policy_rule` | `zpa_policy` | Write | Create a new ZPA forwarding policy rule (write operation) |
 | `zpa_create_isolation_policy_rule` | `zpa_policy` | Write | Create a new ZPA isolation policy rule (write operation) |
-| `zpa_create_pra_credential` | `zpa_misc` | Write | Create a new ZPA PRA credential (write operation) |
-| `zpa_create_pra_portal` | `zpa_misc` | Write | Create a new ZPA PRA portal (write operation) |
-| `zpa_create_provisioning_key` | `zpa_connectors` | Write | Create a new ZPA provisioning key (write operation) |
-| `zpa_create_segment_group` | `zpa_app_segments` | Write | Create a new ZPA segment group (write operation) |
-| `zpa_create_server_group` | `zpa_app_segments` | Write | Create a new ZPA server group (write operation) |
-| `zpa_create_service_edge_group` | `zpa_connectors` | Write | Create a new ZPA service edge group (write operation) |
+| `zpa_create_pra_credential` | `zpa_pra` | Write | Create a new ZPA PRA credential (write operation) |
+| `zpa_create_pra_portal` | `zpa_pra` | Write | Create a new ZPA PRA portal (write operation) |
+| `zpa_create_provisioning_key` | `zpa_provisioning_keys` | Write | Create a new ZPA provisioning key (write operation) |
+| `zpa_create_segment_group` | `zpa_segment_groups` | Write | Create a new ZPA segment group (write operation) |
+| `zpa_create_server_group` | `zpa_server_groups` | Write | Create a new ZPA server group (write operation) |
+| `zpa_create_service_edge_group` | `zpa_service_edge_groups` | Write | Create a new ZPA service edge group (write operation) |
 | `zpa_create_timeout_policy_rule` | `zpa_policy` | Write | Create a new ZPA timeout policy rule (write operation) |
-| `zpa_delete_access_policy_rule` | `zpa_policy` | Write | Delete a ZPA access policy rule (destructive operation) |
+| `zpa_delete_access_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA access policy rule (destructive operation) |
 | `zpa_delete_app_connector` | `zpa_connectors` | Write | Delete a ZPA app connector (destructive operation) |
-| `zpa_delete_app_connector_group` | `zpa_connectors` | Write | Delete a ZPA app connector group (destructive operation) |
+| `zpa_delete_app_connector_group` | `zpa_app_connector_groups` | Write | Delete a ZPA app connector group (destructive operation) |
 | `zpa_delete_app_protection_rule` | `zpa_policy` | Write | Delete a ZPA app protection rule (destructive operation) |
 | `zpa_delete_application_segment` | `zpa_app_segments` | Write | Delete a ZPA application segment (destructive operation) |
-| `zpa_delete_application_server` | `zpa_misc` | Write | Delete a ZPA application server (destructive operation) |
-| `zpa_delete_ba_certificate` | `zpa_misc` | Write | Delete a ZPA browser access certificate (destructive operation) |
+| `zpa_delete_application_segment_ba` | `zpa_app_segments` | Write | Delete a ZPA Browser Access (BA) application segment. Use only when the admin explicitly asks to delete a Browser Access segment (destructive operation). |
+| `zpa_delete_application_segment_pra` | `zpa_app_segments` | Write | Delete a ZPA Privileged Remote Access (PRA) application segment. Use only when the admin explicitly asks to delete a PRA segment. Does not delete the related pra_credential or pra_portal resources (destructive operation). |
+| `zpa_delete_application_server` | `zpa_application_servers` | Write | Delete a ZPA application server (destructive operation) |
+| `zpa_delete_ba_certificate` | `zpa_ba_certificates` | Write | Delete a ZPA browser access certificate (destructive operation) |
 | `zpa_delete_forwarding_policy_rule` | `zpa_policy` | Write | Delete a ZPA forwarding policy rule (destructive operation) |
 | `zpa_delete_isolation_policy_rule` | `zpa_policy` | Write | Delete a ZPA isolation policy rule (destructive operation) |
-| `zpa_delete_pra_credential` | `zpa_misc` | Write | Delete a ZPA PRA credential (destructive operation) |
-| `zpa_delete_pra_portal` | `zpa_misc` | Write | Delete a ZPA PRA portal (destructive operation) |
-| `zpa_delete_provisioning_key` | `zpa_connectors` | Write | Delete a ZPA provisioning key (destructive operation) |
-| `zpa_delete_segment_group` | `zpa_app_segments` | Write | Delete a ZPA segment group (destructive operation) |
-| `zpa_delete_server_group` | `zpa_app_segments` | Write | Delete a ZPA server group (destructive operation) |
-| `zpa_delete_service_edge_group` | `zpa_connectors` | Write | Delete a ZPA service edge group (destructive operation) |
+| `zpa_delete_pra_credential` | `zpa_pra` | Write | Delete a ZPA PRA credential (destructive operation) |
+| `zpa_delete_pra_portal` | `zpa_pra` | Write | Delete a ZPA PRA portal (destructive operation) |
+| `zpa_delete_provisioning_key` | `zpa_provisioning_keys` | Write | Delete a ZPA provisioning key (destructive operation) |
+| `zpa_delete_segment_group` | `zpa_segment_groups` | Write | Delete a ZPA segment group (destructive operation) |
+| `zpa_delete_server_group` | `zpa_server_groups` | Write | Delete a ZPA server group (destructive operation) |
+| `zpa_delete_service_edge` | `zpa_service_edge_groups` | Write | Delete a single ZPA Service Edge — removes the edge from the ZPA cloud; it must be re-provisioned with a fresh provisioning key to reconnect (destructive operation, HMAC double-confirmed). |
+| `zpa_delete_service_edge_group` | `zpa_service_edge_groups` | Write | Delete a ZPA service edge group (destructive operation) |
 | `zpa_delete_timeout_policy_rule` | `zpa_policy` | Write | Delete a ZPA timeout policy rule (destructive operation) |
-| `zpa_update_access_policy_rule` | `zpa_policy` | Write | Update an existing ZPA access policy rule (write operation) |
+| `zpa_update_access_policy_rule` | `zpa_access_policies` | Write | Update an existing ZPA access policy rule (write operation) |
 | `zpa_update_app_connector` | `zpa_connectors` | Write | Update a ZPA app connector (enable/disable, rename) (write operation) |
-| `zpa_update_app_connector_group` | `zpa_connectors` | Write | Update an existing ZPA app connector group (write operation) |
+| `zpa_update_app_connector_group` | `zpa_app_connector_groups` | Write | Update an existing ZPA app connector group (write operation) |
 | `zpa_update_app_protection_rule` | `zpa_policy` | Write | Update an existing ZPA app protection rule (write operation) |
 | `zpa_update_application_segment` | `zpa_app_segments` | Write | Update an existing ZPA application segment (write operation) |
-| `zpa_update_application_server` | `zpa_misc` | Write | Update an existing ZPA application server (write operation) |
+| `zpa_update_application_segment_ba` | `zpa_app_segments` | Write | Update an existing ZPA Browser Access (BA) application segment. Omitting apps_config leaves the published BA apps unchanged; supplying it triggers an SDK-side diff that creates new BA apps, preserves matching ones, and removes BA apps whose domain is no longer listed (write operation). |
+| `zpa_update_application_segment_pra` | `zpa_app_segments` | Write | Update an existing ZPA Privileged Remote Access (PRA) application segment. Omitting apps_config leaves the published RDP/SSH apps unchanged; supplying it triggers an SDK-side diff that creates new PRA apps, preserves matching ones, and removes PRA apps whose domain is no longer listed (write operation). |
+| `zpa_update_application_server` | `zpa_application_servers` | Write | Update an existing ZPA application server (write operation) |
 | `zpa_update_forwarding_policy_rule` | `zpa_policy` | Write | Update an existing ZPA forwarding policy rule (write operation) |
 | `zpa_update_isolation_policy_rule` | `zpa_policy` | Write | Update an existing ZPA isolation policy rule (write operation) |
-| `zpa_update_pra_credential` | `zpa_misc` | Write | Update an existing ZPA PRA credential (write operation) |
-| `zpa_update_pra_portal` | `zpa_misc` | Write | Update an existing ZPA PRA portal (write operation) |
-| `zpa_update_provisioning_key` | `zpa_connectors` | Write | Update an existing ZPA provisioning key (write operation) |
-| `zpa_update_segment_group` | `zpa_app_segments` | Write | Update an existing ZPA segment group (write operation) |
-| `zpa_update_server_group` | `zpa_app_segments` | Write | Update an existing ZPA server group (write operation) |
-| `zpa_update_service_edge_group` | `zpa_connectors` | Write | Update an existing ZPA service edge group (write operation) |
+| `zpa_update_pra_credential` | `zpa_pra` | Write | Update an existing ZPA PRA credential (write operation) |
+| `zpa_update_pra_portal` | `zpa_pra` | Write | Update an existing ZPA PRA portal (write operation) |
+| `zpa_update_provisioning_key` | `zpa_provisioning_keys` | Write | Update an existing ZPA provisioning key (write operation) |
+| `zpa_update_segment_group` | `zpa_segment_groups` | Write | Update an existing ZPA segment group (write operation) |
+| `zpa_update_server_group` | `zpa_server_groups` | Write | Update an existing ZPA server group (write operation) |
+| `zpa_update_service_edge` | `zpa_service_edge_groups` | Write | Update an existing ZPA Service Edge — enable/disable, rename, or refresh description. Group re-membership and provisioning-key assignment go through the Service Edge Group / Provisioning Key tools instead (write operation). |
+| `zpa_update_service_edge_group` | `zpa_service_edge_groups` | Write | Update an existing ZPA service edge group (write operation) |
 | `zpa_update_timeout_policy_rule` | `zpa_policy` | Write | Update an existing ZPA timeout policy rule (write operation) |
 
 ---
@@ -280,46 +322,47 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
-| `zdx_get_alert` | `zdx` | Read-only | Get a specific ZDX alert by ID (read-only) |
-| `zdx_get_analysis` | `zdx` | Read-only | Get status of a ZDX score analysis (read-only) |
-| `zdx_get_application` | `zdx` | Read-only | Get ZDX application details (read-only) |
-| `zdx_get_application_metric` | `zdx` | Read-only | Get ZDX metrics for a specified application (read-only) |
-| `zdx_get_application_score_trend` | `zdx` | Read-only | Get ZDX application score trend (read-only) |
-| `zdx_get_application_user` | `zdx` | Read-only | Get a specific ZDX application user (read-only) |
-| `zdx_get_deeptrace_cloudpath` | `zdx` | Read-only | Get cloud path topology from a ZDX deep trace session (read-only) |
-| `zdx_get_deeptrace_cloudpath_metrics` | `zdx` | Read-only | Get cloud path metrics from a ZDX deep trace session (read-only) |
-| `zdx_get_deeptrace_events` | `zdx` | Read-only | Get events from a ZDX deep trace session (read-only) |
-| `zdx_get_deeptrace_health_metrics` | `zdx` | Read-only | Get health metrics from a ZDX deep trace session (read-only) |
-| `zdx_get_deeptrace_webprobe_metrics` | `zdx` | Read-only | Get web probe metrics from a ZDX deep trace session (read-only) |
-| `zdx_get_device` | `zdx` | Read-only | Get a specific ZDX device by ID (read-only) |
-| `zdx_get_device_deep_trace` | `zdx` | Read-only | Get a specific ZDX deep trace by ID (read-only) |
-| `zdx_get_software_details` | `zdx` | Read-only | Get details for specific ZDX software (read-only) |
-| `zdx_get_web_probes` | `zdx` | Read-only | Get web probes for an app on a device - returns web_probe_id needed for zdx_start_deeptrace (read-only) |
-| `zdx_list_alert_affected_devices` | `zdx` | Read-only | List devices affected by a ZDX alert (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_alerts` | `zdx` | Read-only | List ZDX alerts (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_application_users` | `zdx` | Read-only | List users for a ZDX application (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_applications` | `zdx` | Read-only | List ZDX applications (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_cloudpath_probes` | `zdx` | Read-only | List cloud path probes for an app on a device - returns cloudpath_probe_id needed for zdx_start_deeptrace (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_deeptrace_top_processes` | `zdx` | Read-only | Get top processes from a ZDX deep trace session (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_departments` | `zdx` | Read-only | List ZDX departments (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_device_deep_traces` | `zdx` | Read-only | List ZDX deep traces for a device (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_devices` | `zdx` | Read-only | List ZDX devices with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_historical_alerts` | `zdx` | Read-only | List ZDX historical alerts (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_locations` | `zia_locations` | Read-only | List ZDX locations (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_list_software` | `zdx` | Read-only | List ZDX software inventory (read-only) Supports JMESPath client-side filtering via the query parameter. |
-| `zdx_delete_analysis` | `zdx` | Write | Stop a running ZDX score analysis (destructive operation) |
-| `zdx_delete_deeptrace` | `zdx` | Write | Delete a ZDX deep trace session (destructive operation) |
-| `zdx_start_analysis` | `zdx` | Write | Start a ZDX score analysis on a device (write operation) |
-| `zdx_start_deeptrace` | `zdx` | Write | Start a deep trace for a ZDX device (write operation) |
+| `zdx_get_alert` | `zdx_alerts` | Read-only | Get a specific ZDX alert by ID (read-only) |
+| `zdx_get_analysis` | `zdx_troubleshooting` | Read-only | Get status of a ZDX score analysis (read-only) |
+| `zdx_get_application` | `zdx_reports` | Read-only | Get ZDX application details (read-only) |
+| `zdx_get_application_metric` | `zdx_reports` | Read-only | Get ZDX metrics for a specified application (read-only) |
+| `zdx_get_application_score_trend` | `zdx_reports` | Read-only | Get ZDX application score trend (read-only) |
+| `zdx_get_application_user` | `zdx_reports` | Read-only | Get a specific ZDX application user (read-only) |
+| `zdx_get_deeptrace_cloudpath` | `zdx_troubleshooting` | Read-only | Get cloud path topology from a ZDX deep trace session (read-only) |
+| `zdx_get_deeptrace_cloudpath_metrics` | `zdx_troubleshooting` | Read-only | Get cloud path metrics from a ZDX deep trace session (read-only) |
+| `zdx_get_deeptrace_events` | `zdx_troubleshooting` | Read-only | Get events from a ZDX deep trace session (read-only) |
+| `zdx_get_deeptrace_health_metrics` | `zdx_troubleshooting` | Read-only | Get health metrics from a ZDX deep trace session (read-only) |
+| `zdx_get_deeptrace_webprobe_metrics` | `zdx_troubleshooting` | Read-only | Get web probe metrics from a ZDX deep trace session (read-only) |
+| `zdx_get_device` | `zdx_reports` | Read-only | Get a specific ZDX device by ID (read-only) |
+| `zdx_get_device_deep_trace` | `zdx_troubleshooting` | Read-only | Get a specific ZDX deep trace by ID (read-only) |
+| `zdx_get_software_details` | `zdx_software_inventory` | Read-only | Get details for specific ZDX software (read-only) |
+| `zdx_get_web_probes` | `zdx_reports` | Read-only | Get web probes for an app on a device - returns web_probe_id needed for zdx_start_deeptrace (read-only) |
+| `zdx_list_alert_affected_devices` | `zdx_alerts` | Read-only | List devices affected by a ZDX alert (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_alerts` | `zdx_alerts` | Read-only | List ZDX alerts (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_application_users` | `zdx_reports` | Read-only | List users for a ZDX application (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_applications` | `zdx_reports` | Read-only | List ZDX applications (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_cloudpath_probes` | `zdx_reports` | Read-only | List cloud path probes for an app on a device - returns cloudpath_probe_id needed for zdx_start_deeptrace (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_deeptrace_top_processes` | `zdx_troubleshooting` | Read-only | Get top processes from a ZDX deep trace session (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_departments` | `zdx_locations` | Read-only | List ZDX departments (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_device_deep_traces` | `zdx_troubleshooting` | Read-only | List ZDX deep traces for a device (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_devices` | `zdx_reports` | Read-only | List ZDX devices with optional filtering (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_historical_alerts` | `zdx_alerts` | Read-only | List ZDX historical alerts (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_locations` | `zdx_locations` | Read-only | List ZDX locations (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_list_software` | `zdx_software_inventory` | Read-only | List ZDX software inventory (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zdx_delete_analysis` | `zdx_troubleshooting` | Write | Stop a running ZDX score analysis (destructive operation) |
+| `zdx_delete_deeptrace` | `zdx_troubleshooting` | Write | Delete a ZDX deep trace session (destructive operation) |
+| `zdx_start_analysis` | `zdx_troubleshooting` | Write | Start a ZDX score analysis on a device (write operation) |
+| `zdx_start_deeptrace` | `zdx_troubleshooting` | Write | Start a deep trace for a ZDX device (write operation) |
 
 ---
 
 ## ZCC — Client Connector
 
-All 3 tools are read-only.
+All 4 tools are read-only.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
+| `zcc_get_device_otp` | `zcc` | Read-only | Get the One-Time Password (OTP) bundle for a Zscaler Client Connector device — includes logout_otp (One-Time Logout Password), exit_otp, uninstall_otp, revert_otp, and per-service disable OTPs (zia_disable_otp, zpa_disable_otp, zdx_disable_otp, zdp_disable_otp, anti_tempering_disable_otp, deception_settings_otp). Requires the device's udid (look it up via zcc_list_devices). The returned values are sensitive short-lived credentials — treat them like passwords (read-only). |
 | `zcc_list_devices` | `zcc` | Read-only | Retrieves ZCC device enrollment information from the Zscaler Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zcc_list_forwarding_profiles` | `zcc` | Read-only | Returns the list of Forwarding Profiles By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zcc_list_trusted_networks` | `zcc` | Read-only | Returns the list of Trusted Networks By Company ID in the Client Connector Portal (read-only) Supports JMESPath client-side filtering via the query parameter. |

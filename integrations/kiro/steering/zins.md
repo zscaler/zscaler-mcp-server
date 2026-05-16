@@ -4,6 +4,19 @@
 
 Z-Insights provides analytics and reporting across Zscaler services — web traffic patterns, cyber security incidents, shadow IT usage, SaaS security posture, firewall activity, and IoT device statistics.
 
+## Available Skills
+
+Kiro should prefer **guided skills** over ad-hoc workflows whenever a user's intent matches one of the skills below. Each skill is a multi-step playbook that auto-activates on description match. When a request maps cleanly to a skill, load the SKILL.md and follow it; otherwise fall back to the ad-hoc workflows further down.
+
+| Skill | Path | When to use |
+|-------|------|-------------|
+| Investigate security incident | `skills/zins/investigate-security-incident/SKILL.md` | "Spike in cyber incidents", "Investigate threats this week", "Which locations are getting hit?" |
+| Audit shadow IT | `skills/zins/audit-shadow-it/SKILL.md` | "What shadow IT is in our environment?", "Discover and rank unsanctioned SaaS" |
+| Analyze web traffic | `skills/zins/analyze-web-traffic/SKILL.md` | "What does our web traffic look like?", "Protocol / location distribution" |
+| Assess network security | `skills/zins/assess-network-security/SKILL.md` | "How is our Zero Trust Firewall performing?", "Firewall block/allow ratios by location" |
+
+Z-Insights is **read-only**. All four skills are licensing-aware: if a specific feature (CASB, IoT) is not entitled on the tenant, surface that as a clearly-flagged gap rather than treating the section as a workflow failure.
+
 ## Key Concepts
 
 - **Web Traffic**: Traffic volume, protocols, and threat categories by location

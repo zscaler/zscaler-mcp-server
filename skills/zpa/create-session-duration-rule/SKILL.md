@@ -141,7 +141,7 @@ the admin in **plain language**, do not narrate which filter / search
   1. *"I can't find an application segment named `<name>`. Want me to
      use a different existing segment?"*
   2. *"I can't find an application segment named `<name>`. To create
-     it I'll hand off to `zpa-onboard-application` first (it walks
+     it I'll hand off to `zpa-application_segment-onboard` first (it walks
      the connector-group → server-group → segment-group → app-segment
      chain), then come back here for the timeout rule. Want me to
      proceed?"*
@@ -236,7 +236,7 @@ afterward. Otherwise, accept the default append-at-end placement.
 
 ### Related skills (chain these, don't reinvent them)
 
-- `zpa-onboard-application` — **upstream dependency.** Owns the full
+- `zpa-application_segment-onboard` — **upstream dependency.** Owns the full
   chain: App Connector Group → Server Group → Segment Group → App
   Segment. Trigger this *first* if the named app segment does not yet
   exist; resume this skill afterward with the new segment ID.
@@ -256,7 +256,7 @@ afterward. Otherwise, accept the default append-at-end placement.
 **Typical chain when the app segment doesn't exist yet:**
 
 ```text
-zpa-onboard-application       (only if the app segment doesn't exist)
+zpa-application_segment-onboard       (only if the app segment doesn't exist)
         ↓
 zpa-create-session-duration-rule  (this skill — Timeout Policy rule)
 ```

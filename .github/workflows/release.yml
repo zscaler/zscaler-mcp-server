@@ -56,6 +56,11 @@ jobs:
     if: github.event_name == 'push' && github.ref != 'refs/heads/develop'
     needs: lint-checks
     runs-on: ubuntu-latest
+    # Surface semantic-release outputs at the job level so the downstream
+    # mcp-registry-publish job can gate on whether a release actually happened.
+    outputs:
+      new_release_published: ${{ steps.release.outputs.new_release_published }}
+      new_release_version: ${{ steps.release.outputs.new_release_version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -96,3 +101,46 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # MCP Registry Publish
+  # ---------------------------------------------------------------------------
+  # After every successful release, push the freshly-bumped server.json to
+  # the canonical MCP Registry at https://registry.modelcontextprotocol.io
+  # so downstream catalogs (GitHub MCP Registry, MCP-aware clients) see the
+  # new version without manual intervention.
+  #
+  # Auth: GitHub OIDC — no PAT or long-lived token. The minimal permissions
+  # block (id-token: write, contents: read) is scoped to this job only and
+  # does not affect the rest of the workflow's permissions.
+  #
+  # Failure here is non-fatal for the release itself — PyPI / GitHub release
+  # are already done by the time this job runs. Operators can fall back to
+  # the manual `mcp-publisher publish` flow documented in
+  # integrations/github/README.md.
+  mcp-registry-publish:
+    name: Publish to MCP Registry
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          # Check out the tag the release job just created so the published
+          # server.json matches the version users see on PyPI / GitHub.
+          ref: v${{ needs.release.outputs.new_release_version }}
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish
