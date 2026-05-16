@@ -27,7 +27,6 @@ import pytest
 from zscaler_mcp import lifecycle
 from zscaler_mcp.common import tool_helpers
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
