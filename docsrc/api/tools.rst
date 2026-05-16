@@ -127,7 +127,12 @@ ZIA Tools
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: zscaler_mcp.tools.zia.atp_malicious_urls
+.. automodule:: zscaler_mcp.tools.zia.atp_settings
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: zscaler_mcp.tools.zia.atp_malware_protection
    :members:
    :undoc-members:
    :show-inheritance:

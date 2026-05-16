@@ -8,23 +8,24 @@ The Zscaler MCP Server is available as a **Kiro Power**, providing AI-assisted m
 |-----------|----------|---------|
 | Power manifest | `integrations/kiro/POWER.md` | Power metadata, tool reference, workflows, and best practices |
 | MCP config | `integrations/kiro/mcp.json` | MCP server connection configuration |
-| Steering files | `integrations/kiro/steering/` | 9 service-specific context files for on-demand loading |
+| Steering files | `integrations/kiro/steering/` | 10 service-specific context files for on-demand loading |
 
 ### Steering Files
 
-Unlike skills (which are guided workflows), Kiro uses **steering files** — service-specific knowledge documents that the AI loads on demand based on your request:
+Steering files are service-specific knowledge documents that Kiro loads on demand based on your request. Each per-service steering file enumerates the **guided skills** (multi-step playbooks under `skills/`) relevant to that service so Kiro can autoload the right skill before composing an ad-hoc tool sequence.
 
-| Steering File | Service | Tools |
-|---------------|---------|-------|
-| `zpa.md` | ZPA (Private Access) | 59 — app segments, access/forwarding/timeout/isolation policies, connectors, PRA |
-| `zia.md` | ZIA (Internet Access) | 76 — cloud firewall, URL filtering, SSL inspection, DLP, locations, sandbox |
-| `zdx.md` | ZDX (Digital Experience) | 18 — app scores, device health, alerts, deep traces (read-only) |
-| `z-insights.md` | Z-Insights (Analytics) | 16 — web traffic, cyber incidents, shadow IT, firewall analytics (read-only) |
-| `zcc.md` | ZCC (Client Connector) | 4 — device enrollment, forwarding profiles (read-only) |
-| `ztw.md` | ZTW (Workload Segmentation) | 19 — IP groups, network services, cloud accounts |
-| `easm.md` | EASM (Attack Surface) | 7 — findings, lookalike domains, scan evidence (read-only) |
-| `zid.md` | ZIdentity | 10 — users, groups, identity management (read-only) |
-| `cross-product.md` | Cross-product | ZCC + ZDX + ZPA + ZIA correlation workflow |
+| Steering File | Service | Skills | Tools |
+|---------------|---------|--------|-------|
+| `zpa.md` | ZPA (Private Access) | 11 | 104 — app segments (standard / BA / PRA), policies, connectors, PRA, LSS |
+| `zia.md` | ZIA (Internet Access) | 12 | 149 — cloud firewall, URL filtering, SSL inspection, DLP, ATP, Cloud App Control |
+| `zdx.md` | ZDX (Digital Experience) | 6 | 31 — app scores, device health, alerts, deep traces |
+| `zins.md` | Z-Insights (Analytics) | 4 | 16 — web traffic, cyber incidents, shadow IT, firewall analytics (read-only) |
+| `zms.md` | ZMS (Microsegmentation) | 5 | 20 — agents, resource groups, policy rules, app zones, tags (read-only) |
+| `zcc.md` | ZCC (Client Connector) | 1 | 4 — devices, forwarding profiles, OTP (read-only) |
+| `ztw.md` | ZTW (Workload Segmentation) | — | 19 — IP groups, network services, cloud accounts |
+| `easm.md` | EASM (Attack Surface) | 1 | 7 — findings, lookalike domains, scan evidence (read-only) |
+| `zid.md` | ZIdentity | — | 10 — users, groups, identity management (read-only) |
+| `cross-product.md` | Cross-product | 1 | ZCC + ZDX + ZPA + ZIA correlation workflow |
 
 ## Installation
 
@@ -88,6 +89,7 @@ The `POWER.md` includes detailed workflows for:
 - **User troubleshooting** (Cross-product) — ZCC device → ZDX health → ZPA/ZIA policies
 - **Security investigation** (Z-Insights) — incidents → locations → timeline → threat breakdown
 - **Attack surface review** (EASM) — findings → details → lookalike domains
+- **Microsegmentation posture** (ZMS) — agents → resources → resource groups → policies → app zones
 
 ## Verification
 

@@ -40,6 +40,32 @@ Ask the administrator for the following information:
 
 ---
 
+### Step 1.5: Pick the Server Group Pattern (baseline alignment)
+
+Reference: ZPA Baseline Recommendations v1.0 §Server Group Definition. Pick one of the five patterns before you choose `app_connector_group_ids`:
+
+| Pattern | When to use | AC group binding |
+|---|---|---|
+| **Dedicated per location** (default for most apps) | Apps hosted in one DC / cloud region | The single location AC group only |
+| **Secure enclave** | Sensitive / regulated apps (Finance, HR, Legal, PCI) | The **isolated** enclave AC group only — never co-mingle with general traffic |
+| **Global** | Apps reachable from anywhere (AD DCs, NTP, internally LB'd web) | **All** location AC groups |
+| **SIPA** | Third-party apps that require fixed source IP | Dedicated SIPA AC group(s) only — separate from general traffic so heavy general load can't degrade SIPA performance |
+| **Regional** | Single-DC app that needs cross-DC failover | Multiple AC groups in a region (e.g. "US-East" SG bound to all US-East AC groups) |
+| **Discovery** | Wildcard segment for unknown apps (`*.corp.example.com`) | All communal AC groups, plus `dynamic_discovery=True` |
+
+Once you've picked the pattern, the AC group selection in Step 2 / 3 is determined.
+
+#### Dynamic Discovery — when to disable it
+
+The baseline doc recommends `dynamic_discovery=True` for almost all server groups. **Disable it only when:**
+
+- Strict per-server segmentation is required (specific server IDs must be served by specific connectors).
+- You need destination NAT for overlapping networks across multi-DC / multi-cloud or partner environments served by ZPA Extranet.
+
+**Important — dynamic discovery ≠ application health checks.** Dynamic discovery only learns server reachability from connector lookups. Application health (TCP probes, HTTP checks, port polling) is configured separately on the **application segment** via the `health_reporting` field. See the `application_segment-onboard` skill for `health_reporting` defaults.
+
+---
+
 ### Step 2: Check for Existing App Connector Groups
 
 Before creating anything, list existing app connector groups to avoid duplicates.
@@ -154,7 +180,7 @@ Server group created successfully.
 **Next Steps:**
 - You can now reference this server group (ID: <id>) when creating
   application segments using `zpa_create_application_segment`
-- To create a complete application, see the "onboard-application" skill
+- To create a complete application, see the "application_segment-onboard" skill
 ```text
 
 ---

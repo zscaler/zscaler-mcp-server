@@ -29,6 +29,39 @@ def enable_tool_call_logging():
     audit_logger.info("Tool-call audit logging enabled")
 
 
+def disable_tool_call_logging() -> None:
+    """Disable audit logging for all tool invocations.
+
+    Used by the lifecycle reload path so that flipping
+    ``ZSCALER_MCP_LOG_TOOL_CALLS`` in ``.env`` and sending SIGHUP
+    actually toggles the audit logger on/off without a full restart.
+    """
+    global _log_tool_calls_enabled
+    if _log_tool_calls_enabled:
+        audit_logger.info("Tool-call audit logging disabled")
+    _log_tool_calls_enabled = False
+
+
+def refresh_tool_call_logging() -> None:
+    """Reapply the ``ZSCALER_MCP_LOG_TOOL_CALLS`` env var to the audit toggle.
+
+    Idempotent. Called by :func:`zscaler_mcp.lifecycle._do_soft_reload`
+    after re-reading ``.env`` so that toggling audit logging via the
+    env file and ``zscaler-mcp reload`` is a one-liner.
+    """
+    import os
+
+    desired = os.environ.get("ZSCALER_MCP_LOG_TOOL_CALLS", "").strip().lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    if desired and not _log_tool_calls_enabled:
+        enable_tool_call_logging()
+    elif not desired and _log_tool_calls_enabled:
+        disable_tool_call_logging()
+
+
 def is_tool_call_logging_enabled() -> bool:
     """Return True if per-tool-call audit logging has been enabled."""
     return _log_tool_calls_enabled

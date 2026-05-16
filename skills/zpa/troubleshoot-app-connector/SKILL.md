@@ -37,6 +37,21 @@ Collect from the administrator:
 
 ---
 
+### Step 1.5: Config-Only Pre-Flight Checks (baseline alignment)
+
+Before concluding a connector is broken, verify the deployment matches ZPA Baseline Recommendations v1.0 §App Connector Recommendations. These are **configuration checks only** — ZPA does not expose live connector telemetry (CPU, memory, throughput, bandwidth utilization), so we cannot prove a connector is *currently* overloaded; we can only verify the deployment shape.
+
+| Pre-flight check | How to verify | Doc reference |
+|---|---|---|
+| AC group is in the **same DC / VPC** as the apps it serves | Compare AC group `latitude` / `longitude` / `location` to the application server location | Page 11 — "directly adjacent to application workloads" |
+| AC group has **N+1 connectors** | Count connectors in `zpa_list_app_connectors` filtered by `app_connector_group_id`. Doc formula: `N = ceil(Total_Mbps / 500); deploy N+1`. | Page 11 |
+| **SIPA / sensitive / LSS connectors are isolated** in their own AC groups | Inspect AC group naming and bound server groups — they should not share AC groups with general traffic | Page 11 |
+| AC group has unrestricted outbound to ZPA cloud + redundant DNS | Out-of-band check (network team) — not visible via API | Page 13 |
+
+**Important — what we cannot check via API:** per-connector CPU/memory/throughput, app probe results, bandwidth utilization, session counts. If the symptom is "connector is slow" and the config checks above pass, the next step is operational telemetry from outside ZPA (hypervisor / cloud-provider metrics, syslog from the connector VM). Flag this gap to the user so they don't expect the API to return runtime metrics.
+
+---
+
 ### Step 2: Inspect Connector and Connector Group Status via API
 
 **List individual app connectors** to get their runtime status directly:

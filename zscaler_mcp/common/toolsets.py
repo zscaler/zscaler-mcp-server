@@ -37,7 +37,7 @@ service name when a service has only one toolset, e.g.::
 
     zia_url_filtering        zia_cloud_firewall      zia_ssl_inspection
     zpa_app_segments         zpa_policy              zpa_connectors
-    zdx_devices              zdx_alerts              zdx_deep_traces
+    zdx_alerts               zdx_reports             zdx_troubleshooting
     zcc                      ztw                     zid
 
 Special keywords accepted by callers (resolved during selection, never
@@ -429,6 +429,94 @@ TOOLSETS.register(ToolsetMetadata(
 ))
 
 TOOLSETS.register(ToolsetMetadata(
+    id="zia_atp_policy",
+    service="zia",
+    description=(
+        "ZIA Advanced Threat Protection (ATP) policy: tenant-wide threat "
+        "protection settings (zia_get_atp_settings / zia_update_atp_settings), "
+        "the ATP security-exception bypass URL list "
+        "(zia_get_atp_security_exceptions / zia_update_atp_security_exceptions), "
+        "and the ATP malicious-URL denylist "
+        "(zia_list_atp_malicious_urls / zia_add_atp_malicious_urls / "
+        "zia_delete_atp_malicious_urls). All backed by the SDK's "
+        "zscaler.zia.atp_policy.ATPPolicyAPI."
+    ),
+    default=True,
+    instructions=_zia_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zia_atp_malware",
+    service="zia",
+    description=(
+        "ZIA Advanced Threat Protection (ATP) Malware Protection Policy: "
+        "tenant-wide malware singletons that sit alongside zia_atp_policy "
+        "under cyberThreatProtection. File-handling toggles "
+        "(zia_get_atp_malware_policy / zia_update_atp_malware_policy — "
+        "block_unscannable_files, block_password_protected_archive_files), "
+        "traffic-direction inspection (zia_get_atp_malware_inspection / "
+        "zia_update_atp_malware_inspection — inspect_inbound, "
+        "inspect_outbound), protocol-level inspection "
+        "(zia_get_atp_malware_protocols / zia_update_atp_malware_protocols "
+        "— inspect_http, inspect_ftp_over_http, inspect_ftp), and the "
+        "16-field threat-class settings block (zia_get_malware_settings / "
+        "zia_update_malware_settings — virus / trojan / worm / adware / "
+        "spyware / ransomware / remote-access-tool / unwanted-applications "
+        "blocked + capture toggles). All backed by the SDK's "
+        "zscaler.zia.malware_protection_policy.MalwareProtectionPolicyAPI; "
+        "every update is PUT-replace and writes are staged until "
+        "zia_activate_configuration is called."
+    ),
+    default=True,
+    instructions=_zia_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zia_advanced_settings",
+    service="zia",
+    description=(
+        "ZIA Advanced Settings: the tenant-wide singleton surfaced under "
+        "Administration → Advanced Settings in the ZIA Admin Portal "
+        "(zia_get_advanced_settings / zia_update_advanced_settings, backed "
+        "by the SDK's zscaler.zia.advanced_settings.AdvancedSettingsAPI). "
+        "Around 50 knobs across authentication / Kerberos / digest bypass "
+        "URLs and apps, DNS optimization on transparent proxy (IPv4 + "
+        "IPv6), Office 365 one-click, UI session timeout, surrogate IP "
+        "enforcement, HTTP tunnel handling, domain-fronting block, HTTP/2 "
+        "non-browser traffic, ECS-for-all, dynamic user risk, "
+        "CONNECT-host / SNI mismatch handling, and SIPA XFF header "
+        "insertion. PUT-replace update contract — fetch + merge + write, "
+        "then call zia_activate_configuration to apply."
+    ),
+    default=True,
+    instructions=_zia_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zia_threat_settings",
+    service="zia",
+    description=(
+        "ZIA threat-related tenant-wide singletons that don't belong to "
+        "the ATP / ATP-malware policy blocks. Currently holds the Mobile "
+        "Advanced Threat Settings (zia_get_mobile_advanced_settings / "
+        "zia_update_mobile_advanced_settings, backed by "
+        "zscaler.zia.mobile_threat_settings.MobileAdvancedSettingsAPI) — "
+        "the Mobile Malware Protection policy applied to traffic from "
+        "mobile clients (iOS / Android via the Zscaler Client "
+        "Connector). 8 boolean knobs for blocking apps with malicious "
+        "activity, known vulnerabilities, unencrypted credential / "
+        "location / PII / device-ID leakage, ad-website beacons, and "
+        "communication with unknown remote servers. PUT-replace update "
+        "contract — fetch + merge + write, then call "
+        "zia_activate_configuration to apply. Distinct from "
+        "zia_atp_policy (the desktop / web ATP block) and zia_atp_malware "
+        "(the malware inspection / file-handling block)."
+    ),
+    default=True,
+    instructions=_zia_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
     id="zia_ssl_inspection",
     service="zia",
     description="ZIA SSL Inspection policy rules.",
@@ -491,7 +579,43 @@ TOOLSETS.register(ToolsetMetadata(
     id="zia_users",
     service="zia",
     description=(
-        "ZIA users, user groups, departments, device groups, devices."
+        "ZIA users, user groups, departments. Device inventory lives in "
+        "the dedicated `zia_devices` toolset."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zia_devices",
+    service="zia",
+    description=(
+        "ZIA device inventory: zia_list_devices, zia_list_devices_lite, "
+        "zia_list_device_groups. Read-only — device enrollment lives in "
+        "ZCC, not ZIA."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zia_authentication_settings",
+    service="zia",
+    description=(
+        "ZIA authentication settings: cookie-auth exempt URL list "
+        "(zia_list_auth_exempt_urls / zia_add_auth_exempt_urls / "
+        "zia_delete_auth_exempt_urls). Distinct from the ATP "
+        "security-exception bypass list (see zia_atp_policy)."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zia_rule_labels",
+    service="zia",
+    description=(
+        "ZIA rule labels — generic tagging objects referenced by every "
+        "ZIA policy rule family via the `labels` operand. CRUD: "
+        "zia_list_rule_labels, zia_get_rule_label, zia_create_rule_label, "
+        "zia_update_rule_label, zia_delete_rule_label."
     ),
     default=True,
 ))
@@ -531,19 +655,64 @@ TOOLSETS.register(ToolsetMetadata(
     service="zpa",
     description=(
         "ZPA application segments (incl. PRA, browser-access, inspection "
-        "variants), segment groups, server groups."
+        "variants). Server groups and segment groups — both referenced "
+        "by application segments AND by access policy rules — live in "
+        "their own dedicated toolsets (zpa_server_groups, "
+        "zpa_segment_groups)."
     ),
     default=True,
     instructions=_zpa_umbrella_instructions,
 ))
 
 TOOLSETS.register(ToolsetMetadata(
+    id="zpa_segment_groups",
+    service="zpa",
+    description=(
+        "ZPA segment groups (CRUD): zpa_list_segment_groups, "
+        "zpa_get_segment_group, zpa_create_segment_group, "
+        "zpa_update_segment_group, zpa_delete_segment_group. Referenced "
+        "by application segments via segment_group_id and by access "
+        "policy rules as the APP_GROUP operand."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_server_groups",
+    service="zpa",
+    description=(
+        "ZPA server groups (CRUD): zpa_list_server_groups, "
+        "zpa_get_server_group, zpa_create_server_group, "
+        "zpa_update_server_group, zpa_delete_server_group. Bind app "
+        "connector groups to application segments and are also "
+        "referenced by access policy rules."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
     id="zpa_policy",
     service="zpa",
     description=(
-        "ZPA policy rules: access, app-protection, forwarding, "
-        "isolation, timeout, capabilities, conditional access, "
-        "client/credential/console."
+        "ZPA policy rules other than access policies: app-protection, "
+        "forwarding, isolation, timeout, capabilities, conditional "
+        "access, client/credential/console. Access policy CRUD lives "
+        "in the dedicated zpa_access_policies toolset."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_access_policies",
+    service="zpa",
+    description=(
+        "ZPA Access Policy rules — the primary application-access "
+        "control surface. CRUD: zpa_list_access_policy_rules, "
+        "zpa_get_access_policy_rule, zpa_create_access_policy_rule, "
+        "zpa_update_access_policy_rule, zpa_delete_access_policy_rule. "
+        "Operands typically reference resources from zpa_app_segments, "
+        "zpa_segment_groups, zpa_server_groups, zpa_idp, "
+        "zpa_posture, and zpa_trusted_networks."
     ),
     default=True,
 ))
@@ -552,8 +721,43 @@ TOOLSETS.register(ToolsetMetadata(
     id="zpa_connectors",
     service="zpa",
     description=(
-        "ZPA app connector groups, app connectors, service edges, "
-        "service edge groups, provisioning keys."
+        "ZPA app connectors (individual connector inventory + "
+        "enrollment certificates). App connector groups, service "
+        "edge groups, and provisioning keys each live in their own "
+        "dedicated toolsets (zpa_app_connector_groups, "
+        "zpa_service_edge_groups, zpa_provisioning_keys)."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_service_edge_groups",
+    service="zpa",
+    description=(
+        "ZPA service edges and service edge groups — the cloud-hosted "
+        "broker family (CRUD on groups + read/update/delete on the "
+        "individual edge instances). Group tools: "
+        "zpa_list_service_edge_groups, zpa_get_service_edge_group, "
+        "zpa_create_service_edge_group, zpa_update_service_edge_group, "
+        "zpa_delete_service_edge_group. Individual edge tools: "
+        "zpa_list_service_edges, zpa_get_service_edge, "
+        "zpa_update_service_edge, zpa_delete_service_edge, "
+        "zpa_bulk_delete_service_edges. Edges are enrolled into a group "
+        "via the bootstrap tokens managed in zpa_provisioning_keys."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_provisioning_keys",
+    service="zpa",
+    description=(
+        "ZPA provisioning keys (CRUD): zpa_list_provisioning_keys, "
+        "zpa_get_provisioning_key, zpa_create_provisioning_key, "
+        "zpa_update_provisioning_key, zpa_delete_provisioning_key. "
+        "Bootstrap tokens used to enroll app connectors and service "
+        "edges; reference an enrollment certificate (zpa_connectors) "
+        "and an app connector group or service edge group."
     ),
     default=True,
 ))
@@ -563,8 +767,102 @@ TOOLSETS.register(ToolsetMetadata(
     service="zpa",
     description=(
         "ZPA identity providers, SAML attributes, SCIM attributes, "
-        "SCIM groups, posture profiles, trusted networks, "
-        "machine groups, isolation profiles, customer version profiles."
+        "SCIM groups, machine groups, customer version profiles. "
+        "Posture profiles, trusted networks, isolation profiles, and "
+        "app-protection profiles each live in their own dedicated "
+        "toolset (zpa_posture, zpa_trusted_networks, zpa_isolation, "
+        "zpa_app_protection)."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_app_connector_groups",
+    service="zpa",
+    description=(
+        "ZPA app connector groups (CRUD): zpa_list_app_connector_groups, "
+        "zpa_get_app_connector_group, zpa_create_app_connector_group, "
+        "zpa_update_app_connector_group, zpa_delete_app_connector_group. "
+        "Individual app connectors, service edges, provisioning keys, "
+        "and enrollment certificates live in zpa_connectors."
+    ),
+    default=True,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_application_servers",
+    service="zpa",
+    description=(
+        "ZPA application servers (the legacy server-object operand "
+        "referenced by server groups). CRUD: zpa_list_application_servers, "
+        "zpa_get_application_server, zpa_create_application_server, "
+        "zpa_update_application_server, zpa_delete_application_server."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_ba_certificates",
+    service="zpa",
+    description=(
+        "ZPA browser-access certificates (issued + intermediate). "
+        "Used by browser-access application segments. Tools: "
+        "zpa_list_ba_certificates, zpa_get_ba_certificate, "
+        "zpa_create_ba_certificate, zpa_delete_ba_certificate."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_pra",
+    service="zpa",
+    description=(
+        "ZPA Privileged Remote Access (PRA): credentials and portals. "
+        "Tools: zpa_list_pra_credentials / zpa_get_pra_credential / "
+        "zpa_create_pra_credential / zpa_update_pra_credential / "
+        "zpa_delete_pra_credential, plus the matching pra_portal CRUD."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_isolation",
+    service="zpa",
+    description=(
+        "ZPA Cloud Browser Isolation profiles. Read-only operand "
+        "referenced by isolation policy rules: get_zpa_isolation_profile."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_posture",
+    service="zpa",
+    description=(
+        "ZPA device posture profiles. Read-only operand referenced by "
+        "access policy rules: get_zpa_posture_profile."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_trusted_networks",
+    service="zpa",
+    description=(
+        "ZPA trusted networks. Read-only operand referenced by access "
+        "and forwarding policy rules: get_zpa_trusted_network."
+    ),
+    default=False,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zpa_app_protection",
+    service="zpa",
+    description=(
+        "ZPA AppProtection (Inspection) profiles — the operand "
+        "referenced by app-protection policy rules. Read tool: "
+        "get_zpa_app_protection_profile. The matching policy-rule CRUD "
+        "(zpa_*_app_protection_rule) lives under zpa_policy."
     ),
     default=False,
 ))
@@ -580,9 +878,11 @@ TOOLSETS.register(ToolsetMetadata(
     id="zpa_misc",
     service="zpa",
     description=(
-        "Other ZPA resources: certificates, pra (privileged remote "
-        "access) consoles/credentials/portals/approvals, application "
-        "servers, enrollment certificates."
+        "Other ZPA resources that don't fit the dedicated resource-family "
+        "toolsets. Currently a small catch-all for legacy reads not yet "
+        "split out; most ZPA surfaces (PRA, BA certificates, application "
+        "servers, app-protection profiles, isolation/posture/trusted "
+        "networks, app connector groups) now live in their own toolsets."
     ),
     default=False,
 ))
@@ -590,16 +890,74 @@ TOOLSETS.register(ToolsetMetadata(
 
 # ---- ZDX toolset(s) --------------------------------------------------------
 #
-# ZDX is naturally smaller and read-only; we keep it as a single
-# default-on toolset rather than fragmenting.
+# ZDX is split into five resource-family toolsets that mirror the layout
+# of the ZDX admin console (Administration / Alerts / Inventory /
+# Reports) plus a dedicated bucket for the deep-trace / analysis
+# troubleshooting lifecycle. All five default-on to preserve the prior
+# "everything zdx loads at startup" behaviour for `--toolsets default`
+# and the no-selection fallback. ZDX is read-only except for deep
+# traces and analyses, which live in `zdx_troubleshooting`.
 
 TOOLSETS.register(ToolsetMetadata(
-    id="zdx",
+    id="zdx_alerts",
     service="zdx",
     description=(
-        "Zscaler Digital Experience: device, application, and alert "
-        "querying plus deep-trace/analysis lifecycle (read-only "
-        "except for deep-trace start/stop and analysis start/stop)."
+        "ZDX alerts: list ongoing alerts, list historical alerts, get "
+        "a single alert by id, and enumerate the devices affected by "
+        "an alert. Read-only."
+    ),
+    default=True,
+    instructions=_zdx_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zdx_locations",
+    service="zdx",
+    description=(
+        "ZDX administration operand catalog: tenant locations and "
+        "departments. These are the scope filters that every other "
+        "ZDX query tool accepts (`location_id`, `department_id`). "
+        "Read-only."
+    ),
+    default=True,
+    instructions=_zdx_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zdx_software_inventory",
+    service="zdx",
+    description=(
+        "ZDX software inventory: list installed software across the "
+        "device fleet and fetch detailed information (versions, "
+        "hosts) for a specific software entry. Read-only."
+    ),
+    default=True,
+    instructions=_zdx_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zdx_reports",
+    service="zdx",
+    description=(
+        "ZDX reports: device inventory, application performance "
+        "metrics, application score trends, application users, and "
+        "device-level web-probe / cloudpath-probe results. Covers "
+        "every `zdx_application_*` tool. Read-only."
+    ),
+    default=True,
+    instructions=_zdx_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
+    id="zdx_troubleshooting",
+    service="zdx",
+    description=(
+        "ZDX deep-trace troubleshooting and analysis: start/stop deep "
+        "traces and analyses, list deep traces per device, fetch "
+        "deep-trace events, top processes, web-probe metrics, "
+        "cloudpath metrics, cloudpath topology, and health metrics. "
+        "This is the only ZDX toolset with write tools (start/delete "
+        "for deep traces and analyses)."
     ),
     default=True,
     instructions=_zdx_umbrella_instructions,
@@ -727,9 +1085,8 @@ _TOOL_TOOLSET_OVERRIDES: Dict[str, str] = {
     "zia_url_lookup": "zia_url_categories",
     "zia_activate_configuration": "zia_admin",
     "zia_get_activation_status": "zia_admin",
-    "zia_list_devices": "zia_users",
-    "zia_list_devices_lite": "zia_users",
-    "zia_list_device_groups": "zia_users",
+    # zia_list_devices, zia_list_devices_lite, zia_list_device_groups
+    # are routed to `zia_devices` via the prefix rule `_device` below.
 
     # ZIA: shadow-IT (separate from cloud-app-control catalog)
     "zia_list_shadow_it_apps": "zia_shadow_it",
@@ -743,22 +1100,83 @@ _TOOL_TOOLSET_OVERRIDES: Dict[str, str] = {
     "zia_list_cloud_app_ssl_policy": "zia_cloud_app_control",
     "zia_list_cloud_app_control_actions": "zia_cloud_app_control",
 
-    # ZIA: ATP malicious URLs and auth-exempt URLs
-    "zia_list_atp_malicious_urls": "zia_url_categories",
-    "zia_add_atp_malicious_urls": "zia_url_categories",
-    "zia_delete_atp_malicious_urls": "zia_url_categories",
-    "zia_list_auth_exempt_urls": "zia_url_categories",
-    "zia_add_auth_exempt_urls": "zia_url_categories",
-    "zia_delete_auth_exempt_urls": "zia_url_categories",
+    # ZIA: Advanced Threat Protection (ATP) policy — every tool backed by
+    # the SDK's zscaler.zia.atp_policy.ATPPolicyAPI lives in the dedicated
+    # zia_atp_policy toolset (tenant-wide ATP settings, the security-
+    # exception bypass URL list, and the malicious-URL denylist).
+    "zia_get_atp_settings": "zia_atp_policy",
+    "zia_update_atp_settings": "zia_atp_policy",
+    "zia_get_atp_security_exceptions": "zia_atp_policy",
+    "zia_update_atp_security_exceptions": "zia_atp_policy",
+    "zia_list_atp_malicious_urls": "zia_atp_policy",
+    "zia_add_atp_malicious_urls": "zia_atp_policy",
+    "zia_delete_atp_malicious_urls": "zia_atp_policy",
 
-    # ZIA: rule labels are a generic resource shared across all rule
-    # families — pin them under the umbrella admin toolset so they're
-    # always available alongside the rules that reference them.
-    "zia_list_rule_labels": "zia_admin",
-    "zia_get_rule_label": "zia_admin",
-    "zia_create_rule_label": "zia_admin",
-    "zia_update_rule_label": "zia_admin",
-    "zia_delete_rule_label": "zia_admin",
+    # ZIA: Advanced Threat Protection — Malware Protection Policy. All 8
+    # tools backed by zscaler.zia.malware_protection_policy.MalwareProtectionPolicyAPI
+    # live in zia_atp_malware so admins can enable/audit the malware
+    # surface independently from the rest of the ATP policy. Includes
+    # the two zia_*_malware_settings tools that lack the `_atp_` infix
+    # — pinned explicitly here so they share the same toolset as their
+    # zia_*_atp_malware_* siblings instead of falling through to a
+    # generic prefix rule.
+    "zia_get_atp_malware_policy": "zia_atp_malware",
+    "zia_update_atp_malware_policy": "zia_atp_malware",
+    "zia_get_atp_malware_inspection": "zia_atp_malware",
+    "zia_update_atp_malware_inspection": "zia_atp_malware",
+    "zia_get_atp_malware_protocols": "zia_atp_malware",
+    "zia_update_atp_malware_protocols": "zia_atp_malware",
+    "zia_get_malware_settings": "zia_atp_malware",
+    "zia_update_malware_settings": "zia_atp_malware",
+
+    # ZIA: Advanced Settings (Administration → Advanced Settings) —
+    # tenant-wide singleton backed by
+    # zscaler.zia.advanced_settings.AdvancedSettingsAPI. Pinned to its
+    # own toolset because the surface (~50 knobs spanning DNS opt,
+    # bypass URLs/apps, session timeout, surrogate IP, HTTP/2, ECS,
+    # dynamic user risk, etc.) is substantial enough to warrant
+    # independent discovery / audit. Explicit overrides because the
+    # tool names share the generic `_advanced_settings` suffix that
+    # could collide with future ZPA/ZTW tools if we relied on a prefix
+    # rule.
+    "zia_get_advanced_settings": "zia_advanced_settings",
+    "zia_update_advanced_settings": "zia_advanced_settings",
+
+    # ZIA: Mobile Advanced Threat Settings — tenant-wide singleton
+    # backed by zscaler.zia.mobile_threat_settings.MobileAdvancedSettingsAPI
+    # governing the Mobile Malware Protection policy applied to traffic
+    # from mobile clients. Pinned to the new `zia_threat_settings`
+    # toolset rather than `zia_advanced_settings` because the resource
+    # is conceptually a threat policy (8 block_apps_* knobs), not the
+    # generic admin Advanced Settings block. Explicit overrides
+    # because the tool names share the `_advanced_settings` suffix
+    # with the ZIA admin block above — a substring-based prefix rule
+    # would mis-route them.
+    "zia_get_mobile_advanced_settings": "zia_threat_settings",
+    "zia_update_mobile_advanced_settings": "zia_threat_settings",
+
+    # ZIA: Custom IPS signature rules (Snort/Suricata-style detection
+    # signatures) — pinned to the `zia_cloud_firewall` toolset so they
+    # load alongside the Cloud Firewall IPS *policy* rule family
+    # (zia_*_cloud_firewall_ips_rule), since admins working on
+    # intrusion prevention typically want both surfaces — the
+    # signature ("what to detect") and the policy rule ("when to
+    # enforce") — available in the same session. Explicit overrides
+    # because the `_ips_signature_rule[s]` infix doesn't match the
+    # existing `_cloud_firewall_*` prefix rules.
+    "zia_list_ips_signature_rules": "zia_cloud_firewall",
+    "zia_get_ips_signature_rule": "zia_cloud_firewall",
+    "zia_create_ips_signature_rule": "zia_cloud_firewall",
+    "zia_update_ips_signature_rule": "zia_cloud_firewall",
+    "zia_delete_ips_signature_rule": "zia_cloud_firewall",
+
+    # ZIA: cookie-auth exempt URL list — its own dedicated
+    # zia_authentication_settings toolset (covered by the
+    # `_auth_exempt` prefix rule below; no explicit overrides needed).
+
+    # ZIA: rule labels — its own dedicated zia_rule_labels toolset
+    # (covered by the `_rule_label` prefix rule below; no explicit
+    # overrides needed).
 
     # ZIA: workload groups (cross-rule operand)
     "zia_list_workload_groups": "zia_workload_groups",
@@ -778,37 +1196,22 @@ _TOOL_TOOLSET_OVERRIDES: Dict[str, str] = {
     "zia_get_sandbox_behavioral_analysis": "zia_sandbox",
     "zia_get_sandbox_file_hash_count": "zia_sandbox",
 
-    # ---- ZPA: pra (privileged remote access) ---------------------------
-    "zpa_list_pra_credentials": "zpa_misc",
-    "zpa_get_pra_credential": "zpa_misc",
-    "zpa_create_pra_credential": "zpa_misc",
-    "zpa_update_pra_credential": "zpa_misc",
-    "zpa_delete_pra_credential": "zpa_misc",
-    "zpa_list_pra_portals": "zpa_misc",
-    "zpa_get_pra_portal": "zpa_misc",
-    "zpa_create_pra_portal": "zpa_misc",
-    "zpa_update_pra_portal": "zpa_misc",
-    "zpa_delete_pra_portal": "zpa_misc",
+    # ---- ZPA dedicated resource-family toolsets ------------------------
+    # PRA (credentials + portals), BA certificates, application servers,
+    # and app connector groups are all routed via the prefix rules below
+    # (`_pra_`, `_ba_certificate`, `_application_server`,
+    # `_app_connector_group`); no explicit overrides needed.
 
-    # ZPA: certificates and application servers (under misc)
-    "zpa_list_ba_certificates": "zpa_misc",
-    "zpa_get_ba_certificate": "zpa_misc",
-    "zpa_create_ba_certificate": "zpa_misc",
-    "zpa_delete_ba_certificate": "zpa_misc",
-    "zpa_list_application_servers": "zpa_misc",
-    "zpa_get_application_server": "zpa_misc",
-    "zpa_create_application_server": "zpa_misc",
-    "zpa_update_application_server": "zpa_misc",
-    "zpa_delete_application_server": "zpa_misc",
-
-    # ZPA: idp-adjacent reads (under zpa_idp)
-    "get_zpa_isolation_profile": "zpa_idp",
-    "get_zpa_posture_profile": "zpa_idp",
+    # ---- ZPA: legacy `get_zpa_*` reads (no _zpa_ prefix marker) --------
+    # These don't follow the {service}_{verb}_{resource} pattern, so
+    # prefix rules can't catch them — they need explicit mappings.
+    "get_zpa_isolation_profile": "zpa_isolation",
+    "get_zpa_posture_profile": "zpa_posture",
+    "get_zpa_trusted_network": "zpa_trusted_networks",
+    "get_zpa_app_protection_profile": "zpa_app_protection",
     "get_zpa_saml_attribute": "zpa_idp",
     "get_zpa_scim_attribute": "zpa_idp",
     "get_zpa_scim_group": "zpa_idp",
-    "get_zpa_trusted_network": "zpa_idp",
-    "get_zpa_app_protection_profile": "zpa_misc",
     "get_zpa_enrollment_certificate": "zpa_connectors",
     "get_zpa_app_segments_by_type": "zpa_app_segments",
 
@@ -820,6 +1223,45 @@ _TOOL_TOOLSET_OVERRIDES: Dict[str, str] = {
 # Prefix rules — first match wins. List MORE-SPECIFIC patterns FIRST.
 # A predicate is a callable taking a tool name and returning bool.
 _TOOLSET_PREFIX_RULES: List[Tuple[Callable[[str], bool], str]] = [
+    # ===================================================================
+    # ZDX — placed FIRST because some broad predicates below would
+    # otherwise hijack ZDX tools (e.g. ZIA's `_location` rule would
+    # claim `zdx_list_locations`, ZIA's `_device` rule would claim
+    # `zdx_list_devices`). Every ZDX predicate is explicitly scoped to
+    # `n.startswith("zdx_")` so it can never reach into another
+    # service's tools.
+    # ===================================================================
+
+    # Deep-trace + analysis lifecycle — catches every `zdx_*deeptrace*`
+    # / `zdx_*deep_trace*` / `zdx_*analysis*` tool, both read and
+    # write. Must come BEFORE the alerts/reports rules so that
+    # `zdx_get_deeptrace_*` (which contains `_web_probe`, `_device`,
+    # etc. fragments) lands here rather than in reports.
+    (lambda n: n.startswith("zdx_") and (
+        "_deeptrace" in n or "_deep_trace" in n or "_analysis" in n
+    ),                                          "zdx_troubleshooting"),
+
+    # Alerts. MUST come before the `zdx_*` catch-all below because
+    # `zdx_list_alert_affected_devices` otherwise looks like a
+    # device/reports tool.
+    (lambda n: n.startswith("zdx_") and "_alert" in n,
+                                                "zdx_alerts"),
+
+    # Software inventory.
+    (lambda n: n.startswith("zdx_") and "_software" in n,
+                                                "zdx_software_inventory"),
+
+    # Administration: locations + departments (the operand catalog
+    # used to scope every other ZDX query).
+    (lambda n: n.startswith("zdx_") and (
+        "_location" in n or "_department" in n
+    ),                                          "zdx_locations"),
+
+    # Reports — catch-all for every other ZDX tool: device inventory,
+    # `zdx_application_*`, application users, and the device-level
+    # web-probe / cloudpath-probe tools.
+    (lambda n: n.startswith("zdx_"),            "zdx_reports"),
+
     # ===================================================================
     # ZIA — order matters; check the most-specific patterns first
     # ===================================================================
@@ -864,26 +1306,56 @@ _TOOLSET_PREFIX_RULES: List[Tuple[Callable[[str], bool], str]] = [
     (lambda n: "_ip_destination_group" in n or "_ip_source_group" in n,
                                             "zia_cloud_firewall"),
 
+    # Dedicated ZIA resource-family toolsets (split out from the
+    # umbrella zia_admin / zia_users / zia_url_categories buckets).
+    # Devices: matches zia_list_devices, zia_list_devices_lite, and
+    # zia_list_device_groups — `_device` covers all three.
+    (lambda n: "_device" in n and n.startswith("zia_"),
+                                            "zia_devices"),
+    # Cookie-auth exempt URL list lives in its own toolset (NOT the
+    # ATP bypass list — that's caught above by the explicit
+    # `zia_*_atp_*` overrides routing to zia_atp_policy).
+    (lambda n: "_auth_exempt" in n,         "zia_authentication_settings"),
+    # Rule labels — generic tagging operand referenced by every rule
+    # family, but managed independently.
+    (lambda n: "_rule_label" in n,          "zia_rule_labels"),
+
     # ===================================================================
-    # ZPA — order matters
+    # ZPA — order matters; more-specific patterns FIRST
     # ===================================================================
 
-    # Policy rule families — all map to zpa_policy
-    (lambda n: "_access_policy_rule" in n,     "zpa_policy"),
+    # Access policies get their own dedicated toolset; every other
+    # policy-rule family stays under zpa_policy.
+    (lambda n: "_access_policy_rule" in n,     "zpa_access_policies"),
     (lambda n: "_app_protection_rule" in n,    "zpa_policy"),
     (lambda n: "_forwarding_policy_rule" in n, "zpa_policy"),
     (lambda n: "_isolation_policy_rule" in n,  "zpa_policy"),
     (lambda n: "_timeout_policy_rule" in n,    "zpa_policy"),
 
-    # Connector & service-edge family
-    (lambda n: "_app_connector" in n,          "zpa_connectors"),
-    (lambda n: "_service_edge" in n,           "zpa_connectors"),
-    (lambda n: "_provisioning_key" in n,       "zpa_connectors"),
+    # Dedicated ZPA resource-family toolsets — these MUST come before
+    # any broader rule that would also match (e.g.
+    # `_app_connector_group` before `_app_connector`).
+    (lambda n: "_app_connector_group" in n,    "zpa_app_connector_groups"),
+    (lambda n: "_application_server" in n,     "zpa_application_servers"),
+    (lambda n: "_ba_certificate" in n,         "zpa_ba_certificates"),
+    (lambda n: "_pra_credential" in n
+              or "_pra_portal" in n,           "zpa_pra"),
 
-    # App segments + segment groups + server groups
+    # Connector family (individual connectors only — app connector
+    # groups, service edge groups, and provisioning keys all live in
+    # their own dedicated toolsets).
+    (lambda n: "_app_connector" in n,          "zpa_connectors"),
+    (lambda n: "_service_edge" in n,           "zpa_service_edge_groups"),
+    (lambda n: "_provisioning_key" in n,       "zpa_provisioning_keys"),
+
+    # Application segments stay in zpa_app_segments. Segment groups and
+    # server groups have their own toolsets since they're shared
+    # operands referenced by both app segments and access policy rules.
+    # `_application_server` is already claimed above so
+    # `_application_segment` is unambiguous here.
     (lambda n: "_application_segment" in n,    "zpa_app_segments"),
-    (lambda n: "_segment_group" in n,          "zpa_app_segments"),
-    (lambda n: "_server_group" in n,           "zpa_app_segments"),
+    (lambda n: "_segment_group" in n,          "zpa_segment_groups"),
+    (lambda n: "_server_group" in n,           "zpa_server_groups"),
 
     # ===================================================================
     # ZTW — collapse into a single toolset
@@ -913,10 +1385,15 @@ def toolset_for_tool(tool_name: str) -> str:
         if predicate(tool_name):
             return toolset_id
 
-    # Bare service-name fallback: zcc_*, zdx_*, zid_*, zeasm_*,
-    # zins_*, zms_*, ztw_* all collapse into a single toolset per service
-    # (toolset id == service code).
-    for prefix in ("zcc_", "zdx_", "zid_", "zeasm_", "zins_", "zms_"):
+    # Bare service-name fallback: zcc_*, zid_*, zeasm_*, zins_*, zms_*
+    # all collapse into a single toolset per service (toolset id ==
+    # service code). ZDX is intentionally NOT in this list — every
+    # `zdx_*` tool is routed via the dedicated ZDX prefix rules above
+    # (zdx_alerts / zdx_locations / zdx_reports / zdx_software_inventory
+    # / zdx_troubleshooting), and the `zdx_*` catch-all there ensures
+    # any newly added ZDX tool resolves cleanly without needing a
+    # bare-service fallback.
+    for prefix in ("zcc_", "zid_", "zeasm_", "zins_", "zms_"):
         if tool_name.startswith(prefix):
             tsid = prefix.rstrip("_")
             if TOOLSETS.has(tsid):

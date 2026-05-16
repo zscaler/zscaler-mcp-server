@@ -1,5 +1,5 @@
 ---
-name: zpa-onboard-application
+name: zpa-application_segment-onboard
 description: "End-to-end onboarding of a new application in Zscaler Private Access. Walks through the complete dependency chain: (1) App connector group, (2) Server group, (3) Segment group, (4) Application segment with domain names and ports, (5) Access policy rule to grant user/group access. Use when an administrator needs to make an internal application accessible through ZPA."
 ---
 
@@ -19,7 +19,25 @@ Onboard a new application in Zscaler Private Access by walking through the full 
 
 ## Workflow
 
-Follow this 7-step process for complete application onboarding.
+Follow this 8-step process for complete application onboarding. Step 0 is new — it picks the segmentation pattern, which then drives the right defaults in every later step.
+
+### Step 0: Classify the Application (baseline alignment)
+
+Before creating anything, ask the administrator one question: **what kind of application is this?** The answer drives the defaults for AC group, server group, segment group, and `health_reporting` mode. Reference: ZPA Baseline Recommendations v1.0 §App Segmentation Recommendations.
+
+| Class | Examples | App Connector Group | Server Group | Health Reporting |
+|---|---|---|---|---|
+| **Standard** (general business app) | Wiki, ticketing, internal SaaS | Communal, per location | Communal per location, `dynamic_discovery=True` | `ON_ACCESS` |
+| **Sensitive / regulated** (Finance, HR, Legal, PCI) | Workday, SAP HCM, financial systems | **Dedicated isolated** secure-enclave AC group | **Dedicated** SG bound to enclave AC group only | `ON_ACCESS` (use `CONTINUOUS` only for multi-DC critical) |
+| **Global** (one app, accessed from everywhere) | AD DCs, NTP, internally LB'd web | All location AC groups | **Global SG** spanning all AC groups | `ON_ACCESS` |
+| **Discovery** (wildcard for unknown apps) | `*.corp.example.com` | All communal AC groups | **Global Discovery SG** | **`NONE`** (high volume; per doc page 23) |
+| **SIPA** (third-party IP allow-listed) | Vendor portals requiring fixed source IP | **Dedicated SIPA AC group** (separate egress IPs) | **SIPA SG** bound to SIPA AC group only | `ON_ACCESS` |
+
+**Why this matters:** the defaults in this skill historically used `health_reporting="ON_ACCESS"` for everything. That is wrong for Discovery (should be `NONE` to avoid probe storms across all communal AC groups) and may be wrong for critical multi-DC apps (where `CONTINUOUS` lets ZPA route users to the closest *healthy* server). Pick the class first, then the rest of the workflow uses the right defaults.
+
+If the administrator is unsure, default to **Standard** and tell them they can re-classify later by updating the segment.
+
+---
 
 ### Step 1: Gather Application Details
 
@@ -133,10 +151,23 @@ zpa_create_application_segment(
   tcp_port_range=[{"from": "443", "to": "443"}, {"from": "80", "to": "80"}],
   server_group_ids=["<server_group_id>"],
   enabled=True,
-  health_reporting="ON_ACCESS",
+  health_reporting="<from_step_0>",
   is_cname_enabled=True
 )
 ```text
+
+**Set `health_reporting` from the Step 0 classification:**
+
+| Class | `health_reporting` value |
+|---|---|
+| Standard | `"ON_ACCESS"` |
+| Sensitive (single-DC) | `"ON_ACCESS"` |
+| Sensitive (multi-DC critical) | `"CONTINUOUS"` |
+| Global | `"ON_ACCESS"` |
+| **Discovery** | **`"NONE"`** |
+| SIPA | `"ON_ACCESS"` |
+
+`CONTINUOUS` generates one probe per connector in every bound AC group every interval — avoid it on segments bound to large AC groups.
 
 **Port configuration options:**
 

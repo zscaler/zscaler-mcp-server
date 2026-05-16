@@ -2,7 +2,7 @@
 
 300+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
 
-> **Cross-tool conventions.** The most-violated rules in this repo are mirrored — same content, different formats — at `.cursor/rules/zscaler-conventions.mdc` (auto-applied in Cursor) and `.claude/CONVENTIONS.md` (Claude Code). The full convention set lives below in this file; the mirrors exist so the rules survive even if this file is trimmed and so a Cursor session always loads them. **Helper-file convention** is in [Helper File Convention (DO NOT FRAGMENT)](#helper-file-convention-do-not-fragment) below — read it before adding any new file under `zscaler_mcp/common/`.
+> **Cross-tool conventions.** The most-violated rules in this repo are mirrored at `.claude/CONVENTIONS.md` (Claude Code) so they survive even if this file is trimmed. A parallel Cursor mirror at `.cursor/rules/zscaler-conventions.mdc` (auto-applied in Cursor sessions) is **planned but not yet committed** — until it lands, Cursor sessions rely on this `CLAUDE.md` being loaded explicitly. The full convention set lives below; **Helper-file convention** is in [Helper File Convention (DO NOT FRAGMENT)](#helper-file-convention-do-not-fragment) — read it before adding any new file under `zscaler_mcp/common/`.
 
 ## Architecture Overview
 
@@ -71,7 +71,7 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 
 ### Deferred Tool Loading & AI Agent Behavior
 
-Most MCP clients (Claude Desktop, Cursor) use **deferred tool loading** — they don't load all 280+ tools upfront. Instead, they search for relevant tools based on the user's prompt. This has important implications:
+Most MCP clients (Claude Desktop, Cursor) use **deferred tool loading** — they don't load all 360+ tools upfront. Instead, they search for relevant tools based on the user's prompt. This has important implications:
 
 - **Tool search returns "closest N" results**, even if none are relevant. If a service is disabled, the search will return unrelated tools from other services rather than saying "not found."
 - **The `zscaler_get_available_services` tool** was designed to solve this. It returns enabled services with tool counts AND explicitly lists disabled services with a note instructing the agent to inform the user. Its description mentions all service names (ZCC, ZDX, ZPA, ZIA, ZTW, etc.) so it surfaces in tool search when someone asks about any service.
@@ -91,10 +91,15 @@ The `zscaler_get_available_services` tool exposes disabled services to the AI ag
 
 ## Toolsets
 
-Tools are grouped into named **toolsets** (registered in `zscaler_mcp/common/toolsets.py`). Toolsets let users load only the slice of tools the agent actually needs — e.g. `zia_url_filtering` (5 tools) instead of every tool from every service (~280). The full design and catalog live in `docs/guides/toolsets.md`; the highlights for working in this codebase:
+Tools are grouped into named **toolsets** (registered in `zscaler_mcp/common/toolsets.py`). Toolsets let users load only the slice of tools the agent actually needs — e.g. `zia_url_filtering` (5 tools) instead of every tool from every service (~360). The full design and catalog live in `docs/guides/toolsets.md`; the highlights for working in this codebase:
 
-- **29 toolsets** today: ZIA is split into ~15 sub-toolsets (one per rule family + locations + admin + categories etc.), ZPA into 6 (`zpa_app_segments`, `zpa_policy`, `zpa_connectors`, `zpa_idp`, `zpa_microtenants`, `zpa_misc`), and one toolset each for ZDX, ZCC, ZTW, ZIdentity, EASM, Z-Insights, ZMS. The always-on `meta` toolset holds the cross-service tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, plus the three discovery tools below).
+- **52 toolsets** today (catalog grew from 29 → 52 as ZIA / ZPA / ZDX were split into resource-family-scoped groups):
+  - **ZIA: 21 sub-toolsets.** One per rule family (`zia_url_filtering`, `zia_cloud_firewall`, `zia_ssl_inspection`, `zia_dlp`, `zia_cloud_app_control`, `zia_file_type_control`, `zia_sandbox`), plus locations, URL categories, users, devices (`zia_devices`), authentication settings (`zia_authentication_settings` — cookie-auth exempt URL list), rule labels (`zia_rule_labels`), workload groups, time intervals, shadow IT, ATP policy (`zia_atp_policy` — tenant-wide ATP settings + security-exception bypass list + malicious-URL denylist), ATP malware (`zia_atp_malware` — malware policy / inspection / protocols + the 16-field threat-class block, backed by `zscaler.zia.malware_protection_policy.MalwareProtectionPolicyAPI`), advanced settings (`zia_advanced_settings` — tenant-wide *Administration → Advanced Settings* singleton, ~50 knobs across DNS opt / bypass / surrogate IP / HTTP/2 / ECS / dynamic-user-risk / SIPA, backed by `zscaler.zia.advanced_settings.AdvancedSettingsAPI`), admin (`zia_admin` for activation + intermediate-CA / generic config) and `zia_misc` as the catch-all.
+  - **ZPA: 19 sub-toolsets.** Resource-family scoped: `zpa_app_segments` (standard + BA + PRA segments and `get_zpa_app_segments_by_type`), `zpa_access_policies` (all access/forwarding/timeout/isolation rules), `zpa_policy` (umbrella policy registry tools), `zpa_app_connector_groups`, `zpa_connectors` (individual connectors + enrollment certs), `zpa_server_groups`, `zpa_segment_groups`, `zpa_service_edge_groups`, `zpa_provisioning_keys`, `zpa_application_servers`, `zpa_pra` (PRA portals + credentials), `zpa_ba_certificates`, `zpa_app_protection`, `zpa_posture`, `zpa_trusted_networks`, `zpa_isolation`, `zpa_idp` (SAML/SCIM attributes + groups), `zpa_microtenants`, `zpa_misc`.
+  - **ZDX: 5 sub-toolsets.** Replaced the single `zdx` toolset: `zdx_alerts`, `zdx_locations` (locations + departments), `zdx_software_inventory`, `zdx_troubleshooting` (deep traces + analyses + probes), `zdx_reports` (default catch-all for everything else: devices, applications, web/cloudpath probe reads).
+  - **One toolset each** for ZCC, ZTW, ZIdentity, EASM, Z-Insights, ZMS. The always-on `meta` toolset holds the cross-service tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, plus the three discovery tools below).
 - **Tagging is centralized.** Don't add a `toolset` field to dicts in `services.py`. Map a new tool name in `_TOOL_TOOLSET_OVERRIDES` (exact match) or `_TOOLSET_PREFIX_RULES` (predicate, first-match-wins) inside `toolsets.py`. The test `tests/test_toolsets.py::TestToolsetForTool::test_every_registered_tool_resolves` enforces this mapping is exhaustive.
+- **Prefix-rule ordering is load-bearing.** `_TOOLSET_PREFIX_RULES` is evaluated first-match-wins, and several predicates across services share substrings (`_location` would hijack `zdx_list_locations` into `zia_locations` if evaluated first; `_device` would pull `zdx_list_devices` into ZIA's device toolset; `_app_connector_group` must be evaluated before `_app_connector`). The current file follows two conventions: (1) **ZDX block sits at the top** of the rules list, with every predicate explicitly scoped to `n.startswith("zdx_")`, so ZDX tools can never be poached by a downstream service's predicate; (2) within each service, more-specific prefixes precede general ones. When adding a new toolset that shares a substring with an existing one, add the rule *above* the broader rule and gate it with the service prefix.
 - **Selection layers** (resolved in `ZscalerMCPServer.__init__`): explicit `--toolsets` / `ZSCALER_MCP_TOOLSETS` (supports `default` and `all` keywords) → fall back to "every toolset whose service is in `enabled_services`" (preserves today's behaviour). Filter precedence: `disabled_tools` > toolset selection > `enabled_tools` allowlist > `write_tools` allowlist.
 - **Per-toolset instructions.** Each toolset can carry an `instructions` callable. At server startup `_compose_server_instructions()` calls each enabled toolset's snippet and concatenates them into the FastMCP `instructions` field — sent to the agent only when the matching tools are loaded. Snippets shared across multiple toolsets (e.g. the rule-family `order`/`rank` reminder bound to all 5 ZIA rule toolsets) are de-duplicated.
 - **Three discovery meta-tools** (always loaded): `zscaler_list_toolsets` (catalog with currently-enabled status + tool counts), `zscaler_get_toolset_tools` (member tools of a toolset), `zscaler_enable_toolset` (register a toolset's tools at runtime). The runtime-enable path uses the same `register_read_tools`/`register_write_tools` codepath as startup, so all filter precedence still applies.
@@ -129,6 +134,7 @@ ZIA is the largest service in the server. Tool modules are organized one-resourc
 | Cloud Firewall | `cloud_firewall_rules.py` | `zia_list_cloud_firewall_rules`, `zia_get_cloud_firewall_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
 | Cloud Firewall DNS | `cloud_firewall_dns_rules.py` | `zia_list_cloud_firewall_dns_rules`, `zia_get_cloud_firewall_dns_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | `applications` ≠ cloud-app enum |
 | Cloud Firewall IPS | `cloud_firewall_ips_rules.py` | `zia_list_cloud_firewall_ips_rules`, `zia_get_cloud_firewall_ips_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
+| Custom IPS Signatures | `ips_signature_rules.py` | `zia_list_ips_signature_rules`, `zia_get_ips_signature_rule` | `zia_create_ips_signature_rule`, `zia_update_ips_signature_rule`, `zia_delete_ips_signature_rule` | Snort/Suricata-style signature **definitions** (not policy rules — distinct from Cloud Firewall IPS above). Tiny field set (`name`, `description`, `rule_text`); the SDK pre-flight-validates `rule_text` on create against the dynamic-validation endpoint and surfaces syntax / duplicate-`sid` errors as `ValueError` before any tenant-side write. Update is PUT-replace; the tool backfills `name` + `rule_text` (the load-bearing fields here, instead of the usual `name` + `order`) when the caller omits them. Lives in the `zia_cloud_firewall` toolset alongside the Cloud Firewall IPS policy-rule family via explicit overrides — admins working on intrusion prevention typically want the **what to detect** (signature) and **when to enforce** (policy rule) surfaces loaded together. |
 | URL Filtering | `url_filtering_rules.py` | `zia_list_url_filtering_rules`, `zia_get_url_filtering_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
 | SSL Inspection | `ssl_inspection.py` | `zia_list_ssl_inspection_rules`, `zia_get_ssl_inspection_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Cloud-app auto-resolver |
 | Web DLP | `web_dlp_rules.py` | `zia_list_web_dlp_rules`, `zia_list_web_dlp_rules_lite`, `zia_get_web_dlp_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | |
@@ -136,7 +142,28 @@ ZIA is the largest service in the server. Tool modules are organized one-resourc
 | Sandbox Rules | `sandbox_rules.py` | `zia_list_sandbox_rules`, `zia_get_sandbox_rule` | `zia_create_…`, `zia_update_…`, `zia_delete_…` | Distinct from sandbox **reports** in `get_sandbox_info.py` |
 | Time Intervals | `time_intervals.py` | `zia_list_time_intervals`, `zia_get_time_interval` | `zia_create_time_interval`, `zia_update_time_interval`, `zia_delete_time_interval` | Reusable schedule object referenced by all rule types via the `time_windows` field. `start_time`/`end_time` are minutes from midnight (0-1439); `days_of_week` accepts `EVERYDAY`, `SUN`-`SAT`. |
 
-All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). The `zia_update_time_interval` tool applies the same pattern for `name`, `start_time`, `end_time`, and `days_of_week`. Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill required identifiers on update.
+All `update_*_rule` tools in this table apply the **silent backfill** pattern for `name` and `order` (see Critical Gotchas). The `zia_update_time_interval` tool applies the same pattern for `name`, `start_time`, `end_time`, and `days_of_week`. The `zia_update_ips_signature_rule` tool applies it for `name` and `rule_text` — IPS signatures have no `order` field, so the load-bearing pair shifts to the identifying name and the signature body itself. Adding a new rule resource? Follow this same shape — never multiplex actions, always backfill the load-bearing identifying fields on update.
+
+### ZIA Tenant-Wide Singletons (ATP Policy + Malware Protection + Advanced Settings)
+
+Some ZIA configuration is not rule-shaped but a single mutable object owned by the tenant. The **Advanced Threat Protection (ATP)** family — both the policy block and the Malware Protection sub-family — lives here, as do the **Administration → Advanced Settings** knobs. They all follow a different update contract than the rule families above.
+
+| Resource | Module | Read | Write | Notes |
+|----------|--------|------|-------|-------|
+| ATP Policy Settings | `atp_settings.py` | `zia_get_atp_settings` | `zia_update_atp_settings` | Tenant-wide ATP block (risk tolerance, C2/malware/phishing toggles). **Strict PUT-replace** — no silent backfill. Any field omitted is reset to the API default. Always fetch via `zia_get_atp_settings` first, merge changes onto the response, then submit the complete payload. |
+| ATP Security Exceptions | `atp_settings.py` | `zia_get_atp_security_exceptions` | `zia_update_atp_security_exceptions` | Tenant-wide ATP bypass URL list (the allowlist). Update is a full-list replace — pass the complete URL set you want to remain on the allowlist, not just the delta. |
+| ATP Malicious URLs | `atp_settings.py` | `zia_list_atp_malicious_urls` | `zia_add_atp_malicious_urls`, `zia_delete_atp_malicious_urls` | Block-list (denylist) management via add/delete operations rather than full-replace; conceptually opposite of the security-exceptions allowlist. The delete tool is HMAC-confirmed. |
+| ATP Malware Policy | `atp_malware_protection.py` | `zia_get_atp_malware_policy` | `zia_update_atp_malware_policy` | File-handling toggles (`block_unscannable_files`, `block_password_protected_archive_files`). PUT-replace with positional booleans — both arguments are required on every update. |
+| ATP Malware Inspection | `atp_malware_protection.py` | `zia_get_atp_malware_inspection` | `zia_update_atp_malware_inspection` | Traffic-direction toggles (`inspect_inbound`, `inspect_outbound`). PUT-replace with positional booleans. |
+| ATP Malware Protocols | `atp_malware_protection.py` | `zia_get_atp_malware_protocols` | `zia_update_atp_malware_protocols` | Protocol toggles (`inspect_http`, `inspect_ftp_over_http`, `inspect_ftp`). PUT-replace with positional booleans. **SDK quirk:** the response-parser on the SDK's update returns the wrong field names (`inspectInbound` / `inspectOutbound` instead of `inspectHttp` / `inspectFtpOverHttp`). The MCP tool transparently re-fetches via `zia_get_atp_malware_protocols` after a successful PUT so callers get authoritative state. |
+| Malware Settings | `atp_malware_protection.py` | `zia_get_malware_settings` | `zia_update_malware_settings` | 16-field threat-class block (virus / trojan / worm / adware / spyware / ransomware / remote-access tool / unwanted-applications, each with a matching `*_capture` PCAP toggle). **Strict PUT-replace** — any omitted field is reset to `False`. Always fetch via `zia_get_malware_settings`, mutate, then send the full dict back. Unknown keys are silently dropped (only the 16 documented snake_case attributes round-trip through the SDK model). |
+| Advanced Settings | `advanced_settings.py` | `zia_get_advanced_settings` | `zia_update_advanced_settings` | The *Administration → Advanced Settings* block — ~50 knobs across authentication / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6), Office 365 one-click, UI session timeout, surrogate IP enforcement, HTTP tunnel handling, domain-fronting block, HTTP/2 non-browser traffic, ECS-for-all, dynamic user risk, CONNECT-host / SNI mismatch handling, and SIPA XFF header insertion. **Strict PUT-replace** — the SDK forwards the payload as `**kwargs`, so any field omitted is reset to API default (or `[]` for list fields). Always fetch via `zia_get_advanced_settings` first, merge changes, then send the full dict back. |
+
+**Module layout convention.** Every tool backed by `zscaler.zia.atp_policy.ATPPolicyAPI` lives in **one file** (`atp_settings.py` — 7 tools across ATP policy, security exceptions, and the malicious-URL denylist), every tool backed by `zscaler.zia.malware_protection_policy.MalwareProtectionPolicyAPI` lives in **one file** (`atp_malware_protection.py` — 8 tools across the four malware singletons), and every tool backed by `zscaler.zia.advanced_settings.AdvancedSettingsAPI` lives in **one file** (`advanced_settings.py` — 2 tools for the singleton). One SDK API class → one MCP module → one logical surface. The historical `atp_malicious_urls.py` split was unwound (PR #65) for this reason.
+
+The first three rows (ATP policy + security exceptions + malicious URLs) live in the dedicated **`zia_atp_policy`** toolset; the four malware-family rows live in **`zia_atp_malware`**; the Advanced Settings row lives in its own **`zia_advanced_settings`**. All three toolsets are `default=True`. Splitting them is intentional — each surface has its own update contract and operationally-distinct audit posture, and admins frequently want to enable or audit only one of them.
+
+All three of these singleton surfaces still require ZIA activation (`zia_activate_configuration`) after writes, like every other ZIA write operation.
 
 ## ZMS (Zscaler Microsegmentation)
 
@@ -338,7 +365,20 @@ Server & security env vars:
 - `--host` — HTTP bind address (default `127.0.0.1`)
 - `--port` — HTTP listen port (default `8000`)
 - `--log-tool-calls` — Enable tool-call audit logging (logs tool name, args, duration, result summary)
+- `--dotenv-path` — Explicit path to the `.env` file to load. Overrides the default search (project root + CWD). Recorded in the PID file so `zscaler-mcp reload` / `restart` re-read the same source. (env: `ZSCALER_MCP_DOTENV_PATH`)
+- `--pid-file` — Override the PID file location used by the lifecycle subcommands. Defaults to `/var/run/zscaler-mcp.pid` (or `/tmp/zscaler-mcp.pid` if `/var/run` is not writable). Set per instance when running multiple servers on the same host. (env: `ZSCALER_MCP_PID_FILE`)
 - `--version` — Print version and exit
+
+### Lifecycle Subcommands
+
+In addition to the top-level flags above, the CLI exposes four subcommands for managing a running server. They are mutually exclusive with the serve path — running `zscaler-mcp` with no subcommand starts the server as before.
+
+- `zscaler-mcp reload` — Soft reload (SIGHUP). Re-reads `.env` and re-applies env-driven toggles. MCP sessions and the listening socket survive.
+- `zscaler-mcp restart` — Hard restart (SIGUSR2). Re-reads `.env`, then `os.execvp`'s a fresh Python interpreter with the original argv. Same PID, fresh memory, fresh env. Sessions die — clients reconnect.
+- `zscaler-mcp status` — Print PID, uptime, transport, port, and `.env` path of the running server (or report none running).
+- `zscaler-mcp stop` — Clean shutdown (SIGTERM, no respawn). Same signal Docker uses, so the running server has no SIGTERM handler installed and falls through to FastMCP/uvicorn's default shutdown.
+
+See **Process Lifecycle Management** below for the full design.
 
 ## Tool-Call Audit Logging
 
@@ -403,6 +443,104 @@ Disabling sanitization removes a defense-in-depth layer; only do this temporaril
 - **`zscaler_mcp/common/sanitize.py`** — `sanitize_text()` for single strings, `sanitize_value()` for recursive traversal, plus three private stage functions (`_strip_invisible`, `_sanitize_html_markdown`, `_sanitize_code_fences`).
 - **`tests/test_sanitize.py`** — 46 tests covering golden injection inputs (RLO override, ZWSP, embedded `<script>`, fake `system` fence, etc.) and integration through the audit wrapper.
 - Dependency: `bleach>=6.2.0` (added to `pyproject.toml`).
+
+## Process Lifecycle Management
+
+Operators can reconfigure a running server (locally or inside a Docker container) without recreating the container, via four CLI subcommands: `zscaler-mcp reload`, `zscaler-mcp restart`, `zscaler-mcp status`, `zscaler-mcp stop`.
+
+### Design
+
+When the server starts (after `parse_args()` succeeds, before `server.run()`), it writes a JSON PID file containing the running PID, start time, transport, host:port, the resolved `.env` path, the original `argv`, and the Python interpreter path. Two signal handlers are then installed in the running server:
+
+- **SIGHUP → soft reload.** Re-reads `.env` with `override=True` (so stale values get replaced), then re-applies env-driven runtime toggles (currently: `ZSCALER_MCP_LOG_TOOL_CALLS`). The Zscaler SDK client has no module-level cache — it's created on every tool call — so once new credentials land in `os.environ`, the next tool call already picks them up. The auth-middleware token cache is keyed by credential hash, so credential rotation naturally misses old entries and re-validates against the new values. **MCP sessions and the listening socket survive.** This is the right path when you only changed a knob (audit logging, log level, a non-credential env var).
+- **SIGUSR2 → hard restart.** Re-reads `.env` into `os.environ` (so the child inherits fresh values immediately), removes the PID file, then `os.execvp`'s a fresh Python interpreter with the original `argv`. **Same PID** (Docker doesn't notice the swap), fresh memory, fresh env, fresh module imports, fresh entitlement-filter result. **Sessions die — clients reconnect.** This is the right path when you rotated credentials, changed `--toolsets` selection, flipped `--enable-write-tools`, swapped vanity domain, etc. — anything that's read once at startup.
+- **SIGTERM / SIGINT → not handled.** Deliberately. The standard FastMCP/uvicorn signal handling kicks in, which is what `docker stop`, `systemctl stop`, and Ctrl+C all expect. `zscaler-mcp stop` simply sends SIGTERM and lets that path do its job.
+
+The atexit-registered cleanup removes the PID file on clean shutdown so `zscaler-mcp status` doesn't lie about a dead PID.
+
+### Env-source classification (the "what will actually change?" question)
+
+The reload/restart messaging — and the `status` output — is gated by `_classify_env_source()` so the CLI tells the truth instead of always claiming it will "re-read .env". The classifier checks two things: the `dotenv_path` recorded in the PID file (set at server startup), and whether a `.env` exists in any of the default search paths now (which catches the `docker cp` workflow). Four branches:
+
+| `dotenv_path` in PID file | File exists at that path? | Default-path `.env` present now? | Label | What `reload`/`restart` actually does |
+|---|---|---|---|---|
+| Set | Yes | n/a | `live` (or `live (bind-mounted)` if path is `/app/.env`) | Re-reads the file, picks up host-side edits, then execs |
+| Set | No | Yes | `fresh-discovery` | SIGHUP no-ops, but `restart` execs a fresh process that re-discovers and loads the newly-placed `.env`. **`docker cp` workflow.** |
+| Set | No | No | `missing` | Logs a warning, skips the re-read, execs with same `os.environ`. Common case: container started with `--env-file` only, no bind mount, no `docker cp`. |
+| `None` | n/a | Yes | `fresh-discovery` | Same as above — fresh process discovers the `.env` placed since startup. |
+| `None` | n/a | No | `none` | Skips the re-read entirely. Common case: AgentCore deployments using Secrets Manager, or any deploy that uses container env-vars without a `.env` file. |
+
+The "missing" and "none" branches are explicitly NOT a bug — they reflect the underlying constraint that env vars in a running container's PID 1 are immutable from outside the container unless you bind-mount a file PID 1 can re-read (or you inject one with `docker cp`). The CLI surfaces this fact instead of silently claiming success. AgentCore deploys (`none` branch) still benefit from `restart`: re-importing `zscaler_mcp.config` triggers a fresh Secrets Manager fetch on the new process boot, picking up rotated secrets there.
+
+### Why Docker `--env-file` snapshots survive container `stop`/`start`
+
+A common mental-model bug worth pinning here: `docker run --env-file=./.env ...` reads the host `.env` **once** at `docker run` time and copies the resolved `KEY=VALUE` pairs into the container's `Config.Env` metadata (visible via `docker inspect`). After that moment, the container has **no link** to the host file — you could delete `./.env` on the host and the container still holds the values. `docker stop && docker start <same-container>` reuses `Config.Env` from the metadata; **it does NOT re-read the host file**. The only ways to change `Config.Env` are (a) `docker rm` + `docker run` (full recreate, picks up the current host `.env`), or (b) bind-mount the file inside so PID 1 can re-read it on reload/restart. Likewise, `docker exec <ctr> sh -c 'export FOO=bar'` mutates a transient child shell's env — PID 1's env is untouched, since no Unix API lets one process write another's environment.
+
+### Updating env vars in a running container — three workflows
+
+| Workflow | Recreates container? | Picks up env changes? | When to use |
+|---|---|---|---|
+| **A.** `docker rm -f && docker run --env-file=./.env ...` | Yes | Yes (Docker re-reads host `.env` at run-time) | Always works. Disruptive — active sessions die, image cache cold for that container. |
+| **B.** Bind-mount `.env` at `/app/.env` once, then `zscaler-mcp restart` after every host-side edit | No (one-time setup) | Yes (PID 1 re-reads `/app/.env` on every restart) | Recommended long-term workflow. Default in `scripts/setup-mcp-server.py`. |
+| **C.** `docker cp ./.env <container>:/app/.env && docker exec <container> zscaler-mcp restart` | No | Yes (fresh execvp'd process re-discovers `/app/.env`) | Easiest one-off fix for an already-running container without a bind mount. No setup change required. |
+
+Workflow C is what makes `restart` valuable for containers that are already running without a bind mount — the operator doesn't have to recreate just to swap a credential. The "fresh-discovery" classifier branch is what tells the operator this is about to work.
+
+### PID file location
+
+In priority order:
+
+1. `--pid-file <path>` / `ZSCALER_MCP_PID_FILE`
+2. `/var/run/zscaler-mcp.pid` (typical inside containers running as a user with write access there)
+3. `/tmp/zscaler-mcp.pid`
+4. `~/.zscaler-mcp/server.pid` (auto-created)
+
+For multiple instances on the same host (e.g. one per port), set `ZSCALER_MCP_PID_FILE=/tmp/zscaler-mcp-8001.pid` per instance.
+
+### .env file resolution
+
+`zscaler_mcp/server.py::_resolve_dotenv_path()` resolves the `.env` source in this order, then records the absolute path in the PID file so reload/restart re-read the same source:
+
+1. `--dotenv-path <path>` / `ZSCALER_MCP_DOTENV_PATH`
+2. `<project_root>/.env` (editable install)
+3. `<cwd>/.env`
+
+The first-pass load happens **before** `parse_args()` (so env-var defaults resolve correctly); the path is then re-resolved after parsing to honour `--dotenv-path` and the final value lands in the PID file.
+
+### Container deployment
+
+For `zscaler-mcp restart` to pick up live `.env` edits inside a container, the `.env` file must be **bind-mounted** (not just passed via `--env-file`, which snapshots values at container start). The `scripts/setup-mcp-server.py` setup script defaults to bind-mounting:
+
+```bash
+docker run -d --name zscaler-mcp-server \
+  --env-file /path/to/.env \                           # boot-time injection
+  -v /path/to/.env:/app/.env:ro \                      # live re-read on restart
+  -e ZSCALER_MCP_DOTENV_PATH=/app/.env \
+  zscaler/zscaler-mcp-server:latest --transport streamable-http
+```
+
+Then to apply a config change:
+
+```bash
+$EDITOR /path/to/.env                                  # edit on the host
+docker exec zscaler-mcp-server zscaler-mcp restart     # re-read + execvp inside container
+```
+
+Same workflow for `reload` (cheap, sessions survive) when only a runtime toggle changed.
+
+Operators who want the snapshot-only behaviour can opt out via `setup-mcp-server.py --legacy-env-file`.
+
+### Cross-platform
+
+SIGHUP and SIGUSR2 are Unix-only. On Windows the `reload`/`restart` subcommands print a clear error and exit 2; `status` works (just reads the PID file); `stop` falls back to SIGTERM. Native Windows operators must restart their supervisor (Docker Desktop, NSSM, etc.) directly. Container deployments are unaffected — the container OS is Linux.
+
+### Implementation
+
+- **`zscaler_mcp/lifecycle.py`** — PID-file dataclass + read/write/remove, signal-handler installer (`install_serve_handlers`), four `cmd_*` subcommand entry points (`cmd_reload`, `cmd_restart`, `cmd_status`, `cmd_stop`), argparse subparser registration (`register_subparsers`), and the soft-reload helper (`_do_soft_reload`).
+- **`zscaler_mcp/server.py::_resolve_dotenv_path()`** — single source of truth for `.env` discovery, recorded in the PID file.
+- **`zscaler_mcp/server.py::main()`** — wires lifecycle: short-circuits to `lifecycle.dispatch()` for subcommands, otherwise writes the PID file + installs handlers + atexit-registers cleanup before calling `server.run()`.
+- **`zscaler_mcp/common/tool_helpers.py::refresh_tool_call_logging()`** — re-applies the `ZSCALER_MCP_LOG_TOOL_CALLS` toggle from current `os.environ`. Called by the SIGHUP handler.
+- **`tests/test_lifecycle.py`** — 45 tests covering PID-file round-trip, default-path resolution, every subcommand against missing/stale/live PID files, the SIGHUP-triggered env reload (raises the signal against `os.getpid()` and asserts the env update lands), env-source classification (every branch including the `docker cp`-fed `fresh-discovery` path), reload/restart messaging accuracy, and argparse integration.
 
 ## Development
 
@@ -683,7 +821,23 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 ## Skills
 
-37 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by description match. Organized by service: `skills/zpa/` (8), `skills/zia/` (12), `skills/zdx/` (6), `skills/zms/` (5), `skills/zins/` (4), `skills/easm/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
+41 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by frontmatter description match. Organized by service: `skills/zpa/` (11), `skills/zia/` (12), `skills/zdx/` (6), `skills/zms/` (5), `skills/zins/` (4), `skills/easm/` (1), `skills/zcc/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
+
+### Skill Conventions (Emerging)
+
+Newer skills — especially in Z-Insights and ZMS — follow two conventions that improve resilience on tenants where a feature is unlicensed or returns sparse data. When authoring or reviewing a skill that depends on multiple independent API reads, prefer this shape:
+
+- **`## Validation` section** after the workflow steps, listing each tool the skill calls, its expected response shape, and the right action when the result is empty or errors. Empty / unlicensed responses are not workflow failures — they're authoritative signals that should be surfaced as gaps in the final report. Reference: `skills/zins/audit-shadow-it/SKILL.md::Validation`.
+- **`### Partial Data` edge case** under the skill's `## Edge Cases` section, telling the agent how to behave when one tool in the chain succeeds and another fails. The canonical guidance: "present the available sections and clearly flag the gap — do not fail the whole audit." Common cause: an add-on (IoT Device Visibility, CASB, ZMS) isn't entitled on the tenant. Mark the missing section as `Not available — feature not licensed / data not collected` so the requester can see the scope of what was actually audited.
+
+Both patterns are about making skills *licensing-aware*: a Z-Insights audit on a tenant without CASB should still produce a useful shadow-IT report, just with a clearly-labeled CASB section marked unavailable.
+
+### Skill Discovery via Integrations
+
+Each MCP client integration exposes the skill catalog in the idiomatic way for that client:
+
+- **Claude Code, Cursor, Gemini CLI** — skills are auto-loaded by description match; the agent picks one when the user's request fits.
+- **Kiro IDE** — skill discovery is wired through the **per-service steering files** under `integrations/kiro/steering/`. Each steering file has an `## Available Skills` section enumerating the relevant skills with intent cues, so when Kiro loads (say) `zia.md` for a ZIA question it sees all 12 ZIA skills inline rather than having to search the filesystem. This lets the agent prefer a guided skill over an ad-hoc tool sequence. The same per-service files also include their service's tool catalog and gotchas. Bump these references when adding, renaming, or removing a skill — there is no auto-generator for this catalog yet.
 
 ## Platform Integrations
 
@@ -726,3 +880,13 @@ The server is published to the [GitHub MCP Registry](https://github.com/modelcon
 One self-contained script in `local_dev/scripts/` for OIDCProxy (OAuth 2.1 + DCR):
 
 - **`setup-oidcproxy-auth.py`** — End-to-end orchestration script. Loads Auth0 credentials from `.env`, builds the Docker image, starts the container with an inline entrypoint (passed via `python -c`), verifies OAuth endpoints, and updates Claude Desktop / Cursor configs. The entrypoint code is embedded directly in the script — no separate file needed. Run from the project root.
+
+### Local Setup Script (`scripts/setup-mcp-server.py`)
+
+Interactive bootstrapper for local Docker-based deployments. Loads `.env`, prompts for transport (stdio / sse / streamable-http) and auth mode (`none`, `api-key`, `jwt`, `zscaler`), starts the container, and writes a working MCP client configuration into Claude Desktop / Cursor / Gemini / Kiro.
+
+Key design choices:
+
+- **Client configs receive only an auth header — never the raw Zscaler credentials.** When the user picks `zscaler` auth mode with `streamable-http`, the script generates a single `Authorization: Basic base64(client_id:client_secret)` header on the client side instead of dropping `X-Zscaler-Client-ID` / `X-Zscaler-Client-Secret` into the MCP client's JSON. This matches the canonical pattern used by remote deployments (GCP Cloud Run, Azure Container Apps) and keeps the credentials off the client filesystem.
+- The server's `AuthMiddleware` accepts **both** formats (`Authorization: Basic` and the `X-Zscaler-*` pair) — they hit the same `/oauth2/v1/token` validation path and the same cache — so the client-side switch to `Authorization: Basic` is a pure improvement, not a compatibility break.
+- The helper that builds the header dictionary lives in `_client_auth_headers()` (`scripts/setup-mcp-server.py`). Don't duplicate the base64 encoding in callers — call the helper and trust its output.
