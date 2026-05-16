@@ -25,7 +25,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## ZIA — Internet Access
 
-83 read-only tools, 81 write tools.
+84 read-only tools, 82 write tools.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
@@ -54,6 +54,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_get_location` | `zia_locations` | Read-only | Get a specific ZIA location by ID (read-only) |
 | `zia_get_location_group` | `zia_locations` | Read-only | Get a specific ZIA location group by ID (read-only) |
 | `zia_get_malware_settings` | `zia_atp_malware` | Read-only | Get the full ZIA Malware Protection threat-class settings block (read-only) — 16 booleans covering virus, trojan, worm, adware, spyware, ransomware, remote-access tool, and unwanted-application enforcement, each with a matching *_capture PCAP toggle. Always call this before zia_update_malware_settings so partial updates can be merged onto the existing payload (the update is PUT-replace; omitted fields are reset to False). Supports JMESPath client-side filtering via the query parameter. |
+| `zia_get_mobile_advanced_settings` | `zia_threat_settings` | Read-only | Get the ZIA Mobile Advanced Threat Settings block (read-only) — the tenant-wide singleton that governs the Mobile Malware Protection policy applied to traffic from mobile clients (iOS / Android via the Zscaler Client Connector). Returns 8 boolean knobs: block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers. Always call this before zia_update_mobile_advanced_settings so partial updates can be merged onto the existing payload (the update is PUT-replace). Supports JMESPath client-side filtering via the query parameter. |
 | `zia_get_network_app` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network application by ID (read-only) |
 | `zia_get_network_app_group` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network application group by ID (read-only) |
 | `zia_get_network_service` | `zia_cloud_firewall` | Read-only | Get a specific ZIA network service by ID (read-only) |
@@ -180,6 +181,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_update_ips_signature_rule` | `zia_cloud_firewall` | Write | Update an existing custom ZIA IPS signature rule (write operation, PUT-replace). Silently backfills the load-bearing fields name and rule_text from the existing record when the caller omits them, so partial updates 'just work'. Server-side validation is NOT re-run on update because the existing-sid check would flag every edit as a duplicate of itself; validate the new rule_text manually before calling. After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_location` | `zia_locations` | Write | Update an existing ZIA location (write operation) |
 | `zia_update_malware_settings` | `zia_atp_malware` | Write | Update the full ZIA Malware Protection threat-class settings block (write operation, PUT-replace). Any of the 16 `*_blocked` / `*_capture` booleans omitted from the payload is reset to False by the API — always call zia_get_malware_settings first, mutate the fields you want to change, then pass the full dict back here. Unknown keys are silently dropped (only the 16 documented snake_case fields are round-tripped). After a successful update, call zia_activate_configuration to apply the change. |
+| `zia_update_mobile_advanced_settings` | `zia_threat_settings` | Write | Update the ZIA Mobile Advanced Threat Settings block (write operation, PUT-replace). The SDK passes the body through as **kwargs, so any field omitted from the payload is reset to its API default. Always call zia_get_mobile_advanced_settings first, mutate the boolean knobs you want to change (block_apps_with_malicious_activity, block_apps_with_known_vulnerabilities, block_apps_sending_unencrypted_user_credentials, block_apps_sending_location_info, block_apps_sending_personally_identifiable_info, block_apps_sending_device_identifier, block_apps_communicating_with_ad_websites, block_apps_communicating_with_remote_unknown_servers), then pass the full dict back here. After a successful update, call zia_activate_configuration to apply the change. |
 | `zia_update_network_app_group` | `zia_cloud_firewall` | Write | Update an existing ZIA network application group (write operation) |
 | `zia_update_network_service` | `zia_cloud_firewall` | Write | Update an existing ZIA network service (write operation) |
 | `zia_update_network_svc_group` | `zia_cloud_firewall` | Write | Update an existing ZIA network service group (write operation) |

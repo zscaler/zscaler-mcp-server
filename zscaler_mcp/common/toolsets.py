@@ -493,6 +493,30 @@ TOOLSETS.register(ToolsetMetadata(
 ))
 
 TOOLSETS.register(ToolsetMetadata(
+    id="zia_threat_settings",
+    service="zia",
+    description=(
+        "ZIA threat-related tenant-wide singletons that don't belong to "
+        "the ATP / ATP-malware policy blocks. Currently holds the Mobile "
+        "Advanced Threat Settings (zia_get_mobile_advanced_settings / "
+        "zia_update_mobile_advanced_settings, backed by "
+        "zscaler.zia.mobile_threat_settings.MobileAdvancedSettingsAPI) — "
+        "the Mobile Malware Protection policy applied to traffic from "
+        "mobile clients (iOS / Android via the Zscaler Client "
+        "Connector). 8 boolean knobs for blocking apps with malicious "
+        "activity, known vulnerabilities, unencrypted credential / "
+        "location / PII / device-ID leakage, ad-website beacons, and "
+        "communication with unknown remote servers. PUT-replace update "
+        "contract — fetch + merge + write, then call "
+        "zia_activate_configuration to apply. Distinct from "
+        "zia_atp_policy (the desktop / web ATP block) and zia_atp_malware "
+        "(the malware inspection / file-handling block)."
+    ),
+    default=True,
+    instructions=_zia_umbrella_instructions,
+))
+
+TOOLSETS.register(ToolsetMetadata(
     id="zia_ssl_inspection",
     service="zia",
     description="ZIA SSL Inspection policy rules.",
@@ -1117,6 +1141,19 @@ _TOOL_TOOLSET_OVERRIDES: Dict[str, str] = {
     # rule.
     "zia_get_advanced_settings": "zia_advanced_settings",
     "zia_update_advanced_settings": "zia_advanced_settings",
+
+    # ZIA: Mobile Advanced Threat Settings — tenant-wide singleton
+    # backed by zscaler.zia.mobile_threat_settings.MobileAdvancedSettingsAPI
+    # governing the Mobile Malware Protection policy applied to traffic
+    # from mobile clients. Pinned to the new `zia_threat_settings`
+    # toolset rather than `zia_advanced_settings` because the resource
+    # is conceptually a threat policy (8 block_apps_* knobs), not the
+    # generic admin Advanced Settings block. Explicit overrides
+    # because the tool names share the `_advanced_settings` suffix
+    # with the ZIA admin block above — a substring-based prefix rule
+    # would mis-route them.
+    "zia_get_mobile_advanced_settings": "zia_threat_settings",
+    "zia_update_mobile_advanced_settings": "zia_threat_settings",
 
     # ZIA: Custom IPS signature rules (Snort/Suricata-style detection
     # signatures) — pinned to the `zia_cloud_firewall` toolset so they

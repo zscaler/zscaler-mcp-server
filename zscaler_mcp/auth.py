@@ -843,3 +843,118 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
     logger.info("=" * 70)
 
     return AuthMiddleware(app, provider)
+
+
+# ---------------------------------------------------------------------------
+# HTTP Transport Hardening Middlewares
+# ---------------------------------------------------------------------------
+#
+# These two middlewares defend against well-known client-side bugs that break
+# spec-compliant MCP servers when accessed by less-strict clients. Both are
+# pure pre-processors: they mutate the ASGI ``scope`` (path, headers) before
+# forwarding to the wrapped app, never short-circuit, and add no new
+# dependencies. Compliant clients (Claude Desktop, Cursor) sail through
+# untouched; non-compliant clients (Gemini CLI, custom LangChain agents,
+# Bedrock-style HTTP gateways) get silently corrected.
+#
+# Both classes mirror the ``SourceIPMiddleware`` shape (no factory function
+# needed for these — the wiring helper ``apply_transport_hardening`` below
+# handles transport gating).
+# ---------------------------------------------------------------------------
+
+
+class StripTrailingSlashMiddleware:
+    """ASGI middleware that strips trailing slashes from HTTP request paths.
+
+    Many MCP clients post to ``/mcp/`` instead of ``/mcp`` (the spec endpoint).
+    Without this middleware those requests hit FastMCP's 307 redirect, which
+    most JSON-RPC clients cannot follow on a POST. With it, the path is
+    silently normalised before any downstream middleware (including
+    :class:`AuthMiddleware`'s ``SKIP_PATHS`` check) sees it.
+
+    The root path ``/`` is left alone. Non-HTTP scopes (``websocket``,
+    ``lifespan``) pass through unchanged.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            path = scope.get("path", "")
+            if path != "/" and path.endswith("/"):
+                scope["path"] = path.rstrip("/")
+                raw_path = scope.get("raw_path")
+                if isinstance(raw_path, bytes):
+                    scope["raw_path"] = raw_path.rstrip(b"/") or b"/"
+        await self.app(scope, receive, send)
+
+
+class NormalizeContentTypeMiddleware:
+    """ASGI middleware that normalises ``application/json-rpc`` to ``application/json``.
+
+    The MCP spec mandates ``Content-Type: application/json``, but several
+    older / hand-written clients still emit the deprecated
+    ``application/json-rpc`` media type. Starlette's JSON parser rejects it
+    outright, surfacing as a generic 400 with no actionable detail. This
+    middleware rewrites the header value (preserving any ``; charset=...``
+    parameters) before the request is parsed downstream.
+
+    Only the media type is rewritten — parameters, casing of other fields,
+    and every non-Content-Type header are preserved verbatim.
+    """
+
+    _JSON_RPC = "application/json-rpc"
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            headers = scope.get("headers")
+            if headers:
+                rewritten = []
+                changed = False
+                for name, value in headers:
+                    if name == b"content-type":
+                        try:
+                            decoded = value.decode("utf-8")
+                        except UnicodeDecodeError:
+                            rewritten.append((name, value))
+                            continue
+                        if decoded.lower().startswith(self._JSON_RPC):
+                            rest = decoded[len(self._JSON_RPC):]
+                            new_value = f"application/json{rest}".encode("utf-8")
+                            rewritten.append((name, new_value))
+                            changed = True
+                            continue
+                    rewritten.append((name, value))
+                if changed:
+                    scope["headers"] = rewritten
+        await self.app(scope, receive, send)
+
+
+def apply_transport_hardening(app: Any, transport: str) -> Any:
+    """Wrap an ASGI app with the two HTTP transport hardening middlewares.
+
+    Defense against two common client-side bugs that trip up non-Claude /
+    non-Cursor MCP clients:
+
+    1. **Trailing slashes** in request paths (``POST /mcp/`` instead of
+       ``POST /mcp``) — would otherwise hit a 307 redirect that most
+       JSON-RPC clients cannot follow on a POST.
+    2. **Non-standard ``Content-Type`` headers** (``application/json-rpc``
+       instead of ``application/json``) — would otherwise be rejected by
+       Starlette's JSON parser with a generic 400.
+
+    No-op for ``stdio`` transport. Both wrapped middlewares are pure
+    pre-processors; they never short-circuit a request and add no
+    behavioural change for spec-compliant clients.
+
+    Should be applied as the **outermost** wrapper so path/header
+    normalisation happens *before* :class:`AuthMiddleware` and
+    :class:`SourceIPMiddleware` see the request.
+    """
+    if transport == "stdio":
+        return app
+    return StripTrailingSlashMiddleware(NormalizeContentTypeMiddleware(app))

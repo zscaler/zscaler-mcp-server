@@ -87,21 +87,28 @@ The `server.json` version is updated automatically during releases:
 1. **`set-version.sh`** updates the `version` field in `server.json` alongside `pyproject.toml`, `__init__.py`, and plugin manifests
 2. **`.releaserc.json`** includes `server.json` in the git assets, so the version bump is committed with the release
 
-After each release, re-publish to the registry:
-
-```bash
-mcp-publisher publish
-```
-
 ## Publishing
 
-### Prerequisites
+### Automatic (default)
+
+Every push to `master` that produces a semantic-release also pushes the freshly-bumped `server.json` to the canonical MCP Registry at `https://registry.modelcontextprotocol.io`. This is wired into the release workflow as the `mcp-registry-publish` job in [`.github/workflows/release.yml`](../../.github/workflows/release.yml):
+
+- **Gated on a real release** — the job only runs when `cycjimmy/semantic-release-action` reports `new_release_published == 'true'`, so commits that don't trigger a version bump don't try to re-publish
+- **GitHub OIDC auth** — no PAT or long-lived secret. The job's job-scoped permissions request a short-lived OIDC token (`id-token: write`) and exchange it via `mcp-publisher login github-oidc`
+- **Pinned to the released tag** — checks out `v${new_release_version}` so the `server.json` published matches the version users see on PyPI / the GitHub Release
+- **Non-fatal failure mode** — PyPI and the GitHub Release have already happened by the time this job runs. If the registry push fails (network blip, registry outage), operators can fall back to the manual flow below
+
+### Manual fallback
+
+Use the manual flow only when the automated job fails or for a one-off republish.
+
+#### Prerequisites
 
 ```bash
 brew install mcp-publisher
 ```
 
-### Steps
+#### Steps
 
 ```bash
 # 1. Authenticate with GitHub

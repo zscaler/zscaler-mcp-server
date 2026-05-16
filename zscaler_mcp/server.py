@@ -1628,7 +1628,7 @@ class ZscalerMCPServer:
             host: Host to bind to for HTTP transports (default: 127.0.0.1)
             port: Port to listen on for HTTP transports (default: 8000)
         """
-        from zscaler_mcp.auth import apply_auth_middleware
+        from zscaler_mcp.auth import apply_auth_middleware, apply_transport_hardening
 
         if transport in ("streamable-http", "sse"):
             _validate_host_config(host)
@@ -1668,6 +1668,13 @@ class ZscalerMCPServer:
             if allowed_ips is not None:
                 logger.info("Source IP ACL active: %s", allowed_ips)
                 app = SourceIPMiddleware(app, allowed_ips)
+
+            # Outermost wrapper: normalise trailing slashes and the
+            # ``application/json-rpc`` content-type so non-strict MCP clients
+            # (Gemini CLI, Bedrock-style HTTP gateways, custom LangChain
+            # agents, etc.) can talk to the server without bespoke fix-ups.
+            # Compliant clients (Claude Desktop, Cursor) are unaffected.
+            app = apply_transport_hardening(app, transport)
 
             _log_security_posture(
                 transport, scheme, host, port, tls_kwargs,
