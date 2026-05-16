@@ -483,6 +483,13 @@ class ZPAService(BaseService):
             zpa_list_service_edge_groups,
             zpa_update_service_edge_group,
         )
+        from .tools.zpa.service_edges import (
+            zpa_bulk_delete_service_edges,
+            zpa_delete_service_edge,
+            zpa_get_service_edge,
+            zpa_list_service_edges,
+            zpa_update_service_edge,
+        )
 
         # Define read-only tools
         self.read_tools = [
@@ -575,6 +582,16 @@ class ZPAService(BaseService):
                 "func": zpa_get_service_edge_group,
                 "name": "zpa_get_service_edge_group",
                 "description": "Get a specific ZPA service edge group by ID (read-only)",
+            },
+            {
+                "func": zpa_list_service_edges,
+                "name": "zpa_list_service_edges",
+                "description": "List individual ZPA Service Edges (the cloud-hosted broker instances themselves, distinct from their parent service edge groups). Returns runtime status, version, location, enrollment cert, and `serviceEdgeGroupId`. Use to inventory edges before bulk operations or to verify enrollment after a provisioning key was used. Supports JMESPath client-side filtering via the query parameter (read-only).",
+            },
+            {
+                "func": zpa_get_service_edge,
+                "name": "zpa_get_service_edge",
+                "description": "Get a specific ZPA Service Edge by ID — full record including control-channel state, runtime status, version, location, enrollment certificate, and parent service edge group membership (read-only).",
             },
             {
                 "func": zpa_list_ba_certificates,
@@ -889,6 +906,21 @@ class ZPAService(BaseService):
                 "description": "Delete a ZPA service edge group (destructive operation)",
             },
             {
+                "func": zpa_update_service_edge,
+                "name": "zpa_update_service_edge",
+                "description": "Update an existing ZPA Service Edge — enable/disable, rename, or refresh description. Group re-membership and provisioning-key assignment go through the Service Edge Group / Provisioning Key tools instead (write operation).",
+            },
+            {
+                "func": zpa_delete_service_edge,
+                "name": "zpa_delete_service_edge",
+                "description": "Delete a single ZPA Service Edge — removes the edge from the ZPA cloud; it must be re-provisioned with a fresh provisioning key to reconnect (destructive operation, HMAC double-confirmed).",
+            },
+            {
+                "func": zpa_bulk_delete_service_edges,
+                "name": "zpa_bulk_delete_service_edges",
+                "description": "Bulk delete multiple ZPA Service Edges in a single API call (`POST /serviceEdge/bulkDelete`). Each removed edge must be re-provisioned to reconnect (destructive operation, HMAC double-confirmed).",
+            },
+            {
                 "func": zpa_create_ba_certificate,
                 "name": "zpa_create_ba_certificate",
                 "description": "Create a new ZPA browser access certificate (write operation)",
@@ -1145,6 +1177,13 @@ class ZIAService(BaseService):
             zia_get_ip_source_group,
             zia_list_ip_source_groups,
             zia_update_ip_source_group,
+        )
+        from .tools.zia.ips_signature_rules import (
+            zia_create_ips_signature_rule,
+            zia_delete_ips_signature_rule,
+            zia_get_ips_signature_rule,
+            zia_list_ips_signature_rules,
+            zia_update_ips_signature_rule,
         )
         from .tools.zia.list_dlp_dictionaries import zia_dlp_dictionary_manager
         from .tools.zia.list_dlp_engines import zia_dlp_engine_manager
@@ -1708,6 +1747,18 @@ class ZIAService(BaseService):
                 "name": "zia_get_cloud_firewall_ips_rule",
                 "description": "Get a specific ZIA cloud firewall IPS rule by ID (read-only)",
             },
+            # Custom IPS Signature Rules (Snort/Suricata-style detection signatures —
+            # complementary to the Cloud Firewall IPS policy rules above)
+            {
+                "func": zia_list_ips_signature_rules,
+                "name": "zia_list_ips_signature_rules",
+                "description": "List custom ZIA IPS signature rules (read-only) — Snort/Suricata-style detection signatures authored on the tenant. Distinct from the Cloud Firewall IPS rule family (zia_list_cloud_firewall_ips_rules), which gates *enforcement* of IPS on firewall-matched traffic; signatures describe *what* to detect. Supports pagination via the page / page_size parameters and JMESPath client-side filtering via the query parameter.",
+            },
+            {
+                "func": zia_get_ips_signature_rule,
+                "name": "zia_get_ips_signature_rule",
+                "description": "Get a specific custom ZIA IPS signature rule by ID (read-only). Returns the signature metadata and the raw rule_text Snort/Suricata signature body.",
+            },
             # File Type Control Rules
             {
                 "func": zia_list_file_type_control_rules,
@@ -2121,6 +2172,22 @@ class ZIAService(BaseService):
                 "func": zia_delete_cloud_firewall_ips_rule,
                 "name": "zia_delete_cloud_firewall_ips_rule",
                 "description": "Delete a ZIA cloud firewall IPS rule (destructive operation)",
+            },
+            # Custom IPS Signature Rules (Snort/Suricata-style detection signatures)
+            {
+                "func": zia_create_ips_signature_rule,
+                "name": "zia_create_ips_signature_rule",
+                "description": "Create a custom ZIA IPS signature rule (write operation). The rule_text (Snort/Suricata-style signature with a unique sid:) is server-side validated by the SDK against the ZIA dynamic-validation endpoint *before* the create request is issued — syntactic, semantic, or duplicate-sid errors are surfaced as a ValueError without leaving a stub rule on the tenant. After a successful create, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_update_ips_signature_rule,
+                "name": "zia_update_ips_signature_rule",
+                "description": "Update an existing custom ZIA IPS signature rule (write operation, PUT-replace). Silently backfills the load-bearing fields name and rule_text from the existing record when the caller omits them, so partial updates 'just work'. Server-side validation is NOT re-run on update because the existing-sid check would flag every edit as a duplicate of itself; validate the new rule_text manually before calling. After a successful update, call zia_activate_configuration to apply the change.",
+            },
+            {
+                "func": zia_delete_ips_signature_rule,
+                "name": "zia_delete_ips_signature_rule",
+                "description": "Delete a custom ZIA IPS signature rule by ID (destructive operation, requires HMAC double-confirmation). After a successful delete, call zia_activate_configuration to apply the change.",
             },
             # Cloud App Control Rules
             {

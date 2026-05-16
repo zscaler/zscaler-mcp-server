@@ -824,9 +824,24 @@ def docker_run_http(
     extra_env: dict[str, str],
     auth_mode: str,
     debug: bool,
+    bind_mount_source: Optional[Path] = None,
 ) -> None:
     docker_remove_existing(container_name)
 
+    # The two .env paths are deliberately distinct:
+    #
+    # * ``env_file`` is the Docker-sanitised copy (a temp file) used by
+    #   ``--env-file`` to seed os.environ at container boot. Docker's
+    #   parser is strict and chokes on `export FOO=bar`, comments mid-
+    #   line, etc., so we always sanitise.
+    #
+    # * ``bind_mount_source`` is the OPERATOR-EDITED .env on the host.
+    #   When set, it gets bind-mounted at /app/.env so the in-container
+    #   reload path (`docker exec <container> zscaler-mcp restart`) sees
+    #   live edits without recreating the container. Skipped when the
+    #   resolved env file was synthesized from prompts (temp, vanishes
+    #   on script exit) or when the operator opted out via
+    #   ``--legacy-env-file``.
     args = [
         "docker", "run", "-d",
         "--restart=unless-stopped",
@@ -834,6 +849,10 @@ def docker_run_http(
         "-p", f"{port}:{port}",
         "--env-file", str(env_file),
     ]
+
+    if bind_mount_source is not None:
+        args.extend(["-v", f"{bind_mount_source}:/app/.env:ro"])
+        args.extend(["-e", "ZSCALER_MCP_DOTENV_PATH=/app/.env"])
 
     for k, v in extra_env.items():
         args.extend(["-e", f"{k}={v}"])
@@ -947,6 +966,16 @@ def parse_args() -> argparse.Namespace:
                     help="Skip endpoint verification.")
     p.add_argument("--skip-agent-config", action="store_true",
                     help="Don't auto-configure any AI agents.")
+    p.add_argument("--legacy-env-file", action="store_true",
+                    help=(
+                        "Use the legacy --env-file behaviour only "
+                        "(snapshot at container start). The default now "
+                        "ALSO bind-mounts the .env into /app/.env so "
+                        "`docker exec <container> zscaler-mcp restart` "
+                        "picks up live edits. Pass this flag to opt out "
+                        "(e.g. when you want the .env to live elsewhere "
+                        "or when the source is a temp file)."
+                    ))
     return p.parse_args()
 
 
@@ -1046,6 +1075,7 @@ def main() -> None:
     # docker --env-file always has something to read.
     auth_extra_env = collect_mode_credentials(auth_mode, env_vars, args.port)
 
+    env_file_was_synthesized = False
     if env_file is None:
         merged = {**env_vars, **auth_extra_env}
         # Always need Zscaler API creds (regardless of MCP auth mode)
@@ -1055,10 +1085,29 @@ def main() -> None:
             zs = collect_zscaler_creds({})
             merged.update(zs)
         env_file = _materialize_env_file(merged)
+        env_file_was_synthesized = True
         ok(f"Synthesized .env at {env_file}")
 
     # Sanitize for Docker's strict parser regardless of source.
     docker_env_file = sanitise_env_for_docker(env_file)
+
+    # Bind-mount decision: default ON (so `docker exec ... zscaler-mcp
+    # restart` inside the container picks up live host-side .env edits),
+    # but skip when the source is a synthesized temp file (which is
+    # auto-deleted on script exit, orphaning the bind mount) or when
+    # the operator explicitly opted out.
+    bind_mount_source: Optional[Path] = None
+    if args.legacy_env_file:
+        info("Using --legacy-env-file: .env is snapshotted at container start.")
+    elif env_file_was_synthesized:
+        info(
+            "Synthesized .env is a temp file — falling back to --env-file "
+            "snapshot. To use the live-reload path, point --env-file at a "
+            "persistent .env on disk and re-run."
+        )
+    else:
+        bind_mount_source = env_file
+        info(f"Bind-mounting {env_file} → /app/.env (live-reload enabled).")
 
     # ── Step 2: Docker readiness + image pull ──────────────────────────
 
@@ -1091,6 +1140,7 @@ def main() -> None:
             extra_env=extra_env,
             auth_mode=auth_mode,
             debug=args.debug,
+            bind_mount_source=bind_mount_source,
         )
 
         # ── Step 4: Verify ────────────────────────────────────────────

@@ -222,6 +222,16 @@ class TestToolsetForTool:
             # own toolset via explicit overrides.
             ("zia_get_advanced_settings", "zia_advanced_settings"),
             ("zia_update_advanced_settings", "zia_advanced_settings"),
+            # Custom IPS Signature Rules (PR #65) — pinned to the
+            # `zia_cloud_firewall` toolset alongside the Cloud Firewall
+            # IPS *policy* rule family via explicit overrides; the
+            # `_ips_signature_rule[s]` infix doesn't match the existing
+            # `_cloud_firewall_*` prefix rules.
+            ("zia_list_ips_signature_rules", "zia_cloud_firewall"),
+            ("zia_get_ips_signature_rule", "zia_cloud_firewall"),
+            ("zia_create_ips_signature_rule", "zia_cloud_firewall"),
+            ("zia_update_ips_signature_rule", "zia_cloud_firewall"),
+            ("zia_delete_ips_signature_rule", "zia_cloud_firewall"),
             # ZPA legacy `get_zpa_*` reads moved out of zpa_idp / zpa_misc
             ("get_zpa_isolation_profile", "zpa_isolation"),
             ("get_zpa_posture_profile", "zpa_posture"),

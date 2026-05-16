@@ -165,6 +165,40 @@ To onboard a ZIA location, resources must be created in order:
 - Toggling `enable_dns_resolution_on_transparent_proxy` interacts with the DNS-firewall rule family (`zia_list_cloud_firewall_dns_rules`) — review DNS rules before disabling.
 - Bypass lists (`auth_bypass_urls`, `kerberos_bypass_urls`, `digest_auth_bypass_urls`) are **allowlists** that exempt traffic from authentication — adding the wrong URL silently opens an auth hole. Treat changes as security-sensitive.
 
+### Custom IPS Signature Authoring
+
+```text
+1. zia_list_ips_signature_rules               → Inventory existing custom signatures (paginated; supports JMESPath query)
+2. zia_get_ips_signature_rule(<id>)           → Inspect rule_text + metadata for a baseline / similar signature
+3. zia_create_ips_signature_rule              → Author the new signature (rule_text auto-validated server-side
+                                                 against the dynamic-validation endpoint BEFORE create)
+4. zia_activate_configuration                  → Stage the new signature live on the cloud
+5. zia_create_cloud_firewall_ips_rule          → (Optional) tighten the matching policy rule that
+                                                 governs WHEN this signature is enforced (allow / drop /
+                                                 reset / bypass-IPS on which traffic) — paired surface
+6. zia_activate_configuration                  → Activate the policy-rule change too
+```
+
+**The two surfaces are complementary, not interchangeable:**
+
+| Surface | What it does | Tools |
+|---|---|---|
+| **Custom IPS signatures** (`zia_*_ips_signature_rule`) | Defines *what* to detect — Snort/Suricata-style rule body with a unique `sid:` | list / get / create / update / delete |
+| **Cloud Firewall IPS rules** (`zia_*_cloud_firewall_ips_rule`) | Defines *when* to enforce IPS on firewall-matched traffic — allow / block-drop / block-reset / bypass-IPS, scoped by users, locations, src/dst, etc. | list / get / create / update / delete |
+
+A signature without a matching policy rule is dormant. A policy rule without enabled signatures has nothing to detect.
+
+**Critical PUT semantics for `zia_update_ips_signature_rule`:**
+
+- The IPS signature update endpoint is full-replace. The tool silently backfills the load-bearing fields **`name` and `rule_text`** from the existing record when the caller omits them — different from rule-family tools, which backfill `name` and `order` (IPS signatures have no `order`).
+- **Server-side validation is NOT re-run on update.** The dynamic-validation endpoint flags any rule whose `sid:` already exists as a duplicate — which on an update is the rule being modified itself, so a pre-flight check would reject every legitimate edit. If you change `rule_text`, validate the new body manually (in the ZIA Admin Portal or via the SDK's `validate_ips_signature_rule`) before pushing the update.
+
+**Common pitfalls:**
+
+- Every signature needs a unique `sid:` and a `rev:` — duplicates are rejected at create time. When forking an existing signature, bump the `sid:` to a new value and reset `rev:` to `1`.
+- Forgetting `zia_activate_configuration` after the create / update / delete is the #1 cause of "my signature isn't catching traffic".
+- Custom signatures complement, not replace, the predefined Zscaler-managed signatures — ZIA's IPS engine evaluates both sets.
+
 ### Network Configuration
 ```
 1. zia_list_locations       → View all locations
@@ -199,6 +233,8 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_get_cloud_firewall_dns_rule` | Get specific firewall DNS rule |
 | `zia_list_cloud_firewall_ips_rules` | List firewall IPS rules |
 | `zia_get_cloud_firewall_ips_rule` | Get specific firewall IPS rule |
+| `zia_list_ips_signature_rules` | List custom IPS signature rules (Snort/Suricata-style detection signatures — distinct from Cloud Firewall IPS *policy* rules above; signatures = "what to detect", policy rules = "when to enforce"). Supports page / page_size + JMESPath query. |
+| `zia_get_ips_signature_rule` | Get a specific custom IPS signature rule by ID — returns metadata + the raw rule_text Snort/Suricata signature body |
 | `zia_list_url_filtering_rules` | List URL filtering rules |
 | `zia_get_url_filtering_rule` | Get specific URL rule |
 | `zia_list_ssl_inspection_rules` | List SSL inspection rules |
@@ -288,6 +324,9 @@ To onboard a ZIA location, resources must be created in order:
 | `zia_create_cloud_firewall_ips_rule` | Create firewall IPS rule |
 | `zia_update_cloud_firewall_ips_rule` | Update firewall IPS rule (PUT — name/order silently backfilled) |
 | `zia_delete_cloud_firewall_ips_rule` | Delete firewall IPS rule |
+| `zia_create_ips_signature_rule` | Create a custom IPS signature rule (Snort/Suricata-style). The SDK pre-flight-validates `rule_text` against the ZIA dynamic-validation endpoint *before* the create — syntax / duplicate-`sid` errors raise without leaving a stub on the tenant. |
+| `zia_update_ips_signature_rule` | Update a custom IPS signature rule (PUT — `name` and `rule_text` silently backfilled when omitted). Server-side validation is NOT re-run because the existing-`sid` check would flag every legitimate edit as a duplicate of itself; validate the new rule_text manually first. |
+| `zia_delete_ips_signature_rule` | Delete a custom IPS signature rule (HMAC double-confirmed) |
 | `zia_create_url_filtering_rule` | Create URL filtering rule |
 | `zia_update_url_filtering_rule` | Update URL filtering rule |
 | `zia_delete_url_filtering_rule` | Delete URL filtering rule |

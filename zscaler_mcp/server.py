@@ -2093,12 +2093,45 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--dotenv-path",
+        default=os.environ.get("ZSCALER_MCP_DOTENV_PATH"),
+        metavar="PATH",
+        help=(
+            "Explicit path to the .env file to load. When set, overrides "
+            "the default search (project root + CWD). Recorded in the "
+            "PID file so 'zscaler-mcp reload' / 'zscaler-mcp restart' "
+            "re-read the same source. (env: ZSCALER_MCP_DOTENV_PATH)"
+        ),
+    )
+
+    parser.add_argument(
+        "--pid-file",
+        default=os.environ.get("ZSCALER_MCP_PID_FILE"),
+        metavar="PATH",
+        help=(
+            "Override the PID file location used by the lifecycle "
+            "subcommands. Defaults to /var/run/zscaler-mcp.pid (or "
+            "/tmp/zscaler-mcp.pid if /var/run is not writable). Set per "
+            "instance when running multiple servers on the same host. "
+            "(env: ZSCALER_MCP_PID_FILE)"
+        ),
+    )
+
+    parser.add_argument(
         "--version",
         "-v",
         action="version",
         version=f"Zscaler MCP Server version {__version__}",
         help="Show version information and exit.",
     )
+
+    # Lifecycle subcommands (reload / restart / status / stop). Added
+    # last so all the top-level options above remain valid for the
+    # default "serve" path (no subcommand). Each subcommand inherits
+    # the parent parser's arguments via dest='command'.
+    from zscaler_mcp import lifecycle
+
+    lifecycle.register_subparsers(parser)
 
     return parser.parse_args()
 
@@ -2152,13 +2185,50 @@ def _check_env_file_security() -> None:
             continue
 
 
+def _resolve_dotenv_path(explicit: Optional[str] = None) -> Optional[str]:
+    """Resolve which ``.env`` file to load, honoring CLI/env overrides.
+
+    Search order:
+        1. Explicit ``--dotenv-path`` / ``ZSCALER_MCP_DOTENV_PATH`` if set
+        2. ``<project_root>/.env`` (editable install)
+        3. ``<cwd>/.env``
+
+    Returns the absolute path of the file actually loaded, or ``None`` if
+    no .env file was found (the server still runs — every config knob has
+    an env-var fallback). The returned value is what gets recorded in the
+    PID file so ``zscaler-mcp reload`` / ``zscaler-mcp restart`` re-read
+    the same source.
+    """
+    candidate = explicit or os.environ.get("ZSCALER_MCP_DOTENV_PATH", "").strip()
+    if candidate:
+        candidate = os.path.abspath(os.path.expanduser(candidate))
+        if os.path.isfile(candidate):
+            load_dotenv(candidate, override=True)
+            return candidate
+        logger.warning("dotenv path %s does not exist — falling back to defaults", candidate)
+
+    pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(pkg_dir)
+    project_env = os.path.join(project_root, ".env")
+    cwd_env = os.path.abspath(os.path.join(os.getcwd(), ".env"))
+
+    loaded_from = None
+    if os.path.isfile(project_env):
+        load_dotenv(project_env)
+        loaded_from = project_env
+    if os.path.isfile(cwd_env) and cwd_env != project_env:
+        load_dotenv(cwd_env, override=True)
+        loaded_from = cwd_env
+    return loaded_from
+
+
 def main():
     """Main entry point for the Zscaler Integrations MCP Server."""
-    # Load environment variables - try project root (editable install) then CWD
-    _pkg_dir = os.path.dirname(os.path.abspath(__file__))
-    _project_root = os.path.dirname(_pkg_dir)
-    load_dotenv(os.path.join(_project_root, ".env"))
-    load_dotenv()  # CWD override
+    # First-pass env load. We do this BEFORE parse_args() because every
+    # CLI flag has an env-var default that needs to already be resolved.
+    # The exact path used is recomputed (and recorded in the PID file)
+    # after parse_args() so explicit --dotenv-path wins.
+    _resolve_dotenv_path()
 
     _check_env_file_security()
 
@@ -2170,6 +2240,22 @@ def main():
 
     # Parse command line arguments (includes environment variable defaults)
     args = parse_args()
+
+    # Lifecycle subcommands short-circuit before any server setup.
+    # ``args.command`` is set by zscaler_mcp.lifecycle.register_subparsers
+    # and is None on the default "serve" path.
+    command = getattr(args, "command", None)
+    if isinstance(command, str) and command:
+        from zscaler_mcp import lifecycle
+
+        pid_file_arg = getattr(args, "pid_file", None)
+        if isinstance(pid_file_arg, str) and pid_file_arg:
+            os.environ["ZSCALER_MCP_PID_FILE"] = pid_file_arg
+        sys.exit(lifecycle.dispatch(command))
+
+    # Re-resolve dotenv with the explicit CLI flag in mind. Records the
+    # final path so the lifecycle handlers know what file to re-read.
+    final_dotenv_path = _resolve_dotenv_path(getattr(args, "dotenv_path", None))
 
     if getattr(args, "log_tool_calls", False):
         from zscaler_mcp.common.tool_helpers import enable_tool_call_logging
@@ -2258,6 +2344,49 @@ def main():
             disable_entitlement_filter=getattr(args, "no_entitlement_filter", False),
             host=args.host,
         )
+
+        # ----------------------------------------------------------------
+        # Process lifecycle: write PID file and install signal handlers
+        # so 'zscaler-mcp reload' (SIGHUP) and 'zscaler-mcp restart'
+        # (SIGUSR2) work against this PID. Done after server construction
+        # but before .run() so a misconfigured server doesn't leave a
+        # stale PID file behind. atexit-removed on clean shutdown.
+        # ----------------------------------------------------------------
+        import atexit
+        import time as _time
+
+        from zscaler_mcp import lifecycle
+
+        pid_file_arg = getattr(args, "pid_file", None)
+        if isinstance(pid_file_arg, str) and pid_file_arg:
+            os.environ["ZSCALER_MCP_PID_FILE"] = pid_file_arg
+        pid_file_path = lifecycle.default_pid_file_path()
+
+        lifecycle_state = lifecycle.LifecycleState(
+            pid=os.getpid(),
+            started_at=_time.time(),
+            transport=args.transport,
+            host=args.host,
+            port=args.port,
+            dotenv_path=final_dotenv_path,
+            argv=list(sys.argv),
+            python_executable=sys.executable,
+            version=__version__,
+        )
+        try:
+            lifecycle.write_pid_file(lifecycle_state, pid_file_path)
+            logger.info("Wrote PID file: %s (pid=%d)", pid_file_path, lifecycle_state.pid)
+        except OSError as exc:
+            logger.warning(
+                "Could not write PID file %s: %s — lifecycle subcommands "
+                "(reload/restart/status/stop) will not work for this instance.",
+                pid_file_path,
+                exc,
+            )
+
+        atexit.register(lifecycle.remove_pid_file, pid_file_path)
+        lifecycle.install_serve_handlers(lifecycle_state, final_dotenv_path)
+
         logger.info("Starting server with %s transport", args.transport)
         server.run(args.transport, host=args.host, port=args.port)
     except RuntimeError as e:
