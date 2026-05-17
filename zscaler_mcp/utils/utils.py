@@ -591,6 +591,46 @@ def validate_and_convert_country_code_iso(country_input: str) -> str:
     raise ValueError(f"Could not find country: {country_input}")
 
 
+def _get_package_version() -> str:
+    """Return the installed/declared version of the ``zscaler-mcp`` package.
+
+    Resolution order (first hit wins):
+
+    1. ``importlib.metadata.version("zscaler-mcp")`` — the canonical path
+       when the package is ``pip install``ed (wheel, sdist, or editable
+       install). Returns the version baked into the installed
+       distribution's metadata.
+    2. ``zscaler_mcp.__version__`` — the in-source declaration. Used when
+       the server runs directly from a source checkout / Docker layer
+       that copies the source tree without ``pip install``ing it
+       (i.e. no ``*.dist-info`` directory next to the package). The
+       release tooling (``scripts/set-version.sh``) bumps both
+       ``pyproject.toml`` and ``__init__.py`` in lockstep, so this is
+       always in sync with the published version.
+    3. ``"0.0.0"`` — last-resort sentinel. Intentionally invalid so a
+       future regression that breaks both paths above is loud rather
+       than silently pretending to be some stale real version.
+
+    Previous versions of this helper hardcoded a literal fallback
+    (e.g. ``"0.3.1"``) that drifted from the real version on every
+    release; the in-source ``__version__`` fallback eliminates that
+    class of bug entirely.
+    """
+    import importlib.metadata
+
+    try:
+        return importlib.metadata.version("zscaler-mcp")
+    except importlib.metadata.PackageNotFoundError:
+        pass
+
+    try:
+        from zscaler_mcp import __version__ as pkg_version
+    except ImportError:
+        return "0.0.0"
+
+    return pkg_version or "0.0.0"
+
+
 def get_mcp_user_agent() -> str:
     """
     Generate a formatted user-agent string for the Zscaler Integrations MCP Server.
@@ -600,17 +640,10 @@ def get_mcp_user_agent() -> str:
              zscaler-mcp-server/<version>/<OS_Architecture>
 
     Examples:
-        >>> get_mcp_user_agent()
-        'zscaler-mcp-server/0.2.0/Darwin-24.6.0-x86_64'
+        >>> get_mcp_user_agent()  # doctest: +SKIP
+        'zscaler-mcp-server/0.12.0/Darwin-24.6.0-x86_64'
     """
-    import importlib.metadata
-
-    try:
-        # Get the version from the package metadata
-        version = importlib.metadata.version("zscaler-mcp")
-    except importlib.metadata.PackageNotFoundError:
-        # Fallback to reading from pyproject.toml if package not installed
-        version = "0.2.0"  # Default version
+    version = _get_package_version()
 
     # Get system information
     system = platform.system()
@@ -636,18 +669,12 @@ def get_combined_user_agent(user_agent_comment: Optional[str] = None) -> str:
              zscaler-mcp-server/<version> python/<python_version> <os>/<arch> [comment]
 
     Examples:
-        >>> get_combined_user_agent()
-        'zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64'
-        >>> get_combined_user_agent("Claude Desktop 1.2024.10.23")
-        'zscaler-mcp-server/0.3.1 python/3.11.8 darwin/arm64 Claude Desktop 1.2024.10.23'
+        >>> get_combined_user_agent()  # doctest: +SKIP
+        'zscaler-mcp-server/0.12.0 python/3.11.8 darwin/arm64'
+        >>> get_combined_user_agent("Claude Desktop 1.2024.10.23")  # doctest: +SKIP
+        'zscaler-mcp-server/0.12.0 python/3.11.8 darwin/arm64 Claude Desktop 1.2024.10.23'
     """
-    import importlib.metadata
-
-    # Get MCP server version
-    try:
-        version = importlib.metadata.version("zscaler-mcp")
-    except importlib.metadata.PackageNotFoundError:
-        version = "0.3.1"  # Default version from pyproject.toml
+    version = _get_package_version()
 
     # Get Python version
     python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"

@@ -205,12 +205,63 @@ Unlike skills (which are guided workflows), Kiro uses **steering files** — ser
 3. Select **Local Directory** or provide the GitHub URL
 4. Point to ``integrations/kiro/``
 
+.. _gcp-deployment:
+
+Google Cloud Deployment
+-----------------------
+
+The Zscaler MCP Server can be deployed to **Google Cloud Run** (managed, serverless), **Google Kubernetes Engine** (GKE), or a **Compute Engine VM** using the interactive ``gcp_mcp_operations.py`` script. Per-target walkthroughs: :doc:`../guides/gcp-cloud-run`, :doc:`../guides/gcp-gke`, :doc:`../guides/gcp-compute-engine-vm`.
+
+.. image:: https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/gcp_complete.png
+   :alt: Video: Zscaler Integration MCP Server in GCP — complete walkthrough
+   :target: https://zscaler.wistia.com/medias/13jxjizk3r
+   :width: 720
+
+▶ **Walkthrough:** `Zscaler MCP Server in GCP — complete walkthrough (Wistia) <https://zscaler.wistia.com/medias/13jxjizk3r>`__
+
+**Per-target walkthroughs:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 50
+
+   * - Target
+     - Walkthrough
+   * - Google Cloud Run
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/ns3qmngu25>`__
+   * - Google Kubernetes Engine (GKE)
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/n6w0uy6v8o>`__
+   * - Google ADK Agent (Cloud Run)
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/modpfk1blb>`__
+
+.. note::
+
+   Compute Engine VM does not yet have a dedicated walkthrough — see the complete walkthrough above for full coverage.
+
+**Quick Start:**
+
+.. code-block:: bash
+
+   cd integrations/google/gcp
+   python gcp_mcp_operations.py deploy
+
+The script prompts for deployment target, credential source (``.env`` file or manual entry), Zscaler API credentials, MCP auth mode, and GCP options. Secrets can be stored in GCP Secret Manager.
+
 .. _google-adk:
 
 Google ADK (Agent Development Kit)
 ----------------------------------
 
 The Zscaler MCP Server integrates with `Google ADK <https://google.github.io/adk-docs/>`__ to build autonomous Zscaler security agents powered by Gemini models.
+
+.. image:: https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/gcp_adk.png
+   :alt: Video: Zscaler MCP Server and Google ADK Agent Cloud
+   :target: https://zscaler.wistia.com/medias/modpfk1blb
+   :width: 720
+
+▶ **Walkthrough:** `Zscaler MCP Server and Google ADK Agent Cloud (Wistia) <https://zscaler.wistia.com/medias/modpfk1blb>`__
+
+For the broader context — the ADK Agent alongside the standalone MCP server deployments (Cloud Run, GKE, Compute Engine VM) — see the `complete GCP walkthrough <https://zscaler.wistia.com/medias/13jxjizk3r>`__ or the :ref:`gcp-deployment` section above.
 
 **What's Included:**
 
@@ -262,6 +313,30 @@ Azure Deployment
 ----------------
 
 The Zscaler MCP Server can be deployed to **Azure Container Apps** (managed, serverless), an **Azure Virtual Machine** (Ubuntu 22.04), or **Azure Kubernetes Service** (Preview) using the interactive ``azure_mcp_operations.py`` script. Full walkthrough: :doc:`../guides/azure-deployment`.
+
+.. image:: https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/azure_container_complete.png
+   :alt: Video: Zscaler Integration MCP Server in Azure — complete walkthrough
+   :target: https://zscaler.wistia.com/medias/lk72alp7wv
+   :width: 720
+
+▶ **Walkthrough:** `Zscaler MCP Server in Azure — complete walkthrough (Wistia) <https://zscaler.wistia.com/medias/lk72alp7wv>`__
+
+**Per-target walkthroughs:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 50 50
+
+   * - Target
+     - Walkthrough
+   * - Azure Container Apps
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/4ddig7h580>`__
+   * - Azure Virtual Machine
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/7zz9cvhga2>`__
+   * - Azure Kubernetes Service (Preview)
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/yxd5k8hzh3>`__
+   * - Azure AI Foundry Agent
+     - `Watch on Wistia <https://zscaler.wistia.com/medias/2j2t9twzfb>`__
 
 **What's Included:**
 
@@ -332,6 +407,13 @@ Azure AI Foundry Agent
 ----------------------
 
 The Zscaler MCP Server integrates with `Azure AI Foundry <https://ai.azure.com>`__ to create autonomous security agents powered by GPT-4o that use Zscaler MCP tools.
+
+.. image:: https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/azure_container_foundry.png
+   :alt: Video: Zscaler MCP Server and Azure AI Foundry Agent
+   :target: https://zscaler.wistia.com/medias/2j2t9twzfb
+   :width: 720
+
+▶ **Walkthrough:** `Zscaler MCP Server and Azure AI Foundry Agent (Wistia) <https://zscaler.wistia.com/medias/2j2t9twzfb>`__
 
 There are two ways to configure the Foundry agent:
 

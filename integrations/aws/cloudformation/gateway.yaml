@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server — AgentCore Gateway nested stack. Two modes:
+  GatewayMode=create provisions a new Gateway and registers the runtime
+  as an mcpServer target. GatewayMode=attach skips Gateway creation and
+  registers the runtime as a target on an existing Gateway. Outbound auth
+  defaults to JWT_PASSTHROUGH; override via OAuthProviderArn. Lambda code
+  is uploaded to S3 by aws_mcp_operations.py before stack launch.
+
+Parameters:
+
+  # ── Identification ────────────────────────────────────────────────────
+  ResourceNamePrefix:
+    Type: String
+    Description: Prefix applied to named resources (gateway name, target name).
+
+  DeploymentLambdaRoleArn:
+    Type: String
+    Description: IAM role assumed by the Gateway provisioner Lambda.
+
+  # ── Mode + connectivity ───────────────────────────────────────────────
+  GatewayMode:
+    Type: String
+    AllowedValues: [create, attach]
+    Default: create
+    Description: >-
+      "create" provisions a new Gateway and registers the runtime as a
+      target on it. "attach" registers the runtime as a target on an
+      existing Gateway (ExistingGatewayId).
+
+  ExistingGatewayId:
+    Type: String
+    Default: ''
+    Description: >-
+      Gateway ID to attach to. Required when GatewayMode=attach. Ignored
+      when GatewayMode=create.
+
+  UpstreamMcpUrl:
+    Type: String
+    Description: >-
+      The runtime's MCP endpoint URL (RuntimeStack output). Registered as
+      the upstream endpoint on the mcpServer target.
+
+  # ── Gateway service role (create mode only) ───────────────────────────
+  GatewayServiceRoleArn:
+    Type: String
+    Default: ''
+    Description: >-
+      IAM role assumed by AgentCore Gateway itself when invoking the
+      upstream runtime and AgentCore Identity. Required when
+      GatewayMode=create. Ignored in attach mode.
+
+  # ── MCP protocol ──────────────────────────────────────────────────────
+  GatewayMcpVersion:
+    Type: String
+    Default: '2025-11-25,2025-03-26'
+    Description: >-
+      Comma-separated MCP protocol versions advertised in the Gateway's
+      protocolConfiguration. Declare every version your downstream clients
+      send in their `MCP-Protocol-Version` header. Default declares both
+      `2025-11-25` (current; required for 3LO + Authorization Code on
+      MCP-server targets, and for the semantic-search tool) and `2025-03-26`
+      (legacy; required for Amazon Quick's MCP integration today, which
+      sends 2025-03-26 on service-to-service connections). AWS does not
+      permit adding new versions to an existing Gateway — declare every
+      version you need here at create time.
+
+  # ── Inbound authorizer (Quick / downstream agent → Gateway) ───────────
+  InboundDiscoveryUrl:
+    Type: String
+    Default: ''
+    Description: >-
+      OIDC discovery URL passed to the Gateway's customJWTAuthorizer.
+      Required when GatewayMode=create (unless InboundIssuer is provided,
+      from which discovery URL is derived). Ignored in attach mode.
+  InboundIssuer:
+    Type: String
+    Default: ''
+    Description: >-
+      OIDC issuer URL. When InboundDiscoveryUrl is empty, the discovery
+      URL is derived as "<issuer>/.well-known/openid-configuration".
+  InboundAllowedAudience:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated allowedAudience values for the customJWTAuthorizer.
+      Either this or OAuthClientId must be non-empty.
+  InboundAllowedScopes:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated allowedScopes values for the customJWTAuthorizer.
+      Optional. When set, the Gateway enforces that inbound tokens carry
+      the listed scopes. Note: matching is AND, not OR — every listed
+      scope must be present in the inbound token's `scope` claim.
+  InboundClientClaimName:
+    Type: String
+    Default: 'client_id'
+    Description: >-
+      Name of the JWT claim that carries the OAuth client ID in inbound
+      tokens. Gateway uses this to match OAuthClientId. Required per-IdP
+      because Gateway's `allowedClients` matcher only reads `client_id`
+      (a Cognito-native convention); other OIDC IdPs use different claim
+      names. When this is NOT `client_id`, the Lambda emits a
+      `customClaims` matcher on the named claim instead of `allowedClients`.
+        Cognito  → client_id   (default)
+        Auth0    → azp
+        Okta     → cid
+        Entra ID → azp (or appid for v1.0 tokens)
+        Keycloak → azp
+        Google   → azp
+  OAuthClientId:
+    Type: String
+    Default: ''
+    Description: >-
+      OAuth client ID. Used in two places: (1) mapped to the Gateway's
+      customJWTAuthorizer for inbound downstream-agent validation —
+      via `allowedClients` when InboundClientClaimName=client_id, or
+      via a `customClaims` matcher on the configured claim otherwise.
+      (2) the clientId on the auto-provisioned AgentCore Identity
+      OAuth2 credential provider that authenticates Gateway → runtime.
+      Required in create mode.
+  OAuthClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: >-
+      OAuth client secret paired with OAuthClientId. Used to mint the
+      AgentCore Identity OAuth2 credential provider that the Gateway uses
+      to authenticate to the runtime (CLIENT_CREDENTIALS grant). Required
+      when OAuthProviderArn is empty.
+
+  # ── Outbound credential provider (Gateway → Runtime) ──────────────────
+  OAuthProviderArn:
+    Type: String
+    Default: ''
+    Description: >-
+      ARN of an existing AgentCore Identity OAuth2 credential provider.
+      Optional — when supplied, the Lambda reuses this provider instead of
+      auto-creating one from OAuthClientId / OAuthClientSecret. Use this
+      to share a single provider across multiple deployments, or when the
+      customer has a curated provider with locked-down scopes.
+  OAuthProviderScopes:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated OAuth scopes requested when the Gateway exchanges
+      for an upstream token. When empty, the Lambda falls back to
+      InboundAllowedAudience as a single scope value.
+
+  TokenEndpointQuery:
+    Type: String
+    Default: ''
+    Description: >-
+      IdP-agnostic escape hatch. Optional. When non-empty, this string is
+      appended as a query suffix to the IdP's advertised token_endpoint
+      URL before the credential provider is created. Use this when your
+      IdP needs request parameters that don't fit AgentCore's customOauth2
+      schema (which only exposes `scope`). Examples:
+        - Auth0 custom APIs: "audience=urn:my-api"
+        - Entra ID v1.0: "resource=api://my-app"
+        - Keycloak with RFC 8707: "resource=https://my-rs"
+      Leave empty for any standard OIDC IdP (Okta, Cognito, Entra v2,
+      Google, etc.) — the discoveryUrl path handles them out of the box.
+  OAuthProviderGrantType:
+    Type: String
+    AllowedValues: [AUTHORIZATION_CODE, CLIENT_CREDENTIALS, TOKEN_EXCHANGE]
+    Default: CLIENT_CREDENTIALS
+    Description: >-
+      Grant type used by the OAuth provider. CLIENT_CREDENTIALS (2LO,
+      service-to-service) is the correct default for Gateway → Runtime
+      — AUTHORIZATION_CODE (3LO) requires interactive admin consent at
+      target-creation time and is incompatible with CFN-driven deploys.
+
+  # ── Tool schema (SchemaUpfront) ───────────────────────────────────────
+  GatewayToolSchemaJson:
+    Type: String
+    Default: ''
+    Description: >-
+      Tool schema JSON (single-line) cached on the target. Recommended for
+      production (no interactive consent at create time). Leave empty for
+      ImplicitSync — Gateway will discover tools live from the runtime,
+      requiring admin consent during target creation.
+
+  # ── Lambda code source ────────────────────────────────────────────────
+  LambdaCodeBucket:
+    Type: String
+    Description: S3 bucket holding the provisioner Lambda zip.
+  LambdaCodeKey:
+    Type: String
+    Description: S3 key for gateway_provisioner.zip.
+
+Resources:
+
+  GatewayProvisionerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ResourceNamePrefix}-gateway-provisioner
+      Description: CloudFormation custom-resource handler for AgentCore Gateway lifecycle.
+      Runtime: python3.12
+      Handler: gateway_provisioner.handler
+      Timeout: 900
+      MemorySize: 512
+      Role: !Ref DeploymentLambdaRoleArn
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key:    !Ref LambdaCodeKey
+
+  AgentCoreGateway:
+    Type: Custom::AgentCoreGateway
+    Properties:
+      ServiceToken:             !GetAtt GatewayProvisionerLambda.Arn
+      GatewayMode:              !Ref GatewayMode
+      ExistingGatewayId:        !Ref ExistingGatewayId
+      GatewayName:              !Sub ${ResourceNamePrefix}-gateway
+      TargetName:               zscaler-mcp
+      CredentialProviderName:   !Sub ${ResourceNamePrefix}-mcp-runtime-oauth
+      UpstreamMcpUrl:           !Ref UpstreamMcpUrl
+      GatewayMcpVersion:        !Ref GatewayMcpVersion
+      GatewayServiceRoleArn:    !Ref GatewayServiceRoleArn
+      InboundDiscoveryUrl:      !Ref InboundDiscoveryUrl
+      InboundIssuer:            !Ref InboundIssuer
+      InboundAllowedAudience:   !Ref InboundAllowedAudience
+      InboundAllowedScopes:     !Ref InboundAllowedScopes
+      InboundClientClaimName:   !Ref InboundClientClaimName
+      OAuthClientId:            !Ref OAuthClientId
+      OAuthClientSecret:        !Ref OAuthClientSecret
+      OAuthProviderArn:         !Ref OAuthProviderArn
+      OAuthProviderScopes:      !Ref OAuthProviderScopes
+      OAuthProviderGrantType:   !Ref OAuthProviderGrantType
+      TokenEndpointQuery:       !Ref TokenEndpointQuery
+      ToolSchemaJson:           !Ref GatewayToolSchemaJson
+      # Surface the Lambda zip's S3 key as a property of the custom
+      # resource itself. CloudFormation only re-invokes a custom resource
+      # when its explicit properties change — updating only the backing
+      # Lambda's Code.S3Key is invisible to the custom resource. The
+      # deploy script content-hashes this key, so any provisioner-code
+      # change automatically triggers ensure_target() to reconcile the
+      # Gateway target (which does a delete-and-recreate to defeat
+      # AgentCore's merge semantics on mcpToolSchema). The value is
+      # informational only — the Lambda handler does not read it.
+      LambdaCodeKey:            !Ref LambdaCodeKey
+
+Outputs:
+
+  # GatewayId is the customer's Gateway in attach mode (passed through) and
+  # our Gateway in create mode. Either way, callers need it.
+  GatewayId:
+    Description: AgentCore Gateway ID (created by us, or referenced via ExistingGatewayId).
+    Value: !GetAtt AgentCoreGateway.GatewayId
+
+  # GatewayArn is only present in create mode (we own it). In attach mode
+  # it's still echoed back from the lookup if AgentCore returns it.
+  GatewayArn:
+    Description: AgentCore Gateway ARN (best-effort — may be empty in attach mode).
+    Value: !GetAtt AgentCoreGateway.GatewayArn
+
+  # GatewayMcpUrl is the URL downstream agents call. In create mode this
+  # is the Gateway we just provisioned; in attach mode it's the existing
+  # Gateway's URL (looked up by the Lambda and passed through).
+  GatewayMcpUrl:
+    Description: Gateway MCP endpoint URL — register this with your downstream agent platform.
+    Value: !GetAtt AgentCoreGateway.McpUrl
+
+  TargetId:
+    Description: ID of the mcpServer target we registered on the Gateway.
+    Value: !GetAtt AgentCoreGateway.TargetId
+
+  GatewayLifecycleMode:
+    Description: Confirms whether this stack owns the Gateway lifecycle (create) or only the target (attach).
+    Value: !GetAtt AgentCoreGateway.Mode
+
+  GatewayOAuthProviderArn:
+    Description: ARN of the AgentCore Identity OAuth2 credential provider used for Gateway → Runtime auth.
+    Value: !GetAtt AgentCoreGateway.OAuthProviderArn

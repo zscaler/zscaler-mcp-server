@@ -1,0 +1,280 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server — IAM nested stack. Creates two roles: the AgentCore
+  Runtime execution role (assumed by the container) and the deployment-Lambda
+  role (assumed by the custom-resource Lambdas that call bedrock-agentcore
+  control-plane APIs).
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+    Description: Prefix applied to all named resources.
+
+  ImageUri:
+    Type: String
+    Description: >-
+      Marketplace ECR image URI. Used to extract the registry account ID
+      so we can authorize cross-account ECR pulls.
+
+  SecretArn:
+    Type: String
+    Description: ARN of the Secrets Manager secret holding Zscaler OneAPI credentials.
+
+  EnableAgentCoreGateway:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Description: When true, the deployment Lambda role gets bedrock-agentcore Gateway permissions.
+
+  GatewayMode:
+    Type: String
+    AllowedValues: [create, attach]
+    Default: create
+    Description: >-
+      Controls whether the Gateway service role is provisioned in this
+      stack. "create" provisions a new role for the Gateway we own;
+      "attach" assumes the customer's existing Gateway already has its
+      own service role.
+
+Conditions:
+
+  # We only provision a Gateway service role when (a) the Gateway is enabled
+  # AND (b) the Gateway lifecycle is owned by us (create mode). In attach
+  # mode the customer's existing Gateway already has its own service role,
+  # so we'd be creating an orphan.
+  CreateOwnedGatewayServiceRole: !And
+    - !Equals [!Ref EnableAgentCoreGateway, 'true']
+    - !Equals [!Ref GatewayMode, create]
+
+Resources:
+
+  # ── AgentCore Runtime execution role ────────────────────────────────────
+  # Assumed by the running container. Needs to read the Secret at startup
+  # and pull the image from Marketplace ECR (cross-account).
+
+  AgentCoreExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock-agentcore.amazonaws.com
+            Action: sts:AssumeRole
+      Description: >-
+        Execution role for the Zscaler MCP Server container running on
+        AWS Bedrock AgentCore Runtime.
+      Policies:
+        - PolicyName: SecretsManagerRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref SecretArn
+        - PolicyName: MarketplaceEcrPull
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Cross-account ECR pull from AWS Marketplace registry (709825985650).
+              # GetAuthorizationToken is account-agnostic and required for pulls.
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: !Sub
+                  - arn:aws:ecr:${AWS::Region}:${RegistryAccount}:repository/zscaler/*
+                  - RegistryAccount: !Select [0, !Split ['.', !Ref ImageUri]]
+        # Match docs/deployment/amazon_bedrock_agentcore.md Step 2 verbatim:
+        # CreateLogGroup + CreateLogStream + PutLogEvents + DescribeLogStreams
+        # under /aws/bedrock-agentcore/runtimes/* (AgentCore container logs).
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/bedrock-agentcore/*
+
+  # ── Deployment Lambda role ──────────────────────────────────────────────
+  # Assumed by the CloudFormation custom-resource Lambdas. Needs to call
+  # bedrock-agentcore-control APIs and pass the execution role to the
+  # Runtime when creating it.
+
+  DeploymentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-deployment-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Description: >-
+        Role for the CloudFormation custom-resource Lambdas that provision
+        Bedrock AgentCore Runtime (and optionally Gateway).
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        # ────────────────────────────────────────────────────────────────
+        # bedrock-agentcore IAM permission model (read this if you're tempted
+        # to tighten this policy):
+        #
+        # CreateAgentRuntime is documented as a single API call, but the
+        # service internally fans out to other AgentCore resource families
+        # that each have their own IAM action namespace:
+        #
+        #   1. CreateAgentRuntime           → runtime/*
+        #   2. CreateAgentRuntimeEndpoint   → runtime/* (endpoint subresource)
+        #   3. CreateWorkloadIdentity       → workload-identity-directory/default/workload-identity/*
+        #   4. (potentially others — AWS's IAM docs are incomplete here)
+        #
+        # We attempted narrow per-resource scoping three times in a row and
+        # each deploy hit a different undocumented fan-out call. The Lambda
+        # role granted here is only assumed by our custom-resource Lambdas,
+        # only during stack lifecycle events, and only in this account.
+        # Broad bedrock-agentcore:* is the pragmatic scope until AWS
+        # documents the full call graph.
+        # ────────────────────────────────────────────────────────────────
+        - PolicyName: BedrockAgentCoreAdmin
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock-agentcore:*
+                Resource: '*'
+        # AgentCore Identity stores OAuth2 client secrets in Secrets Manager
+        # on the caller's behalf. CreateOauth2CredentialProvider therefore
+        # transitively requires secretsmanager:CreateSecret, and
+        # DeleteOauth2CredentialProvider requires the corresponding
+        # DeleteSecret. AWS scopes these to the managed prefix
+        # "bedrock-agentcore-identity!*" under the caller's account, so we
+        # narrow the resource path here instead of granting account-wide.
+        - PolicyName: AgentCoreIdentitySecretsManagement
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:CreateSecret
+                  - secretsmanager:UpdateSecret
+                  - secretsmanager:PutSecretValue
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DeleteSecret
+                  - secretsmanager:TagResource
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:bedrock-agentcore-identity!*
+        - PolicyName: PassExecutionRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt AgentCoreExecutionRole.Arn
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: bedrock-agentcore.amazonaws.com
+        # PassRole is also needed for the Gateway service role we create
+        # below (when GatewayMode=create). Carve it out conditionally so
+        # the attach-mode deploy doesn't need to grant a wildcard PassRole.
+        - !If
+          - CreateOwnedGatewayServiceRole
+          - PolicyName: PassGatewayServiceRole
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: iam:PassRole
+                  Resource: !GetAtt GatewayServiceRole.Arn
+                  Condition:
+                    StringEquals:
+                      iam:PassedToService: bedrock-agentcore.amazonaws.com
+          - !Ref AWS::NoValue
+
+  # ── AgentCore Gateway service role (create mode only) ──────────────────
+  # Assumed by the Gateway itself when it invokes outbound (to our runtime)
+  # and when it talks to AgentCore Identity for credential brokering.
+  # Permissions follow the AWS-published "Configuring permissions" table in
+  # the MCP-server-targets developer guide:
+  #   https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-target-MCPservers.html
+
+  GatewayServiceRole:
+    Type: AWS::IAM::Role
+    Condition: CreateOwnedGatewayServiceRole
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-gateway-service-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock-agentcore.amazonaws.com
+            Action: sts:AssumeRole
+      Description: >-
+        Service role for the AgentCore Gateway fronting the Zscaler MCP
+        Server. Used by the Gateway when invoking the upstream runtime
+        and when talking to AgentCore Identity.
+      Policies:
+        - PolicyName: AgentCoreIdentityWorkload
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock-agentcore:GetWorkloadAccessToken
+                  - bedrock-agentcore:GetWorkloadAccessTokenForUserId
+                  - bedrock-agentcore:GetResourceOauth2Token
+                  - bedrock-agentcore:CompleteResourceTokenAuth
+                  - bedrock-agentcore:CreateWorkloadIdentity
+                Resource: '*'
+        - PolicyName: SecretsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Required so the Gateway can read OAuth credential-provider
+              # secrets (when an outbound OAuth provider is attached).
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: '*'
+        - PolicyName: InvokeRuntime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # The Gateway invokes the runtime over HTTP; this perm covers
+              # the IAM-credential-provider path if customers ever switch
+              # outbound auth from JWT_PASSTHROUGH to GATEWAY_IAM_ROLE.
+              - Effect: Allow
+                Action:
+                  - bedrock-agentcore:InvokeAgentRuntime
+                Resource: '*'
+
+Outputs:
+
+  AgentCoreExecutionRoleArn:
+    Description: ARN of the role assumed by the AgentCore Runtime container.
+    Value: !GetAtt AgentCoreExecutionRole.Arn
+  DeploymentLambdaRoleArn:
+    Description: ARN of the role used by the deployment-Lambda custom resources.
+    Value: !GetAtt DeploymentLambdaRole.Arn
+  GatewayServiceRoleArn:
+    Condition: CreateOwnedGatewayServiceRole
+    Description: ARN of the role assumed by the AgentCore Gateway itself (create mode only).
+    Value: !GetAtt GatewayServiceRole.Arn
