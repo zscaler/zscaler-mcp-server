@@ -1,0 +1,545 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on AWS Bedrock AgentCore — root nested stack.
+  Pulls the official Zscaler MCP container image from AWS Marketplace ECR
+  (709825985650.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server),
+  provisions IAM, Secrets Manager (optional), AgentCore Runtime, and
+  optionally an AgentCore Gateway in front of the runtime.
+
+# ──────────────────────────────────────────────────────────────────────────
+# Parameters
+# ──────────────────────────────────────────────────────────────────────────
+
+Parameters:
+
+  # ── Asset bucket (where the nested templates live) ──────────────────────
+  AssetBucket:
+    Type: String
+    Description: >-
+      S3 bucket holding the nested-stack templates (iam.yaml, secrets.yaml,
+      runtime.yaml, gateway.yaml). Upload all four templates to this bucket
+      under AssetPrefix before launching this root stack.
+  AssetPrefix:
+    Type: String
+    Default: zscaler-mcp/
+    Description: >-
+      S3 key prefix for the nested-stack templates. Must end with '/'.
+
+  # ── Image source ────────────────────────────────────────────────────────
+  ImageUri:
+    Type: String
+    Default: 709825985650.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:0.10.4-bedrock
+    Description: >-
+      Container image URI. Defaults to the AWS Marketplace ECR for the
+      Zscaler MCP Server. The Marketplace listing publishes immutable
+      "<semver>-bedrock" tags only (no moving "latest"). Update the tag
+      when a newer version is published, or override entirely for a
+      private mirror.
+
+  # ── Identifiers ─────────────────────────────────────────────────────────
+  ResourceNamePrefix:
+    Type: String
+    Default: zscaler-mcp
+    Description: >-
+      Prefix applied to every named resource (IAM roles, runtime name,
+      secret name, gateway name). Lowercase letters, digits, and dashes.
+    AllowedPattern: '^[a-z][a-z0-9-]{1,30}[a-z0-9]$'
+    ConstraintDescription: >-
+      Must start with a lowercase letter, contain only lowercase letters,
+      digits, and dashes, and be 3-32 characters long.
+
+  # ── Credential management ───────────────────────────────────────────────
+  CredentialSource:
+    Type: String
+    Default: UseExisting
+    AllowedValues:
+      - UseExisting
+      - CreateNew
+    Description: >-
+      "UseExisting" references a pre-existing Secrets Manager secret
+      (recommended for production). "CreateNew" provisions a new secret
+      from the parameters below (testing only — credentials end up in the
+      CloudFormation template parameters).
+
+  ExistingSecretName:
+    Type: String
+    Default: ''
+    Description: >-
+      Name of the existing Secrets Manager secret. Required when
+      CredentialSource=UseExisting. The secret JSON must contain at minimum
+      ZSCALER_CLIENT_ID, ZSCALER_CLIENT_SECRET, ZSCALER_VANITY_DOMAIN,
+      and ZSCALER_CUSTOMER_ID.
+
+  ZscalerClientId:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerVanityDomain:
+    Type: String
+    Default: ''
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerCustomerId:
+    Type: String
+    Default: ''
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerCloud:
+    Type: String
+    Default: production
+    AllowedValues: [production, beta, zscalerten, zscalerbeta]
+    Description: Zscaler cloud (defaults to production).
+
+  # ── Server runtime configuration ────────────────────────────────────────
+  WriteToolsEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Whether to enable Zscaler MCP write tools (create / update / delete).
+      Default false (read-only). Set to true only when you trust the agent
+      caller to make changes to your Zscaler tenant.
+  WriteToolsAllowlist:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated fnmatch patterns of write tools to allow when
+      WriteToolsEnabled=true. Example: "zpa_create_*,zia_update_*". Empty
+      string means "allow all write tools" — strongly recommend an explicit
+      allowlist.
+  DisabledTools:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated fnmatch patterns of tools to exclude entirely
+      (read or write). Applied at registration time. Example:
+      "zcc_*,zia_list_device*".
+  DisabledServices:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated service names to exclude entirely (zcc, zdx, zpa,
+      zia, ztw, zid, zeasm, zins, zms). Wildcards are NOT supported here.
+
+  # ── MCP-client authentication (Layer 1) ─────────────────────────────────
+  McpAuthMode:
+    Type: String
+    Default: jwt
+    AllowedValues: [jwt, zscaler, api-key, none]
+    Description: >-
+      Authentication enforced on the MCP server's HTTP endpoint. 'jwt'
+      validates JWTs against an external IdP (Auth0, Cognito, Entra). When
+      AgentCore Gateway is enabled, set this to 'jwt' so the Gateway can
+      forward delegated tokens.
+  JwtJwksUri:
+    Type: String
+    Default: ''
+    Description: Required when McpAuthMode=jwt. Example https://your-tenant.us.auth0.com/.well-known/jwks.json
+  JwtIssuer:
+    Type: String
+    Default: ''
+    Description: Required when McpAuthMode=jwt. Example https://your-tenant.us.auth0.com/
+  JwtAudience:
+    Type: String
+    Default: zscaler-mcp-server
+    Description: Required when McpAuthMode=jwt.
+  JwtDiscoveryUrl:
+    Type: String
+    Default: ''
+    Description: >-
+      OIDC discovery URL passed to the AgentCore customJwtAuthorizer.
+      Optional — when blank, derived from JwtIssuer as
+      "<issuer>/.well-known/openid-configuration". For Cognito user
+      pools use
+      https://cognito-idp.<region>.amazonaws.com/<pool-id>/.well-known/openid-configuration.
+  JwtAllowedClients:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated OAuth client IDs accepted by the AgentCore
+      customJwtAuthorizer (optional). When blank, AgentCore Identity
+      does not restrict by client_id (audience check still applies).
+  ApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Required when McpAuthMode=api-key.
+
+  # ── AgentCore Gateway (optional) ────────────────────────────────────────
+  EnableAgentCoreGateway:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Provision (or attach to) an AgentCore Gateway in front of the runtime.
+      When 'true', downstream agents (Amazon Quick Suite, Bedrock Agents,
+      custom MCP clients, etc.) talk to the Gateway URL instead of the
+      Runtime URL directly. Default: 'false' (Gateway-free deployment).
+
+  GatewayMode:
+    Type: String
+    Default: create
+    AllowedValues: [create, attach]
+    Description: >-
+      "create" provisions a new Gateway and registers the runtime as a
+      target on it (full lifecycle owned by this stack). "attach" registers
+      the runtime as a target on a Gateway that already exists in this
+      account+region — the customer keeps ownership of their Gateway.
+
+  ExistingGatewayId:
+    Type: String
+    Default: ''
+    Description: >-
+      Gateway ID to attach to. Required when GatewayMode=attach. Ignored
+      when GatewayMode=create.
+
+  GatewayMcpVersion:
+    Type: String
+    Default: '2025-11-25,2025-03-26'
+    Description: >-
+      Comma-separated MCP protocol versions advertised in the Gateway's
+      protocolConfiguration. Default declares both `2025-11-25` (current;
+      required for 3LO + Authorization Code on MCP-server targets and the
+      semantic-search tool) and `2025-03-26` (legacy; required by Amazon
+      Quick's MCP integration today, which sends 2025-03-26 on
+      service-to-service connections). AWS does not permit adding versions
+      to an existing Gateway — declare every version you need here at
+      create time. Ignored in attach mode (uses the existing Gateway's
+      version).
+
+  # ── Gateway inbound (downstream agent → Gateway) ─────────────────────────
+  GatewayInboundDiscoveryUrl:
+    Type: String
+    Default: ''
+    Description: >-
+      OIDC discovery URL for the IdP that issues tokens to downstream agents
+      (e.g. Quick Suite). When empty, derived from GatewayInboundIssuer as
+      "<issuer>/.well-known/openid-configuration". Required when
+      GatewayMode=create.
+  GatewayInboundIssuer:
+    Type: String
+    Default: ''
+    Description: >-
+      OIDC issuer URL for the IdP fronting downstream agents. Used to derive
+      GatewayInboundDiscoveryUrl when that field is empty.
+  GatewayInboundAllowedAudience:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated allowedAudience values for the Gateway's CUSTOM_JWT
+      authorizer. Either this or GatewayOAuthClientId must be non-empty in
+      create mode.
+  GatewayInboundAllowedScopes:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated allowedScopes values for the Gateway's CUSTOM_JWT
+      authorizer (optional). Matching is AND — every listed scope must
+      be present in the inbound token's `scope` claim.
+  GatewayInboundClientClaimName:
+    Type: String
+    Default: 'client_id'
+    Description: >-
+      JWT claim that carries the OAuth client ID in inbound tokens. The
+      deploy script auto-detects from the discovery URL when not set:
+      `client_id` for Cognito (default), `azp` for Auth0 / Entra / Keycloak
+      / Google, `cid` for Okta. Required because Gateway's `allowedClients`
+      matcher is Cognito-shaped: it reads the `client_id` claim only and
+      reports any mismatch as `403 insufficient_scope`. When this value
+      is not `client_id`, the Gateway authorizer uses a `customClaims`
+      matcher on the named claim instead.
+  GatewayOAuthClientId:
+    Type: String
+    Default: ''
+    Description: >-
+      OAuth client ID used in two places: (1) the Gateway's CUSTOM_JWT
+      authorizer allowedClients (downstream agent validation), and (2) the
+      auto-provisioned AgentCore Identity OAuth2 credential provider that
+      authenticates Gateway → runtime. Required in create mode.
+  GatewayOAuthClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: >-
+      OAuth client secret paired with GatewayOAuthClientId. Used by the
+      AgentCore Identity OAuth2 credential provider that the Gateway uses
+      to call the runtime (CLIENT_CREDENTIALS grant). Required in create
+      mode unless GatewayOAuthProviderArn is supplied (in which case the
+      Lambda reuses your existing provider and never sees the secret).
+
+  # ── Gateway outbound credential provider (Gateway → Runtime) ────────────
+  GatewayOAuthProviderArn:
+    Type: String
+    Default: ''
+    Description: >-
+      ARN of an EXISTING AgentCore Identity OAuth2 credential provider.
+      Optional. When supplied, the deploy skips auto-provisioning and
+      reuses your provider verbatim — useful when you want a single
+      provider shared across multiple deployments, or when your provider
+      has curated scopes. Leave empty to auto-create one from
+      GatewayOAuthClientId / GatewayOAuthClientSecret + the IdP discovery
+      URL.
+  GatewayOAuthProviderScopes:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated OAuth scopes requested via GatewayOAuthProviderArn
+      (ignored when GatewayOAuthProviderArn is empty).
+  GatewayOAuthProviderGrantType:
+    Type: String
+    Default: CLIENT_CREDENTIALS
+    AllowedValues: [AUTHORIZATION_CODE, CLIENT_CREDENTIALS, TOKEN_EXCHANGE]
+    Description: >-
+      Grant type the Gateway uses when minting upstream tokens.
+      CLIENT_CREDENTIALS (2LO, service-to-service) is the correct default
+      for Gateway → Runtime — AUTHORIZATION_CODE (3LO) requires interactive
+      admin consent at target-creation time and is incompatible with
+      CloudFormation-driven deploys.
+
+  GatewayTokenEndpointQuery:
+    Type: String
+    Default: ''
+    Description: >-
+      IdP-agnostic escape hatch. Optional. Appended to the discovered
+      token_endpoint URL when AgentCore's customOauth2 schema can't
+      express a parameter your IdP requires (e.g. Auth0 audience, Entra
+      v1 resource, RFC 8707 resource indicators). Examples:
+      "audience=urn:my-api" or "resource=api://my-app". Leave empty for
+      standard OIDC IdPs (Okta, Cognito, Entra v2, Google, Keycloak) —
+      they work via the default discoveryUrl path.
+
+  # ── Optional curated tool schema (SchemaUpfront) ────────────────────────
+  GatewayToolSchemaJson:
+    Type: String
+    Default: ''
+    Description: >-
+      Tool schema JSON (single-line) cached on the Gateway target. Empty
+      means ImplicitSync — Gateway crawls the runtime live during target
+      creation (which requires interactive admin OAuth consent and is not
+      CI-friendly). Strongly recommend populating this for production
+      deployments.
+
+  # ── Tool-call audit logging ─────────────────────────────────────────────
+  EnableToolCallLogging:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >-
+      Forward every tool invocation (name + redacted args + duration +
+      result summary) to CloudWatch Logs via the audit logger.
+
+  # ── Lambda code keys (hash-suffixed by aws_mcp_operations.py) ──────────
+  # The deploy script computes an 8-char SHA-256 of each provisioner's
+  # source .py and uploads the zip to a content-suffixed S3 key
+  # (e.g. lambda/gateway_provisioner-<hash>.zip). It then passes the
+  # actual key into these parameters. A source change → new hash → new
+  # key → property change on both the AWS::Lambda::Function AND the
+  # Custom::AgentCoreGateway resources, so the custom resource actually
+  # re-runs and reconciles the Gateway target.
+  #
+  # The defaults match the legacy unsuffixed layout so a manual stack
+  # update (without re-running the deploy script) still resolves.
+  RuntimeProvisionerLambdaKey:
+    Type: String
+    Default: ''
+    Description: >-
+      S3 key of the runtime-provisioner Lambda zip relative to AssetBucket.
+      When empty, falls back to "{AssetPrefix}lambda/runtime_provisioner.zip".
+  GatewayProvisionerLambdaKey:
+    Type: String
+    Default: ''
+    Description: >-
+      S3 key of the gateway-provisioner Lambda zip relative to AssetBucket.
+      When empty, falls back to "{AssetPrefix}lambda/gateway_provisioner.zip".
+
+# ──────────────────────────────────────────────────────────────────────────
+# Conditions
+# ──────────────────────────────────────────────────────────────────────────
+
+Conditions:
+
+  CreateNewSecret: !Equals [!Ref CredentialSource, CreateNew]
+  UseExistingSecret: !Equals [!Ref CredentialSource, UseExisting]
+  GatewayEnabled: !Equals [!Ref EnableAgentCoreGateway, 'true']
+  GatewayCreateMode: !And
+    - !Equals [!Ref EnableAgentCoreGateway, 'true']
+    - !Equals [!Ref GatewayMode, create]
+  # Empty-string fallback flags for the hash-suffixed Lambda keys. When the
+  # deploy script supplies a key we use it verbatim; otherwise we fall back
+  # to the legacy unsuffixed layout for backwards compatibility with anyone
+  # who launches the root template by hand.
+  RuntimeLambdaKeyEmpty: !Equals [!Ref RuntimeProvisionerLambdaKey, '']
+  GatewayLambdaKeyEmpty: !Equals [!Ref GatewayProvisionerLambdaKey, '']
+
+# ──────────────────────────────────────────────────────────────────────────
+# Resources
+# ──────────────────────────────────────────────────────────────────────────
+
+Resources:
+
+  # ── Child stack 1: IAM ─────────────────────────────────────────────────
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}iam.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ImageUri: !Ref ImageUri
+        SecretArn: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretArn
+          - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ExistingSecretName}-*
+        EnableAgentCoreGateway: !Ref EnableAgentCoreGateway
+        GatewayMode: !Ref GatewayMode
+      TimeoutInMinutes: 10
+
+  # ── Child stack 2: Secrets Manager (only if CredentialSource=CreateNew) ─
+  SecretsStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNewSecret
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}secrets.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ZscalerClientId: !Ref ZscalerClientId
+        ZscalerClientSecret: !Ref ZscalerClientSecret
+        ZscalerVanityDomain: !Ref ZscalerVanityDomain
+        ZscalerCustomerId: !Ref ZscalerCustomerId
+        ZscalerCloud: !Ref ZscalerCloud
+      TimeoutInMinutes: 5
+
+  # ── Child stack 3: AgentCore Runtime ────────────────────────────────────
+  RuntimeStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: IamStack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}runtime.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        # AgentCore Runtime names must match [a-zA-Z][a-zA-Z0-9_]{0,47}
+        # (no hyphens). Strip dashes from the prefix to derive a valid name.
+        # e.g. "zscaler-mcp" -> "zscalermcp"
+        RuntimeName: !Join ['', !Split ['-', !Ref ResourceNamePrefix]]
+        ImageUri: !Ref ImageUri
+        ExecutionRoleArn: !GetAtt IamStack.Outputs.AgentCoreExecutionRoleArn
+        DeploymentLambdaRoleArn: !GetAtt IamStack.Outputs.DeploymentLambdaRoleArn
+        SecretName: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretName
+          - !Ref ExistingSecretName
+        WriteToolsEnabled: !Ref WriteToolsEnabled
+        WriteToolsAllowlist: !Ref WriteToolsAllowlist
+        DisabledTools: !Ref DisabledTools
+        DisabledServices: !Ref DisabledServices
+        McpAuthMode: !Ref McpAuthMode
+        JwtJwksUri: !Ref JwtJwksUri
+        JwtIssuer: !Ref JwtIssuer
+        JwtAudience: !Ref JwtAudience
+        JwtDiscoveryUrl: !Ref JwtDiscoveryUrl
+        JwtAllowedClients: !Ref JwtAllowedClients
+        ApiKey: !Ref ApiKey
+        EnableToolCallLogging: !Ref EnableToolCallLogging
+        LambdaCodeBucket: !Ref AssetBucket
+        LambdaCodeKey: !If
+          - RuntimeLambdaKeyEmpty
+          - !Sub ${AssetPrefix}lambda/runtime_provisioner.zip
+          - !Ref RuntimeProvisionerLambdaKey
+      TimeoutInMinutes: 30
+
+  # ── Child stack 4: AgentCore Gateway (conditional) ─────────────────────
+  # Always passes GatewayInbound* params to the Lambda. The Lambda enforces
+  # required-ness based on GatewayMode (create requires inbound IdP details;
+  # attach skips them since the customer's existing Gateway already has an
+  # authorizer configured).
+  GatewayStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: GatewayEnabled
+    DependsOn: RuntimeStack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}gateway.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        DeploymentLambdaRoleArn: !GetAtt IamStack.Outputs.DeploymentLambdaRoleArn
+        GatewayMode: !Ref GatewayMode
+        ExistingGatewayId: !Ref ExistingGatewayId
+        UpstreamMcpUrl: !GetAtt RuntimeStack.Outputs.RuntimeMcpUrl
+        # IamStack.Outputs.GatewayServiceRoleArn is only present in create
+        # mode; attach mode receives an empty string and the Lambda ignores
+        # the param.
+        GatewayServiceRoleArn: !If
+          - GatewayCreateMode
+          - !GetAtt IamStack.Outputs.GatewayServiceRoleArn
+          - ''
+        GatewayMcpVersion: !Ref GatewayMcpVersion
+        InboundDiscoveryUrl: !Ref GatewayInboundDiscoveryUrl
+        InboundIssuer: !Ref GatewayInboundIssuer
+        InboundAllowedAudience: !Ref GatewayInboundAllowedAudience
+        InboundAllowedScopes: !Ref GatewayInboundAllowedScopes
+        InboundClientClaimName: !Ref GatewayInboundClientClaimName
+        OAuthClientId: !Ref GatewayOAuthClientId
+        OAuthClientSecret: !Ref GatewayOAuthClientSecret
+        OAuthProviderArn: !Ref GatewayOAuthProviderArn
+        OAuthProviderScopes: !Ref GatewayOAuthProviderScopes
+        OAuthProviderGrantType: !Ref GatewayOAuthProviderGrantType
+        TokenEndpointQuery: !Ref GatewayTokenEndpointQuery
+        GatewayToolSchemaJson: !Ref GatewayToolSchemaJson
+        LambdaCodeBucket: !Ref AssetBucket
+        LambdaCodeKey: !If
+          - GatewayLambdaKeyEmpty
+          - !Sub ${AssetPrefix}lambda/gateway_provisioner.zip
+          - !Ref GatewayProvisionerLambdaKey
+      TimeoutInMinutes: 20
+
+# ──────────────────────────────────────────────────────────────────────────
+# Outputs
+# ──────────────────────────────────────────────────────────────────────────
+
+Outputs:
+
+  RuntimeId:
+    Description: AgentCore Runtime ID — supply to MCP clients that talk directly to the runtime.
+    Value: !GetAtt RuntimeStack.Outputs.RuntimeId
+  RuntimeArn:
+    Description: AgentCore Runtime ARN.
+    Value: !GetAtt RuntimeStack.Outputs.RuntimeArn
+  RuntimeMcpUrl:
+    Description: Runtime MCP endpoint URL.
+    Value: !GetAtt RuntimeStack.Outputs.RuntimeMcpUrl
+
+  GatewayId:
+    Condition: GatewayEnabled
+    Description: >-
+      AgentCore Gateway ID. In create mode this is the Gateway we
+      provisioned; in attach mode it's the existing Gateway you pointed
+      us at via ExistingGatewayId.
+    Value: !GetAtt GatewayStack.Outputs.GatewayId
+  GatewayMcpUrl:
+    Condition: GatewayEnabled
+    Description: >-
+      Gateway MCP endpoint URL — the URL downstream agent platforms
+      (Amazon Quick Suite, Bedrock Agents, custom MCP clients, etc.)
+      should call.
+    Value: !GetAtt GatewayStack.Outputs.GatewayMcpUrl
+  GatewayTargetId:
+    Condition: GatewayEnabled
+    Description: ID of the mcpServer target we registered on the Gateway.
+    Value: !GetAtt GatewayStack.Outputs.TargetId
+  GatewayLifecycleMode:
+    Condition: GatewayEnabled
+    Description: >-
+      "create" if the deploy script owns the Gateway lifecycle; "attach"
+      if only the target lifecycle is owned by us (the Gateway itself
+      belongs to the customer).
+    Value: !GetAtt GatewayStack.Outputs.GatewayLifecycleMode
+
+  SecretName:
+    Description: Secrets Manager secret name holding Zscaler OneAPI credentials.
+    Value: !If [CreateNewSecret, !GetAtt SecretsStack.Outputs.SecretName, !Ref ExistingSecretName]
+
+  ExecutionRoleArn:
+    Description: IAM role assumed by the AgentCore Runtime container.
+    Value: !GetAtt IamStack.Outputs.AgentCoreExecutionRoleArn

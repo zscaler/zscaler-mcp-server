@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server — AgentCore Runtime nested stack. Pulls the Marketplace
+  ECR image, sets the env vars expected by the MCP server (auth mode,
+  write-tools, audit logging, etc.), and provisions the runtime via a
+  CloudFormation custom resource since AWS::BedrockAgentCore::Runtime is
+  not yet a native CloudFormation type.
+
+  Provisioner Lambda code lives in cloudformation/lambda/runtime_provisioner.py
+  and is uploaded to S3 by aws_mcp_operations.py before stack launch.
+
+Parameters:
+
+  ResourceNamePrefix:        { Type: String }
+  RuntimeName:
+    Type: String
+    Description: >-
+      AgentCore Runtime name. Must match the AWS regex
+      [a-zA-Z][a-zA-Z0-9_]{0,47} — no hyphens, no dots. Typically derived from
+      ResourceNamePrefix by stripping dashes (e.g. "zscaler-mcp" -> "zscalermcp").
+  ImageUri:                  { Type: String }
+  ExecutionRoleArn:          { Type: String }
+  DeploymentLambdaRoleArn:   { Type: String }
+  SecretName:                { Type: String }
+  WriteToolsEnabled:         { Type: String, AllowedValues: ['true', 'false'] }
+  WriteToolsAllowlist:       { Type: String, Default: '' }
+  DisabledTools:             { Type: String, Default: '' }
+  DisabledServices:          { Type: String, Default: '' }
+  McpAuthMode:               { Type: String, AllowedValues: [jwt, zscaler, api-key, none] }
+  JwtJwksUri:                { Type: String, Default: '' }
+  JwtIssuer:                 { Type: String, Default: '' }
+  JwtAudience:               { Type: String, Default: 'zscaler-mcp-server' }
+  JwtDiscoveryUrl:
+    Type: String
+    Default: ''
+    Description: >-
+      OIDC discovery URL for the customJwtAuthorizer configured on the
+      AgentCore Runtime. Required when McpAuthMode=jwt; if omitted, the
+      provisioner derives it from JwtIssuer as
+      "<issuer>/.well-known/openid-configuration".
+  JwtAllowedClients:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated OAuth client_id values accepted by the AgentCore
+      customJwtAuthorizer. Optional. When omitted, AgentCore Identity
+      does not restrict by client_id (audience check still applies).
+  ApiKey:                    { Type: String, Default: '', NoEcho: true }
+  EnableToolCallLogging:     { Type: String, AllowedValues: ['true', 'false'] }
+  LambdaCodeBucket:          { Type: String, Description: S3 bucket holding the provisioner Lambda zip. }
+  LambdaCodeKey:             { Type: String, Description: S3 key for runtime_provisioner.zip. }
+
+Resources:
+
+  RuntimeProvisionerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ResourceNamePrefix}-runtime-provisioner
+      Description: CloudFormation custom-resource handler for AgentCore Runtime lifecycle.
+      Runtime: python3.12
+      Handler: runtime_provisioner.handler
+      Timeout: 900
+      MemorySize: 512
+      Role: !Ref DeploymentLambdaRoleArn
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key:    !Ref LambdaCodeKey
+
+  AgentCoreRuntime:
+    Type: Custom::AgentCoreRuntime
+    Properties:
+      ServiceToken:           !GetAtt RuntimeProvisionerLambda.Arn
+      RuntimeName:            !Ref RuntimeName
+      ImageUri:               !Ref ImageUri
+      ExecutionRoleArn:       !Ref ExecutionRoleArn
+      SecretName:             !Ref SecretName
+      WriteToolsEnabled:      !Ref WriteToolsEnabled
+      WriteToolsAllowlist:    !Ref WriteToolsAllowlist
+      DisabledTools:          !Ref DisabledTools
+      DisabledServices:       !Ref DisabledServices
+      McpAuthMode:            !Ref McpAuthMode
+      JwtJwksUri:             !Ref JwtJwksUri
+      JwtIssuer:              !Ref JwtIssuer
+      JwtAudience:            !Ref JwtAudience
+      JwtDiscoveryUrl:        !Ref JwtDiscoveryUrl
+      JwtAllowedClients:      !Ref JwtAllowedClients
+      ApiKey:                 !Ref ApiKey
+      EnableToolCallLogging:  !Ref EnableToolCallLogging
+
+Outputs:
+
+  RuntimeId:
+    Value: !GetAtt AgentCoreRuntime.RuntimeId
+  RuntimeArn:
+    Value: !GetAtt AgentCoreRuntime.RuntimeArn
+  RuntimeMcpUrl:
+    Value: !GetAtt AgentCoreRuntime.McpUrl
