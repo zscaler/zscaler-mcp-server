@@ -6,7 +6,17 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
-## 0.12.0 (Unreleased)
+## 0.12.1 (May 16, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Documentation
+
+`PR #66 <https://github.com/zscaler/zscaler-mcp-server/pull/66>`_ Updated Azure and GCP integration documentation. Included links to demo videos.
+
+## 0.12.0 (May 15, 2026)
 
 ### Notes
 
@@ -14,7 +24,7 @@ Zscaler Integrations MCP Server Changelog
 
 ### Breaking Changes
 
-`PR #64 <https://github.com/zscaler/zscaler-mcp-server/pull/64>`_ - Removed the ``clientless_app_ids`` parameter from ``zpa_create_application_segment`` and ``zpa_update_application_segment``. The field is only meaningful for Browser Access segments and previously triggered a stray ``BROWSER_ACCESS`` lookup when passed against a standard segment. Browser Access workloads are now served by the dedicated ``zpa_*_application_segment_ba`` tools (see below); use those instead.
+`PR #65 <https://github.com/zscaler/zscaler-mcp-server/pull/65>`_ - **HTTP transport hardening middleware.** Added two ASGI pre-processor middlewares wired in as the outermost wrapper around every HTTP transport (streamable-http + SSE), running *before* ``AuthMiddleware`` and ``SourceIPMiddleware``. ``StripTrailingSlashMiddleware`` rewrites ``POST /mcp/`` to ``POST /mcp`` so clients that can't follow a 307-on-POST (Gemini CLI, custom LangChain agents, hand-written JSON-RPC clients) work out-of-the-box. ``NormalizeContentTypeMiddleware`` rewrites the deprecated ``Content-Type: application/json-rpc`` to the spec-compliant ``application/json`` (preserving ``; charset=...``). Both are pure pre-processors — no new dependencies, never short-circuit, compliant clients (Claude Desktop, Cursor) unaffected. Exposed via ``apply_transport_hardening(app, transport)`` in ``zscaler_mcp/auth.py``; 20 unit tests in ``tests/test_transport_hardening.py``. Mirrored to the AWS variant.
 
 ### Enhancements
 
