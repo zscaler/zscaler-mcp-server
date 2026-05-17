@@ -1,6 +1,16 @@
 # Zscaler Integrations MCP Server Changelog
 
-## 0.12.0 (Unreleased)
+## 0.12.1 (May 16, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Documentation
+
+- [PR #66](https://github.com/zscaler/zscaler-mcp-server/pull/66) - Updated Azure and GCP integration documentation. Included links to demo videos.
+
+## 0.12.0 (May 15, 2026)
 
 ### Notes
 
@@ -8,7 +18,7 @@
 
 ### Breaking Changes
 
-- [PR #64](https://github.com/zscaler/zscaler-mcp-server/pull/64) - Removed the `clientless_app_ids` parameter from `zpa_create_application_segment` and `zpa_update_application_segment`. The field is only meaningful for Browser Access segments and previously triggered a stray `BROWSER_ACCESS` lookup when passed against a standard segment. Browser Access workloads are now served by the dedicated `zpa_*_application_segment_ba` tools (see below); use those instead.
+- [PR #65](https://github.com/zscaler/zscaler-mcp-server/pull/65) - Removed the `clientless_app_ids` parameter from `zpa_create_application_segment` and `zpa_update_application_segment`. The field is only meaningful for Browser Access segments and previously triggered a stray `BROWSER_ACCESS` lookup when passed against a standard segment. Browser Access workloads are now served by the dedicated `zpa_*_application_segment_ba` tools (see below); use those instead.
 
 ### Enhancements
 

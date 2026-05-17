@@ -2,6 +2,19 @@
 
 Deploy the Zscaler MCP Server to Azure with your choice of deployment target, authentication mode, and Azure Key Vault for secret storage.
 
+## Video Walkthrough
+
+[![Video: Zscaler Integration MCP Server in Azure — complete](../../assets/azure_container_complete.png)](https://zscaler.wistia.com/medias/lk72alp7wv)
+
+End-to-end walkthrough of every deployment target in this guide — Container Apps, Virtual Machine, AKS, and the Azure AI Foundry agent. Click the thumbnail to watch on Wistia, or jump to a per-target walkthrough in the matching section below:
+
+| Target | Walkthrough |
+|--------|-------------|
+| Azure Container Apps | [Watch on Wistia](https://zscaler.wistia.com/medias/4ddig7h580) |
+| Azure Virtual Machine | [Watch on Wistia](https://zscaler.wistia.com/medias/7zz9cvhga2) |
+| Azure Kubernetes Service (Preview) | [Watch on Wistia](https://zscaler.wistia.com/medias/yxd5k8hzh3) |
+| Azure AI Foundry Agent | [Watch on Wistia](https://zscaler.wistia.com/medias/2j2t9twzfb) |
+
 ## Deployment Targets
 
 | Target | Description | Image/Package | Status |
@@ -146,6 +159,10 @@ Session: 38s | Total tokens: 2,496
 
 ## Container Apps Deployment
 
+[![Video: Zscaler MCP Server and Azure Container Apps](../../assets/azure_container_apps.png)](https://zscaler.wistia.com/medias/4ddig7h580)
+
+▶ **Walkthrough:** [Zscaler MCP Server and Azure Container Apps (Wistia)](https://zscaler.wistia.com/medias/4ddig7h580)
+
 Pulls the pre-built Docker image from Docker Hub (`zscaler/zscaler-mcp-server:latest`):
 
 - **Serverless** — Azure manages scaling (1-3 replicas by default)
@@ -169,6 +186,10 @@ Pulls the pre-built Docker image from Docker Hub (`zscaler/zscaler-mcp-server:la
 ```
 
 ## VM Deployment
+
+[![Video: Zscaler MCP Server and Azure VM](../../assets/azure_container_vms.png)](https://zscaler.wistia.com/medias/7zz9cvhga2)
+
+▶ **Walkthrough:** [Zscaler MCP Server and Azure VM (Wistia)](https://zscaler.wistia.com/medias/7zz9cvhga2)
 
 Provisions an Ubuntu 22.04 VM and installs the MCP server from PyPI:
 
@@ -218,6 +239,10 @@ sudo systemctl restart zscaler-mcp  # restart service
 ```
 
 ## AKS Deployment (Preview)
+
+[![Video: Zscaler MCP Server and Azure Kubernetes Service](../../assets/azure_container_aks.png)](https://zscaler.wistia.com/medias/yxd5k8hzh3)
+
+▶ **Walkthrough:** [Zscaler MCP Server and Azure Kubernetes Service (Wistia)](https://zscaler.wistia.com/medias/yxd5k8hzh3)
 
 > **Status: Preview.** AKS support is fully functional for the four supported auth modes (`jwt`, `api-key`, `zscaler`, `none`) and has been validated end-to-end with cluster creation, LoadBalancer Service, and the Docker Hub image. **Credentials can now be stored in Azure Key Vault and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver** — this is the recommended default. A simpler env-var injection path is also available for short-lived demos. **OIDCProxy auth, TLS Ingress, and HPA are still planned** — see Known Limitations below.
 
@@ -338,6 +363,10 @@ kubectl describe deployment zscaler-mcp-server -n default
 - **Single replica by default** — for HA, edit `.aks-manifest.yaml` and re-apply, or scale via `kubectl scale deployment zscaler-mcp-server --replicas=3`.
 
 ## Azure AI Foundry Agent Integration
+
+[![Video: Zscaler MCP Server and Azure AI Foundry Agent](../../assets/azure_container_foundry.png)](https://zscaler.wistia.com/medias/2j2t9twzfb)
+
+▶ **Walkthrough:** [Zscaler MCP Server and Azure AI Foundry Agent (Wistia)](https://zscaler.wistia.com/medias/2j2t9twzfb)
 
 For organizations using Azure AI Foundry, you can create a managed AI agent that uses your deployed MCP server as a tool. This enables:
 

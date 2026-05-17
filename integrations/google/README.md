@@ -4,11 +4,15 @@ This directory contains all Google Cloud deployment options for the Zscaler MCP 
 
 ## Video Walkthrough
 
-A complete video walkthrough covering all five Google Cloud deployment options (Cloud Run, GKE, Compute Engine VM, ADK Agent Local, ADK Agent Cloud Run) is available here:
+[![Video: Zscaler Integration MCP Server in GCP — complete walkthrough](../../assets/gcp_complete.png)](https://zscaler.wistia.com/medias/13jxjizk3r)
 
-**[Zscaler Integration MCP Server in GCP — Video Demo](https://zscaler.wistia.com/medias/13jxjizk3r)**
+End-to-end walkthrough covering every Google Cloud deployment option in this guide — Cloud Run, GKE, Compute Engine VM, and the ADK Agent (local + Cloud Run). Click the thumbnail to watch on Wistia, or jump to a per-target walkthrough below:
 
-The demo walks through prerequisites, IAM setup, and live deployments for each target.
+| Target | Walkthrough |
+|--------|-------------|
+| Google Cloud Run | [Watch on Wistia](https://zscaler.wistia.com/medias/ns3qmngu25) |
+| Google Kubernetes Engine (GKE) | [Watch on Wistia](https://zscaler.wistia.com/medias/n6w0uy6v8o) |
+| Google ADK Agent (Cloud Run) | [Watch on Wistia](https://zscaler.wistia.com/medias/modpfk1blb) |
 
 ## What's Included
 
@@ -35,6 +39,15 @@ Interactive deployment of the Zscaler MCP Server as an independent service. Supp
 | **Cloud Run** | Docker container (managed, serverless) | `zscaler/zscaler-mcp-server:latest` (Docker Hub) |
 | **GKE** | Docker container on self-managed or Autopilot cluster | Same image; optionally creates a new Autopilot cluster |
 | **Compute Engine VM** | Python library from PyPI via systemd | `pip install zscaler-mcp[gcp]` on Debian 12 |
+
+**▶ Per-target walkthroughs:**
+
+| Cloud Run | GKE |
+|:---------:|:---:|
+| [![Video: Zscaler MCP Server and Google Cloud Run](../../assets/gcp_cloud_run.png)](https://zscaler.wistia.com/medias/ns3qmngu25) | [![Video: Zscaler MCP Server and Google GKE](../../assets/gcp_gke.png)](https://zscaler.wistia.com/medias/n6w0uy6v8o) |
+| [Watch on Wistia](https://zscaler.wistia.com/medias/ns3qmngu25) | [Watch on Wistia](https://zscaler.wistia.com/medias/n6w0uy6v8o) |
+
+> _Compute Engine VM has no dedicated walkthrough yet — see the [complete walkthrough](https://zscaler.wistia.com/medias/13jxjizk3r) above for full coverage._
 
 MCP clients (Claude Desktop, Cursor, etc.) connect directly to the server over HTTPS using streamable-http transport.
 

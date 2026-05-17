@@ -4,9 +4,11 @@ The Zscaler MCP Server integrates with [Google ADK](https://google.github.io/adk
 
 ## Video Walkthrough
 
-A complete video walkthrough covering all Google Cloud deployment options — including the ADK Agent for local development and Cloud Run — is available here:
+[![Video: Zscaler MCP Server and Google ADK Agent Cloud](../../../assets/gcp_adk.png)](https://zscaler.wistia.com/medias/modpfk1blb)
 
-**[Zscaler Integration MCP Server in GCP — Video Demo](https://zscaler.wistia.com/medias/13jxjizk3r)**
+▶ **Walkthrough:** [Zscaler MCP Server and Google ADK Agent Cloud (Wistia)](https://zscaler.wistia.com/medias/modpfk1blb)
+
+For the broader context — the ADK Agent alongside the standalone MCP server deployments (Cloud Run, GKE, Compute Engine VM) — see the [complete GCP walkthrough](https://zscaler.wistia.com/medias/13jxjizk3r).
 
 ## What's Included
 
