@@ -6,6 +6,10 @@
 
 - Python Versions: **v3.11, v3.12, v3.13, v3.14**
 
+### Bug Fixes
+
+- [PR #67](https://github.com/zscaler/zscaler-mcp-server/pull/67) - Fixed `get_combined_user_agent` and `get_mcp_user_agent` reporting stale hardcoded versions (e.g. `0.3.1`) on source-only runs where `importlib.metadata` can't find an installed distribution. Both helpers now fall back to `zscaler_mcp.__version__` (kept in sync with `pyproject.toml` by `scripts/set-version.sh`) instead of a baked-in literal.
+
 ### Documentation
 
 - [PR #66](https://github.com/zscaler/zscaler-mcp-server/pull/66) - Updated Azure and GCP integration documentation. Included links to demo videos.
