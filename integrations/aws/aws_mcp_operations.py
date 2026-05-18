@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import sys
 import time
 from pathlib import Path
@@ -167,28 +168,110 @@ DEFAULT_STACK_NAME = "zscaler-mcp-agentcore"
 DEFAULT_RESOURCE_PREFIX = "zscaler-mcp"
 
 # ──────────────────────────────────────────────────────────────────────────
-# Pretty print helpers
+# ANSI colours
+# ──────────────────────────────────────────────────────────────────────────
+# Colours / spinner enabled only when stdout is attached to a real TTY.
+# When piped, tee'd, or running in CI, ``stdout.isatty()`` returns False
+# so logs stay plain text (no escape codes leaking into log files).
+# Matches the styling used by integrations/azure and integrations/google/gcp.
+
+COLOURS = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+if COLOURS and platform.system() == "Windows":
+    # Best-effort: enable VT escapes on Windows 10+ consoles. If
+    # SetConsoleMode fails we fall back to plain text rather than spew
+    # raw escape sequences.
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    except Exception:
+        COLOURS = False
+
+RED      = "\033[0;31m" if COLOURS else ""
+GREEN    = "\033[0;32m" if COLOURS else ""
+YELLOW   = "\033[1;33m" if COLOURS else ""
+BLUE     = "\033[0;34m" if COLOURS else ""
+CYAN     = "\033[0;36m" if COLOURS else ""
+SKY_BLUE = "\033[34;01m" if COLOURS else ""
+BOLD     = "\033[1m" if COLOURS else ""
+DIM      = "\033[2m" if COLOURS else ""
+NC       = "\033[0m" if COLOURS else ""
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Pretty-print helpers
 # ──────────────────────────────────────────────────────────────────────────
 
 def info(msg: str) -> None:
-    print(f"[INFO]  {msg}")
+    print(f"{BLUE}[INFO]{NC}  {msg}")
 
 
 def ok(msg: str) -> None:
-    print(f"[OK]    {msg}")
+    print(f"{GREEN}[OK]{NC}    {msg}")
 
 
 def warn(msg: str) -> None:
-    print(f"[WARN]  {msg}")
+    print(f"{YELLOW}[WARN]{NC}  {msg}")
 
 
 def err(msg: str) -> None:
-    print(f"[ERROR] {msg}", file=sys.stderr)
+    print(f"{RED}[ERROR]{NC} {msg}", file=sys.stderr)
 
 
 def step(title: str) -> None:
     bar = "─" * (80 - len(title) - 5)
-    print(f"\n── {title} {bar}")
+    print(f"\n{SKY_BLUE}── {BOLD}{title}{NC}{SKY_BLUE} {bar}{NC}")
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# CloudFormation wait spinner
+# ──────────────────────────────────────────────────────────────────────────
+# Used by wait_for_stack to render a live "we're still here" indicator
+# with elapsed time + colour-coded status, while still rate-limiting the
+# actual CloudFormation API polls to one every ~15s. CloudFormation has
+# no progress-percent API — elapsed time is the most honest progress
+# signal we can show.
+
+_SPINNER_FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+
+def _color_for_stack_status(status: str) -> str:
+    """Pick a colour for a CloudFormation stack status string.
+
+    Mapping:
+      green   → *_COMPLETE        (success)
+      red     → *_FAILED, ROLLBACK_*   (failure / unwinding)
+      cyan    → *_IN_PROGRESS     (working)
+      yellow  → anything else     (transient / unknown)
+    """
+    if not status:
+        return NC
+    if "FAILED" in status or "ROLLBACK" in status:
+        return RED
+    if status.endswith("_COMPLETE"):
+        return GREEN
+    if status.endswith("_IN_PROGRESS"):
+        return CYAN
+    return YELLOW
+
+
+def _fmt_elapsed(seconds: float) -> str:
+    """Format seconds as '12s', '2m 14s', or '1h 23m 04s' for display."""
+    total = int(seconds)
+    if total < 60:
+        return f"{total}s"
+    if total < 3600:
+        return f"{total // 60}m {total % 60:02d}s"
+    return f"{total // 3600}h {(total % 3600) // 60:02d}m {(total % 60):02d}s"
+
+
+def _clear_spinner_line() -> None:
+    """Carriage-return + ANSI 'erase to end of line'. Used to overwrite
+    the live spinner line cleanly before printing a permanent log line."""
+    if COLOURS:
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -319,25 +402,29 @@ def load_state() -> dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────
 
 def prompt(label: str, default: str | None = None, *, secret: bool = False) -> str:
-    suffix = f" [{default}]" if default else ""
+    suffix = f" {DIM}[{default}]{NC}" if default else ""
+    line = f"{BOLD}{label}{NC}{suffix}: "
     if secret:
         try:
             import getpass
 
-            val = getpass.getpass(f"{label}{suffix}: ")
+            val = getpass.getpass(line)
         except Exception:
-            val = input(f"{label}{suffix}: ").strip()
+            val = input(line).strip()
     else:
-        val = input(f"{label}{suffix}: ").strip()
+        val = input(line).strip()
     return val or (default or "")
 
 
 def prompt_choice(label: str, choices: list[str], default: str) -> str:
-    print(f"\n{label}")
+    print(f"\n{BOLD}{label}{NC}")
     for i, c in enumerate(choices, 1):
-        marker = " (default)" if c == default else ""
-        print(f"  {i}. {c}{marker}")
-    raw = input(f"Pick 1-{len(choices)} [{choices.index(default) + 1}]: ").strip()
+        marker = f"{DIM} (default){NC}" if c == default else ""
+        print(f"  {CYAN}[{i}]{NC} {c}{marker}")
+    default_idx = choices.index(default) + 1
+    raw = input(
+        f"Pick {CYAN}1-{len(choices)}{NC} {DIM}[{default_idx}]{NC}: "
+    ).strip()
     if not raw:
         return default
     try:
@@ -349,7 +436,7 @@ def prompt_choice(label: str, choices: list[str], default: str) -> str:
 
 def prompt_bool(label: str, default: bool) -> bool:
     d = "Y/n" if default else "y/N"
-    raw = input(f"{label} [{d}]: ").strip().lower()
+    raw = input(f"{BOLD}{label}{NC} {CYAN}[{d}]{NC}: ").strip().lower()
     if not raw:
         return default
     return raw in ("y", "yes", "true", "1")
@@ -480,7 +567,8 @@ def cleanup_orphaned_resources(
         info("Auto-cleaning (running --non-interactive).")
     else:
         confirm = input(
-            "  Delete these now so the deploy can proceed? [Y/n]: "
+            f"  {BOLD}Delete these now so the deploy can proceed?{NC} "
+            f"{CYAN}[Y/n]{NC}: "
         ).strip().lower()
         if confirm in ("n", "no"):
             err("Cannot proceed — clean these up manually and re-run.")
@@ -675,24 +763,69 @@ def wait_for_stack(
     info(f"Waiting for stack '{stack_name}'…")
     last_status = ""
     captured_failures: list[str] = []
-    while True:
-        try:
-            resp = cfn.describe_stacks(StackName=stack_name)
-        except ClientError as e:
-            if "does not exist" in str(e):
-                # Likely OnFailure=DELETE swept the stack away after a failure
-                return "STACK_DELETED", captured_failures
-            raise
-        status = resp["Stacks"][0]["StackStatus"]
-        if status != last_status:
-            print(f"  status={status}")
-            last_status = status
-        # Snapshot failure reasons early — once the stack is deleted they're gone
-        if status in capture_failures_at and not captured_failures:
-            captured_failures = latest_failure_reasons(sess, stack_name)
-        if status in terminal:
-            return status, captured_failures
-        time.sleep(15)
+
+    # Poll cadence: hit DescribeStacks at most every ~15s (CloudFormation
+    # rate-limits it, and faster polling adds no real-world value because
+    # stack updates flip status on the order of seconds-to-minutes). The
+    # spinner redraws much faster than that so the user sees a live ticker.
+    poll_interval = 15.0
+    spinner_interval = 0.15
+    use_spinner = COLOURS
+
+    started = time.monotonic()
+    last_poll = -poll_interval  # force a poll on the very first iteration
+    spinner_idx = 0
+    status = ""
+
+    try:
+        while True:
+            now = time.monotonic()
+            if now - last_poll >= poll_interval:
+                last_poll = now
+                try:
+                    resp = cfn.describe_stacks(StackName=stack_name)
+                except ClientError as e:
+                    if "does not exist" in str(e):
+                        # Likely OnFailure=DELETE swept the stack away after a failure
+                        _clear_spinner_line()
+                        return "STACK_DELETED", captured_failures
+                    raise
+                status = resp["Stacks"][0]["StackStatus"]
+                if status != last_status:
+                    _clear_spinner_line()
+                    color = _color_for_stack_status(status)
+                    elapsed = _fmt_elapsed(now - started)
+                    print(
+                        f"  {DIM}→{NC} status={color}{status}{NC} "
+                        f"{DIM}(at {elapsed}){NC}"
+                    )
+                    last_status = status
+                # Snapshot failure reasons early — once the stack is deleted they're gone
+                if status in capture_failures_at and not captured_failures:
+                    captured_failures = latest_failure_reasons(sess, stack_name)
+                if status in terminal:
+                    _clear_spinner_line()
+                    return status, captured_failures
+
+            if use_spinner and status:
+                frame = _SPINNER_FRAMES[spinner_idx % len(_SPINNER_FRAMES)]
+                color = _color_for_stack_status(status)
+                elapsed = _fmt_elapsed(now - started)
+                sys.stdout.write(
+                    f"\r  {CYAN}{frame}{NC} waiting [{BOLD}{elapsed}{NC}] — "
+                    f"{color}{status}{NC}   "
+                )
+                sys.stdout.flush()
+                spinner_idx += 1
+
+            time.sleep(spinner_interval if use_spinner else poll_interval)
+    except KeyboardInterrupt:
+        _clear_spinner_line()
+        warn(
+            f"Interrupted while waiting. Stack '{stack_name}' will continue "
+            "in CloudFormation — re-run this script to resume monitoring."
+        )
+        raise
 
 
 def handle_unrecoverable_state(
@@ -741,7 +874,8 @@ def handle_unrecoverable_state(
         sys.exit(1)
 
     confirm = input(
-        f"  Delete the stack '{stack_name}' now and re-run deploy? [y/N]: "
+        f"  {BOLD}Delete the stack {YELLOW}'{stack_name}'{NC}{BOLD} now and re-run deploy?{NC} "
+        f"{CYAN}[y/N]{NC}: "
     ).strip().lower()
     if confirm not in ("y", "yes"):
         info("Aborted. Run `aws cloudformation delete-stack --stack-name "
@@ -909,31 +1043,54 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     # auth options available in Step 8 and whether Step 9 (Gateway IdP)
     # runs at all. Explanation is laid out before the prompt so operators
     # don't have to read the docs to make an informed choice.
+    #
+    # Style note: bracketed [N] menu + looped re-prompt matches the Azure
+    # and GCP deployment scripts (integrations/azure, integrations/google/gcp)
+    # so operators get the same UX across hyperscalers.
     step("Step 7: Architecture — how downstream agents reach the runtime")
     print(
         "\nChoose how downstream agents (Amazon Quick Suite, Bedrock Agents,\n"
         "custom MCP clients) will reach the Zscaler MCP Server. This dictates\n"
         "which auth options are available in the next step.\n"
     )
-    print("  1. Direct runtime (no Gateway)  [recommended]")
-    print("     - Callers invoke the runtime via bedrock-agentcore:InvokeAgentRuntime")
-    print("       (boto3, agentcore CLI, AgentCore Sandbox, Lambda, etc.)")
-    print("     - Any auth mode works: jwt / zscaler / api-key / none")
-    print("     - Simplest deploy — no external IdP needed\n")
-    print("  2. Provision a new AgentCore Gateway in front of the runtime  [experimental]")
-    print("     - Gateway exposes a single OAuth-fronted MCP URL")
-    print("     - REQUIRES a JWT/OIDC IdP (Auth0, Cognito, Okta, Entra, etc.)")
-    print("       — AWS Gateway only supports CUSTOM_JWT inbound auth.")
-    print("     - You'll provide the IdP's discovery URL + audience + client ID")
-    print("       in Step 9. Make sure that IdP exists BEFORE proceeding.")
-    print("     - Known limitation: tools/list propagation through the Gateway")
-    print("       target is currently inconsistent — downstream clients may")
-    print("       see a subset of MCP tools or none at all.\n")
-    print("  3. Attach the runtime as a target on an existing AgentCore Gateway  [experimental]")
-    print("     - You already operate a Gateway — we'll just add our target")
-    print("     - The existing Gateway's IdP is reused (no IdP setup needed here)")
-    print("     - You'll provide the existing Gateway's ID in Step 9")
-    print("     - Same Gateway tool-discovery limitation as option 2 applies.\n")
+    # Tag styling: green [recommended] for the safe path, yellow
+    # [experimental] for the Gateway paths. Marker numbers follow suit so
+    # the eye can pick out the recommended row at a glance.
+    tag_recommended = f"{BOLD}{GREEN}[recommended]{NC}"
+    tag_experimental = f"{BOLD}{YELLOW}[experimental]{NC}"
+    marker_safe = f"{GREEN}[1]{NC}"
+    marker_exp_2 = f"{YELLOW}[2]{NC}"
+    marker_exp_3 = f"{YELLOW}[3]{NC}"
+
+    print(f"  {marker_safe} {BOLD}Direct runtime (no Gateway){NC}  {tag_recommended}")
+    print("      - Callers invoke the runtime via bedrock-agentcore:InvokeAgentRuntime")
+    print("        (boto3, agentcore CLI, AgentCore Sandbox, Lambda, etc.)")
+    print("      - Any auth mode works: jwt / zscaler / api-key / none")
+    print("      - Simplest deploy — no external IdP needed\n")
+    print(
+        f"  {marker_exp_2} {BOLD}Provision a new AgentCore Gateway in front of the runtime{NC}  "
+        f"{tag_experimental}"
+    )
+    print("      - Gateway exposes a single OAuth-fronted MCP URL")
+    print("      - REQUIRES a JWT/OIDC IdP (Auth0, Cognito, Okta, Entra, etc.)")
+    print("        — AWS Gateway only supports CUSTOM_JWT inbound auth.")
+    print("      - You'll provide the IdP's discovery URL + audience + client ID")
+    print("        in Step 9. Make sure that IdP exists BEFORE proceeding.")
+    print(
+        f"      - {YELLOW}Known limitation:{NC} tools/list propagation through the Gateway"
+    )
+    print("        target is currently inconsistent — downstream clients may")
+    print("        see a subset of MCP tools or none at all.\n")
+    print(
+        f"  {marker_exp_3} {BOLD}Attach the runtime as a target on an existing AgentCore Gateway{NC}  "
+        f"{tag_experimental}"
+    )
+    print("      - You already operate a Gateway — we'll just add our target")
+    print("      - The existing Gateway's IdP is reused (no IdP setup needed here)")
+    print("      - You'll provide the existing Gateway's ID in Step 9")
+    print(
+        f"      - Same Gateway tool-discovery {YELLOW}limitation{NC} as option 2 applies.\n"
+    )
 
     architecture_options = {
         "1": ("Direct runtime (no Gateway)",                                                   "false", "create"),
@@ -941,7 +1098,11 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         "3": ("Attach to an existing AgentCore Gateway [experimental]",                        "true",  "attach"),
     }
 
-    # Default selection from .env, if explicitly set.
+    # Compute the displayed default from .env. The .env value pre-fills
+    # the prompt for repeat deploys, but the user can always override at
+    # the prompt — we no longer silently skip the question when .env has
+    # ENABLE_AGENTCORE_GATEWAY set (the previous behavior surprised users
+    # who carried over =true from an earlier Gateway-enabled deploy).
     env_mode_default = (env.get("GATEWAY_MODE") or "create").strip().lower()
     if env_mode_default not in ("create", "attach"):
         env_mode_default = "create"
@@ -956,19 +1117,40 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     else:
         default_arch_key = "2"
 
-    if "ENABLE_AGENTCORE_GATEWAY" in env:
+    if args.non_interactive:
+        # Non-interactive mode: silently use the .env-derived default so
+        # CI / scripted deploys remain reproducible.
         arch_key = default_arch_key
-        info(
-            f"Architecture: {architecture_options[arch_key][0]} (from .env: "
+        env_origin = (
             f"ENABLE_AGENTCORE_GATEWAY={env['ENABLE_AGENTCORE_GATEWAY'].lower()}"
-            + (f", GATEWAY_MODE={env_mode_default}" if env_gw_enabled else "")
-            + ")"
+            if "ENABLE_AGENTCORE_GATEWAY" in env
+            else "no .env override"
         )
-    elif args.non_interactive:
-        arch_key = default_arch_key
+        if env_gw_enabled:
+            env_origin += f", GATEWAY_MODE={env_mode_default}"
+        info(
+            f"Architecture: {architecture_options[arch_key][0]} "
+            f"(non-interactive — {env_origin})"
+        )
     else:
-        raw = input(f"Pick 1-3 [{default_arch_key}]: ").strip()
-        arch_key = raw if raw in architecture_options else default_arch_key
+        # Always prompt in interactive mode. Loop until we get a valid
+        # number; an empty response accepts the displayed default.
+        while True:
+            try:
+                raw = input(
+                    f"  {BOLD}Choice{NC} {CYAN}[1-3]{NC} "
+                    f"{DIM}(default {default_arch_key}){NC}: "
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                err("\nAborted.")
+                sys.exit(1)
+            if not raw:
+                arch_key = default_arch_key
+                break
+            if raw in architecture_options:
+                arch_key = raw
+                break
+            warn(f"Invalid choice: {raw!r}. Pick 1-3 or press Enter for default.")
 
     arch_label, enable_flag, mode = architecture_options[arch_key]
     gateway_enabled = enable_flag == "true"
@@ -1529,14 +1711,25 @@ def cmd_destroy(args: argparse.Namespace) -> None:
 
     if not args.yes:
         confirm = input(
-            f"Delete stack '{stack_name}' in {region}? This removes the AgentCore "
-            "Runtime, Gateway (if enabled), Lambdas, and IAM roles. [y/N]: "
+            f"{BOLD}Delete stack {YELLOW}'{stack_name}'{NC}{BOLD} in {region}?{NC} "
+            f"{DIM}This removes the AgentCore Runtime, Gateway (if enabled), "
+            f"Lambdas, and IAM roles.{NC} {CYAN}[y/N]{NC}: "
         ).strip().lower()
         if confirm not in ("y", "yes"):
             info("Aborted.")
             return
 
     cfn = sess.client("cloudformation")
+
+    # Short-circuit when the stack is already gone (deleted manually, or
+    # the previous destroy run already removed it but left the state file
+    # behind). Otherwise delete_stack would raise a ClientError.
+    current = stack_status(sess, stack_name)
+    if current is None:
+        ok(f"Stack '{stack_name}' does not exist — nothing to delete.")
+        _remove_state_file()
+        return
+
     info(f"Deleting stack '{stack_name}'")
     cfn.delete_stack(StackName=stack_name)
     final, captured = wait_for_stack(
@@ -1544,13 +1737,32 @@ def cmd_destroy(args: argparse.Namespace) -> None:
     )
     if final in ("DELETE_COMPLETE", "STACK_DELETED"):
         ok(f"Stack '{stack_name}' deleted.")
-        if STATE_FILE.exists():
-            STATE_FILE.unlink()
+        _remove_state_file()
     else:
         err(f"Stack delete ended in {final}")
         for r in captured:
             print(r)
+        warn(
+            f"Local state file '{STATE_FILE.name}' preserved so you can "
+            "re-run 'destroy' once the failed resources are cleaned up."
+        )
         sys.exit(1)
+
+
+def _remove_state_file() -> None:
+    """Delete the local deploy state file so subsequent runs start clean.
+
+    Called from every destroy path that observes the stack as gone — both
+    the success case and the "stack already deleted out-of-band" case. The
+    failure case (DELETE_FAILED) deliberately preserves the file so a
+    follow-up destroy can target the same stack.
+    """
+    if STATE_FILE.exists():
+        try:
+            STATE_FILE.unlink()
+            info(f"Removed local state file: {STATE_FILE.name}")
+        except OSError as e:
+            warn(f"Could not remove state file '{STATE_FILE.name}': {e}")
 
 
 # ──────────────────────────────────────────────────────────────────────────
