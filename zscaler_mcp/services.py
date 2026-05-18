@@ -462,6 +462,12 @@ class ZPAService(BaseService):
             zpa_list_provisioning_keys,
             zpa_update_provisioning_key,
         )
+        from .tools.zpa.segment_group_wizard import (
+            WIZARD_RESOURCE_URI,
+            WIZARD_TOOL_META,
+            get_wizard_html_resource,
+            zpa_segment_group_wizard,
+        )
         from .tools.zpa.segment_groups import (
             zpa_create_segment_group,
             zpa_delete_segment_group,
@@ -562,6 +568,42 @@ class ZPAService(BaseService):
                 "func": zpa_get_segment_group,
                 "name": "zpa_get_segment_group",
                 "description": "Get a specific ZPA segment group by ID (read-only)",
+            },
+            {
+                "func": zpa_segment_group_wizard,
+                "name": "zpa_segment_group_wizard",
+                "description": (
+                    "Open an interactive embedded wizard (MCP Apps) that walks "
+                    "the admin through creating a ZPA segment group. Renders "
+                    "as a Zscaler-branded form inside MCP-Apps-capable hosts "
+                    "(Cursor, Claude, ChatGPT Apps, Goose, VS Code Copilot); "
+                    "other hosts see a text fallback. The wizard does not "
+                    "mutate state — on submit it posts a tools/call for "
+                    "zpa_create_segment_group back through the host, which "
+                    "still enforces the standard write-tools allowlist and "
+                    "audit trail. Accepts optional pre-fill args (name, "
+                    "description, enabled, microtenant_id) so the model can "
+                    "seed the wizard from conversation context (read-only)."
+                ),
+                "meta": WIZARD_TOOL_META,
+                "resources": [
+                    {
+                        "uri": WIZARD_RESOURCE_URI,
+                        "func": get_wizard_html_resource,
+                        "name": "ZPA Segment Group Wizard",
+                        "description": (
+                            "HTML bundle for the ZPA segment group wizard "
+                            "(MCP Apps UI resource)."
+                        ),
+                        # MUST be `text/html;profile=mcp-app` per the MCP
+                        # Apps spec (SEP-1865, section "UI Resource Format").
+                        # Plain `text/html` causes hosts (Cursor, Claude,
+                        # ChatGPT Apps) to reject the resource with
+                        # "Unsupported UI resource type" / "Unsupported UI
+                        # resource content format" errors.
+                        "mime_type": "text/html;profile=mcp-app",
+                    }
+                ],
             },
             {
                 "func": zpa_list_application_servers,

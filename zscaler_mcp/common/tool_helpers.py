@@ -178,6 +178,103 @@ def _is_in_selected_toolset(
     return tsid in selected_toolsets
 
 
+def _add_tool_compat(server, fn, **kwargs) -> None:
+    """Register a tool with FastMCP, compatible with both 2.x and 3.x.
+
+    FastMCP 2.x accepts ``server.add_tool(fn, name=..., description=...,
+    annotations=..., meta=...)`` directly. FastMCP 3.x changed the
+    signature: ``add_tool`` only accepts a constructed ``Tool`` object
+    or a callable. To support both without forking the codebase, we
+    try the 2.x kwargs path first and fall back to building a
+    ``Tool.from_function(...)`` and registering that.
+    """
+    try:
+        server.add_tool(fn, **kwargs)
+    except TypeError as exc:
+        # FastMCP 3.x rejects kwargs on add_tool — try the Tool-builder
+        # path. Import lazily so we don't hard-depend on the 3.x layout.
+        if "unexpected keyword argument" not in str(exc):
+            raise
+        try:
+            from fastmcp.tools import Tool  # FastMCP 3.x
+        except ImportError as ie:  # pragma: no cover — should not happen
+            raise exc from ie
+        tool = Tool.from_function(fn, **kwargs)
+        server.add_tool(tool)
+
+
+def _add_resource_compat(server, fn, *, uri: str, name: str, description, mime_type) -> None:
+    """Register a resource with FastMCP, compatible with both 2.x and 3.x."""
+    # Prefer `add_resource_fn` (FastMCP 2.x) — simplest, takes kwargs.
+    add_fn = getattr(server, "add_resource_fn", None)
+    if add_fn is not None:
+        try:
+            add_fn(fn=fn, uri=uri, name=name, description=description, mime_type=mime_type)
+            return
+        except ValueError:
+            # Duplicate URI — fine, treat as idempotent.
+            logger.debug("Resource %s already registered (skipping)", uri)
+            return
+        except TypeError:
+            pass  # Fall through to other attempts.
+
+    # FastMCP 3.x: build a FunctionResource via from_function() and pass it
+    # to add_resource(resource).
+    try:
+        from fastmcp.resources import FunctionResource  # FastMCP 3.x
+        resource = FunctionResource.from_function(
+            fn,
+            uri=uri,
+            name=name,
+            description=description,
+            mime_type=mime_type,
+        )
+        server.add_resource(resource)
+        return
+    except (ImportError, ValueError):
+        pass
+
+    # Last resort: the decorator API (stable since FastMCP 2.0).
+    server.resource(uri, name=name, description=description, mime_type=mime_type)(fn)
+
+
+def _register_tool_resources(server, tool_name: str, resources: list) -> None:
+    """Register MCP resources that ship alongside a tool (MCP Apps pattern).
+
+    Each entry in ``resources`` is a dict shaped like::
+
+        {
+            "uri": "ui://zscaler/zpa/segment-group-wizard/v1",
+            "func": callable_returning_str_or_bytes,
+            "name": "...",            # optional
+            "description": "...",     # optional
+            "mime_type": "text/html", # optional
+        }
+
+    Used by MCP Apps tools to expose interactive UI bundles via the
+    ``ui://`` URI scheme. The host fetches the resource through
+    ``resources/read`` after seeing ``_meta.ui.resourceUri`` on the tool
+    descriptor.
+    """
+    for res in resources:
+        uri = res["uri"]
+        try:
+            _add_resource_compat(
+                server,
+                res["func"],
+                uri=uri,
+                name=res.get("name", tool_name + "_resource"),
+                description=res.get("description"),
+                mime_type=res.get("mime_type"),
+            )
+            logger.debug(f"📦 Registered resource {uri} for tool {tool_name}")
+        except Exception as exc:  # pragma: no cover — best-effort
+            logger.warning(
+                "Could not register resource %s for tool %s: %s",
+                uri, tool_name, exc,
+            )
+
+
 def register_read_tools(
     server,
     tools: List[Dict[str, any]],
@@ -196,6 +293,16 @@ def register_read_tools(
            set survive (``meta`` toolset is always exempt).
         3. ``enabled_tools`` — explicit name allowlist (additive intent;
            narrows further when both are given).
+
+    Each tool definition may carry two optional fields beyond the
+    standard ``func`` / ``name`` / ``description``:
+
+    * ``meta`` — passed straight through to FastMCP's ``add_tool`` so it
+      lands on the tool descriptor's ``_meta`` field. Used by MCP Apps
+      tools to declare ``_meta.ui.resourceUri``.
+    * ``resources`` — a list of resource dicts (see
+      :func:`_register_tool_resources`) registered alongside the tool.
+      Used by MCP Apps tools to expose ``ui://...`` HTML bundles.
 
     Args:
         server: The MCP server instance.
@@ -230,16 +337,24 @@ def register_read_tools(
             continue
 
         fn = _wrap_with_audit(tool_def["func"], tool_name)
-        server.add_tool(
-            fn,
-            name=tool_name,
-            description=tool_def["description"],
-            annotations=ToolAnnotations(
+        add_tool_kwargs = {
+            "name": tool_name,
+            "description": tool_def["description"],
+            "annotations": ToolAnnotations(
                 readOnlyHint=True
             ),  # Mark as read-only for AI agent permission frameworks
-        )
+        }
+        if "meta" in tool_def and tool_def["meta"] is not None:
+            add_tool_kwargs["meta"] = tool_def["meta"]
+        _add_tool_compat(server, fn, **add_tool_kwargs)
         logger.debug(f"✅ Registered read-only tool: {tool_name}")
         count += 1
+
+        # Register any companion resources (MCP Apps ui:// bundles, etc.)
+        # after the tool itself so the descriptor pointer always lands
+        # alongside a fetchable resource.
+        if tool_def.get("resources"):
+            _register_tool_resources(server, tool_name, tool_def["resources"])
 
     return count
 
@@ -338,7 +453,8 @@ def register_write_tools(
                 logger.debug(f"✅ Tool matches allowlist: {tool_name}")
 
         fn = _wrap_with_audit(tool_def["func"], tool_name)
-        server.add_tool(
+        _add_tool_compat(
+            server,
             fn,
             name=tool_name,
             description=tool_def["description"],

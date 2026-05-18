@@ -823,6 +823,17 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 41 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by frontmatter description match. Organized by service: `skills/zpa/` (11), `skills/zia/` (12), `skills/zdx/` (6), `skills/zms/` (5), `skills/zins/` (4), `skills/easm/` (1), `skills/zcc/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
 
+### Skill Frontmatter — Hard Limits
+
+The frontmatter at the top of every `SKILL.md` is parsed by external skill loaders (Claude's skill uploader, MCP client skill registries) and has hard byte/character ceilings that the API enforces at upload time. Violating these turns into a cryptic 400 from the upload UI, so they have to be checked before authoring.
+
+- **`description` ≤ 1024 characters.** The Claude skill uploader rejects any skill whose frontmatter `description` field exceeds **1024 characters** with the error `field 'description' in SKILL.md must be at most 1024 characters`. Count the value of the YAML `description:` field (the prose between the quotes, not the YAML key) and keep it under 1024. The description doubles as the skill's auto-activation matcher — it should list the **trigger phrases an admin actually uses** ("block ChatGPT", "allow Dropbox uploads", "create a Cloud App Control rule for X") plus a one-sentence summary of what the skill does. Trim ruthlessly: every example you add costs character budget you can't recover. Long technical caveats (API quirks, multi-resource ordering, error-handling patterns) belong in the body of the skill, not in the description.
+- **`name`** — must be unique within `skills/`, kebab-case, prefixed with the service (`zia-`, `zpa-`, `zdx-`, `zcc-`, `zms-`, `zins-`, `easm-`, `cross-product-`). No character ceiling enforced by the loader, but keep it under ~50 characters so it renders cleanly in skill pickers.
+- **Keep frontmatter to two fields**: `name` and `description`. Other fields (`tags`, `priority`, `version`) are silently dropped by current loaders and add maintenance noise.
+- **Validate before commit.** A one-liner sanity check: `python -c "import yaml,sys; d=yaml.safe_load(open('skills/.../SKILL.md').read().split('---')[1]); print(len(d['description']))"` — must print a number ≤ 1024.
+
+When a skill needs more discoverability than 1024 characters can hold (e.g. a multi-resource workflow with many trigger phrases), prefer **splitting into two skills** that chain together over stuffing every keyword into one description. The skill chaining pattern (`zia-look-up-rule-targets`, `zia-look-up-cloud-app-name`, `zia-manage-time-interval`) was designed for exactly this — each chained skill carries its own focused description, and the parent skill's description only lists *its* trigger phrases plus the chain hand-offs.
+
 ### Skill Conventions (Emerging)
 
 Newer skills — especially in Z-Insights and ZMS — follow two conventions that improve resilience on tenants where a feature is unlicensed or returns sparse data. When authoring or reviewing a skill that depends on multiple independent API reads, prefer this shape:
