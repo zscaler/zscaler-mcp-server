@@ -11,7 +11,33 @@ description: |-
 
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
-## 0.12.0 (Unreleased)
+## 0.12.2 (May 18, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- [PR #67](https://github.com/zscaler/zscaler-mcp-server/pull/67) - Fixed `get_combined_user_agent` and `get_mcp_user_agent` reporting stale hardcoded versions (e.g. `0.3.1`) on source-only runs where `importlib.metadata` can't find an installed distribution. Both helpers now fall back to `zscaler_mcp.__version__` (kept in sync with `pyproject.toml` by `scripts/set-version.sh`) instead of a baked-in literal.
+
+- [PR #67](https://github.com/zscaler/zscaler-mcp-server/pull/67) - **AWS deploy script UX.** Step 7 (Architecture) is now always interactive with a numeric `[1] [2] [3]` prompt that matches the Azure / GCP scripts — `.env` values become the default selection rather than silently skipping the question. Added colour-coded prompts (`[recommended]` / `[experimental]` tags, step headers) and a live spinner with elapsed time during the CloudFormation stack wait. Colour and spinner auto-disable on non-TTY stdout. `docs/deployment/amazon_bedrock_agentcore.md` updated.
+
+## 0.12.1 (May 16, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- [PR #66](https://github.com/zscaler/zscaler-mcp-server/pull/66) - Fixed `get_combined_user_agent` and `get_mcp_user_agent` reporting stale hardcoded versions (e.g. `0.3.1`) on source-only runs where `importlib.metadata` can't find an installed distribution. Both helpers now fall back to `zscaler_mcp.__version__` (kept in sync with `pyproject.toml` by `scripts/set-version.sh`) instead of a baked-in literal.
+
+### Documentation
+
+- [PR #66](https://github.com/zscaler/zscaler-mcp-server/pull/66) - Updated Azure and GCP integration documentation. Included links to demo videos.
+
+## 0.12.0 (May 15, 2026)
 
 ### Notes
 
