@@ -45,6 +45,7 @@ dependencies = [
   "orjson>=3.11.7",
   "PyJWT[crypto]>=2.8.0",
   "bleach>=6.2.0",
+  "mcp-ui-server>=0.1.0",
 ]
 
 [project.scripts]
@@ -115,3 +116,6 @@ filterwarnings = [
 [tool.setuptools.packages.find]
 include = ["zscaler_mcp*"]
 exclude = ["notes*", "local_dev*", "tests*"]
+
+[tool.setuptools.package-data]
+"zscaler_mcp.tools.zpa.wizards" = ["*.html"]

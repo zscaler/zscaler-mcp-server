@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZPA Segment Group Wizard</title>
+  <style>
+    :root {
+      --zs-blue: #236BF5;
+      --zs-blue-strong: #1856d8;
+      --zs-blue-soft: rgba(35, 107, 245, 0.12);
+      --bg: #ffffff;
+      --bg-elev: #f6f8fb;
+      --bg-card: #ffffff;
+      --border: #e3e8ef;
+      --border-strong: #cdd5e0;
+      --text: #1a2233;
+      --text-muted: #5b6573;
+      --text-faint: #8c95a3;
+      --accent: var(--zs-blue);
+      --accent-contrast: #ffffff;
+      --success: #137a3b;
+      --success-bg: #e8f5ee;
+      --danger: #b3261e;
+      --danger-bg: #fde8e7;
+      --header-bg: linear-gradient(135deg, #2A6FF7 0%, #1856D8 100%);
+      --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+      --logo-fill: #ffffff;
+      --radius: 10px;
+    }
+    html[data-theme="dark"] {
+      --bg: #0e1116;
+      --bg-elev: #161b22;
+      --bg-card: #161b22;
+      --border: #2a313a;
+      --border-strong: #3a424d;
+      --text: #e6edf3;
+      --text-muted: #9aa4b2;
+      --text-faint: #6e7785;
+      --success: #46d281;
+      --success-bg: rgba(46, 160, 67, 0.15);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.15);
+      --header-bg: linear-gradient(135deg, #1f4fb8 0%, #143a86 100%);
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+      --logo-fill: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+      transition: background 180ms ease, color 180ms ease;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* Header */
+    .header {
+      background: var(--header-bg);
+      color: #ffffff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 12px 12px 0 0;
+    }
+    .header svg.logo {
+      height: 26px;
+      width: auto;
+    }
+    .header svg.logo path {
+      fill: var(--logo-fill);
+    }
+    .theme-toggle {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 150ms ease;
+    }
+    .theme-toggle:hover { background: rgba(255, 255, 255, 0.28); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+    /* Progress */
+    .progress {
+      padding: 18px 24px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-faint);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .progress .step .dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--bg-elev);
+      border: 1.5px solid var(--border-strong);
+      color: var(--text-faint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 180ms ease;
+    }
+    .progress .step.active .dot {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    .progress .step.complete .dot {
+      background: var(--success-bg);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .progress .step.active { color: var(--text); }
+    .progress .step.complete { color: var(--text-muted); }
+    .progress .connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+    }
+    /* Card body */
+    .card {
+      flex: 1;
+      padding: 24px;
+    }
+    .card .title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 4px 0;
+    }
+    .card .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 0 20px 0;
+    }
+    /* Form fields */
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .field label .required {
+      color: var(--danger);
+      margin-left: 2px;
+    }
+    .field input[type="text"],
+    .field textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+    .field input[type="text"]:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--zs-blue-soft);
+    }
+    .field textarea { resize: vertical; min-height: 72px; }
+    .field .hint {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 5px;
+    }
+    .field .error {
+      font-size: 12px;
+      color: var(--danger);
+      margin-top: 5px;
+      display: none;
+    }
+    .field.has-error input,
+    .field.has-error textarea {
+      border-color: var(--danger);
+    }
+    .field.has-error .error { display: block; }
+    /* Toggle */
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-elev);
+    }
+    .toggle .switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle .switch input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border-strong);
+      transition: 180ms;
+      border-radius: 22px;
+    }
+    .toggle .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px; width: 16px;
+      left: 3px; bottom: 3px;
+      background: #ffffff;
+      transition: 180ms;
+      border-radius: 50%;
+    }
+    .toggle input:checked + .slider { background: var(--accent); }
+    .toggle input:checked + .slider:before { transform: translateX(16px); }
+    .toggle .label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .toggle .label .name { font-weight: 500; font-size: 14px; }
+    .toggle .label .desc { font-size: 12px; color: var(--text-muted); }
+    /* Review */
+    .review-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .review-row:last-child { border-bottom: none; }
+    .review-row .review-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .review-row .review-value { color: var(--text); }
+    .review-row .review-value.muted { color: var(--text-faint); font-style: italic; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+    .badge.enabled {
+      color: var(--success);
+      background: var(--success-bg);
+      border-color: var(--success);
+    }
+    .badge.disabled {
+      color: var(--text-muted);
+      background: var(--bg-elev);
+      border-color: var(--border-strong);
+    }
+    /* Footer / buttons */
+    .footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-elev);
+      border-radius: 0 0 12px 12px;
+    }
+    .footer .left, .footer .right { display: flex; gap: 8px; }
+    .btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 150ms ease;
+      font-family: inherit;
+    }
+    .btn:hover { border-color: var(--text-muted); }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: var(--accent-contrast);
+      border-color: var(--accent);
+    }
+    .btn.primary:hover {
+      background: var(--zs-blue-strong);
+      border-color: var(--zs-blue-strong);
+    }
+    .btn.ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-muted);
+    }
+    .btn.ghost:hover {
+      color: var(--text);
+      background: var(--bg-elev);
+    }
+    /* Result panel */
+    .result {
+      padding: 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-top: 16px;
+    }
+    .result.success {
+      border-color: var(--success);
+      background: var(--success-bg);
+      color: var(--text);
+    }
+    .result.success h4 { color: var(--success); }
+    .result.fallback {
+      background: var(--bg-elev);
+      border-color: var(--border-strong);
+    }
+    .result h4 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .result .result-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .result.success .result-sub { color: var(--text); opacity: 0.85; }
+    .result code, .result pre {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12.5px;
+      background: var(--bg-card);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: block;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-top: 8px;
+    }
+    .result code.inline {
+      display: inline;
+      padding: 1px 6px;
+      margin: 0;
+      font-size: 12px;
+    }
+    /* Structured result fields (rendered on a successful create) */
+    .result-fields {
+      margin-top: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .result-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      padding: 10px 14px;
+      font-size: 13px;
+      gap: 12px;
+      align-items: center;
+    }
+    .result-row + .result-row {
+      border-top: 1px solid var(--border);
+    }
+    .result-row .result-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .result-row .result-value {
+      color: var(--text);
+      word-break: break-word;
+    }
+    .result-row .result-value.muted {
+      color: var(--text-faint);
+      font-style: italic;
+    }
+    details.raw-response {
+      margin-top: 12px;
+    }
+    details.raw-response summary {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 12px;
+      user-select: none;
+      padding: 4px 0;
+    }
+    details.raw-response summary:hover { color: var(--text); }
+    details.raw-response[open] summary { margin-bottom: 4px; }
+    .copy-btn {
+      margin-top: 8px;
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    /* Step visibility */
+    [data-step] { display: none; }
+    [data-step].active { display: block; }
+    /* Animations */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    [data-step].active { animation: slideIn 220ms ease; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <svg class="logo" viewBox="0 0 252 54" xmlns="http://www.w3.org/2000/svg" aria-label="Zscaler">
+      <path d="M84.53,27.46c1.34,8.25-5.82,12.89-13.08,13.43-4.62,9.5-20.91,15.91-35,9-6,.91-9.35-.6-11.9-3.48C29.69,39.77,45.32,27.82,64.41,34c10.2,3.29,12.85-4.45,10.28-7.35-9.62-10.92-31.34-1.09-32.11-.27C51.11,13.32,81.62,9.66,84.53,27.46Zm-29.24-15c.05,0-6.94-2.49-16.7,1.73a10.37,10.37,0,0,1-1.16-.5c9.4-6.24,17.63-8.89,24.68-7.86C57.84.93,37.35-2.68,25.61,9.09,11.1,6.23.94,18.53,1.52,29.76S14.36,48,21.34,46.09a2.09,2.09,0,0,1,.5,0C23.4,38.67,29.7,21.4,55.29,12.47Zm58.45,10.26L115,17H93.18l-.49,2.22a2.55,2.55,0,0,0,2.64,3.3h10.13L87.51,38.37,86.3,43.69h23.15l1.33-5.82H96.14Zm14.58,4.61c-1-.26-6.77-1.12-6.41-3.11.4-2.22,3.12-2.44,4.45-2.4,2.73.08,3.59,1.28,3.73,1.71a2.42,2.42,0,0,0,2.52,1.7h4.31c.48-2.67.6-8.82-9.41-8.82-3.21,0-7.5.8-10.33,4.07-1.52,1.75-4.13,6.1-1.46,9.36,1.4,1.65,5,2.94,9,3.71,2.53.5,3.87,1.51,3.59,2.71-.17.8-1.18,2.61-4.9,2.61-1.67,0-5.27-.27-4.59-4H112c-.8,3.4-1.1,9.32,9.3,9.32,4,0,12.16-.51,14.29-9C137.09,29,130.18,27.82,128.32,27.34Zm24.09,9.43a6.09,6.09,0,0,1-4.37,1.6c-5.15.05-4.57-5-3.87-8.12s2.36-8,7.25-8c3.47,0,3.87,2.25,4.05,2.91h7c-.24-7.41-5.92-8.82-9.93-8.72-11,.27-14.18,9.46-15.17,13.73-2.87,12.48,5.11,14,8.93,14a15,15,0,0,0,14-8.72h-5A3.71,3.71,0,0,0,152.41,36.77Zm28.65,2.56a13.11,13.11,0,0,1-7.93,4.46c-6.1,1-14.48.75-12.37-8,.68-2.8,1.72-4.64,3.83-6,3.52-2.31,8.19-2.64,9.71-2.81.52-.05,4.35-.34,5-2.61s-2.88-2.39-3.86-2.4c-3,0-4,1.17-4.55,1.9h-6.71c2.71-7.14,10.2-7.41,12.22-7.41,2.26,0,11.35,0,9.61,7.52C183.38,35.42,183.29,36.57,181.06,39.33Zm-3-9.08a26.65,26.65,0,0,1-4.21,1.3c-1.4.42-4,.59-5.32,1.81-1.1,1-3,5.32,1.57,5.41a7.34,7.34,0,0,0,7.43-6.21C177.75,31.51,178.06,30.25,178.06,30.25Zm17.26-21h-3.6l-7.88,34.49h7L198,12.51A2.54,2.54,0,0,0,195.32,9.2Zm18.19,26.27h5a15.23,15.23,0,0,1-14,8.72c-10.67,0-10-9.52-8.92-14,3-12.55,11.42-13.73,15.16-13.73,5,0,12.81,2.06,8.84,15.74H202.24c-.43,1.81-.79,6.26,4,6.21a5.89,5.89,0,0,0,3.69-1C210.57,37,211.17,35.51,213.51,35.47Zm-10.25-7.82h10.23c.87-4.9-2.16-5.42-3.88-5.42C208.14,22.23,204.65,22.76,203.26,27.65Zm25.28-7.72c-4.69,3.2-6.25,8.35-6.79,10.83-.43,1.94-2.95,12.93-2.95,12.93h7S228.48,31.59,229,30c.55-1.93,2.36-7.16,9.36-6.95l1.62-6A18.9,18.9,0,0,0,228.54,19.93Zm12.25-8.12L241,11h3.78l-.18.84h-1.35l-.78,3.69h-1l.77-3.69ZM247,11l.34,3.28h0L249.11,11h1.39l-1,4.53h-.93l.82-3.6h0l-1.91,3.6h-.76l-.44-3.6h0l-.67,3.6h-.94l.95-4.53Z"/>
+    </svg>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+    </button>
+  </header>
+
+  <div class="progress" id="progressBar">
+    <div class="step" data-progress="1"><div class="dot">1</div><span>Identity</span></div>
+    <div class="connector"></div>
+    <div class="step" data-progress="2"><div class="dot">2</div><span>Settings</span></div>
+    <div class="connector"></div>
+    <div class="step" data-progress="3"><div class="dot">3</div><span>Review</span></div>
+  </div>
+
+  <main class="card">
+    <!-- Step 1 — Identity -->
+    <section data-step="1">
+      <h2 class="title">Name your segment group</h2>
+      <p class="subtitle">A segment group is a logical bucket for application segments. Give it a name your team will recognize, and a short description of what it contains.</p>
+
+      <div class="field" id="field-name">
+        <label for="sg-name">Group name<span class="required">*</span></label>
+        <input type="text" id="sg-name" placeholder="e.g. Production Web Apps" autocomplete="off" />
+        <div class="hint">Required. Must be unique within the tenant.</div>
+        <div class="error">Name is required.</div>
+      </div>
+
+      <div class="field">
+        <label for="sg-description">Description</label>
+        <textarea id="sg-description" placeholder="Optional — what this group is for, who owns it, etc."></textarea>
+        <div class="hint">Optional. Up to 1024 characters.</div>
+      </div>
+    </section>
+
+    <!-- Step 2 — Settings -->
+    <section data-step="2">
+      <h2 class="title">Group settings</h2>
+      <p class="subtitle">Control whether this group is active right now and (optionally) scope it to a microtenant.</p>
+
+      <div class="field">
+        <label>Status</label>
+        <div class="toggle">
+          <label class="switch">
+            <input type="checkbox" id="sg-enabled" checked />
+            <span class="slider"></span>
+          </label>
+          <div class="label">
+            <span class="name" id="sg-enabled-label">Enabled</span>
+            <span class="desc">When enabled, application segments inside this group are reachable through ZPA. Disabled groups stage configuration without taking effect.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="sg-microtenant">Microtenant ID</label>
+        <input type="text" id="sg-microtenant" placeholder="Leave empty for the parent tenant" autocomplete="off" />
+        <div class="hint">Optional. Only required if your environment uses microtenants and this group lives inside a specific one.</div>
+      </div>
+    </section>
+
+    <!-- Step 3 — Review -->
+    <section data-step="3">
+      <h2 class="title">Review segment group</h2>
+      <p class="subtitle">Verify the details below before creating the group. You can go back to make changes.</p>
+
+      <div id="review-content">
+        <div class="review-row">
+          <div class="review-label">Group name</div>
+          <div class="review-value" id="review-name"></div>
+        </div>
+        <div class="review-row">
+          <div class="review-label">Description</div>
+          <div class="review-value" id="review-description"></div>
+        </div>
+        <div class="review-row">
+          <div class="review-label">Status</div>
+          <div class="review-value" id="review-enabled"></div>
+        </div>
+        <div class="review-row">
+          <div class="review-label">Microtenant</div>
+          <div class="review-value" id="review-microtenant"></div>
+        </div>
+      </div>
+
+      <div id="submit-result"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="left">
+      <button class="btn ghost" id="btn-back">&larr; Back</button>
+    </div>
+    <div class="right">
+      <button class="btn" id="btn-cancel">Cancel</button>
+      <button class="btn primary" id="btn-next">Next &rarr;</button>
+      <button class="btn primary" id="btn-submit" style="display:none">Create segment group</button>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ============================================================
+      // MCP Apps JSON-RPC bridge
+      // Implements SEP-1865 "MCP Apps" (spec version 2026-01-26).
+      // Host comms is JSON-RPC 2.0 over window.postMessage.
+      //   - ui/initialize        (request, View -> Host)
+      //   - ui/notifications/initialized      (notif, View -> Host)
+      //   - ui/notifications/size-changed     (notif, View -> Host)
+      //   - tools/call           (request, View -> Host) — submit
+      //   - ui/notifications/tool-input       (notif, Host -> View) — pre-fill
+      //   - ui/notifications/tool-result      (notif, Host -> View) — submit result
+      //   - ui/notifications/host-context-changed (notif, Host -> View)
+      // ============================================================
+
+      var nextId = 1;
+      var pending = {};
+
+      function postToHost(msg) {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(msg, '*');
+        }
+      }
+      function sendRequest(method, params) {
+        var id = nextId++;
+        return new Promise(function (resolve, reject) {
+          pending[id] = { resolve: resolve, reject: reject };
+          postToHost({ jsonrpc: '2.0', id: id, method: method, params: params || {} });
+        });
+      }
+      function sendNotification(method, params) {
+        postToHost({ jsonrpc: '2.0', method: method, params: params || {} });
+      }
+
+      // ============================================================
+      // Theme handling — defaults to user choice, also reacts to host
+      // ui/notifications/host-context-changed { theme: "light"|"dark" }.
+      // ============================================================
+      var STORAGE_KEY = 'zs_wizard_theme';
+      var userThemeChoice = null;
+      try {
+        userThemeChoice = localStorage.getItem(STORAGE_KEY);
+      } catch (e) { /* sandboxed iframe may block storage; ignore */ }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+      }
+      if (userThemeChoice === 'dark' || userThemeChoice === 'light') {
+        applyTheme(userThemeChoice);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        applyTheme('dark');
+      }
+      document.getElementById('themeToggle').addEventListener('click', function () {
+        var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        var next = cur === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        userThemeChoice = next;
+        try { localStorage.setItem(STORAGE_KEY, next); } catch (e) {}
+      });
+      function applyHostTheme(theme) {
+        // Only respect the host's theme if the user hasn't explicitly
+        // chosen one yet.
+        if (userThemeChoice) return;
+        applyTheme(theme);
+      }
+
+      // ============================================================
+      // State + DOM refs
+      // ============================================================
+      var state = {
+        step: 1,
+        maxStep: 3,
+        submitted: false,
+        values: { name: '', description: '', enabled: true, microtenant_id: '' }
+      };
+
+      var $name = document.getElementById('sg-name');
+      var $desc = document.getElementById('sg-description');
+      var $enabled = document.getElementById('sg-enabled');
+      var $enabledLabel = document.getElementById('sg-enabled-label');
+      var $micro = document.getElementById('sg-microtenant');
+      var $fieldName = document.getElementById('field-name');
+      var $btnBack = document.getElementById('btn-back');
+      var $btnNext = document.getElementById('btn-next');
+      var $btnSubmit = document.getElementById('btn-submit');
+      var $btnCancel = document.getElementById('btn-cancel');
+      var $submitResult = document.getElementById('submit-result');
+
+      function syncFormFromState() {
+        $name.value = state.values.name;
+        $desc.value = state.values.description;
+        $enabled.checked = !!state.values.enabled;
+        $enabledLabel.textContent = $enabled.checked ? 'Enabled' : 'Disabled';
+        $micro.value = state.values.microtenant_id;
+      }
+      function syncStateFromForm() {
+        state.values.name = $name.value.trim();
+        state.values.description = $desc.value.trim();
+        state.values.enabled = !!$enabled.checked;
+        state.values.microtenant_id = $micro.value.trim();
+      }
+      function applyInitial(data) {
+        if (!data || typeof data !== 'object') return;
+        if (typeof data.name === 'string') state.values.name = data.name;
+        if (typeof data.description === 'string') state.values.description = data.description;
+        if (typeof data.enabled === 'boolean') state.values.enabled = data.enabled;
+        if (typeof data.microtenant_id === 'string') state.values.microtenant_id = data.microtenant_id;
+        syncFormFromState();
+      }
+
+      $enabled.addEventListener('change', function () {
+        $enabledLabel.textContent = $enabled.checked ? 'Enabled' : 'Disabled';
+      });
+
+      // ============================================================
+      // Step navigation + review
+      // ============================================================
+      function validateStep(step) {
+        syncStateFromForm();
+        if (step === 1 && !state.values.name) {
+          $fieldName.classList.add('has-error');
+          $name.focus();
+          return false;
+        }
+        $fieldName.classList.remove('has-error');
+        return true;
+      }
+      function goTo(step) {
+        if (step < 1 || step > state.maxStep) return;
+        state.step = step;
+        document.querySelectorAll('[data-step]').forEach(function (el) {
+          el.classList.toggle('active', String(state.step) === el.getAttribute('data-step'));
+        });
+        document.querySelectorAll('.progress .step').forEach(function (el) {
+          var n = parseInt(el.getAttribute('data-progress'), 10);
+          el.classList.remove('active', 'complete');
+          if (n < state.step) el.classList.add('complete');
+          if (n === state.step) el.classList.add('active');
+        });
+        $btnBack.style.display = (state.step === 1 || state.submitted) ? 'none' : '';
+        if (state.step === state.maxStep) {
+          $btnNext.style.display = 'none';
+          $btnSubmit.style.display = state.submitted ? 'none' : '';
+        } else {
+          $btnNext.style.display = '';
+          $btnSubmit.style.display = 'none';
+        }
+        if (state.step === 3) renderReview();
+      }
+      function renderReview() {
+        syncStateFromForm();
+        document.getElementById('review-name').textContent = state.values.name || '(empty)';
+        var descEl = document.getElementById('review-description');
+        if (state.values.description) {
+          descEl.textContent = state.values.description;
+          descEl.classList.remove('muted');
+        } else {
+          descEl.textContent = 'No description';
+          descEl.classList.add('muted');
+        }
+        document.getElementById('review-enabled').innerHTML = state.values.enabled
+          ? '<span class="badge enabled">Enabled</span>'
+          : '<span class="badge disabled">Disabled</span>';
+        var microEl = document.getElementById('review-microtenant');
+        if (state.values.microtenant_id) {
+          microEl.textContent = state.values.microtenant_id;
+          microEl.classList.remove('muted');
+        } else {
+          microEl.textContent = 'Parent tenant (default)';
+          microEl.classList.add('muted');
+        }
+      }
+
+      $btnNext.addEventListener('click', function () {
+        if (!validateStep(state.step)) return;
+        goTo(state.step + 1);
+      });
+      $btnBack.addEventListener('click', function () { goTo(state.step - 1); });
+      $btnCancel.addEventListener('click', function () {
+        sendNotification('notifications/message', {
+          level: 'info',
+          data: 'Segment group wizard cancelled.'
+        });
+      });
+
+      // ============================================================
+      // Submit — uses standard MCP `tools/call` JSON-RPC request.
+      // ============================================================
+      function args() {
+        var a = { name: state.values.name, enabled: state.values.enabled };
+        if (state.values.description) a.description = state.values.description;
+        if (state.values.microtenant_id) a.microtenant_id = state.values.microtenant_id;
+        return a;
+      }
+      function commandPreview() {
+        return 'zpa_create_segment_group(' + JSON.stringify(args(), null, 2) + ')';
+      }
+
+      // Escape user-provided text before injecting into innerHTML.
+      function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = (s == null) ? '' : String(s);
+        return d.innerHTML;
+      }
+
+      function renderPending() {
+        $submitResult.innerHTML =
+          '<div class="result fallback">' +
+            '<h4>Creating segment group...</h4>' +
+            '<div class="result-sub">' +
+              'Sending <code class="inline">zpa_create_segment_group</code> through the host. ' +
+              'Subject to the standard write-tools allowlist and audit log.' +
+            '</div>' +
+          '</div>';
+      }
+
+      // result is the CallToolResult dict returned by tools/call.
+      // The newly-created segment group typically comes back as a JSON
+      // string inside content[0].text. We parse it for a structured
+      // summary, with the raw payload available behind a <details>.
+      function renderSuccess(result) {
+        var parsed = parseToolResult(result);
+        var rawText = extractText(result) || JSON.stringify(result, null, 2);
+
+        var fields = '';
+        if (parsed) {
+          fields = '<div class="result-fields">';
+          if (parsed.id != null) {
+            fields += rowHtml('ID', '<code class="inline">' + esc(parsed.id) + '</code>');
+          }
+          if (parsed.name) {
+            fields += rowHtml('Name', esc(parsed.name));
+          }
+          if (parsed.description) {
+            fields += rowHtml('Description', esc(parsed.description));
+          }
+          if (typeof parsed.enabled === 'boolean') {
+            fields += rowHtml('Status', parsed.enabled
+              ? '<span class="badge enabled">Enabled</span>'
+              : '<span class="badge disabled">Disabled</span>');
+          }
+          if (parsed.microtenant_id) {
+            fields += rowHtml('Microtenant', '<code class="inline">' + esc(parsed.microtenant_id) + '</code>');
+          } else if ('microtenant_id' in parsed) {
+            fields += rowHtml('Microtenant', '<span class="result-value muted">Parent tenant (default)</span>');
+          }
+          fields += '</div>';
+        }
+
+        $submitResult.innerHTML =
+          '<div class="result success">' +
+            '<h4>Segment group created</h4>' +
+            '<div class="result-sub">' +
+              '<code class="inline">zpa_create_segment_group</code> succeeded.' +
+            '</div>' +
+            fields +
+            '<details class="raw-response">' +
+              '<summary>Show raw response</summary>' +
+              '<pre></pre>' +
+            '</details>' +
+          '</div>';
+        $submitResult.querySelector('details pre').textContent = rawText;
+      }
+
+      function renderError(err) {
+        var msg = (err && err.message) ? err.message : (err || 'No response from host');
+        $submitResult.innerHTML =
+          '<div class="result fallback">' +
+            '<h4>Submit did not complete</h4>' +
+            '<div class="result-sub">' +
+              'The host did not return a successful result. This usually means ' +
+              'write tools are not enabled on the server, or the create call ' +
+              'was rejected by policy.' +
+            '</div>' +
+            '<pre id="err-msg"></pre>' +
+            '<div class="result-sub" style="margin-top:12px;">' +
+              'You can also paste this into chat to invoke the create directly:' +
+            '</div>' +
+            '<pre id="cmd-preview"></pre>' +
+            '<button class="copy-btn" id="copy-btn">Copy command</button>' +
+          '</div>';
+        document.getElementById('err-msg').textContent = String(msg);
+        document.getElementById('cmd-preview').textContent = commandPreview();
+        document.getElementById('copy-btn').addEventListener('click', function () {
+          var p = document.getElementById('cmd-preview');
+          try { navigator.clipboard.writeText(p.textContent); } catch (e) {}
+          this.textContent = 'Copied!';
+          var b = this;
+          setTimeout(function () { b.textContent = 'Copy command'; }, 1500);
+        });
+      }
+
+      function rowHtml(label, valueHtml) {
+        return '<div class="result-row">' +
+          '<div class="result-label">' + esc(label) + '</div>' +
+          '<div class="result-value">' + valueHtml + '</div>' +
+        '</div>';
+      }
+
+      // Pull a usable text payload out of a CallToolResult.
+      function extractText(result) {
+        if (!result || !Array.isArray(result.content)) return null;
+        var bits = [];
+        result.content.forEach(function (c) {
+          if (c && c.type === 'text' && c.text) bits.push(c.text);
+        });
+        return bits.length ? bits.join('\n') : null;
+      }
+
+      // Try hard to recover a structured object from the tool result:
+      //  1) result.structuredContent (MCP 2025-03+ optional field)
+      //  2) JSON.parse(content[0].text)
+      //  3) null (caller falls back to raw text).
+      function parseToolResult(result) {
+        if (!result) return null;
+        if (result.structuredContent && typeof result.structuredContent === 'object') {
+          return result.structuredContent;
+        }
+        var txt = extractText(result);
+        if (!txt) return null;
+        try {
+          var v = JSON.parse(txt);
+          return (v && typeof v === 'object') ? v : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      $btnSubmit.addEventListener('click', function () {
+        if (!validateStep(1)) { goTo(1); return; }
+        syncStateFromForm();
+        state.submitted = true;
+        $btnSubmit.style.display = 'none';
+        $btnBack.style.display = 'none';
+        renderPending();
+
+        sendRequest('tools/call', {
+          name: 'zpa_create_segment_group',
+          arguments: args()
+        }).then(function (result) {
+          if (result && result.isError) {
+            renderError(extractText(result) || 'Tool returned an error');
+          } else {
+            renderSuccess(result);
+          }
+        }).catch(function (err) {
+          renderError(err);
+        }).finally(scheduleResize);
+      });
+
+      // ============================================================
+      // Inbound messages from the host
+      // ============================================================
+      window.addEventListener('message', function (ev) {
+        var d = ev && ev.data;
+        if (!d || d.jsonrpc !== '2.0') return;
+
+        // Response to a request we sent (ui/initialize, tools/call, ...).
+        if (d.id != null && pending[d.id]) {
+          var hooks = pending[d.id];
+          delete pending[d.id];
+          if (d.error) hooks.reject(d.error);
+          else hooks.resolve(d.result);
+          return;
+        }
+
+        // Server-initiated notifications.
+        if (d.method === 'ui/notifications/tool-input' && d.params && d.params.arguments) {
+          applyInitial(d.params.arguments);
+        } else if (d.method === 'ui/notifications/tool-input-partial' && d.params && d.params.arguments) {
+          applyInitial(d.params.arguments);
+        } else if (d.method === 'ui/notifications/host-context-changed' && d.params) {
+          if (d.params.theme) applyHostTheme(d.params.theme);
+        } else if (d.method === 'ui/notifications/tool-result' && d.params) {
+          // Result of the host's outer tool call (our wizard tool). Mostly
+          // ignored — the host already has it. We log it for debugging.
+          // eslint-disable-next-line no-console
+          if (window.console && console.debug) console.debug('tool-result', d.params);
+        }
+      });
+
+      // ============================================================
+      // Size reporting — required by Claude (zero-height iframe stays
+      // hidden). We use ResizeObserver on the body so the host can
+      // grow/shrink the iframe as the user navigates between steps.
+      // ============================================================
+      function currentSize() {
+        return {
+          width: Math.ceil(document.documentElement.scrollWidth || document.body.scrollWidth || 720),
+          height: Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 640)
+        };
+      }
+      var lastSize = { width: 0, height: 0 };
+      var resizeTimer = null;
+      function scheduleResize() {
+        if (resizeTimer) return;
+        resizeTimer = setTimeout(function () {
+          resizeTimer = null;
+          var s = currentSize();
+          if (s.width === lastSize.width && s.height === lastSize.height) return;
+          lastSize = s;
+          sendNotification('ui/notifications/size-changed', s);
+        }, 50);
+      }
+      if (window.ResizeObserver) {
+        new ResizeObserver(scheduleResize).observe(document.body);
+      } else {
+        window.addEventListener('resize', scheduleResize);
+      }
+
+      // ============================================================
+      // Lifecycle — initialize handshake
+      // ============================================================
+      syncFormFromState();
+      goTo(1);
+
+      sendRequest('ui/initialize', {
+        capabilities: {},
+        appCapabilities: {
+          availableDisplayModes: ['inline']
+        },
+        clientInfo: { name: 'ZPA Segment Group Wizard', version: '1.0.0' },
+        protocolVersion: '2026-01-26'
+      }).then(function (result) {
+        if (result && result.hostContext) {
+          if (result.hostContext.theme) applyHostTheme(result.hostContext.theme);
+        }
+      }).catch(function () {
+        // Older / non-spec-compliant hosts may not respond. Render anyway.
+      }).finally(function () {
+        sendNotification('ui/notifications/initialized', {});
+        scheduleResize();
+      });
+    })();
+  </script>
+</body>
+</html>

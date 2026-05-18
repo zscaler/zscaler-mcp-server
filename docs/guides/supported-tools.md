@@ -200,7 +200,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## ZPA — Private Access
 
-53 read-only tools, 56 write tools.
+54 read-only tools, 56 write tools.
 
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
@@ -257,6 +257,7 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zpa_list_service_edge_groups` | `zpa_service_edge_groups` | Read-only | List ZPA service edge groups (read-only) Supports JMESPath client-side filtering via the query parameter. |
 | `zpa_list_service_edges` | `zpa_service_edge_groups` | Read-only | List individual ZPA Service Edges (the cloud-hosted broker instances themselves, distinct from their parent service edge groups). Returns runtime status, version, location, enrollment cert, and `serviceEdgeGroupId`. Use to inventory edges before bulk operations or to verify enrollment after a provisioning key was used. Supports JMESPath client-side filtering via the query parameter (read-only). |
 | `zpa_list_timeout_policy_rules` | `zpa_policy` | Read-only | List ZPA timeout policy rules (read-only) Supports JMESPath client-side filtering via the query parameter. |
+| `zpa_segment_group_wizard` | `zpa_segment_groups` | Read-only | Open an interactive embedded wizard (MCP Apps) that walks the admin through creating a ZPA segment group. Renders as a Zscaler-branded form inside MCP-Apps-capable hosts (Cursor, Claude, ChatGPT Apps, Goose, VS Code Copilot); other hosts see a text fallback. The wizard does not mutate state — on submit it posts a tools/call for zpa_create_segment_group back through the host, which still enforces the standard write-tools allowlist and audit trail. Accepts optional pre-fill args (name, description, enabled, microtenant_id) so the model can seed the wizard from conversation context (read-only). |
 | `zpa_bulk_delete_app_connectors` | `zpa_connectors` | Write | Bulk delete multiple ZPA app connectors (destructive operation) |
 | `zpa_bulk_delete_service_edges` | `zpa_service_edge_groups` | Write | Bulk delete multiple ZPA Service Edges in a single API call (`POST /serviceEdge/bulkDelete`). Each removed edge must be re-provisioned to reconnect (destructive operation, HMAC double-confirmed). |
 | `zpa_create_access_policy_rule` | `zpa_access_policies` | Write | Create a new ZPA access policy rule (write operation) |
