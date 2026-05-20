@@ -45,6 +45,10 @@ The Zscaler MCP Server ships with native integrations for several AI development
      - Agent
      - ``python azure_mcp_operations.py agent_create``
      - :doc:`Guide <../guides/azure-deployment>` · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure/foundry_agent.py>`__
+   * - **AWS (Bedrock AgentCore Runtime)**
+     - Deployment
+     - ``python aws_mcp_operations.py deploy``
+     - :doc:`Guide <../guides/amazon-bedrock-agentcore>` · `Source <https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/aws>`__
    * - **GitHub MCP Registry**
      - Registry
      - ``mcp-publisher publish``
@@ -468,6 +472,111 @@ Foundry no longer accepts auth headers inlined in ``MCPTool.headers``. The suppo
    python azure_mcp_operations.py agent_destroy   # delete agent
 
 **Finding the agent in the portal:** Foundry agents created by this script are **Prompt Agents** in the new Foundry experience. Open `ai.azure.com <https://ai.azure.com>`__, ensure the *New Foundry* toggle (top-right) is on, then go to **Build → Agents → Agents** tab and select ``zscaler-mcp-agent``. ``agent_create`` also prints a deep link straight to the agent on success.
+
+.. _aws-deployment:
+
+AWS Deployment
+--------------
+
+The Zscaler MCP Server can be deployed to **Amazon Bedrock AgentCore Runtime** using the interactive ``aws_mcp_operations.py`` script or the raw CloudFormation templates in ``integrations/aws/cloudformation/``. The container image is pulled from the **AWS Marketplace** registry (``709825985650.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server``) — a free BYOL subscription grants your account permission to pull. Full walkthrough: :doc:`../guides/amazon-bedrock-agentcore`.
+
+**Deployment Paths:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Path
+     - When to use it
+   * - **Interactive Python wrapper** (``aws_mcp_operations.py``)
+     - One-off deployments, evaluations, demos. Mirrors the UX of the Azure / GCP scripts — prompts for region, credentials, auth mode, and architecture choice, then drives the same CloudFormation templates.
+   * - **Raw CloudFormation** (``zscaler-mcp-root.yaml`` + nested children)
+     - IaC teams. Fits into any existing CI/CD that runs ``aws cloudformation deploy``. Both paths produce identical AWS resources.
+
+**Architectures:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 45 25
+
+   * - Architecture
+     - Description
+     - Status
+   * - **Direct Runtime**
+     - AgentCore Runtime fronts the MCP server directly over ``streamable-http``. Recommended for all production deployments. Client auth is enforced by the MCP server itself (Zscaler / JWT / API key).
+     - GA
+   * - **AgentCore Gateway**
+     - Bedrock AgentCore Gateway adds an OAuth/OIDC fronting layer that brokers tool discovery and invocation. Requires a pre-existing OAuth client (Auth0, Okta, Entra, Cognito, Keycloak) — the wrapper does **not** create the OAuth client for you. Tool discovery has been inconsistent across IdPs; treat as evaluation-only.
+     - **Experimental**
+
+**What gets deployed:**
+
+The root template (``zscaler-mcp-root.yaml``) orchestrates four nested stacks:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 25 55
+
+   * - Stack
+     - Always created?
+     - Purpose
+   * - **IAM**
+     - yes
+     - AgentCore Runtime execution role + deployment-Lambda role. Grants cross-account ECR pull from the Marketplace registry.
+   * - **Secrets**
+     - only when ``CredentialSource=CreateNew``
+     - Provisions a Secrets Manager secret holding Zscaler OneAPI credentials. Production deployments should reuse an existing secret instead.
+   * - **Runtime**
+     - yes
+     - Custom-resource Lambda calls ``bedrock-agentcore:CreateAgentRuntime`` against the Marketplace image. Wires in env vars for auth mode, write-tools allowlist, audit logging, etc.
+   * - **Gateway**
+     - only when ``EnableAgentCoreGateway=true``
+     - Custom-resource Lambdas call ``bedrock-agentcore-control:CreateGateway`` + ``CreateGatewayTarget``. Experimental — see the guide for current state of testing.
+
+**Authentication Modes:**
+
+The script supports the same auth modes as the Azure integration — ``OIDCProxy``, ``JWT``, ``API Key``, ``Zscaler``, and ``None``. Client credentials are stored in AWS Secrets Manager (when ``CredentialSource=CreateNew``) or referenced from an existing secret.
+
+**Quick Start:**
+
+.. code-block:: bash
+
+   # Subscribe (free, BYOL) to "Zscaler MCP Server" in AWS Marketplace once per AWS account
+   # https://aws.amazon.com/marketplace -> search "Zscaler MCP Server"
+
+   cd integrations/aws
+   python aws_mcp_operations.py deploy
+
+The script prompts for AWS region, credential source (existing Secrets Manager secret or new), MCP auth mode, and architecture (Direct Runtime vs. experimental Gateway). After the stack settles, it auto-updates Claude Desktop and Cursor client configs with the AgentCore Runtime invoke URL.
+
+**Lifecycle commands:**
+
+.. code-block:: bash
+
+   python aws_mcp_operations.py deploy    # create the stack
+   python aws_mcp_operations.py status    # show resource state
+   python aws_mcp_operations.py logs      # tail CloudWatch logs
+   python aws_mcp_operations.py destroy   # tear everything down, including the state file
+
+**Prerequisites:**
+
+- Active AWS Marketplace subscription to *Zscaler MCP Server* (free BYOL)
+- AWS CLI / boto3 credentials with permissions to create CloudFormation, IAM, Lambda, Secrets Manager, S3, and Bedrock AgentCore resources
+- Python 3.10+ with ``boto3`` (only for the interactive wrapper)
+- Zscaler OneAPI credentials from the ZIdentity console
+
+**Strands Agent client:**
+
+Once the runtime is deployed, the companion ``integrations/aws/strands_agent_chat.py`` script lets you drive it from a local terminal using a `Strands <https://strandsagents.com/>`__ agent backed by an Amazon Bedrock reasoning model — no Bedrock Sandbox dependency, no static MCP token, just SigV4 from your AWS credentials. The script auto-discovers the runtime from ``.aws-deploy-state.json``, walks through a curated Bedrock model picker (Claude Sonnet 4.6 / Opus 4.7 / Opus 4.6, Amazon Nova Pro, Llama 3.3 70B), a tool-filter preset (Discovery / ZPA / ZIA / ZDX read-only / policy-investigation / custom / all), performs the MCP streamable-http session handshake against the runtime, and drops into an interactive chat loop with per-message stats and a session summary on exit.
+
+.. code-block:: bash
+
+   cd integrations/aws
+   uv venv .strands-venv --python 3.11 && source .strands-venv/bin/activate
+   uv pip install -r requirements.txt
+   python strands_agent_chat.py
+
+Full reference: `docs/deployment/strands-agentcore-client.md <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/strands-agentcore-client.md>`__ — architecture, the two-session-id model (Bedrock affinity vs. MCP transport), the MCP handshake flow (``initialize`` → ``notifications/initialized`` → ``Mcp-Session-Id``), tool filter presets, CLI flags, the ``--list-tools`` smoke test, and a troubleshooting table.
 
 .. _github-mcp-registry:
 
