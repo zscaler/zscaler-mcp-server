@@ -84,7 +84,7 @@ Two distinct session identifiers travel on every call and they are **not** inter
 
 | Requirement | Notes |
 |---|---|
-| **A deployed AgentCore Runtime** | Provisioned via `aws_mcp_operations.py deploy` or the CloudFormation root template. The script auto-discovers it from `.aws-deploy-state.json` if you run from `integrations/aws/`. |
+| **A deployed AgentCore Runtime** | Provisioned via `aws_mcp_operations.py deploy` or the CloudFormation root template. The script auto-discovers it from `.aws-deploy-state.json` if you run from `integrations/aws/bedrock-agentcore/`. |
 | **AWS credentials** | Via `aws configure`, `AWS_PROFILE`, or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. The role/user needs `bedrock-agentcore:InvokeAgentRuntime` on the runtime ARN and `bedrock:InvokeModelWithResponseStream` / `bedrock:Converse` / `bedrock:ConverseStream` on the reasoning model. |
 | **Bedrock model access** | Enable the model you intend to use in the Bedrock console (Model access → Manage). Anthropic models additionally require a one-time **use-case form** to be submitted in the same console. Without it you'll see `ResourceNotFoundException: Model use case details have not been submitted`. |
 | **Python 3.10+** | The script is pure-Python with three runtime deps (see [Install](#install)). |
@@ -96,7 +96,7 @@ Two distinct session identifiers travel on every call and they are **not** inter
 A co-located requirements file ships with the integration:
 
 ```bash
-cd integrations/aws
+cd integrations/aws/bedrock-agentcore
 uv venv .strands-venv --python 3.11
 source .strands-venv/bin/activate
 uv pip install -r requirements.txt
@@ -110,14 +110,14 @@ strands-agents>=1.40.0
 httpx>=0.27.0
 ```
 
-Both `.strands-venv/` and the local state file are listed in `integrations/aws/.gitignore`.
+Both `.strands-venv/` and the local state file are listed in `integrations/aws/bedrock-agentcore/.gitignore`.
 
 ---
 
 ## Quick start
 
 ```bash
-cd integrations/aws
+cd integrations/aws/bedrock-agentcore
 source .strands-venv/bin/activate
 python strands_agent_chat.py
 ```
@@ -334,13 +334,13 @@ Once that passes, the LLM-driven chat is the next step.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `[ERROR] tools/list failed: MCP error from tools/list: {'code': -32010, 'message': 'Received error (400) from runtime.'}` | Skipping the MCP `initialize` handshake against a `v0.12.x+` runtime. | The client now handles this automatically. If you see it again, you're running an older copy of the script — pull the latest from `integrations/aws/strands_agent_chat.py` and verify `mcp_initialize` is present. |
+| `[ERROR] tools/list failed: MCP error from tools/list: {'code': -32010, 'message': 'Received error (400) from runtime.'}` | Skipping the MCP `initialize` handshake against a `v0.12.x+` runtime. | The client now handles this automatically. If you see it again, you're running an older copy of the script — pull the latest from `integrations/aws/bedrock-agentcore/strands_agent_chat.py` and verify `mcp_initialize` is present. |
 | `No AWS credentials found.` | Local `boto3` couldn't resolve creds. | Run `aws configure`, set `AWS_PROFILE`, or export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. Verify with `aws sts get-caller-identity`. |
 | `botocore.exceptions.ClientError: An error occurred (AccessDeniedException) when calling the InvokeAgentRuntime operation` | IAM principal lacks `bedrock-agentcore:InvokeAgentRuntime` on the runtime ARN. | Attach a policy granting that action on `arn:aws:bedrock-agentcore:<region>:<acct>:runtime/<id>`. |
 | `ResourceNotFoundException: Model use case details have not been submitted for this account.` | Anthropic models require a one-time per-account use-case attestation. | Bedrock console → **Model access** → **Manage** → Anthropic → fill the use-case form. Wait ~15 min and retry. |
 | `AccessDeniedException` on the first model invoke (non-Anthropic) | The model isn't enabled in your account/region. | Bedrock console → **Model access** → enable the model in the target region. Region prefixes (`us.`, `eu.`) matter. |
 | `Input should be a valid string` from a `zpa_list_*` tool | Older runtime image where `page` / `page_size` were typed as `Optional[str]`; current Bedrock models emit `int` for those args. | Already fixed at the source (see `zscaler_mcp/tools/zpa/*.py` — `Annotated[Optional[int], Field(ge=1, ...)]`). Rebuild the image and redeploy the runtime. |
-| `Strands is not installed.` | `requirements.txt` not installed in the active venv. | `uv pip install -r integrations/aws/requirements.txt` (or `pip install -r ...`) and re-run. |
+| `Strands is not installed.` | `requirements.txt` not installed in the active venv. | `uv pip install -r integrations/aws/bedrock-agentcore/requirements.txt` (or `pip install -r ...`) and re-run. |
 | `Tool filter '...' matched 0 of N tools.` | The regex didn't match any tool name in the runtime's `tools/list`. | Re-run with `--list-tools` to see the actual catalogue, then refine the regex. |
 | Runtime ARN in state file doesn't match the live runtime | A redeploy ran without updating `.aws-deploy-state.json`. | The next `aws_mcp_operations.py deploy` will overwrite the state file. Until then, answer **n** to the "Use the deployment from the state file?" prompt and paste the live ARN. |
 | Want to see exactly what's on the wire | — | Set `DEBUG_MCP_WIRE=1` before running. The first 2 kB of every response body is dumped to stdout. |
@@ -351,5 +351,5 @@ Once that passes, the LLM-driven chat is the next step.
 
 - [`amazon_bedrock_agentcore.md`](amazon_bedrock_agentcore.md) — full deployment guide (CloudFormation + manual AWS CLI paths) for the AgentCore Runtime itself.
 - [`../guides/TROUBLESHOOTING.md`](../guides/TROUBLESHOOTING.md) — broader troubleshooting across the AWS integration.
-- [`../../integrations/aws/strands_agent_chat.py`](../../integrations/aws/strands_agent_chat.py) — the client source, ~1100 lines, single file, no external runtime config beyond the venv.
-- [`../../integrations/aws/aws_mcp_operations.py`](../../integrations/aws/aws_mcp_operations.py) — companion deployment / lifecycle script.
+- [`../../integrations/aws/bedrock-agentcore/strands_agent_chat.py`](../../integrations/aws/bedrock-agentcore/strands_agent_chat.py) — the client source, ~1100 lines, single file, no external runtime config beyond the venv.
+- [`../../integrations/aws/bedrock-agentcore/aws_mcp_operations.py`](../../integrations/aws/bedrock-agentcore/aws_mcp_operations.py) — companion deployment / lifecycle script.

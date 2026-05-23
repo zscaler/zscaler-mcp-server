@@ -209,7 +209,7 @@ Many enterprise GCP organizations enforce the `constraints/iam.allowedPolicyMemb
 ## Resources
 
 - [GCP Secret Manager Integration](../../docs/deployment/gcp_secrets_manager_integration.md)
-- [Cloud Run Deployment Guide](../../docsrc/guides/gcp-cloud-run.rst)
+- [Cloud Run Deployment Guide](https://zscaler.github.io/zscaler-mcp-server/docs/deployment/gcp)
 - [Main README](../../README.md)
 - [Supported Tools Reference](../../docs/guides/supported-tools.md)
 - [Troubleshooting](../../docs/guides/TROUBLESHOOTING.md)

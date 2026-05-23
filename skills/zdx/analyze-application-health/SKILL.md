@@ -21,7 +21,7 @@ Perform an organization-wide analysis of application health using ZDX. This skil
 
 ## Data Presentation Requirements
 
-**ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
+**All tables are rendered by the HTML template, not by hand.** Do not author `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` markup in your reply or in the report. You produce a JSON payload (see *Data Payload Contract*) and the template at `./templates/report.html.template` turns it into the styled, sortable, exportable tables shown in `./example/report.example.html`.
 
 After each table, provide:
 
@@ -35,13 +35,83 @@ Use color-coded status indicators in tables:
 - Yellow/Okay: scores 34-65, metrics approaching thresholds
 - Red/Poor: scores 0-33, metrics exceeding thresholds
 
+## ⚠ HTML OUTPUT — READ THIS BEFORE PRODUCING ANY HTML
+
+There is exactly one acceptable way to produce the HTML output:
+
+1. **Read the template from disk** — do NOT inline a copy in your response. The template lives next to this SKILL.md inside the skill's package, at:
+
+   ```text
+   ./templates/report.html.template
+   ```
+
+   The `./` prefix is intentional: this path is **relative to the skill folder** (the directory containing this SKILL.md), **never** an absolute path. Most agents that load skills from an uploaded `.zip` extract the package into a working directory and expose its contents via that relative path — read the file by joining the skill's own root directory with `./templates/report.html.template`. Do not rewrite this to an absolute path that points at the author's machine.
+
+2. **Build a single JSON object** (`__ZDX_DATA__` payload) shaped exactly as documented in the *Data Payload Contract* section below. Aggregate the responses from the ZDX MCP tool calls (Steps 1–5 of the *Workflow*) into that object.
+
+3. **Replace** the literal token `__ZDX_DATA__` (which appears once, inside `<script type="application/json" id="zdx-data">__ZDX_DATA__</script>`) with the JSON object. Do not edit any other part of the template.
+
+4. **Write** the result to disk as `application_health_report_<YYYYMMDD-HHMMSS>.html` next to the .docx, and give the user a `computer://` link to it.
+
+This template already provides: Zscaler header with logo · sticky top bar · scope summary bar · KPI cards with severity-coded top borders · per-table search + filter chips · sortable color-coded tables · per-table CSV export · light/dark theme toggle · top-right language dropdown (EN / ES / PT / FR / JA) · printable PDF view · localStorage prefs · Analysis / Root Cause / Remediation block.
+
+**If you find yourself writing `<html>`, `<style>`, or `<table>` in a code-block destined for the user, stop. Read the template instead.**
+
+A populated reference rendering ships with this skill at `./example/report.example.html` (relative to the skill folder). Open it in a browser to preview the exact layout and depth expected.
+
+### Data Payload Contract
+
+The full `__ZDX_DATA__` payload is one JSON object. Every field below is **required** unless marked optional.
+
+```json
+{
+  "generated_at": "<ISO 8601 timestamp>",
+  "scope_en": "Free-form description in English",
+  "scope_es": "...in Spanish (optional, falls back to scope_en)",
+  "scope_pt": "...in Portuguese (optional)",
+  "scope_fr": "...in French (optional)",
+  "scope_ja": "...in Japanese (optional)",
+  "kpis": {
+    "total": "<int>",
+    "good": "<int>",
+    "okay": "<int>",
+    "poor": "<int>",
+    "mostImpacted": "<app name or '—'>"
+  },
+  "tables": {
+    "apps": [
+      {
+        "severity": "critical | warning | good",
+        "name": "<application name>",
+        "score": "<0-100>",
+        "status": "Good | Okay | Poor",
+        "pft": "<page fetch time, e.g. '1.2s'>",
+        "dns": "<dns time, e.g. '18ms'>",
+        "availability": "<percentage, e.g. '99%'>",
+        "impactedUsers": "<int or summary string>",
+        "bottleneck": "DNS | PFT | Availability | None"
+      }
+    ]
+  },
+  "analysis": {
+    "summary": "...",
+    "rootCause": "...",
+    "remediation": [
+      { "priority": "Immediate | Investigate | Monitor | Communicate", "action": "..." }
+    ]
+  }
+}
+```
+
+Map each row's `severity` from `status`: `Good` → `good`, `Okay` → `warning`, `Poor` → `critical`.
+
 ## Output Artifacts — MANDATORY
 
-**You MUST generate BOTH files below. Do NOT skip the HTML page. Do NOT consider this optional. Both files are REQUIRED output for every application health analysis.**
+You MUST generate BOTH files below. Both are REQUIRED output for every application health analysis.
 
 ### 1. Word Document (.docx) — REQUIRED
 
-Write a Word document to disk named `application_health_report_<date>.docx` containing:
+Write a Word document to disk named `application_health_report_<YYYYMMDD-HHMMSS>.docx` containing:
 
 - Executive summary with overall health posture (healthy/degraded/poor counts)
 - Application health table (app name, score, status, PFT, DNS, availability, impacted users, bottleneck)
@@ -52,97 +122,7 @@ Write a Word document to disk named `application_health_report_<date>.docx` cont
 
 ### 2. Interactive HTML Web Page (.html) — REQUIRED
 
-Write a **fully functional, self-contained HTML file** to disk named `application_health_report_<date>.html`. This file MUST contain working CSS and JavaScript — not placeholders or comments. Copy the template below and populate `<tbody>` with one `<tr>` per application. Replace `{{TOTAL_APPS}}`, `{{GOOD_COUNT}}`, `{{OKAY_COUNT}}`, `{{POOR_COUNT}}`, and `{{MOST_IMPACTED}}` with actual values.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Application Health Report</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;color:#2d3436;padding:20px}
-h1{text-align:center;margin-bottom:20px;color:#1a1a2e}
-.summary{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.card{background:#fff;border-radius:10px;padding:18px 28px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;min-width:160px}
-.card .num{font-size:2em;font-weight:700;color:#1a1a2e}
-.card .label{font-size:.85em;color:#636e72;margin-top:4px}
-.filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
-.filters input,.filters select{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:.95em}
-.filters input{min-width:260px}
-.filters button{padding:8px 18px;background:#0984e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95em}
-.filters button:hover{background:#0767b2}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-th{background:#1a1a2e;color:#fff;padding:10px 12px;cursor:pointer;position:sticky;top:0;user-select:none;white-space:nowrap}
-th:hover{background:#2d3460}
-td{padding:9px 12px;border-bottom:1px solid #eee}
-tr.good{background:#d4edda}
-tr.okay{background:#fff3cd}
-tr.poor{background:#f8d7da}
-tr:hover{filter:brightness(.97)}
-.status-good{color:#27ae60;font-weight:700}
-.status-okay{color:#e67e22;font-weight:700}
-.status-poor{color:#e74c3c;font-weight:700}
-@media(max-width:800px){.summary{flex-direction:column;align-items:center}table{font-size:.85em}}
-</style>
-</head>
-<body>
-<h1>Application Health Report</h1>
-<div class="summary">
-  <div class="card"><div class="num">{{TOTAL_APPS}}</div><div class="label">Total Apps</div></div>
-  <div class="card"><div class="num" style="color:#27ae60">{{GOOD_COUNT}}</div><div class="label">Good</div></div>
-  <div class="card"><div class="num" style="color:#e67e22">{{OKAY_COUNT}}</div><div class="label">Okay</div></div>
-  <div class="card"><div class="num" style="color:#e74c3c">{{POOR_COUNT}}</div><div class="label">Poor</div></div>
-  <div class="card"><div class="num">{{MOST_IMPACTED}}</div><div class="label">Most Impacted</div></div>
-</div>
-<div class="filters">
-  <input type="text" id="search" placeholder="Search application, bottleneck..." oninput="applyFilters()">
-  <select id="statusFilter" onchange="applyFilters()"><option value="">All Status</option><option value="Good">Good</option><option value="Okay">Okay</option><option value="Poor">Poor</option></select>
-  <select id="bottleneckFilter" onchange="applyFilters()"><option value="">All Bottlenecks</option><option value="DNS">DNS</option><option value="PFT">PFT</option><option value="Availability">Availability</option><option value="None">None</option></select>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
-<table id="healthTable">
-<thead><tr>
-  <th onclick="sortTable(0)">Application &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(1)">Score &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(2)">Status &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(3)">Page Fetch Time &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(4)">DNS &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(5)">Availability &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(6)">Impacted Users &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(7)">Bottleneck &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="good|okay|poor"> per application.
-     Example row:
-  <tr class="poor">
-    <td>Microsoft 365</td><td>28</td><td class="status-poor">Poor</td><td>12.4s</td>
-    <td>22ms</td><td>94%</td><td>47</td><td>PFT</td>
-  </tr>
--->
-</tbody>
-</table>
-<script>
-let sortDir=[1,1,1,1,1,1,1,1];
-function sortTable(c){const t=document.getElementById('healthTable'),b=t.tBodies[0],rows=Array.from(b.rows);sortDir[c]*=-1;rows.sort((a,b_)=>{let x=a.cells[c].textContent.trim(),y=b_.cells[c].textContent.trim();const xn=parseFloat(x),yn=parseFloat(y);if(!isNaN(xn)&&!isNaN(yn))return(xn-yn)*sortDir[c];return x.localeCompare(y)*sortDir[c]});rows.forEach(r=>b.appendChild(r))}
-function applyFilters(){const q=document.getElementById('search').value.toLowerCase(),s=document.getElementById('statusFilter').value,bn=document.getElementById('bottleneckFilter').value;const rows=document.querySelectorAll('#healthTable tbody tr');rows.forEach(row=>{const txt=row.textContent.toLowerCase(),st=row.cells[2]?.textContent.trim()||'',bt=row.cells[7]?.textContent.trim()||'';let show=true;if(q&&!txt.includes(q))show=false;if(s&&st!==s)show=false;if(bn&&bt!==bn)show=false;row.style.display=show?'':'none'})}
-function exportCSV(){const t=document.getElementById('healthTable'),rows=Array.from(t.rows).filter(r=>r.style.display!=='none');let csv=rows.map(r=>Array.from(r.cells).map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='application_health.csv';a.click()}
-</script>
-</body>
-</html>
-```text
-
-**MANDATORY STEPS:**
-
-1. Copy this template exactly
-2. Replace the `{{...}}` placeholders in the summary cards with real values
-3. Add one `<tr>` row inside `<tbody>` for every application
-4. Set the row class to `good`, `okay`, or `poor` based on score
-5. Write the file to disk and provide the file path to the user
-
-**Both files must be saved to the user's working directory** and the file paths provided in the response.
+Generated by the template-substitution flow described in the **HTML OUTPUT** section above. Filename: `application_health_report_<YYYYMMDD-HHMMSS>.html`. Do not hand-author HTML or CSS — the template ships everything the report needs.
 
 ---
 
@@ -308,40 +288,20 @@ zdx_list_alert_affected_devices(alert_id="<alert_id>")
 
 ### Step 6: Present Application Health Report
 
-Present all data in **HTML table format** with detailed analysis.
+Assemble the `__ZDX_DATA__` payload defined in the *Data Payload Contract* and render it through `./templates/report.html.template` (see the **HTML OUTPUT** section). The template already produces the application table, KPI cards, color coding, search/sort, and CSV export — do **not** hand-author any HTML or markdown table here.
 
-**Application Health Overview (HTML table):**
+What you DO write is the `analysis` block inside the payload. **Do not skip it.** This is what makes the report useful:
 
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Application</th>
-  <th style="padding:8px;border:1px solid #ddd">Score</th>
-  <th style="padding:8px;border:1px solid #ddd">Status</th>
-  <th style="padding:8px;border:1px solid #ddd">PFT</th>
-  <th style="padding:8px;border:1px solid #ddd">DNS</th>
-  <th style="padding:8px;border:1px solid #ddd">Availability</th>
-  <th style="padding:8px;border:1px solid #ddd">Impacted Users</th>
-  <th style="padding:8px;border:1px solid #ddd">Bottleneck</th>
-</tr></thead>
-<tbody>
-  <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Microsoft 365</td><td style="padding:8px;font-weight:bold;color:red">28</td><td style="padding:8px">POOR</td><td style="padding:8px">12.4s</td><td style="padding:8px">22ms</td><td style="padding:8px">94%</td><td style="padding:8px">47 poor, 23 okay</td><td style="padding:8px">Page Fetch Time</td></tr>
-  <tr style="background:#fff3cd"><td style="padding:8px;border:1px solid #ddd">Salesforce</td><td style="padding:8px;font-weight:bold;color:orange">52</td><td style="padding:8px">OKAY</td><td style="padding:8px">4.2s</td><td style="padding:8px">180ms</td><td style="padding:8px">99%</td><td style="padding:8px">12 poor, 31 okay</td><td style="padding:8px">DNS Resolution</td></tr>
-  <tr style="background:#d4edda"><td style="padding:8px;border:1px solid #ddd">Zoom</td><td style="padding:8px;font-weight:bold;color:green">92</td><td style="padding:8px">GOOD</td><td style="padding:8px">1.2s</td><td style="padding:8px">18ms</td><td style="padding:8px">100%</td><td style="padding:8px">0</td><td style="padding:8px">-</td></tr>
-</tbody></table>
-```text
+- **`analysis.summary`** (3–5 sentences): overall health posture — how many apps are good vs. okay vs. poor, the dominant bottleneck pattern across degraded apps, and whether this is a localized or organization-wide degradation.
+- **`analysis.rootCause`** (1–3 sentences per degraded app): state the primary bottleneck metric and what it indicates (e.g., "Microsoft 365 PFT at 12.4s indicates server-side or CDN latency, not DNS or network"). Quote the numbers from the metric calls in Steps 2–3.
+- **`analysis.remediation`** (4–6 items): label each with a priority bucket and a concrete action.
 
-**After the table, ALWAYS provide:**
-
-1. **Analysis:** Explain the overall health posture -- how many apps are healthy vs degraded, what the dominant issues are, and whether this is a localized or organization-wide pattern.
-
-2. **Root Cause per Degraded App:** For each degraded/poor application, state the primary bottleneck metric and what it indicates (e.g., "Microsoft 365 PFT at 12.4s indicates server-side or CDN latency, not DNS or network").
-
-3. **Next Steps / Resolution:**
-   - **Critical apps (score 0-33):** Immediate investigation required. Check service health dashboards, ISP paths, and Zscaler cloud path. Engage application vendor if server-side.
-   - **Degraded apps (score 34-65):** Monitor trend. If declining, investigate the bottleneck metric. If stable, may be a capacity or configuration issue.
-   - **Healthy apps:** No action needed. Note any that are borderline (score 66-70) for proactive monitoring.
-   - Prioritize by user impact count -- apps affecting the most users should be addressed first.
+| Priority | Apply to | Action |
+|---|---|---|
+| `Immediate` | Apps with score 0–33 | Check service health dashboards, ISP paths, and Zscaler cloud path. Engage the application vendor if server-side. |
+| `Investigate` | Apps with score 34–65 | If declining, drill into the bottleneck metric. If stable, suspect a capacity or configuration issue. |
+| `Monitor` | Borderline apps (score 66–70) | Proactive monitoring. No action unless score drops below 66 within 24h. |
+| `Communicate` | Apps with the highest user impact | Notify affected user list; route to the application team with the metric evidence. |
 
 ---
 

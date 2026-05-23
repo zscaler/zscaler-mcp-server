@@ -1,0 +1,15 @@
+# Zscaler MCP Server — AgentCore Harness deployment dependencies
+#
+# The Harness control-plane / data-plane APIs (bedrock-agentcore-control,
+# bedrock-agentcore) require boto3 >= 1.43.0 — earlier releases do not
+# expose `create_harness` / `invoke_harness` / the new
+# `create_api_key_credential_provider` shape.
+#
+# Install:
+#   cd integrations/aws/harness
+#   uv venv .harness-venv --python 3.11
+#   source .harness-venv/bin/activate
+#   uv pip install -r requirements.txt
+
+boto3>=1.43.0
+botocore>=1.43.0

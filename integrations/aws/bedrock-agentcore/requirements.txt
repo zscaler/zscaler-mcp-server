@@ -8,7 +8,7 @@
 #
 # Install with:
 #
-#   cd integrations/aws
+#   cd integrations/aws/bedrock-agentcore
 #   uv venv .strands-venv --python 3.11
 #   source .strands-venv/bin/activate
 #   uv pip install -r requirements.txt

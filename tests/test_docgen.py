@@ -217,10 +217,18 @@ class TestEndToEndOnTempCopy(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmproot = Path(tmpdir)
             # Materialise just enough of the repo tree to satisfy TARGETS.
+            # Two flavours coexist: marker-region targets (Markdown with a
+            # generated:start/end pair) and whole-file targets (region is
+            # None — the generator owns the entire file content).
             for relpath, region, _ in docgen.TARGETS:
                 src = docgen.REPO_ROOT / relpath
                 dst = tmproot / relpath
                 dst.parent.mkdir(parents=True, exist_ok=True)
+                if region is None:
+                    # Whole-file target — write a known-stale stub so the
+                    # rewriter has something to overwrite.
+                    dst.write_text("stale-whole-file\n", encoding="utf-8")
+                    continue
                 shutil.copy2(src, dst)
                 # Stuff the marker block with a known-stale value so we
                 # know the rewrite ran.

@@ -1670,11 +1670,19 @@ class ZscalerMCPServer:
                 app = SourceIPMiddleware(app, allowed_ips)
 
             # Outermost wrapper: normalise trailing slashes and the
-            # ``application/json-rpc`` content-type so non-strict MCP clients
-            # (Gemini CLI, Bedrock-style HTTP gateways, custom LangChain
-            # agents, etc.) can talk to the server without bespoke fix-ups.
-            # Compliant clients (Claude Desktop, Cursor) are unaffected.
-            app = apply_transport_hardening(app, transport)
+            # ``application/json-rpc`` content-type, and convert
+            # FastMCP's 406-on-GET into a spec-compliant 405 so
+            # non-strict MCP clients (Gemini CLI, Bedrock AgentCore
+            # Harness's ``remote_mcp`` tool, custom LangChain agents,
+            # etc.) can talk to the server without bespoke fix-ups.
+            # Compliant clients (Claude Desktop, Cursor) are unaffected
+            # because they include ``text/event-stream`` in their GET
+            # Accept header.
+            app = apply_transport_hardening(
+                app,
+                transport,
+                mcp_path=self.server.settings.streamable_http_path,
+            )
 
             _log_security_posture(
                 transport, scheme, host, port, tls_kwargs,
