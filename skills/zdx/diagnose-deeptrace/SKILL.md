@@ -21,7 +21,7 @@ Perform deep trace diagnostics on a user's device to capture detailed network pa
 
 ## Data Presentation Requirements
 
-**ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
+**All tables are rendered by the HTML template, not by hand.** Do not author `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` markup in your reply or in the report. You produce a JSON payload (see *Data Payload Contract*) and the template at `./templates/report.html.template` turns it into the styled, sortable, exportable tables shown in `./example/report.example.html`.
 
 After each table, provide:
 
@@ -35,13 +35,115 @@ Use color-coded status indicators:
 - Yellow/Degraded: Metrics approaching thresholds (latency 50-150ms, packet loss 1-5%, moderate resource usage)
 - Red/Critical: Metrics exceeding thresholds (latency > 150ms, packet loss > 5%, resource exhaustion)
 
+## ⚠ HTML OUTPUT — READ THIS BEFORE PRODUCING ANY HTML
+
+There is exactly one acceptable way to produce the HTML output:
+
+1. **Read the template from disk** — do NOT inline a copy in your response. The template lives next to this SKILL.md inside the skill's package, at:
+
+   ```text
+   ./templates/report.html.template
+   ```
+
+   The `./` prefix is intentional: this path is **relative to the skill folder** (the directory containing this SKILL.md), **never** an absolute path. Most agents that load skills from an uploaded `.zip` extract the package into a working directory and expose its contents via that relative path — read the file by joining the skill's own root directory with `./templates/report.html.template`. Do not rewrite this to an absolute path that points at the author's machine.
+
+2. **Build a single JSON object** (`__ZDX_DATA__` payload) shaped exactly as documented in the *Data Payload Contract* section below. Aggregate the responses from the ZDX MCP tool calls (Steps 1–8 of the *Workflow*) into that object.
+
+3. **Replace** the literal token `__ZDX_DATA__` (which appears once, inside `<script type="application/json" id="zdx-data">__ZDX_DATA__</script>`) with the JSON object. Do not edit any other part of the template.
+
+4. **Write** the result to disk as `deep_trace_diagnosis_<YYYYMMDD-HHMMSS>.html` next to the .docx, and give the user a `computer://` link to it.
+
+This template already provides: Zscaler header with logo · sticky top bar · scope summary bar · KPI cards with severity-coded top borders · per-table search + filter chips · sortable color-coded tables · per-table CSV export · light/dark theme toggle · top-right language dropdown (EN / ES / PT / FR / JA) · printable PDF view · localStorage prefs · Analysis / Root Cause / Remediation block.
+
+**If you find yourself writing `<html>`, `<style>`, or `<table>` in a code-block destined for the user, stop. Read the template instead.**
+
+A populated reference rendering ships with this skill at `./example/report.example.html` (relative to the skill folder). Open it in a browser to preview the exact layout and depth expected.
+
+### Data Payload Contract
+
+The full `__ZDX_DATA__` payload is one JSON object. Every field below is **required** unless marked optional. This skill emits **five tables**: web probe metrics, cloud path topology, device health, top processes, and events timeline.
+
+```json
+{
+  "generated_at": "<ISO 8601 timestamp>",
+  "scope_en": "Free-form description in English",
+  "scope_es": "...in Spanish (optional, falls back to scope_en)",
+  "scope_pt": "...in Portuguese (optional)",
+  "scope_fr": "...in French (optional)",
+  "scope_ja": "...in Japanese (optional)",
+  "kpis": {
+    "user": "<user name or email>",
+    "device": "<device hostname>",
+    "session": "<session name or id>",
+    "status": "Completed | In Progress | Failed",
+    "duration": "<e.g. '14m'>",
+    "rootCauseLayer": "Device | Local Network | ISP | Zscaler | Application | DNS | —"
+  },
+  "tables": {
+    "probes": [
+      {
+        "severity": "critical | warning | good",
+        "metric": "DNS | TCP | SSL | HTTP Response",
+        "value": "<measured value, e.g. '186ms'>",
+        "threshold": "<expected value, e.g. '<50ms'>",
+        "status": "Good | Degraded | Critical"
+      }
+    ],
+    "path": [
+      {
+        "severity": "critical | warning | good",
+        "hop": "<int>",
+        "host": "<IP or hostname>",
+        "latency": "<int, ms>",
+        "loss": "<float, %>",
+        "jitter": "<int, ms>",
+        "status": "Good | Degraded | Critical"
+      }
+    ],
+    "health": [
+      {
+        "severity": "critical | warning | good",
+        "metric": "CPU | Memory | Disk I/O | Network",
+        "value": "<e.g. '92%'>",
+        "status": "Good | Degraded | Critical"
+      }
+    ],
+    "processes": [
+      {
+        "severity": "critical | warning | good | neutral",
+        "name": "<process name>",
+        "cpu": "<float, %>",
+        "memory": "<float, %>"
+      }
+    ],
+    "events": [
+      {
+        "severity": "critical | warning | good | info",
+        "timestamp": "<ISO 8601>",
+        "type": "Zscaler | Hardware | Software | Network",
+        "description": "<event description>"
+      }
+    ]
+  },
+  "analysis": {
+    "summary": "...",
+    "rootCause": "...",
+    "remediation": [
+      { "priority": "Immediate | Investigate | Monitor | Communicate", "action": "..." }
+    ]
+  }
+}
+```
+
+Map each row's `severity` from `status` (or threshold delta for probes/path/health): `Good` → `good`, `Degraded` → `warning`, `Critical` → `critical`.
+
 ## Output Artifacts — MANDATORY
 
-**You MUST generate BOTH files below. Do NOT skip the HTML page. Do NOT consider this optional. Both files are REQUIRED output for every deep trace diagnosis.**
+You MUST generate BOTH files below. Both are REQUIRED output for every deep trace diagnosis.
 
 ### 1. Word Document (.docx) — REQUIRED
 
-Write a Word document to disk named `deep_trace_diagnosis_<date>.docx` containing:
+Write a Word document to disk named `deep_trace_diagnosis_<YYYYMMDD-HHMMSS>.docx` containing:
 
 - Session summary (name, type, user, device, status, start/end time, duration)
 - Web probe metrics breakdown (DNS, TCP, SSL, HTTP response times)
@@ -54,141 +156,7 @@ Write a Word document to disk named `deep_trace_diagnosis_<date>.docx` containin
 
 ### 2. Interactive HTML Web Page (.html) — REQUIRED
 
-Write a **fully functional, self-contained HTML file** to disk named `deep_trace_diagnosis_<date>.html`. This file MUST contain working CSS and JavaScript — not placeholders or comments. Copy the template below and populate `<tbody>` with data from the deep trace. Replace `{{USER}}`, `{{DEVICE}}`, `{{SESSION}}`, `{{STATUS}}`, `{{DURATION}}`, and `{{ROOT_CAUSE}}` with actual values.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Deep Trace Diagnosis</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;color:#2d3436;padding:20px}
-h1{text-align:center;margin-bottom:20px;color:#1a1a2e}
-h2{margin:24px 0 12px;color:#1a1a2e}
-.summary{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.card{background:#fff;border-radius:10px;padding:18px 28px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;min-width:160px}
-.card .num{font-size:2em;font-weight:700;color:#1a1a2e}
-.card .label{font-size:.85em;color:#636e72;margin-top:4px}
-.filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
-.filters input,.filters select{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:.95em}
-.filters input{min-width:260px}
-.filters button{padding:8px 18px;background:#0984e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95em}
-.filters button:hover{background:#0767b2}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:24px}
-th{background:#1a1a2e;color:#fff;padding:10px 12px;cursor:pointer;position:sticky;top:0;user-select:none;white-space:nowrap}
-th:hover{background:#2d3460}
-td{padding:9px 12px;border-bottom:1px solid #eee}
-tr.good{background:#d4edda}
-tr.degraded{background:#fff3cd}
-tr.critical{background:#f8d7da}
-tr:hover{filter:brightness(.97)}
-.status-good{color:#27ae60;font-weight:700}
-.status-degraded{color:#e67e22;font-weight:700}
-.status-critical{color:#e74c3c;font-weight:700}
-@media(max-width:800px){.summary{flex-direction:column;align-items:center}table{font-size:.85em}}
-</style>
-</head>
-<body>
-<h1>Deep Trace Diagnosis Report</h1>
-<div class="summary">
-  <div class="card"><div class="num">{{USER}}</div><div class="label">User</div></div>
-  <div class="card"><div class="num">{{DEVICE}}</div><div class="label">Device</div></div>
-  <div class="card"><div class="num">{{SESSION}}</div><div class="label">Session</div></div>
-  <div class="card"><div class="num">{{STATUS}}</div><div class="label">Status</div></div>
-  <div class="card"><div class="num">{{DURATION}}</div><div class="label">Duration</div></div>
-  <div class="card"><div class="num" style="color:#e74c3c">{{ROOT_CAUSE}}</div><div class="label">Root Cause Layer</div></div>
-</div>
-
-<h2>Web Probe Metrics</h2>
-<div class="filters">
-  <input type="text" id="search" placeholder="Search metrics, hops, processes..." oninput="applyFilters('probeTable')">
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
-<table id="probeTable">
-<thead><tr>
-  <th onclick="sortTable('probeTable',0)">Metric &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('probeTable',1)">Value &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('probeTable',2)">Threshold &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('probeTable',3)">Status &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="good|degraded|critical"> per web probe metric -->
-</tbody>
-</table>
-
-<h2>Cloud Path Topology</h2>
-<table id="pathTable">
-<thead><tr>
-  <th onclick="sortTable('pathTable',0)">Hop &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('pathTable',1)">IP / Hostname &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('pathTable',2)">Latency (ms) &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('pathTable',3)">Packet Loss (%) &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('pathTable',4)">Jitter (ms) &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('pathTable',5)">Status &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="good|degraded|critical"> per hop -->
-</tbody>
-</table>
-
-<h2>Device Health</h2>
-<table id="healthTable">
-<thead><tr>
-  <th onclick="sortTable('healthTable',0)">Metric &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('healthTable',1)">Value &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('healthTable',2)">Status &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="good|degraded|critical"> per health metric -->
-</tbody>
-</table>
-
-<h2>Top Processes</h2>
-<table id="processTable">
-<thead><tr>
-  <th onclick="sortTable('processTable',0)">Process &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('processTable',1)">CPU % &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('processTable',2)">Memory % &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr> per top process -->
-</tbody>
-</table>
-
-<h2>Events Timeline</h2>
-<table id="eventTable">
-<thead><tr>
-  <th onclick="sortTable('eventTable',0)">Timestamp &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('eventTable',1)">Type &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable('eventTable',2)">Description &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr> per event -->
-</tbody>
-</table>
-
-<script>
-let sortDirs={};
-function sortTable(tid,c){const t=document.getElementById(tid),b=t.tBodies[0],rows=Array.from(b.rows);const k=tid+c;if(!sortDirs[k])sortDirs[k]=1;sortDirs[k]*=-1;rows.sort((a,b_)=>{let x=a.cells[c].textContent.trim(),y=b_.cells[c].textContent.trim();const xn=parseFloat(x),yn=parseFloat(y);if(!isNaN(xn)&&!isNaN(yn))return(xn-yn)*sortDirs[k];return x.localeCompare(y)*sortDirs[k]});rows.forEach(r=>b.appendChild(r))}
-function applyFilters(tid){const q=document.getElementById('search').value.toLowerCase();document.querySelectorAll('table tbody tr').forEach(row=>{row.style.display=row.textContent.toLowerCase().includes(q)?'':'none'})}
-function exportCSV(){const tables=['probeTable','pathTable','healthTable','processTable','eventTable'];let csv='';tables.forEach(tid=>{const t=document.getElementById(tid),rows=Array.from(t.rows).filter(r=>r.style.display!=='none');csv+=rows.map(r=>Array.from(r.cells).map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(',')).join('\n')+'\n'});const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='deep_trace_diagnosis.csv';a.click()}
-</script>
-</body>
-</html>
-```text
-
-**MANDATORY STEPS:**
-
-1. Copy this template exactly
-2. Replace the `{{...}}` placeholders in the summary cards with real values
-3. Add `<tr>` rows inside each `<tbody>` with data from the deep trace tools
-4. Set the row class to `good`, `degraded`, or `critical` based on thresholds
-5. Write the file to disk and provide the file path to the user
-
-**Both files must be saved to the user's working directory** and the file paths provided in the response.
+Generated by the template-substitution flow described in the **HTML OUTPUT** section above. Filename: `deep_trace_diagnosis_<YYYYMMDD-HHMMSS>.html`. Do not hand-author HTML or CSS — the template ships everything the report needs.
 
 ---
 
@@ -382,7 +350,13 @@ Review all events that occurred during the trace window:
 | **Application** | High HTTP response + clean network path | Escalate to app team with ZDX evidence |
 | **DNS** | High DNS time + normal TCP/SSL | Check DNS resolver, consider DNS proxy |
 
-Present the complete diagnosis with all tables and analysis as described in the Output Artifacts section.
+Use the table above to pick the dominant **root cause layer**, then assemble the `__ZDX_DATA__` payload defined in the *Data Payload Contract* and render it through `./templates/report.html.template` (see the **HTML OUTPUT** section). The template already produces the five tables (probes, path, health, processes, events), KPI cards, color coding, search/sort, and CSV export — do **not** hand-author any HTML here.
+
+Write the `analysis` block before rendering:
+
+- **`analysis.summary`** (3–5 sentences): which layer is the bottleneck, the strongest piece of evidence (single number / hop), and whether this is a one-off or part of a recurring pattern.
+- **`analysis.rootCause`** (2–4 sentences): map the layer to the evidence row that proves it (e.g., *"hop 4 (203.0.113.10) shows 187 ms latency and 6% packet loss — every downstream metric is degraded from that hop on, isolating the issue to the ISP segment, not the device or Zscaler edge"*).
+- **`analysis.remediation`** (3–5 items): each `priority` uses the same buckets as the other skills (`Immediate`, `Investigate`, `Monitor`, `Communicate`).
 
 ---
 

@@ -1,0 +1,606 @@
+/**
+ * Hero — landing surface mirroring the Zscaler OneAPI Automation Hub.
+ * Two-column grid (headline left, search + terminal right) with a
+ * stats bar pinned beneath, divided from the rest of the page by a
+ * hairline.
+ *
+ * Theming model: every mode-dependent value below routes through a CSS
+ * variable so the same set of rules works in both light and dark mode.
+ * Defaults are the LIGHT-mode values (clean white-blue surface with the
+ * Background.webp isometric watermark, matching the Automation Hub
+ * homepage); `[data-theme="dark"]` overrides swap them for the
+ * near-black navbar-shelf surface and the radial blue gradients we use
+ * in dark mode.
+ */
+
+.heroContainer {
+  /* Light-mode defaults — overridden in dark mode below. */
+  --hero-bg: #f4f7fb;
+  --hero-title-color: #0a2540;
+  --hero-subtitle-color: #475569;
+  --hero-eyebrow-color: #194cbb;
+  --hero-eyebrow-bg: rgba(45, 125, 253, 0.1);
+  --hero-eyebrow-border: rgba(45, 125, 253, 0.35);
+  --hero-button-bg: #194cbb;
+  --hero-button-color: #ffffff;
+  --hero-button-secondary-bg: rgba(25, 76, 187, 0.04);
+  --hero-button-secondary-color: #194cbb;
+  --hero-button-secondary-border: rgba(25, 76, 187, 0.35);
+  --hero-surface: rgba(25, 76, 187, 0.04);
+  --hero-surface-strong: rgba(25, 76, 187, 0.08);
+  --hero-border: rgba(25, 76, 187, 0.22);
+  --hero-text: #0a2540;
+  --hero-text-muted: #64748b;
+  --hero-text-faint: #94a3b8;
+  --hero-stats-bg: rgba(255, 255, 255, 0.5);
+  --hero-stats-border: rgba(15, 23, 42, 0.08);
+  --hero-stats-value-grad: linear-gradient(135deg, #194cbb 0%, #3DB7FF 100%);
+
+  position: relative;
+  background-color: var(--hero-bg);
+  padding: 5rem 0 0;
+  overflow: hidden;
+}
+
+/* Dark-mode override — flat near-black surface with the radial-blue
+ * glow gradients we use across the rest of the dark navbar shelf.
+ * (Light mode is a clean flat surface, no watermark — the previous
+ * tiled patterns added visual noise without clarifying anything.)
+ */
+:global([data-theme="dark"]) .heroContainer {
+  --hero-bg: #18181b;
+  background-image:
+    radial-gradient(
+      ellipse 800px 400px at 15% 0%,
+      rgba(25, 76, 187, 0.12) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 600px 300px at 85% 100%,
+      rgba(45, 125, 253, 0.07) 0%,
+      transparent 60%
+    );
+  --hero-title-color: #ffffff;
+  --hero-subtitle-color: rgba(255, 255, 255, 0.75);
+  --hero-eyebrow-color: rgba(255, 255, 255, 0.78);
+  --hero-eyebrow-bg: rgba(45, 125, 253, 0.1);
+  --hero-eyebrow-border: rgba(45, 125, 253, 0.28);
+  --hero-button-bg: #ffffff;
+  --hero-button-color: #18181b;
+  --hero-button-secondary-bg: rgba(255, 255, 255, 0.06);
+  --hero-button-secondary-color: #ffffff;
+  --hero-button-secondary-border: rgba(255, 255, 255, 0.18);
+  --hero-surface: rgba(255, 255, 255, 0.09);
+  --hero-surface-strong: rgba(255, 255, 255, 0.13);
+  --hero-border: rgba(255, 255, 255, 0.22);
+  --hero-text: #ffffff;
+  --hero-text-muted: rgba(255, 255, 255, 0.7);
+  --hero-text-faint: rgba(255, 255, 255, 0.5);
+  --hero-stats-bg: rgba(0, 0, 0, 0.18);
+  --hero-stats-border: rgba(255, 255, 255, 0.07);
+  --hero-stats-value-grad: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.6) 100%
+  );
+}
+
+/* Float the content above the watermark layer. */
+.heroInner,
+.statsBar {
+  position: relative;
+  z-index: 1;
+}
+
+.heroInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+/* ===== Left column ===== */
+
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 0.5rem;
+}
+
+.heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background-color: var(--hero-eyebrow-bg);
+  border: 1px solid var(--hero-eyebrow-border);
+  color: var(--hero-eyebrow-color);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrowDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-color);
+  box-shadow: 0 0 8px rgba(45, 125, 253, 0.75);
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--hero-title-color);
+  margin: 0 0 1.25rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.heroTitleAccent {
+  /* All-blue gradient: deep wordmark blue (#194CBB) → vivid bright
+   * blue (#3DB7FF). No green/teal at any point along the gradient —
+   * "AI agents" reads as pure-blue end-to-end.
+   */
+  background: linear-gradient(135deg, #194CBB 0%, #3DB7FF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.heroSubtitle {
+  font-size: 1.1rem;
+  color: var(--hero-subtitle-color);
+  margin: 0 0 2rem;
+  max-width: 540px;
+  line-height: 1.6;
+}
+
+.heroCta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.heroButton {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--hero-button-bg);
+  color: var(--hero-button-color);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.heroButton:hover {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(45, 125, 253, 0.4);
+}
+
+.heroButtonIcon {
+  margin-left: 0.5rem;
+}
+
+.heroButtonSecondary {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--hero-button-secondary-bg);
+  color: var(--hero-button-secondary-color);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  border: 1px solid var(--hero-button-secondary-border);
+  transition: all 0.2s ease;
+}
+
+.heroButtonSecondary:hover {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  text-decoration: none;
+  border-color: var(--accent-color);
+}
+
+/* ===== Right column ===== */
+
+.heroRight {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* =====
+ * Hero search bar
+ *
+ * The original pretty hero pill: leading magnifier glyph, themed
+ * border, ↵ kbd hint, focus ring tinted Zscaler blue. The wrapper
+ * also hosts the curated suggestion dropdown shown when a popular
+ * topic pill is clicked — see `.suggestionDropdown` further down.
+ * ===== */
+
+.searchWrap {
+  position: relative;
+}
+
+.searchForm {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--hero-surface);
+  border: 1px solid var(--hero-border);
+  border-radius: 10px;
+  padding: 0 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.searchForm:focus-within {
+  border-color: var(--primary-color);
+  background-color: var(--hero-surface-strong);
+  box-shadow: 0 0 0 4px rgba(25, 76, 187, 0.22);
+}
+
+.searchIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hero-text-muted);
+  margin-right: 0.6rem;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.95rem 0;
+  font-size: 1rem;
+  color: var(--hero-text);
+  font-family: inherit;
+}
+
+.searchInput::placeholder {
+  color: var(--hero-text-faint);
+}
+
+.searchInput::-webkit-search-cancel-button,
+.searchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchKbd {
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background-color: var(--hero-surface-strong);
+  border: 1px solid var(--hero-border);
+  color: var(--hero-text-muted);
+  margin-left: 0.5rem;
+}
+
+/* ===== Curated suggestion dropdown =====
+ *
+ * Anchored beneath the hero search form by the shared `.searchWrap`
+ * positioning context. Each entry is a docs link with a title and a
+ * subtle breadcrumb subtitle, mirroring the Automation Hub's "click a
+ * popular topic, see matching pages" UX (see referenced screenshot).
+ *
+ * Driven by curated static data in `Hero/index.tsx` rather than the
+ * search-local plugin, because that plugin's worker no-ops in dev
+ * mode and we want the affordance to work identically dev + prod.
+ */
+.suggestionDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background-color: var(--hero-bg);
+  border: 1px solid var(--hero-border);
+  border-radius: 10px;
+  padding: 0.5rem;
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.18),
+    0 2px 4px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+:global([data-theme="dark"]) .suggestionDropdown {
+  background-color: #1f2026;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.suggestionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  color: var(--hero-text);
+  text-decoration: none;
+  transition: background-color 0.12s ease;
+}
+
+.suggestionItem:hover,
+.suggestionItem:focus-visible {
+  background-color: var(--hero-surface-strong);
+  color: var(--hero-text);
+  text-decoration: none;
+  outline: none;
+}
+
+.suggestionTitle {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--hero-text);
+}
+
+.suggestionPath {
+  font-size: 0.78rem;
+  color: var(--hero-text-muted);
+}
+
+.suggestionFooter {
+  margin-top: 0.25rem;
+  padding: 0.55rem 0.8rem;
+  border: none;
+  background-color: transparent;
+  border-top: 1px solid var(--hero-border);
+  text-align: left;
+  color: var(--accent-color);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 0 0 6px 6px;
+  transition: background-color 0.12s ease;
+}
+
+.suggestionFooter:hover,
+.suggestionFooter:focus-visible {
+  background-color: var(--hero-surface-strong);
+  outline: none;
+}
+
+.popularTopics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.popularTopicsLabel {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--hero-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.popularTopicsPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.topicPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid var(--hero-border);
+  background-color: var(--hero-surface);
+  color: var(--hero-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.topicPill:hover {
+  background-color: var(--hero-surface-strong);
+  border-color: var(--accent-color);
+  color: var(--hero-text);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.topicPill:focus-visible {
+  outline: 2px solid var(--accent-color, #2D7DFD);
+  outline-offset: 2px;
+}
+
+/* ===== Terminal preview ===== */
+
+.terminal {
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  background-color: #0d0d10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.terminalChrome {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.terminalDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.terminalDot[data-color="red"] {
+  background-color: #ff5f57;
+}
+.terminalDot[data-color="amber"] {
+  background-color: #ffbd2e;
+}
+.terminalDot[data-color="green"] {
+  background-color: #28c840;
+}
+
+.terminalTitle {
+  margin-left: 0.5rem;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.terminalBody {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background-color: transparent;
+}
+
+.codeMuted {
+  color: rgba(255, 255, 255, 0.4);
+}
+.codePrompt {
+  color: var(--accent-color);
+}
+.codeCmd {
+  color: #ffffff;
+  font-weight: 500;
+}
+.codeStr {
+  color: #f8d56f;
+}
+
+/* ===== Stats bar ===== */
+
+.statsBar {
+  border-top: 1px solid var(--hero-stats-border);
+  background-color: var(--hero-stats-bg);
+}
+
+.statsInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 120px;
+}
+
+.statValue {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: var(--hero-stats-value-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.statLabel {
+  font-size: 0.82rem;
+  color: var(--hero-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 996px) {
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .heroTitle {
+    font-size: 2.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroContainer {
+    padding: 3.5rem 0 0;
+  }
+
+  .heroInner {
+    padding-bottom: 3rem;
+  }
+
+  .heroTitle {
+    font-size: 2.25rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+
+  .statValue {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .heroInner {
+    padding: 0 1.25rem 2.5rem;
+  }
+
+  .heroCta {
+    width: 100%;
+  }
+
+  .heroButton,
+  .heroButtonSecondary {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .statsInner {
+    padding: 1.25rem;
+    justify-content: space-between;
+  }
+
+  .stat {
+    min-width: 90px;
+  }
+}

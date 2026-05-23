@@ -21,7 +21,7 @@ Investigate active and historical ZDX alerts to determine their scope, affected 
 
 ## Data Presentation Requirements
 
-**ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
+**All tables are rendered by the HTML template, not by hand.** Do not author `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` markup in your reply or in the report. You produce a JSON payload (see *Data Payload Contract*) and the template at `./templates/report.html.template` turns it into the styled, sortable, exportable tables shown in `./example/report.example.html`.
 
 After each table, provide:
 
@@ -35,13 +35,94 @@ Use color-coded rows by alert priority:
 - Yellow: Medium priority alerts (moderate impact, localized scope)
 - Green: Low priority or resolved alerts
 
+## ⚠ HTML OUTPUT — READ THIS BEFORE PRODUCING ANY HTML
+
+There is exactly one acceptable way to produce the HTML output:
+
+1. **Read the template from disk** — do NOT inline a copy in your response. The template lives next to this SKILL.md inside the skill's package, at:
+
+   ```text
+   ./templates/report.html.template
+   ```
+
+   The `./` prefix is intentional: this path is **relative to the skill folder** (the directory containing this SKILL.md), **never** an absolute path. Most agents that load skills from an uploaded `.zip` extract the package into a working directory and expose its contents via that relative path — read the file by joining the skill's own root directory with `./templates/report.html.template`. Do not rewrite this to an absolute path that points at the author's machine.
+
+2. **Build a single JSON object** (`__ZDX_DATA__` payload) shaped exactly as documented in the *Data Payload Contract* section below. Aggregate the responses from the ZDX MCP tool calls (Steps 1–6 of the *Workflow*) into that object.
+
+3. **Replace** the literal token `__ZDX_DATA__` (which appears once, inside `<script type="application/json" id="zdx-data">__ZDX_DATA__</script>`) with the JSON object. Do not edit any other part of the template.
+
+4. **Write** the result to disk as `alert_investigation_report_<YYYYMMDD-HHMMSS>.html` next to the .docx, and give the user a `computer://` link to it.
+
+This template already provides: Zscaler header with logo · sticky top bar · scope summary bar · KPI cards with severity-coded top borders · per-table search + filter chips · sortable color-coded tables · per-table CSV export · light/dark theme toggle · top-right language dropdown (EN / ES / PT / FR / JA) · printable PDF view · localStorage prefs · Analysis / Root Cause / Remediation block.
+
+**If you find yourself writing `<html>`, `<style>`, or `<table>` in a code-block destined for the user, stop. Read the template instead.**
+
+A populated reference rendering ships with this skill at `./example/report.example.html` (relative to the skill folder). Open it in a browser to preview the exact layout and depth expected.
+
+### Data Payload Contract
+
+The full `__ZDX_DATA__` payload is one JSON object. Every field below is **required** unless marked optional. This skill emits **two tables**: the active alert summary and the per-alert metric correlation.
+
+```json
+{
+  "generated_at": "<ISO 8601 timestamp>",
+  "scope_en": "Free-form description in English",
+  "scope_es": "...in Spanish (optional, falls back to scope_en)",
+  "scope_pt": "...in Portuguese (optional)",
+  "scope_fr": "...in French (optional)",
+  "scope_ja": "...in Japanese (optional)",
+  "kpis": {
+    "total": "<int>",
+    "high": "<int>",
+    "medium": "<int>",
+    "low": "<int>",
+    "mostAffectedApp": "<app name or '—'>",
+    "impactedDevices": "<int>"
+  },
+  "tables": {
+    "alerts": [
+      {
+        "severity": "critical | warning | good",
+        "priority": "High | Medium | Low",
+        "name": "<alert title>",
+        "application": "<app name>",
+        "duration": "<e.g. '6 hours'>",
+        "affectedDevices": "<int>",
+        "locations": "<comma-separated location names>",
+        "bottleneck": "<e.g. 'PFT: 12.4s'>",
+        "status": "Active | Resolved"
+      }
+    ],
+    "correlation": [
+      {
+        "severity": "critical | warning | good",
+        "alert": "<alert title>",
+        "pft": "<value or '—'>",
+        "dns": "<value or '—'>",
+        "availability": "<value or '—'>",
+        "rootCauseIndicator": "Server-side / CDN | Local DNS resolver | Application server instability | ISP path | …"
+      }
+    ]
+  },
+  "analysis": {
+    "summary": "...",
+    "rootCause": "...",
+    "remediation": [
+      { "priority": "Immediate | Investigate | Monitor | Communicate", "action": "..." }
+    ]
+  }
+}
+```
+
+Map each row's `severity` from `priority`: `High` → `critical`, `Medium` → `warning`, `Low` → `good`.
+
 ## Output Artifacts — MANDATORY
 
-**You MUST generate BOTH files below. Do NOT skip the HTML page. Do NOT consider this optional. Both files are REQUIRED output for every alert investigation.**
+You MUST generate BOTH files below. Both are REQUIRED output for every alert investigation.
 
 ### 1. Word Document (.docx) — REQUIRED
 
-Write a Word document to disk named `alert_investigation_report_<date>.docx` containing:
+Write a Word document to disk named `alert_investigation_report_<YYYYMMDD-HHMMSS>.docx` containing:
 
 - Executive summary with active alert count, severity breakdown, and scope
 - Active alerts table (priority, alert name, application, duration, affected devices, locations, bottleneck)
@@ -52,98 +133,7 @@ Write a Word document to disk named `alert_investigation_report_<date>.docx` con
 
 ### 2. Interactive HTML Web Page (.html) — REQUIRED
 
-Write a **fully functional, self-contained HTML file** to disk named `alert_investigation_report_<date>.html`. This file MUST contain working CSS and JavaScript — not placeholders or comments. Copy the template below and populate `<tbody>` with one `<tr>` per alert. Replace `{{TOTAL_ALERTS}}`, `{{HIGH_COUNT}}`, `{{MEDIUM_COUNT}}`, `{{LOW_COUNT}}`, `{{MOST_AFFECTED}}`, and `{{IMPACTED_DEVICES}}` with actual values.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Alert Investigation Report</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;color:#2d3436;padding:20px}
-h1{text-align:center;margin-bottom:20px;color:#1a1a2e}
-.summary{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.card{background:#fff;border-radius:10px;padding:18px 28px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;min-width:160px}
-.card .num{font-size:2em;font-weight:700;color:#1a1a2e}
-.card .label{font-size:.85em;color:#636e72;margin-top:4px}
-.filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
-.filters input,.filters select{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:.95em}
-.filters input{min-width:260px}
-.filters button{padding:8px 18px;background:#0984e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95em}
-.filters button:hover{background:#0767b2}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-th{background:#1a1a2e;color:#fff;padding:10px 12px;cursor:pointer;position:sticky;top:0;user-select:none;white-space:nowrap}
-th:hover{background:#2d3460}
-td{padding:9px 12px;border-bottom:1px solid #eee}
-tr.high{background:#f8d7da}
-tr.medium{background:#fff3cd}
-tr.low{background:#d4edda}
-tr:hover{filter:brightness(.97)}
-.priority-high{color:#e74c3c;font-weight:700}
-.priority-medium{color:#e67e22;font-weight:700}
-.priority-low{color:#636e72;font-weight:700}
-@media(max-width:800px){.summary{flex-direction:column;align-items:center}table{font-size:.85em}}
-</style>
-</head>
-<body>
-<h1>Alert Investigation Report</h1>
-<div class="summary">
-  <div class="card"><div class="num">{{TOTAL_ALERTS}}</div><div class="label">Total Alerts</div></div>
-  <div class="card"><div class="num" style="color:#e74c3c">{{HIGH_COUNT}}</div><div class="label">High</div></div>
-  <div class="card"><div class="num" style="color:#e67e22">{{MEDIUM_COUNT}}</div><div class="label">Medium</div></div>
-  <div class="card"><div class="num" style="color:#27ae60">{{LOW_COUNT}}</div><div class="label">Low</div></div>
-  <div class="card"><div class="num">{{MOST_AFFECTED}}</div><div class="label">Most Affected App</div></div>
-  <div class="card"><div class="num">{{IMPACTED_DEVICES}}</div><div class="label">Impacted Devices</div></div>
-</div>
-<div class="filters">
-  <input type="text" id="search" placeholder="Search alert, application, location..." oninput="applyFilters()">
-  <select id="priorityFilter" onchange="applyFilters()"><option value="">All Priority</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
-  <select id="statusFilter" onchange="applyFilters()"><option value="">All Status</option><option value="Active">Active</option><option value="Resolved">Resolved</option></select>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
-<table id="alertTable">
-<thead><tr>
-  <th onclick="sortTable(0)">Priority &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(1)">Alert Name &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(2)">Application &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(3)">Duration &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(4)">Affected Devices &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(5)">Locations &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(6)">Bottleneck &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(7)">Status &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="high|medium|low"> per alert.
-     Example row:
-  <tr class="high">
-    <td class="priority-high">HIGH</td><td>M365 - High Page Fetch Time</td><td>Microsoft 365</td>
-    <td>6 hours</td><td>47</td><td>New York, London</td><td>PFT: 12.4s</td><td>Active</td>
-  </tr>
--->
-</tbody>
-</table>
-<script>
-let sortDir=[1,1,1,1,1,1,1,1];
-function sortTable(c){const t=document.getElementById('alertTable'),b=t.tBodies[0],rows=Array.from(b.rows);sortDir[c]*=-1;rows.sort((a,b_)=>{let x=a.cells[c].textContent.trim(),y=b_.cells[c].textContent.trim();const xn=parseFloat(x),yn=parseFloat(y);if(!isNaN(xn)&&!isNaN(yn))return(xn-yn)*sortDir[c];return x.localeCompare(y)*sortDir[c]});rows.forEach(r=>b.appendChild(r))}
-function applyFilters(){const q=document.getElementById('search').value.toLowerCase(),p=document.getElementById('priorityFilter').value,s=document.getElementById('statusFilter').value;const rows=document.querySelectorAll('#alertTable tbody tr');rows.forEach(row=>{const txt=row.textContent.toLowerCase(),pr=row.cells[0]?.textContent.trim()||'',st=row.cells[7]?.textContent.trim()||'';let show=true;if(q&&!txt.includes(q))show=false;if(p&&!pr.toUpperCase().includes(p.toUpperCase()))show=false;if(s&&st!==s)show=false;row.style.display=show?'':'none'})}
-function exportCSV(){const t=document.getElementById('alertTable'),rows=Array.from(t.rows).filter(r=>r.style.display!=='none');let csv=rows.map(r=>Array.from(r.cells).map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='alert_investigation.csv';a.click()}
-</script>
-</body>
-</html>
-```text
-
-**MANDATORY STEPS:**
-
-1. Copy this template exactly
-2. Replace the `{{...}}` placeholders in the summary cards with real values
-3. Add one `<tr>` row inside `<tbody>` for every alert
-4. Set the row class to `high`, `medium`, or `low` based on priority
-5. Write the file to disk and provide the file path to the user
-
-**Both files must be saved to the user's working directory** and the file paths provided in the response.
+Generated by the template-substitution flow described in the **HTML OUTPUT** section above. Filename: `alert_investigation_report_<YYYYMMDD-HHMMSS>.html`. Do not hand-author HTML or CSS — the template ships everything the report needs.
 
 ---
 
@@ -351,57 +341,20 @@ For comprehensive deep trace analysis, see the [Diagnose Deep Trace](../diagnose
 
 ### Step 7: Present Alert Investigation Report
 
-Present all data in **HTML table format** with detailed analysis.
+Assemble the `__ZDX_DATA__` payload defined in the *Data Payload Contract* and render it through `./templates/report.html.template` (see the **HTML OUTPUT** section). The template already produces both the alert table and the metric-correlation table, plus KPI cards, color coding by priority, search/sort, and CSV export — do **not** hand-author any HTML or markdown table here.
 
-**Active Alerts Summary (HTML table):**
+What you DO write is the `analysis` block inside the payload. **Do not skip it.** This is what makes the investigation useful:
 
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Priority</th>
-  <th style="padding:8px;border:1px solid #ddd">Alert Name</th>
-  <th style="padding:8px;border:1px solid #ddd">Application</th>
-  <th style="padding:8px;border:1px solid #ddd">Duration</th>
-  <th style="padding:8px;border:1px solid #ddd">Affected Devices</th>
-  <th style="padding:8px;border:1px solid #ddd">Locations</th>
-  <th style="padding:8px;border:1px solid #ddd">Bottleneck</th>
-</tr></thead>
-<tbody>
-  <tr style="background:#f8d7da"><td style="padding:8px;font-weight:bold;color:red">HIGH</td><td style="padding:8px">M365 - High Page Fetch Time</td><td style="padding:8px">Microsoft 365</td><td style="padding:8px">6 hours</td><td style="padding:8px">47</td><td style="padding:8px">New York, London, Singapore</td><td style="padding:8px">PFT: 12.4s</td></tr>
-  <tr style="background:#fff3cd"><td style="padding:8px;font-weight:bold;color:orange">MEDIUM</td><td style="padding:8px">Salesforce - DNS Degraded</td><td style="padding:8px">Salesforce</td><td style="padding:8px">2 hours</td><td style="padding:8px">12</td><td style="padding:8px">Dallas</td><td style="padding:8px">DNS: 180ms</td></tr>
-  <tr style="background:#d4edda"><td style="padding:8px;font-weight:bold;color:gray">LOW</td><td style="padding:8px">Internal CRM - Availability Drop</td><td style="padding:8px">Internal CRM</td><td style="padding:8px">30 min</td><td style="padding:8px">3</td><td style="padding:8px">San Jose</td><td style="padding:8px">Availability: 92%</td></tr>
-</tbody></table>
-```text
+- **`analysis.summary`** (3–5 sentences): rank the alerts by impact, name the highest-priority one and why, and call out whether multiple alerts share a root cause. Quote concrete numbers from Steps 2–4 (e.g., *"47 devices across 3 locations with PFT at 12.4s indicates a server-side issue, not a local network problem"*).
+- **`analysis.rootCause`** (1–3 sentences per active alert): map the alert to the dominant bottleneck. Cite the historical pattern data from Step 5 (recurring vs. new) and the deep-trace evidence from Step 6 when available.
+- **`analysis.remediation`** (4–6 items): label each with a priority bucket and a concrete action.
 
-**Metric Correlation per Alert (HTML table):**
-
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Alert</th>
-  <th style="padding:8px;border:1px solid #ddd">PFT</th>
-  <th style="padding:8px;border:1px solid #ddd">DNS</th>
-  <th style="padding:8px;border:1px solid #ddd">Availability</th>
-  <th style="padding:8px;border:1px solid #ddd">Root Cause Indicator</th>
-</tr></thead>
-<tbody>
-  <tr><td style="padding:8px;border:1px solid #ddd">M365 - High PFT</td><td style="padding:8px;color:red;font-weight:bold">12.4s</td><td style="padding:8px;color:green">25ms</td><td style="padding:8px;color:orange">94%</td><td style="padding:8px">Server-side / CDN latency</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">Salesforce - DNS</td><td style="padding:8px;color:orange">4.2s</td><td style="padding:8px;color:red;font-weight:bold">180ms</td><td style="padding:8px;color:green">99%</td><td style="padding:8px">Local DNS resolver (Dallas)</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">CRM - Availability</td><td style="padding:8px;color:orange">Variable</td><td style="padding:8px;color:green">15ms</td><td style="padding:8px;color:red;font-weight:bold">92%</td><td style="padding:8px">Application server instability</td></tr>
-</tbody></table>
-```text
-
-**After the tables, ALWAYS provide:**
-
-1. **Analysis:** "Three active alerts are impacting the organization. The M365 alert is the highest priority -- 47 devices across 3 locations with PFT at 12.4s indicates a server-side issue, not a local network problem. The Salesforce DNS issue is isolated to Dallas, suggesting a local DNS resolver problem. The CRM alert is new and low impact -- likely transient."
-
-2. **Historical Pattern Analysis:** "The M365 High PFT alert has triggered 3 times this week (Mon 8am, Wed 2pm, Today 10am), suggesting a recurring issue possibly correlated with peak usage hours. No prior Salesforce DNS alerts exist -- this is a new issue. The CRM had one similar alert 5 days ago that resolved in 45 minutes."
-
-3. **Next Steps / Resolution:**
-   - **M365 (HIGH):** Check Microsoft 365 service health dashboard immediately. If service is healthy, investigate Zscaler cloud path to Microsoft endpoints. The recurring pattern suggests a capacity issue during peak hours -- consider engaging Microsoft support with ZDX evidence.
-   - **Salesforce DNS (MEDIUM):** Investigate DNS server configuration in Dallas office. Compare with healthy locations. Consider switching to redundant DNS or Zscaler DNS proxy.
-   - **CRM Availability (LOW):** Monitor for 1 hour. If it persists, check application server health and recent deployments. Check for scheduled maintenance windows.
-   - **Proactive:** Set up recurring deep traces for the M365 issue to capture network path data during the next peak-hour occurrence.
+| Priority | Apply to | Action |
+|---|---|---|
+| `Immediate` | HIGH alerts and any alert with > 25 affected devices | Engage the vendor / service-health dashboard. Validate Zscaler cloud path. Open a P1 with supporting ZDX evidence (PFT / DNS / loss / hop). |
+| `Investigate` | MEDIUM alerts and recurring alerts | Compare the affected location/department against healthy peers. Drill into the bottleneck metric. Open a P2 with the historical pattern as evidence. |
+| `Monitor` | LOW alerts and brand-new alerts (< 30 min) | Watch for 1 hour. If still active or impact grows, promote to `Investigate`. |
+| `Communicate` | Any alert with multi-location impact | Notify location IT contacts; surface the alert in the next change/incident review. |
 
 ---
 

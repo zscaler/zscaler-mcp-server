@@ -1,0 +1,11 @@
+# Local-only artifacts created by the AWS-integration scripts.
+# Scoped to this folder so we don't fight with the repo-root .gitignore.
+
+# Deployment state written by aws_mcp_operations.py — contains the
+# CloudFormation stack name + region + (when JWT auth is used) the
+# raw API key. Never commit.
+.aws-deploy-state.json
+
+# Per-run venv created by `uv venv .strands-venv` for strands_agent_chat.py.
+.strands-venv/
+.aws-deploy-state.json

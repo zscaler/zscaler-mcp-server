@@ -1,0 +1,15 @@
+# Local-only artifacts produced by harness_mcp_operations.py.
+
+# Deployment state written by `deploy` — contains the harness ARN,
+# region, execution-role ARN, credential-provider ARN, and the MCP URL.
+.aws-harness-state.json
+
+# Per-run venv used during prototyping.
+.harness-venv/
+
+# Local credential file (copied from env.properties, with secrets filled in).
+.env
+
+# Python cache.
+__pycache__/
+*.pyc

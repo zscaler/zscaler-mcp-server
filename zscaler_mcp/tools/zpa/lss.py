@@ -43,9 +43,9 @@ def zpa_list_lss_configs(
             )
         ),
     ] = None,
-    page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
+    page: Annotated[Optional[int], Field(ge=1, description="Page number for pagination.")] = None,
     page_size: Annotated[
-        Optional[str], Field(description="Items per page for pagination (max 500).")
+        Optional[int], Field(ge=1, description="Items per page for pagination (max 500).")
     ] = None,
     query: Annotated[
         Optional[str],
@@ -77,10 +77,10 @@ def zpa_list_lss_configs(
     qp: Dict[str, Any] = {}
     if search:
         qp["search"] = search
-    if page:
-        qp["page"] = page
-    if page_size:
-        qp["page_size"] = page_size
+    if page is not None:
+        qp["page"] = str(page)
+    if page_size is not None:
+        qp["page_size"] = str(page_size)
 
     configs, _, err = api.list_configs(query_params=qp or None)
     if err:

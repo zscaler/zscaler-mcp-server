@@ -129,8 +129,8 @@ def zpa_list_application_segments_pra(
             )
         ),
     ] = None,
-    page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
-    page_size: Annotated[Optional[str], Field(description="Number of items per page.")] = None,
+    page: Annotated[Optional[int], Field(ge=1, description="Page number for pagination.")] = None,
+    page_size: Annotated[Optional[int], Field(ge=1, description="Number of items per page.")] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
@@ -158,10 +158,10 @@ def zpa_list_application_segments_pra(
     query_params: Dict[str, Any] = {"microtenant_id": microtenant_id}
     if search:
         query_params["search"] = search
-    if page:
-        query_params["page"] = page
-    if page_size:
-        query_params["page_size"] = page_size
+    if page is not None:
+        query_params["page"] = str(page)
+    if page_size is not None:
+        query_params["page_size"] = str(page_size)
 
     segments, _, err = api.list_segments_pra(query_params=query_params)
     if err:

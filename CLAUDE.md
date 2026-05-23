@@ -576,15 +576,50 @@ Three Markdown files are partially auto-generated from the live tool inventory. 
 | File | Region marker | Source of truth |
 |------|---------------|-----------------|
 | `docs/guides/supported-tools.md` | `<!-- generated:start tools -->` | Tool descriptions in `zscaler_mcp/services.py` (`read_tools` / `write_tools` lists). |
+| `docs-site/docs/guides/supported-tools.md` | `<!-- generated:start tools -->` | Mirror of the above for the Docusaurus site. |
 | `README.md` | `<!-- generated:start service-summary -->` | Per-service tool counts derived from the same source. |
 | `docs/guides/toolsets.md` | `<!-- generated:start toolset-catalog -->` | Toolset metadata in `zscaler_mcp/common/toolsets.py` + per-toolset tool counts from the inventory. |
+| `docs-site/src/data/toolsets.json` | (whole file) | Same source — feeds the docs-site React `ToolsetsCatalog` component which renders the card-grid view at `/docs/guides/toolsets`. The whole file is generated; there are no markers. |
+| `manifest.json` (repo root) | (whole file) | MCPB (Claude Desktop Directory) bundle manifest. Static template + live tool inventory + version from `zscaler_mcp.__version__`. Owned by `zscaler_mcp/common/mcpb.py`. See "MCPB bundle" below. |
 
-Outside the marker pairs, every file is fully hand-written and the generator never touches it.
+Outside the marker pairs (and outside whole-file targets), every file is fully hand-written and the generator never touches it. Whole-file targets are fully owned by the generator — manual edits get stomped on the next `make generate-docs`.
 
 **Commands:**
 
 - `make generate-docs` (or `zscaler-mcp --generate-docs`) — regenerate all three regions in place. Idempotent: re-running with no source changes performs no file writes.
 - `make check-docs` (or `zscaler-mcp --check-docs`) — exit 0 when docs are in sync, exit 1 + list of stale files otherwise. Designed for CI; wired into `.github/workflows/tests.yml` as a dedicated step before the test suite runs.
+
+### Auto-mirrored integration docs (docs-site)
+
+The Docusaurus site at `docs-site/` re-publishes the canonical, video-rich integration walkthroughs that live under `integrations/`. Nine pages in `docs-site/docs/` are full-file mirrors — editing them by hand has no effect, the next sync run overwrites them. The mirror is driven by `docs-site/scripts/sync_integrations_to_docs.py` (stdlib-only Python; no zscaler-mcp deps). The script lives under `docs-site/scripts/` rather than the top-level `scripts/` folder because it's a maintainer-only build helper — `scripts/` is reserved for end-user-runnable entry points (today: `setup-mcp-server.py`).
+
+| docs-site page | Source README |
+|---|---|
+| `deployment/azure.md` | `integrations/azure/README.md` |
+| `deployment/gcp.md` | `integrations/google/README.md` |
+| `integrations/google-adk.md` | `integrations/google/adk/README.md` |
+| `integrations/aws-harness.md` | `integrations/aws/harness/README.md` |
+| `integrations/claude.md` | `integrations/claude-code-plugin/README.md` |
+| `integrations/cursor.md` | `integrations/cursor-plugin/README.md` |
+| `integrations/gemini-cli.md` | `integrations/gemini-extension/README.md` |
+| `integrations/kiro.md` | `integrations/kiro/README.md` |
+| `integrations/github-registry.md` | `integrations/github/README.md` |
+
+What the sync does on every run, per file:
+
+1. **Image refs** — every `![alt](../../assets/foo.png)` rewrites to an absolute `https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/foo.png` URL. This avoids duplicating binaries inside `docs-site/static/`; the trade-off is that the image must be committed to `master` before the dev preview can render it. For walkthrough screenshots that need to render immediately (before a push), copy them into `docs-site/static/img/` and reference them as `/img/<name>.png` — that path is served directly by Docusaurus regardless of master state.
+2. **Relative repo links** — first tried against an explicit cross-reference map (`_CROSS_REF_REDIRECTS`) that redirects sibling-README links to the synced docs-site page (e.g. `./adk/README.md` from `integrations/google/README.md` → `/docs/integrations/google-adk`). Anything that doesn't match falls back to a `github.com/.../blob/master/...` URL so the link still works.
+3. **Strip the leading H1** — Docusaurus already renders the page title from frontmatter `title:`; keeping the source H1 would render the title twice.
+4. **Prepend frontmatter + generated banner** — frontmatter gives Docusaurus the title and sidebar label, the banner tells editors not to hand-edit the file.
+
+Commands:
+
+- `make sync-integration-docs` — write the mirror in place. Idempotent.
+- `make check-integration-docs` (or `python docs-site/scripts/sync_integrations_to_docs.py --check`) — exit 0 when synced, exit 1 + list of stale files otherwise.
+
+CI wiring: `.github/workflows/docs-site.yml` runs `--check` as the first step of the docs build, before installing Node. A stale mirror fails the workflow loudly instead of silently shipping out-of-date content. The workflow also triggers on `integrations/**/README.md` changes (not just `docs-site/**`), so editing a source README automatically rebuilds the site after the mirror is regenerated.
+
+Adding a new mirrored page: append a `SyncTarget(...)` entry to `SYNC_MAP` in `docs-site/scripts/sync_integrations_to_docs.py`, then run the sync. Also add an entry to `sidebars.ts` under `integrationsTree` so the new page shows up in the left sidebar.
 
 **Implementation:** `zscaler_mcp/common/docgen.py`. The generator instantiates each service with `zscaler_client=None` (mirroring the pattern already used by `parse_args` for `--list-tools`) so the SDK isn't needed at doc-generation time. Adding a new auto-generated region: append a `(path, region_name, renderer_fn)` tuple to `TARGETS`, insert the matching marker pair in the file, and add a renderer test in `tests/test_docgen.py`. Tests assert that the committed docs are always in sync (`TestRepoIsInSync::test_committed_docs_are_in_sync`).
 
@@ -823,6 +858,17 @@ A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS
 
 41 guided skills in `skills/` for multi-step workflows. Skills are auto-activated by frontmatter description match. Organized by service: `skills/zpa/` (11), `skills/zia/` (12), `skills/zdx/` (6), `skills/zms/` (5), `skills/zins/` (4), `skills/easm/` (1), `skills/zcc/` (1), `skills/cross-product/` (1). Each skill has a `SKILL.md` with frontmatter (`name`, `description`) and step-by-step instructions referencing specific tool names.
 
+### Skill Frontmatter — Hard Limits
+
+The frontmatter at the top of every `SKILL.md` is parsed by external skill loaders (Claude's skill uploader, MCP client skill registries) and has hard byte/character ceilings that the API enforces at upload time. Violating these turns into a cryptic 400 from the upload UI, so they have to be checked before authoring.
+
+- **`description` ≤ 1024 characters.** The Claude skill uploader rejects any skill whose frontmatter `description` field exceeds **1024 characters** with the error `field 'description' in SKILL.md must be at most 1024 characters`. Count the value of the YAML `description:` field (the prose between the quotes, not the YAML key) and keep it under 1024. The description doubles as the skill's auto-activation matcher — it should list the **trigger phrases an admin actually uses** ("block ChatGPT", "allow Dropbox uploads", "create a Cloud App Control rule for X") plus a one-sentence summary of what the skill does. Trim ruthlessly: every example you add costs character budget you can't recover. Long technical caveats (API quirks, multi-resource ordering, error-handling patterns) belong in the body of the skill, not in the description.
+- **`name`** — must be unique within `skills/`, kebab-case, prefixed with the service (`zia-`, `zpa-`, `zdx-`, `zcc-`, `zms-`, `zins-`, `easm-`, `cross-product-`). No character ceiling enforced by the loader, but keep it under ~50 characters so it renders cleanly in skill pickers.
+- **Keep frontmatter to two fields**: `name` and `description`. Other fields (`tags`, `priority`, `version`) are silently dropped by current loaders and add maintenance noise.
+- **Validate before commit.** A one-liner sanity check: `python -c "import yaml,sys; d=yaml.safe_load(open('skills/.../SKILL.md').read().split('---')[1]); print(len(d['description']))"` — must print a number ≤ 1024.
+
+When a skill needs more discoverability than 1024 characters can hold (e.g. a multi-resource workflow with many trigger phrases), prefer **splitting into two skills** that chain together over stuffing every keyword into one description. The skill chaining pattern (`zia-look-up-rule-targets`, `zia-look-up-cloud-app-name`, `zia-manage-time-interval`) was designed for exactly this — each chained skill carries its own focused description, and the parent skill's description only lists *its* trigger phrases plus the chain hand-offs.
+
 ### Skill Conventions (Emerging)
 
 Newer skills — especially in Z-Insights and ZMS — follow two conventions that improve resilience on tenants where a feature is unlicensed or returns sparse data. When authoring or reviewing a skill that depends on multiple independent API reads, prefer this shape:
@@ -874,6 +920,34 @@ The server is published to the [GitHub MCP Registry](https://github.com/modelcon
 **Only 4 env vars are required** for the registry (stdio transport): `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, `ZSCALER_CUSTOMER_ID`, `ZSCALER_VANITY_DOMAIN`. Auth, TLS, and host validation are not applicable for stdio.
 
 **Publishing:** `mcp-publisher login github && mcp-publisher publish` (from repo root). See `integrations/github/README.md` for full steps.
+
+### MCPB bundle (Claude Desktop Directory)
+
+The server ships as a `.mcpb` (MCP Bundle) on Anthropic's Claude Desktop Directory. MCPB is the format for **local stdio** MCP servers — there is no MCPB path for remote/HTTP servers; Claude-Desktop users wanting the remote variant configure `mcp-remote` in `claude_desktop_config.json` directly.
+
+**Repo-root files (committed):**
+
+- **`manifest.json`** — MCPB v0.4 manifest. **Auto-generated** by `zscaler_mcp/common/mcpb.py` (a docgen whole-file target). Never hand-edit; run `make generate-docs` after touching the tool inventory and commit the result. CI's `make check-docs` step fails the build if it drifts.
+- **`.mcpbignore`** — `.gitignore`-style exclusion list for `mcpb pack`. Keeps the bundle to ~460 KB by stripping `docs/`, `docs-site/`, `tests/`, `integrations/`, `assets/`, `skills/`, `commands/`, `local_dev/`, etc. — everything that isn't `zscaler_mcp/` source + `pyproject.toml` + `manifest.json` + `icon.png` + `README.md` + `LICENSE`.
+- **`icon.png`** — directory listing icon (405 x 245 PNG).
+
+**Architectural decisions encoded in `mcpb.py`:**
+
+1. **`server.type: "uv"`** instead of `"python"`. The legacy `python` + `pip install --target` approach embedded platform-locked compiled wheels (`cryptography`, `pydantic-core`, `orjson` all ship `.so` / `.pyd`), producing an OS-and-arch-locked bundle that silently failed on other platforms. `uv run` defers wheel selection to install time, so the bundle stays source-only and cross-platform. Bundle size went from ~58 MB to ~460 KB.
+2. **MCPB spec 0.4** — current shipping spec. Bump only when Anthropic releases a new one and we audit for breaking changes.
+3. **Env-var fixes** — the previous manifest set `ZSCALER_MCP_ENABLED_SERVICES` / `_ENABLED_TOOLS` / `_DEBUG_MODE` in the runtime env, but `zscaler_mcp/server.py` reads `ZSCALER_MCP_SERVICES` / `_TOOLS` / `_DEBUG`. The old names were silently ignored, so Claude-Desktop users toggling "Enabled Services" / "Debug Mode" got no effect. Fixed in `mcpb.py::_STATIC_TEMPLATE` and asserted by `tests/test_mcpb.py::TestServerConfig::test_env_uses_correct_zscaler_mcp_var_names`.
+4. **Repo-root placement** — `mcpb pack` defaults to the CWD; placing the manifest at the repo root means contributors can `npx @anthropic-ai/mcpb@latest pack` from any clean checkout without extra flags. (Historical placement under `local_dev/anthropic_requirements/` was non-standard maintainer scratch space; that directory is gitignored and can be deleted from local checkouts — nothing committed depends on it.)
+
+**Commands:**
+
+- `make build-mcpb` — the single command for cutting a submission. Regenerates `manifest.json` from the live tool inventory (dependency on `make generate-docs`) and packs the bundle via `npx @anthropic-ai/mcpb@latest pack`. Outputs both `zscaler-mcp-server.mcpb` and the versioned `zscaler-mcp-server-<VERSION>.mcpb`. Upload the versioned one to Anthropic's submission form.
+- `make info-mcpb FILE=<bundle.mcpb>` — `mcpb info` on a built bundle (size, file count, "signed" status).
+- `make generate-docs` — regenerates `manifest.json` (alongside all other docgen targets). Run after adding/renaming/removing a tool. `make build-mcpb` already depends on this, so for the release flow you don't need to run it explicitly.
+- `make check-docs` — CI guard that fails if the committed manifest drifts.
+
+**Release integration:**
+
+The `set-version.sh` script regenerates `manifest.json` after bumping `__init__.py::__version__` so the committed manifest tracks the new release. `manifest.json` is listed in `@semantic-release/git`'s assets so the regen lands in the version-bump commit. There is no separate CI workflow that builds or attaches the bundle — Anthropic's submission flow is manual via [their Google Form](https://docs.google.com/forms/d/e/1FAIpQLScHtjkiCNjpqnWtFLIQStChXlvVcvX8NPXkMfjtYPDPymgang/viewform), there is no API, and reverse-engineering the form submission is brittle (file upload requires a Google Drive auth handshake bound to the form session) and bad-faith with the vendor anyway. The maintainer runs `make build-mcpb` when ready and uploads the resulting `.mcpb` by hand.
 
 ### Docker + OIDCProxy Setup
 

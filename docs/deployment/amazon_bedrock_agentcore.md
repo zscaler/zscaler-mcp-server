@@ -854,7 +854,7 @@ The Gateway has to authenticate *itself* to the runtime when forwarding a tool c
 
 - **Auto-provision (default).** Leave `GATEWAY_OAUTH_PROVIDER_ARN` empty. The deploy Lambda calls `bedrock-agentcore-control:create_oauth2_credential_provider` for you, using the same inbound IdP details (discovery URL + `GATEWAY_OAUTH_CLIENT_ID`) plus the secret you provide in `GATEWAY_OAUTH_CLIENT_SECRET`. The provider is created with grant type `CLIENT_CREDENTIALS` and torn down on stack delete.
 
-- **Bring your own.** Set `GATEWAY_OAUTH_PROVIDER_ARN` to an existing provider ARN (e.g. one you created in the console for `SGIO-Auth0-Provider`). The stack skips auto-provisioning entirely, ignores `GATEWAY_OAUTH_CLIENT_SECRET`, and binds the target to that provider. Use this to share one provider across deployments or to enforce curated scopes.
+- **Bring your own.** Set `GATEWAY_OAUTH_PROVIDER_ARN` to an existing provider ARN (e.g. one you created in the console for `MyOrgAuth0Provider`). The stack skips auto-provisioning entirely, ignores `GATEWAY_OAUTH_CLIENT_SECRET`, and binds the target to that provider. Use this to share one provider across deployments or to enforce curated scopes.
 
 #### IdP must accept a vanilla client_credentials request
 
@@ -1018,15 +1018,15 @@ When the Zscaler MCP Server is deployed with **JWT authentication** (Layer 1), t
    - From the dropdown, choose **Auth0 by Okta**
 
 5. **Provider configurations**
-   Fill in the fields with values from your Auth0 tenant. Example for **securitygeekio.ca.auth0.com**:
+   Fill in the fields with values from your Auth0 tenant. Example for **acme.us.auth0.com**:
 
    | Field | Value |
    |-------|-------|
    | **Client ID** | `x7hEmN5MikTZXhZkOnTMRlQlbtiiPCce` |
    | **Client secret** | *(Use the value from Auth0 Dashboard → Applications, or from `AUTH0_CLIENT_SECRET` in your env)* |
-   | **Issuer** | `https://securitygeekio.ca.auth0.com/` |
-   | **Authorization endpoint** | `https://securitygeekio.ca.auth0.com/authorize` |
-   | **Token endpoint** | `https://securitygeekio.ca.auth0.com/oauth/token` |
+   | **Issuer** | `https://acme.us.auth0.com/` |
+   | **Authorization endpoint** | `https://acme.us.auth0.com/authorize` |
+   | **Token endpoint** | `https://acme.us.auth0.com/oauth/token` |
 
    For a different Auth0 tenant, use these URL patterns (replace `YOUR_TENANT` with your domain):
 
@@ -1041,7 +1041,7 @@ When the Zscaler MCP Server is deployed with **JWT authentication** (Layer 1), t
 
 After creating the OAuth client, Bedrock displays a **Callback URL** on the provider details page. You must add this URL to your Auth0 application.
 
-1. In the provider details (e.g. for `SGIO-Auth0-Provider`), locate the **Callback URL** (e.g. `https://bedrock-agentcore.us-east-1.amazonaws.com/identities/oauth2/callback/76ae34e8-117e-4a20-989e-b8b0b27216fa`).
+1. In the provider details (e.g. for `MyOrgAuth0Provider`), locate the **Callback URL** (e.g. `https://bedrock-agentcore.us-east-1.amazonaws.com/identities/oauth2/callback/76ae34e8-117e-4a20-989e-b8b0b27216fa`).
 2. Copy the full URL.
 3. In **Auth0 Dashboard** → **Applications** → your application → **Settings**.
 4. In **Allowed Callback URLs**, add the Bedrock callback URL (comma-separated if you have others).
@@ -1057,15 +1057,15 @@ The success message says: *"Associate it within your local agent code or in a Ga
 
 1. **If using Agent Sandbox with a Runtime** – When you open the sandbox and select your Zscaler MCP runtime, look for:
    - A **Sign in** or **Connect** option that lets you authenticate with an identity provider.
-   - A dropdown or settings to select **SGIO-Auth0-Provider** (or your provider name).
+   - A dropdown or settings to select **MyOrgAuth0Provider** (or your provider name).
    - After signing in, the sandbox should obtain tokens and include them in `Authorization: Bearer` headers when invoking the runtime.
 
 2. **If using a Gateway** – When the Zscaler MCP runtime is exposed through a Gateway (as a target), add the OAuth credential provider when creating or editing the Gateway target:
-   - In the Gateway target configuration, set the **credentials** / **credential provider** to the ARN of your Auth0 provider (e.g. `arn:aws:bedrock-agentcore:us-east-1:202719523534:token-vault/default/oauth2credentialprovider/SGIO-Auth0-Provider`).
+   - In the Gateway target configuration, set the **credentials** / **credential provider** to the ARN of your Auth0 provider (e.g. `arn:aws:bedrock-agentcore:us-east-1:123456789012:token-vault/default/oauth2credentialprovider/MyOrgAuth0Provider`).
 
 3. **If using local agent code** – Use the identity provider ARN in your agent’s configuration when it connects to the MCP runtime, so the agent can fetch tokens and attach them to MCP requests.
 
-The provider ARN is shown on the provider details page (e.g. `arn:aws:bedrock-agentcore:us-east-1:202719523534:token-vault/default/oauth2credentialprovider/SGIO-Auth0-Provider`).
+The provider ARN is shown on the provider details page (e.g. `arn:aws:bedrock-agentcore:us-east-1:123456789012:token-vault/default/oauth2credentialprovider/MyOrgAuth0Provider`).
 
 ### Step 4: Verify Auth0 API and Audience
 
@@ -1308,7 +1308,7 @@ Pass credentials directly
 
 ## Environment variable reference
 
-The integration deliberately keeps the user-facing surface small. The deploy script (via the runtime provisioner Lambda) and the container image set most plumbing values internally — you should rarely need to touch them. The tables below split what's intended for users versus what the system manages itself, and map to the same layout in `integrations/aws/env.properties`.
+The integration deliberately keeps the user-facing surface small. The deploy script (via the runtime provisioner Lambda) and the container image set most plumbing values internally — you should rarely need to touch them. The tables below split what's intended for users versus what the system manages itself, and map to the same layout in `integrations/aws/bedrock-agentcore/env.properties`.
 
 ### User-facing — required
 

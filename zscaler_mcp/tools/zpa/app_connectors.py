@@ -22,9 +22,9 @@ def zpa_list_app_connectors(
             )
         ),
     ] = None,
-    page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
+    page: Annotated[Optional[int], Field(ge=1, description="Page number for pagination.")] = None,
     page_size: Annotated[
-        Optional[str], Field(description="Number of items per page. Default 20, max 500.")
+        Optional[int], Field(ge=1, description="Number of items per page. Default 20, max 500.")
     ] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
@@ -47,10 +47,10 @@ def zpa_list_app_connectors(
         qp["microtenant_id"] = microtenant_id
     if search:
         qp["search"] = search
-    if page:
-        qp["page"] = page
-    if page_size:
-        qp["page_size"] = page_size
+    if page is not None:
+        qp["page"] = str(page)
+    if page_size is not None:
+        qp["page_size"] = str(page_size)
 
     connectors, _, err = api.list_connectors(query_params=qp)
     if err:
