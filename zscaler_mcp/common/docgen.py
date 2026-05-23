@@ -595,14 +595,13 @@ def _render_toolset_catalog_region(inv: Inventory, catalog: ToolsetCatalog) -> s
 # ---------------------------------------------------------------------------
 
 
-# Late import so :mod:`zscaler_mcp.common.mcpb` can in turn import the
-# Inventory type from this module without triggering an import cycle.
-# (We only need these symbols inside TARGETS below.)
-from zscaler_mcp.common.mcpb import (  # noqa: E402
-    MANIFEST_RELATIVE_PATH as _MCPB_MANIFEST_PATH,
-    render_manifest_json as _render_mcpb_manifest,
-)
-
+# Late module import so :mod:`zscaler_mcp.common.mcpb` can in turn
+# import the Inventory type from this module without triggering an
+# import cycle. We import the module rather than its symbols so a
+# single suppression covers the whole statement (ruff's I001 sorter
+# rejects multi-name late `from … import (...)` blocks that carry a
+# per-statement directive comment).
+from zscaler_mcp.common import mcpb as _mcpb  # noqa: E402
 
 # (target file path relative to repo root, region name | None, renderer)
 #
@@ -660,9 +659,9 @@ TARGETS: List[Tuple[str, Optional[str], Callable[[Inventory, ToolsetCatalog], st
     # docstring for why the manifest lives at the repo root and why
     # `server.type = "uv"` instead of `"python"`.
     (
-        _MCPB_MANIFEST_PATH,
+        _mcpb.MANIFEST_RELATIVE_PATH,
         None,
-        _render_mcpb_manifest,
+        _mcpb.render_manifest_json,
     ),
 ]
 
