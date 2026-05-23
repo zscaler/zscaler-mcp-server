@@ -58,7 +58,12 @@ from typing import Any, Optional
 
 try:
     import boto3
-    from botocore.exceptions import ClientError, EndpointConnectionError, NoCredentialsError, ProfileNotFound
+    from botocore.exceptions import (
+        ClientError,
+        EndpointConnectionError,
+        NoCredentialsError,
+        ProfileNotFound,
+    )
 except ImportError:
     print("ERROR: boto3 is required.  pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
