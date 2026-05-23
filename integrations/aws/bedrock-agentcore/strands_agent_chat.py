@@ -26,7 +26,7 @@ spinner, and an end-of-session summary.
 
 Quick start::
 
-    cd integrations/aws
+    cd integrations/aws/bedrock-agentcore
     uv venv .strands-venv --python 3.11 && source .strands-venv/bin/activate
     uv pip install strands-agents boto3 httpx
     python strands_agent_chat.py

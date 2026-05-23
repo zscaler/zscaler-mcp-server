@@ -890,6 +890,124 @@ class StripTrailingSlashMiddleware:
         await self.app(scope, receive, send)
 
 
+class HealthCheckMiddleware:
+    """ASGI middleware that responds 200 OK to ``GET /health`` unconditionally.
+
+    Load balancers (ECS Express ALB, GCP Cloud Run, Kubernetes liveness
+    probes, Azure App Service) need a stable, cheap, anonymous endpoint
+    to determine container readiness. The MCP-spec endpoints (``/mcp``,
+    ``/sse``, ``/messages/``) require POST with specific headers and a
+    valid auth token — using them as health-check targets makes the LB
+    probe brittle and (after the GET→405 hardening) actively wrong.
+
+    This middleware short-circuits ``GET /health`` (and ``HEAD /health``)
+    with a tiny JSON body before any other middleware sees the request,
+    so the probe:
+
+    * never reaches :class:`AuthMiddleware` (no 401 on missing token),
+    * never reaches :class:`SourceIPMiddleware` (LB can be in a
+      different subnet from real callers),
+    * never reaches FastMCP (no spurious session creation per probe),
+    * never reaches the audit logger (no log spam every 30 s).
+
+    The path is configurable so operators behind a non-default LB
+    convention can move it (``/healthz`` for kube-native deployments,
+    ``/readyz`` for readiness vs. liveness separation, etc.).
+    """
+
+    def __init__(self, app, path: str = "/health"):
+        self.app = app
+        self._path = path
+
+    async def __call__(self, scope, receive, send):
+        if (
+            scope.get("type") == "http"
+            and scope.get("method") in ("GET", "HEAD")
+            and scope.get("path") == self._path
+        ):
+            await send({
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"cache-control", b"no-store"),
+                ],
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b'{"status":"ok"}' if scope["method"] == "GET" else b"",
+            })
+            return
+        await self.app(scope, receive, send)
+
+
+class RejectNonSSEGetMiddleware:
+    """ASGI middleware that converts FastMCP's 406-on-GET into a clean 405.
+
+    When a client opens ``GET /mcp`` without ``Accept: text/event-stream``,
+    FastMCP's streamable-http session manager replies with ``406 Not
+    Acceptable``. The MCP spec defines GET on this endpoint as an
+    *optional* server-initiated SSE stream — clients are free to skip
+    it and rely on POST-only — but several HTTP MCP gateways (notably
+    Amazon Bedrock AgentCore Harness's ``remote_mcp`` tool) open the
+    GET as part of their initial handshake without the required Accept
+    header. Those clients treat the 406 as a fatal client-init error
+    rather than the soft "no SSE here" signal it's meant to be.
+
+    The MCP spec is clear that POST is the only *required* method on
+    the streamable-http endpoint, and ``405 Method Not Allowed`` with
+    ``Allow: POST`` is the conventional HTTP signal for "this endpoint
+    is POST-only". Returning 405 instead of 406 lets non-spec-compliant
+    GET-first clients fall back to POST-only cleanly, while spec-
+    compliant clients (Claude Desktop, Cursor) include
+    ``text/event-stream`` on their GETs and pass through to the
+    underlying FastMCP SSE handler unchanged.
+
+    Only ``GET`` requests to the configured MCP path are intercepted;
+    every other method, every other path, and every non-HTTP scope
+    are forwarded verbatim.
+    """
+
+    def __init__(self, app, mcp_path: str = "/mcp"):
+        self.app = app
+        self._mcp_path = mcp_path
+
+    async def __call__(self, scope, receive, send):
+        if (
+            scope.get("type") == "http"
+            and scope.get("method") == "GET"
+            and scope.get("path") == self._mcp_path
+        ):
+            accept = b""
+            for name, value in scope.get("headers", []):
+                if name == b"accept":
+                    accept = value
+                    break
+            try:
+                accept_str = accept.decode("latin-1").lower()
+            except UnicodeDecodeError:
+                accept_str = ""
+            if "text/event-stream" not in accept_str:
+                await send({
+                    "type": "http.response.start",
+                    "status": 405,
+                    "headers": [
+                        (b"content-type", b"text/plain; charset=utf-8"),
+                        (b"allow", b"POST"),
+                    ],
+                })
+                await send({
+                    "type": "http.response.body",
+                    "body": (
+                        b"Method Not Allowed: this endpoint is POST-only. "
+                        b"To receive server-initiated messages over SSE, "
+                        b"reissue the GET with Accept: text/event-stream."
+                    ),
+                })
+                return
+        await self.app(scope, receive, send)
+
+
 class NormalizeContentTypeMiddleware:
     """ASGI middleware that normalises ``application/json-rpc`` to ``application/json``.
 
@@ -934,11 +1052,16 @@ class NormalizeContentTypeMiddleware:
         await self.app(scope, receive, send)
 
 
-def apply_transport_hardening(app: Any, transport: str) -> Any:
-    """Wrap an ASGI app with the two HTTP transport hardening middlewares.
+def apply_transport_hardening(
+    app: Any,
+    transport: str,
+    mcp_path: str = "/mcp",
+    health_path: str = "/health",
+) -> Any:
+    """Wrap an ASGI app with the HTTP transport hardening middlewares.
 
-    Defense against two common client-side bugs that trip up non-Claude /
-    non-Cursor MCP clients:
+    Defense against four common client-side / infrastructure issues that
+    trip up non-Claude / non-Cursor MCP clients:
 
     1. **Trailing slashes** in request paths (``POST /mcp/`` instead of
        ``POST /mcp``) — would otherwise hit a 307 redirect that most
@@ -946,15 +1069,44 @@ def apply_transport_hardening(app: Any, transport: str) -> Any:
     2. **Non-standard ``Content-Type`` headers** (``application/json-rpc``
        instead of ``application/json``) — would otherwise be rejected by
        Starlette's JSON parser with a generic 400.
+    3. **GET without ``Accept: text/event-stream``** on the
+       streamable-http endpoint — would otherwise hit FastMCP's 406,
+       which Bedrock AgentCore Harness's ``remote_mcp`` tool (and a
+       handful of other HTTP MCP gateways) treats as a fatal client
+       initialization error. Converted to a spec-compliant ``405 Method
+       Not Allowed`` (with ``Allow: POST``) that those clients handle
+       cleanly by falling back to POST-only.
+    4. **Load-balancer health probes** that need a stable 2xx response
+       and have no business going through MCP / auth / source-IP ACL
+       middleware. ``HealthCheckMiddleware`` short-circuits
+       ``GET /health`` with a tiny JSON body before any of those layers
+       see the request — keeps ALB target-group probes green without
+       relying on ``/mcp`` (which returns 405/406 to non-SSE GETs by
+       design, and 401 once auth is on).
 
-    No-op for ``stdio`` transport. Both wrapped middlewares are pure
-    pre-processors; they never short-circuit a request and add no
-    behavioural change for spec-compliant clients.
+    No-op for ``stdio`` transport. The GET→405 middleware is only
+    layered in for ``streamable-http`` because SSE transport's ``/sse``
+    endpoint *requires* GET to work (that's literally how SSE
+    connects), and the streamable-http endpoint is the only one Bedrock
+    Harness targets. The health endpoint is wired in for **every** HTTP
+    transport (SSE included) since LBs don't care which transport sits
+    behind them.
 
-    Should be applied as the **outermost** wrapper so path/header
+    All wrapped middlewares are minimal pre-processors that mutate
+    ``scope`` (or short-circuit for the very narrow GET-405 / GET-health
+    cases) and add no behavioural change for spec-compliant clients.
+
+    Should be applied as the **outermost** wrapper so path / header
     normalisation happens *before* :class:`AuthMiddleware` and
-    :class:`SourceIPMiddleware` see the request.
+    :class:`SourceIPMiddleware` see the request. ``HealthCheckMiddleware``
+    is layered in as the literal outermost so health probes bypass
+    *everything* — including the trailing-slash and content-type
+    normalisers, since they're cheap no-ops on ``GET /health`` anyway.
     """
     if transport == "stdio":
         return app
-    return StripTrailingSlashMiddleware(NormalizeContentTypeMiddleware(app))
+    inner = app
+    if transport == "streamable-http":
+        inner = RejectNonSSEGetMiddleware(inner, mcp_path=mcp_path)
+    inner = StripTrailingSlashMiddleware(NormalizeContentTypeMiddleware(inner))
+    return HealthCheckMiddleware(inner, path=health_path)

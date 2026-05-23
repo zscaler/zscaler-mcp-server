@@ -1,0 +1,119 @@
+# Files and directories excluded from the `.mcpb` bundle.
+#
+# The MCPB CLI (`npx @anthropic-ai/mcpb@latest pack`) reads this file
+# the same way `.gitignore` is read — anything matching is omitted
+# from the zip archive. The goal is a lean bundle (~250 KB) containing
+# ONLY what Claude Desktop needs to invoke the server:
+#
+#   * zscaler_mcp/        — the Python package
+#   * pyproject.toml      — uv reads this at install time to resolve deps
+#   * manifest.json       — the MCPB manifest (auto-generated, do not edit)
+#   * icon.png            — directory listing icon
+#   * README.md           — surfaced in the directory listing
+#   * LICENSE             — required by the spec
+#
+# Everything else is build / test / docs / dev infrastructure and adds
+# nothing to a Claude Desktop user's experience.
+
+# Version control / CI
+.git/
+.github/
+.releaserc.json
+codecov.yml
+
+# Python build + dev tooling
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+zscaler_mcp.egg-info/
+build/
+dist/
+uv.lock
+
+# Tests
+tests/
+
+# Documentation source — the rendered site is hosted on GitHub Pages
+# already; we don't need 50 MB of Docusaurus assets inside the bundle.
+docs/
+docs-site/
+
+# Repo-root docs / image assets (~10 MB of PNGs for the docs site
+# walkthroughs, which Claude Desktop has no use for). The MCPB icon
+# lives under ``assets/`` too (to keep the repo root clean) so the
+# un-ignore rule below pulls just that one file back in.
+#
+# IMPORTANT: glob is ``assets/**`` not ``assets/``. A trailing-slash
+# directory pattern excludes the directory entry itself, after which
+# gitignore-style un-ignores like ``!assets/icon.png`` can no longer
+# match (a child of a pruned directory is never re-considered). The
+# ``**`` form excludes every child file recursively while leaving the
+# directory eligible for the un-ignore rule to apply.
+assets/**
+!assets/icon.png
+
+# Examples + integrations + skills + plugin commands / rules (none of
+# these are runtime deps; they're Cursor / Claude Code / Gemini plugin
+# materials that ship via their own integrations, not via MCPB).
+examples/
+integrations/
+skills/
+commands/
+rules/
+
+# Top-level repo scripts (setup helpers, doc generators) are dev tools
+scripts/
+Makefile
+
+# Container + cloud infrastructure
+Dockerfile
+.dockerignore
+.devcontainer/
+docker-compose*.yml
+
+# AI-agent context files (these target tools that pack the repo, not
+# the Claude Desktop runtime — they'd just confuse the directory)
+.claude/
+.cursor/
+.claude-plugin/
+.cursor-plugin/
+.mcp.json
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+
+# Local maintainer-only artifacts
+local_dev/
+notes/
+.env
+.env.*
+.DS_Store
+
+# Linter configs not needed at runtime
+.pylintrc
+.markdownlint.json
+.markdownlintignore
+.readthedocs.yaml
+
+# Release artifacts
+CHANGELOG.md
+
+# Other registry / plugin metadata at the repo root (these belong to
+# parallel distribution channels — GitHub MCP Registry, Gemini CLI
+# extension — and aren't read by Claude Desktop at runtime).
+server.json
+gemini-extension.json
+mcp.json
+
+# Don't recursively include a previously-built bundle inside the new one
+*.mcpb
+
+# IDE workspace files
+.vscode/
+.idea/
+*.swp
+*.swo

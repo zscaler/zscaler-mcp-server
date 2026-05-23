@@ -67,3 +67,13 @@ sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/server.json" && rm
 # Generate requirements.txt from pyproject.toml
 echo "Updating requirements.txt"
 uv pip compile pyproject.toml --output-file requirements.txt
+
+# Regenerate the MCPB (Claude Desktop) manifest so its `version` field
+# tracks the new release. The manifest content is otherwise derived
+# from the live tool inventory; it's safe to regenerate unconditionally.
+#
+# IMPORTANT: this MUST run after `zscaler_mcp/__init__.py` has been
+# rewritten above — `mcpb.build_manifest()` reads `__version__` at
+# import time.
+echo "Regenerating MCPB manifest"
+python -m zscaler_mcp.server --generate-docs

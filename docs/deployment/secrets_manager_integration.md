@@ -144,8 +144,8 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 SECRET_NAME="${SECRET_NAME:-zscaler/mcp/credentials}"
 AGENT_NAME="zscalermcp"
 AGENT_DESCRIPTION="Zscaler MCP Server Agent"
-ROLE_ARN="arn:aws:iam::202719523534:role/bedrock-core-zscaler-role"
-ECR_IMAGE="202719523534.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest"
+ROLE_ARN="arn:aws:iam::123456789012:role/bedrock-core-zscaler-role"
+ECR_IMAGE="123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest"
 
 echo "Configuration:"
 echo "  AWS Region: $AWS_REGION"
@@ -282,7 +282,7 @@ aws bedrock-agentcore-control get-agent-runtime \
   "status": "READY",
   "environmentVariables": {
     "ZSCALER_CLIENT_ID": "ipm2ol7odg7hp",
-    "ZSCALER_VANITY_DOMAIN": "securitygeekio",
+    "ZSCALER_VANITY_DOMAIN": "acme",
     ...
   }
 }
@@ -494,10 +494,10 @@ docker build -t zscaler/zscaler-mcp-server .
 
 # Tag
 docker tag zscaler/zscaler-mcp-server:latest \
-  202719523534.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest
 
 # Push
-docker push 202719523534.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest
+docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest
 ```
 
 #### Step 6: Deploy Agent Runtime
@@ -511,10 +511,10 @@ aws bedrock-agentcore-control create-agent-runtime \
   --description "Zscaler MCP Server with Runtime Secret Retrieval" \
   --agent-runtime-artifact '{
     "containerConfiguration": {
-      "containerUri": "202719523534.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest"
+      "containerUri": "123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest"
     }
   }' \
-  --role-arn "arn:aws:iam::202719523534:role/bedrock-core-zscaler-role" \
+  --role-arn "arn:aws:iam::123456789012:role/bedrock-core-zscaler-role" \
   --network-configuration '{
     "networkMode": "PUBLIC"
   }' \
@@ -557,7 +557,7 @@ Region: us-east-1
 ✓ Secret retrieved successfully from Secrets Manager
 ✓ Credentials loaded and set as environment variables
   - Client ID: ipm2ol7odg...
-  - Vanity Domain: securitygeekio
+  - Vanity Domain: acme
   - Cloud: production
 ================================================================================
 Initializing Zscaler MCP Server instance
@@ -732,8 +732,8 @@ aws lambda create-function \
   --timeout 60 \
   --environment Variables="{
     SECRET_NAME=zscaler/mcp/credentials,
-    ROLE_ARN=arn:aws:iam::202719523534:role/bedrock-core-zscaler-role,
-    ECR_IMAGE=202719523534.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest,
+    ROLE_ARN=arn:aws:iam::123456789012:role/bedrock-core-zscaler-role,
+    ECR_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest,
     AGENT_NAME=zscalermcp
   }"
 ```
@@ -999,15 +999,15 @@ cat > secret-resource-policy.json << 'EOF'
       "Effect": "Allow",
       "Principal": {
         "AWS": [
-          "arn:aws:iam::202719523534:role/bedrock-core-zscaler-role",
-          "arn:aws:iam::202719523534:user/deployment-user"
+          "arn:aws:iam::123456789012:role/bedrock-core-zscaler-role",
+          "arn:aws:iam::123456789012:user/deployment-user"
         ]
       },
       "Action": "secretsmanager:GetSecretValue",
       "Resource": "*",
       "Condition": {
         "StringEquals": {
-          "aws:SourceAccount": "202719523534"
+          "aws:SourceAccount": "123456789012"
         }
       }
     }

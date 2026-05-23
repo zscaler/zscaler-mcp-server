@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application Health Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+  :root, [data-theme="dark"] {
+    --zs-bg: #050912;
+    --zs-panel: #0d1426;
+    --zs-card: #131c33;
+    --zs-border: rgba(255, 255, 255, 0.08);
+    --zs-border-strong: rgba(255, 255, 255, 0.16);
+    --zs-text: #e6eaf3;
+    --zs-muted: #8a93a8;
+    --zs-logo-fill: #ffffff;
+    --zs-cyan: #3cc0e5;
+    --zs-blue: #4a7cff;
+    --zs-purple: #8a5cff;
+    --zs-good-bg: rgba(34, 197, 94, 0.08);
+    --zs-warn-bg: rgba(245, 158, 11, 0.08);
+    --zs-bad-bg:  rgba(239, 68, 68, 0.10);
+    --zs-row-hover: rgba(60, 192, 229, 0.05);
+    --zs-evidence-bg: rgba(255, 255, 255, 0.03);
+    --zs-chip-active-bg: linear-gradient(90deg, rgba(60, 192, 229, 0.18), rgba(74, 124, 255, 0.18));
+  }
+  [data-theme="light"] {
+    --zs-bg: #f4f6fb;
+    --zs-panel: #ffffff;
+    --zs-card: #ffffff;
+    --zs-border: rgba(15, 23, 42, 0.08);
+    --zs-border-strong: rgba(15, 23, 42, 0.18);
+    --zs-text: #0a1429;
+    --zs-muted: #4b5563;
+    --zs-logo-fill: #236bf5;
+    --zs-cyan: #0ea5e9;
+    --zs-blue: #2563eb;
+    --zs-purple: #7c3aed;
+    --zs-good-bg: rgba(34, 197, 94, 0.07);
+    --zs-warn-bg: rgba(245, 158, 11, 0.07);
+    --zs-bad-bg:  rgba(239, 68, 68, 0.07);
+    --zs-row-hover: rgba(14, 165, 233, 0.06);
+    --zs-evidence-bg: rgba(15, 23, 42, 0.03);
+    --zs-chip-active-bg: linear-gradient(90deg, rgba(14, 165, 233, 0.12), rgba(37, 99, 235, 0.12));
+  }
+  html, body {
+    background: var(--zs-bg);
+    color: var(--zs-text);
+    font-family: 'Inter', 'Noto Sans JP', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+  }
+  .grad-text {
+    background: linear-gradient(90deg, var(--zs-cyan) 0%, var(--zs-blue) 50%, var(--zs-purple) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .panel { background: var(--zs-panel); border: 1px solid var(--zs-border); }
+  .card  { background: var(--zs-card);  border: 1px solid var(--zs-border); }
+
+  .zs-logo { height: 28px; width: auto; color: var(--zs-logo-fill); display: block; }
+
+  /* Pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap;
+  }
+  .pill-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); }
+  .pill-warning  { background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.4); }
+  .pill-good     { background: rgba(34, 197, 94, 0.15);  color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.4); }
+  .pill-info     { background: rgba(6, 182, 212, 0.15);  color: #0891b2; border: 1px solid rgba(6, 182, 212, 0.4); }
+  .pill-neutral  { background: rgba(138, 147, 168, 0.12); color: var(--zs-muted); border: 1px solid var(--zs-border); }
+  [data-theme="dark"] .pill-critical { color: #fca5a5; }
+  [data-theme="dark"] .pill-warning  { color: #fcd34d; }
+  [data-theme="dark"] .pill-good     { color: #86efac; }
+  [data-theme="dark"] .pill-info     { color: #67e8f9; }
+
+  /* Filter chips */
+  .filter-chip {
+    padding: 6px 12px; border-radius: 8px; font-size: 13px;
+    border: 1px solid var(--zs-border); background: transparent; color: var(--zs-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-chip:hover { color: var(--zs-text); border-color: var(--zs-cyan); }
+  .filter-chip.active {
+    background: var(--zs-chip-active-bg); color: var(--zs-text); border-color: var(--zs-cyan);
+  }
+
+  /* Stat cards */
+  .stat-card {
+    background: var(--zs-card); border: 1px solid var(--zs-border);
+    border-radius: 12px; padding: 18px; text-align: left; width: 100%;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .stat-card.readonly { cursor: default; }
+  .stat-card:hover:not(.readonly) { border-color: var(--zs-border-strong); transform: translateY(-1px); }
+  .stat-card.active { border-color: var(--zs-cyan); box-shadow: 0 0 0 1px rgba(60, 192, 229, 0.6); }
+  .stat-num { font-size: 32px; font-weight: 700; line-height: 1; }
+  .stat-num.critical { color: #ef4444; }
+  .stat-num.warning  { color: #d97706; }
+  .stat-num.good     { color: #16a34a; }
+  .stat-num.info     { color: #0891b2; }
+  .stat-num.neutral  { color: var(--zs-text); }
+  [data-theme="dark"] .stat-num.critical { color: #fca5a5; }
+  [data-theme="dark"] .stat-num.warning  { color: #fcd34d; }
+  [data-theme="dark"] .stat-num.good     { color: #86efac; }
+  [data-theme="dark"] .stat-num.info     { color: #67e8f9; }
+  .stat-sub { font-size: 13px; color: var(--zs-muted); margin-top: 4px; word-break: break-word; }
+
+  /* Buttons */
+  .btn-primary {
+    background: linear-gradient(90deg, var(--zs-cyan), var(--zs-blue));
+    color: #ffffff; font-weight: 600;
+    padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid var(--zs-border); background: transparent;
+    color: var(--zs-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .icon-btn:hover { color: var(--zs-text); border-color: var(--zs-cyan); }
+  .icon-btn .icon { width: 18px; height: 18px; }
+
+  /* Search input */
+  .search-input {
+    background: var(--zs-panel); border: 1px solid var(--zs-border);
+    color: var(--zs-text); padding: 10px 14px; border-radius: 8px;
+    width: 100%; font-size: 14px;
+  }
+  .search-input:focus { outline: none; border-color: var(--zs-cyan); }
+  .search-input::placeholder { color: var(--zs-muted); }
+
+  /* Data tables */
+  .zs-table-wrap { background: var(--zs-card); border: 1px solid var(--zs-border); border-radius: 12px; overflow: hidden; }
+  .zs-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .zs-table thead th {
+    background: var(--zs-panel); color: var(--zs-muted);
+    text-align: left; font-weight: 600; font-size: 11px;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 12px 14px; border-bottom: 1px solid var(--zs-border);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .zs-table thead th:hover { color: var(--zs-text); }
+  .zs-table tbody td {
+    padding: 12px 14px; border-bottom: 1px solid var(--zs-border);
+    color: var(--zs-text); vertical-align: middle;
+  }
+  .zs-table tbody tr:last-child td { border-bottom: none; }
+  .zs-table tbody tr:hover { background: var(--zs-row-hover); }
+  .zs-table tbody tr.row-critical { background: var(--zs-bad-bg); }
+  .zs-table tbody tr.row-warning  { background: var(--zs-warn-bg); }
+  .zs-table tbody tr.row-good     { background: var(--zs-good-bg); }
+  .zs-table tbody tr.row-critical:hover,
+  .zs-table tbody tr.row-warning:hover,
+  .zs-table tbody tr.row-good:hover { filter: brightness(1.05); }
+
+  /* Language dropdown */
+  .lang-menu {
+    position: absolute; right: 0; top: calc(100% + 6px);
+    background: var(--zs-panel); border: 1px solid var(--zs-border-strong);
+    border-radius: 10px; padding: 4px; min-width: 180px; z-index: 50;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+  .lang-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; border-radius: 6px; font-size: 14px; color: var(--zs-text);
+    cursor: pointer; transition: background 0.1s;
+    width: 100%; background: transparent; border: none; text-align: left;
+  }
+  .lang-item:hover { background: var(--zs-evidence-bg); }
+  .lang-item.active { color: var(--zs-cyan); }
+  .lang-item .code { color: var(--zs-muted); font-size: 12px; font-weight: 500; }
+
+  .header-shell { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+  /* Active-incident pill (header) */
+  .incident-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(239, 68, 68, 0.18); color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  [data-theme="dark"] .incident-pill { color: #fca5a5; }
+
+  /* Scope summary bar */
+  .scope-bar {
+    background: linear-gradient(90deg, rgba(60, 192, 229, 0.07), rgba(74, 124, 255, 0.05));
+    border: 1px solid var(--zs-border);
+    border-left: 3px solid var(--zs-cyan);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--zs-text);
+    display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+  }
+  .scope-bar .scope-item .lbl {
+    color: var(--zs-muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; margin-right: 4px;
+  }
+
+  /* Incident banner (red/pink, prose explanation) */
+  .incident-banner {
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+    font-size: 14px; line-height: 1.55;
+  }
+  .incident-banner.severity-critical {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-left: 3px solid #ef4444;
+  }
+  .incident-banner.severity-warning {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-left: 3px solid #f59e0b;
+  }
+  .incident-banner .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    flex-shrink: 0; margin-top: 4px;
+  }
+  .incident-banner.severity-critical .dot { background: #ef4444; }
+  .incident-banner.severity-warning  .dot { background: #f59e0b; }
+  .incident-banner .title { font-weight: 700; margin-bottom: 4px; color: var(--zs-text); }
+  .incident-banner .body  { color: var(--zs-muted); }
+
+  /* KPI top-border accent (severity-coded) */
+  .stat-card.accent-critical { border-top: 3px solid #ef4444; }
+  .stat-card.accent-warning  { border-top: 3px solid #f59e0b; }
+  .stat-card.accent-good     { border-top: 3px solid #22c55e; }
+  .stat-card.accent-info     { border-top: 3px solid var(--zs-cyan); }
+
+  /* Analysis section (paragraph + remediation list) */
+  .analysis-section {
+    background: var(--zs-card); border: 1px solid var(--zs-border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;
+  }
+  .analysis-section h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--zs-muted); margin-bottom: 8px; font-weight: 700;
+  }
+  .analysis-section p { color: var(--zs-text); line-height: 1.6; margin-bottom: 12px; }
+  .analysis-section .remediation-list { padding-left: 18px; margin: 8px 0 0 0; }
+  .analysis-section .remediation-list li { color: var(--zs-text); margin-bottom: 6px; line-height: 1.55; }
+
+  /* Section heading */
+  .section-h {
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--zs-muted);
+    margin: 0 0 12px 0;
+  }
+
+  /* Inline status text */
+  .txt-critical { color: #ef4444; font-weight: 600; }
+  .txt-warning  { color: #d97706; font-weight: 600; }
+  .txt-good     { color: #16a34a; font-weight: 600; }
+  [data-theme="dark"] .txt-critical { color: #fca5a5; }
+  [data-theme="dark"] .txt-warning  { color: #fcd34d; }
+  [data-theme="dark"] .txt-good     { color: #86efac; }
+
+  /* Print */
+  @media print {
+    :root, [data-theme="dark"], [data-theme="light"] {
+      --zs-bg: #ffffff; --zs-panel: #ffffff; --zs-card: #ffffff;
+      --zs-border: #d1d5db; --zs-border-strong: #9ca3af;
+      --zs-text: #0a1429; --zs-muted: #4b5563; --zs-logo-fill: #236bf5;
+      --zs-good-bg: #f0fdf4; --zs-warn-bg: #fffbeb; --zs-bad-bg: #fef2f2;
+      --zs-evidence-bg: #f9fafb;
+    }
+    html, body { background: #ffffff !important; color: #0a1429 !important; }
+    .no-print { display: none !important; }
+    .grad-text { -webkit-text-fill-color: #0a1429 !important; color: #0a1429 !important; background: none !important; }
+    .zs-table-wrap, .panel, .card, .stat-card { box-shadow: none !important; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- ZDX config: defines KPIs, filters, tables, and i18n labels for this skill. -->
+  <script type="application/json" id="zdx-config">{
+  "id": "analyze-application-health",
+  "title": {
+    "en": "Application Health Report",
+    "es": "Informe de Salud de Aplicaciones",
+    "pt": "Relatório de Saúde de Aplicações",
+    "fr": "Rapport sur la Santé des Applications",
+    "ja": "アプリケーション健全性レポート"
+  },
+  "subtitle": {
+    "en": "Organization-wide ZDX scores, bottlenecks, and impacted users",
+    "es": "Puntuaciones ZDX, cuellos de botella y usuarios afectados a nivel organización",
+    "pt": "Pontuações ZDX, gargalos e usuários impactados em toda a organização",
+    "fr": "Scores ZDX, goulots et utilisateurs affectés à l'échelle de l'organisation",
+    "ja": "組織全体の ZDX スコア、ボトルネック、影響を受けたユーザー"
+  },
+  "kpis": [
+    {
+      "key": "total",
+      "labelKey": "kpi_total",
+      "severity": "neutral"
+    },
+    {
+      "key": "good",
+      "labelKey": "kpi_good",
+      "severity": "good"
+    },
+    {
+      "key": "okay",
+      "labelKey": "kpi_okay",
+      "severity": "warning"
+    },
+    {
+      "key": "poor",
+      "labelKey": "kpi_poor",
+      "severity": "critical"
+    },
+    {
+      "key": "mostImpacted",
+      "labelKey": "kpi_mostImpacted",
+      "severity": "neutral",
+      "kind": "text"
+    }
+  ],
+  "filters": [
+    {
+      "name": "status",
+      "labelKey": "filter_status",
+      "options": [
+        [
+          "All",
+          "All",
+          "filter_all"
+        ],
+        [
+          "Good",
+          "Good",
+          "status_good"
+        ],
+        [
+          "Okay",
+          "Okay",
+          "status_okay"
+        ],
+        [
+          "Poor",
+          "Poor",
+          "status_poor"
+        ]
+      ]
+    },
+    {
+      "name": "bottleneck",
+      "labelKey": "filter_bottleneck",
+      "options": [
+        [
+          "All",
+          "All",
+          "filter_all"
+        ],
+        [
+          "PFT",
+          "PFT",
+          "bn_pft"
+        ],
+        [
+          "DNS",
+          "DNS",
+          "bn_dns"
+        ],
+        [
+          "Availability",
+          "Availability",
+          "bn_avail"
+        ],
+        [
+          "None",
+          "None",
+          "bn_none"
+        ]
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "id": "apps",
+      "titleKey": "table_apps",
+      "rowSeverityKey": "severity",
+      "columns": [
+        {
+          "key": "name",
+          "labelKey": "col_app"
+        },
+        {
+          "key": "score",
+          "labelKey": "col_score"
+        },
+        {
+          "key": "status",
+          "labelKey": "col_status",
+          "kind": "status"
+        },
+        {
+          "key": "pft",
+          "labelKey": "col_pft"
+        },
+        {
+          "key": "dns",
+          "labelKey": "col_dns"
+        },
+        {
+          "key": "availability",
+          "labelKey": "col_avail"
+        },
+        {
+          "key": "impactedUsers",
+          "labelKey": "col_users"
+        },
+        {
+          "key": "bottleneck",
+          "labelKey": "col_bottleneck"
+        }
+      ]
+    }
+  ],
+  "searchKeys": [
+    "name",
+    "status",
+    "bottleneck"
+  ],
+  "filterMatch": {
+    "status": "status",
+    "bottleneck": "bottleneck"
+  },
+  "i18n": {
+    "en": {
+      "kpi_total": "Total Apps",
+      "kpi_good": "Good",
+      "kpi_okay": "Okay",
+      "kpi_poor": "Poor",
+      "kpi_mostImpacted": "Most Impacted",
+      "filter_status": "Status",
+      "filter_bottleneck": "Bottleneck",
+      "filter_all": "All",
+      "status_good": "Good",
+      "status_okay": "Okay",
+      "status_poor": "Poor",
+      "bn_pft": "PFT",
+      "bn_dns": "DNS",
+      "bn_avail": "Availability",
+      "bn_none": "None",
+      "table_apps": "Applications",
+      "col_app": "Application",
+      "col_score": "Score",
+      "col_status": "Status",
+      "col_pft": "Page Fetch Time",
+      "col_dns": "DNS",
+      "col_avail": "Availability",
+      "col_users": "Impacted Users",
+      "col_bottleneck": "Bottleneck",
+      "scope": "Scope",
+      "generatedAt": "Generated at"
+    },
+    "es": {
+      "kpi_total": "Total de Apps",
+      "kpi_good": "Buenas",
+      "kpi_okay": "Regulares",
+      "kpi_poor": "Pobres",
+      "kpi_mostImpacted": "Más Afectada",
+      "filter_status": "Estado",
+      "filter_bottleneck": "Cuello de Botella",
+      "filter_all": "Todos",
+      "status_good": "Buena",
+      "status_okay": "Regular",
+      "status_poor": "Pobre",
+      "bn_pft": "PFT",
+      "bn_dns": "DNS",
+      "bn_avail": "Disponibilidad",
+      "bn_none": "Ninguno",
+      "table_apps": "Aplicaciones",
+      "col_app": "Aplicación",
+      "col_score": "Puntuación",
+      "col_status": "Estado",
+      "col_pft": "Tiempo de Carga",
+      "col_dns": "DNS",
+      "col_avail": "Disponibilidad",
+      "col_users": "Usuarios Afectados",
+      "col_bottleneck": "Cuello de Botella",
+      "scope": "Alcance",
+      "generatedAt": "Generado"
+    },
+    "pt": {
+      "kpi_total": "Total de Apps",
+      "kpi_good": "Boas",
+      "kpi_okay": "Regulares",
+      "kpi_poor": "Ruins",
+      "kpi_mostImpacted": "Mais Impactada",
+      "filter_status": "Estado",
+      "filter_bottleneck": "Gargalo",
+      "filter_all": "Todos",
+      "status_good": "Boa",
+      "status_okay": "Regular",
+      "status_poor": "Ruim",
+      "bn_pft": "PFT",
+      "bn_dns": "DNS",
+      "bn_avail": "Disponibilidade",
+      "bn_none": "Nenhum",
+      "table_apps": "Aplicações",
+      "col_app": "Aplicação",
+      "col_score": "Pontuação",
+      "col_status": "Estado",
+      "col_pft": "Tempo de Carga",
+      "col_dns": "DNS",
+      "col_avail": "Disponibilidade",
+      "col_users": "Usuários Impactados",
+      "col_bottleneck": "Gargalo",
+      "scope": "Escopo",
+      "generatedAt": "Gerado em"
+    },
+    "fr": {
+      "kpi_total": "Total d'Apps",
+      "kpi_good": "Bonnes",
+      "kpi_okay": "Correctes",
+      "kpi_poor": "Mauvaises",
+      "kpi_mostImpacted": "Plus Impactée",
+      "filter_status": "Statut",
+      "filter_bottleneck": "Goulot",
+      "filter_all": "Tous",
+      "status_good": "Bonne",
+      "status_okay": "Correct",
+      "status_poor": "Mauvais",
+      "bn_pft": "PFT",
+      "bn_dns": "DNS",
+      "bn_avail": "Disponibilité",
+      "bn_none": "Aucun",
+      "table_apps": "Applications",
+      "col_app": "Application",
+      "col_score": "Score",
+      "col_status": "Statut",
+      "col_pft": "Temps de Chargement",
+      "col_dns": "DNS",
+      "col_avail": "Disponibilité",
+      "col_users": "Utilisateurs Affectés",
+      "col_bottleneck": "Goulot",
+      "scope": "Portée",
+      "generatedAt": "Généré le"
+    },
+    "ja": {
+      "kpi_total": "アプリ合計",
+      "kpi_good": "良好",
+      "kpi_okay": "普通",
+      "kpi_poor": "不良",
+      "kpi_mostImpacted": "影響大",
+      "filter_status": "ステータス",
+      "filter_bottleneck": "ボトルネック",
+      "filter_all": "すべて",
+      "status_good": "良好",
+      "status_okay": "普通",
+      "status_poor": "不良",
+      "bn_pft": "PFT",
+      "bn_dns": "DNS",
+      "bn_avail": "可用性",
+      "bn_none": "なし",
+      "table_apps": "アプリケーション",
+      "col_app": "アプリケーション",
+      "col_score": "スコア",
+      "col_status": "ステータス",
+      "col_pft": "ページ取得時間",
+      "col_dns": "DNS",
+      "col_avail": "可用性",
+      "col_users": "影響ユーザー",
+      "col_bottleneck": "ボトルネック",
+      "scope": "範囲",
+      "generatedAt": "生成日時"
+    }
+  }
+}</script>
+
+  <!-- ZDX data: the agent replaces this entire JSON object with the skill run's data.
+       Schema for the data object:
+         {
+           "generated_at":  ISO-8601 string,
+           "scope_en":      free-form description in English (also _es, _pt, _fr, _ja),
+           "kpis":          { <key>: <value>, … } — keys must match config.kpis,
+           "tables":        { <table_id>: [ { …row… }, … ] }
+         }
+       Every row should include a "severity" field set to one of:
+         "critical" | "warning" | "good" | "info" | "neutral"
+       to drive the colored row background.
+  -->
+  <script type="application/json" id="zdx-data">{
+  "generated_at": "2026-05-18T10:30:00Z",
+  "scope_en": "Last 4 hours · All locations · All departments",
+  "scope_es": "Últimas 4 horas · Todas las ubicaciones · Todos los departamentos",
+  "scope_pt": "Últimas 4 horas · Todas as localidades · Todos os departamentos",
+  "scope_fr": "4 dernières heures · Tous les sites · Tous les départements",
+  "scope_ja": "過去 4 時間 · すべての拠点 · すべての部門",
+  "kpis": {
+    "total": 18,
+    "good": 9,
+    "okay": 6,
+    "poor": 3,
+    "mostImpacted": "Microsoft 365"
+  },
+  "tables": {
+    "apps": [
+      {
+        "severity": "critical",
+        "name": "Microsoft 365",
+        "score": 28,
+        "status": "Poor",
+        "pft": "12.4s",
+        "dns": "22ms",
+        "availability": "94%",
+        "impactedUsers": 47,
+        "bottleneck": "PFT"
+      },
+      {
+        "severity": "critical",
+        "name": "Salesforce",
+        "score": 31,
+        "status": "Poor",
+        "pft": "9.8s",
+        "dns": "210ms",
+        "availability": "97%",
+        "impactedUsers": 33,
+        "bottleneck": "DNS"
+      },
+      {
+        "severity": "critical",
+        "name": "Workday",
+        "score": 33,
+        "status": "Poor",
+        "pft": "4.6s",
+        "dns": "48ms",
+        "availability": "92%",
+        "impactedUsers": 21,
+        "bottleneck": "Availability"
+      },
+      {
+        "severity": "warning",
+        "name": "Zoom",
+        "score": 52,
+        "status": "Okay",
+        "pft": "3.4s",
+        "dns": "55ms",
+        "availability": "99%",
+        "impactedUsers": 18,
+        "bottleneck": "PFT"
+      },
+      {
+        "severity": "warning",
+        "name": "ServiceNow",
+        "score": 48,
+        "status": "Okay",
+        "pft": "4.1s",
+        "dns": "44ms",
+        "availability": "98%",
+        "impactedUsers": 14,
+        "bottleneck": "PFT"
+      },
+      {
+        "severity": "warning",
+        "name": "Slack",
+        "score": 61,
+        "status": "Okay",
+        "pft": "2.9s",
+        "dns": "61ms",
+        "availability": "99%",
+        "impactedUsers": 9,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "warning",
+        "name": "Google Drive",
+        "score": 55,
+        "status": "Okay",
+        "pft": "3.1s",
+        "dns": "180ms",
+        "availability": "99%",
+        "impactedUsers": 12,
+        "bottleneck": "DNS"
+      },
+      {
+        "severity": "warning",
+        "name": "Box",
+        "score": 58,
+        "status": "Okay",
+        "pft": "2.8s",
+        "dns": "60ms",
+        "availability": "98%",
+        "impactedUsers": 7,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "warning",
+        "name": "Confluence",
+        "score": 64,
+        "status": "Okay",
+        "pft": "2.6s",
+        "dns": "42ms",
+        "availability": "99%",
+        "impactedUsers": 5,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "GitHub",
+        "score": 88,
+        "status": "Good",
+        "pft": "1.4s",
+        "dns": "18ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "Jira",
+        "score": 84,
+        "status": "Good",
+        "pft": "1.7s",
+        "dns": "26ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "Okta",
+        "score": 96,
+        "status": "Good",
+        "pft": "0.9s",
+        "dns": "12ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "DocuSign",
+        "score": 78,
+        "status": "Good",
+        "pft": "2.0s",
+        "dns": "21ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "Notion",
+        "score": 82,
+        "status": "Good",
+        "pft": "1.8s",
+        "dns": "20ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "Asana",
+        "score": 76,
+        "status": "Good",
+        "pft": "2.1s",
+        "dns": "24ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "AWS Console",
+        "score": 92,
+        "status": "Good",
+        "pft": "1.2s",
+        "dns": "14ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "GitHub Copilot",
+        "score": 87,
+        "status": "Good",
+        "pft": "1.5s",
+        "dns": "16ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      },
+      {
+        "severity": "good",
+        "name": "Linear",
+        "score": 90,
+        "status": "Good",
+        "pft": "1.3s",
+        "dns": "15ms",
+        "availability": "100%",
+        "impactedUsers": 0,
+        "bottleneck": "None"
+      }
+    ]
+  }
+}</script>
+
+  <script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect, useRef } = React;
+const config = JSON.parse(document.getElementById('zdx-config').textContent);
+const data   = JSON.parse(document.getElementById('zdx-data').textContent);
+
+const SHARED_I18N = {"en": {"search": "Search", "all": "All", "export": "Export CSV", "printSavePdf": "Print / Save PDF", "language": "Language", "toLight": "Switch to light mode", "toDark": "Switch to dark mode", "showing": "Showing", "of": "of", "rows": "rows", "noResults": "No rows match the current filters.", "footer": "Generated by the ZDX skill via the Zscaler MCP server.", "activeIncident": "Active Incident", "analysis": "Analysis", "rootCause": "Root Cause", "remediation": "Remediation"}, "es": {"search": "Buscar", "all": "Todos", "export": "Exportar CSV", "printSavePdf": "Imprimir / Guardar PDF", "language": "Idioma", "toLight": "Cambiar a modo claro", "toDark": "Cambiar a modo oscuro", "showing": "Mostrando", "of": "de", "rows": "filas", "noResults": "Ninguna fila coincide con los filtros actuales.", "footer": "Generado por la skill ZDX a través del servidor MCP de Zscaler.", "activeIncident": "Incidente Activo", "analysis": "Análisis", "rootCause": "Causa Raíz", "remediation": "Remediación"}, "pt": {"search": "Pesquisar", "all": "Todos", "export": "Exportar CSV", "printSavePdf": "Imprimir / Salvar PDF", "language": "Idioma", "toLight": "Mudar para modo claro", "toDark": "Mudar para modo escuro", "showing": "Mostrando", "of": "de", "rows": "linhas", "noResults": "Nenhuma linha corresponde aos filtros atuais.", "footer": "Gerado pela skill ZDX via servidor MCP da Zscaler.", "activeIncident": "Incidente Ativo", "analysis": "Análise", "rootCause": "Causa Raiz", "remediation": "Remediação"}, "fr": {"search": "Rechercher", "all": "Tous", "export": "Exporter CSV", "printSavePdf": "Imprimer / Enregistrer PDF", "language": "Langue", "toLight": "Passer au mode clair", "toDark": "Passer au mode sombre", "showing": "Affichage de", "of": "sur", "rows": "lignes", "noResults": "Aucune ligne ne correspond aux filtres actuels.", "footer": "Généré par la skill ZDX via le serveur MCP Zscaler.", "activeIncident": "Incident Actif", "analysis": "Analyse", "rootCause": "Cause Racine", "remediation": "Remédiation"}, "ja": {"search": "検索", "all": "すべて", "export": "CSV エクスポート", "printSavePdf": "印刷 / PDF 保存", "language": "言語", "toLight": "ライトモードに切り替え", "toDark": "ダークモードに切り替え", "showing": "表示", "of": "/", "rows": "行", "noResults": "現在のフィルタに一致する行はありません。", "footer": "Zscaler MCP サーバー経由で ZDX スキルにより生成。", "activeIncident": "アクティブインシデント", "analysis": "分析", "rootCause": "根本原因", "remediation": "対策"}};
+const LANGUAGES   = [["en", "English", "EN"], ["es", "Español", "ES"], ["pt", "Português", "PT"], ["fr", "Français", "FR"], ["ja", "日本語", "JA"]];
+
+// Translate(key, lang) looks first in the skill-specific labels, then in shared,
+// then falls back to the English value of either, then the raw key.
+function makeTranslator(lang) {
+  return function t(key) {
+    const skillBundle = (config.i18n && config.i18n[lang]) || {};
+    if (skillBundle[key] !== undefined) return skillBundle[key];
+    const sharedBundle = SHARED_I18N[lang] || {};
+    if (sharedBundle[key] !== undefined) return sharedBundle[key];
+    const skillEn = (config.i18n && config.i18n.en) || {};
+    if (skillEn[key] !== undefined) return skillEn[key];
+    const sharedEn = SHARED_I18N.en || {};
+    if (sharedEn[key] !== undefined) return sharedEn[key];
+    return key;
+  };
+}
+
+const PREF_KEY = 'zdx-report-prefs-v1';
+function loadPrefs() {
+  try { const v = window.localStorage.getItem(PREF_KEY); return v ? JSON.parse(v) : {}; }
+  catch { return {}; }
+}
+function savePrefs(p) {
+  try { window.localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch {}
+}
+
+/* ---------------- Icons ---------------- */
+function IconSun() {
+  return (
+    <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  );
+}
+function IconMoon() {
+  return (
+    <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+function IconGlobe() {
+  return (
+    <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20" />
+      <path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z" />
+    </svg>
+  );
+}
+function ZscalerLogo() {
+  return (
+    <svg className="zs-logo" viewBox="0 0 252 54" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-label="Zscaler">
+  <path d="M84.53,27.46c1.34,8.25-5.82,12.89-13.08,13.43-4.62,9.5-20.91,15.91-35,9-6,.91-9.35-.6-11.9-3.48C29.69,39.77,45.32,27.82,64.41,34c10.2,3.29,12.85-4.45,10.28-7.35-9.62-10.92-31.34-1.09-32.11-.27C51.11,13.32,81.62,9.66,84.53,27.46Zm-29.24-15c.05,0-6.94-2.49-16.7,1.73a10.37,10.37,0,0,1-1.16-.5c9.4-6.24,17.63-8.89,24.68-7.86C57.84.93,37.35-2.68,25.61,9.09,11.1,6.23.94,18.53,1.52,29.76S14.36,48,21.34,46.09a2.09,2.09,0,0,1,.5,0C23.4,38.67,29.7,21.4,55.29,12.47Zm58.45,10.26L115,17H93.18l-.49,2.22a2.55,2.55,0,0,0,2.64,3.3h10.13L87.51,38.37,86.3,43.69h23.15l1.33-5.82H96.14Zm14.58,4.61c-1-.26-6.77-1.12-6.41-3.11.4-2.22,3.12-2.44,4.45-2.4,2.73.08,3.59,1.28,3.73,1.71a2.42,2.42,0,0,0,2.52,1.7h4.31c.48-2.67.6-8.82-9.41-8.82-3.21,0-7.5.8-10.33,4.07-1.52,1.75-4.13,6.1-1.46,9.36,1.4,1.65,5,2.94,9,3.71,2.53.5,3.87,1.51,3.59,2.71-.17.8-1.18,2.61-4.9,2.61-1.67,0-5.27-.27-4.59-4H112c-.8,3.4-1.1,9.32,9.3,9.32,4,0,12.16-.51,14.29-9C137.09,29,130.18,27.82,128.32,27.34Zm24.09,9.43a6.09,6.09,0,0,1-4.37,1.6c-5.15.05-4.57-5-3.87-8.12s2.36-8,7.25-8c3.47,0,3.87,2.25,4.05,2.91h7c-.24-7.41-5.92-8.82-9.93-8.72-11,.27-14.18,9.46-15.17,13.73-2.87,12.48,5.11,14,8.93,14a15,15,0,0,0,14-8.72h-5A3.71,3.71,0,0,0,152.41,36.77Zm28.65,2.56a13.11,13.11,0,0,1-7.93,4.46c-6.1,1-14.48.75-12.37-8,.68-2.8,1.72-4.64,3.83-6,3.52-2.31,8.19-2.64,9.71-2.81.52-.05,4.35-.34,5-2.61s-2.88-2.39-3.86-2.4c-3,0-4,1.17-4.55,1.9h-6.71c2.71-7.14,10.2-7.41,12.22-7.41,2.26,0,11.35,0,9.61,7.52C183.38,35.42,183.29,36.57,181.06,39.33Zm-3-9.08a26.65,26.65,0,0,1-4.21,1.3c-1.4.42-4,.59-5.32,1.81-1.1,1-3,5.32,1.57,5.41a7.34,7.34,0,0,0,7.43-6.21C177.75,31.51,178.06,30.25,178.06,30.25Zm17.26-21h-3.6l-7.88,34.49h7L198,12.51A2.54,2.54,0,0,0,195.32,9.2Zm18.19,26.27h5a15.23,15.23,0,0,1-14,8.72c-10.67,0-10-9.52-8.92-14,3-12.55,11.42-13.73,15.16-13.73,5,0,12.81,2.06,8.84,15.74H202.24c-.43,1.81-.79,6.26,4,6.21a5.89,5.89,0,0,0,3.69-1C210.57,37,211.17,35.51,213.51,35.47Zm-10.25-7.82h10.23c.87-4.9-2.16-5.42-3.88-5.42C208.14,22.23,204.65,22.76,203.26,27.65Zm25.28-7.72c-4.69,3.2-6.25,8.35-6.79,10.83-.43,1.94-2.95,12.93-2.95,12.93h7S228.48,31.59,229,30c.55-1.93,2.36-7.16,9.36-6.95l1.62-6A18.9,18.9,0,0,0,228.54,19.93Zm12.25-8.12L241,11h3.78l-.18.84h-1.35l-.78,3.69h-1l.77-3.69ZM247,11l.34,3.28h0L249.11,11h1.39l-1,4.53h-.93l.82-3.6h0l-1.91,3.6h-.76l-.44-3.6h0l-.67,3.6h-.94l.95-4.53Z" />
+</svg>
+  );
+}
+
+/* ---------------- Sub-components ---------------- */
+function ThemeToggle({ theme, onToggle, t }) {
+  const label = theme === 'dark' ? t('toLight') : t('toDark');
+  return (
+    <button onClick={onToggle} className="icon-btn no-print" aria-label={label} title={label}>
+      {theme === 'dark' ? <IconSun /> : <IconMoon />}
+    </button>
+  );
+}
+
+function LanguageMenu({ lang, onChange, t }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  useEffect(() => {
+    function handler(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+  const current = LANGUAGES.find(l => l[0] === lang) || LANGUAGES[0];
+  return (
+    <div ref={wrapRef} className="relative no-print">
+      <button onClick={() => setOpen(o => !o)} className="icon-btn" aria-label={t('language')} title={t('language')} style={{ width: 'auto', padding: '0 10px', gap: 6 }}>
+        <IconGlobe />
+        <span className="text-[12px] font-semibold ml-1">{current[2]}</span>
+      </button>
+      {open && (
+        <div className="lang-menu" role="menu">
+          {LANGUAGES.map(([code, name, short]) => (
+            <button
+              key={code}
+              className={'lang-item ' + (code === lang ? 'active' : '')}
+              onClick={() => { onChange(code); setOpen(false); }}
+              role="menuitemradio"
+              aria-checked={code === lang}
+            >
+              <span>{name}</span>
+              <span className="code">{short}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KpiCard({ kpi, raw, t, active, onClick }) {
+  const isText = kpi.kind === 'text';
+  const sev = kpi.severity || 'neutral';
+  // Support raw being a primitive OR an object {value, sub, severity?}.
+  const isObj = raw !== null && typeof raw === 'object';
+  const value = isObj ? raw.value : raw;
+  const sub   = isObj ? raw.sub   : null;
+  const accentSev = (isObj && raw.severity) || sev;
+  const display = (value === null || value === undefined) ? '—' :
+                  (kpi.suffix ? value + kpi.suffix : value);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={'stat-card accent-' + accentSev + ' ' + (onClick ? '' : 'readonly ') + (active ? 'active' : '')}
+      aria-pressed={!!active}
+    >
+      <div className="text-xs uppercase tracking-wide text-[var(--zs-muted)] mb-2">{t(kpi.labelKey)}</div>
+      {isText ? (
+        <div className={'text-[20px] font-semibold ' + (accentSev === 'good' ? 'txt-good' : accentSev === 'critical' ? 'txt-critical' : accentSev === 'warning' ? 'txt-warning' : 'text-[var(--zs-text)]')}>{display}</div>
+      ) : (
+        <div className={'stat-num ' + accentSev}>{display}</div>
+      )}
+      {sub && <div className="stat-sub">{sub}</div>}
+    </button>
+  );
+}
+
+function ScopeBar({ scope, t }) {
+  if (!scope || typeof scope !== 'object') return null;
+  const entries = Object.entries(scope).filter(([, v]) => v !== null && v !== undefined && v !== '');
+  if (entries.length === 0) return null;
+  return (
+    <div className="scope-bar mb-5">
+      {entries.map(([k, v]) => (
+        <div key={k} className="scope-item">
+          <span className="lbl">{t('scope_' + k) !== ('scope_' + k) ? t('scope_' + k) : k}:</span>
+          <span>{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IncidentBanner({ incident }) {
+  if (!incident) return null;
+  const sev = incident.severity || 'critical';
+  return (
+    <div className={'incident-banner severity-' + sev + ' mb-6'} role="alert">
+      <div className="dot" />
+      <div>
+        {incident.title && <div className="title">{incident.title}</div>}
+        {incident.body && <div className="body">{incident.body}</div>}
+      </div>
+    </div>
+  );
+}
+
+function AnalysisSection({ analysis, t }) {
+  if (!analysis) return null;
+  return (
+    <div className="analysis-section">
+      {analysis.summary && (
+        <>
+          <h3>{t('analysis')}</h3>
+          <p>{analysis.summary}</p>
+        </>
+      )}
+      {analysis.rootCause && (
+        <>
+          <h3>{t('rootCause')}</h3>
+          <p>{analysis.rootCause}</p>
+        </>
+      )}
+      {analysis.remediation && analysis.remediation.length > 0 && (
+        <>
+          <h3>{t('remediation')}</h3>
+          <ol className="remediation-list">
+            {analysis.remediation.map((step, i) => <li key={i}>{step}</li>)}
+          </ol>
+        </>
+      )}
+    </div>
+  );
+}
+
+function rowSeverityClass(sev) {
+  switch (sev) {
+    case 'critical': return 'row-critical';
+    case 'warning':  return 'row-warning';
+    case 'good':     return 'row-good';
+    default: return '';
+  }
+}
+
+function StatusPill({ status }) {
+  const s = (status || '').toString().toLowerCase();
+  let cls = 'pill pill-neutral';
+  if (['good', 'ok', 'current', 'top', 'active', 'completed', 'low'].includes(s)) cls = 'pill pill-good';
+  else if (['okay', 'degraded', 'outdated', 'borderline', 'medium', 'warning'].includes(s)) cls = 'pill pill-warning';
+  else if (['poor', 'critical', 'eol', 'high', 'fail', 'failed'].includes(s)) cls = 'pill pill-critical';
+  else if (['info', 'resolved'].includes(s)) cls = 'pill pill-info';
+  return <span className={cls}>{status}</span>;
+}
+
+function PriorityPill({ priority }) {
+  const p = (priority || '').toString().toLowerCase();
+  let cls = 'pill pill-neutral';
+  if (p === 'high') cls = 'pill pill-critical';
+  else if (p === 'medium') cls = 'pill pill-warning';
+  else if (p === 'low') cls = 'pill pill-good';
+  return <span className={cls}>{priority}</span>;
+}
+
+function RiskPill({ risk }) {
+  const r = (risk || '').toString().toLowerCase();
+  let cls = 'pill pill-neutral';
+  if (r === 'critical' || r === 'high') cls = 'pill pill-critical';
+  else if (r === 'medium') cls = 'pill pill-warning';
+  else if (r === 'low') cls = 'pill pill-good';
+  return <span className={cls}>{risk}</span>;
+}
+
+function AlertStatusPill({ status }) {
+  const s = (status || '').toString().toLowerCase();
+  let cls = 'pill pill-neutral';
+  if (s === 'active') cls = 'pill pill-critical';
+  else if (s === 'resolved') cls = 'pill pill-good';
+  return <span className={cls}>{status}</span>;
+}
+
+function VerdictPill({ verdict }) {
+  const v = (verdict || '').toString().toLowerCase();
+  let cls = 'pill pill-neutral';
+  if (v === 'shared') cls = 'pill pill-critical';
+  else if (v === 'degraded') cls = 'pill pill-warning';
+  else if (v === 'ok' || v === 'good') cls = 'pill pill-good';
+  return <span className={cls}>{verdict}</span>;
+}
+
+function renderCell(col, row) {
+  const v = row[col.key];
+  if (col.kind === 'status')     return <StatusPill status={v} />;
+  if (col.kind === 'priority')   return <PriorityPill priority={v} />;
+  if (col.kind === 'risk')       return <RiskPill risk={v} />;
+  if (col.kind === 'alertStatus')return <AlertStatusPill status={v} />;
+  if (col.kind === 'verdict')    return <VerdictPill verdict={v} />;
+  return v;
+}
+
+function DataTable({ tableSpec, rows, sortState, onSort, t, columnOverrides }) {
+  return (
+    <div className="zs-table-wrap mb-8">
+      <div className="px-4 py-3 border-b border-[var(--zs-border)] flex items-center justify-between">
+        <h2 className="text-sm font-semibold tracking-wide uppercase text-[var(--zs-muted)]">
+          {t(tableSpec.titleKey)} <span className="text-[var(--zs-text)] ml-1">({rows.length})</span>
+        </h2>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="zs-table">
+          <thead>
+            <tr>
+              {tableSpec.columns.map(col => {
+                const indicator = sortState && sortState.col === col.key ? (sortState.dir === 1 ? ' ▲' : ' ▼') : '';
+                const override = columnOverrides && columnOverrides[col.key];
+                const label = override || t(col.labelKey);
+                return (
+                  <th key={col.key} onClick={() => onSort(col.key)}>
+                    {label}{indicator}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr><td colSpan={tableSpec.columns.length} style={{ textAlign: 'center', padding: '32px', color: 'var(--zs-muted)' }}>{t('noResults')}</td></tr>
+            ) : (
+              rows.map((row, i) => (
+                <tr key={i} className={rowSeverityClass(row[tableSpec.rowSeverityKey])}>
+                  {tableSpec.columns.map(col => (
+                    <td key={col.key}>{renderCell(col, row)}</td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function csvEscape(s) {
+  const v = (s === null || s === undefined) ? '' : String(s);
+  if (/[",\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+  return v;
+}
+
+function exportCSV(tableSpec, rows, t) {
+  const header = tableSpec.columns.map(c => t(c.labelKey));
+  const body = rows.map(r => tableSpec.columns.map(c => r[c.key]));
+  const lines = [header, ...body].map(arr => arr.map(csvEscape).join(','));
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (config.id || 'report') + '_' + tableSpec.id + '.csv';
+  a.click();
+}
+
+/* ---------------- Main App ---------------- */
+function App() {
+  const prefs = loadPrefs();
+  const [theme, setTheme] = useState(prefs.theme === 'light' ? 'light' : 'dark');
+  const [lang, setLang]   = useState(SHARED_I18N[prefs.lang] ? prefs.lang : 'en');
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState(() => {
+    const init = {};
+    (config.filters || []).forEach(f => { init[f.name] = 'All'; });
+    return init;
+  });
+  const [sortByTable, setSortByTable] = useState({});
+
+  const t = makeTranslator(lang);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.lang = lang;
+    savePrefs({ theme, lang });
+  }, [theme, lang]);
+
+  function setFilter(name, val) {
+    setFilters(prev => ({ ...prev, [name]: val }));
+  }
+
+  function sortRows(tableSpec, rows) {
+    const s = sortByTable[tableSpec.id];
+    if (!s) return rows;
+    const { col, dir } = s;
+    return [...rows].sort((a, b) => {
+      const av = a[col]; const bv = b[col];
+      const an = parseFloat(av); const bn = parseFloat(bv);
+      if (!isNaN(an) && !isNaN(bn)) return (an - bn) * dir;
+      return String(av).localeCompare(String(bv)) * dir;
+    });
+  }
+
+  function onSort(tableId, col) {
+    setSortByTable(prev => {
+      const cur = prev[tableId];
+      const dir = cur && cur.col === col ? -cur.dir : 1;
+      return { ...prev, [tableId]: { col, dir } };
+    });
+  }
+
+  function filterRows(rows) {
+    const q = search.trim().toLowerCase();
+    return rows.filter(r => {
+      if (q) {
+        const hay = (config.searchKeys || Object.keys(r)).map(k => r[k]).join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      for (const f of (config.filters || [])) {
+        const sel = filters[f.name];
+        if (!sel || sel === 'All') continue;
+        const rowField = (config.filterMatch && config.filterMatch[f.name]) || f.name;
+        const rv = r[rowField];
+        if (rv === undefined || rv === null) continue;
+        if (String(rv).toLowerCase() !== String(sel).toLowerCase()) return false;
+      }
+      return true;
+    });
+  }
+
+  // Scope: either a string (legacy `scope_en`) or a structured object `scope_obj`.
+  const scopeStr = data['scope_' + lang] || data.scope_en || (typeof data.scope === 'string' ? data.scope : '') || '';
+  const scopeObj = (data.scope && typeof data.scope === 'object') ? data.scope :
+                   (data['scope_obj_' + lang] || data.scope_obj || null);
+  const title = (config.title && (config.title[lang] || config.title.en)) || '';
+  const subtitle = (config.subtitle && (config.subtitle[lang] || config.subtitle.en)) || '';
+
+  const totalRows = (config.tables || []).reduce((sum, tbl) => sum + ((data.tables && data.tables[tbl.id]) || []).length, 0);
+  const visibleRows = (config.tables || []).reduce((sum, tbl) => sum + filterRows((data.tables && data.tables[tbl.id]) || []).length, 0);
+
+  return (
+    <div className="min-h-screen">
+      <header className="panel border-b sticky top-0 z-20 header-shell">
+        <div className="w-full px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4 min-w-0">
+            <ZscalerLogo />
+            <div className="h-6 w-px bg-[var(--zs-border-strong)]" />
+            <div className="text-sm font-medium text-[var(--zs-text)] truncate">{title}</div>
+          </div>
+          <div className="flex items-center gap-2 no-print">
+            {data.incident && <span className="incident-pill">⚡ {t('activeIncident')}</span>}
+            <LanguageMenu lang={lang} onChange={setLang} t={t} />
+            <ThemeToggle theme={theme} onToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')} t={t} />
+            <button onClick={() => window.print()} className="btn-primary">{t('printSavePdf')}</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <section className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight">
+            <span className="grad-text">{title}</span>
+          </h1>
+          <div className="text-[var(--zs-muted)] text-sm">{subtitle}</div>
+          {scopeStr && !scopeObj && <div className="text-[var(--zs-muted)] text-xs mt-2"><span className="text-[var(--zs-text)] font-medium">{t('scope')}:</span> {scopeStr}</div>}
+          {data.generated_at && <div className="text-[var(--zs-muted)] text-xs mt-1"><span className="text-[var(--zs-text)] font-medium">{t('generatedAt')}:</span> {data.generated_at}</div>}
+        </section>
+
+        <ScopeBar scope={scopeObj} t={t} />
+        <IncidentBanner incident={data.incident} />
+
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          {(config.kpis || []).map(kpi => (
+            <KpiCard key={kpi.key} kpi={kpi} raw={data.kpis && data.kpis[kpi.key]} t={t} />
+          ))}
+        </section>
+
+        <section className="panel rounded-xl p-5 mb-6 no-print">
+          <div className="space-y-4">
+            <div>
+              <div className="section-h">{t('search')}</div>
+              <input
+                className="search-input"
+                placeholder={t('search') + '…'}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            {(config.filters || []).map(f => (
+              <div key={f.name}>
+                <div className="section-h">{t(f.labelKey)}</div>
+                <div className="flex flex-wrap gap-2">
+                  {f.options.map(([val, _label, labelKey]) => (
+                    <button
+                      key={val}
+                      className={'filter-chip ' + (filters[f.name] === val ? 'active' : '')}
+                      onClick={() => setFilter(f.name, val)}
+                    >
+                      {t(labelKey)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="text-xs uppercase tracking-wide text-[var(--zs-muted)] mb-3 no-print flex items-center justify-between">
+          <span>{t('showing')} {visibleRows} {t('of')} {totalRows} {t('rows')}</span>
+        </div>
+
+        {(config.tables || []).map(tableSpec => {
+          const rawRows = (data.tables && data.tables[tableSpec.id]) || [];
+          const filtered = filterRows(rawRows);
+          const sorted = sortRows(tableSpec, filtered);
+          return (
+            <div key={tableSpec.id}>
+              <div className="flex items-center justify-end mb-2 no-print">
+                <button className="filter-chip" onClick={() => exportCSV(tableSpec, sorted, t)}>{t('export')}</button>
+              </div>
+              <DataTable
+                tableSpec={tableSpec}
+                rows={sorted}
+                sortState={sortByTable[tableSpec.id]}
+                onSort={(col) => onSort(tableSpec.id, col)}
+                t={t}
+                columnOverrides={(data.columnOverrides && data.columnOverrides[tableSpec.id]) || null}
+              />
+            </div>
+          );
+        })}
+
+        <AnalysisSection analysis={data.analysis} t={t} />
+
+        <footer className="mt-12 pt-6 border-t border-[var(--zs-border)] text-xs text-[var(--zs-muted)] text-center">
+          {t('footer')} · <code className="font-mono">{config.id}</code>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -19,7 +19,7 @@ Audit the software installed across devices in the organization using ZDX's soft
 
 ## Data Presentation Requirements
 
-**ALWAYS present ZDX data using HTML tables** in the chat for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
+**All tables are rendered by the HTML template, not by hand.** Do not author `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` markup in your reply or in the report. You produce a JSON payload (see *Data Payload Contract*) and the template at `./templates/report.html.template` turns it into the styled, sortable, exportable tables shown in `./example/report.example.html`.
 
 After each table, provide:
 
@@ -33,13 +33,82 @@ Use color-coded status indicators in tables:
 - Yellow: One version behind or approaching EOL
 - Red: EOL, known vulnerabilities, or significantly outdated
 
+## ⚠ HTML OUTPUT — READ THIS BEFORE PRODUCING ANY HTML
+
+There is exactly one acceptable way to produce the HTML output:
+
+1. **Read the template from disk** — do NOT inline a copy in your response. The template lives next to this SKILL.md inside the skill's package, at:
+
+   ```text
+   ./templates/report.html.template
+   ```
+
+   The `./` prefix is intentional: this path is **relative to the skill folder** (the directory containing this SKILL.md), **never** an absolute path. Most agents that load skills from an uploaded `.zip` extract the package into a working directory and expose its contents via that relative path — read the file by joining the skill's own root directory with `./templates/report.html.template`. Do not rewrite this to an absolute path that points at the author's machine.
+
+2. **Build a single JSON object** (`__ZDX_DATA__` payload) shaped exactly as documented in the *Data Payload Contract* section below. Aggregate the responses from the ZDX MCP tool calls (Steps 1–3 of the *Workflow*) into that object.
+
+3. **Replace** the literal token `__ZDX_DATA__` (which appears once, inside `<script type="application/json" id="zdx-data">__ZDX_DATA__</script>`) with the JSON object. Do not edit any other part of the template.
+
+4. **Write** the result to disk as `software_inventory_audit_<YYYYMMDD-HHMMSS>.html` next to the .docx, and give the user a `computer://` link to it.
+
+This template already provides: Zscaler header with logo · sticky top bar · scope summary bar · KPI cards with severity-coded top borders · per-table search + filter chips · sortable color-coded tables · per-table CSV export · light/dark theme toggle · top-right language dropdown (EN / ES / PT / FR / JA) · printable PDF view · localStorage prefs · Analysis / Root Cause / Remediation block.
+
+**If you find yourself writing `<html>`, `<style>`, or `<table>` in a code-block destined for the user, stop. Read the template instead.**
+
+A populated reference rendering ships with this skill at `./example/report.example.html` (relative to the skill folder). Open it in a browser to preview the exact layout and depth expected.
+
+### Data Payload Contract
+
+The full `__ZDX_DATA__` payload is one JSON object. Every field below is **required** unless marked optional.
+
+```json
+{
+  "generated_at": "<ISO 8601 timestamp>",
+  "scope_en": "Free-form description in English",
+  "scope_es": "...in Spanish (optional, falls back to scope_en)",
+  "scope_pt": "...in Portuguese (optional)",
+  "scope_fr": "...in French (optional)",
+  "scope_ja": "...in Japanese (optional)",
+  "kpis": {
+    "totalSoftware": "<int>",
+    "totalDevices": "<int>",
+    "compliancePct": "<float, 0-100>",
+    "criticalCount": "<int>"
+  },
+  "tables": {
+    "software": [
+      {
+        "severity": "critical | warning | good",
+        "name": "<software name>",
+        "version": "<version string or summary>",
+        "vendor": "<vendor>",
+        "group": "<category, e.g. 'Collaboration'>",
+        "devices": "<int>",
+        "users": "<int>",
+        "status": "Current | Outdated | EOL",
+        "risk": "None | Low | Medium | High | Critical"
+      }
+    ]
+  },
+  "analysis": {
+    "summary": "...",
+    "rootCause": "...",
+    "remediation": [
+      { "priority": "Immediate | Investigate | Monitor | Communicate", "action": "..." }
+    ]
+  }
+}
+```
+
+Map each row's `severity` from `status`: `Current` → `good`, `Outdated` → `warning`, `EOL` → `critical`.
+
 ## Output Artifacts — MANDATORY
 
-**You MUST generate BOTH files below. Do NOT skip the HTML page. Do NOT consider this optional. Both files are REQUIRED output for every software inventory audit.**
+You MUST generate BOTH files below. Both are REQUIRED output for every software inventory audit.
 
 ### 1. Word Document (.docx) — REQUIRED
 
-Write a Word document to disk named `software_inventory_audit_<date>.docx` containing:
+Write a Word document to disk named `software_inventory_audit_<YYYYMMDD-HHMMSS>.docx` containing:
 
 - Executive summary with compliance posture percentages
 - Full software inventory table (software name, version, vendor, device count, user count, status, risk)
@@ -49,96 +118,7 @@ Write a Word document to disk named `software_inventory_audit_<date>.docx` conta
 
 ### 2. Interactive HTML Web Page (.html) — REQUIRED
 
-Write a **fully functional, self-contained HTML file** to disk named `software_inventory_audit_<date>.html`. This file MUST contain working CSS and JavaScript — not placeholders or comments. Copy the template below and populate `<tbody>` with one `<tr>` per software entry from the collected data. Replace `{{TOTAL_SOFTWARE}}`, `{{TOTAL_DEVICES}}`, `{{COMPLIANCE_PCT}}`, and `{{CRITICAL_COUNT}}` with actual values.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Software Inventory Audit</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;color:#2d3436;padding:20px}
-h1{text-align:center;margin-bottom:20px;color:#1a1a2e}
-.summary{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.card{background:#fff;border-radius:10px;padding:18px 28px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;min-width:160px}
-.card .num{font-size:2em;font-weight:700;color:#1a1a2e}
-.card .label{font-size:.85em;color:#636e72;margin-top:4px}
-.filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
-.filters input,.filters select{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:.95em}
-.filters input{min-width:260px}
-.filters button{padding:8px 18px;background:#0984e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95em}
-.filters button:hover{background:#0767b2}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-th{background:#1a1a2e;color:#fff;padding:10px 12px;cursor:pointer;position:sticky;top:0;user-select:none;white-space:nowrap}
-th:hover{background:#2d3460}
-td{padding:9px 12px;border-bottom:1px solid #eee}
-tr.current{background:#d4edda}
-tr.outdated{background:#fff3cd}
-tr.eol{background:#f8d7da}
-tr:hover{filter:brightness(.97)}
-.status-current{color:#27ae60;font-weight:700}
-.status-outdated{color:#e67e22;font-weight:700}
-.status-eol{color:#e74c3c;font-weight:700}
-@media(max-width:800px){.summary{flex-direction:column;align-items:center}table{font-size:.85em}}
-</style>
-</head>
-<body>
-<h1>Software Inventory Audit Report</h1>
-<div class="summary">
-  <div class="card"><div class="num" id="totalSw">{{TOTAL_SOFTWARE}}</div><div class="label">Total Software</div></div>
-  <div class="card"><div class="num" id="totalDev">{{TOTAL_DEVICES}}</div><div class="label">Total Devices</div></div>
-  <div class="card"><div class="num" id="compPct">{{COMPLIANCE_PCT}}%</div><div class="label">Compliance</div></div>
-  <div class="card"><div class="num" id="critCnt" style="color:#e74c3c">{{CRITICAL_COUNT}}</div><div class="label">Critical / EOL</div></div>
-</div>
-<div class="filters">
-  <input type="text" id="search" placeholder="Search software, vendor, version..." oninput="applyFilters()">
-  <select id="statusFilter" onchange="applyFilters()"><option value="">All Status</option><option value="Current">Current</option><option value="Outdated">Outdated</option><option value="EOL">EOL</option></select>
-  <select id="riskFilter" onchange="applyFilters()"><option value="">All Risk</option><option value="None">None</option><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option><option value="Critical">Critical</option></select>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
-<table id="inventoryTable">
-<thead><tr>
-  <th onclick="sortTable(0)">Software &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(1)">Version &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(2)">Vendor &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(3)">Group &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(4)">Devices &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(5)">Users &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(6)">Status &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(7)">Risk &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="current|outdated|eol"> per software entry.
-     Example row:
-  <tr class="current">
-    <td>Microsoft Teams</td><td>24.1.414</td><td>Microsoft</td><td>Collaboration</td>
-    <td>290</td><td>280</td><td class="status-current">Current</td><td>None</td>
-  </tr>
--->
-</tbody>
-</table>
-<script>
-let sortDir=[1,1,1,1,1,1,1,1];
-function sortTable(c){const t=document.getElementById('inventoryTable'),b=t.tBodies[0],rows=Array.from(b.rows);sortDir[c]*=-1;rows.sort((a,b_)=>{let x=a.cells[c].textContent.trim(),y=b_.cells[c].textContent.trim();const xn=parseFloat(x),yn=parseFloat(y);if(!isNaN(xn)&&!isNaN(yn))return(xn-yn)*sortDir[c];return x.localeCompare(y)*sortDir[c]});rows.forEach(r=>b.appendChild(r))}
-function applyFilters(){const q=document.getElementById('search').value.toLowerCase(),s=document.getElementById('statusFilter').value,r=document.getElementById('riskFilter').value;const rows=document.querySelectorAll('#inventoryTable tbody tr');rows.forEach(row=>{const txt=row.textContent.toLowerCase(),st=row.cells[6]?.textContent.trim()||'',ri=row.cells[7]?.textContent.trim()||'';let show=true;if(q&&!txt.includes(q))show=false;if(s&&st!==s)show=false;if(r&&ri!==r)show=false;row.style.display=show?'':'none'})}
-function exportCSV(){const t=document.getElementById('inventoryTable'),rows=Array.from(t.rows).filter(r=>r.style.display!=='none');let csv=rows.map(r=>Array.from(r.cells).map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='software_inventory.csv';a.click()}
-</script>
-</body>
-</html>
-```text
-
-**MANDATORY STEPS:**
-
-1. Copy this template exactly
-2. Replace the `{{...}}` placeholders in the summary cards with real values
-3. Add one `<tr>` row inside `<tbody>` for every software entry collected from the API
-4. Set the row class to `current`, `outdated`, or `eol` based on status
-5. Write the file to disk and provide the file path to the user
-
-**Both files must be saved to the user's working directory** and the file paths provided in the response.
+Generated by the template-substitution flow described in the **HTML OUTPUT** section above. Filename: `software_inventory_audit_<YYYYMMDD-HHMMSS>.html`. Do not hand-author HTML or CSS — the template ships everything the report needs.
 
 ---
 
@@ -243,53 +223,20 @@ zdx_list_devices(location_id=["<location_id>"])
 
 ### Step 4: Present Audit Report
 
-Present all data in **HTML table format** with detailed analysis.
+Assemble the `__ZDX_DATA__` payload defined in the *Data Payload Contract* and render it through `./templates/report.html.template` (see the **HTML OUTPUT** section). The template already produces the inventory table, KPI cards, compliance percentages, color coding, search/sort, and CSV export — do **not** hand-author any HTML or markdown table here.
 
-**Software Inventory Overview (HTML table):**
+What you DO write is the `analysis` block inside the payload. **Do not skip it.** This is what makes the audit useful:
 
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Software</th>
-  <th style="padding:8px;border:1px solid #ddd">Version(s)</th>
-  <th style="padding:8px;border:1px solid #ddd">Devices</th>
-  <th style="padding:8px;border:1px solid #ddd">Status</th>
-  <th style="padding:8px;border:1px solid #ddd">Risk</th>
-</tr></thead>
-<tbody>
-  <tr style="background:#d4edda"><td style="padding:8px;border:1px solid #ddd">Microsoft Teams</td><td style="padding:8px">24.1.x (290)</td><td style="padding:8px">290</td><td style="padding:8px;color:green;font-weight:bold">Current</td><td style="padding:8px">None</td></tr>
-  <tr style="background:#fff3cd"><td style="padding:8px;border:1px solid #ddd">Google Chrome</td><td style="padding:8px">120.x (312), 119.x (45)</td><td style="padding:8px">357</td><td style="padding:8px;color:orange;font-weight:bold">45 Outdated</td><td style="padding:8px">Medium</td></tr>
-  <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Java Runtime</td><td style="padding:8px">21.x (180), 17.x (95), 8.x (12)</td><td style="padding:8px">287</td><td style="padding:8px;color:red;font-weight:bold">12 EOL</td><td style="padding:8px">Critical</td></tr>
-</tbody></table>
-```text
+- **`analysis.summary`** (3–5 sentences): the fleet's compliance posture. Cite the ratio of up-to-date vs. outdated software. Call out patterns (e.g., "Outdated Chrome is concentrated in APAC offices, suggesting MDM policy gaps in that region"). Quote actual counts from the `kpis` block.
+- **`analysis.rootCause`** (1–3 sentences per EOL / vulnerable group): explain the risk concretely (e.g., "Java 8 is end-of-life with 200+ known CVEs. The 12 devices running it are exposed to remote code execution vulnerabilities").
+- **`analysis.remediation`** (4–6 items): label each with a priority bucket and a concrete action.
 
-**Compliance Summary (HTML table):**
-
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Category</th>
-  <th style="padding:8px;border:1px solid #ddd">Count</th>
-  <th style="padding:8px;border:1px solid #ddd">Percentage</th>
-</tr></thead>
-<tbody>
-  <tr style="background:#d4edda"><td style="padding:8px">Up to Date</td><td style="padding:8px">792</td><td style="padding:8px">93.5%</td></tr>
-  <tr style="background:#fff3cd"><td style="padding:8px">One Version Behind</td><td style="padding:8px">43</td><td style="padding:8px">5.1%</td></tr>
-  <tr style="background:#f8d7da"><td style="padding:8px">EOL / Unsupported</td><td style="padding:8px">12</td><td style="padding:8px">1.4%</td></tr>
-</tbody></table>
-```text
-
-**After the tables, ALWAYS provide:**
-
-1. **Analysis:** Summarize the fleet's compliance posture. Highlight the ratio of up-to-date vs outdated software. Identify patterns (e.g., "Outdated Chrome is concentrated in APAC offices, suggesting MDM policy gaps in that region").
-
-2. **Security Assessment:** For each EOL or vulnerable software, explain the risk (e.g., "Java 8 is end-of-life with 200+ known CVEs. The 12 devices running it are exposed to remote code execution vulnerabilities").
-
-3. **Next Steps / Resolution:**
-   - **Critical (EOL):** Immediate upgrade plan. Identify device owners, schedule maintenance windows, and push updates via MDM.
-   - **High (vulnerable versions):** Cross-reference with known CVEs. Prioritize devices in sensitive departments (Finance, Engineering).
-   - **Medium (one version behind):** Schedule automated updates via MDM or software distribution tools.
-   - **Low (current):** No action needed. Verify auto-update policies are in place.
+| Priority | Apply to | Action |
+|---|---|---|
+| `Immediate` | EOL software | Immediate upgrade plan. Identify device owners, schedule maintenance windows, push updates via MDM. |
+| `Investigate` | Vulnerable versions | Cross-reference with known CVEs. Prioritize devices in sensitive departments (Finance, Engineering). |
+| `Monitor` | One version behind | Schedule automated updates via MDM or software distribution tools. |
+| `Communicate` | Borderline current versions | Confirm auto-update policies are in place; report status to security/compliance. |
 
 ---
 

@@ -19,7 +19,7 @@ Investigate a user's digital experience using Zscaler Digital Experience (ZDX) m
 
 ## Data Presentation Requirements
 
-**ALWAYS present ZDX data using HTML tables** for clear, structured output. Use `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, `<td>` tags with inline styling for readability.
+**All tables are rendered by the HTML template, not by hand.** Do not author `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, or `<td>` markup in your reply or in the report. You produce a JSON payload (see *Data Payload Contract*) and the template at `./templates/report.html.template` turns it into the styled, sortable, exportable tables shown in `./example/report.example.html`.
 
 After each table, provide:
 
@@ -33,13 +33,89 @@ Use color-coded status indicators in tables:
 - Yellow/Degraded: scores 34-65, metrics approaching thresholds
 - Red/Poor: scores 0-33, metrics exceeding thresholds
 
+## ⚠ HTML OUTPUT — READ THIS BEFORE PRODUCING ANY HTML
+
+There is exactly one acceptable way to produce the HTML output:
+
+1. **Read the template from disk** — do NOT inline a copy in your response. The template lives next to this SKILL.md inside the skill's package, at:
+
+   ```text
+   ./templates/report.html.template
+   ```
+
+   The `./` prefix is intentional: this path is **relative to the skill folder** (the directory containing this SKILL.md), **never** an absolute path. Most agents that load skills from an uploaded `.zip` extract the package into a working directory and expose its contents via that relative path — read the file by joining the skill's own root directory with `./templates/report.html.template`. Do not rewrite this to an absolute path that points at the author's machine.
+
+2. **Build a single JSON object** (`__ZDX_DATA__` payload) shaped exactly as documented in the *Data Payload Contract* section below. Aggregate the responses from the ZDX MCP tool calls (Steps 1–5 of the *Workflow*) into that object.
+
+3. **Replace** the literal token `__ZDX_DATA__` (which appears once, inside `<script type="application/json" id="zdx-data">__ZDX_DATA__</script>`) with the JSON object. Do not edit any other part of the template.
+
+4. **Write** the result to disk as `user_experience_diagnosis_<YYYYMMDD-HHMMSS>.html` next to the .docx, and give the user a `computer://` link to it.
+
+This template already provides: Zscaler header with logo · sticky top bar · scope summary bar · KPI cards with severity-coded top borders · per-table search + filter chips · sortable color-coded tables · per-table CSV export · light/dark theme toggle · top-right language dropdown (EN / ES / PT / FR / JA) · printable PDF view · localStorage prefs · Analysis / Root Cause / Remediation block.
+
+**If you find yourself writing `<html>`, `<style>`, or `<table>` in a code-block destined for the user, stop. Read the template instead.**
+
+A populated reference rendering ships with this skill at `./example/report.example.html` (relative to the skill folder). Open it in a browser to preview the exact layout and depth expected.
+
+### Data Payload Contract
+
+The full `__ZDX_DATA__` payload is one JSON object. Every field below is **required** unless marked optional. This skill emits **two tables**: the device/user summary and the per-metric breakdown.
+
+```json
+{
+  "generated_at": "<ISO 8601 timestamp>",
+  "scope_en": "Free-form description in English",
+  "scope_es": "...in Spanish (optional, falls back to scope_en)",
+  "scope_pt": "...in Portuguese (optional)",
+  "scope_fr": "...in French (optional)",
+  "scope_ja": "...in Japanese (optional)",
+  "kpis": {
+    "user": "<user name or email>",
+    "device": "<device hostname or model>",
+    "score": "<int, 0-100>",
+    "bottleneck": "DNS | TCP | SSL | Server | Page Load | —",
+    "alerts": "<int>"
+  },
+  "tables": {
+    "summary": [
+      { "severity": "neutral", "field": "User",       "value": "<name (email)>" },
+      { "severity": "neutral", "field": "Device",     "value": "<device_type, os_version>" },
+      { "severity": "neutral", "field": "Location",   "value": "<location>" },
+      { "severity": "neutral", "field": "Department", "value": "<department>" },
+      { "severity": "neutral", "field": "ZCC Version","value": "<version>" },
+      { "severity": "critical | warning | good", "field": "Experience Score", "value": "<score>/100 (<label>)" }
+    ],
+    "metrics": [
+      {
+        "severity": "critical | warning | good",
+        "name": "DNS Resolution | TCP Connect | SSL Handshake | Server Response | Page Load",
+        "current": "<e.g. '850ms' | 'Timeout' | 'N/A'>",
+        "normal": "<e.g. '< 100ms'>",
+        "category": "DNS | Network | Server | Client",
+        "status": "OK | Degraded | Critical",
+        "impact": "<short user-facing impact, e.g. 'Application unreachable'>"
+      }
+    ]
+  },
+  "analysis": {
+    "summary": "...",
+    "rootCause": "...",
+    "remediation": [
+      { "priority": "Immediate | Investigate | Monitor | Communicate", "action": "..." }
+    ]
+  }
+}
+```
+
+Map each row's `severity` from `status`: `OK` → `good`, `Degraded` → `warning`, `Critical` → `critical`. The static summary rows are `neutral` except the Experience Score row, which carries the same severity bucket as the user's overall score.
+
 ## Output Artifacts — MANDATORY
 
-**You MUST generate BOTH files below. Do NOT skip the HTML page. Do NOT consider this optional. Both files are REQUIRED output for every user experience diagnosis.**
+You MUST generate BOTH files below. Both are REQUIRED output for every user experience diagnosis.
 
 ### 1. Word Document (.docx) — REQUIRED
 
-Write a Word document to disk named `user_experience_diagnosis_<date>.docx` containing:
+Write a Word document to disk named `user_experience_diagnosis_<YYYYMMDD-HHMMSS>.docx` containing:
 
 - User and device summary (name, email, device type, OS, location, department)
 - Application experience scores with trend analysis
@@ -50,95 +126,7 @@ Write a Word document to disk named `user_experience_diagnosis_<date>.docx` cont
 
 ### 2. Interactive HTML Web Page (.html) — REQUIRED
 
-Write a **fully functional, self-contained HTML file** to disk named `user_experience_diagnosis_<date>.html`. This file MUST contain working CSS and JavaScript — not placeholders or comments. Copy the template below and populate `<tbody>` with one `<tr>` per metric. Replace `{{USER}}`, `{{DEVICE}}`, `{{SCORE}}`, `{{BOTTLENECK}}`, and `{{ALERTS}}` with actual values.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>User Experience Diagnosis</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f6fa;color:#2d3436;padding:20px}
-h1{text-align:center;margin-bottom:20px;color:#1a1a2e}
-.summary{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
-.card{background:#fff;border-radius:10px;padding:18px 28px;box-shadow:0 2px 8px rgba(0,0,0,.1);text-align:center;min-width:160px}
-.card .num{font-size:2em;font-weight:700;color:#1a1a2e}
-.card .label{font-size:.85em;color:#636e72;margin-top:4px}
-.filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
-.filters input,.filters select{padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:.95em}
-.filters input{min-width:260px}
-.filters button{padding:8px 18px;background:#0984e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.95em}
-.filters button:hover{background:#0767b2}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-th{background:#1a1a2e;color:#fff;padding:10px 12px;cursor:pointer;position:sticky;top:0;user-select:none;white-space:nowrap}
-th:hover{background:#2d3460}
-td{padding:9px 12px;border-bottom:1px solid #eee}
-tr.ok{background:#d4edda}
-tr.degraded{background:#fff3cd}
-tr.critical{background:#f8d7da}
-tr:hover{filter:brightness(.97)}
-.status-ok{color:#27ae60;font-weight:700}
-.status-degraded{color:#e67e22;font-weight:700}
-.status-critical{color:#e74c3c;font-weight:700}
-@media(max-width:800px){.summary{flex-direction:column;align-items:center}table{font-size:.85em}}
-</style>
-</head>
-<body>
-<h1>User Experience Diagnosis Report</h1>
-<div class="summary">
-  <div class="card"><div class="num">{{USER}}</div><div class="label">User</div></div>
-  <div class="card"><div class="num">{{DEVICE}}</div><div class="label">Device</div></div>
-  <div class="card"><div class="num" id="score">{{SCORE}}</div><div class="label">Experience Score</div></div>
-  <div class="card"><div class="num" style="color:#e74c3c">{{BOTTLENECK}}</div><div class="label">Bottleneck</div></div>
-  <div class="card"><div class="num">{{ALERTS}}</div><div class="label">Active Alerts</div></div>
-</div>
-<div class="filters">
-  <input type="text" id="search" placeholder="Search metrics, values..." oninput="applyFilters()">
-  <select id="statusFilter" onchange="applyFilters()"><option value="">All Status</option><option value="OK">OK</option><option value="Degraded">Degraded</option><option value="Critical">Critical</option></select>
-  <select id="categoryFilter" onchange="applyFilters()"><option value="">All Categories</option><option value="DNS">DNS</option><option value="Network">Network</option><option value="Server">Server</option><option value="Client">Client</option></select>
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
-<table id="metricsTable">
-<thead><tr>
-  <th onclick="sortTable(0)">Metric &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(1)">Current Value &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(2)">Normal Range &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(3)">Category &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(4)">Status &#x25B4;&#x25BE;</th>
-  <th onclick="sortTable(5)">Impact &#x25B4;&#x25BE;</th>
-</tr></thead>
-<tbody>
-<!-- POPULATE: one <tr class="ok|degraded|critical"> per metric.
-     Example row:
-  <tr class="critical">
-    <td>Server Response Time</td><td>Timeout</td><td>&lt; 500ms</td><td>Server</td>
-    <td class="status-critical">Critical</td><td>Application unreachable</td>
-  </tr>
--->
-</tbody>
-</table>
-<script>
-let sortDir=[1,1,1,1,1,1];
-function sortTable(c){const t=document.getElementById('metricsTable'),b=t.tBodies[0],rows=Array.from(b.rows);sortDir[c]*=-1;rows.sort((a,b_)=>{let x=a.cells[c].textContent.trim(),y=b_.cells[c].textContent.trim();const xn=parseFloat(x),yn=parseFloat(y);if(!isNaN(xn)&&!isNaN(yn))return(xn-yn)*sortDir[c];return x.localeCompare(y)*sortDir[c]});rows.forEach(r=>b.appendChild(r))}
-function applyFilters(){const q=document.getElementById('search').value.toLowerCase(),s=document.getElementById('statusFilter').value,cat=document.getElementById('categoryFilter').value;const rows=document.querySelectorAll('#metricsTable tbody tr');rows.forEach(row=>{const txt=row.textContent.toLowerCase(),st=row.cells[4]?.textContent.trim()||'',ct=row.cells[3]?.textContent.trim()||'';let show=true;if(q&&!txt.includes(q))show=false;if(s&&st!==s)show=false;if(cat&&ct!==cat)show=false;row.style.display=show?'':'none'})}
-function exportCSV(){const t=document.getElementById('metricsTable'),rows=Array.from(t.rows).filter(r=>r.style.display!=='none');let csv=rows.map(r=>Array.from(r.cells).map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='user_experience_diagnosis.csv';a.click()}
-</script>
-</body>
-</html>
-```text
-
-**MANDATORY STEPS:**
-
-1. Copy this template exactly
-2. Replace the `{{...}}` placeholders in the summary cards with real values
-3. Add one `<tr>` row inside `<tbody>` for every metric collected
-4. Set the row class to `ok`, `degraded`, or `critical` based on status
-5. Write the file to disk and provide the file path to the user
-
-**Both files must be saved to the user's working directory** and the file paths provided in the response.
+Generated by the template-substitution flow described in the **HTML OUTPUT** section above. Filename: `user_experience_diagnosis_<YYYYMMDD-HHMMSS>.html`. Do not hand-author HTML or CSS — the template ships everything the report needs.
 
 ---
 
@@ -293,57 +281,20 @@ For comprehensive deep trace analysis, see the [Diagnose Deep Trace](../diagnose
 
 ### Present Diagnosis
 
-Present all data in **HTML table format** with detailed analysis.
+Assemble the `__ZDX_DATA__` payload defined in the *Data Payload Contract* and render it through `./templates/report.html.template` (see the **HTML OUTPUT** section). The template already produces the device/user summary, the per-metric table, KPI cards, color coding by status, search/sort, and CSV export — do **not** hand-author any HTML or markdown table here.
 
-**Device & User Summary:**
+What you DO write is the `analysis` block inside the payload. **Do not skip it.** This is what makes the diagnosis useful:
 
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Field</th>
-  <th style="padding:8px;border:1px solid #ddd">Value</th>
-</tr></thead>
-<tbody>
-  <tr><td style="padding:8px;border:1px solid #ddd">User</td><td style="padding:8px;border:1px solid #ddd">&lt;name&gt; (&lt;email&gt;)</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">Device</td><td style="padding:8px;border:1px solid #ddd">&lt;device_type&gt;, &lt;os_version&gt;</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">Location</td><td style="padding:8px;border:1px solid #ddd">&lt;location&gt;</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">Department</td><td style="padding:8px;border:1px solid #ddd">&lt;department&gt;</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">ZCC Version</td><td style="padding:8px;border:1px solid #ddd">&lt;version&gt;</td></tr>
-  <tr><td style="padding:8px;border:1px solid #ddd">Experience Score</td><td style="padding:8px;border:1px solid #ddd;font-weight:bold;color:red">&lt;score&gt;/100 (Poor)</td></tr>
-</tbody></table>
-```text
+- **`analysis.summary`** (3–5 sentences): which metric(s) are out of range and by how much. Quote concrete numbers from Steps 2–3 (e.g., *"Server response time has degraded from normal (180ms) to timeout. TCP connect is also elevated at 850ms vs. 65ms baseline."*). Call out whether the issue is client-specific or shared (Step 4's `impacted_users`).
+- **`analysis.rootCause`** (2–4 sentences): the dominant bottleneck and what it points to (network congestion, server overload, local device issue, ZCC tunnel, ZPA app-connector health, etc.). Cite alert correlation from Step 4 when present.
+- **`analysis.remediation`** (4–6 items): label each with a priority bucket and a concrete action.
 
-**Metric Breakdown (HTML table):**
-
-```html
-<table style="border-collapse:collapse;width:100%">
-<thead><tr style="background:#1a1a2e;color:#fff">
-  <th style="padding:8px;border:1px solid #ddd">Metric</th>
-  <th style="padding:8px;border:1px solid #ddd">Current</th>
-  <th style="padding:8px;border:1px solid #ddd">Normal Range</th>
-  <th style="padding:8px;border:1px solid #ddd">Status</th>
-</tr></thead>
-<tbody>
-  <tr><td style="padding:8px;border:1px solid #ddd">DNS Resolution</td><td style="padding:8px">15ms</td><td style="padding:8px">&lt; 50ms</td><td style="padding:8px;color:green;font-weight:bold">OK</td></tr>
-  <tr style="background:#fff3cd"><td style="padding:8px;border:1px solid #ddd">TCP Connect</td><td style="padding:8px">850ms</td><td style="padding:8px">&lt; 100ms</td><td style="padding:8px;color:orange;font-weight:bold">DEGRADED</td></tr>
-  <tr style="background:#fff3cd"><td style="padding:8px;border:1px solid #ddd">SSL Handshake</td><td style="padding:8px">1200ms</td><td style="padding:8px">&lt; 150ms</td><td style="padding:8px;color:orange;font-weight:bold">DEGRADED</td></tr>
-  <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Server Response</td><td style="padding:8px">Timeout</td><td style="padding:8px">&lt; 500ms</td><td style="padding:8px;color:red;font-weight:bold">CRITICAL</td></tr>
-  <tr style="background:#f8d7da"><td style="padding:8px;border:1px solid #ddd">Page Load</td><td style="padding:8px">N/A</td><td style="padding:8px">&lt; 3000ms</td><td style="padding:8px;color:red;font-weight:bold">FAILED</td></tr>
-</tbody></table>
-```text
-
-**After the tables, ALWAYS provide:**
-
-1. **Analysis:** "Server response time has degraded from normal (180ms) to timeout. TCP connect time is also elevated (850ms vs 65ms), indicating network path issues between the Zscaler cloud and the application server. 15 other devices are experiencing the same issue, confirming this is NOT client-specific."
-
-2. **Root Cause:** Identify the primary bottleneck (e.g., "Server Response timeout with elevated TCP connect time points to network congestion or application server overload in the US-East region").
-
-3. **Next Steps / Resolution:**
-   - **Immediate:** Check application server health in the affected datacenter
-   - **Investigate:** Run a deep trace to identify the exact hop causing latency
-   - **Verify:** Check ISP or cloud provider status pages for known outages
-   - **If ZPA:** Verify app connector health for the affected server group
-   - **Escalate:** If server-side, engage the application team with the ZDX evidence
+| Priority | Apply to | Action |
+|---|---|---|
+| `Immediate` | Critical-status metrics (timeout, failure) | Check application server health in the affected datacenter. If ZPA, verify app-connector health for the server group. |
+| `Investigate` | Degraded metrics | Run a deep trace (see the `diagnose-deeptrace` skill) to identify the exact hop causing latency. Check ISP / cloud provider status pages. |
+| `Monitor` | Borderline metrics + intermittent reports | Schedule a follow-up score check in 1–4 hours. If the score keeps dropping, promote to `Investigate`. |
+| `Communicate` | Issues affecting ≥ 5 users at the same site | Notify the location IT contact with the ZDX evidence. If server-side, engage the application team. |
 
 ---
 

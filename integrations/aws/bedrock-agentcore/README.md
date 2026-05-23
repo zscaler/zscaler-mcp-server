@@ -65,7 +65,7 @@ The Direct Runtime topology is the proven, production-tested path. AgentCore Run
 ### Quick start (interactive wrapper)
 
 ```bash
-cd integrations/aws
+cd integrations/aws/bedrock-agentcore
 pip install boto3
 cp env.properties .env       # optional but recommended
 $EDITOR .env                 # fill in Zscaler creds + auth choice
@@ -100,7 +100,7 @@ BUCKET=zscaler-mcp-cfn-${ACCOUNT}-${REGION}
 aws s3 mb s3://${BUCKET} --region ${REGION}
 
 # 2) Upload nested templates
-aws s3 sync integrations/aws/cloudformation/ s3://${BUCKET}/zscaler-mcp/ \
+aws s3 sync integrations/aws/bedrock-agentcore/cloudformation/ s3://${BUCKET}/zscaler-mcp/ \
   --exclude '*' --include 'iam.yaml' --include 'secrets.yaml' \
   --include 'runtime.yaml' --include 'gateway.yaml' --include 'zscaler-mcp-root.yaml'
 

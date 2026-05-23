@@ -20,7 +20,9 @@ import unittest
 from unittest.mock import MagicMock
 
 from zscaler_mcp.auth import (
+    HealthCheckMiddleware,
     NormalizeContentTypeMiddleware,
+    RejectNonSSEGetMiddleware,
     StripTrailingSlashMiddleware,
     apply_transport_hardening,
 )
@@ -249,6 +251,316 @@ class TestNormalizeContentTypeMiddleware(unittest.TestCase):
 
 
 # ============================================================================
+# RejectNonSSEGetMiddleware
+# ============================================================================
+
+
+def _make_recording_send():
+    """Async ``send`` callable that records every ASGI message it sees."""
+    messages = []
+
+    async def send(message):
+        messages.append(message)
+
+    send._messages = messages
+    return send
+
+
+class TestRejectNonSSEGetMiddleware(unittest.TestCase):
+    def test_non_http_scope_passes_through_unchanged(self):
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {"type": "lifespan"}
+        _run_async(middleware(scope, MagicMock(), MagicMock()))
+
+        self.assertEqual(len(app._calls), 1)
+
+    def test_post_is_never_intercepted(self):
+        """POST is the only required method on the streamable-http endpoint."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/mcp",
+            "headers": [(b"content-type", b"application/json")],
+        }
+        _run_async(middleware(scope, MagicMock(), MagicMock()))
+
+        self.assertEqual(len(app._calls), 1)
+
+    def test_get_on_other_paths_passes_through(self):
+        """Only the configured MCP path is intercepted (don't 405 /health, /sse, etc.)."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        for path in ("/", "/health", "/sse", "/.well-known/oauth-protected-resource"):
+            with self.subTest(path=path):
+                scope = {
+                    "type": "http",
+                    "method": "GET",
+                    "path": path,
+                    "headers": [(b"accept", b"application/json")],
+                }
+                _run_async(middleware(scope, MagicMock(), MagicMock()))
+
+        self.assertEqual(len(app._calls), 4)
+
+    def test_get_with_sse_accept_passes_through(self):
+        """Spec-compliant clients (Accept: text/event-stream) reach FastMCP unchanged."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/mcp",
+            "headers": [(b"accept", b"text/event-stream")],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 1)
+        self.assertEqual(len(send._messages), 0)  # short-circuit didn't fire
+
+    def test_get_with_multi_value_accept_passes_through(self):
+        """The Bedrock pattern would still pass IF it set Accept correctly."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/mcp",
+            "headers": [(b"accept", b"application/json, text/event-stream")],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 1)
+        self.assertEqual(len(send._messages), 0)
+
+    def test_get_without_sse_accept_returns_405(self):
+        """The Bedrock Harness case — GET /mcp with no SSE Accept → 405."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/mcp",
+            "headers": [(b"accept", b"application/json")],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 0)  # short-circuited — never reached FastMCP
+        self.assertEqual(len(send._messages), 2)
+        self.assertEqual(send._messages[0]["type"], "http.response.start")
+        self.assertEqual(send._messages[0]["status"], 405)
+        # Allow header is mandatory for 405.
+        headers = dict(send._messages[0]["headers"])
+        self.assertEqual(headers[b"allow"], b"POST")
+
+    def test_get_with_no_accept_header_returns_405(self):
+        """Missing Accept entirely is the worst-case spec violation — same 405."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/mcp",
+            "headers": [],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 0)
+        self.assertEqual(send._messages[0]["status"], 405)
+
+    def test_get_with_wildcard_accept_returns_405(self):
+        """Accept: */* doesn't explicitly request SSE → 405 (let client retry properly)."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/mcp",
+            "headers": [(b"accept", b"*/*")],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(send._messages[0]["status"], 405)
+
+    def test_custom_mcp_path(self):
+        """Operator-customised streamable_http_path is respected."""
+        app = _make_recording_app()
+        middleware = RejectNonSSEGetMiddleware(app, mcp_path="/custom-mcp")
+
+        # Default /mcp passes through (not the configured path)
+        scope_default = {
+            "type": "http",
+            "method": "GET",
+            "path": "/mcp",
+            "headers": [(b"accept", b"application/json")],
+        }
+        _run_async(middleware(scope_default, MagicMock(), MagicMock()))
+        self.assertEqual(len(app._calls), 1)
+
+        # Custom path triggers the 405.
+        scope_custom = {
+            "type": "http",
+            "method": "GET",
+            "path": "/custom-mcp",
+            "headers": [(b"accept", b"application/json")],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope_custom, MagicMock(), send))
+        self.assertEqual(send._messages[0]["status"], 405)
+
+
+# ============================================================================
+# HealthCheckMiddleware
+# ============================================================================
+
+
+class TestHealthCheckMiddleware(unittest.TestCase):
+    """Cover the LB-probe short-circuit in :class:`HealthCheckMiddleware`.
+
+    The middleware must:
+
+    * return 200 OK with a JSON body for ``GET /health``,
+    * return 200 OK with an empty body for ``HEAD /health``,
+    * **not** invoke the wrapped app for either case (so probes never
+      blow up auth-token caches, audit log lines, or MCP session
+      creation),
+    * pass every other request through unchanged,
+    * honour a custom ``path`` so operators can move it to ``/healthz``,
+      ``/readyz``, etc.
+    """
+
+    def test_get_health_short_circuits_with_200(self):
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/health",
+            "headers": [],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 0)
+        self.assertEqual(send._messages[0]["type"], "http.response.start")
+        self.assertEqual(send._messages[0]["status"], 200)
+        body = send._messages[1]["body"]
+        self.assertIn(b'"status"', body)
+        self.assertIn(b'"ok"', body)
+
+    def test_get_health_sets_no_cache_headers(self):
+        """``cache-control: no-store`` keeps stale probes from being cached
+        by Cloud Front / ALB / sidecars."""
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {"type": "http", "method": "GET", "path": "/health", "headers": []}
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        headers = dict(send._messages[0]["headers"])
+        self.assertEqual(headers.get(b"content-type"), b"application/json")
+        self.assertEqual(headers.get(b"cache-control"), b"no-store")
+
+    def test_head_health_returns_empty_body(self):
+        """HEAD must return 200 with no body, per HTTP semantics."""
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {"type": "http", "method": "HEAD", "path": "/health", "headers": []}
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 0)
+        self.assertEqual(send._messages[0]["status"], 200)
+        self.assertEqual(send._messages[1]["body"], b"")
+
+    def test_post_health_passes_through(self):
+        """Only GET / HEAD are short-circuited — POST /health goes downstream
+        in case a downstream app actually defines a POST handler."""
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {"type": "http", "method": "POST", "path": "/health", "headers": []}
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 1)
+        self.assertEqual(len(send._messages), 0)
+
+    def test_non_health_path_passes_through(self):
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {"type": "http", "method": "GET", "path": "/mcp", "headers": []}
+        send = _make_recording_send()
+        _run_async(middleware(scope, MagicMock(), send))
+
+        self.assertEqual(len(app._calls), 1)
+
+    def test_websocket_scope_passes_through(self):
+        """Non-HTTP scopes (websocket, lifespan) must always pass through."""
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {"type": "websocket", "path": "/health"}
+        _run_async(middleware(scope, MagicMock(), MagicMock()))
+
+        self.assertEqual(len(app._calls), 1)
+
+    def test_lifespan_scope_passes_through(self):
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app)
+
+        scope = {"type": "lifespan"}
+        _run_async(middleware(scope, MagicMock(), MagicMock()))
+
+        self.assertEqual(len(app._calls), 1)
+
+    def test_custom_path(self):
+        """Operators behind a kube-native convention use ``/healthz``."""
+        app = _make_recording_app()
+        middleware = HealthCheckMiddleware(app, path="/healthz")
+
+        scope_default = {
+            "type": "http",
+            "method": "GET",
+            "path": "/health",
+            "headers": [],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope_default, MagicMock(), send))
+        self.assertEqual(len(app._calls), 1)
+        self.assertEqual(len(send._messages), 0)
+
+        scope_custom = {
+            "type": "http",
+            "method": "GET",
+            "path": "/healthz",
+            "headers": [],
+        }
+        send = _make_recording_send()
+        _run_async(middleware(scope_custom, MagicMock(), send))
+        self.assertEqual(send._messages[0]["status"], 200)
+
+
+# ============================================================================
 # apply_transport_hardening factory
 # ============================================================================
 
@@ -264,27 +576,68 @@ class TestApplyTransportHardening(unittest.TestCase):
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "streamable-http")
         self.assertIsNot(wrapped, app)
-        self.assertIsInstance(wrapped, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped, HealthCheckMiddleware)
 
     def test_sse_returns_wrapped_app(self):
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "sse")
         self.assertIsNot(wrapped, app)
-        self.assertIsInstance(wrapped, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped, HealthCheckMiddleware)
 
-    def test_outermost_layer_is_strip_trailing_slash(self):
-        """Path normalisation MUST happen before any header / auth logic.
+    def test_streamable_http_includes_get_405_layer(self):
+        """The GET→405 middleware must be in the chain for streamable-http."""
+        app = _make_recording_app()
+        wrapped = apply_transport_hardening(app, "streamable-http")
+        # Walk: HealthCheck → StripTrailingSlash → NormalizeContentType →
+        #       RejectNonSSEGet → app
+        self.assertIsInstance(wrapped, HealthCheckMiddleware)
+        self.assertIsInstance(wrapped.app, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped.app.app, NormalizeContentTypeMiddleware)
+        self.assertIsInstance(wrapped.app.app.app, RejectNonSSEGetMiddleware)
+        self.assertIs(wrapped.app.app.app.app, app)
 
-        ``StripTrailingSlashMiddleware`` must be the outer layer so
-        :class:`AuthMiddleware`'s ``SKIP_PATHS`` check (e.g. ``/health``)
-        correctly handles ``/health/`` and ``/health``.
+    def test_sse_does_not_include_get_405_layer(self):
+        """SSE transport REQUIRES GET to work on /sse — we must not 405 it."""
+        app = _make_recording_app()
+        wrapped = apply_transport_hardening(app, "sse")
+        # Walk: HealthCheck → StripTrailingSlash → NormalizeContentType → app
+        self.assertIsInstance(wrapped, HealthCheckMiddleware)
+        self.assertIsInstance(wrapped.app, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped.app.app, NormalizeContentTypeMiddleware)
+        self.assertIs(wrapped.app.app.app, app)  # no GET-405 layer
+
+    def test_outermost_layer_is_health_check(self):
+        """Health probes MUST bypass every other middleware.
+
+        ``HealthCheckMiddleware`` has to be the outermost layer so LB
+        probes against ``/health`` never reach auth, source-IP ACL,
+        the GET→405 hardening, or FastMCP itself. Otherwise the ALB /
+        kubelet / Cloud Run scheduler will mark targets unhealthy the
+        moment we turn on auth or any path-restrictive middleware.
         """
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "streamable-http")
-        # Outer = StripTrailingSlash, inner = NormalizeContentType.
-        self.assertIsInstance(wrapped, StripTrailingSlashMiddleware)
-        self.assertIsInstance(wrapped.app, NormalizeContentTypeMiddleware)
-        self.assertIs(wrapped.app.app, app)
+        self.assertIsInstance(wrapped, HealthCheckMiddleware)
+        self.assertIsInstance(wrapped.app, StripTrailingSlashMiddleware)
+
+    def test_custom_mcp_path_is_forwarded(self):
+        """Caller-passed mcp_path reaches the GET-405 middleware."""
+        app = _make_recording_app()
+        wrapped = apply_transport_hardening(app, "streamable-http", mcp_path="/x")
+        # HealthCheck → StripTrailingSlash → NormalizeContentType →
+        # RejectNonSSEGet
+        get_405 = wrapped.app.app.app
+        self.assertIsInstance(get_405, RejectNonSSEGetMiddleware)
+        self.assertEqual(get_405._mcp_path, "/x")
+
+    def test_custom_health_path_is_forwarded(self):
+        """Caller-passed health_path reaches the HealthCheckMiddleware."""
+        app = _make_recording_app()
+        wrapped = apply_transport_hardening(
+            app, "streamable-http", health_path="/readyz"
+        )
+        self.assertIsInstance(wrapped, HealthCheckMiddleware)
+        self.assertEqual(wrapped._path, "/readyz")
 
     def test_end_to_end_normalises_both_path_and_content_type(self):
         """Single request with BOTH trailing slash AND application/json-rpc."""

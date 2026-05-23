@@ -311,6 +311,20 @@ def _cleanup_temp_env_files() -> None:
 atexit.register(_cleanup_temp_env_files)
 
 
+# Stable directory for persisted stdio env files (survives script exit).
+_STDIO_ENV_DIR = Path.home() / ".config" / "zscaler-mcp"
+
+
+def _persist_env_for_stdio(source: Path) -> Path:
+    """Copy the sanitized env file to a stable location that survives
+    script exit, so that AI agents can reference it in ``--env-file``
+    long after this script has terminated."""
+    _STDIO_ENV_DIR.mkdir(parents=True, exist_ok=True)
+    dest = _STDIO_ENV_DIR / "docker-stdio.env"
+    dest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    return dest
+
+
 # ════════════════════════════════════════════════════════════════════════
 #  JSON config writer (idempotent merge)
 # ════════════════════════════════════════════════════════════════════════
@@ -500,7 +514,7 @@ def _http_url_entry(ctx: AgentWriteContext) -> dict:
 
 
 def _stdio_docker_entry(ctx: AgentWriteContext) -> dict:
-    args = ["run", "--rm", "-i", "--name", f"{ctx.server_name}-stdio"]
+    args = ["run", "--rm", "-i"]
 
     if ctx.env_file_path is not None:
         args.extend(["--env-file", str(ctx.env_file_path)])
@@ -1164,13 +1178,22 @@ def main() -> None:
     else:
         section("Step 5: Configure AI agents")
         client_headers = _client_auth_headers(auth_mode, auth_extra_env, env_vars)
+
+        # For stdio mode, persist the sanitized env file to a stable path
+        # that survives script exit. The temp file gets cleaned up by atexit,
+        # but agents spawn the container long after this script terminates.
+        stdio_env_path: Optional[Path] = None
+        if transport == "stdio":
+            stdio_env_path = _persist_env_for_stdio(docker_env_file)
+            ok(f"Persisted stdio env file to {stdio_env_path}")
+
         ctx = AgentWriteContext(
             server_name=args.container_name,
             transport=transport,
             auth_mode=auth_mode,
             url=server_url,
             headers=client_headers,
-            env_file_path=docker_env_file if transport == "stdio" else None,
+            env_file_path=stdio_env_path if transport == "stdio" else None,
             env_inline=auth_extra_env if transport == "stdio" else {},
             image=DOCKER_IMAGE,
         )

@@ -5,14 +5,33 @@ applications — not just allow/block, but action-level decisions like
 ``BLOCK_FILE_UPLOAD``, ``ALLOW_AI_ML_WEB_USE``, or
 ``DENY_WEBMAIL_SEND``. Every CAC rule is scoped to a single
 **rule type** (a.k.a. category / ``app_class``), and the granular
-actions live at the **category** level — not at the application level.
-The same action set applies to every app in a category, but the API
-needs *some* representative app from that category passed alongside
-the rule type to surface the action list.
+action vocabulary is *surfaced* at the **category** level — the
+discovery endpoint accepts a representative app from a category and
+returns the category-wide action list.
+
+**However, the create endpoint validates each ``(rule_type,
+application, action)`` tuple individually.** Two apps in the same
+category can each accept a slightly different subset of the
+category's action enums. Combining multiple apps into a single
+rule's ``cloud_applications`` list with a shared ``actions`` list
+frequently fails with::
+
+    {"code": "INVALID_INPUT_ARGUMENT",
+     "message": "Invalid action provided for selected applications"}
+
+The error is total — the entire create is rejected, not just the
+incompatible app. There is no read-only call that enumerates per-app
+action validity, so the only safe pattern when the admin's request
+targets multiple apps is to **create one rule per cloud
+application** (one ``zia_create_cloud_app_control_rule`` call per
+canonical enum), each with the minimal action subset the admin
+actually asked for. See
+``skills/zia/create-cloud-app-control-rule/SKILL.md`` →
+"Multi-app handling".
 
 Tools in this module:
     - :func:`zia_list_cloud_app_control_actions` — discover the
-      granular action set available for a cloud application's
+      granular action vocabulary available for a cloud application's
       category (read-only, used as a pre-step for rule authoring).
     - :func:`zia_list_cloud_app_control_rules` — list existing CAC
       rules for a given rule type (read-only).
@@ -27,11 +46,78 @@ Tools in this module:
       requires HMAC confirmation token (write).
 
 Authoring workflow ("create a rule that blocks uploads on Dropbox"):
-    1. ``zia_list_cloud_app_control_actions(cloud_app="Dropbox")`` ->
-       returns ``category="FILE_SHARE"`` and the valid action enums.
-    2. ``zia_create_cloud_app_control_rule(rule_type="FILE_SHARE",
+    1. ``zia_list_cloud_app_policy(search="Dropbox",
+       query="[*].{app: app, name: appName, parent: parent}")`` ->
+       returns the canonical enum (``DROPBOX``) and its parent
+       category (``FILE_SHARE``). Always use the ``app`` field
+       (canonical enum), never ``appName`` (display name).
+    2. ``zia_list_cloud_app_control_actions(cloud_app="DROPBOX")`` ->
+       returns ``category="FILE_SHARE"`` and the category's action
+       vocabulary. Per-app action validity is not enumerated here —
+       the create call is the only authoritative validator (see
+       below).
+    3. ``zia_list_cloud_app_control_rules(rule_type="FILE_SHARE",
+       query="[?enabled].{id, name, order, actions,
+       cloud_applications}")`` -> pull the existing policy table
+       once and run the four safety checks below.
+    4. ``zia_create_cloud_app_control_rule(rule_type="FILE_SHARE",
        name="Block Dropbox upload", cloud_applications=["DROPBOX"],
-       actions=["BLOCK_FILE_SHARE_UPLOAD"], ...)`` -> creates the rule.
+       actions=["BLOCK_FILE_SHARE_UPLOAD"], order=<from step 3>,
+       ...)`` -> creates the rule.
+
+Authoring workflow when the admin names multiple apps ("block file
+uploads on Dropbox, Google Drive, and OneDrive for Finance"):
+    Loop steps 1, 2, and 4 once per app — one
+    ``zia_create_cloud_app_control_rule`` invocation per app, each
+    with ``cloud_applications=[<single canonical enum>]``. Step 3
+    runs once for the whole batch (the safety checks reuse the same
+    policy-table snapshot). Activation runs once at the end.
+
+Rule order and policy evaluation:
+    The CAC policy table for each ``rule_type`` is evaluated
+    top-to-bottom, **first-match-wins**. ``order`` is 1-based —
+    ``order=1`` is the top, evaluated first. A more general rule
+    placed above a more specific rule will **shadow** the
+    specific one (the specific rule never fires). The tool
+    defaults ``order=1`` when omitted, but agents must pass
+    ``order`` explicitly whenever the tenant already has CAC
+    rules of the same ``rule_type`` — never rely on the default.
+
+Safety checks before every create (and any update that changes
+``actions``, ``cloud_applications``, or ``order``):
+    Adding a rule without reviewing the existing table is the
+    most common source of silently-shadowed rules and accidental
+    duplicates. The agent is expected to run these four checks
+    against the result of a single
+    ``zia_list_cloud_app_control_rules(rule_type=...)`` call
+    before invoking ``create`` / ``update``:
+
+    a. **Specificity.** The rule must target a specific cloud
+       application (or a small same-category set) AND at least
+       one other scoping dimension (users / groups / departments
+       / locations / devices / time window / device trust /
+       user-agent type), unless the admin explicitly asked for
+       a tenant-wide policy.
+    b. **Shadowing.** No existing enabled rule above the
+       proposed ``order`` position may match the same traffic
+       the new rule is meant to govern — otherwise the new rule
+       never fires.
+    c. **Duplicate purpose.** If an existing enabled rule
+       already performs the requested action against the same
+       apps and scoping, ``update`` that rule instead of
+       creating a parallel one.
+    d. **Deny supersedes Allow.** A ``BLOCK_*`` / ``DENY_*``
+       rule must sit above every overlapping ``ALLOW_*`` rule
+       that could match the same traffic. Compute the lowest
+       matching Allow ``order`` and place the new Deny strictly
+       below it (i.e. a smaller ``order`` value — 1-based, so
+       smaller = closer to the top). The Deny itself must also
+       be specific per check (a).
+
+    If any check fails, surface it to the admin and confirm
+    intent before proceeding. See
+    ``skills/zia/create-cloud-app-control-rule/SKILL.md`` Step 6
+    for the full walk-through.
 
 The CAC API is unusual within the ZIA rule families:
     - The endpoint *requires* ``rule_type`` (the category) on every
@@ -80,6 +166,38 @@ from zscaler_mcp.utils.utils import parse_list
 # whole category genuinely has no granular actions defined.
 _MAX_CATEGORY_PROBE_APPS = 8
 
+# Hard ZIA limit on the Cloud App Control rule ``name`` field. Enforced
+# client-side so callers get a clear validation error instead of the
+# generic ``INVALID_INPUT_ARGUMENT`` round-trip the API otherwise
+# returns.
+_CAC_NAME_MAX_LENGTH = 31
+
+
+def _validate_cac_rule_name(name: Optional[str]) -> None:
+    """Reject Cloud App Control rule names that exceed ZIA's 31-char hard limit.
+
+    ZIA rejects longer names with::
+
+        {"code": "INVALID_INPUT_ARGUMENT",
+         "message": "Name exceeds the max length 31 characters"}
+
+    Catching it client-side saves a round trip and gives the caller a
+    field-specific error message instead of the API's generic one.
+    ``None`` is accepted so update calls that intentionally omit
+    ``name`` (relying on silent backfill) pass through unchanged.
+    """
+    if name is None:
+        return
+    if len(name) > _CAC_NAME_MAX_LENGTH:
+        raise ValueError(
+            f"Cloud App Control rule name must be {_CAC_NAME_MAX_LENGTH} "
+            f"characters or fewer (got {len(name)}: {name!r}). ZIA "
+            f"rejects longer names with INVALID_INPUT_ARGUMENT: "
+            f"'Name exceeds the max length 31 characters'. Abbreviate "
+            f"the verb (e.g. 'Block' -> 'Blk', 'Allow' -> 'Allw', "
+            f"'Isolate' -> 'Iso') before truncating the app name."
+        )
+
 
 def _probe_actions(
     cloudappcontrol,
@@ -115,10 +233,16 @@ def zia_list_cloud_app_control_actions(
                 "(``'Azure DevOps'``, ``'dropbox'``, ``'chatgpt'``). "
                 "The tool resolves the input to its canonical form, "
                 "looks up the app's category (= rule type), and returns "
-                "the granular action set the API supports for Cloud App "
-                "Control rules in that category. The same action set "
-                "applies to every app in the category — actions are "
-                "category-level, not per-app."
+                "the granular action vocabulary the API supports for "
+                "Cloud App Control rules in that category. The action "
+                "vocabulary is *surfaced* at the category level — "
+                "every app in a category resolves to the same "
+                "returned list — but the create endpoint validates "
+                "per (rule_type, application, action) tuple and can "
+                "still reject a category-level action when paired "
+                "with a specific app. Treat the returned list as a "
+                "superset; the create call is the only authoritative "
+                "validator."
             )
         ),
     ],
@@ -159,13 +283,30 @@ def zia_list_cloud_app_control_actions(
     """List granular Cloud App Control actions for an application.
 
     Cloud App Control rules in ZIA enforce action-level decisions on
-    cloud applications. Importantly, the **action set is defined at
-    the category level, not the application level** — every app in
-    ``SYSTEM_AND_DEVELOPMENT`` shares the same actions
+    cloud applications. The **action vocabulary is surfaced at the
+    category level** — every app in ``SYSTEM_AND_DEVELOPMENT``
+    resolves to the same returned list
     (``ALLOW_SYSTEM_DEVELOPMENT_CREATE``,
     ``BLOCK_SYSTEM_DEVELOPMENT_SHARE``, ``DEV_CONDITIONAL_ACCESS``,
-    ...), every app in ``AI_ML`` shares its own action set
+    ...), every app in ``AI_ML`` resolves to its own
     (``ALLOW_AI_ML_WEB_USE``, ``DENY_AI_ML_CHAT``, ...), and so on.
+
+    **Important caveat — per-app validity is not enumerated here.**
+    The returned ``actions`` list is the category's full vocabulary,
+    NOT a per-app validity list. The ZIA *create* endpoint validates
+    each ``(rule_type, application, action)`` tuple individually and
+    can reject a category-level action when paired with a specific
+    app in that category (the error code is
+    ``INVALID_INPUT_ARGUMENT`` with the message ``"Invalid action
+    provided for selected applications"``). There is no read-only
+    call that enumerates which actions are individually valid for a
+    given app — the create call is the only authoritative
+    validator. When the admin's request names multiple apps, call
+    ``zia_create_cloud_app_control_rule`` once per app rather than
+    combining apps in a single rule's ``cloud_applications``; see
+    the module docstring and
+    ``skills/zia/create-cloud-app-control-rule/SKILL.md`` →
+    "Multi-app handling".
 
     The ZIA API quirk this tool hides: the
     ``list_available_actions(rule_type, cloud_apps)`` endpoint only
@@ -178,7 +319,9 @@ def zia_list_cloud_app_control_actions(
 
     To paper over that, this tool:
 
-    1. Resolves ``cloud_app`` to its canonical enum.
+    1. Resolves ``cloud_app`` to its canonical enum (the ``app``
+       field in the policy catalog, e.g. ``GDRIVE`` for "Google
+       Drive"). Friendly display names are resolved automatically.
     2. Looks up the app's ``parent`` field — this is the rule type to
        use (unless the caller overrides via ``rule_type``).
     3. Probes ``list_available_actions`` with the user's app first,
@@ -618,7 +761,29 @@ def zia_create_cloud_app_control_rule(
             )
         ),
     ],
-    name: Annotated[str, Field(description="Rule name (max 31 chars).")],
+    name: Annotated[
+        str,
+        Field(
+            description=(
+                "Rule name. **Hard ZIA limit of 31 characters** — "
+                "longer names are rejected by the API with "
+                "``INVALID_INPUT_ARGUMENT: 'Name exceeds the max "
+                "length 31 characters'``. This tool also rejects "
+                "names > 31 characters client-side before the API "
+                "call so the validation error surfaces without a "
+                "round trip. In multi-app loops (one rule per "
+                "cloud application), make each name unique by "
+                "suffixing the app's short form — abbreviate the "
+                "verb (``'Blk'``, ``'Allw'``, ``'Iso'``, ``'Dny'``) "
+                "before truncating the app name, and prefer plain "
+                "ASCII separators (``-``) over typographic ones "
+                "(``—``) when you're at the edge of the limit. "
+                "Example pattern: ``'Blk upload - OneDrive'`` (21 "
+                "chars), ``'Blk upload - GDrive'`` (19 chars), "
+                "``'Blk upload - Dropbox'`` (20 chars)."
+            )
+        ),
+    ],
     actions: Annotated[
         Union[List[str], str],
         Field(
@@ -637,14 +802,25 @@ def zia_create_cloud_app_control_rule(
         Optional[Union[List[str], str]],
         Field(
             description=(
-                "Cloud applications the rule applies to. Accepts canonical "
-                "ZIA enums (``DROPBOX``, ``GOOGLE_WEBMAIL``, ``CHATGPT_AI``) "
-                "OR friendly display names (``'Dropbox'``, "
-                "``'Google Webmail'``) — friendly names are auto-resolved "
-                "via the policy-engine cloud-app catalog. Note: the SDK "
-                "kwarg is ``applications`` but we surface it as "
-                "``cloud_applications`` for consistency with other ZIA "
-                "rule tools. Accepts JSON string or list."
+                "Cloud applications the rule applies to. **Should "
+                "contain exactly one canonical enum per rule** — when "
+                "the admin's request names multiple apps (e.g. "
+                "'Dropbox, Google Drive, and OneDrive'), call this "
+                "tool once per app rather than passing a multi-app "
+                "list. ZIA validates each (rule_type, application, "
+                "action) tuple individually and frequently rejects "
+                "multi-app rules with ``INVALID_INPUT_ARGUMENT: "
+                "'Invalid action provided for selected applications'`` "
+                "because per-app action validity varies. Accepts "
+                "canonical ZIA enums (``DROPBOX``, ``GDRIVE``, "
+                "``ONEDRIVE``, ``CHATGPT_AI``) OR friendly display "
+                "names (``'Dropbox'``, ``'Google Drive'``) — friendly "
+                "names are auto-resolved via the policy-engine "
+                "cloud-app catalog (the ``app`` field, not "
+                "``appName``). Note: the SDK kwarg is "
+                "``applications``; this tool surfaces it as "
+                "``cloud_applications`` for consistency with other "
+                "ZIA rule tools. Accepts JSON string or list."
             )
         ),
     ] = None,
@@ -737,12 +913,79 @@ def zia_create_cloud_app_control_rule(
 
     Write operation — requires the ``--enable-write-tools`` flag.
 
-    Workflow expectation: the agent should first call
-    ``zia_list_cloud_app_control_actions(cloud_app=<app>)`` to
-    discover both the correct ``rule_type`` (returned as
-    ``category``) and the valid ``actions`` enums for the user's
-    target app. Then pass those into this tool together with the
-    desired ``name`` and ``cloud_applications``.
+    Workflow expectation per app: for each canonical app the admin
+    named, first call ``zia_list_cloud_app_policy(search="<app
+    name>", query="[*].{app: app, name: appName, parent: parent}")``
+    to resolve the friendly name to its canonical enum (the ``app``
+    field — e.g. ``GDRIVE`` for "Google Drive") and discover the
+    parent category. Then call ``zia_list_cloud_app_control_actions(
+    cloud_app=<canonical enum>)`` to confirm the ``rule_type``
+    (returned as ``category``) and the action vocabulary. Then pass
+    those into this tool together with the desired ``name`` and
+    ``cloud_applications``.
+
+    **One rule per cloud application.** When the admin's request
+    targets multiple apps (e.g. "block uploads on Dropbox, Google
+    Drive, and OneDrive for Finance"), invoke this tool **once per
+    app** — not once with ``cloud_applications=["DROPBOX", "GDRIVE",
+    "ONEDRIVE"]``. The ZIA *create* endpoint validates each
+    ``(rule_type, application, action)`` tuple individually and a
+    category-level action that's valid for one app in a category may
+    be rejected when paired with a different app in the same
+    category. Combined rules frequently fail with::
+
+        {"code": "INVALID_INPUT_ARGUMENT",
+         "message": "Invalid action provided for selected applications"}
+
+    The error rejects the entire create, not just the incompatible
+    app, so the safe pattern is to split: one rule per app, each
+    with ``cloud_applications=[<single canonical enum>]``, reusing
+    the same scoping (users / groups / locations / schedule /
+    device trust) across every iteration. Rule names must be unique
+    — suffix each with the app's friendly name (e.g. "Block uploads
+    — Dropbox", "Block uploads — Google Drive"). See
+    ``skills/zia/create-cloud-app-control-rule/SKILL.md`` →
+    "Multi-app handling" for the full pattern.
+
+    **If the create still fails with that error**, pare the
+    ``actions`` list down to the minimal subset the admin actually
+    asked for and retry. If a single action still fails for an app,
+    the action genuinely doesn't apply to that app — confirm with
+    the admin and either substitute a different action or skip
+    that app from the batch and report the omission.
+
+    Mandatory pre-flight checks before invoking this tool:
+
+    1. ``zia_list_cloud_app_control_rules(rule_type=<category>,
+       query="[?enabled].{id, name, order, actions,
+       cloud_applications}")`` — pull the existing policy table
+       once and reuse the result for all four checks below across
+       every iteration of the multi-app loop.
+    2. Validate the new rule against the four criteria documented
+       in the module docstring:
+
+       a. **Specificity** — defined app(s) plus at least one
+          other scoping dimension, unless tenant-wide is the
+          admin's explicit intent.
+       b. **Shadowing** — no existing enabled rule above the
+          chosen ``order`` may match the same traffic.
+       c. **Duplicate purpose** — if an existing enabled rule
+          already does the job, prefer
+          ``zia_update_cloud_app_control_rule`` against it
+          instead of creating a parallel rule.
+       d. **Deny supersedes Allow** — a ``BLOCK_*`` / ``DENY_*``
+          rule must be placed above every overlapping
+          ``ALLOW_*`` rule (smaller ``order`` value).
+
+    3. Always pass ``order`` explicitly when the tenant already
+       has CAC rules of the same ``rule_type`` — derive it from
+       the checks above (especially d). Never rely on the
+       ``order=1`` default in a populated table.
+
+    If any check fails, surface it to the admin and confirm
+    intent before creating. Creating a rule that gets shadowed
+    by an existing rule, or duplicates an existing rule's
+    purpose, is almost always a configuration error.
 
     Returns:
         dict: The created Cloud App Control rule. If friendly
@@ -752,6 +995,7 @@ def zia_create_cloud_app_control_rule(
     canonical_rule_type = validate_app_class(rule_type, service=service)
     if not canonical_rule_type:
         raise ValueError("rule_type is required.")
+    _validate_cac_rule_name(name)
 
     cloud_apps_audit: Optional[dict] = None
     if resolve_cloud_apps and cloud_applications is not None:
@@ -818,7 +1062,21 @@ def zia_update_cloud_app_control_rule(
         Union[int, str],
         Field(description="The ID of the Cloud App Control rule to update."),
     ],
-    name: Annotated[Optional[str], Field(description="Rule name (max 31 chars).")] = None,
+    name: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Rule name. **Hard ZIA limit of 31 characters** when "
+                "supplied — longer names are rejected by the API "
+                "with ``INVALID_INPUT_ARGUMENT: 'Name exceeds the "
+                "max length 31 characters'``. This tool also "
+                "rejects names > 31 characters client-side. When "
+                "omitted, the existing name is silently backfilled "
+                "from the rule on the server (the underlying ZIA "
+                "endpoint is a PUT)."
+            )
+        ),
+    ] = None,
     actions: Annotated[
         Optional[Union[List[str], str]],
         Field(
@@ -918,6 +1176,43 @@ def zia_update_cloud_app_control_rule(
     the API decides (typically: kept from prior state for ID-list
     fields, reset to defaults for primitive fields).
 
+    Pre-flight checks when the update changes ``actions``,
+    ``cloud_applications``, or ``order`` — i.e. when the rule's
+    matching semantics or position in the policy table change:
+
+    1. Re-run ``zia_list_cloud_app_control_rules(rule_type=...,
+       query="[?enabled].{id, name, order, actions,
+       cloud_applications}")`` and apply the same four-criteria
+       review documented in the module docstring (specificity,
+       shadowing, duplicate purpose, Deny-above-Allow) against
+       the *post-update* shape of the rule.
+    2. Particular gotchas:
+
+       - An update that switches an ``ALLOW_*`` action to
+         ``BLOCK_*`` / ``DENY_*`` may require re-ordering the
+         rule above other Allow rules that now overlap.
+       - An update that broadens ``cloud_applications`` may
+         shadow more specific rules below — review the rules
+         below the updated ``order`` position.
+       - An update that **adds apps to** ``cloud_applications``
+         (turning a single-app rule into a multi-app rule) may
+         hit ``INVALID_INPUT_ARGUMENT: "Invalid action provided
+         for selected applications"`` because per-app action
+         validity varies even within a single category. The safe
+         pattern is to leave the rule as-is and create new
+         single-app rules for the additional apps via
+         ``zia_create_cloud_app_control_rule`` — see that tool's
+         docstring and the "Multi-app handling" section of
+         ``skills/zia/create-cloud-app-control-rule/SKILL.md``.
+       - An update that narrows scoping (removes users /
+         locations / etc.) may stop shadowing other rules that
+         were previously unreachable — usually intentional, but
+         confirm with the admin.
+
+    Updates that only flip ``enabled``, change ``description``,
+    adjust quotas, or rename the rule do not require this
+    review.
+
     Returns:
         dict: The updated Cloud App Control rule. If friendly
         cloud-app names were auto-resolved,
@@ -926,6 +1221,7 @@ def zia_update_cloud_app_control_rule(
     canonical_rule_type = validate_app_class(rule_type, service=service)
     if not canonical_rule_type:
         raise ValueError("rule_type is required.")
+    _validate_cac_rule_name(name)
 
     cloud_apps_audit: Optional[dict] = None
     if resolve_cloud_apps and cloud_applications is not None:
