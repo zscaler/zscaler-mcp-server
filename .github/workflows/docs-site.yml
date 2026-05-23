@@ -1,0 +1,137 @@
+name: Deploy Documentation Site
+
+on:
+  # Validate every PR that touches docs and every commit pushed to an
+  # open PR (`pull_request` default activity types include `opened`,
+  # `synchronize` for new commits, and `reopened`). Build-only — the
+  # deploy job is gated below to push-to-master.
+  pull_request:
+    paths:
+      - "docs-site/**"
+      - "integrations/**/README.md"
+      - ".github/workflows/docs-site.yml"
+  # Build + deploy on merge to master.
+  push:
+    branches:
+      - master
+    paths:
+      - "docs-site/**"
+      - "integrations/**/README.md"
+      - ".github/workflows/docs-site.yml"
+  workflow_dispatch:
+
+# Concurrency is keyed by ref so each PR branch and the master branch
+# get their own group. `cancel-in-progress: true` only on PR runs —
+# new commits to an open PR supersede the previous build (saves CI
+# minutes). On master we set it false: never abort a deploy
+# mid-flight, even if a second push lands while Pages is publishing.
+concurrency:
+  group: "docs-site-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Workflow-level permissions are intentionally read-only — the deploy
+# job grants itself `pages: write` + `id-token: write` at the job
+# scope so PR builds (which never deploy) can't acquire those tokens
+# from a malicious workflow change.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    # A successful Docusaurus build of this site clocks in under
+    # 3 minutes; 15 leaves comfortable headroom for npm-cache misses
+    # and stops a stuck job from holding the runner for the default
+    # 6-hour ceiling.
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: docs-site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        # The integration-doc sync script is a small stdlib-only
+        # Python tool — no dependencies needed.
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify integration docs are in sync
+        working-directory: ${{ github.workspace }}
+        run: python docs-site/scripts/sync_integrations_to_docs.py --check
+
+      - name: Install Python deps for the skills-index generator
+        # Only PyYAML is needed; pinned conservatively because the
+        # frontmatter parser is the only consumer.
+        run: pip install "pyyaml>=6.0"
+
+      - name: Verify skills index is in sync
+        working-directory: ${{ github.workspace }}
+        run: python docs-site/scripts/generate_skills_index.py --check
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Docusaurus site
+        run: npm run build
+
+      - name: Verify build output
+        # Defense-in-depth: `npm run build` exits non-zero on most
+        # failures, but a silent partial build (missing index, empty
+        # sitemap) would still upload and serve a broken site. Fail
+        # the workflow loudly here instead, *before* the artifact
+        # upload — so the deploy job (gated by `needs: build`) never
+        # publishes a half-rendered portal.
+        run: |
+          set -euo pipefail
+          test -d build || { echo "::error::Docusaurus build directory is missing"; exit 1; }
+          test -f build/index.html || { echo "::error::build/index.html is missing"; exit 1; }
+          test -d build/docs || { echo "::error::build/docs/ is missing"; exit 1; }
+          test -s build/sitemap.xml || { echo "::error::build/sitemap.xml is missing or empty"; exit 1; }
+          test -d build/assets || { echo "::error::build/assets/ is missing"; exit 1; }
+          file_count=$(find build -type f | wc -l | tr -d ' ')
+          build_size=$(du -sh build | cut -f1)
+          echo "Build output OK: ${file_count} files (${build_size})"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Only publish on merge to master (and manual `workflow_dispatch`
+    # from master). PR runs validate the build but never touch
+    # production. The `github.ref` guard mirrors the trigger config
+    # but is also enforced here as belt-and-braces.
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    # Pages deploys typically complete in under 60s; 10 min keeps a
+    # transient Pages API stall from hanging the job for hours.
+    timeout-minutes: 10
+    # Pages write + OIDC scoped to this job only — the rest of the
+    # workflow runs under the read-only workflow-level permissions.
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

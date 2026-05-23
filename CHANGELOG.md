@@ -1,5 +1,33 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.12.3 (May 22, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **Strands Agent client for AgentCore Runtime.** Added `integrations/aws/bedrock-agentcore/strands_agent_chat.py` — a self-contained interactive CLI that drives a deployed AgentCore Runtime from any laptop with AWS credentials. SigV4-signs every `InvokeAgentRuntime` call, auto-discovers the runtime from `.aws-deploy-state.json`, walks the operator through a curated Bedrock model picker (Claude Sonnet 4.6 / Opus 4.7 / Opus 4.6, Amazon Nova Pro, Llama 3.3 70B) and a tool-filter preset picker (Discovery / ZPA / ZIA / ZDX read-only / policy-investigation / custom regex / all), and drops into a chat loop with per-message stats (latency, token usage), a session summary on exit, and in-chat `help` / `status` / `tools` / `clear` / `reset` / `quit` commands. Pinned dependencies live in `integrations/aws/bedrock-agentcore/requirements.txt` (boto3, strands-agents, httpx). Companion `integrations/aws/bedrock-agentcore/.gitignore` keeps `.strands-venv/` and the local state file out of git.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **Reorganized `integrations/aws/` into `bedrock-agentcore/` and `harness/` subfolders.** All existing AgentCore Runtime artifacts (`aws_mcp_operations.py`, `strands_agent_chat.py`, `cloudformation/`, `env.properties`, `requirements.txt`, READMEs, `.gitignore`) now live under `integrations/aws/bedrock-agentcore/`. A sibling `integrations/aws/harness/` placeholder reserves space for the upcoming AWS-recommended AgentCore Harness deployment path. The MCP server image is unchanged — Harness consumes it as a standard `remote_mcp` tool over streamable-HTTP.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **MCP streamable-http handshake.** The Strands client now performs the spec-compliant MCP session handshake against the AgentCore runtime — `POST initialize` (advertising protocol version `2025-11-25`), captures the server-issued `Mcp-Session-Id` response header, fires the `notifications/initialized` notification, then echoes that header on every subsequent `tools/list` / `tools/call`. This is mandatory on the `v0.12.x+` runtime image (where `web_server.py`'s Genesis NDJSON wrapper no longer bypasses the MCP transport layer). Falls back gracefully to session-less mode against the legacy `v0.10.x` Genesis-wrapped image, so the same client works against both deployments without flags.
+
+### Bug Fixes
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - Packaged several ZDX Skill templates for better display and parsing of the response.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - Fixed ZIA `cloud_app_control` tools by adding further docstrings instructions for proper workflow construction.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **ZPA list-tool pagination types.** Re-typed `page` and `page_size` as `Annotated[Optional[int], Field(ge=1, ...)]` across all 9 ZPA list tools (`zpa_list_segment_groups`, `zpa_list_server_groups`, `zpa_list_app_connectors`, `zpa_list_app_connector_groups`, `zpa_list_service_edges`, `zpa_list_lss_configs`, `zpa_list_application_segments`, `zpa_list_application_segments_ba`, `zpa_list_application_segments_pra`). The previous `Optional[str]` declaration caused Pydantic to reject every Bedrock-driven invocation with `Input should be a valid string`, because modern Claude / Nova models naturally emit JSON integers for numeric-looking arguments. The tools now convert back to `str` at the SDK call site so the underlying API call is unchanged.
+
+### Documentation
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - Added `docs/deployment/strands-agentcore-client.md` — full reference for the new Strands client: architecture, the two-session-id model (Bedrock affinity vs. MCP transport), prerequisites, install, the MCP handshake flow, the Bedrock model catalogue, tool filter presets, interactive flow walkthrough, chat commands, CLI flags, the `--list-tools` smoke test, and a troubleshooting table covering the `-32010` handshake error, the Anthropic use-case form, the ZPA pagination Pydantic error, missing AWS creds, and `DEBUG_MCP_WIRE` for wire-level debugging.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **Migrated the documentation portal from Sphinx to Docusaurus 3**, deployed to GitHub Pages. Added new sections for Skills, published Registries (Cursor, Claude, Official MCP, Docker, GitHub), and a hand-curated sitemap.
+
 ## 0.12.2 (May 18, 2026)
 
 ### Notes

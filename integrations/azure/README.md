@@ -4,7 +4,7 @@ Deploy the Zscaler MCP Server to Azure with your choice of deployment target, au
 
 ## Video Walkthrough
 
-[![Video: Zscaler Integration MCP Server in Azure — complete](../../assets/azure_container_complete.png)](https://zscaler.wistia.com/medias/lk72alp7wv)
+[![Video: Zscaler Integration MCP Server in Azure — complete](../../assets/azure_complete.png)](https://zscaler.wistia.com/medias/lk72alp7wv)
 
 End-to-end walkthrough of every deployment target in this guide — Container Apps, Virtual Machine, AKS, and the Azure AI Foundry agent. Click the thumbnail to watch on Wistia, or jump to a per-target walkthrough in the matching section below:
 

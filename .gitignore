@@ -26,6 +26,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# MCPB (Claude Desktop Directory) bundle build artifacts.
+# The bundle is produced on demand by `make build-mcpb` and uploaded
+# to GitHub Releases — it never lives in version control. The
+# `manifest.json` at the repo root IS tracked (it's the docgen-owned
+# source the bundle is built from).
+*.mcpb
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -69,15 +76,11 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-# Source lives in docsrc/; rendered HTML/doctrees under docsrc/_build* are
-# build artifacts and should never be committed. The deployable HTML for
-# GitHub Pages lives at docs/ and is published by `make docs-github`.
-docs/_build/
-docsrc/_build/
-docsrc/_build_clean/
-docsrc/_build/doctrees/
-docsrc/_build/html/
+# Docusaurus build output (the new docs portal under docs-site/). The
+# Sphinx portal (docsrc/) was retired in favour of Docusaurus; if you
+# see stale docsrc/ build artefacts on disk, they are safe to delete.
+docs-site/build/
+docs-site/.docusaurus/
 
 # PyBuilder
 .pybuilder/

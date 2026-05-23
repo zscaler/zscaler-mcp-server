@@ -1,0 +1,34 @@
+# Dependencies for the AWS-integration helper scripts in this directory.
+#
+# This is NOT the runtime requirements file for the Zscaler MCP server itself
+# (that's pyproject.toml in the repo root). These pins only cover:
+#
+#   strands_agent_chat.py   — interactive Strands → Bedrock → AgentCore chat
+#   aws_mcp_operations.py   — CloudFormation deployment driver
+#
+# Install with:
+#
+#   cd integrations/aws/bedrock-agentcore
+#   uv venv .strands-venv --python 3.11
+#   source .strands-venv/bin/activate
+#   uv pip install -r requirements.txt
+#
+# Both scripts also work with plain pip and a system Python 3.11+ — uv is
+# just faster.
+
+# AWS SDK — recent enough for `bedrock-agentcore` (data plane) and
+# `bedrock-agentcore-control` (control plane). 1.40+ is also required by the
+# AgentCore Runtime provisioner Lambda for createAgentRuntime's
+# `requestHeaderConfiguration` parameter.
+boto3>=1.40.0
+
+# Strands Agents SDK — the local agent runtime that wraps Bedrock's Converse
+# API and orchestrates MCP tool calls. 1.40 is the first release that
+# exposes the public `Agent` + `BedrockModel` shapes used by this script;
+# older versions don't expose `metrics.accumulated_usage`.
+strands-agents>=1.40.0
+
+# HTTPX — used directly to POST signed JSON-RPC requests to AgentCore
+# Runtime's `/invocations` endpoint. boto3 also pulls in `urllib3`, but
+# we want HTTP/2 + streaming response handling, so httpx stays explicit.
+httpx>=0.27.0

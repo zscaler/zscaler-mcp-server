@@ -10,15 +10,15 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 
 ## Table of Contents
 
-- [ZIA — Internet Access](#zia-internet-access)
-- [ZPA — Private Access](#zpa-private-access)
-- [ZDX — Digital Experience](#zdx-digital-experience)
-- [ZCC — Client Connector](#zcc-client-connector)
-- [ZTW — Workload Segmentation](#ztw-workload-segmentation)
+- [ZIA — Internet Access](#zia--internet-access)
+- [ZPA — Private Access](#zpa--private-access)
+- [ZDX — Digital Experience](#zdx--digital-experience)
+- [ZCC — Client Connector](#zcc--client-connector)
+- [ZTW — Workload Segmentation](#ztw--workload-segmentation)
 - [ZIdentity](#zidentity)
-- [EASM — External Attack Surface Management](#easm-external-attack-surface-management)
+- [EASM — External Attack Surface Management](#easm--external-attack-surface-management)
 - [Z-Insights](#z-insights)
-- [ZMS — Microsegmentation](#zms-microsegmentation)
+- [ZMS — Microsegmentation](#zms--microsegmentation)
 - [Meta (always loaded)](#meta-always-loaded)
 
 ---

@@ -22,8 +22,8 @@ def zpa_list_segment_groups(
             )
         ),
     ] = None,
-    page: Annotated[Optional[str], Field(description="Page number for pagination.")] = None,
-    page_size: Annotated[Optional[str], Field(description="Items per page for pagination.")] = None,
+    page: Annotated[Optional[int], Field(ge=1, description="Page number for pagination.")] = None,
+    page_size: Annotated[Optional[int], Field(ge=1, description="Items per page for pagination.")] = None,
     microtenant_id: Annotated[
         Optional[str], Field(description="Microtenant ID for scoping.")
     ] = None,
@@ -43,10 +43,10 @@ def zpa_list_segment_groups(
     qp = {"microtenant_id": microtenant_id}
     if search:
         qp["search"] = search
-    if page:
-        qp["page"] = page
-    if page_size:
-        qp["page_size"] = page_size
+    if page is not None:
+        qp["page"] = str(page)
+    if page_size is not None:
+        qp["page_size"] = str(page_size)
 
     groups, _, err = sg.list_groups(query_params=qp)
     if err:
