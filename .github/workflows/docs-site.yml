@@ -1,29 +1,40 @@
 name: Deploy Documentation Site
 
 on:
+  # Validate every PR that touches docs and every commit pushed to an
+  # open PR (`pull_request` default activity types include `opened`,
+  # `synchronize` for new commits, and `reopened`). Build-only — the
+  # deploy job is gated below to push-to-master.
+  pull_request:
+    paths:
+      - "docs-site/**"
+      - "integrations/**/README.md"
+      - ".github/workflows/docs-site.yml"
+  # Build + deploy on merge to master.
   push:
     branches:
       - master
-    # Trigger on changes to the docs-site itself OR to the source
-    # READMEs we mirror into it. The build job runs the sync check
-    # first, so a stale mirror fails the workflow loudly instead of
-    # silently shipping out-of-date content.
     paths:
       - "docs-site/**"
       - "integrations/**/README.md"
       - ".github/workflows/docs-site.yml"
   workflow_dispatch:
 
-# Only one in-flight deploy at a time. Cancel a stale one if a newer push lands.
+# Concurrency is keyed by ref so each PR branch and the master branch
+# get their own group. `cancel-in-progress: true` only on PR runs —
+# new commits to an open PR supersede the previous build (saves CI
+# minutes). On master we set it false: never abort a deploy
+# mid-flight, even if a second push lands while Pages is publishing.
 concurrency:
-  group: "docs-site"
-  cancel-in-progress: false
+  group: "docs-site-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Allow this workflow to write to gh-pages and grab an OIDC token for Pages.
+# Workflow-level permissions are intentionally read-only — the deploy
+# job grants itself `pages: write` + `id-token: write` at the job
+# scope so PR builds (which never deploy) can't acquire those tokens
+# from a malicious workflow change.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
@@ -100,10 +111,23 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
+    # Only publish on merge to master (and manual `workflow_dispatch`
+    # from master). PR runs validate the build but never touch
+    # production. The `github.ref` guard mirrors the trigger config
+    # but is also enforced here as belt-and-braces.
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     # Pages deploys typically complete in under 60s; 10 min keeps a
     # transient Pages API stall from hanging the job for hours.
     timeout-minutes: 10
+    # Pages write + OIDC scoped to this job only — the rest of the
+    # workflow runs under the read-only workflow-level permissions.
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
