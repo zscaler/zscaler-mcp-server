@@ -1,0 +1,362 @@
+/**
+ * Zscaler MCP Server documentation theme.
+ *
+ * Color palette and visual identity are sourced from the Zscaler OneAPI
+ * Automation Hub (gitlab/oneapi-automation-hub) so this site reads as part
+ * of the same family. Any change here should mirror the OneAPI Hub.
+ */
+
+:root {
+  /* Zscaler brand palette — all-blue, no green.
+   * Source: zscaler.com identity. The deep blue (#194CBB) is the
+   * wordmark; the navy (#0A2540) is the navbar/footer surface; the
+   * vivid blue (#2D7DFD) is the saturated accent used for CTAs,
+   * active sidebar items, search-focus rings, and the "AI agents"
+   * gradient endpoint. Together they form a monotonic-blue palette
+   * (deep → vivid → light) with no green/teal anywhere.
+   */
+  --primary-color: #194CBB;
+  --secondary-color: #0A2540;
+  --accent-color: #2D7DFD;
+  --accent-color-dim: #1C5FCC;       /* For hovered/pressed states */
+  --accent-color-soft: #7BAFFF;      /* For text accents (e.g. inline links) */
+  --light-bg: #F4F6F8;
+  --card-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --border-color: #ccd5e0;
+  --border-light: #e0e5eb;
+
+  /* Infima / Docusaurus theme variables — keyed to brand blue in
+   * light mode so links, buttons, and admonition headers all align
+   * with the wordmark color.
+   */
+  --ifm-color-primary: #194CBB;
+  --ifm-color-primary-dark: #1644a8;
+  --ifm-color-primary-darker: #144099;
+  --ifm-color-primary-darkest: #103581;
+  --ifm-color-primary-light: #2a5cd4;
+  --ifm-color-primary-lighter: #3866dc;
+  --ifm-color-primary-lightest: #5d83e3;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* API method colors (used in tool catalog tables) */
+  --openapi-code-green: #4caf50;
+  --openapi-code-blue: #2196f3;
+  --openapi-code-red: #f44336;
+  --openapi-code-orange: #ff9800;
+  --openapi-code-yellow: #ffeb3b;
+}
+
+[data-theme="dark"] {
+  /* In dark mode, Infima's primary is the Zscaler vivid blue
+   * (#2D7DFD) so link/button text stays readable against dark
+   * surfaces without ever drifting into green/teal territory.
+   */
+  --ifm-color-primary: #2D7DFD;
+  --ifm-color-primary-dark: #1565E1;
+  --ifm-color-primary-darker: #1359CC;
+  --ifm-color-primary-darkest: #0F4BAA;
+  --ifm-color-primary-light: #5294FE;
+  --ifm-color-primary-lighter: #69A4FE;
+  --ifm-color-primary-lightest: #94C0FF;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  --light-bg: #1e2125;
+  --card-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  --border-color: #2d3138;
+  --border-light: #2d3138;
+}
+
+/* ===== Navbar polish — Automation Hub style =====
+ *
+ * The navbar follows the active theme (light surface in light mode,
+ * dark surface in dark mode) — same behaviour as the OneAPI
+ * Automation Hub. Two implementation details worth knowing:
+ *
+ *   - `--navbar-overlay` is a per-mode rgba ramp used by every
+ *     transparent surface inside the navbar (link hover background,
+ *     search input fill, slide-toggle track). In dark mode it's a
+ *     translucent white; in light mode it's a translucent black. This
+ *     lets one set of rules cover both modes without manually
+ *     swapping colours in every selector.
+ *
+ *   - Common typography / spacing rules below apply in both modes;
+ *     mode-specific colour overrides live in the `[data-theme="dark"]`
+ *     block at the bottom of this section.
+ */
+
+:root {
+  --navbar-overlay: rgba(0, 0, 0, 0.05);
+  --navbar-overlay-strong: rgba(0, 0, 0, 0.08);
+  --navbar-border: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] {
+  --navbar-overlay: rgba(255, 255, 255, 0.06);
+  --navbar-overlay-strong: rgba(255, 255, 255, 0.1);
+  --navbar-border: rgba(255, 255, 255, 0.06);
+}
+
+.navbar {
+  height: 4rem;
+  border-bottom: 1px solid var(--navbar-border);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.navbar__title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.navbar__logo {
+  height: 1.75rem;
+}
+
+/* The Zscaler wordmark SVG is brand blue (#194CBB) and should stay
+ * blue in both light and dark mode — deliberately not inverted.
+ */
+
+.navbar__items--right {
+  gap: 0.5rem;
+}
+
+.navbar__link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.navbar__link:hover {
+  background-color: var(--navbar-overlay);
+  text-decoration: none;
+}
+
+/* Active page underline accent — uses the Zscaler vivid blue
+ * (`--accent-color`) so it reads against both light and dark navbar
+ * surfaces.
+ */
+.navbar__link--active {
+  position: relative;
+}
+
+.navbar__link--active::after {
+  content: "";
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: -0.15rem;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--accent-color);
+}
+
+.navbar__items {
+  gap: 0.15rem;
+}
+
+/* Search box in the navbar (offline search plugin) — surface and
+ * border share the per-mode overlay variables.
+ */
+.navbar .navbar__search-input {
+  background-color: var(--navbar-overlay);
+  border: 1px solid var(--navbar-border);
+}
+
+/* ----- Dark-mode-only navbar tweaks -------------------------------
+ *
+ * Keep the Automation-Hub-style near-black navbar surface when the
+ * site is in dark mode, plus the white-ish wordmark / link colours
+ * the dark surface needs to stay readable. In light mode we let
+ * Docusaurus's stock light navbar show through.
+ */
+[data-theme="dark"] .navbar {
+  background-color: #18181b;
+  --ifm-navbar-link-color: rgba(255, 255, 255, 0.78);
+  --ifm-navbar-link-hover-color: #ffffff;
+}
+
+[data-theme="dark"] .navbar__title {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme="dark"] .navbar__link--active {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .navbar-sidebar__brand {
+  background-color: #18181b;
+}
+
+[data-theme="dark"] .navbar .navbar__search-input {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] .navbar .navbar__search-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Sidebar collapse icon recolouring on the dark navbar. The color-mode
+ * toggle is rendered by our slide-style swizzle (src/theme/ColorModeToggle)
+ * which manages its own colors via its CSS module — we deliberately do
+ * NOT target it here.
+ */
+[data-theme="dark"] .navbar .clean-btn:not([aria-pressed]) svg {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== Sidebar - matches OneAPI Hub pattern =====
+ *
+ * The sidebar must stay visible as the reader scrolls the main
+ * content, otherwise anchor-link navigation (e.g. clicking
+ * "Claude Marketplace" on the Registries page) leaves the sidebar
+ * off-screen and forces a scroll-back-to-top to navigate to the
+ * next section.
+ *
+ * Docusaurus's stock `.theme-doc-sidebar-container` is already
+ * `position: sticky`, but our override below adds `resize: horizontal`
+ * and constrained widths which — combined with `.main-wrapper`'s
+ * `display: flex` — caused the container to stretch to the full
+ * height of the main content. A sticky element that's as tall as
+ * its scrolling ancestor has nothing to stick to, which is why the
+ * sidebar appeared to scroll with the page.
+ *
+ * The fix is to explicitly bound the container to the viewport
+ * height (minus the fixed navbar) and use `align-self: flex-start`
+ * so the flex parent stops stretching it. The inner menu list keeps
+ * its own scroll so the sidebar contents are reachable when they
+ * exceed the viewport.
+ */
+.main-wrapper {
+  display: flex;
+}
+
+.theme-doc-sidebar-container {
+  resize: horizontal;
+  overflow-y: auto;
+  min-width: 220px;
+  max-width: 600px;
+  border-right: 1px solid var(--ifm-toc-border-color);
+  position: sticky;
+  top: var(--ifm-navbar-height);
+  height: calc(100vh - var(--ifm-navbar-height));
+  align-self: flex-start;
+}
+
+.menu__list {
+  position: relative;
+}
+
+.menu__link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu__list-item:hover > .menu__link {
+  background-color: var(--ifm-menu-color-background-active);
+}
+
+.menu__list .menu__list {
+  margin-left: 1rem;
+  padding-left: 0.5rem;
+}
+
+.menu__list .menu__list::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+.theme-doc-sidebar-menu {
+  font-size: 14px;
+  font-weight: var(--ifm-font-weight-normal);
+}
+
+/* ===== Footer =====
+ *
+ * Background colour matches the deep navy used on the Zscaler OneAPI
+ * Automation Hub footer (`#0a1f3d` — same family as the wordmark blue
+ * `#194CBB`, just darkened to footer weight). Switched away from the
+ * previous flat near-black so the footer reads as a clear "Zscaler"
+ * surface in both light and dark site themes, not as a neutral
+ * chrome panel.
+ *
+ * The Zscaler corporate row + trademark copyright are rendered by
+ * our swizzled `src/theme/Footer/Layout/index.tsx`; the colour tokens
+ * below apply to both the swizzled section and the standard link
+ * columns above it.
+ */
+.footer--dark {
+  --ifm-footer-background-color: #0a1f3d;
+  --ifm-footer-color: #cbd5e1;
+  --ifm-footer-link-color: #cbd5e1;
+  --ifm-footer-title-color: #ffffff;
+}
+
+.footer--dark .footer__link-item:hover {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+/* ===== Admonitions polish ===== */
+.theme-admonition {
+  border-radius: 8px;
+}
+
+/* ===== Code block tweaks ===== */
+.theme-code-block {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Table polish for tool catalog =====
+ *
+ * Wide auto-generated tables (especially the Supported Tools page
+ * with multi-sentence ZIA descriptions) used to overflow under the
+ * right-side floating TOC and become unreadable. Wrapping every
+ * markdown table in an `overflow-x:auto` container makes the table
+ * scroll horizontally inside its column instead of bleeding outside
+ * — a safety net even on pages where the right TOC is hidden.
+ *
+ * The `.markdown` selector is Docusaurus's own wrapper around every
+ * .md/.mdx body, so this is scoped to content tables only and won't
+ * affect the toolset-catalog card grid or any other tables we render
+ * via React components.
+ */
+.markdown > table,
+.markdown table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Wrap long words inside table cells (tool ids, dotted-path imports,
+ * and the rare URL that sneaks into a description) instead of forcing
+ * the column wider than the page.
+ */
+.markdown table td,
+.markdown table th {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.markdown table th {
+  background-color: var(--light-bg);
+}
+
+[data-theme="dark"] .markdown table th {
+  background-color: #1e2125;
+}

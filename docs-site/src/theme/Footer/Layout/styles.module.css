@@ -1,0 +1,147 @@
+/**
+ * Zscaler corporate footer row — paired with src/theme/Footer/Layout/index.tsx.
+ *
+ * Layout:
+ *
+ *   ┌─────────────────────────────────────────────────────────────────┐
+ *   │  [LOGO]                                              Sitemap    │
+ *   │  Zscaler is universally recognized…    [f] [in] [x] [yt]  Privacy │
+ *   │                                                      Legal      │
+ *   │                                                      Security   │
+ *   │                                                      Cookie     │
+ *   └─────────────────────────────────────────────────────────────────┘
+ *
+ * Below this row the standard FooterCopyright text renders centered
+ * across the full width.
+ *
+ * On narrow viewports (≤ 996px, Docusaurus's mobile breakpoint) the
+ * three columns stack vertically and the corporate links re-arrange
+ * into a horizontal pill-row that wraps naturally.
+ */
+
+.corporate {
+  display: grid;
+  grid-template-columns: minmax(280px, 2fr) auto 1fr;
+  gap: 2.5rem;
+  align-items: start;
+  padding: 2.5rem 0 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 1.5rem;
+}
+
+.corporateLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 32rem;
+}
+
+.corporateLogoLink {
+  display: inline-block;
+  width: fit-content;
+}
+
+.corporateLogo {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.corporateTagline {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.corporateSocial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  align-self: center;
+}
+
+.socialIcon {
+  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.socialIcon:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.socialIcon:focus-visible {
+  outline: 2px solid var(--accent-color, #2D7DFD);
+  outline-offset: 2px;
+}
+
+.corporateLinks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.8125rem;
+}
+
+.corporateLinks a {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.corporateLinks a:hover {
+  color: var(--accent-color, #2D7DFD);
+  text-decoration: none;
+}
+
+.copyrightWrapper {
+  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.55);
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile: stack the three columns. The corporate links become a
+ * wrapped horizontal pill-row so they don't dominate the viewport
+ * vertically.
+ */
+@media (max-width: 996px) {
+  .corporate {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    text-align: center;
+  }
+
+  .corporateLeft {
+    align-items: center;
+    max-width: none;
+  }
+
+  .corporateLogoLink {
+    margin: 0 auto;
+  }
+
+  .corporateLinks {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 1.25rem;
+  }
+}
