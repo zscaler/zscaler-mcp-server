@@ -324,7 +324,7 @@ urllib3==2.7.0
     #   zscaler-sdk-python
 uuid-utils==0.16.0
     # via langsmith
-uvicorn==0.47.0
+uvicorn==0.48.0
     # via
     #   zscaler-mcp (pyproject.toml)
     #   fastmcp-slim
