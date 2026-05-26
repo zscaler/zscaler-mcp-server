@@ -19,13 +19,14 @@ The server secret is generated once at process startup (ephemeral, never stored)
 Tokens expire after CONFIRMATION_TOKEN_TTL_SECONDS (default: 5 minutes).
 """
 
+import base64
 import hashlib
 import hmac
 import json
 import os
 import secrets
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from zscaler_mcp.common.logging import get_logger
 
@@ -91,16 +92,56 @@ def _validate_token(
     return True, None
 
 
+# Sentinel returned by extract_confirmed_from_kwargs when the agent sent
+# a native (SEP-2322) ``inputResponses`` + ``requestState`` payload via
+# the kwargs transport. The string carries a base64url-encoded JSON blob
+# so the existing (tool_name, confirmed, params) signature of
+# ``check_confirmation`` can pass the native fields through without
+# every tool having to be re-signatured. Format:
+#
+#     __native__:<base64url-encoded JSON {inputResponses, requestState}>
+#
+# This is a transient wire format for the P3 prototype. Once the
+# ``mcp`` / ``fastmcp`` SDK upgrade (P1) makes ``inputResponses`` and
+# ``requestState`` first-class JSON-RPC fields on ``params``, the
+# sentinel goes away and the dispatcher reads the native fields
+# directly.
+_NATIVE_SENTINEL_PREFIX = "__native__:"
+
+
 def extract_confirmed_from_kwargs(kwargs_value: Any) -> Optional[str]:
-    """Extract confirmation_token from the kwargs parameter.
+    """Extract a confirmation marker from the ``kwargs`` parameter.
 
-    In MCP/FastMCP context, kwargs is a literal parameter that may receive:
-    - A dict: {"confirmation_token": "12345:abc..."} or {"confirmed": True}
-    - A JSON string: '{"confirmation_token": "12345:abc..."}'
-    - An empty string/dict: "" or {}
+    In MCP/FastMCP context, ``kwargs`` is a literal parameter that may
+    receive:
 
-    Returns:
-        The confirmation_token string if present, None otherwise.
+    - The native (SEP-2322) shape, when the agent is replying to an
+      ``InputRequiredResult``::
+
+          {"inputResponses": {"confirm": true}, "requestState": "<echoed>"}
+
+      Detected by the presence of either ``inputResponses`` or
+      ``requestState`` and returned as a ``__native__:<base64-blob>``
+      sentinel that :func:`check_confirmation` knows how to unpack.
+
+    - The legacy HMAC shape::
+
+          {"confirmation_token": "12345:abc..."}
+
+      Returned as the bare token string.
+
+    - The deprecated boolean shape::
+
+          {"confirmed": true}  or  {"confirm": true}
+
+      Returned as the ``"__deprecated_bool_confirmed__"`` sentinel.
+
+    - A JSON string of any of the above.
+    - An empty string / dict — returns ``None``.
+
+    Native and legacy shapes are mutually exclusive in practice but if
+    both are present the **native shape wins** (the agent is opting into
+    the new protocol).
     """
     data = kwargs_value
     if isinstance(data, str):
@@ -111,12 +152,26 @@ def extract_confirmed_from_kwargs(kwargs_value: Any) -> Optional[str]:
         except (json.JSONDecodeError, ValueError):
             return None
 
-    if isinstance(data, dict):
-        token = data.get("confirmation_token")
-        if token:
-            return str(token)
-        if data.get("confirmed") or data.get("confirm"):
-            return "__deprecated_bool_confirmed__"
+    if not isinstance(data, dict):
+        return None
+
+    # Native (SEP-2322) shape takes precedence over legacy when both
+    # fields are present.
+    if "inputResponses" in data or "requestState" in data:
+        blob = {
+            "inputResponses": data.get("inputResponses"),
+            "requestState": data.get("requestState"),
+        }
+        encoded = base64.urlsafe_b64encode(
+            json.dumps(blob, separators=(",", ":")).encode("utf-8")
+        ).decode("ascii").rstrip("=")
+        return f"{_NATIVE_SENTINEL_PREFIX}{encoded}"
+
+    token = data.get("confirmation_token")
+    if token:
+        return str(token)
+    if data.get("confirmed") or data.get("confirm"):
+        return "__deprecated_bool_confirmed__"
 
     return None
 
@@ -207,45 +262,128 @@ def generate_confirmation_message(tool_name: str, params: Dict[str, Any], token:
     )
 
 
-def check_confirmation(tool_name: str, confirmed: Any, params: Dict[str, Any]) -> Optional[str]:
+def _decode_native_sentinel(sentinel: str) -> Dict[str, Any]:
+    """Reverse the encoding done by :func:`extract_confirmed_from_kwargs`."""
+    encoded = sentinel[len(_NATIVE_SENTINEL_PREFIX):]
+    padding = "=" * (-len(encoded) % 4)
+    raw = base64.urlsafe_b64decode(encoded + padding)
+    return json.loads(raw.decode("utf-8"))
+
+
+def check_confirmation(
+    tool_name: str, confirmed: Any, params: Dict[str, Any]
+) -> Optional[Union[str, Dict[str, Any]]]:
     """Check if a write operation has a valid cryptographic confirmation.
 
-    Called at the start of every write tool. The ``confirmed`` argument is
-    the value returned by ``extract_confirmed_from_kwargs`` — either a
-    confirmation_token string, the deprecated-bool sentinel
-    ``"__deprecated_bool_confirmed__"``, or None (no confirmation yet).
+    Called at the start of every write tool. The ``confirmed`` argument
+    is the value returned by :func:`extract_confirmed_from_kwargs` — one
+    of:
 
-    Returns a confirmation message (str) if the caller should stop and ask
-    the user, or None if the operation may proceed.
+    - ``None`` / ``False`` — no confirmation yet (first call).
+    - A ``"__native__:..."`` sentinel — the agent is replying to a
+      previous ``InputRequiredResult`` with SEP-2322 native fields.
+    - The ``"__deprecated_bool_confirmed__"`` sentinel — legacy
+      ``confirmed=true`` shape.
+    - Any other string — treated as the legacy HMAC ``confirmation_token``.
+
+    Returns:
+        - ``None`` if the operation may proceed.
+        - A ``dict`` matching the native ``InputRequiredResult`` shape
+          (SEP-2322) when :func:`zscaler_mcp.common.elicitation_native.is_native_elicitation_enabled`
+          returns ``True``.
+        - A ``str`` legacy prose message with an embedded HMAC token
+          otherwise.
+
+    The dual return type lets tool functions stay agnostic — they keep
+    ``if confirmation_check: return confirmation_check`` and FastMCP
+    serializes either shape through the result channel.
     """
+    # Lazy import — avoids a circular dependency at module load.
+    from zscaler_mcp.common import elicitation_native as native
+
     if should_skip_confirmations():
         logger.debug(
             "Skipping confirmation for %s (ZSCALER_MCP_SKIP_CONFIRMATIONS=true)", tool_name
         )
         return None
 
+    # -------------------------------------------------------------
+    # Native (SEP-2322) retry: ``inputResponses`` + ``requestState``
+    # arrived via the kwargs transport.
+    # -------------------------------------------------------------
+    if isinstance(confirmed, str) and confirmed.startswith(_NATIVE_SENTINEL_PREFIX):
+        try:
+            payload = _decode_native_sentinel(confirmed)
+        except (ValueError, json.JSONDecodeError):
+            logger.warning("Malformed native elicitation sentinel for %s", tool_name)
+            # Fall through to the native first-call path so the agent
+            # gets a fresh prompt instead of a cryptic crash.
+            payload = {}
+
+        ok, err = native.check_input_response(
+            tool_name,
+            params,
+            payload.get("inputResponses"),
+            payload.get("requestState"),
+        )
+        if ok:
+            logger.info("Confirmed (native inputResponses + requestState): %s", tool_name)
+            return None
+
+        logger.warning("Native elicitation retry rejected for %s: %s", tool_name, err)
+        # Re-issue with the error surfaced inside the prompt so the
+        # agent can show the user why their previous response didn't
+        # take effect. Stay in native mode so the agent doesn't have to
+        # context-switch protocols mid-confirmation.
+        return native.build_input_required_result(
+            tool_name,
+            params,
+            prompt_prefix=f"Previous request rejected: {err}\n",
+        )
+
+    # -------------------------------------------------------------
+    # First call (or legacy ``confirmed=false``): pick the wire shape
+    # based on the operator's native-mode opt-in.
+    # -------------------------------------------------------------
     if confirmed is None or confirmed is False:
-        token = _generate_token(tool_name, params)
         logger.info("Confirmation required for %s", tool_name)
+        if native.is_native_elicitation_enabled():
+            return native.build_input_required_result(tool_name, params)
+        token = _generate_token(tool_name, params)
         return generate_confirmation_message(tool_name, params, token)
 
     if confirmed == "__deprecated_bool_confirmed__":
-        token = _generate_token(tool_name, params)
         logger.warning(
             "Deprecated confirmed=true received for %s. "
-            "Please use confirmation_token instead. Generating new token.",
+            "Please use confirmation_token (or native inputResponses + "
+            "requestState) instead. Generating new prompt.",
             tool_name,
         )
+        if native.is_native_elicitation_enabled():
+            return native.build_input_required_result(tool_name, params)
+        token = _generate_token(tool_name, params)
         return generate_confirmation_message(tool_name, params, token)
 
+    # -------------------------------------------------------------
+    # Legacy HMAC retry: ``confirmation_token`` arrived via kwargs.
+    # This path is intentionally preserved even when native mode is
+    # enabled — older clients that haven't migrated stay functional
+    # (the SEP-2596 deprecation policy gives a 12-month window).
+    # -------------------------------------------------------------
     token_str = str(confirmed)
     valid, error = _validate_token(token_str, tool_name, params)
     if not valid:
         logger.warning("Confirmation token rejected for %s: %s", tool_name, error)
+        if native.is_native_elicitation_enabled():
+            return native.build_input_required_result(
+                tool_name,
+                params,
+                prompt_prefix=f"Legacy confirmation_token rejected: {error}\n",
+            )
         new_token = _generate_token(tool_name, params)
         return f"Confirmation rejected: {error}\n\n" + generate_confirmation_message(
             tool_name, params, new_token
         )
 
-    logger.info("Confirmed (token valid): %s", tool_name)
+    logger.info("Confirmed (HMAC token valid): %s", tool_name)
     return None

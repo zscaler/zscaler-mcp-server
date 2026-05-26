@@ -10,6 +10,14 @@ from mcp.types import ToolAnnotations
 from zscaler_mcp.common.logging import get_logger
 from zscaler_mcp.common.sanitize import is_sanitization_enabled, sanitize_value
 from zscaler_mcp.common.toolsets import META_TOOLSET_ID, toolset_for_tool
+from zscaler_mcp.common.trace_context import (
+    bind_trace_context,
+    extract_trace_context_from_mcp_request_ctx,
+    format_audit_trace_suffix,
+    get_current_trace_context,
+    reset_trace_context,
+    try_extract_from_tool_kwargs,
+)
 
 logger = get_logger(__name__)
 audit_logger = get_logger("zscaler_mcp.audit")
@@ -123,29 +131,59 @@ def _wrap_with_audit(func, tool_name: str):
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        if not _log_tool_calls_enabled:
-            return _maybe_sanitize(func(*args, **kwargs))
+        ctx_token = None
+        if get_current_trace_context() is None:
+            # Priority 1 (spec-correct): MCP request_ctx.meta — works
+            # end-to-end on every MCP transport because the SDK sets this
+            # ContextVar on the same task that dispatches the handler.
+            extracted = extract_trace_context_from_mcp_request_ctx()
+            if extracted is None:
+                # Priority 2 (synthetic): _meta nested in the tool's own
+                # kwargs (or in a kwargs:str JSON string). Used by unit
+                # tests and bespoke harnesses; not what a real MCP client
+                # sends.
+                extracted = try_extract_from_tool_kwargs(kwargs)
+            if extracted is not None:
+                ctx_token = bind_trace_context(extracted)
 
-        safe_args = _sanitize_args(kwargs)
-        audit_logger.info("[TOOL CALL] %s | args: %s", tool_name, safe_args)
-
-        t0 = time.monotonic()
+        trace_suffix = format_audit_trace_suffix()
         try:
-            result = func(*args, **kwargs)
-            result = _maybe_sanitize(result)
-            elapsed_ms = (time.monotonic() - t0) * 1000
-            summary = _summarize_result(result)
+            if not _log_tool_calls_enabled:
+                return _maybe_sanitize(func(*args, **kwargs))
+
+            safe_args = _sanitize_args(kwargs)
             audit_logger.info(
-                "[TOOL OK]   %s | %dms | %s", tool_name, elapsed_ms, summary
+                "[TOOL CALL] %s%s | args: %s", tool_name, trace_suffix, safe_args
             )
-            return result
-        except Exception as exc:
-            elapsed_ms = (time.monotonic() - t0) * 1000
-            audit_logger.error(
-                "[TOOL ERR]  %s | %dms | %s: %s",
-                tool_name, elapsed_ms, type(exc).__name__, exc,
-            )
-            raise
+
+            t0 = time.monotonic()
+            try:
+                result = func(*args, **kwargs)
+                result = _maybe_sanitize(result)
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                summary = _summarize_result(result)
+                audit_logger.info(
+                    "[TOOL OK]   %s%s | %dms | %s",
+                    tool_name,
+                    trace_suffix,
+                    elapsed_ms,
+                    summary,
+                )
+                return result
+            except Exception as exc:
+                elapsed_ms = (time.monotonic() - t0) * 1000
+                audit_logger.error(
+                    "[TOOL ERR]  %s%s | %dms | %s: %s",
+                    tool_name,
+                    trace_suffix,
+                    elapsed_ms,
+                    type(exc).__name__,
+                    exc,
+                )
+                raise
+        finally:
+            if ctx_token is not None:
+                reset_trace_context(ctx_token)
 
     return wrapper
 

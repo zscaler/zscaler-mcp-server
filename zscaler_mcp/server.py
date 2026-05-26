@@ -524,6 +524,7 @@ class ZscalerMCPServer:
         disabled_tools: Optional[Set[str]] = None,
         disabled_services: Optional[Set[str]] = None,
         toolsets: Optional[Set[str]] = None,
+        disabled_toolsets: Optional[Set[str]] = None,
         host: Optional[str] = None,
         auth: Optional[object] = None,
         disable_entitlement_filter: bool = False,
@@ -550,6 +551,19 @@ class ZscalerMCPServer:
                 When ``None``, every toolset whose owning service is currently
                 enabled is selected (preserves today's behaviour).
                 See :mod:`zscaler_mcp.common.toolsets`.
+            disabled_toolsets: Set of toolset ids to exclude (e.g.
+                ``{"zia_ssl_inspection", "zia_admin"}``). Applied as a
+                blocklist *after* ``toolsets`` selection — so it works
+                cleanly with the ``"all"`` and ``"default"`` keywords (e.g.
+                ``toolsets={"all"}, disabled_toolsets={"zia_ssl_inspection"}``
+                loads every toolset except SSL inspection). Toolset ids
+                must be exact — wildcards are not supported (mirrors
+                ``disabled_services``, which doesn't glob either). The
+                ``meta`` toolset cannot be disabled; if listed it is
+                silently kept so the cross-service discovery tools
+                remain available. Equivalent CLI flag:
+                ``--disabled-toolsets``. Equivalent env var:
+                ``ZSCALER_MCP_DISABLED_TOOLSETS``.
             host: HTTP bind host (e.g. 0.0.0.0). When 0.0.0.0, host header validation is auto-disabled.
             auth: A ``fastmcp.server.auth.AuthProvider`` instance (e.g.
                 ``OIDCProxy``, ``OAuthProxy``, or a custom ``AuthProvider`` subclass)
@@ -631,6 +645,44 @@ class ZscalerMCPServer:
                 for ts in TOOLSETS.values()
                 if ts.service in self.enabled_services or ts.id == META_TOOLSET_ID
             }
+
+        # Apply the --disabled-toolsets blocklist on top of whatever was
+        # selected above. This is a set-subtraction with two guarantees:
+        #
+        #   1. The ``meta`` toolset is never removed — the cross-service
+        #      discovery tools (zscaler_list_toolsets etc.) must always
+        #      be loadable. Listing ``meta`` in --disabled-toolsets is
+        #      silently ignored (logged at INFO so operators notice).
+        #   2. Unknown ids are logged at WARNING and otherwise ignored
+        #      (same UX as --toolsets and --disabled-services).
+        #
+        # We also remember the operator-supplied blocklist so the runtime
+        # ``zscaler_enable_toolset`` meta-tool can refuse to re-enable a
+        # toolset the operator explicitly turned off.
+        self.disabled_toolsets: Set[str] = set()
+        if disabled_toolsets:
+            requested = {t.strip() for t in disabled_toolsets if t and t.strip()}
+            unknown_block = {t for t in requested if not TOOLSETS.has(t)}
+            if unknown_block:
+                logger.warning(
+                    "Unknown toolset id(s) in --disabled-toolsets: %s. "
+                    "Known toolsets: %s",
+                    ", ".join(sorted(unknown_block)),
+                    ", ".join(TOOLSETS.all_ids()),
+                )
+            requested -= unknown_block
+            if META_TOOLSET_ID in requested:
+                logger.info(
+                    "Ignoring %r in --disabled-toolsets: the meta toolset "
+                    "is always loaded so cross-service discovery tools "
+                    "(zscaler_list_toolsets, zscaler_get_toolset_tools, "
+                    "zscaler_enable_toolset) stay available.",
+                    META_TOOLSET_ID,
+                )
+                requested.discard(META_TOOLSET_ID)
+            self.disabled_toolsets = requested
+            if self.disabled_toolsets:
+                self.selected_toolsets -= self.disabled_toolsets
         self._toolset_catalog = TOOLSETS
 
         # OneAPI entitlement filter — trim the selected toolsets down to
@@ -805,6 +857,17 @@ class ZscalerMCPServer:
             resource_count,
             resource_word,
         )
+
+        # P4 prototype (SEP-2549). Attach a wrapper to the registered
+        # ListToolsRequest handler so tools/list responses can carry
+        # ttlMs / cacheScope in _meta. No-op when
+        # ZSCALER_MCP_TOOL_LIST_CACHE is not truthy. Must run AFTER
+        # _register_tools so the lowlevel handler exists.
+        from zscaler_mcp.common.cache_metadata import (
+            attach_tool_list_cache_metadata,
+        )
+
+        attach_tool_list_cache_metadata(self.server)
 
     def _register_tools(self) -> int:
         """Register tools from all services.
@@ -1098,7 +1161,16 @@ class ZscalerMCPServer:
                 "tool_count": counts.get(tsid, 0),
                 "can_enable": True,
             }
-            if (
+            if tsid in getattr(self, "disabled_toolsets", set()):
+                # Operator-blocklist wins — surface this distinctly so
+                # the agent reports the right cause to the user instead
+                # of conflating it with entitlement failures.
+                row["can_enable"] = False
+                row["unavailable_reason"] = (
+                    "Disabled by operator (--disabled-toolsets / "
+                    "ZSCALER_MCP_DISABLED_TOOLSETS)"
+                )
+            elif (
                 ent_state == "applied"
                 and entitled is not None
                 and ts.service not in entitled
@@ -1250,6 +1322,26 @@ class ZscalerMCPServer:
                 "status": "already_enabled",
             }
 
+        # Refuse to enable a toolset the operator explicitly blocked
+        # via --disabled-toolsets / ZSCALER_MCP_DISABLED_TOOLSETS. The
+        # blocklist is authoritative — if the operator turned it off,
+        # the agent should not be able to re-enable it. Report this as
+        # a distinct status so the agent surfaces the right message to
+        # the user instead of looping on enable attempts.
+        if toolset in getattr(self, "disabled_toolsets", set()):
+            return {
+                "toolset": toolset,
+                "newly_registered": 0,
+                "status": "disabled_by_operator",
+                "error": (
+                    f"Toolset {toolset!r} was explicitly disabled at "
+                    "server startup via --disabled-toolsets / "
+                    "ZSCALER_MCP_DISABLED_TOOLSETS. Re-enabling requires "
+                    "an operator to restart the server without that flag. "
+                    "Inform the user — do not retry."
+                ),
+            }
+
         # Refuse to enable a toolset whose product the OneAPI
         # credentials are not entitled to. Tools would fail at call
         # time anyway and the agent would loop. Be authoritative here.
@@ -1316,6 +1408,16 @@ class ZscalerMCPServer:
         # notifications/tools/list_changed; many clients re-list tools on
         # the next request anyway. Document the limitation rather than
         # touch private state.
+        if registered:
+            # Cooperating-cache mitigation for SEP-2549. Bumps the
+            # tool-inventory version and opens a short invalidation
+            # grace window so any client that already honours
+            # ``Result.meta.ttlMs`` refreshes on its next listing.
+            from zscaler_mcp.common.cache_metadata import (
+                bump_tool_inventory_version,
+            )
+
+            bump_tool_inventory_version()
         return {
             "toolset": toolset,
             "newly_registered": registered,
@@ -1971,6 +2073,22 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--disabled-toolsets",
+        default=os.environ.get("ZSCALER_MCP_DISABLED_TOOLSETS"),
+        metavar="TOOLSET1,TOOLSET2,...",
+        help=(
+            "Comma-separated list of toolsets to exclude (e.g. "
+            "'zia_ssl_inspection,zia_admin'). Applied as a blocklist "
+            "after --toolsets selection — useful with the 'all' / "
+            "'default' keywords (e.g. '--toolsets all --disabled-toolsets "
+            "zia_ssl_inspection' loads every toolset except SSL "
+            "inspection). Toolset ids must be exact (no wildcards). "
+            "The 'meta' toolset cannot be disabled. (env: "
+            "ZSCALER_MCP_DISABLED_TOOLSETS)"
+        ),
+    )
+
+    parser.add_argument(
         "--no-entitlement-filter",
         action="store_true",
         default=os.environ.get("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", "").lower()
@@ -2340,6 +2458,12 @@ def main():
         if getattr(args, "toolsets", None):
             toolsets = set(t.strip() for t in args.toolsets.split(",") if t.strip())
 
+        disabled_toolsets = None
+        if getattr(args, "disabled_toolsets", None):
+            disabled_toolsets = set(
+                t.strip() for t in args.disabled_toolsets.split(",") if t.strip()
+            )
+
         # Create and run the server
         server = ZscalerMCPServer(
             client_id=args.client_id,
@@ -2356,6 +2480,7 @@ def main():
             disabled_tools=disabled_tools,
             disabled_services=disabled_services,
             toolsets=toolsets,
+            disabled_toolsets=disabled_toolsets,
             disable_entitlement_filter=getattr(args, "no_entitlement_filter", False),
             host=args.host,
         )

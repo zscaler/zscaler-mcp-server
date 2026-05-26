@@ -79,9 +79,10 @@ class TestStreamableHttpTransport(unittest.TestCase):
 
         # Verify uvicorn was called with default parameters. The app is wrapped
         # by transport hardening middleware. For streamable-http the chain is
-        # HealthCheck → StripTrailingSlash → NormalizeContentType →
+        # HealthCheck → TraceContext → StripTrailingSlash → NormalizeContentType →
         # RejectNonSSEGet → mock_app. (HealthCheck answers ALB / kubelet
-        # probes on /health with a 200; the GET-405 layer converts FastMCP's
+        # probes on /health with a 200; TraceContext binds W3C trace headers
+        # for the request lifetime; the GET-405 layer converts FastMCP's
         # 406 into a 405 so non-strict MCP gateways like Bedrock AgentCore
         # Harness handshake cleanly.)
         mock_uvicorn.run.assert_called_once()
@@ -96,11 +97,16 @@ class TestStreamableHttpTransport(unittest.TestCase):
             RejectNonSSEGetMiddleware,
             StripTrailingSlashMiddleware,
         )
+        from zscaler_mcp.common.trace_context import TraceContextMiddleware
+
         self.assertIsInstance(wrapped_app, HealthCheckMiddleware)
-        self.assertIsInstance(wrapped_app.app, StripTrailingSlashMiddleware)
-        self.assertIsInstance(wrapped_app.app.app, NormalizeContentTypeMiddleware)
-        self.assertIsInstance(wrapped_app.app.app.app, RejectNonSSEGetMiddleware)
-        self.assertIs(wrapped_app.app.app.app.app, mock_app)
+        self.assertIsInstance(wrapped_app.app, TraceContextMiddleware)
+        self.assertIsInstance(wrapped_app.app.app, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped_app.app.app.app, NormalizeContentTypeMiddleware)
+        self.assertIsInstance(
+            wrapped_app.app.app.app.app, RejectNonSSEGetMiddleware
+        )
+        self.assertIs(wrapped_app.app.app.app.app.app, mock_app)
 
     @patch("zscaler_mcp.server.FastMCP")
     @patch("zscaler_mcp.client.get_zscaler_client")

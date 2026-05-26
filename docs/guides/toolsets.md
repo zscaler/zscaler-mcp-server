@@ -19,6 +19,8 @@ The Zscaler MCP server groups its 280+ tools into **toolsets** — small, named 
 | Run with everything explicitly | `--toolsets all` |
 | Run with a narrow custom set | `--toolsets zia_url_filtering,zpa_app_segments` |
 | Set via environment variable | `ZSCALER_MCP_TOOLSETS=zia_url_filtering,zpa_app_segments` |
+| Run with everything **except** a few | `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin` |
+| Blocklist via environment variable | `ZSCALER_MCP_DISABLED_TOOLSETS=zia_ssl_inspection,zia_admin` |
 | Discover what exists | Call `zscaler_list_toolsets` from your client. |
 | Inspect a toolset | Call `zscaler_get_toolset_tools` with a toolset id. |
 | Enable more at runtime | Call `zscaler_enable_toolset` with a toolset id. |
@@ -149,8 +151,33 @@ The selection pipeline is deterministic:
 3. **`--toolsets all`** → every registered toolset.
 4. **`--toolsets a,b,default`** → explicit ids `a` and `b` plus the `default` expansion.
 5. **`--toolsets a,unknown`** → `a` is loaded; `unknown` produces a startup WARNING listing the valid ids.
+6. **`--disabled-toolsets x,y`** → after steps 1-5 finish, any id in this list is subtracted from the selection. This is what makes the "everything except a few" pattern cheap.
 
-The `meta` toolset is always force-added. Tools belonging to the `meta` toolset bypass the toolset filter entirely.
+The `meta` toolset is always force-added (even if listed in `--disabled-toolsets`). Tools belonging to the `meta` toolset bypass the toolset filter entirely.
+
+## Excluding toolsets with `--disabled-toolsets`
+
+`--disabled-toolsets` is the inverse of `--toolsets`: an explicit **blocklist** applied after the include set is resolved. It is the toolset-level analogue of `--disabled-tools` (which works on individual tool names) and `--disabled-services` (which works on whole services).
+
+Use it whenever you'd otherwise have to spell out an `--toolsets` list that is "almost everything":
+
+```bash
+# Run every toolset except SSL inspection and tenant admin
+zscaler-mcp --toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin
+
+# Same idea via the environment
+export ZSCALER_MCP_TOOLSETS=all
+export ZSCALER_MCP_DISABLED_TOOLSETS=zia_ssl_inspection,zia_admin
+```
+
+Rules to know:
+
+- **Ids must be exact** — no wildcards. This matches `--disabled-services` (which also doesn't glob). For pattern-based exclusion at the tool level use `--disabled-tools` instead.
+- **The `meta` toolset can never be disabled.** Listing it is silently ignored and a single INFO log line surfaces the override. This keeps `zscaler_list_toolsets` / `zscaler_get_toolset_tools` / `zscaler_enable_toolset` available so the agent can always describe what was turned off.
+- **The blocklist wins over the include set.** If the same id appears in both `--toolsets` and `--disabled-toolsets`, the blocklist wins (mirrors how `--disabled-tools` wins over `--toolsets`).
+- **The blocklist wins over `zscaler_enable_toolset`.** A toolset that was explicitly disabled at startup cannot be re-enabled by the agent at runtime — the call returns `{"status": "disabled_by_operator", "error": "..."}` so the agent reports the right reason to the user instead of looping. The only way back is an operator restart without the flag.
+- **`zscaler_list_toolsets` surfaces the block.** Operator-blocked toolsets are returned with `can_enable: false` and `unavailable_reason: "Disabled by operator (--disabled-toolsets / ZSCALER_MCP_DISABLED_TOOLSETS)"`. This reason takes precedence over the entitlement-filter reason — the operator block is the one that actually requires action (restart), so the agent sees the more useful explanation first.
+- **Unknown ids warn and pass through.** Same UX as `--toolsets` and `--disabled-services`: a startup WARNING lists the unknown ids and the valid ones still apply. The server does not refuse to start.
 
 ## Filter precedence
 

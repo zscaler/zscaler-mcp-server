@@ -85,6 +85,8 @@ Two independent exclusion mechanisms, applied at registration time (not runtime)
 
 - **`--disabled-tools` / `ZSCALER_MCP_DISABLED_TOOLS`** — removes individual tools by name pattern. Supports `fnmatch` wildcards (e.g., `zcc_*`, `zia_list_device*`). Applied in `register_read_tools()` and `register_write_tools()` via `fnmatch.fnmatch()`.
 
+- **`--disabled-toolsets` / `ZSCALER_MCP_DISABLED_TOOLSETS`** — removes individual **toolsets** by exact id (e.g., `zia_ssl_inspection,zia_admin`). Applied AFTER `--toolsets` selection resolves, so it composes cleanly with the `all` and `default` keywords (e.g. `--toolsets all --disabled-toolsets zia_ssl_inspection` loads every toolset except SSL inspection). The `meta` toolset cannot be disabled — listing it in the blocklist is silently ignored. Operator-disabled toolsets cannot be re-enabled at runtime via `zscaler_enable_toolset` (returns `status: "disabled_by_operator"`). Does NOT support wildcards (mirrors `--disabled-services`). See `docs/guides/toolsets.md`.
+
 **Cross-service overlap**: Some Zscaler APIs expose overlapping data. For example, ZIA has device management tools (`zia_list_devices`) that return the same data as ZCC's tools. Disabling the `zcc` service removes all `zcc_*` tools but does NOT remove ZIA's device tools. Use `--disabled-tools` to also block the ZIA overlap if needed.
 
 The `zscaler_get_available_services` tool exposes disabled services to the AI agent so it can inform users instead of searching for workarounds.
@@ -100,7 +102,7 @@ Tools are grouped into named **toolsets** (registered in `zscaler_mcp/common/too
   - **One toolset each** for ZCC, ZTW, ZIdentity, EASM, Z-Insights, ZMS. The always-on `meta` toolset holds the cross-service tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, plus the three discovery tools below).
 - **Tagging is centralized.** Don't add a `toolset` field to dicts in `services.py`. Map a new tool name in `_TOOL_TOOLSET_OVERRIDES` (exact match) or `_TOOLSET_PREFIX_RULES` (predicate, first-match-wins) inside `toolsets.py`. The test `tests/test_toolsets.py::TestToolsetForTool::test_every_registered_tool_resolves` enforces this mapping is exhaustive.
 - **Prefix-rule ordering is load-bearing.** `_TOOLSET_PREFIX_RULES` is evaluated first-match-wins, and several predicates across services share substrings (`_location` would hijack `zdx_list_locations` into `zia_locations` if evaluated first; `_device` would pull `zdx_list_devices` into ZIA's device toolset; `_app_connector_group` must be evaluated before `_app_connector`). The current file follows two conventions: (1) **ZDX block sits at the top** of the rules list, with every predicate explicitly scoped to `n.startswith("zdx_")`, so ZDX tools can never be poached by a downstream service's predicate; (2) within each service, more-specific prefixes precede general ones. When adding a new toolset that shares a substring with an existing one, add the rule *above* the broader rule and gate it with the service prefix.
-- **Selection layers** (resolved in `ZscalerMCPServer.__init__`): explicit `--toolsets` / `ZSCALER_MCP_TOOLSETS` (supports `default` and `all` keywords) → fall back to "every toolset whose service is in `enabled_services`" (preserves today's behaviour). Filter precedence: `disabled_tools` > toolset selection > `enabled_tools` allowlist > `write_tools` allowlist.
+- **Selection layers** (resolved in `ZscalerMCPServer.__init__`): explicit `--toolsets` / `ZSCALER_MCP_TOOLSETS` (supports `default` and `all` keywords) → fall back to "every toolset whose service is in `enabled_services`" (preserves today's behaviour) → subtract `--disabled-toolsets` / `ZSCALER_MCP_DISABLED_TOOLSETS` blocklist (exact ids, `meta` is always retained). Filter precedence: `disabled_tools` > toolset selection (include - blocklist) > `enabled_tools` allowlist > `write_tools` allowlist.
 - **Per-toolset instructions.** Each toolset can carry an `instructions` callable. At server startup `_compose_server_instructions()` calls each enabled toolset's snippet and concatenates them into the FastMCP `instructions` field — sent to the agent only when the matching tools are loaded. Snippets shared across multiple toolsets (e.g. the rule-family `order`/`rank` reminder bound to all 5 ZIA rule toolsets) are de-duplicated.
 - **Three discovery meta-tools** (always loaded): `zscaler_list_toolsets` (catalog with currently-enabled status + tool counts), `zscaler_get_toolset_tools` (member tools of a toolset), `zscaler_enable_toolset` (register a toolset's tools at runtime). The runtime-enable path uses the same `register_read_tools`/`register_write_tools` codepath as startup, so all filter precedence still applies.
 - **OneAPI entitlement filter** (always-on, opt-out via `--no-entitlement-filter` / `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true`). After the operator-driven `selected_toolsets` is resolved, `zscaler_mcp/common/entitlements.py::apply_entitlement_filter` exchanges the configured OneAPI credentials for a bearer token and intersects the selection with the products listed in the `service-info[].prd` claim. Cache-first: in `ZSCALER_MCP_AUTH_MODE=zscaler` the auth-middleware cache is reused (no extra `/oauth2/v1/token` call); otherwise it cold-fetches via `auth.fetch_oneapi_token`. Roles (`rnm`) are intentionally ignored — only product entitlement is reliable. Failure mode is non-fatal: missing creds, decode failure, network error, or empty `service-info` all log a single WARN line and the selection passes through unchanged. The `meta` toolset is always preserved.
@@ -300,6 +302,49 @@ Destructive write operations (delete, bulk update) use cryptographic confirmatio
 
 Implementation: `zscaler_mcp/common/elicitation.py` — `generate_confirmation_token()` and `verify_confirmation_token()`.
 
+#### Native elicitation prototype (P3 — MCP 2026-07-28 RC)
+
+`zscaler_mcp/common/elicitation_native.py` implements **SEP-2322 (Multi Round-Trip Requests)** as a dual-mode prototype. When operators set `ZSCALER_MCP_NATIVE_ELICITATION=true`, `check_confirmation` returns the spec-shaped dict instead of the legacy prose string:
+
+```jsonc
+{
+  "resultType": "inputRequired",
+  "inputRequests": [
+    { "name": "confirm",
+      "schema": { "type": "boolean", "description": "DESTRUCTIVE: delete segment group 12345?" },
+      "required": true }
+  ],
+  "requestState": "<opaque base64url HMAC blob>",
+  "_legacy_message": "..."
+}
+```
+
+Key invariants (every one is covered by `tests/test_elicitation_native.py`):
+
+- **Zero tool-code changes.** All ~50 destructive tools using `check_confirmation` automatically pick up the native shape — the dispatch lives entirely inside `elicitation.py::check_confirmation`. Tools just `return confirmation_check` whether the value is a string (legacy) or a dict (native).
+- **`requestState` binds tool name + canonical args + expiry** via HMAC-SHA256. Same cryptographic guarantee as the legacy token, just in the spec-defined opaque shape. Args canonicalization is shared with `elicitation.py::_canonical_payload` so the two flows bind identical surfaces.
+- **Cross-replica verification** when `ZSCALER_MCP_ELICITATION_SECRET` is set to the same value across replicas — a `requestState` issued by replica A verifies on replica B. Required for multi-instance deployments (AgentCore Gateway, Cloud Run min-instances >= 2, AKS multi-pod). Falls back to a per-process random key for single-instance dev.
+- **Backward compatible on the input side.** Even with native mode enabled, an agent that still sends `kwargs.confirmation_token` (the legacy HMAC shape) continues to work — covers the SEP-2596-mandated 12-month deprecation window.
+- **Native shape wins** when an agent sends BOTH `kwargs.inputResponses` AND `kwargs.confirmation_token` (the agent is mid-migration).
+- **Rejected retries re-prompt in the same protocol** the agent used. A native retry that fails (expired state, tampered args, `confirm:false`) returns a fresh `InputRequiredResult` with the error embedded in the prompt, not a protocol-switch back to legacy prose.
+- **`ZSCALER_MCP_SKIP_CONFIRMATIONS=true` short-circuits both flows** identically.
+
+Transport caveat: until the `mcp` / `fastmcp` SDK ships `2026-07-28` support (P1 in `local_dev/mcp-protocol-spec/mcp-2026-07-28-impact-analysis.md`), `inputResponses` and `requestState` travel through the existing `kwargs` string parameter that destructive tools already accept (`kwargs='{"inputResponses":{"confirm":true},"requestState":"..."}'`). After the SDK upgrade those become first-class JSON-RPC fields on `params` and the `kwargs` wrapping goes away — at which point the `_NATIVE_SENTINEL_PREFIX` plumbing inside `elicitation.py::extract_confirmed_from_kwargs` can be deleted.
+
+Full step-by-step testing recipe lives at `local_dev/mcp-protocol-spec/p3-prototype-readme.md`.
+
+#### Tool-list cache metadata prototype (P4 — MCP 2026-07-28 RC, SEP-2549)
+
+`zscaler_mcp/common/cache_metadata.py` drafts the integration point for `Result.meta.ttlMs` / `Result.meta.cacheScope` on `tools/list` responses. Operators flip on with `ZSCALER_MCP_TOOL_LIST_CACHE=true` (default `false`). The wiring lives at the MCP-SDK boundary:
+
+- **`attach_tool_list_cache_metadata(self.server)`** runs in `ZscalerMCPServer.__init__` after `_register_tools()`. It looks up the registered `mcp.types.ListToolsRequest` handler on the FastMCP `_mcp_server` and replaces it with a small async wrapper (idempotent via a `_zscaler_cache_wrapped` sentinel) that merges `{"ttlMs": ..., "cacheScope": "global"}` into the returned `ListToolsResult.meta`. No FastMCP internals are duplicated — we ride on the SDK's existing `Result.meta` field (which already carries `ConfigDict(extra="allow")` and serializes as `_meta`).
+- **`bump_tool_inventory_version()`** is called from `ZscalerMCPServer.zscaler_enable_toolset` after a successful `register_read_tools` / `register_write_tools`. This opens a 5-second invalidation grace window during which the emitted `ttlMs` is clamped down to force cache-aware clients to refresh. It's the cooperating-cache mitigation for the still-missing `notifications/tools/list_changed` emit (FastMCP exposes no public hook for that — tracked at `server.py:1395-1399`).
+- **`cacheScope` is hard-coded to `"global"`** — the Zscaler inventory is server-scoped (filtered by the server's OneAPI entitlement + the operator's `--toolsets` / `--enabled-tools` / `--disabled-tools` flags), not per-caller. The helper will switch to `"user"` if per-caller filtering ever ships.
+
+Two preconditions before the default flips to `true`: (a) a shipping MCP client (Claude / Cursor / VS Code) honours the cache fields, and (b) we add `notifications/tools/list_changed` emission for runtime toolset enable. Until then it stays opt-in. The legacy un-tagged response is what every current client sees.
+
+Full design and `curl`-based test recipe live at `local_dev/mcp-protocol-spec/p4-prototype-readme.md`.
+
 ## ZDX Filtering
 
 ZDX query tools accept optional filters that significantly improve result quality:
@@ -339,11 +384,16 @@ Server & security env vars:
 - `ZSCALER_MCP_DISABLED_TOOLS` — Comma-separated tool patterns to exclude (wildcards via fnmatch)
 - `ZSCALER_MCP_DISABLED_SERVICES` — Comma-separated service names to exclude
 - `ZSCALER_MCP_TOOLSETS` — Comma-separated toolset ids to enable (e.g. `zia_url_filtering,zpa_app_segments`). Special values: `default` (curated default-on subset) and `all` (every toolset). When unset, every toolset whose service is enabled is loaded. The `meta` toolset is always loaded. See `docs/guides/toolsets.md`.
+- `ZSCALER_MCP_DISABLED_TOOLSETS` — Comma-separated toolset ids to exclude (e.g. `zia_ssl_inspection,zia_admin`). Applied AFTER `ZSCALER_MCP_TOOLSETS` resolves, so it composes with the `all` / `default` keywords. Exact ids only (no wildcards). The `meta` toolset cannot be excluded. See `docs/guides/toolsets.md`.
 - `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` — Skip the OneAPI entitlement filter (`true`/`false`). When `false` (default), the server intersects the selected toolsets with the products entitled by the OneAPI bearer token (`service-info[].prd`). Set `true` as an emergency override.
 - `ZSCALER_MCP_WRITE_ENABLED` — Enable write tools (`true`/`false`)
 - `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
 - `ZSCALER_MCP_SKIP_CONFIRMATIONS` — Skip HMAC confirmation for destructive ops (`true`/`false`)
 - `ZSCALER_MCP_CONFIRMATION_TTL` — Confirmation token TTL in seconds (default 300)
+- `ZSCALER_MCP_NATIVE_ELICITATION` — **Prototype (P3, MCP 2026-07-28 RC).** Switch destructive-tool confirmation from the legacy HMAC-prose response to the spec's native `InputRequiredResult` dict shape (SEP-2322). Backward-compatible: agents that still send `kwargs.confirmation_token` continue to work. Opt-in via `true`; ignored otherwise. See `local_dev/mcp-protocol-spec/p3-prototype-readme.md`.
+- `ZSCALER_MCP_ELICITATION_SECRET` — **Prototype (P3).** Optional cross-replica HMAC key for `requestState` verification. When the same value is set on every server instance, a `requestState` issued by replica A can be verified by replica B (the spec-mandated stateless property — SEP-2322). Falls back to a per-process random key when unset (fine for single-instance dev). Never commit; inject via secret manager.
+- `ZSCALER_MCP_TOOL_LIST_CACHE` — **Prototype (P4, MCP 2026-07-28 RC).** Opt-in switch (`true`/`false`, default `false`) that attaches `_meta.ttlMs` and `_meta.cacheScope` to `tools/list` responses per SEP-2549. Off by default because no shipping MCP client yet honours these fields AND we don't yet emit `notifications/tools/list_changed` after `zscaler_enable_toolset`. See `local_dev/mcp-protocol-spec/p4-prototype-readme.md`.
+- `ZSCALER_MCP_TOOL_LIST_TTL_MS` — **Prototype (P4).** Milliseconds the client may cache a `tools/list` response. Default `300000` (5 min). Set `0` to disable emission while keeping the wiring loaded. Negative / non-numeric values fall back to the default and log a warning. A 5-second invalidation grace window after `zscaler_enable_toolset` automatically clamps `ttlMs` regardless of this value.
 - `ZSCALER_MCP_DISABLE_HOST_VALIDATION` — Disable host header checks (`true`/`false`)
 - `ZSCALER_MCP_LOG_TOOL_CALLS` — Enable tool-call audit logging (`true`/`false`)
 - `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` — Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / code-fence stripping). On by default. Use only for diagnostics — disabling it removes a prompt-injection defense layer. (`true`/`false`)
@@ -354,6 +404,7 @@ Server & security env vars:
 - `--services` — Comma-separated services to enable (e.g., `zia,zpa,zdx`)
 - `--disabled-services` — Comma-separated services to exclude (e.g., `zcc,zdx`)
 - `--disabled-tools` — Comma-separated tool patterns to exclude (wildcards: `"zcc_*,zia_list_device*"`)
+- `--disabled-toolsets` — Comma-separated toolset ids to exclude (exact ids, no wildcards: `"zia_ssl_inspection,zia_admin"`). Applied after `--toolsets` resolves; cannot disable `meta`. See `docs/guides/toolsets.md`.
 - `--toolsets` — Comma-separated toolset ids to enable. Use `default` for the curated default-on subset, `all` for everything (e.g. `"zia_url_filtering,zpa_app_segments"` or `"default"`). See `docs/guides/toolsets.md`.
 - `--no-entitlement-filter` — Skip the OneAPI entitlement filter that trims `selected_toolsets` to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only; the filter is non-fatal by default and skips itself on any failure.
 - `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
@@ -389,15 +440,17 @@ Opt-in logging of every tool invocation for troubleshooting and observability. C
 Every tool call produces two log lines via the `zscaler_mcp.audit` logger:
 
 ```text
-[TOOL CALL] zia_list_locations | args: {page: 1, page_size: 50, name: "HQ"}
-[TOOL OK]   zia_list_locations | 342ms | 15 items
+[TOOL CALL] zia_list_locations | trace=4bf92f3577b34da6a3ce929d0e0e4736 | args: {page: 1, page_size: 50, name: "HQ"}
+[TOOL OK]   zia_list_locations | trace=4bf92f3577b34da6a3ce929d0e0e4736 | 342ms | 15 items
 ```
+
+When no W3C trace context is present, the `| trace=…` suffix is omitted (backward compatible).
 
 On error:
 
 ```text
-[TOOL CALL] zms_list_resources | args: {page_num: 1}
-[TOOL ERR]  zms_list_resources | 1204ms | ConnectionError: timeout
+[TOOL CALL] zms_list_resources | trace=4bf92f3577b34da6a3ce929d0e0e4736 | args: {page_num: 1}
+[TOOL ERR]  zms_list_resources | trace=4bf92f3577b34da6a3ce929d0e0e4736 | 1204ms | ConnectionError: timeout
 ```
 
 ### Security
@@ -407,6 +460,7 @@ Sensitive parameters (password, secret, token, key, credential, and any paramete
 ### Implementation
 
 - **`zscaler_mcp/common/tool_helpers.py`** — `_wrap_with_audit()` wraps every tool function at registration time. The wrapper is a no-op when logging is disabled (zero overhead).
+- **`zscaler_mcp/common/trace_context.py`** — W3C Trace Context prototype (SEP-414, P5). Reads `traceparent`/`tracestate`/`baggage` from three sources, in priority order: (1) an explicit `bind_trace_context()` already active on the task, (2) **`mcp.server.lowlevel.server.request_ctx.get().meta`** — the spec-correct path that works end-to-end today because the MCP SDK sets that ContextVar on the same task that dispatches the tool, so it survives FastMCP's `anyio.to_thread.run_sync` and the streamable-http session-manager task-spawn boundary, and (3) a test-only `kwargs._meta` shim. The audit wrapper binds the extracted context for the tool call, which causes `| trace=<id>` to be appended to `[TOOL CALL]`/`[TOOL OK]`/`[TOOL ERR]` lines and causes `get_zscaler_client()` to inject the same `traceparent`/`tracestate`/`baggage` into the SDK's `RequestExecutor._custom_headers` so downstream OneAPI calls participate in the same trace. The companion `TraceContextMiddleware` reads HTTP `traceparent`/`tracestate`/`baggage` headers and binds them via ASGI middleware, but **on the MCP SDK's stateful streamable-http transport that ContextVar binding does NOT propagate to the tool handler** because `StreamableHTTPSessionManager._task_group.start(run_server)` spawns the dispatch in a sibling task rooted at the application lifespan (see `mcp/server/streamable_http_manager.py::_handle_stateful_request`). The middleware is kept as best-effort coverage for future SDK versions and transports that do preserve the binding; the load-bearing path is `params._meta`. Detailed in `local_dev/mcp-protocol-spec/p5-prototype-readme.md`.
 - The audit wrapper covers all tools: service tools (via `register_read_tools`/`register_write_tools`) and the always-on meta-tools (`zscaler_check_connectivity`, `zscaler_get_available_services`, `zscaler_list_toolsets`, `zscaler_get_toolset_tools`, `zscaler_enable_toolset`).
 - Uses a dedicated logger (`zscaler_mcp.audit`) so log output can be filtered independently.
 
