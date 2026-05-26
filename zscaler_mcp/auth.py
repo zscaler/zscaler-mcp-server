@@ -1109,4 +1109,7 @@ def apply_transport_hardening(
     if transport == "streamable-http":
         inner = RejectNonSSEGetMiddleware(inner, mcp_path=mcp_path)
     inner = StripTrailingSlashMiddleware(NormalizeContentTypeMiddleware(inner))
+    from zscaler_mcp.common.trace_context import TraceContextMiddleware
+
+    inner = TraceContextMiddleware(inner)
     return HealthCheckMiddleware(inner, path=health_path)

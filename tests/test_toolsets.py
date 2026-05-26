@@ -600,3 +600,274 @@ class TestEntitlementAwareMetaTools:
         result = s.zscaler_enable_toolset("zia_dlp")
         assert result["status"] == "enabled"
         assert "zia_dlp" in s.selected_toolsets
+
+
+# ----------------------------------------------------------------------------
+# --disabled-toolsets blocklist (P6 — MCP 2026-07-28 RC prototype)
+# ----------------------------------------------------------------------------
+#
+# The --disabled-toolsets flag is the inverse of --toolsets: instead of an
+# allowlist, it's an operator blocklist applied AFTER the include set is
+# resolved. This makes the common "everything except X" pattern cheap:
+#
+#     --toolsets all --disabled-toolsets zia_ssl_inspection
+#     --disabled-toolsets zia_admin,zia_ssl_inspection      (with default
+#                                                            implicit include)
+#
+# Invariants verified below:
+#   1. Blocklist subtracts from selected_toolsets after resolution.
+#   2. The ``meta`` toolset can never be blocked — it always stays loaded.
+#   3. Unknown ids are warned + dropped (mirrors --toolsets / --disabled-services).
+#   4. Operator block reason wins over entitlement reason in
+#      zscaler_list_toolsets surface (clearer UX for the agent).
+#   5. zscaler_enable_toolset refuses to re-enable a blocked toolset
+#      with a distinct ``disabled_by_operator`` status.
+#   6. Empty / None / whitespace-only inputs are no-ops.
+
+
+class TestDisabledToolsets:
+    """End-to-end coverage of the --disabled-toolsets feature."""
+
+    # ---- selection behaviour ------------------------------------------------
+
+    def test_blocklist_removes_toolset_from_selection(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"zia_url_filtering", "zia_ssl_inspection"},
+            disabled_toolsets={"zia_ssl_inspection"},
+        )
+        assert "zia_url_filtering" in s.selected_toolsets
+        assert "zia_ssl_inspection" not in s.selected_toolsets
+        # The meta toolset is always retained.
+        assert META_TOOLSET_ID in s.selected_toolsets
+
+    def test_blocklist_works_with_all_keyword(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"zia_ssl_inspection"},
+        )
+        # Every other toolset is present...
+        expected = set(TOOLSETS.all_ids()) - {"zia_ssl_inspection"}
+        assert s.selected_toolsets == expected
+
+    def test_blocklist_works_with_default_keyword(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        # zia_url_filtering is in the default-on set; verify the block
+        # subtraction works on top of the keyword expansion.
+        s = ZscalerMCPServer(
+            toolsets={"default"},
+            disabled_toolsets={"zia_url_filtering"},
+        )
+        assert "zia_url_filtering" not in s.selected_toolsets
+        # Other default-on toolsets are still present.
+        assert META_TOOLSET_ID in s.selected_toolsets
+        assert "zdx_alerts" in s.selected_toolsets
+
+    def test_blocklist_works_without_explicit_toolsets(self):
+        """When --toolsets is omitted, the fallback selects every toolset
+        whose owning service is enabled. The blocklist must subtract from
+        THAT fallback set too."""
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(disabled_toolsets={"zia_ssl_inspection"})
+        assert "zia_ssl_inspection" not in s.selected_toolsets
+        # Other ZIA toolsets are still in the fallback selection.
+        assert "zia_url_filtering" in s.selected_toolsets
+
+    def test_blocklist_multiple_ids(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"zia_ssl_inspection", "zia_admin"},
+        )
+        assert "zia_ssl_inspection" not in s.selected_toolsets
+        assert "zia_admin" not in s.selected_toolsets
+        # Other toolsets unaffected
+        assert "zia_url_filtering" in s.selected_toolsets
+
+    # ---- meta protection ----------------------------------------------------
+
+    def test_meta_toolset_cannot_be_disabled(self, caplog):
+        """Even if the operator lists ``meta`` in --disabled-toolsets, it
+        is silently kept so cross-service discovery tools stay available.
+        An INFO log line surfaces the override for operator awareness."""
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        with caplog.at_level("INFO"):
+            s = ZscalerMCPServer(
+                toolsets={"all"},
+                disabled_toolsets={"meta", "zia_ssl_inspection"},
+            )
+        # Meta survives the blocklist.
+        assert META_TOOLSET_ID in s.selected_toolsets
+        # Meta is NOT stored as part of the operator blocklist either —
+        # zscaler_enable_toolset must not treat meta as disabled_by_operator.
+        assert META_TOOLSET_ID not in s.disabled_toolsets
+        # Other entries pass through unaffected.
+        assert "zia_ssl_inspection" in s.disabled_toolsets
+        # Operator-visible INFO log.
+        assert any(
+            "meta" in r.message and "always loaded" in r.message
+            for r in caplog.records
+        )
+
+    # ---- unknown-id handling ------------------------------------------------
+
+    def test_unknown_id_warns_and_continues(self, caplog):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        with caplog.at_level("WARNING"):
+            s = ZscalerMCPServer(
+                toolsets={"all"},
+                disabled_toolsets={"zia_url_filtering", "this_does_not_exist"},
+            )
+        # Known one is blocked, unknown one drops out (no crash).
+        assert "zia_url_filtering" not in s.selected_toolsets
+        assert "this_does_not_exist" not in s.disabled_toolsets
+        # The known toolset IS recorded in the operator blocklist.
+        assert "zia_url_filtering" in s.disabled_toolsets
+        # Warning logged about the unknown id.
+        assert any(
+            "this_does_not_exist" in r.message
+            and "Unknown toolset id" in r.message
+            for r in caplog.records
+        )
+
+    # ---- no-op cases --------------------------------------------------------
+
+    def test_none_blocklist_is_no_op(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(toolsets={"zia_url_filtering"}, disabled_toolsets=None)
+        assert s.disabled_toolsets == set()
+        assert "zia_url_filtering" in s.selected_toolsets
+
+    def test_empty_set_blocklist_is_no_op(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(toolsets={"zia_url_filtering"}, disabled_toolsets=set())
+        assert s.disabled_toolsets == set()
+        assert "zia_url_filtering" in s.selected_toolsets
+
+    def test_whitespace_only_entries_dropped(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"zia_url_filtering", "zia_ssl_inspection"},
+            disabled_toolsets={"  zia_ssl_inspection  ", "", "   "},
+        )
+        # Whitespace stripped from the real id, empties dropped.
+        assert s.disabled_toolsets == {"zia_ssl_inspection"}
+        assert "zia_ssl_inspection" not in s.selected_toolsets
+
+    # ---- state stored on the instance --------------------------------------
+
+    def test_blocklist_stored_on_instance(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"zia_ssl_inspection", "zia_admin"},
+        )
+        assert s.disabled_toolsets == {"zia_ssl_inspection", "zia_admin"}
+
+    # ---- meta-tool surface --------------------------------------------------
+
+    def test_list_toolsets_marks_disabled_as_unenableable(self):
+        """zscaler_list_toolsets must surface ``can_enable: False`` with a
+        ``Disabled by operator`` reason so the agent reports the correct
+        cause to the user instead of looping on enable attempts."""
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"zia_ssl_inspection"},
+        )
+        rows = s.zscaler_list_toolsets()
+        ssl_row = next(r for r in rows if r["id"] == "zia_ssl_inspection")
+        assert ssl_row["can_enable"] is False
+        assert "Disabled by operator" in ssl_row["unavailable_reason"]
+        # Other rows unaffected.
+        ufr_row = next(r for r in rows if r["id"] == "zia_url_filtering")
+        assert ufr_row["can_enable"] is True
+        assert "unavailable_reason" not in ufr_row
+
+    def test_enable_toolset_refuses_operator_disabled(self):
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"zia_ssl_inspection"},
+        )
+        # Pre-condition: the blocked toolset is not in the active set.
+        assert "zia_ssl_inspection" not in s.selected_toolsets
+
+        result = s.zscaler_enable_toolset("zia_ssl_inspection")
+        assert result["status"] == "disabled_by_operator"
+        assert "explicitly disabled" in result["error"].lower()
+        assert "--disabled-toolsets" in result["error"]
+        # Idempotent — the toolset is NOT silently added to selection.
+        assert "zia_ssl_inspection" not in s.selected_toolsets
+        assert result["newly_registered"] == 0
+
+    def test_enable_toolset_works_for_unblocked_toolsets(self):
+        """A toolset that wasn't blocked can still be enabled at runtime,
+        even when --disabled-toolsets is in use."""
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"zia_url_filtering"},
+            disabled_toolsets={"zia_ssl_inspection"},
+        )
+        # zia_dlp wasn't in the include set nor the blocklist.
+        assert "zia_dlp" not in s.selected_toolsets
+        result = s.zscaler_enable_toolset("zia_dlp")
+        assert result["status"] == "enabled"
+        assert "zia_dlp" in s.selected_toolsets
+
+    # ---- precedence vs entitlement filter ----------------------------------
+
+    def test_operator_block_precedes_entitlement_reason(self):
+        """When a toolset is BOTH operator-blocked and entitlement-stripped,
+        the agent should see the operator reason — it's the one that
+        actually drives the resolution path forward (restart server vs
+        switch credentials)."""
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"zpa_app_segments"},
+        )
+        # Simulate the post-filter state: token entitled only to ZIA,
+        # ZPA stripped — the same setup TestEntitlementAwareMetaTools
+        # uses. The operator-blocklist row should win.
+        s.entitlement_filter_state = "applied"
+        s.entitled_services = ["zia"]
+
+        rows = s.zscaler_list_toolsets()
+        zpa_row = next(r for r in rows if r["id"] == "zpa_app_segments")
+        assert zpa_row["can_enable"] is False
+        # Operator reason wins — entitlement reason is suppressed for this row.
+        assert "Disabled by operator" in zpa_row["unavailable_reason"]
+        assert "not entitled" not in zpa_row["unavailable_reason"].lower()
+
+    # ---- precedence vs --toolsets allowlist --------------------------------
+
+    def test_blocklist_overrides_toolsets_allowlist(self):
+        """If the operator lists the same id in BOTH --toolsets and
+        --disabled-toolsets, the blocklist wins (matches the
+        --disabled-tools > --tools precedence)."""
+        from zscaler_mcp.server import ZscalerMCPServer
+
+        s = ZscalerMCPServer(
+            toolsets={"zia_url_filtering"},
+            disabled_toolsets={"zia_url_filtering"},
+        )
+        assert "zia_url_filtering" not in s.selected_toolsets
+        # Meta still loaded as the always-on baseline.
+        assert META_TOOLSET_ID in s.selected_toolsets

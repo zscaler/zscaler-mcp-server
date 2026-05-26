@@ -18,6 +18,8 @@ import warnings
 from dotenv import load_dotenv
 from zscaler import ZscalerClient
 
+from zscaler_mcp.common.trace_context import apply_trace_headers_to_client
+
 from .utils.utils import get_combined_user_agent
 
 # Suppress SyntaxWarnings emitted by the upstream zscaler SDK DLP modules.
@@ -122,4 +124,6 @@ def get_zscaler_client(
     if private_key:
         config["privateKey"] = private_key
 
-    return ZscalerClient(config)
+    client = ZscalerClient(config)
+    apply_trace_headers_to_client(client)
+    return client

@@ -26,6 +26,7 @@ from zscaler_mcp.auth import (
     StripTrailingSlashMiddleware,
     apply_transport_hardening,
 )
+from zscaler_mcp.common.trace_context import TraceContextMiddleware
 
 
 def _run_async(coro):
@@ -588,23 +589,26 @@ class TestApplyTransportHardening(unittest.TestCase):
         """The GET→405 middleware must be in the chain for streamable-http."""
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "streamable-http")
-        # Walk: HealthCheck → StripTrailingSlash → NormalizeContentType →
-        #       RejectNonSSEGet → app
+        # Walk: HealthCheck → TraceContext → StripTrailingSlash →
+        #       NormalizeContentType → RejectNonSSEGet → app
         self.assertIsInstance(wrapped, HealthCheckMiddleware)
-        self.assertIsInstance(wrapped.app, StripTrailingSlashMiddleware)
-        self.assertIsInstance(wrapped.app.app, NormalizeContentTypeMiddleware)
-        self.assertIsInstance(wrapped.app.app.app, RejectNonSSEGetMiddleware)
-        self.assertIs(wrapped.app.app.app.app, app)
+        self.assertIsInstance(wrapped.app, TraceContextMiddleware)
+        self.assertIsInstance(wrapped.app.app, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped.app.app.app, NormalizeContentTypeMiddleware)
+        self.assertIsInstance(wrapped.app.app.app.app, RejectNonSSEGetMiddleware)
+        self.assertIs(wrapped.app.app.app.app.app, app)
 
     def test_sse_does_not_include_get_405_layer(self):
         """SSE transport REQUIRES GET to work on /sse — we must not 405 it."""
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "sse")
-        # Walk: HealthCheck → StripTrailingSlash → NormalizeContentType → app
+        # Walk: HealthCheck → TraceContext → StripTrailingSlash →
+        #       NormalizeContentType → app
         self.assertIsInstance(wrapped, HealthCheckMiddleware)
-        self.assertIsInstance(wrapped.app, StripTrailingSlashMiddleware)
-        self.assertIsInstance(wrapped.app.app, NormalizeContentTypeMiddleware)
-        self.assertIs(wrapped.app.app.app, app)  # no GET-405 layer
+        self.assertIsInstance(wrapped.app, TraceContextMiddleware)
+        self.assertIsInstance(wrapped.app.app, StripTrailingSlashMiddleware)
+        self.assertIsInstance(wrapped.app.app.app, NormalizeContentTypeMiddleware)
+        self.assertIs(wrapped.app.app.app.app, app)  # no GET-405 layer
 
     def test_outermost_layer_is_health_check(self):
         """Health probes MUST bypass every other middleware.
@@ -618,15 +622,19 @@ class TestApplyTransportHardening(unittest.TestCase):
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "streamable-http")
         self.assertIsInstance(wrapped, HealthCheckMiddleware)
-        self.assertIsInstance(wrapped.app, StripTrailingSlashMiddleware)
+        # TraceContext sits directly under HealthCheck so that the W3C
+        # headers are read before any auth/ACL work happens, and BEFORE
+        # the trailing-slash / content-type rewrites mutate the scope.
+        self.assertIsInstance(wrapped.app, TraceContextMiddleware)
+        self.assertIsInstance(wrapped.app.app, StripTrailingSlashMiddleware)
 
     def test_custom_mcp_path_is_forwarded(self):
         """Caller-passed mcp_path reaches the GET-405 middleware."""
         app = _make_recording_app()
         wrapped = apply_transport_hardening(app, "streamable-http", mcp_path="/x")
-        # HealthCheck → StripTrailingSlash → NormalizeContentType →
-        # RejectNonSSEGet
-        get_405 = wrapped.app.app.app
+        # HealthCheck → TraceContext → StripTrailingSlash →
+        # NormalizeContentType → RejectNonSSEGet
+        get_405 = wrapped.app.app.app.app
         self.assertIsInstance(get_405, RejectNonSSEGetMiddleware)
         self.assertEqual(get_405._mcp_path, "/x")
 

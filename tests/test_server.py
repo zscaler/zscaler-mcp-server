@@ -3,6 +3,7 @@ Tests for the Zscaler Integrations MCP Server.
 """
 
 import os
+import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -448,6 +449,116 @@ class TestDisabledToolsAndServices(unittest.TestCase):
         for svc in server.services.values():
             if hasattr(svc, "register_tools"):
                 pass
+
+    # ------------------------------------------------------------------
+    # --disabled-toolsets (P6) constructor-level coverage. The deeper
+    # selection / meta-tool behaviour is exercised in
+    # tests/test_toolsets.py::TestDisabledToolsets. These tests focus on
+    # the surface the CLI / programmatic caller sees.
+    # ------------------------------------------------------------------
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_toolsets_stored(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_toolsets is stored on the server instance."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(
+            disabled_toolsets={"zia_ssl_inspection", "zia_admin"},
+        )
+        self.assertEqual(
+            server.disabled_toolsets, {"zia_ssl_inspection", "zia_admin"}
+        )
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_toolsets_empty_by_default(self, mock_get_client, mock_fastmcp):
+        """Test that disabled_toolsets defaults to an empty set."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer()
+        self.assertEqual(server.disabled_toolsets, set())
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_toolsets_subtracts_from_selection(
+        self, mock_get_client, mock_fastmcp
+    ):
+        """The blocklist must be subtracted from the resolved selection."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(
+            toolsets={"zia_url_filtering", "zia_ssl_inspection"},
+            disabled_toolsets={"zia_ssl_inspection"},
+        )
+        self.assertIn("zia_url_filtering", server.selected_toolsets)
+        self.assertNotIn("zia_ssl_inspection", server.selected_toolsets)
+
+    @patch("zscaler_mcp.server.FastMCP")
+    @patch("zscaler_mcp.client.get_zscaler_client")
+    def test_disabled_toolsets_preserves_meta(self, mock_get_client, mock_fastmcp):
+        """The meta toolset must never be removed by the blocklist."""
+        mock_fastmcp.return_value = MagicMock()
+        server = ZscalerMCPServer(
+            toolsets={"all"},
+            disabled_toolsets={"meta"},
+        )
+        # meta survives the blocklist (force-kept) and is NOT stored as
+        # part of the operator-disabled set.
+        self.assertIn("meta", server.selected_toolsets)
+        self.assertNotIn("meta", server.disabled_toolsets)
+
+
+class TestParseArgsDisabledToolsets(unittest.TestCase):
+    """CLI-flag parsing for --disabled-toolsets (P6)."""
+
+    def _parse(self, argv):
+        """Drive the parser with a temporary sys.argv and a clean env."""
+        from zscaler_mcp.server import parse_args
+
+        with patch.object(sys, "argv", ["zscaler-mcp", *argv]):
+            with patch.dict(os.environ, {}, clear=False):
+                # Make sure the env-var default doesn't bleed in from
+                # the host shell during the test.
+                os.environ.pop("ZSCALER_MCP_DISABLED_TOOLSETS", None)
+                return parse_args()
+
+    def test_no_flag_yields_none(self):
+        args = self._parse([])
+        self.assertIsNone(getattr(args, "disabled_toolsets", "MISSING"))
+
+    def test_single_toolset_parsed(self):
+        args = self._parse(["--disabled-toolsets", "zia_ssl_inspection"])
+        self.assertEqual(args.disabled_toolsets, "zia_ssl_inspection")
+
+    def test_multiple_toolsets_parsed(self):
+        args = self._parse(
+            ["--disabled-toolsets", "zia_ssl_inspection,zia_admin"]
+        )
+        self.assertEqual(args.disabled_toolsets, "zia_ssl_inspection,zia_admin")
+
+    def test_env_var_provides_default(self):
+        """ZSCALER_MCP_DISABLED_TOOLSETS env var feeds the default."""
+        from zscaler_mcp.server import parse_args
+
+        with patch.object(sys, "argv", ["zscaler-mcp"]):
+            with patch.dict(
+                os.environ,
+                {"ZSCALER_MCP_DISABLED_TOOLSETS": "zia_admin,zpa_microtenants"},
+            ):
+                args = parse_args()
+        self.assertEqual(args.disabled_toolsets, "zia_admin,zpa_microtenants")
+
+    def test_cli_flag_overrides_env_var(self):
+        from zscaler_mcp.server import parse_args
+
+        with patch.object(
+            sys, "argv", ["zscaler-mcp", "--disabled-toolsets", "zia_url_filtering"]
+        ):
+            with patch.dict(
+                os.environ, {"ZSCALER_MCP_DISABLED_TOOLSETS": "zia_admin"}
+            ):
+                args = parse_args()
+        # argparse default= is evaluated at parser-build time, but the
+        # explicit CLI flag always wins on parse_args().
+        self.assertEqual(args.disabled_toolsets, "zia_url_filtering")
 
 
 class TestZscalerMCPServerAuth(unittest.TestCase):
