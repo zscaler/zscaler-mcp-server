@@ -1,0 +1,22 @@
+# Sphinx documentation source manifest.
+#
+# This file is the authoritative declaration of documentation build
+# dependencies. Edit it with `>=` floor constraints only.
+#
+# The matching pinned lockfile lives next to this file at
+# `docsrc/requirements.txt` and is *generated* — never edit it by hand.
+#
+# Refresh the lockfile with the latest compatible versions:
+#     make docs-update-deps
+#
+# CI fails the build when the committed lockfile drifts from this file:
+#     make docs-check-deps
+#
+# The set below is the minimum needed by `docsrc/conf.py` (extensions =
+# autodoc, intersphinx, todo, githubpages, napoleon, viewcode, myst_parser;
+# html_theme = furo). Add a new line here when `conf.py` starts using a
+# new Sphinx extension or theme, then run `make docs-update-deps`.
+
+sphinx>=7.3.5
+furo>=2024.1.29
+myst-parser>=2.0.0

@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on AWS EC2 (Amazon Linux 2023, no container) — root
+  nested stack. The MCP server is installed straight from PyPI via cloud-init,
+  runs under systemd as the `zscaler-mcp` user, and is fronted by an
+  Application Load Balancer with optional ACM-managed TLS. Credentials are
+  sourced from AWS Secrets Manager.
+
+Parameters:
+
+  AssetBucket:
+    Type: String
+    Description: S3 bucket holding the nested templates.
+  AssetPrefix:
+    Type: String
+    Default: ''
+    Description: S3 key prefix inside the bucket (with trailing slash).
+
+  ResourceNamePrefix:
+    Type: String
+    Default: zscaler-mcp
+    Description: Common name prefix for tags + resource names.
+
+  # ── Credentials (Secrets Manager) ───────────────────────────────────────
+  CredentialSource:
+    Type: String
+    Default: CreateNew
+    AllowedValues: [CreateNew, UseExisting]
+  ExistingSecretName:
+    Type: String
+    Default: ''
+    Description: When CredentialSource=UseExisting, the existing SM secret name.
+  ExistingSecretArn:
+    Type: String
+    Default: ''
+    Description: When CredentialSource=UseExisting, the existing SM secret ARN.
+  ZscalerClientId:
+    Type: String
+    Default: ''
+    NoEcho: true
+  ZscalerClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+  ZscalerVanityDomain:
+    Type: String
+    Default: ''
+  ZscalerCustomerId:
+    Type: String
+    Default: ''
+  ZscalerCloud:
+    Type: String
+    Default: production
+
+  # ── Network ─────────────────────────────────────────────────────────────
+  NetworkMode:
+    Type: String
+    Default: CreateNew
+    AllowedValues: [CreateNew, UseExisting]
+  NewVpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+  ExistingVpcId:
+    Type: String
+    Default: ''
+  ExistingPublicSubnetIds:
+    Type: CommaDelimitedList
+    Default: ''
+  ExistingPrivateSubnetIds:
+    Type: CommaDelimitedList
+    Default: ''
+
+  # ── TLS ─────────────────────────────────────────────────────────────────
+  TlsMode:
+    Type: String
+    AllowedValues: [AcmManaged, AcmExisting, None]
+    Default: None
+  HostedZoneId:
+    Type: String
+    Default: ''
+  DomainName:
+    Type: String
+    Default: ''
+  ExistingCertArn:
+    Type: String
+    Default: ''
+
+  # ── MCP authentication ─────────────────────────────────────────────────
+  McpAuthMode:
+    Type: String
+    Default: zscaler
+    AllowedValues: [zscaler, jwt, api-key, none, oidcproxy]
+  JwtJwksUri:
+    Type: String
+    Default: ''
+  JwtIssuer:
+    Type: String
+    Default: ''
+  JwtAudience:
+    Type: String
+    Default: zscaler-mcp-server
+  ApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+  OidcProxyClientId:
+    Type: String
+    Default: ''
+  OidcProxyClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+  OidcProxyIssuer:
+    Type: String
+    Default: ''
+  OidcProxyAudience:
+    Type: String
+    Default: ''
+
+  # ── Feature flags ───────────────────────────────────────────────────────
+  WriteToolsEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  WriteToolsAllowlist:
+    Type: String
+    Default: ''
+  DisabledTools:
+    Type: String
+    Default: ''
+  DisabledServices:
+    Type: String
+    Default: ''
+  Toolsets:
+    Type: String
+    Default: ''
+  DisabledToolsets:
+    Type: String
+    Default: ''
+  EnableToolCallLogging:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+
+  # ── Capacity / instance ─────────────────────────────────────────────────
+  InstanceType:
+    Type: String
+    Default: t3.small
+  SshIngressCidr:
+    Type: String
+    Default: ''
+  KeyPairName:
+    Type: String
+    Default: ''
+  ContainerPort:
+    Type: Number
+    Default: 8000
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+
+Conditions:
+
+  CreateNetwork: !Equals [!Ref NetworkMode, CreateNew]
+  CreateNewSecret: !Equals [!Ref CredentialSource, CreateNew]
+
+Resources:
+
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNetwork
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}network.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        VpcCidr: !Ref NewVpcCidr
+
+  SecretsStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNewSecret
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}secrets.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ZscalerClientId: !Ref ZscalerClientId
+        ZscalerClientSecret: !Ref ZscalerClientSecret
+        ZscalerVanityDomain: !Ref ZscalerVanityDomain
+        ZscalerCustomerId: !Ref ZscalerCustomerId
+        ZscalerCloud: !Ref ZscalerCloud
+
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}iam.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        SecretArn: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretArn
+          - !Ref ExistingSecretArn
+
+  InstanceStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}instance.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        SecretName: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretName
+          - !Ref ExistingSecretName
+        VpcId: !If
+          - CreateNetwork
+          - !GetAtt NetworkStack.Outputs.VpcId
+          - !Ref ExistingVpcId
+        # IMPORTANT: nested-stack Parameters values must be STRINGS (or
+        # simple scalars). !Split returns a list, which CFN rejects with
+        # "Value of property Parameters must be an object with String (or
+        # simple type) properties" at template-parse time. Pass the comma-
+        # separated string straight through; the nested stack's parameter
+        # declaration (Type: List<AWS::EC2::Subnet::Id>) tells CFN to auto-
+        # split it on the way in. Mirror's the working Fargate pattern.
+        PublicSubnetIds: !If
+          - CreateNetwork
+          - !GetAtt NetworkStack.Outputs.PublicSubnetIds
+          - !Join [',', !Ref ExistingPublicSubnetIds]
+        PrivateSubnetIds: !If
+          - CreateNetwork
+          - !GetAtt NetworkStack.Outputs.PrivateSubnetIds
+          - !Join [',', !Ref ExistingPrivateSubnetIds]
+        InstanceProfileName: !GetAtt IamStack.Outputs.InstanceProfileName
+        InstanceType: !Ref InstanceType
+        SshIngressCidr: !Ref SshIngressCidr
+        KeyPairName: !Ref KeyPairName
+        ContainerPort: !Ref ContainerPort
+        LogRetentionDays: !Ref LogRetentionDays
+        TlsMode: !Ref TlsMode
+        HostedZoneId: !Ref HostedZoneId
+        DomainName: !Ref DomainName
+        ExistingCertArn: !Ref ExistingCertArn
+        McpAuthMode: !Ref McpAuthMode
+        JwtJwksUri: !Ref JwtJwksUri
+        JwtIssuer: !Ref JwtIssuer
+        JwtAudience: !Ref JwtAudience
+        ApiKey: !Ref ApiKey
+        OidcProxyClientId: !Ref OidcProxyClientId
+        OidcProxyClientSecret: !Ref OidcProxyClientSecret
+        OidcProxyIssuer: !Ref OidcProxyIssuer
+        OidcProxyAudience: !Ref OidcProxyAudience
+        WriteToolsEnabled: !Ref WriteToolsEnabled
+        WriteToolsAllowlist: !Ref WriteToolsAllowlist
+        DisabledTools: !Ref DisabledTools
+        DisabledServices: !Ref DisabledServices
+        Toolsets: !Ref Toolsets
+        DisabledToolsets: !Ref DisabledToolsets
+        EnableToolCallLogging: !Ref EnableToolCallLogging
+
+Outputs:
+
+  McpUrl:
+    Description: Publicly reachable MCP endpoint (point clients here).
+    Value: !GetAtt InstanceStack.Outputs.McpUrl
+  AlbDnsName:
+    Value: !GetAtt InstanceStack.Outputs.AlbDnsName
+  InstanceId:
+    Value: !GetAtt InstanceStack.Outputs.InstanceId
+  LogGroupName:
+    Value: !GetAtt InstanceStack.Outputs.LogGroupName
+  SecretName:
+    Value: !If
+      - CreateNewSecret
+      - !GetAtt SecretsStack.Outputs.SecretName
+      - !Ref ExistingSecretName
+  VpcId:
+    Value: !If
+      - CreateNetwork
+      - !GetAtt NetworkStack.Outputs.VpcId
+      - !Ref ExistingVpcId

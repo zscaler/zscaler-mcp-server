@@ -1,0 +1,10 @@
+.aws-deploy-state.json
+.rendered-manifests/
+.env
+.env.local
+.env.*.local
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/

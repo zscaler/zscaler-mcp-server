@@ -13,6 +13,7 @@ This directory contains official integrations for the Zscaler MCP Server with va
 | [Google Cloud (Cloud Run / GKE / VM)](#google-cloud-cloud-run--gke--vm) | [`integrations/google/gcp/`](./google/gcp/) | `integrations/google/gcp/env.properties` | Available |
 | [Google ADK Agent](#google-adk-agent) | [`integrations/google/adk/`](./google/adk/) | `integrations/google/adk/zscaler_agent/.env` | Available |
 | [Azure (Container Apps / VM)](#azure-container-apps--vm) | [`integrations/azure/`](./azure/) | `integrations/azure/env.properties` | Available |
+| [Helm Chart (any Kubernetes)](#helm-chart-any-kubernetes) | [`integrations/helm-chart/`](./helm-chart/) | `integrations/helm-chart/charts/zscaler-mcp-server/values.yaml` | Available |
 | [GitHub MCP Registry](#github-mcp-registry) | [`integrations/github/`](./github/) | `server.json` | Available |
 
 All integrations share the same MCP server, tools, and skills — they differ only in how they connect the AI platform to the server.
@@ -150,6 +151,42 @@ python azure_mcp_operations.py deploy
 ```
 
 **Config files:** `integrations/azure/env.properties`
+
+---
+
+### Helm Chart (any Kubernetes)
+
+**[Full documentation →](./helm-chart/README.md)**
+
+Cluster-vendor-agnostic Helm chart for deploying the Zscaler MCP Server to **any** Kubernetes cluster — EKS, GKE, AKS, OpenShift, Rancher, k3s, Talos, kind/minikube. This is the right answer when the cluster is already a fact and your operating model treats every workload as a Helm release (GitOps via ArgoCD/Flux, Helm-source `Application`s, etc.).
+
+**Features:**
+- Templates: Deployment, Service, Secret, ServiceAccount, Ingress, Gateway API HTTPRoute, cert-manager Certificate, PodDisruptionBudget, HPA, `helm test` smoke pod
+- Pre-existing Secret support for production credential storage via External Secrets Operator, Vault Agent Injector, SealedSecrets, or sops-encrypted GitOps
+- Fail-fast validation for the four most common misconfigurations (mutually-exclusive ingress/httproute, missing Secret reference, missing credentials, invalid auth mode)
+- Maps every `mcp.*` value to an existing `ZSCALER_MCP_*` env var — no parallel runtime contract
+
+**Quick install (interactive — recommended):**
+
+```bash
+python integrations/helm-chart/helm_mcp_operations.py deploy
+```
+
+The Python deployer (same pattern as `azure_mcp_operations.py` / `gcp_mcp_operations.py`) reads your existing `.env`, materialises a Kubernetes `Secret`, runs `helm upgrade --install`, waits for the rollout, starts `kubectl port-forward`, and auto-configures Cursor + Claude Desktop. Follow-up commands: `destroy`, `status`, `logs`, `configure`, `test`.
+
+**Quick install (raw `helm`):**
+
+```bash
+helm install zscaler-mcp \
+  ./integrations/helm-chart/charts/zscaler-mcp-server \
+  --namespace zscaler-mcp --create-namespace \
+  --set secret.values.clientId=$ZSCALER_CLIENT_ID \
+  --set secret.values.clientSecret=$ZSCALER_CLIENT_SECRET \
+  --set secret.values.vanityDomain=$ZSCALER_VANITY_DOMAIN \
+  --set secret.values.customerId=$ZSCALER_CUSTOMER_ID
+```
+
+**Config files:** `integrations/helm-chart/helm_mcp_operations.py`, `integrations/helm-chart/charts/zscaler-mcp-server/values.yaml`
 
 ---
 

@@ -1,0 +1,9 @@
+.aws-deploy-state.json
+.env
+.env.local
+.env.*.local
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/

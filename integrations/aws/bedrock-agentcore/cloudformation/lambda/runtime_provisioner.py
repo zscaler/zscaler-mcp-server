@@ -156,6 +156,55 @@ def build_inbound_auth_kwargs(props) -> dict:
     return kwargs
 
 
+def build_network_configuration(props) -> dict:
+    """Build ``networkConfiguration`` for create/update_agent_runtime.
+
+    PUBLIC mode (default) returns the simple AgentCore-managed network
+    shape. VPC mode wires ENIs into customer-owned subnets/SGs per
+    SEP-VPC support (https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html).
+
+    Raises ``ValueError`` if VPC mode is requested without at least one
+    subnet AND at least one security group — AgentCore's
+    ``CreateAgentRuntime`` rejects either missing, so we fail fast here
+    with a clear message rather than letting the API surface it as a
+    generic 400.
+    """
+    mode = (props.get("NetworkMode") or "PUBLIC").strip().upper()
+    if mode == "PUBLIC":
+        return {"networkMode": "PUBLIC"}
+    if mode != "VPC":
+        raise ValueError(
+            f"NetworkMode={mode!r} is invalid. Allowed: PUBLIC, VPC."
+        )
+
+    subnets = [
+        s.strip()
+        for s in (props.get("VpcSubnetIds") or "").split(",")
+        if s.strip()
+    ]
+    sgs = [
+        s.strip()
+        for s in (props.get("VpcSecurityGroupIds") or "").split(",")
+        if s.strip()
+    ]
+    if not subnets:
+        raise ValueError(
+            "NetworkMode=VPC requires at least one subnet in VpcSubnetIds."
+        )
+    if not sgs:
+        raise ValueError(
+            "NetworkMode=VPC requires at least one security group in "
+            "VpcSecurityGroupIds."
+        )
+    return {
+        "networkMode": "VPC",
+        "networkModeConfig": {
+            "subnets": subnets,
+            "securityGroups": sgs,
+        },
+    }
+
+
 def _derive_discovery_url(issuer: str) -> str:
     """OIDC discovery URL = <issuer>/.well-known/openid-configuration.
 
@@ -251,6 +300,8 @@ def handler(event, context):
             auth_kwargs = build_inbound_auth_kwargs(props)
             if auth_kwargs:
                 print(f"Inbound auth kwargs: {json.dumps(auth_kwargs)}")
+            network_config = build_network_configuration(props)
+            print(f"Network configuration: {json.dumps(network_config)}")
             existing = find_runtime_by_name(runtime_name)
 
             if existing:
@@ -262,7 +313,7 @@ def handler(event, context):
                         "containerConfiguration": {"containerUri": props["ImageUri"]},
                     },
                     roleArn=props["ExecutionRoleArn"],
-                    networkConfiguration={"networkMode": "PUBLIC"},
+                    networkConfiguration=network_config,
                     protocolConfiguration={"serverProtocol": "MCP"},
                     environmentVariables=env,
                     **auth_kwargs,
@@ -275,7 +326,7 @@ def handler(event, context):
                         "containerConfiguration": {"containerUri": props["ImageUri"]},
                     },
                     roleArn=props["ExecutionRoleArn"],
-                    networkConfiguration={"networkMode": "PUBLIC"},
+                    networkConfiguration=network_config,
                     protocolConfiguration={"serverProtocol": "MCP"},
                     environmentVariables=env,
                     **auth_kwargs,

@@ -1,0 +1,231 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on AWS EKS — root nested stack. Provisions (optionally)
+  a fresh VPC, an EKS cluster + managed node group, the OIDC provider, and
+  the IRSA role the Pod will assume. Application-layer resources (Secrets
+  Manager secret + K8s manifests) are applied by the orchestrator script
+  *after* this stack completes, so the script can apply Kubernetes objects
+  via `kubectl`. The cluster stack and the Pod-role stack can be re-run
+  alone via `update` semantics.
+
+  ClusterMode=CreateNew    → script provisions a fresh EKS cluster.
+  ClusterMode=UseExisting  → script attaches to an existing cluster you point at.
+                             In this mode this root stack only provisions the
+                             SM secret + IRSA role.
+
+Parameters:
+
+  AssetBucket:
+    Type: String
+  AssetPrefix:
+    Type: String
+    Default: ''
+  ResourceNamePrefix:
+    Type: String
+    Default: zscaler-mcp
+
+  ClusterMode:
+    Type: String
+    Default: CreateNew
+    AllowedValues: [CreateNew, UseExisting]
+  ClusterName:
+    Type: String
+    Default: zscaler-mcp-eks
+  KubernetesVersion:
+    Type: String
+    # 1.33 is the lowest version not on AWS's "extended support" tier.
+    # Keep in sync with cluster.yaml's AllowedValues + the Python default.
+    Default: '1.33'
+
+  # ── Existing cluster wiring (UseExisting only) ─────────────────────
+  ExistingClusterOidcProviderArn:
+    Type: String
+    Default: ''
+    Description: >-
+      ARN of an OIDC provider already federated to the existing cluster.
+      Required when ClusterMode=UseExisting.
+
+  # ── Credentials ────────────────────────────────────────────────────
+  CredentialSource:
+    Type: String
+    Default: CreateNew
+    AllowedValues: [CreateNew, UseExisting]
+  ExistingSecretArn:
+    Type: String
+    Default: ''
+  ZscalerClientId:
+    Type: String
+    Default: ''
+    NoEcho: true
+  ZscalerClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+  ZscalerVanityDomain:
+    Type: String
+    Default: ''
+  ZscalerCustomerId:
+    Type: String
+    Default: ''
+  ZscalerCloud:
+    Type: String
+    Default: production
+
+  # ── Network ────────────────────────────────────────────────────────
+  NetworkMode:
+    Type: String
+    Default: CreateNew
+    AllowedValues: [CreateNew, UseExisting]
+  NewVpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+  ExistingVpcId:
+    Type: String
+    Default: ''
+  ExistingPublicSubnetIds:
+    Type: CommaDelimitedList
+    Default: ''
+  ExistingPrivateSubnetIds:
+    Type: CommaDelimitedList
+    Default: ''
+
+  # ── Node group ─────────────────────────────────────────────────────
+  NodeInstanceType:
+    Type: String
+    Default: t3.medium
+  NodeDesiredCount:
+    Type: Number
+    Default: 1
+  NodeMinCount:
+    Type: Number
+    Default: 1
+  NodeMaxCount:
+    Type: Number
+    Default: 3
+  NodeDiskSize:
+    Type: Number
+    Default: 20
+
+  # ── Pod identity ──────────────────────────────────────────────────
+  K8sNamespace:
+    Type: String
+    Default: zscaler-mcp
+  K8sServiceAccountName:
+    Type: String
+    Default: zscaler-mcp-sa
+
+Conditions:
+
+  CreateCluster: !Equals [!Ref ClusterMode, CreateNew]
+  CreateNetwork: !And
+    - !Equals [!Ref NetworkMode, CreateNew]
+    - !Equals [!Ref ClusterMode, CreateNew]
+  CreateNewSecret: !Equals [!Ref CredentialSource, CreateNew]
+
+Resources:
+
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNetwork
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}network.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        VpcCidr: !Ref NewVpcCidr
+        ClusterName: !Ref ClusterName
+
+  ClusterStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateCluster
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}cluster.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ClusterName: !Ref ClusterName
+        KubernetesVersion: !Ref KubernetesVersion
+        PrivateSubnetIds: !If
+          - CreateNetwork
+          - !GetAtt NetworkStack.Outputs.PrivateSubnetIds
+          - !Join [',', !Ref ExistingPrivateSubnetIds]
+        ControlPlaneSubnetIds: !Join
+          - ','
+          - - !If
+              - CreateNetwork
+              - !GetAtt NetworkStack.Outputs.PrivateSubnetIds
+              - !Join [',', !Ref ExistingPrivateSubnetIds]
+            - !If
+              - CreateNetwork
+              - !GetAtt NetworkStack.Outputs.PublicSubnetIds
+              - !Join [',', !Ref ExistingPublicSubnetIds]
+        NodeInstanceType: !Ref NodeInstanceType
+        NodeDesiredCount: !Ref NodeDesiredCount
+        NodeMinCount: !Ref NodeMinCount
+        NodeMaxCount: !Ref NodeMaxCount
+        NodeDiskSize: !Ref NodeDiskSize
+
+  SecretsStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNewSecret
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}secrets.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ZscalerClientId: !Ref ZscalerClientId
+        ZscalerClientSecret: !Ref ZscalerClientSecret
+        ZscalerVanityDomain: !Ref ZscalerVanityDomain
+        ZscalerCustomerId: !Ref ZscalerCustomerId
+        ZscalerCloud: !Ref ZscalerCloud
+
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}iam.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        SecretArn: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretArn
+          - !Ref ExistingSecretArn
+        ClusterOidcProviderArn: !If
+          - CreateCluster
+          - !GetAtt ClusterStack.Outputs.ClusterOidcProviderArn
+          - !Ref ExistingClusterOidcProviderArn
+        Namespace: !Ref K8sNamespace
+        ServiceAccountName: !Ref K8sServiceAccountName
+
+Outputs:
+
+  ClusterName:
+    Value: !If
+      - CreateCluster
+      - !GetAtt ClusterStack.Outputs.ClusterName
+      - !Ref ClusterName
+  ClusterEndpoint:
+    Condition: CreateCluster
+    Value: !GetAtt ClusterStack.Outputs.ClusterEndpoint
+  ClusterOidcProviderArn:
+    Value: !If
+      - CreateCluster
+      - !GetAtt ClusterStack.Outputs.ClusterOidcProviderArn
+      - !Ref ExistingClusterOidcProviderArn
+  PodRoleArn:
+    Value: !GetAtt IamStack.Outputs.PodRoleArn
+  PodRoleName:
+    Value: !GetAtt IamStack.Outputs.PodRoleName
+  SecretName:
+    Value: !If
+      - CreateNewSecret
+      - !GetAtt SecretsStack.Outputs.SecretName
+      - !Ref AWS::NoValue
+  SecretArn:
+    Value: !If
+      - CreateNewSecret
+      - !GetAtt SecretsStack.Outputs.SecretArn
+      - !Ref ExistingSecretArn
+  VpcId:
+    Condition: CreateNetwork
+    Value: !GetAtt NetworkStack.Outputs.VpcId
+  K8sNamespace:
+    Value: !Ref K8sNamespace
+  K8sServiceAccountName:
+    Value: !Ref K8sServiceAccountName

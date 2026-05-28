@@ -168,6 +168,41 @@ DEFAULT_STACK_NAME = "zscaler-mcp-agentcore"
 DEFAULT_RESOURCE_PREFIX = "zscaler-mcp"
 
 # ──────────────────────────────────────────────────────────────────────────
+# AgentCore Runtime VPC mode — supported Availability Zone IDs per region
+# ──────────────────────────────────────────────────────────────────────────
+# Source: https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#supported-az
+#
+# IMPORTANT: these are AZ IDs (e.g. ``use1-az1``), NOT AZ names
+# (e.g. ``us-east-1a``). AWS randomises the AZ name → AZ ID mapping per
+# account to spread load — so the same subnet in two different accounts
+# in the same region may report different AZ names but identical AZ IDs.
+# Every validation here keys off the ID returned by
+# ``ec2:DescribeSubnets`` → ``AvailabilityZoneId``.
+#
+# When AWS extends VPC mode to a new region, update this map AND bump
+# the comment with the doc revision date. A missing region in this map
+# means VPC mode is unsupported in that region.
+SUPPORTED_AGENTCORE_AZ_IDS: dict[str, set[str]] = {
+    "us-east-1":      {"use1-az1", "use1-az2", "use1-az4"},
+    "us-east-2":      {"use2-az1", "use2-az2", "use2-az3"},
+    "us-west-2":      {"usw2-az1", "usw2-az2", "usw2-az3"},
+    "ap-southeast-2": {"apse2-az1", "apse2-az2", "apse2-az3"},
+    "ap-south-1":     {"aps1-az1", "aps1-az2", "aps1-az3"},
+    "ap-southeast-1": {"apse1-az1", "apse1-az2", "apse1-az3"},
+    "ap-northeast-1": {"apne1-az1", "apne1-az2", "apne1-az4"},
+    "eu-west-1":      {"euw1-az1", "euw1-az2", "euw1-az3"},
+    "eu-central-1":   {"euc1-az1", "euc1-az2", "euc1-az3"},
+    "eu-north-1":     {"eun1-az1", "eun1-az2", "eun1-az3"},
+    "eu-west-3":      {"euw3-az1", "euw3-az2", "euw3-az3"},
+    "ap-northeast-2": {"apne2-az1", "apne2-az2", "apne2-az3"},
+    "eu-west-2":      {"euw2-az1", "euw2-az2", "euw2-az3"},
+    "ca-central-1":   {"cac1-az1", "cac1-az2", "cac1-az4"},
+    "sa-east-1":      {"sae1-az1", "sae1-az2", "sae1-az3"},
+    "us-gov-west-1":  {"usgw1-az1", "usgw1-az2", "usgw1-az3"},
+}
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # ANSI colours
 # ──────────────────────────────────────────────────────────────────────────
 # Colours / spinner enabled only when stdout is attached to a real TTY.
@@ -440,6 +475,541 @@ def prompt_bool(label: str, default: bool) -> bool:
     if not raw:
         return default
     return raw in ("y", "yes", "true", "1")
+
+
+def prompt_multi_choice(
+    label: str,
+    items: list[tuple[str, str]],
+    *,
+    min_count: int = 1,
+) -> list[str]:
+    """Comma-separated multi-select. Returns the IDs the operator picked.
+
+    ``items`` is a list of (id, display_label) pairs. Operators enter
+    something like ``1,3,4`` to pick the 1st, 3rd, and 4th rows. The
+    loop re-prompts until at least ``min_count`` valid rows are picked
+    (and Ctrl-C is honoured as an explicit abort).
+    """
+    print(f"\n{BOLD}{label}{NC}")
+    for i, (_, lbl) in enumerate(items, 1):
+        print(f"  {CYAN}[{i}]{NC} {lbl}")
+    while True:
+        try:
+            raw = input(
+                f"Pick {CYAN}1-{len(items)}{NC} "
+                f"(comma-separated, min {min_count}): "
+            ).strip()
+        except (EOFError, KeyboardInterrupt):
+            err("\nAborted.")
+            sys.exit(1)
+        if not raw:
+            warn(f"At least {min_count} selection required.")
+            continue
+        try:
+            picks = [int(p) for p in raw.replace(" ", "").split(",") if p]
+        except ValueError:
+            warn(f"Invalid input: {raw!r}. Use comma-separated row numbers.")
+            continue
+        if not all(1 <= p <= len(items) for p in picks):
+            warn(f"All numbers must be between 1 and {len(items)}.")
+            continue
+        if len(set(picks)) < min_count:
+            warn(f"Pick at least {min_count} distinct row(s).")
+            continue
+        return [items[p - 1][0] for p in dict.fromkeys(picks)]
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# AgentCore VPC discovery + validation
+# ──────────────────────────────────────────────────────────────────────────
+
+def list_vpcs(sess: boto3.Session) -> list[dict]:
+    """Return all VPCs in the region, ordered with the default VPC first."""
+    ec2 = sess.client("ec2")
+    resp = ec2.describe_vpcs()
+    vpcs = resp.get("Vpcs", [])
+    # Pin the default VPC to the top so admins see "the obvious choice" first.
+    vpcs.sort(key=lambda v: (not v.get("IsDefault", False), v["VpcId"]))
+    return vpcs
+
+
+def list_subnets_for_vpc(sess: boto3.Session, vpc_id: str) -> list[dict]:
+    """Return every subnet in ``vpc_id``, including its AvailabilityZoneId."""
+    ec2 = sess.client("ec2")
+    resp = ec2.describe_subnets(
+        Filters=[{"Name": "vpc-id", "Values": [vpc_id]}],
+    )
+    return resp.get("Subnets", [])
+
+
+def list_security_groups_for_vpc(sess: boto3.Session, vpc_id: str) -> list[dict]:
+    """Return every security group in ``vpc_id``."""
+    ec2 = sess.client("ec2")
+    resp = ec2.describe_security_groups(
+        Filters=[{"Name": "vpc-id", "Values": [vpc_id]}],
+    )
+    return resp.get("SecurityGroups", [])
+
+
+def supported_agentcore_az_ids(region: str) -> set[str]:
+    """Supported AgentCore AZ IDs for ``region`` (empty set if unsupported)."""
+    return SUPPORTED_AGENTCORE_AZ_IDS.get(region, set())
+
+
+def validate_subnet_az_ids(
+    sess: boto3.Session,
+    subnet_ids: list[str],
+    region: str,
+) -> tuple[list[str], list[tuple[str, str]]]:
+    """Resolve each subnet → AZ ID and split into supported / unsupported.
+
+    Returns ``(ok_subnet_ids, [(bad_subnet_id, bad_az_id), ...])``.
+
+    Calls ``ec2:DescribeSubnets`` once for the full set so this is a
+    single API hit regardless of how many subnets were supplied.
+    """
+    if not subnet_ids:
+        return [], []
+    supported = supported_agentcore_az_ids(region)
+    if not supported:
+        # Region not in the support map → don't pretend to validate.
+        return list(subnet_ids), []
+    ec2 = sess.client("ec2")
+    try:
+        resp = ec2.describe_subnets(SubnetIds=list(subnet_ids))
+    except ClientError as e:
+        warn(
+            f"Could not describe subnets for AZ-ID validation: "
+            f"{_short_aws_error(e)}"
+        )
+        return list(subnet_ids), []
+    ok_, bad = [], []
+    for s in resp.get("Subnets", []):
+        sid = s["SubnetId"]
+        az_id = s.get("AvailabilityZoneId", "")
+        if az_id in supported:
+            ok_.append(sid)
+        else:
+            bad.append((sid, az_id or "<unknown>"))
+    return ok_, bad
+
+
+def validate_resources_share_vpc(
+    sess: boto3.Session,
+    subnet_ids: list[str],
+    sg_ids: list[str],
+    expected_vpc_id: str = "",
+) -> str:
+    """Verify every subnet + SG lives in the same VPC. Returns that VPC ID.
+
+    Two checks in one round trip:
+
+    1. ``ec2:DescribeSubnets`` resolves the VpcId for each subnet — must
+       collapse to a single value.
+    2. ``ec2:DescribeSecurityGroups`` does the same for each SG — must
+       match the subnets' VpcId.
+
+    If ``expected_vpc_id`` is set, both sets must also match THAT — this
+    catches typos when the operator pinned ``AGENTCORE_VPC_ID`` in .env.
+
+    Raises ``SystemExit`` with a clear error message when any check
+    fails. AWS rejects ``CreateAgentRuntime`` for cross-VPC selections
+    too, but it takes 5+ minutes into the stack launch — failing here
+    saves the cycle.
+    """
+    if not subnet_ids or not sg_ids:
+        return ""
+    ec2 = sess.client("ec2")
+
+    subnet_vpcs: dict[str, str] = {}
+    try:
+        resp = ec2.describe_subnets(SubnetIds=list(subnet_ids))
+    except ClientError as e:
+        err(
+            "Could not describe subnets for VPC cross-validation: "
+            f"{_short_aws_error(e)}"
+        )
+        sys.exit(1)
+    for s in resp.get("Subnets", []):
+        subnet_vpcs[s["SubnetId"]] = s.get("VpcId", "")
+    missing = sorted(set(subnet_ids) - subnet_vpcs.keys())
+    if missing:
+        err(f"These subnet IDs do not exist in this region: {missing}")
+        sys.exit(1)
+
+    distinct_subnet_vpcs = {v for v in subnet_vpcs.values() if v}
+    if len(distinct_subnet_vpcs) > 1:
+        err("Subnets span multiple VPCs — pick subnets in ONE VPC:")
+        for sid, vid in subnet_vpcs.items():
+            print(f"    {sid}  →  {vid}")
+        sys.exit(1)
+    if not distinct_subnet_vpcs:
+        err(f"Could not resolve VpcId for subnets: {subnet_ids}")
+        sys.exit(1)
+    subnet_vpc = next(iter(distinct_subnet_vpcs))
+
+    sg_vpcs: dict[str, str] = {}
+    try:
+        resp = ec2.describe_security_groups(GroupIds=list(sg_ids))
+    except ClientError as e:
+        err(
+            "Could not describe security groups for VPC cross-validation: "
+            f"{_short_aws_error(e)}"
+        )
+        sys.exit(1)
+    for g in resp.get("SecurityGroups", []):
+        sg_vpcs[g["GroupId"]] = g.get("VpcId", "")
+    missing = sorted(set(sg_ids) - sg_vpcs.keys())
+    if missing:
+        err(f"These security group IDs do not exist in this region: {missing}")
+        sys.exit(1)
+
+    mismatched_sgs = {gid: vid for gid, vid in sg_vpcs.items() if vid != subnet_vpc}
+    if mismatched_sgs:
+        err(
+            f"Subnets are in VPC {subnet_vpc!r}, but these security groups "
+            "are in a different VPC:"
+        )
+        for gid, vid in mismatched_sgs.items():
+            print(f"    {gid}  →  {vid}")
+        info(
+            "AgentCore requires all subnets AND security groups to share "
+            "ONE VPC. Pick SGs that belong to the same VPC as the subnets."
+        )
+        sys.exit(1)
+
+    if expected_vpc_id and expected_vpc_id != subnet_vpc:
+        err(
+            f"AGENTCORE_VPC_ID={expected_vpc_id!r} does not match the VPC "
+            f"of the supplied subnets/SGs ({subnet_vpc!r})."
+        )
+        info(
+            "Either drop AGENTCORE_VPC_ID (it's optional — subnet IDs "
+            "already encode the VPC), or pick resources from the named VPC."
+        )
+        sys.exit(1)
+
+    return subnet_vpc
+
+
+def _format_subnet_row(s: dict, supported_azs: set[str]) -> str:
+    """Single-line summary used by the interactive subnet picker."""
+    name = next(
+        (
+            t["Value"]
+            for t in s.get("Tags", []) or []
+            if t.get("Key") == "Name"
+        ),
+        "",
+    )
+    az_id = s.get("AvailabilityZoneId", "")
+    badge = ""
+    if supported_azs:
+        badge = (
+            f" {GREEN}[ok]{NC}"
+            if az_id in supported_azs
+            else f" {YELLOW}[unsupported AZ]{NC}"
+        )
+    label = f"  {name}" if name else ""
+    return (
+        f"{s['SubnetId']:24s}  "
+        f"az={az_id:11s}  "
+        f"cidr={s.get('CidrBlock', '?'):20s}"
+        f"{label}{badge}"
+    )
+
+
+def _format_sg_row(g: dict) -> str:
+    """Single-line summary used by the interactive security-group picker."""
+    return (
+        f"{g['GroupId']:22s}  "
+        f"{(g.get('GroupName') or ''):28s}  "
+        f"{(g.get('Description') or '')[:60]}"
+    )
+
+
+def resolve_network_config(
+    sess: boto3.Session,
+    region: str,
+    env: dict[str, str],
+    non_interactive: bool,
+) -> dict[str, str]:
+    """Resolve the three network-related CFN parameters.
+
+    Returns a dict ready to splat into the deploy script's ``parameters``
+    list:
+
+        {
+            "NetworkMode":          "PUBLIC" | "VPC",
+            "VpcSubnetIds":         "subnet-aaa,subnet-bbb",       # "" in PUBLIC
+            "VpcSecurityGroupIds":  "sg-aaa,sg-bbb",               # "" in PUBLIC
+        }
+
+    Resolution order:
+      1. ``env`` (AGENTCORE_NETWORK_MODE, AGENTCORE_VPC_SUBNETS,
+         AGENTCORE_VPC_SECURITY_GROUPS)
+      2. Interactive prompts (when ``non_interactive`` is False)
+      3. Default: PUBLIC
+
+    For VPC mode, the function:
+      - Validates the region appears in SUPPORTED_AGENTCORE_AZ_IDS
+        (warns only — AWS may extend support before this table is updated).
+      - Validates every supplied subnet maps to an AgentCore-supported
+        AZ ID via ``ec2:DescribeSubnets`` (hard fail; AgentCore rejects
+        unsupported AZs).
+      - For interactive runs, drives the operator through a 3-step picker
+        (VPC → subnets → SGs) filtered to AgentCore-eligible AZs.
+    """
+    mode_default = (env.get("AGENTCORE_NETWORK_MODE") or "PUBLIC").strip().upper()
+    if mode_default not in ("PUBLIC", "VPC"):
+        warn(
+            f"AGENTCORE_NETWORK_MODE={mode_default!r} is invalid. "
+            "Using PUBLIC."
+        )
+        mode_default = "PUBLIC"
+
+    # ── 1. Pick the mode ─────────────────────────────────────────────────
+    if non_interactive:
+        mode = mode_default
+        info(f"Network mode: {mode} (from .env)")
+    elif "AGENTCORE_NETWORK_MODE" in env:
+        mode = mode_default
+        info(f"Network mode: {mode} (from .env)")
+    else:
+        print()
+        print(
+            "Choose how AgentCore Runtime connects to the network:\n"
+            "\n"
+            f"  {CYAN}[1]{NC} {BOLD}PUBLIC{NC}  "
+            f"{GREEN}(recommended for evaluation){NC}\n"
+            "      - Runs on the AWS-managed network. Outbound internet\n"
+            "        works out of the box — Zscaler OneAPI is reachable.\n"
+            "      - No VPC plumbing, no NAT gateway, no extra cost.\n"
+            "      - Cannot reach private resources (RDS, internal APIs,\n"
+            "        Zscaler private DNS).\n"
+            "\n"
+            f"  {CYAN}[2]{NC} {BOLD}VPC{NC}     "
+            f"{YELLOW}(needed for private-network access){NC}\n"
+            "      - AgentCore places ENIs in subnets + SGs you own.\n"
+            "      - Subnets MUST be in AgentCore-supported AZ IDs. The\n"
+            "        deploy script validates this against AWS's published\n"
+            "        per-region AZ-ID table.\n"
+            "      - For outbound internet (required by Zscaler OneAPI),\n"
+            "        place the ENIs in PRIVATE subnets with a NAT gateway.\n"
+            "        Public subnets do NOT provide internet to AgentCore.\n"
+            "      - First deploy in this account also brings up the\n"
+            "        AWSServiceRoleForBedrockAgentCoreNetwork SLR — the\n"
+            "        IAM stack grants the narrow CreateServiceLinkedRole\n"
+            "        perm needed for that automatically.\n"
+        )
+        default_idx = "2" if mode_default == "VPC" else "1"
+        raw = input(
+            f"  {BOLD}Choice{NC} {CYAN}[1-2]{NC} "
+            f"{DIM}(default {default_idx}){NC}: "
+        ).strip()
+        mode = {"1": "PUBLIC", "2": "VPC"}.get(raw, mode_default)
+        ok(f"Chose: {mode}")
+
+    if mode == "PUBLIC":
+        return {
+            "NetworkMode": "PUBLIC",
+            "VpcSubnetIds": "",
+            "VpcSecurityGroupIds": "",
+        }
+
+    # ── 2. VPC mode — region support sanity check ────────────────────────
+    supported_azs = supported_agentcore_az_ids(region)
+    if not supported_azs:
+        warn(
+            f"Region {region!r} is not in the AgentCore VPC support table "
+            "this script ships with. AgentCore may have added support since — "
+            "the deploy will still try, and AgentCore's API will reject "
+            "unsupported AZs at create time. If it fails, see "
+            "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#supported-az"
+        )
+
+    # ── 3. VPC mode — resolve subnets + SGs ──────────────────────────────
+    raw_subnets = env.get("AGENTCORE_VPC_SUBNETS", "").strip()
+    raw_sgs = env.get("AGENTCORE_VPC_SECURITY_GROUPS", "").strip()
+    env_vpc_id = env.get("AGENTCORE_VPC_ID", "").strip()
+    have_env_selection = bool(raw_subnets and raw_sgs)
+
+    if non_interactive and not have_env_selection:
+        err(
+            "NetworkMode=VPC requires AGENTCORE_VPC_SUBNETS and "
+            "AGENTCORE_VPC_SECURITY_GROUPS in .env when running with "
+            "--non-interactive."
+        )
+        sys.exit(1)
+
+    if have_env_selection:
+        subnet_ids = [s.strip() for s in raw_subnets.split(",") if s.strip()]
+        sg_ids = [s.strip() for s in raw_sgs.split(",") if s.strip()]
+        info(
+            f"VPC subnets: {','.join(subnet_ids)} "
+            f"(from AGENTCORE_VPC_SUBNETS)"
+        )
+        info(
+            f"VPC security groups: {','.join(sg_ids)} "
+            f"(from AGENTCORE_VPC_SECURITY_GROUPS)"
+        )
+        # Cross-validate the env-supplied IDs ALL belong to the same VPC
+        # (and, if AGENTCORE_VPC_ID is also set, that they match it). AWS
+        # would catch a cross-VPC selection at CreateAgentRuntime time, but
+        # only after 5+ minutes of stack launch. Failing here is much
+        # cheaper. Returns the resolved VPC ID for the deploy log.
+        resolved_vpc = validate_resources_share_vpc(
+            sess, subnet_ids, sg_ids, expected_vpc_id=env_vpc_id
+        )
+        if resolved_vpc:
+            info(f"All resources resolved to VPC: {resolved_vpc}")
+    else:
+        # Interactive 3-step picker: VPC → subnets → SGs.
+        # ── 3a. VPC ──────────────────────────────────────────────────
+        try:
+            vpcs = list_vpcs(sess)
+        except ClientError as e:
+            err(f"Could not list VPCs: {_short_aws_error(e)}")
+            sys.exit(1)
+        if not vpcs:
+            err(
+                "No VPCs found in this region. Create one (or pick a "
+                "region that has one) and re-run."
+            )
+            sys.exit(1)
+        vpc_items: list[tuple[str, str]] = []
+        for v in vpcs:
+            name = next(
+                (
+                    t["Value"]
+                    for t in v.get("Tags", []) or []
+                    if t.get("Key") == "Name"
+                ),
+                "",
+            )
+            default_badge = f" {GREEN}[default]{NC}" if v.get("IsDefault") else ""
+            label = (
+                f"{v['VpcId']:22s}  cidr={v.get('CidrBlock', '?'):20s}"
+                f"  {name}{default_badge}"
+            )
+            vpc_items.append((v["VpcId"], label))
+        if env_vpc_id and any(v["VpcId"] == env_vpc_id for v in vpcs):
+            vpc_id = env_vpc_id
+            info(f"VPC: {vpc_id} (from AGENTCORE_VPC_ID)")
+        else:
+            print()
+            print(f"{BOLD}Select VPC for AgentCore Runtime ENIs{NC}")
+            for i, (_, lbl) in enumerate(vpc_items, 1):
+                print(f"  {CYAN}[{i}]{NC} {lbl}")
+            while True:
+                raw = input(
+                    f"Pick {CYAN}1-{len(vpc_items)}{NC}: "
+                ).strip()
+                try:
+                    vpc_id = vpc_items[int(raw) - 1][0]
+                    break
+                except (ValueError, IndexError):
+                    warn(f"Invalid choice: {raw!r}.")
+            ok(f"Selected VPC: {vpc_id}")
+
+        # ── 3b. Subnets (filtered to supported AZs) ──────────────────
+        try:
+            all_subnets = list_subnets_for_vpc(sess, vpc_id)
+        except ClientError as e:
+            err(f"Could not list subnets for {vpc_id}: {_short_aws_error(e)}")
+            sys.exit(1)
+        if supported_azs:
+            eligible = [
+                s
+                for s in all_subnets
+                if s.get("AvailabilityZoneId") in supported_azs
+            ]
+            ineligible_count = len(all_subnets) - len(eligible)
+        else:
+            eligible = all_subnets
+            ineligible_count = 0
+        if not eligible:
+            err(
+                f"VPC {vpc_id} has no subnets in AgentCore-supported AZ IDs "
+                f"({sorted(supported_azs) or 'region unsupported'}). "
+                "Create subnets in the supported AZs and re-run."
+            )
+            sys.exit(1)
+        if ineligible_count:
+            warn(
+                f"Hiding {ineligible_count} subnet(s) in unsupported AZ IDs "
+                "(AgentCore would reject them at create time)."
+            )
+        subnet_items: list[tuple[str, str]] = [
+            (s["SubnetId"], _format_subnet_row(s, supported_azs))
+            for s in eligible
+        ]
+        subnet_ids = prompt_multi_choice(
+            "Select subnets (recommend >=2 in different AZs)",
+            subnet_items,
+            min_count=1,
+        )
+        # AZ-spread check (advisory).
+        chosen_azs = {
+            s["AvailabilityZoneId"]
+            for s in eligible
+            if s["SubnetId"] in subnet_ids
+        }
+        if len(chosen_azs) < 2:
+            warn(
+                f"Only one Availability Zone selected ({next(iter(chosen_azs), '?')}). "
+                "AWS strongly recommends >=2 AZs for HA — consider picking "
+                "another subnet."
+            )
+
+        # ── 3c. Security groups ──────────────────────────────────────
+        try:
+            sgs = list_security_groups_for_vpc(sess, vpc_id)
+        except ClientError as e:
+            err(
+                f"Could not list security groups for {vpc_id}: "
+                f"{_short_aws_error(e)}"
+            )
+            sys.exit(1)
+        if not sgs:
+            err(f"VPC {vpc_id} has no security groups. (This shouldn't happen.)")
+            sys.exit(1)
+        sg_items: list[tuple[str, str]] = [
+            (g["GroupId"], _format_sg_row(g)) for g in sgs
+        ]
+        sg_ids = prompt_multi_choice(
+            "Select security group(s) (outbound must allow your Zscaler "
+            "OneAPI tenant + any private resources the container will "
+            "talk to)",
+            sg_items,
+            min_count=1,
+        )
+
+    # ── 4. Hard-validate AZ-IDs (catches stale env-driven subnet lists) ──
+    ok_subnets, bad_subnets = validate_subnet_az_ids(sess, subnet_ids, region)
+    if bad_subnets:
+        err(
+            "The following subnets are in AZ IDs AgentCore does NOT support "
+            f"in {region}:"
+        )
+        for sid, az in bad_subnets:
+            print(f"    {sid}  →  {az}")
+        print()
+        info(
+            f"Supported AZ IDs for {region}: "
+            f"{sorted(supported_agentcore_az_ids(region))}"
+        )
+        info(
+            "Either pick subnets in supported AZs, or remove the bad ones "
+            "from AGENTCORE_VPC_SUBNETS and re-run."
+        )
+        sys.exit(1)
+
+    return {
+        "NetworkMode": "VPC",
+        "VpcSubnetIds": ",".join(ok_subnets),
+        "VpcSecurityGroupIds": ",".join(sg_ids),
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1160,6 +1730,21 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         "GatewayMode": mode,
     }
 
+    # ── Step 7.5: Network mode (PUBLIC vs VPC) ──────────────────────────
+    # Distinct from Step 7 (which controls the inbound topology — Gateway
+    # vs direct). This step controls AgentCore's OUTBOUND network: where
+    # the container's ENIs live. PUBLIC keeps everything on the
+    # AWS-managed network; VPC injects ENIs into customer-owned subnets
+    # so the container can reach private RDS/internal APIs/Zscaler
+    # private DNS. The validator inside resolve_network_config() hard-
+    # fails on subnets in AZ IDs AgentCore doesn't support — AWS rejects
+    # those at create time anyway, but we'd rather block before the
+    # 10-minute stack launch than after.
+    step("Step 7.5: Network mode (PUBLIC vs VPC)")
+    network_params = resolve_network_config(
+        sess, region, env, non_interactive=args.non_interactive
+    )
+
     # ── Step 8: Runtime authentication ──────────────────────────────────
     # Auth enforced on the runtime's HTTP endpoint itself. Independent of
     # any Gateway in front (when a Gateway is present, this controls how
@@ -1502,6 +2087,8 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         parameters.append({"ParameterKey": k, "ParameterValue": v})
     for k, v in gw_params.items():
         parameters.append({"ParameterKey": k, "ParameterValue": v})
+    for k, v in network_params.items():
+        parameters.append({"ParameterKey": k, "ParameterValue": v})
 
     template_url = f"https://{asset_bucket}.s3.amazonaws.com/{asset_prefix}{ROOT_TEMPLATE}"
     info(f"Uploading root template → {template_url}")
@@ -1587,6 +2174,9 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         "gateway_mode": gw_params.get("GatewayMode", "create") if gateway_enabled else "",
         "auth_mode": auth_mode,
         "api_key": auth_params.get("ApiKey", ""),
+        "network_mode": network_params["NetworkMode"],
+        "vpc_subnets": network_params["VpcSubnetIds"],
+        "vpc_security_groups": network_params["VpcSecurityGroupIds"],
     })
     _print_outputs(sess, stack_name, gateway_enabled)
 
@@ -1601,6 +2191,7 @@ def _print_outputs(sess: boto3.Session, stack_name: str, gateway_enabled: bool) 
         "RuntimeId",
         "RuntimeArn",
         "RuntimeMcpUrl",
+        "NetworkMode",
         "GatewayLifecycleMode",
         "GatewayId",
         "GatewayMcpUrl",

@@ -1,0 +1,512 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on EC2 — Workload nested stack. Provisions one Amazon
+  Linux 2023 EC2 instance running the MCP server as a systemd service,
+  fronted by an Application Load Balancer with optional ACM TLS. The
+  zscaler-mcp-server package is installed from PyPI (no container) via
+  cloud-init — same pattern as the Azure VM deployment, just AWS-native.
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+  SecretName:
+    Type: String
+    Description: Secrets Manager secret name the bootstrap script reads at instance startup.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets hosting the ALB (must be public).
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets hosting the EC2 instance (private with NAT route).
+  InstanceProfileName:
+    Type: String
+
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues: [t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, m6i.large, m7i.large, c7i.large]
+  SshIngressCidr:
+    Type: String
+    Default: ''
+    Description: >-
+      CIDR allowed to SSH to the instance. Leave blank to skip — recommended,
+      since the instance is registered with AWS SSM Session Manager and you
+      can `aws ssm start-session ...` from anywhere with no inbound SSH at all.
+  KeyPairName:
+    Type: String
+    Default: ''
+    Description: >-
+      EC2 key-pair name for the instance. Required only when SshIngressCidr
+      is set. Leave blank for SSM-only access.
+
+  ContainerPort:
+    Type: Number
+    Default: 8000
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 180, 365, 400, 545, 731, 1827, 3653]
+
+  # ── TLS ─────────────────────────────────────────────────────────────────
+  TlsMode:
+    Type: String
+    AllowedValues: [AcmManaged, AcmExisting, None]
+  HostedZoneId:
+    Type: String
+    Default: ''
+  DomainName:
+    Type: String
+    Default: ''
+  ExistingCertArn:
+    Type: String
+    Default: ''
+
+  # ── MCP-client auth ─────────────────────────────────────────────────────
+  McpAuthMode:
+    Type: String
+    Default: zscaler
+    AllowedValues: [zscaler, jwt, api-key, none, oidcproxy]
+  JwtJwksUri:
+    Type: String
+    Default: ''
+  JwtIssuer:
+    Type: String
+    Default: ''
+  JwtAudience:
+    Type: String
+    Default: zscaler-mcp-server
+  ApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+  OidcProxyClientId:
+    Type: String
+    Default: ''
+  OidcProxyClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+  OidcProxyIssuer:
+    Type: String
+    Default: ''
+  OidcProxyAudience:
+    Type: String
+    Default: ''
+
+  # ── Feature flags ───────────────────────────────────────────────────────
+  WriteToolsEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  WriteToolsAllowlist:
+    Type: String
+    Default: ''
+  DisabledTools:
+    Type: String
+    Default: ''
+  DisabledServices:
+    Type: String
+    Default: ''
+  Toolsets:
+    Type: String
+    Default: ''
+  DisabledToolsets:
+    Type: String
+    Default: ''
+  EnableToolCallLogging:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+
+  # AL2023 AMI ID — comes from the canonical SSM public parameter.
+  Al2023AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Conditions:
+
+  TlsAcmManaged: !Equals [!Ref TlsMode, AcmManaged]
+  TlsEnabled: !Or
+    - !Equals [!Ref TlsMode, AcmManaged]
+    - !Equals [!Ref TlsMode, AcmExisting]
+  TlsDisabled: !Equals [!Ref TlsMode, None]
+  HasSshIngress: !Not [!Equals [!Ref SshIngressCidr, '']]
+  HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
+
+Resources:
+
+  # ── CloudWatch log group ───────────────────────────────────────────────
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/ec2/${ResourceNamePrefix}
+      RetentionInDays: !Ref LogRetentionDays
+
+  # ── Security groups ────────────────────────────────────────────────────
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${ResourceNamePrefix} ALB ingress'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - !If
+          - TlsEnabled
+          - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: HTTPS from anywhere }
+          - !Ref AWS::NoValue
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0, Description: HTTP from anywhere }
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-alb-sg' }
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${ResourceNamePrefix} EC2 instance ingress'
+      VpcId: !Ref VpcId
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-instance-sg' }
+
+  InstanceIngressFromAlb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref InstanceSecurityGroup
+      IpProtocol: tcp
+      FromPort: !Ref ContainerPort
+      ToPort: !Ref ContainerPort
+      SourceSecurityGroupId: !Ref AlbSecurityGroup
+      Description: MCP HTTP from ALB
+
+  InstanceSshIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: HasSshIngress
+    Properties:
+      GroupId: !Ref InstanceSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref SshIngressCidr
+      Description: SSH from operator CIDR
+
+  # ── ACM cert (AcmManaged only) ─────────────────────────────────────────
+  ManagedCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: TlsAcmManaged
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - { Key: Application, Value: zscaler-mcp-server }
+
+  # ── ALB ────────────────────────────────────────────────────────────────
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${ResourceNamePrefix}-alb
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      Subnets: !Ref PublicSubnetIds
+      SecurityGroups: [!Ref AlbSecurityGroup]
+      LoadBalancerAttributes:
+        - { Key: idle_timeout.timeout_seconds, Value: '300' }
+        - { Key: routing.http.drop_invalid_header_fields.enabled, Value: 'true' }
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${ResourceNamePrefix}-tg
+      VpcId: !Ref VpcId
+      Protocol: HTTP
+      Port: !Ref ContainerPort
+      TargetType: instance
+      Targets:
+        - Id: !Ref McpInstance
+          Port: !Ref ContainerPort
+      HealthCheckPath: /mcp
+      Matcher:
+        HttpCode: 200-499
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 4
+      TargetGroupAttributes:
+        - { Key: deregistration_delay.timeout_seconds, Value: '30' }
+
+  # ── Listeners (TLS vs plaintext) ───────────────────────────────────────
+  HttpListenerRedirect:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: TlsEnabled
+    Properties:
+      LoadBalancerArn: !Ref Alb
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            StatusCode: HTTP_301
+
+  HttpListenerForward:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: TlsDisabled
+    Properties:
+      LoadBalancerArn: !Ref Alb
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: TlsEnabled
+    Properties:
+      LoadBalancerArn: !Ref Alb
+      Protocol: HTTPS
+      Port: 443
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates:
+        - CertificateArn: !If
+            - TlsAcmManaged
+            - !Ref ManagedCertificate
+            - !Ref ExistingCertArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # ── Route53 alias (AcmManaged only) ────────────────────────────────────
+  AliasRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: TlsAcmManaged
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Alb.DNSName
+        HostedZoneId: !GetAtt Alb.CanonicalHostedZoneID
+        EvaluateTargetHealth: false
+
+  # ── EC2 instance ───────────────────────────────────────────────────────
+  # cloud-init UserData:
+  #   1. Install Python + pip + AWS CLI + amazon-cloudwatch-agent
+  #   2. Create a venv at /opt/zscaler-mcp/venv
+  #   3. pip install zscaler-mcp + boto3 into the venv
+  #   4. Write a launcher that fetches secrets and execs the MCP server
+  #   5. Write a systemd unit that runs the launcher as the zscaler-mcp user
+  #   6. Configure CloudWatch Agent to ship the log file to the LogGroup
+  #   7. Enable + start everything
+  McpInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref Al2023AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfileName
+      KeyName: !If [HasKeyPair, !Ref KeyPairName, !Ref AWS::NoValue]
+      SubnetId: !Select [0, !Ref PrivateSubnetIds]
+      SecurityGroupIds: [!Ref InstanceSecurityGroup]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 16
+            VolumeType: gp3
+            DeleteOnTermination: true
+            Encrypted: true
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-instance' }
+        - { Key: Application, Value: zscaler-mcp-server }
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          exec > >(tee -a /var/log/zscaler-mcp-bootstrap.log) 2>&1
+
+          # 1. OS-level deps.
+          # AL2023 default python3 is 3.9 — the zscaler-mcp package on PyPI
+          # requires python >= 3.11, so install python3.11 explicitly and
+          # use it for the venv. python3.11-pip pulls in ensurepip support
+          # and the matching pip bootstrap.
+          dnf install -y python3.11 python3.11-pip amazon-cloudwatch-agent
+
+          # 2. Service user
+          id -u zscaler-mcp >/dev/null 2>&1 || useradd -r -s /sbin/nologin -d /opt/zscaler-mcp zscaler-mcp
+          install -d -o zscaler-mcp -g zscaler-mcp /opt/zscaler-mcp /etc/zscaler-mcp /var/log/zscaler-mcp
+
+          # 3. Python venv + install.
+          # The PyPI distribution is named "zscaler-mcp" (the GitHub repo is
+          # "zscaler-mcp-server" but the published package and CLI entry
+          # point are both just "zscaler-mcp"). Mismatching these gives a
+          # "No matching distribution" error from pip at boot.
+          python3.11 -m venv /opt/zscaler-mcp/venv
+          /opt/zscaler-mcp/venv/bin/pip install --upgrade pip
+          /opt/zscaler-mcp/venv/bin/pip install zscaler-mcp boto3
+          chown -R zscaler-mcp:zscaler-mcp /opt/zscaler-mcp
+
+          # 4. Static config (NON-secret env vars and the SM secret pointer)
+          cat > /etc/zscaler-mcp/static.env <<EOF
+          AWS_REGION=${AWS::Region}
+          ZSCALER_SECRET_NAME=${SecretName}
+          ZSCALER_MCP_TRANSPORT=streamable-http
+          ZSCALER_MCP_HOST=0.0.0.0
+          ZSCALER_MCP_PORT=${ContainerPort}
+          ZSCALER_MCP_ALLOW_HTTP=true
+          ZSCALER_MCP_DISABLE_HOST_VALIDATION=true
+          FASTMCP_STATELESS_HTTP=true
+          ZSCALER_MCP_AUTH_MODE=${McpAuthMode}
+          ZSCALER_MCP_WRITE_ENABLED=${WriteToolsEnabled}
+          ZSCALER_MCP_LOG_TOOL_CALLS=${EnableToolCallLogging}
+          ZSCALER_MCP_AUTH_JWKS_URI=${JwtJwksUri}
+          ZSCALER_MCP_AUTH_ISSUER=${JwtIssuer}
+          ZSCALER_MCP_AUTH_AUDIENCE=${JwtAudience}
+          ZSCALER_MCP_AUTH_API_KEY=${ApiKey}
+          ZSCALER_MCP_WRITE_TOOLS=${WriteToolsAllowlist}
+          ZSCALER_MCP_DISABLED_TOOLS=${DisabledTools}
+          ZSCALER_MCP_DISABLED_SERVICES=${DisabledServices}
+          ZSCALER_MCP_TOOLSETS=${Toolsets}
+          ZSCALER_MCP_DISABLED_TOOLSETS=${DisabledToolsets}
+          OIDCPROXY_CLIENT_ID=${OidcProxyClientId}
+          OIDCPROXY_CLIENT_SECRET=${OidcProxyClientSecret}
+          OIDCPROXY_ISSUER=${OidcProxyIssuer}
+          OIDCPROXY_AUDIENCE=${OidcProxyAudience}
+          EOF
+          chmod 640 /etc/zscaler-mcp/static.env
+          chown root:zscaler-mcp /etc/zscaler-mcp/static.env
+
+          # 5. Launcher: fetch secret + exec MCP server
+          cat > /usr/local/bin/zscaler-mcp-launch <<'LAUNCH'
+          #!/bin/bash
+          set -euo pipefail
+          set -a ; . /etc/zscaler-mcp/static.env ; set +a
+          # Pull every JSON field out of the secret and export it
+          eval "$(/opt/zscaler-mcp/venv/bin/python3 - <<'PY'
+          import boto3, json, os
+          s = boto3.Session(region_name=os.environ['AWS_REGION']).client('secretsmanager')
+          v = json.loads(s.get_secret_value(SecretId=os.environ['ZSCALER_SECRET_NAME'])['SecretString'])
+          for k, val in v.items():
+              esc = json.dumps(val)
+              print(f"export {k}={esc}")
+          PY
+          )"
+          # Strip auth=none server-side: tell the inner server it must not enforce.
+          # NB: !Sub treats every dollar-curly in this entire UserData block as a
+          # template variable, including inside heredoc-quoted shell blocks and
+          # inside shell comments. Shell variables that must survive intact to
+          # be expanded at instance-runtime are written with the !Sub escape
+          # syntax (a bang inside the curly braces) so !Sub emits the literal
+          # dollar-curly form into the user-data.
+          if [ "${!ZSCALER_MCP_AUTH_MODE}" = "none" ]; then
+              export ZSCALER_MCP_AUTH_ENABLED=false
+          else
+              export ZSCALER_MCP_AUTH_ENABLED=true
+          fi
+          exec /opt/zscaler-mcp/venv/bin/zscaler-mcp
+          LAUNCH
+          chmod 755 /usr/local/bin/zscaler-mcp-launch
+
+          # 6. systemd unit
+          cat > /etc/systemd/system/zscaler-mcp.service <<'UNIT'
+          [Unit]
+          Description=Zscaler MCP Server
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/local/bin/zscaler-mcp-launch
+          Restart=always
+          RestartSec=10
+          User=zscaler-mcp
+          Group=zscaler-mcp
+          # journald is the source of truth; CW Agent forwards from there
+          StandardOutput=journal
+          StandardError=journal
+          # Generous limits — MCP can hold many concurrent JMESPath ops
+          LimitNOFILE=65535
+
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+
+          # 7. CloudWatch Agent — forward our journal unit to /aws/ec2/<prefix>
+          cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWCONFIG
+          {
+            "logs": {
+              "logs_collected": {
+                "files": {
+                  "collect_list": [
+                    {
+                      "file_path": "/var/log/zscaler-mcp-bootstrap.log",
+                      "log_group_name": "/aws/ec2/${ResourceNamePrefix}",
+                      "log_stream_name": "bootstrap-{instance_id}",
+                      "retention_in_days": ${LogRetentionDays}
+                    },
+                    {
+                      "file_path": "/var/log/zscaler-mcp/server.log",
+                      "log_group_name": "/aws/ec2/${ResourceNamePrefix}",
+                      "log_stream_name": "mcp-server-{instance_id}",
+                      "retention_in_days": ${LogRetentionDays}
+                    },
+                    {
+                      "file_path": "/var/log/messages",
+                      "log_group_name": "/aws/ec2/${ResourceNamePrefix}",
+                      "log_stream_name": "system-{instance_id}",
+                      "retention_in_days": ${LogRetentionDays}
+                    }
+                  ]
+                }
+              }
+            }
+          }
+          CWCONFIG
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+            -a fetch-config -m ec2 -s \
+            -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+          # 8. Forward systemd journal for our unit to the bootstrap log so the
+          # CloudWatch Agent above picks it up. A persistent journald -> file
+          # bridge keeps this transparent.
+          cat > /etc/systemd/system/zscaler-mcp-journal-forward.service <<'JF'
+          [Unit]
+          Description=Forward zscaler-mcp journal output to log file
+          After=zscaler-mcp.service
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/bin/journalctl -fu zscaler-mcp.service --no-pager --output=cat
+          StandardOutput=append:/var/log/zscaler-mcp/server.log
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+          JF
+
+          # 9. Enable + start everything
+          systemctl daemon-reload
+          systemctl enable --now zscaler-mcp.service
+          systemctl enable --now zscaler-mcp-journal-forward.service
+          echo "Zscaler MCP bootstrap complete."
+
+Outputs:
+
+  InstanceId:
+    Value: !Ref McpInstance
+  InstancePrivateIp:
+    Value: !GetAtt McpInstance.PrivateIp
+  AlbDnsName:
+    Value: !GetAtt Alb.DNSName
+  McpUrl:
+    Value: !Sub
+      - '${Scheme}://${Host}/mcp'
+      - Scheme: !If [TlsEnabled, https, http]
+        Host: !If [TlsAcmManaged, !Ref DomainName, !GetAtt Alb.DNSName]
+  LogGroupName:
+    Value: !Ref LogGroup
+  CertificateArn:
+    Condition: TlsAcmManaged
+    Value: !Ref ManagedCertificate
