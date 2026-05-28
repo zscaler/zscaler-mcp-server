@@ -76,11 +76,13 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Docusaurus build output (the new docs portal under docs-site/). The
-# Sphinx portal (docsrc/) was retired in favour of Docusaurus; if you
-# see stale docsrc/ build artefacts on disk, they are safe to delete.
+# Sphinx build output. docsrc/ is the active documentation portal; only
+# its generated _build/ output is ignored (the .rst sources are tracked).
+# The legacy Docusaurus build dirs are kept here in case a stale checkout
+# still has them on disk.
 docs-site/build/
 docs-site/.docusaurus/
+docsrc/_build/
 
 # PyBuilder
 .pybuilder/

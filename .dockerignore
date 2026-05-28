@@ -6,6 +6,7 @@
 # Documentation
 *.md
 docs/
+docsrc/
 README.md
 
 # Python cache and bytecode
@@ -85,3 +86,13 @@ ehthumbs.db
 .env.production
 secrets/
 local_dev/*
+
+# Deployment render artifacts — contain real account IDs and base64-encoded
+# credentials. Gitignored already, but must also stay out of the Docker
+# build context (COPY . /app would otherwise ship them into a build layer).
+**/.rendered-manifests/
+**/.aws-deploy-state.json
+**/.azure-deploy-state.json
+**/.azure-agent-state.json
+**/.aks-manifest.yaml
+**/.gcp-deploy-state.json

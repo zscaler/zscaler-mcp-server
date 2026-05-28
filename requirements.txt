@@ -54,6 +54,7 @@ charset-normalizer==3.4.7
 click==8.4.1
     # via
     #   zscaler-mcp (pyproject.toml)
+    #   huggingface-hub
     #   typer
     #   uvicorn
 cryptography==48.0.0
@@ -64,7 +65,7 @@ cryptography==48.0.0
     #   jwcrypto
     #   pyjwt
     #   zscaler-sdk-python
-cyclopts==4.15.0
+cyclopts==4.16.1
     # via fastmcp-slim
 distro==1.9.0
     # via
@@ -78,7 +79,7 @@ email-validator==2.3.0
     # via pydantic
 exceptiongroup==1.3.1
     # via fastmcp-slim
-fastapi==0.136.1
+fastapi==0.136.3
     # via zscaler-mcp (pyproject.toml)
 fastmcp==3.3.1
     # via zscaler-mcp (pyproject.toml)
@@ -109,9 +110,9 @@ httpx==0.28.1
     #   openai
 httpx-sse==0.4.3
     # via mcp
-huggingface-hub==1.16.1
+huggingface-hub==1.17.0
     # via zscaler-mcp (pyproject.toml)
-idna==3.16
+idna==3.17
     # via
     #   anyio
     #   email-validator
@@ -131,7 +132,7 @@ jmespath==1.1.0
     # via
     #   zscaler-mcp (pyproject.toml)
     #   zscaler-sdk-python
-joserfc==1.6.5
+joserfc==1.6.8
     # via authlib
 jsonref==1.1.0
     # via fastmcp-slim
@@ -145,7 +146,7 @@ jwcrypto==1.5.7
     # via zscaler-sdk-python
 keyring==25.7.0
     # via py-key-value-aio
-langsmith==0.8.5
+langsmith==0.8.6
     # via zscaler-mcp (pyproject.toml)
 markdown-it-py==4.2.0
     # via rich
@@ -181,11 +182,11 @@ packaging==26.2
     #   wheel
 pathable==0.6.0
     # via jsonschema-path
-platformdirs==4.9.6
+platformdirs==4.10.0
     # via fastmcp-slim
-posthog==7.15.3
+posthog==7.16.2
     # via zscaler-mcp (pyproject.toml)
-py-key-value-aio==0.4.4
+py-key-value-aio==0.4.5
     # via fastmcp-slim
 pycountry==26.2.16
     # via zscaler-mcp (pyproject.toml)
@@ -266,7 +267,7 @@ rich==15.0.0
     #   typer
 rich-rst==2.0.1
     # via cyclopts
-rpds-py==0.30.0
+rpds-py==2026.5.1
     # via
     #   jsonschema
     #   referencing
@@ -278,7 +279,7 @@ sniffio==1.3.1
     # via openai
 sse-starlette==3.4.4
     # via mcp
-starlette==1.0.1
+starlette==1.2.0
     # via
     #   zscaler-mcp (pyproject.toml)
     #   fastapi
@@ -324,7 +325,7 @@ urllib3==2.7.0
     #   zscaler-sdk-python
 uuid-utils==0.16.0
     # via langsmith
-uvicorn==0.47.0
+uvicorn==0.48.0
     # via
     #   zscaler-mcp (pyproject.toml)
     #   fastmcp-slim
@@ -334,7 +335,9 @@ watchfiles==1.2.0
 webencodings==0.5.1
     # via bleach
 websockets==16.0
-    # via fastmcp-slim
+    # via
+    #   fastmcp-slim
+    #   langsmith
 werkzeug==3.1.8
     # via zscaler-mcp (pyproject.toml)
 wheel==0.47.0
