@@ -173,22 +173,37 @@ docs-clean:
 docs-install-deps:
 	cd docsrc && uv pip install -r requirements.txt
 
+# Target Python for the docs lockfile. Pinned to the project's minimum
+# supported interpreter (requires-python = ">=3.11") so resolution is
+# identical on every machine and in CI, regardless of which interpreter
+# happens to run `uv`. Newer Sphinx releases that require >=3.12 are
+# correctly excluded here.
+DOCS_PYTHON ?= 3.11
+
 # Refresh docsrc/requirements.txt from docsrc/requirements.in with the
-# latest compatible versions. Run this whenever requirements.in changes
-# or you want to pull in upstream Sphinx/Furo/MyST releases.
+# latest compatible versions for DOCS_PYTHON. Run this whenever
+# requirements.in changes or you want to pull in upstream releases.
 docs-update-deps:
-	@echo "$(COLOR_WARNING)Refreshing docsrc/requirements.txt from requirements.in...$(COLOR_NONE)"
+	@echo "$(COLOR_WARNING)Refreshing docsrc/requirements.txt from requirements.in (Python $(DOCS_PYTHON))...$(COLOR_NONE)"
 	uv pip compile docsrc/requirements.in --upgrade \
+		--python-version $(DOCS_PYTHON) \
 		--custom-compile-command "make docs-update-deps" \
 		--output-file docsrc/requirements.txt
 	@echo "$(COLOR_OK)Lockfile refreshed. Commit docsrc/requirements.txt.$(COLOR_NONE)"
 
-# CI guard: re-compile into a scratch file and diff against the committed
-# lockfile. Exits non-zero when the committed copy is stale.
+# CI guard: re-resolve from requirements.in while *preferring the
+# committed pins* (no --upgrade), then diff. This fails only on genuine
+# drift -- a new constraint added to requirements.in without recompiling,
+# or a pin that no longer satisfies its constraint. It does NOT fail just
+# because a newer upstream release exists (that is what docs-update-deps
+# is for). Seeding the scratch file with the committed lockfile lets uv
+# keep the existing pins when they are still valid.
 docs-check-deps:
-	@echo "$(COLOR_WARNING)Checking docsrc/requirements.txt is in sync with requirements.in...$(COLOR_NONE)"
+	@echo "$(COLOR_WARNING)Checking docsrc/requirements.txt is in sync with requirements.in (Python $(DOCS_PYTHON))...$(COLOR_NONE)"
 	@tmpfile=$$(mktemp); \
-	uv pip compile docsrc/requirements.in --upgrade \
+	cp docsrc/requirements.txt "$$tmpfile"; \
+	uv pip compile docsrc/requirements.in \
+		--python-version $(DOCS_PYTHON) \
 		--custom-compile-command "make docs-update-deps" \
 		--output-file "$$tmpfile" --quiet; \
 	if ! diff -u docsrc/requirements.txt "$$tmpfile" > /dev/null; then \
