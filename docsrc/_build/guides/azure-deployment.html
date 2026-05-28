@@ -1,0 +1,821 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Amazon Bedrock AgentCore Deployment" href="amazon-bedrock-agentcore.html" /><link rel="prev" title="GCP ADK Agent Deployment" href="gcp-adk-agent.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Azure Deployment</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Azure Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/guides/azure-deployment.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="azure-deployment">
+<span id="azure-deployment-guide"></span><h1>Azure Deployment<a class="headerlink" href="#azure-deployment" title="Link to this heading">¶</a></h1>
+<p>This guide walks you through deploying the Zscaler Integrations MCP Server to Microsoft Azure with the interactive <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> script. Three deployment targets are supported:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 35.0%" />
+<col style="width: 25.0%" />
+<col style="width: 15.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Image / Package</p></th>
+<th class="head"><p>Status</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Azure Container Apps</strong></p></td>
+<td><p>Managed, serverless containers (recommended)</p></td>
+<td><p>Docker Hub: <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code></p></td>
+<td><p>GA</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Azure Virtual Machine</strong></p></td>
+<td><p>Ubuntu 22.04, self-managed</p></td>
+<td><p>PyPI: <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-server</span></code></p></td>
+<td><p>GA</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Azure Kubernetes Service (AKS)</strong></p></td>
+<td><p>Kubernetes Deployment + LoadBalancer Service</p></td>
+<td><p>Docker Hub: <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code></p></td>
+<td><p><strong>Preview</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>All three targets use <strong>Azure Key Vault</strong> for secret storage by default (Container Apps + AKS via Workload Identity Federation, VM via direct injection at deploy time). The same script also creates and manages <strong>Azure AI Foundry</strong> agents that call the deployed MCP server as a tool.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://aka.ms/installazurecli">Azure CLI</a> (<code class="docutils literal notranslate"><span class="pre">az</span></code>) — logged in via <code class="docutils literal notranslate"><span class="pre">az</span> <span class="pre">login</span></code></p></li>
+<li><p><a class="reference external" href="https://nodejs.org/">Node.js</a> — required by <code class="docutils literal notranslate"><span class="pre">npx</span> <span class="pre">mcp-remote</span></code> (Claude Desktop bridge)</p></li>
+<li><p>Zscaler OneAPI credentials (<code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code>)</p></li>
+<li><p>For AKS: <code class="docutils literal notranslate"><span class="pre">kubectl</span></code> installed (<code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">kubernetes-cli</span></code> on macOS)</p></li>
+<li><p>For OIDCProxy auth: an OIDC provider app registration (Entra ID, Okta, Auth0, etc.)</p></li>
+<li><p>For VM: SSH key pair (the script can generate one on demand)</p></li>
+</ul>
+</section>
+<section id="authentication-modes">
+<h2>Authentication Modes<a class="headerlink" href="#authentication-modes" title="Link to this heading">¶</a></h2>
+<p>The script supports five MCP client authentication modes. Container Apps and VM support all five; AKS Preview supports four (OIDCProxy is on the roadmap).</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 50.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Client Auth Header</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>OIDCProxy</strong></p></td>
+<td><p>OAuth 2.1 + Dynamic Client Registration via your OIDC provider (browser login)</p></td>
+<td><p>Handled automatically by <code class="docutils literal notranslate"><span class="pre">mcp-remote</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>JWT</strong></p></td>
+<td><p>Validate JWTs against a JWKS endpoint</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;JWT&gt;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>API Key</strong></p></td>
+<td><p>Shared secret, auto-generated if not provided</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;api-key&gt;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Zscaler</strong></p></td>
+<td><p>Validate via OneAPI client credentials</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Basic</span> <span class="pre">base64(id:secret)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>None</strong></p></td>
+<td><p>No authentication — development only</p></td>
+<td><p>No header</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/azure
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+<p>The script prompts for:</p>
+<ol class="arabic simple">
+<li><p><strong>Deployment target</strong> — Container Apps, VM, or AKS Preview</p></li>
+<li><p><strong>Credential source</strong> — load from a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file or enter manually</p></li>
+<li><p><strong>Auth mode</strong> — OIDCProxy, JWT, API Key, Zscaler, or None</p></li>
+<li><p><strong>Azure options</strong> — resource group, region, Key Vault, deployment-specific options</p></li>
+</ol>
+<p>When the deployment finishes, the script automatically updates your Claude Desktop and Cursor configurations with the new MCP server URL and the appropriate auth header.</p>
+<section id="mcp-server-operations">
+<h3>MCP Server Operations<a class="headerlink" href="#mcp-server-operations" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deploy</span></code></p></td>
+<td><p>Interactive guided deployment (Container Apps, VM, or AKS Preview)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">status</span></code></p></td>
+<td><p>Show deployment status and health</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">logs</span></code></p></td>
+<td><p>Stream container / VM / pod logs</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ssh</span></code></p></td>
+<td><p>SSH into the VM (VM deployments only)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">destroy</span></code></p></td>
+<td><p>Tear down all Azure resources. For AKS with an existing cluster, removes only the K8s <code class="docutils literal notranslate"><span class="pre">Deployment</span></code> + <code class="docutils literal notranslate"><span class="pre">Service</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>status<span class="w">      </span><span class="c1"># check health</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>logs<span class="w">        </span><span class="c1"># stream logs</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>destroy<span class="w"> </span>-y<span class="w">  </span><span class="c1"># non-interactive teardown</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="container-apps-deployment">
+<h2>Container Apps Deployment<a class="headerlink" href="#container-apps-deployment" title="Link to this heading">¶</a></h2>
+<p>Container Apps is the recommended path for most deployments — Azure handles scaling, ingress, and TLS termination automatically.</p>
+<ul class="simple">
+<li><p><strong>Image</strong> — Docker Hub: <code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code> (no build required)</p></li>
+<li><p><strong>TLS</strong> — Automatic HTTPS via Azure Container Apps ingress</p></li>
+<li><p><strong>Scaling</strong> — Azure manages 1–3 replicas by default</p></li>
+<li><p><strong>Secrets</strong> — Stored in Azure Key Vault and injected at startup via system-assigned managed identity</p></li>
+</ul>
+</section>
+<section id="vm-deployment">
+<h2>VM Deployment<a class="headerlink" href="#vm-deployment" title="Link to this heading">¶</a></h2>
+<p>Ubuntu 22.04 VM with the MCP server installed from PyPI (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp-server</span></code>) and managed by <code class="docutils literal notranslate"><span class="pre">systemd</span></code>.</p>
+<ul class="simple">
+<li><p><strong>Self-managed</strong> — full control over the VM (SSH, packages, updates)</p></li>
+<li><p><strong>systemd service</strong> — automatic startup and restart on failure</p></li>
+<li><p><strong>NSG configured</strong> — port 22 (SSH) and port 8000 (MCP) opened</p></li>
+<li><p><strong>Secrets</strong> — Key Vault is mandatory; values are pulled at deploy time and rendered into the systemd unit file</p></li>
+</ul>
+<p>VM service management:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># SSH into the VM (or use the script wrapper)</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>ssh
+
+<span class="c1"># On the VM:</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>zscaler-mcp<span class="w">     </span><span class="c1"># check status</span>
+sudo<span class="w"> </span>journalctl<span class="w"> </span>-u<span class="w"> </span>zscaler-mcp<span class="w"> </span>-f<span class="w">     </span><span class="c1"># stream logs</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>zscaler-mcp<span class="w">    </span><span class="c1"># restart service</span>
+
+<span class="c1"># Environment file:</span>
+/opt/zscaler-mcp/env
+</pre></div>
+</div>
+</section>
+<section id="aks-deployment-preview">
+<h2>AKS Deployment (Preview)<a class="headerlink" href="#aks-deployment-preview" title="Link to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Status: Preview.</strong> AKS support is fully functional for <code class="docutils literal notranslate"><span class="pre">jwt</span></code>, <code class="docutils literal notranslate"><span class="pre">api-key</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler</span></code>, and <code class="docutils literal notranslate"><span class="pre">none</span></code> auth modes and has been validated end-to-end with cluster creation, <code class="docutils literal notranslate"><span class="pre">LoadBalancer</span></code> Service, and the Docker Hub image. Credentials are stored in Azure Key Vault by default and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver. <strong>OIDCProxy auth, TLS Ingress, and HPA are still planned for AKS GA.</strong></p>
+</div>
+<p>Deploys the MCP server to an Azure Kubernetes Service cluster as a <code class="docutils literal notranslate"><span class="pre">Deployment</span></code> exposed via a <code class="docutils literal notranslate"><span class="pre">Service</span></code> of type <code class="docutils literal notranslate"><span class="pre">LoadBalancer</span></code>.</p>
+<ul class="simple">
+<li><p><strong>Cluster lifecycle</strong> — create a brand-new AKS cluster (PoC / testing) or use an existing cluster (production)</p></li>
+<li><p><strong>Container image</strong> — same Docker Hub image as Container Apps (<code class="docutils literal notranslate"><span class="pre">zscaler/zscaler-mcp-server:latest</span></code>)</p></li>
+<li><p><strong>External access</strong> — Azure Standard Load Balancer with public IP</p></li>
+<li><p><strong>Resource defaults</strong> — <code class="docutils literal notranslate"><span class="pre">200m</span></code>–<code class="docutils literal notranslate"><span class="pre">1000m</span></code> CPU and <code class="docutils literal notranslate"><span class="pre">512Mi</span></code>–<code class="docutils literal notranslate"><span class="pre">1Gi</span></code> memory per pod, single replica</p></li>
+<li><p><strong>Namespace</strong> — defaults to <code class="docutils literal notranslate"><span class="pre">default</span></code>, configurable</p></li>
+<li><p><strong>Credential storage:</strong></p>
+<ul>
+<li><p><strong>Azure Key Vault (default, recommended).</strong> Workload Identity Federation + Key Vault CSI driver. The script provisions the vault, the User-Assigned Managed Identity (UAMI), the federated credential bound to the pod’s <code class="docutils literal notranslate"><span class="pre">ServiceAccount</span></code>, and the <code class="docutils literal notranslate"><span class="pre">SecretProviderClass</span></code>. Pods consume secrets via <code class="docutils literal notranslate"><span class="pre">valueFrom.secretKeyRef</span></code> against a synced Kubernetes <code class="docutils literal notranslate"><span class="pre">Secret</span></code>.</p></li>
+<li><p><strong>Plain env vars (PoC).</strong> Credentials are baked into the Deployment manifest at deploy time — fine for short demos, not for production.</p></li>
+</ul>
+</li>
+<li><p><strong>Cleanup</strong> — if the script created the cluster, <code class="docutils literal notranslate"><span class="pre">destroy</span></code> deletes the entire resource group; if you supplied an existing cluster, <code class="docutils literal notranslate"><span class="pre">destroy</span></code> removes only the K8s resources we created plus the per-deployment UAMI and federated credential (the Key Vault is preserved).</p></li>
+</ul>
+<p>Operations on AKS:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>status<span class="w">      </span><span class="c1"># AKS provisioning state, pod, and service</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>logs<span class="w">        </span><span class="c1"># kubectl logs deployment/zscaler-mcp-server -f</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>destroy<span class="w">     </span><span class="c1"># full or partial teardown (see above)</span>
+</pre></div>
+</div>
+<p>Direct <code class="docutils literal notranslate"><span class="pre">kubectl</span></code> access works after deployment — the script sets your kubectl context to the cluster automatically:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>default<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>zscaler-mcp-server
+kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>zscaler-mcp-server<span class="w"> </span>-n<span class="w"> </span>default
+kubectl<span class="w"> </span>describe<span class="w"> </span>deployment<span class="w"> </span>zscaler-mcp-server<span class="w"> </span>-n<span class="w"> </span>default
+</pre></div>
+</div>
+<p>Known limitations (Preview):</p>
+<ul class="simple">
+<li><p><strong>OIDCProxy auth is not supported on AKS today</strong> — use <code class="docutils literal notranslate"><span class="pre">jwt</span></code>, <code class="docutils literal notranslate"><span class="pre">api-key</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler</span></code>, or <code class="docutils literal notranslate"><span class="pre">none</span></code>.</p></li>
+<li><p><strong>No Ingress controller</strong> — the script provisions a <code class="docutils literal notranslate"><span class="pre">LoadBalancer</span></code> Service that exposes plain HTTP on port 80. For production, place this behind Application Gateway or NGINX Ingress with <code class="docutils literal notranslate"><span class="pre">cert-manager</span></code> for TLS (requires a DNS A record pointing at the cluster’s ingress LoadBalancer).</p></li>
+<li><p><strong>Single replica by default</strong> — for HA, scale via <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">scale</span> <span class="pre">deployment</span> <span class="pre">zscaler-mcp-server</span> <span class="pre">--replicas=3</span></code> or edit the generated <code class="docutils literal notranslate"><span class="pre">.aks-manifest.yaml</span></code>.</p></li>
+</ul>
+</section>
+<section id="azure-ai-foundry-agent-integration">
+<h2>Azure AI Foundry Agent Integration<a class="headerlink" href="#azure-ai-foundry-agent-integration" title="Link to this heading">¶</a></h2>
+<p>For organizations using <a class="reference external" href="https://ai.azure.com">Azure AI Foundry</a>, the same script can create a managed Foundry agent (powered by GPT-4o or GPT-4) that calls the deployed MCP server as a tool. End users interact with the agent in natural language and the agent decides which Zscaler tools to call.</p>
+<p><strong>Prerequisites:</strong></p>
+<ul class="simple">
+<li><p>Azure AI Foundry project at <a class="reference external" href="https://ai.azure.com">ai.azure.com</a></p></li>
+<li><p>Azure OpenAI deployment of GPT-4o or GPT-4</p></li>
+<li><p>A deployed MCP server (Container Apps, VM, or AKS — from the steps above)</p></li>
+<li><p>Python packages: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">azure-ai-projects</span> <span class="pre">azure-ai-agents</span> <span class="pre">azure-identity</span></code></p></li>
+<li><p>Azure CLI authenticated: <code class="docutils literal notranslate"><span class="pre">az</span> <span class="pre">login</span></code></p></li>
+</ul>
+<section id="mcp-server-authentication-from-foundry">
+<h3>MCP Server Authentication from Foundry<a class="headerlink" href="#mcp-server-authentication-from-foundry" title="Link to this heading">¶</a></h3>
+<p>Azure AI Foundry no longer accepts authentication headers passed inline through <code class="docutils literal notranslate"><span class="pre">MCPTool.headers</span></code>. Any header containing words like <code class="docutils literal notranslate"><span class="pre">secret</span></code>, <code class="docutils literal notranslate"><span class="pre">key</span></code>, <code class="docutils literal notranslate"><span class="pre">token</span></code>, or <code class="docutils literal notranslate"><span class="pre">authorization</span></code> is rejected with <code class="docutils literal notranslate"><span class="pre">invalid_payload</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Headers</span> <span class="n">that</span> <span class="n">can</span> <span class="n">include</span> <span class="n">sensitive</span> <span class="n">information</span> <span class="n">are</span> <span class="ow">not</span> <span class="n">allowed</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">headers</span>
+<span class="nb">property</span> <span class="k">for</span> <span class="n">MCP</span> <span class="n">tools</span><span class="o">.</span> <span class="n">Use</span> <span class="n">project_connection_id</span> <span class="n">instead</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The supported pattern is to register a <strong>Custom keys connection</strong> in the Foundry project that holds the headers, and reference it via <code class="docutils literal notranslate"><span class="pre">MCPTool.project_connection_id</span></code>. Foundry then injects the connection’s keys as request headers when calling the MCP server.</p>
+<p><strong>One-time portal setup</strong> (required before <code class="docutils literal notranslate"><span class="pre">agent_create</span></code> will succeed when an MCP auth mode that needs headers is selected):</p>
+<ol class="arabic simple">
+<li><p>Open your project at <a class="reference external" href="https://ai.azure.com">ai.azure.com</a>.</p></li>
+<li><p>Left navigation: <strong>Management center</strong> → <strong>Connected resources</strong>.</p></li>
+<li><p>Click <strong>+ New connection</strong> → <strong>Custom keys</strong>.</p></li>
+<li><p>Connection name: <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-headers</span></code> (the script’s default; override via <code class="docutils literal notranslate"><span class="pre">AZURE_FOUNDRY_CONNECTION_NAME</span></code>).</p></li>
+<li><p>Mark each row as a <strong>secret</strong> and add the keys for your MCP auth mode:</p></li>
+</ol>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 50.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>MCP Auth Mode</p></th>
+<th class="head"><p>Custom Keys to Add</p></th>
+<th class="head"><p>Source</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zscaler</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-ID</span></code> + <code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-Secret</span></code></p></td>
+<td><p>OneAPI credentials</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">api-key</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">X-MCP-API-Key</span></code></p></td>
+<td><p>MCP API key</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p></td>
+<td><p><em>(no connection needed)</em></p></td>
+<td><p>—</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<ol class="arabic simple" start="6">
+<li><p>Click <strong>Save</strong>, then run <code class="docutils literal notranslate"><span class="pre">agent_create</span></code>.</p></li>
+</ol>
+<p>The connection name is read from <code class="docutils literal notranslate"><span class="pre">AZURE_FOUNDRY_CONNECTION_NAME</span></code> (env var or <code class="docutils literal notranslate"><span class="pre">.env</span></code>), defaulting to <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-headers</span></code>. The data-plane SDK (<code class="docutils literal notranslate"><span class="pre">azure-ai-projects</span></code> v2.0.x) cannot create connections — only read them — so the portal step is currently required. Connection CRUD via the management plane is on the follow-up roadmap.</p>
+<p>The script’s <code class="docutils literal notranslate"><span class="pre">agent_create</span></code> command probes the connection at runtime: if it exists, it proceeds silently; if it’s missing, it prints copy-paste-ready portal instructions and exits before mutating anything in Foundry.</p>
+</section>
+<section id="foundry-agent-operations">
+<h3>Foundry Agent Operations<a class="headerlink" href="#foundry-agent-operations" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 30.0%" />
+<col style="width: 45.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Flags</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">agent_create</span></code></p></td>
+<td></td>
+<td><p>Create a Foundry agent with Zscaler MCP tools. Reads the project endpoint, model name, and connection name from <code class="docutils literal notranslate"><span class="pre">.env</span></code> (or prompts).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">agent_status</span></code></p></td>
+<td></td>
+<td><p>Show agent name, version, model, MCP server URL, and project endpoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">agent_chat</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-m</span> <span class="pre">&quot;...&quot;</span></code></p></td>
+<td><p>Start an interactive multi-turn chat. Optionally pass an initial message.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">agent_destroy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-y</span></code></p></td>
+<td><p>Delete the Foundry agent. Pass <code class="docutils literal notranslate"><span class="pre">-y</span></code> to skip the confirmation prompt.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Deploy the MCP server (if you haven&#39;t already)</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+
+<span class="c1"># 2. One-time: create the Custom keys connection in the portal (see above)</span>
+
+<span class="c1"># 3. Create the Foundry agent</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_create
+
+<span class="c1"># 4. Chat</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;list ZPA segment groups&quot;</span>
+
+<span class="c1"># 5. Manage</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_status
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_destroy<span class="w"> </span>-y
+</pre></div>
+</div>
+<p>After <code class="docutils literal notranslate"><span class="pre">agent_create</span></code> succeeds, the script prints a deep link straight into the new Foundry experience for the agent. The chat command exposes:</p>
+<ul class="simple">
+<li><p><strong>Animated spinner</strong> with a live elapsed-time counter while the model thinks</p></li>
+<li><p><strong>Per-response token usage</strong> (input, output, total)</p></li>
+<li><p><strong>Wall-clock latency</strong> for each request/response</p></li>
+<li><p><strong>Tool approval flow</strong> — <code class="docutils literal notranslate"><span class="pre">require_approval=&quot;always&quot;</span></code> is set by default, so you confirm each Zscaler tool call before it runs</p></li>
+<li><p><strong>Multi-turn context</strong> — proper response chaining preserves conversation history</p></li>
+<li><p><strong>Session summary</strong> — total duration and cumulative token count on exit</p></li>
+</ul>
+</section>
+<section id="finding-the-agent-in-the-foundry-portal">
+<h3>Finding the Agent in the Foundry Portal<a class="headerlink" href="#finding-the-agent-in-the-foundry-portal" title="Link to this heading">¶</a></h3>
+<p>Agents created by <code class="docutils literal notranslate"><span class="pre">agent_create</span></code> are <strong>Prompt Agents</strong> in the new Foundry experience (versioned, type <code class="docutils literal notranslate"><span class="pre">prompt</span></code>). To find them in the portal:</p>
+<ol class="arabic simple">
+<li><p>Open the project at <a class="reference external" href="https://ai.azure.com">ai.azure.com</a>.</p></li>
+<li><p>Make sure the <strong>“New Foundry”</strong> toggle (top-right) is <strong>ON</strong> — Prompt Agents only appear in the new experience.</p></li>
+<li><p>Left nav: <strong>Build</strong> → <strong>Agents</strong> → <strong>Agents</strong> tab.</p></li>
+<li><p>Select <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-agent</span></code> (Type: <code class="docutils literal notranslate"><span class="pre">prompt</span></code>, Version: <code class="docutils literal notranslate"><span class="pre">1</span></code>).</p></li>
+<li><p>Use the <strong>Playground</strong> to test interactively, or <strong>Publish</strong> to share with your tenant.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Two agent surfaces in Foundry — heads-up.</strong> The “Agents” tab in the <em>new</em> Foundry experience lists <strong>Prompt Agents</strong> (created by this script). The classic experience also has an “Agents” tab that lists <strong>Assistant API</strong> agents (type <code class="docutils literal notranslate"><span class="pre">asst_xxxx</span></code>, no versioning). They are different platforms in the same project. If you previously opened the Playground or used another tool, you may see leftover <code class="docutils literal notranslate"><span class="pre">Agent###</span></code> rows in classic — they’re unrelated to <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-agent</span></code> and safe to leave alone.</p>
+</div>
+</section>
+</section>
+<section id="connecting-clients">
+<h2>Connecting Clients<a class="headerlink" href="#connecting-clients" title="Link to this heading">¶</a></h2>
+<p>After deployment, the script automatically updates your Claude Desktop (<code class="docutils literal notranslate"><span class="pre">claude_desktop_config.json</span></code>) and Cursor (<code class="docutils literal notranslate"><span class="pre">mcp.json</span></code>) configurations with the new MCP server URL and the auth header for the selected mode. If you need to configure a client manually, see the <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure">integrations/azure README</a> for full per-client examples.</p>
+<p>For HTTP endpoints (VM, AKS without Ingress), Claude Desktop requires the <code class="docutils literal notranslate"><span class="pre">--allow-http</span></code> flag to <code class="docutils literal notranslate"><span class="pre">mcp-remote</span></code>. The script adds this automatically when the deployed URL is HTTP.</p>
+</section>
+<section id="credential-sources">
+<h2>Credential Sources<a class="headerlink" href="#credential-sources" title="Link to this heading">¶</a></h2>
+<p><strong>From a ``.env`` file.</strong> Copy <code class="docutils literal notranslate"><span class="pre">integrations/azure/env.properties</span></code> to <code class="docutils literal notranslate"><span class="pre">.env</span></code> and fill in the values. During deployment, select “From a .env file” and provide the file path.</p>
+<p><strong>Interactive prompts.</strong> Select “Enter manually” and the script will prompt for each credential. Secrets are entered via <code class="docutils literal notranslate"><span class="pre">getpass</span></code> (hidden input).</p>
+<p>Required environment variables for all auth modes:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></td>
+<td><p>OneAPI client ID from ZIdentity</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></td>
+<td><p>OneAPI client secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></td>
+<td><p>Zscaler vanity domain</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code></p></td>
+<td><p>Zscaler customer ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></td>
+<td><p>Zscaler cloud (e.g. <code class="docutils literal notranslate"><span class="pre">production</span></code>, <code class="docutils literal notranslate"><span class="pre">beta</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
+<p><strong>“Non-HTTPS URLs are only allowed for localhost”</strong> in Claude Desktop:</p>
+<blockquote>
+<div><p>Add <code class="docutils literal notranslate"><span class="pre">--allow-http</span></code> to your <code class="docutils literal notranslate"><span class="pre">mcp-remote</span></code> args. The deployment script does this automatically for HTTP endpoints; only manual configurations need the flag.</p>
+</div></blockquote>
+<p><strong>Claude Desktop shows “Server disconnected”:</strong></p>
+<blockquote>
+<div><p>Run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">status</span></code> to check the deployment health, <code class="docutils literal notranslate"><span class="pre">...</span> <span class="pre">logs</span></code> to inspect the server logs, and <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://&lt;PUBLIC_IP&gt;:8000/mcp</span></code> (or the HTTPS Container Apps URL) to verify reachability. For VM deployments, also confirm the NSG allows inbound on the MCP port.</p>
+</div></blockquote>
+<p><strong>Foundry ``agent_create`` errors with “Headers that can include sensitive information are not allowed”:</strong></p>
+<blockquote>
+<div><p>You’re hitting the policy described in <em>MCP Server Authentication from Foundry</em> above. Create the Custom keys connection in the portal and re-run; the script will pick it up via <code class="docutils literal notranslate"><span class="pre">project_connection_id</span></code>.</p>
+</div></blockquote>
+<p><strong>Foundry ``agent_create`` errors with “Foundry connection ‘zscaler-mcp-headers’ was not found”:</strong></p>
+<blockquote>
+<div><p>Same fix — the connection name in your <code class="docutils literal notranslate"><span class="pre">.env</span></code> (<code class="docutils literal notranslate"><span class="pre">AZURE_FOUNDRY_CONNECTION_NAME</span></code>) must match a Custom keys connection that exists in the project’s <strong>Connected resources</strong>.</p>
+</div></blockquote>
+<p><strong>OIDCProxy callback URL issues:</strong></p>
+<blockquote>
+<div><p>For OIDCProxy mode, register the callback URL in your identity provider:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http://&lt;PUBLIC_IP&gt;:8000/auth/callback
+</pre></div>
+</div>
+<p>Some providers also require explicitly allowing HTTP callback URLs for non-HTTPS deployments.</p>
+</div></blockquote>
+</section>
+<section id="security">
+<h2>Security<a class="headerlink" href="#security" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>Secrets in Key Vault.</strong> All credentials are stored in Azure Key Vault by default for Container Apps, mandatory for VM, and the recommended path on AKS via Workload Identity Federation.</p></li>
+<li><p><strong>Five auth modes.</strong> Choose the level appropriate for the environment — production deployments should use OIDCProxy, JWT, or Zscaler.</p></li>
+<li><p><strong>TLS.</strong> Container Apps provides automatic HTTPS. VM deployments default to HTTP (front with a load balancer + TLS for production). AKS Preview exposes plain HTTP today; place behind Application Gateway / NGINX + <code class="docutils literal notranslate"><span class="pre">cert-manager</span></code> for production.</p></li>
+<li><p><strong>NSG.</strong> VM deployments configure Network Security Group rules for SSH and the MCP port.</p></li>
+<li><p><strong>HMAC confirmations.</strong> Destructive Zscaler operations require cryptographic confirmation tokens (controlled by <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SKIP_CONFIRMATIONS</span></code> and <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_CONFIRMATION_TTL</span></code>).</p></li>
+<li><p><strong>Read-only by default.</strong> Write tools are disabled unless explicitly enabled via <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED=true</span></code> and <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code>.</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/azure">integrations/azure/</a> — full integration source, env templates, and per-client configuration examples</p></li>
+<li><p><a class="reference external" href="https://ai.azure.com">Azure AI Foundry</a></p></li>
+<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/azure/container-apps/">Azure Container Apps</a></p></li>
+<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/azure/aks/">Azure Kubernetes Service</a></p></li>
+<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/azure/key-vault/">Azure Key Vault</a></p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="amazon-bedrock-agentcore.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Amazon Bedrock AgentCore Deployment</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="gcp-adk-agent.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">GCP ADK Agent Deployment</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Azure Deployment</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#authentication-modes">Authentication Modes</a></li>
+<li><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li><a class="reference internal" href="#mcp-server-operations">MCP Server Operations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#container-apps-deployment">Container Apps Deployment</a></li>
+<li><a class="reference internal" href="#vm-deployment">VM Deployment</a></li>
+<li><a class="reference internal" href="#aks-deployment-preview">AKS Deployment (Preview)</a></li>
+<li><a class="reference internal" href="#azure-ai-foundry-agent-integration">Azure AI Foundry Agent Integration</a><ul>
+<li><a class="reference internal" href="#mcp-server-authentication-from-foundry">MCP Server Authentication from Foundry</a></li>
+<li><a class="reference internal" href="#foundry-agent-operations">Foundry Agent Operations</a></li>
+<li><a class="reference internal" href="#finding-the-agent-in-the-foundry-portal">Finding the Agent in the Foundry Portal</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#connecting-clients">Connecting Clients</a></li>
+<li><a class="reference internal" href="#credential-sources">Credential Sources</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li><a class="reference internal" href="#security">Security</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

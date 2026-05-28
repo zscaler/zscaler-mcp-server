@@ -1,0 +1,68 @@
+Guides
+======
+
+This section contains every operational guide for the Zscaler MCP Server — configuration & usage, the full deployment tree (one branch per platform), and support resources.
+
+Pick a deployment branch below — every cloud / Kubernetes / local path has its own dedicated tree.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Configuration & Usage
+
+   configuration
+   examples
+   jmespath-filtering
+   audit-logging
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Deployment
+
+   deployment-local
+   deployment-aws
+   deployment-azure
+   deployment-gcp
+   deployment-kubernetes
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Distribution
+
+   claude-desktop-extension
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Support
+
+   troubleshooting
+   support
+   release-notes
+
+Configuration & Usage
+---------------------
+
+- :doc:`configuration` — every CLI flag and environment variable, organized by feature area.
+- :doc:`examples` — practical end-to-end examples for ZIA / ZPA / ZDX / EASM / Z-Insights / ZMS workflows.
+- :doc:`jmespath-filtering` — use the ``query`` parameter on every ``*_list_*`` tool to filter and project results client-side. Standard `JMESPath <https://jmespath.org/>`_ syntax.
+- :doc:`audit-logging` — opt-in tool-call audit logging via ``--log-tool-calls`` / ``ZSCALER_MCP_LOG_TOOL_CALLS``. Captures every tool invocation (sensitive arguments redacted), duration, and result summary on the ``zscaler_mcp.audit`` logger.
+
+Deployment branches
+-------------------
+
+- :doc:`Local <deployment-local>` — :doc:`setup script <setup-script>` (guided, recommended) and :doc:`Docker <docker>` (raw reference).
+- :doc:`AWS <deployment-aws>` — :doc:`Amazon Bedrock AgentCore <amazon-bedrock-agentcore>`, :doc:`Strands Agent client <strands-agentcore>`, :doc:`AWS Harness (preview) <aws-harness>`, :doc:`Secrets Manager <secrets-manager>`.
+- :doc:`Azure <deployment-azure>` — :doc:`Container Apps / VM / AKS <azure-deployment>`, :doc:`AI Foundry Agent <azure-ai-foundry>`, :doc:`Entra ID OIDCProxy <entra-id-oidcproxy>`.
+- :doc:`Google Cloud <deployment-gcp>` — :doc:`Cloud Run <gcp-cloud-run>`, :doc:`GKE <gcp-gke>`, :doc:`Compute Engine VM <gcp-compute-engine-vm>`, :doc:`ADK Agent <gcp-adk-agent>`.
+- :doc:`Kubernetes <deployment-kubernetes>` — :doc:`Helm chart <helm-chart>` (any cluster: EKS, GKE, AKS, OpenShift, k3s, kind).
+
+Distribution
+------------
+
+- :doc:`claude-desktop-extension` — drag-and-drop ``.mcpb`` bundle for Claude Desktop, including prerequisites (Python 3.11+ and ``uvx``), install walkthrough, and the Anthropic submission process for new bundle releases.
+
+Support
+-------
+
+- :doc:`troubleshooting` — common issues and remediation steps.
+- :doc:`support` — support channels and escalation paths.
+- :doc:`release-notes` — version history and changelog.
