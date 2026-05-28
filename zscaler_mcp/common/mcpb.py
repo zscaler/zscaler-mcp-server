@@ -19,8 +19,8 @@ field that the catalog needs is either:
 
 The :func:`build_manifest` entry point assembles the full document. The
 docgen pipeline (``zscaler_mcp/common/docgen.py``) calls it to emit the
-repo-root ``manifest.json`` as a whole-file target, exactly the same
-way ``docs-site/src/data/toolsets.json`` is generated.
+repo-root ``manifest.json`` as a whole-file target. It's the only
+whole-file (no marker pair) target in :data:`docgen.TARGETS` today.
 
 Architectural decisions encoded here (originally raised by Bryan
 Thompson from Anthropic in PR #30):
