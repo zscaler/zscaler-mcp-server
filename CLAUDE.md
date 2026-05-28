@@ -845,6 +845,89 @@ python azure_mcp_operations.py agent_destroy -y  # skip confirmation prompt
 - **`integrations/azure/.azure-agent-state.json`** — Created during agent_create, stores Foundry project/agent info
 - **`integrations/azure/.aks-manifest.yaml`** — Generated K8s manifest (Deployment + LoadBalancer Service) — written only for AKS deployments
 
+## Kubernetes (Helm Chart) Deployment
+
+Cluster-vendor-agnostic Helm chart at `integrations/helm-chart/` for deploying the MCP server to any Kubernetes cluster — EKS, GKE, AKS, OpenShift, Rancher, k3s, Talos, `kind`, `minikube`. Sibling to the Azure / GCP / AWS deployment scripts but deliberately decoupled from any hyperscaler: the chart never calls `aws`, `az`, or `gcloud`. You bring the cluster; the chart installs one workload.
+
+### Architecture
+
+```text
+┌─ Kubernetes cluster (any distro) ────────────────────────────┐
+│                                                              │
+│  Deployment: zscaler-mcp-zscaler-mcp-server (1 replica)     │
+│    ├─ image: zscaler/zscaler-mcp-server:latest               │
+│    ├─ args: --transport streamable-http --host 0.0.0.0 ...   │
+│    ├─ envFrom: secretRef: zscaler-mcp-creds  ← bulk envvars  │
+│    └─ runAsUser: 1000  (matches the `app` user in the image) │
+│  Service (ClusterIP, port 80 → 8000)                         │
+│  Secret (chart-managed OR pre-existing)                      │
+│  Optional: Ingress / HTTPRoute / Certificate / PDB / HPA     │
+└──────────────────────────────────────────────────────────────┘
+            ▲                              │
+            │ POST /mcp                    │ HTTPS
+            │ Authorization: Basic ...     ▼
+     Claude / Cursor                Zscaler OneAPI
+```
+
+### Key Files
+
+- **`integrations/helm-chart/charts/zscaler-mcp-server/`** — The chart itself. `Chart.yaml`, `values.yaml`, plus templates for Deployment / Service / Secret / ServiceAccount and optional Ingress / HTTPRoute / Certificate (cert-manager) / PDB / HPA / `helm test` smoke pod. Every optional template is gated by an explicit boolean in `values.yaml` — no opt-out surprises.
+
+- **`integrations/helm-chart/helm_mcp_operations.py`** — Interactive Python deployer mirroring `integrations/azure/azure_mcp_operations.py` and `integrations/google/gcp/gcp_mcp_operations.py`. Stdlib + `kubectl` + `helm 3`; no cloud SDK, no `pip install`. Six subcommands: `deploy`, `destroy`, `status`, `logs`, `configure`, `test`. Writes `.helm-deploy-state.json` so follow-up subcommands don't re-prompt.
+
+### Credential Setup — Five Paths
+
+| # | Path | When | Storage |
+|---|------|------|---------|
+| 1 | `helm_mcp_operations.py deploy` | Local dev, day-1 walkthroughs | Materialised from `.env` via `kubectl create secret --from-env-file` |
+| 2 | Manual `kubectl create secret --from-env-file` + `helm install` | CI, GitOps reconcilers | Pre-existing Secret referenced via `secret.create=false` |
+| 3 | Inline `--set secret.values.*` | Smoke tests, templating pipelines | Chart-rendered Secret (`secret.create=true`) |
+| 4 | Pre-existing Secret (ArgoCD/Flux/SealedSecrets/sops) | GitOps workflows | Operator-provided Secret; chart references it by name |
+| 5 | External Secrets Operator (ESO) | Production with AWS Secrets Manager / Azure Key Vault / GCP Secret Manager / Vault / 1Password | ESO materialises the Secret; chart references it by name |
+
+All five paths converge on the same chart contract: the Deployment uses `envFrom: secretRef:` to bulk-import every key in the Secret as an environment variable. **No translation into `values.yaml` syntax** — whatever `ZSCALER_MCP_*` / `ZSCALER_*` keys live in your `.env` (or remote-secret backend) flow into the container untouched. This was a deliberate UX choice when the chart was added: forcing the user to mirror every env var into `secret.values.*` was a non-starter for anyone with a non-trivial `.env`.
+
+### Auto-Configuration of MCP Clients
+
+When `deploy` finishes (or `configure` is run later), the script:
+
+1. Pulls `ZSCALER_CLIENT_ID` + `ZSCALER_CLIENT_SECRET` directly from the cluster Secret (works regardless of which credential-setup path created it).
+2. Computes `Authorization: Basic base64(client_id:client_secret)` locally.
+3. Starts a background `kubectl port-forward` (when no Ingress was configured).
+4. Writes the `zscaler-mcp-server` entry into `~/.cursor/mcp.json` (Cursor's HTTP-native shape) and `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS (via the `mcp-remote` bridge).
+
+Same pattern as the Azure / GCP scripts — the client config never carries raw credentials, only the derived `Authorization: Basic` header.
+
+### Pod-Startup Recovery (built into the rollout wait loop)
+
+`deploy` doesn't use `helm upgrade --wait`. Instead the script polls pod state every 5 seconds with a quiet `kubectl get pods -o json`, classifies the result, and bails out early with a tailored hint on terminal failure states (after a 15-second grace window so the kubelet's first-attempt transients don't trip it):
+
+- `ImagePullBackOff` / `ErrImagePull` / `InvalidImageName` → image / tag / registry guidance; on a `kind` context it adds the `kind load docker-image` recipe so the user can side-load a local image.
+- `CreateContainerConfigError` / `CreateContainerError` / `RunContainerError` → dumps Kubernetes' `container.state.waiting.message` verbatim (usually pinpoints the missing Secret key or invalid env-var name) plus the `kubectl describe pod` command.
+- `CrashLoopBackOff` / `OOMKilled` / `Error` → same recovery surface plus the last 20 pod events.
+
+On any terminal state, the script automatically dumps the last 20 pod events so the operator doesn't have to copy-paste `kubectl describe`. The `$ kubectl ...` info-lines that previously spammed the rollout loop are silenced (`run_kubectl(..., quiet=True)`); the user only sees state-change summaries.
+
+### Gotchas
+
+- **`runAsUser: 1000` is mandatory.** The image runs as the `app` user (uid=1000, gid=1000) baked in via `Dockerfile`'s `USER app`. The chart pins `runAsUser: 1000` + `runAsGroup: 1000` + `fsGroup: 1000` numerically — Kubernetes cannot introspect a `USER <name>` directive, so without numeric UIDs `runAsNonRoot: true` trips admission with `image has non-numeric user (app), cannot verify user is non-root`. If you override `image.repository` to point at a custom build, make sure it still runs under UID 1000.
+
+- **`secret.create=false` requires `secret.existingName`.** Enforced by the chart's `validateValues` template — fails install with a clear error rather than silently rendering an empty `envFrom`.
+
+- **`ingress.enabled` and `httproute.enabled` are mutually exclusive.** Same validateValues template — pick one.
+
+- **Pre-existing Secret + Secret rotation.** When `secret.create: false`, the chart **does not** render the `checksum/credentials` pod annotation. Secret rotation is the operator's responsibility (External Secrets Operator handles this natively via [Stakater reloader](https://github.com/stakater/Reloader) or its own reconciliation). Chart-managed Secrets DO render the annotation, so any change to `secret.values.*` triggers a rolling restart automatically.
+
+- **The Docker Hub image only publishes `latest`.** `image.tag` defaults to `latest`. For production, pin via `image.digest` (`sha256:...`) which wins over `image.tag`.
+
+- **Helm chart vs hyperscaler scripts.** This chart is the answer when **the cluster is already a fact**. If you need to *stand up* cluster infrastructure (EKS, AKS, GKE, networking, IAM, Key Vault), use `integrations/azure/azure_mcp_operations.py` (Container Apps / VM / AKS-Preview), `integrations/google/gcp/gcp_mcp_operations.py` (Cloud Run / GKE / Compute Engine), or `integrations/aws/bedrock-agentcore/aws_mcp_operations.py`. Those scripts provision and manage the underlying cloud infrastructure end-to-end. The Helm chart deliberately doesn't.
+
+### Documentation
+
+- **Source of truth:** `integrations/helm-chart/README.md` (1 → 5 credential paths, full `values.yaml` reference, Deployment Script Reference enumerating every subcommand + flag, Operations cheat sheet, Troubleshooting matrix, Recovering-from-failed-install runbook).
+- **Docs-site mirror:** `docs-site/docs/deployment/helm-chart.md` — auto-synced from the source README via `make sync-integration-docs` (registered in `_CROSS_REF_REDIRECTS` so sibling-repo links rewrite to GitHub master URLs).
+- **Top-level README:** `Additional Deployment Options` → `Kubernetes (Helm Chart)` subsection plus a row in the `Platform Integrations` table.
+
 ## AWS Version
 
 A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS/zscaler-mcp-server` for Amazon Bedrock AgentCore. Key differences:

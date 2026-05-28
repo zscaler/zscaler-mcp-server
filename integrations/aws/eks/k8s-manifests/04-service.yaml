@@ -1,0 +1,22 @@
+# Public entry point. Uses the in-tree EKS cloud-controller-manager to
+# create an NLB targeting the Pod IPs directly — no extra controllers
+# (AWS Load Balancer Controller) required for v1. Production deployments
+# should add an ALB Ingress + cert-manager for TLS — see the README.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zscaler-mcp-server
+  namespace: ${NAMESPACE}
+  labels:
+    app.kubernetes.io/name: zscaler-mcp-server
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: zscaler-mcp-server
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP

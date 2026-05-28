@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zscaler-mcp-server
+  namespace: ${NAMESPACE}
+  labels:
+    app.kubernetes.io/name: zscaler-mcp-server
+spec:
+  replicas: ${REPLICAS}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zscaler-mcp-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zscaler-mcp-server
+    spec:
+      serviceAccountName: ${SA_NAME}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: zscaler-mcp
+          image: ${IMAGE}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: zscaler-mcp-creds
+          env:
+            - { name: ZSCALER_MCP_TRANSPORT, value: streamable-http }
+            - { name: ZSCALER_MCP_HOST, value: "0.0.0.0" }
+            - { name: ZSCALER_MCP_PORT, value: "8000" }
+            - { name: ZSCALER_MCP_ALLOW_HTTP, value: "true" }
+            - { name: ZSCALER_MCP_DISABLE_HOST_VALIDATION, value: "true" }
+            - { name: FASTMCP_STATELESS_HTTP, value: "true" }
+            - { name: ZSCALER_MCP_AUTH_MODE, value: "${AUTH_MODE}" }
+            - { name: ZSCALER_MCP_AUTH_ENABLED, value: "${AUTH_ENABLED}" }
+            - { name: ZSCALER_MCP_AUTH_JWKS_URI, value: "${JWT_JWKS_URI}" }
+            - { name: ZSCALER_MCP_AUTH_ISSUER, value: "${JWT_ISSUER}" }
+            - { name: ZSCALER_MCP_AUTH_AUDIENCE, value: "${JWT_AUDIENCE}" }
+            - { name: ZSCALER_MCP_AUTH_API_KEY, value: "${API_KEY}" }
+            - { name: ZSCALER_MCP_WRITE_ENABLED, value: "${WRITE_ENABLED}" }
+            - { name: ZSCALER_MCP_WRITE_TOOLS, value: "${WRITE_TOOLS}" }
+            - { name: ZSCALER_MCP_DISABLED_TOOLS, value: "${DISABLED_TOOLS}" }
+            - { name: ZSCALER_MCP_DISABLED_SERVICES, value: "${DISABLED_SERVICES}" }
+            - { name: ZSCALER_MCP_TOOLSETS, value: "${TOOLSETS}" }
+            - { name: ZSCALER_MCP_DISABLED_TOOLSETS, value: "${DISABLED_TOOLSETS}" }
+            - { name: ZSCALER_MCP_LOG_TOOL_CALLS, value: "${LOG_TOOL_CALLS}" }
+            - { name: OIDCPROXY_CLIENT_ID, value: "${OIDC_CLIENT_ID}" }
+            - { name: OIDCPROXY_CLIENT_SECRET, value: "${OIDC_CLIENT_SECRET}" }
+            - { name: OIDCPROXY_ISSUER, value: "${OIDC_ISSUER}" }
+            - { name: OIDCPROXY_AUDIENCE, value: "${OIDC_AUDIENCE}" }
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          # The MCP server has no health endpoint per se, but `/mcp` answers
+          # with a 4xx if not POST'd correctly — good enough as a liveness
+          # signal that the process is up and accepting connections.
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10

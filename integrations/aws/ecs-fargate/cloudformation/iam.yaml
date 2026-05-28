@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on ECS-Fargate — IAM nested stack. Creates the two
+  roles every Fargate task needs:
+    1. Task Execution Role  — assumed by the ECS agent on the container's
+                              behalf to pull the image, fetch secrets, and
+                              write logs.
+    2. Task Role            — assumed by the container code itself. The
+                              MCP server only needs to read its own secret
+                              at startup; everything else is outbound HTTPS
+                              to Zscaler OneAPI.
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+  SecretArn:
+    Type: String
+    Description: ARN of the Secrets Manager secret holding the MCP env vars.
+
+Resources:
+
+  # ── Task Execution Role ─────────────────────────────────────────────────
+  # Used by the ECS agent (not the container). Needs:
+  #   - AmazonECSTaskExecutionRolePolicy (managed) for ECR pull + logs
+  #   - secretsmanager:GetSecretValue on the specific secret we mount
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-task-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsManagerRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref SecretArn
+
+  # ── Task Role ───────────────────────────────────────────────────────────
+  # Assumed by the container code. The MCP server does not call any AWS APIs
+  # at runtime (Zscaler OneAPI is plain HTTPS). Kept as a separate principal
+  # for defense-in-depth and to leave room for future AWS API calls (e.g.
+  # CloudWatch metrics) without widening the execution role.
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-task-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Description: >-
+        Role assumed by the Zscaler MCP Server container itself (not the
+        ECS agent). Empty by default; the MCP server does not need AWS
+        API access at runtime.
+
+Outputs:
+
+  TaskExecutionRoleArn:
+    Value: !GetAtt TaskExecutionRole.Arn
+  TaskRoleArn:
+    Value: !GetAtt TaskRole.Arn

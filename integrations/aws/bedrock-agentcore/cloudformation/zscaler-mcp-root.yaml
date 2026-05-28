@@ -169,6 +169,41 @@ Parameters:
     NoEcho: true
     Description: Required when McpAuthMode=api-key.
 
+  # ── Network configuration (PUBLIC default, opt-in VPC) ──────────────────
+  NetworkMode:
+    Type: String
+    Default: PUBLIC
+    AllowedValues: [PUBLIC, VPC]
+    Description: >-
+      AgentCore Runtime network mode. PUBLIC (default) — runs on the
+      AWS-managed network, outbound internet works out of the box, no
+      VPC plumbing required. VPC — AgentCore creates ENIs in subnets
+      and security groups you own so the container can reach private
+      resources (RDS, internal APIs, etc.). VPC subnets must live in
+      AgentCore-supported Availability Zones (see
+      https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#supported-az
+      ). Place subnets in PRIVATE subnets with a NAT gateway if the
+      container needs outbound internet — placing AgentCore in a public
+      subnet does NOT give it internet access.
+
+  VpcSubnetIds:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated subnet IDs (e.g. "subnet-aaa,subnet-bbb"). Required
+      when NetworkMode=VPC. AWS recommends >=2 subnets in different AZs
+      for HA. All subnets must be in AgentCore-supported AZ IDs (see the
+      NetworkMode description for the link). The deploy script validates
+      this with ec2:DescribeSubnets before kicking off the stack.
+
+  VpcSecurityGroupIds:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated security group IDs (e.g. "sg-aaa,sg-bbb"). Required
+      when NetworkMode=VPC. Outbound rules must allow whichever private
+      resources the container will talk to.
+
   # ── AgentCore Gateway (optional) ────────────────────────────────────────
   EnableAgentCoreGateway:
     Type: String
@@ -368,6 +403,12 @@ Conditions:
   GatewayCreateMode: !And
     - !Equals [!Ref EnableAgentCoreGateway, 'true']
     - !Equals [!Ref GatewayMode, create]
+  # Gates the iam:CreateServiceLinkedRole grant on the deployment-Lambda
+  # role. The first VPC-mode CreateAgentRuntime call in an account needs
+  # to provision the AgentCore networking SLR (or AgentCore itself does it
+  # transitively — but the perm has to be on the calling principal). Only
+  # added when NetworkMode=VPC so PUBLIC-mode deploys keep a tighter scope.
+  VpcMode: !Equals [!Ref NetworkMode, 'VPC']
   # Empty-string fallback flags for the hash-suffixed Lambda keys. When the
   # deploy script supplies a key we use it verbatim; otherwise we fall back
   # to the legacy unsuffixed layout for backwards compatibility with anyone
@@ -395,6 +436,7 @@ Resources:
           - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ExistingSecretName}-*
         EnableAgentCoreGateway: !Ref EnableAgentCoreGateway
         GatewayMode: !Ref GatewayMode
+        NetworkMode: !Ref NetworkMode
       TimeoutInMinutes: 10
 
   # ── Child stack 2: Secrets Manager (only if CredentialSource=CreateNew) ─
@@ -443,6 +485,9 @@ Resources:
         JwtAllowedClients: !Ref JwtAllowedClients
         ApiKey: !Ref ApiKey
         EnableToolCallLogging: !Ref EnableToolCallLogging
+        NetworkMode: !Ref NetworkMode
+        VpcSubnetIds: !Ref VpcSubnetIds
+        VpcSecurityGroupIds: !Ref VpcSecurityGroupIds
         LambdaCodeBucket: !Ref AssetBucket
         LambdaCodeKey: !If
           - RuntimeLambdaKeyEmpty
@@ -543,3 +588,7 @@ Outputs:
   ExecutionRoleArn:
     Description: IAM role assumed by the AgentCore Runtime container.
     Value: !GetAtt IamStack.Outputs.AgentCoreExecutionRoleArn
+
+  NetworkMode:
+    Description: AgentCore Runtime network mode (PUBLIC or VPC).
+    Value: !Ref NetworkMode

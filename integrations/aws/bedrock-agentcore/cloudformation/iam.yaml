@@ -36,6 +36,16 @@ Parameters:
       "attach" assumes the customer's existing Gateway already has its
       own service role.
 
+  NetworkMode:
+    Type: String
+    AllowedValues: [PUBLIC, VPC]
+    Default: PUBLIC
+    Description: >-
+      When VPC, the deployment-Lambda role is granted the narrow
+      iam:CreateServiceLinkedRole + ec2:Describe* permissions AgentCore
+      needs to bring up the AWSServiceRoleForBedrockAgentCoreNetwork SLR
+      and place ENIs in customer subnets. PUBLIC leaves them off.
+
 Conditions:
 
   # We only provision a Gateway service role when (a) the Gateway is enabled
@@ -45,6 +55,7 @@ Conditions:
   CreateOwnedGatewayServiceRole: !And
     - !Equals [!Ref EnableAgentCoreGateway, 'true']
     - !Equals [!Ref GatewayMode, create]
+  VpcMode: !Equals [!Ref NetworkMode, 'VPC']
 
 Resources:
 
@@ -206,6 +217,37 @@ Resources:
                   Condition:
                     StringEquals:
                       iam:PassedToService: bedrock-agentcore.amazonaws.com
+          - !Ref AWS::NoValue
+        # VPC-mode-only: allow the deployment Lambda to (a) bring up the
+        # AgentCore networking service-linked role on first VPC deploy in
+        # an account and (b) describe the customer's subnets to validate
+        # they live in AgentCore-supported AZ IDs. iam:CreateServiceLinkedRole
+        # is the documented requirement (already in BedrockAgentCoreFullAccess):
+        #   https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#agentcore-iam-permissions
+        # ec2:DescribeSubnets / DescribeSecurityGroups / DescribeVpcs are
+        # read-only and used by the deploy script's interactive picker too —
+        # granting them on the Lambda lets the provisioner do its own
+        # belt-and-braces validation just before CreateAgentRuntime.
+        - !If
+          - VpcMode
+          - PolicyName: BedrockAgentCoreNetworkSLR
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: iam:CreateServiceLinkedRole
+                  Resource:
+                    - !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreNetwork
+                  Condition:
+                    StringLike:
+                      iam:AWSServiceName: network.bedrock-agentcore.amazonaws.com
+                - Effect: Allow
+                  Action:
+                    - ec2:DescribeSubnets
+                    - ec2:DescribeSecurityGroups
+                    - ec2:DescribeVpcs
+                    - ec2:DescribeAvailabilityZones
+                  Resource: '*'
           - !Ref AWS::NoValue
 
   # ── AgentCore Gateway service role (create mode only) ──────────────────

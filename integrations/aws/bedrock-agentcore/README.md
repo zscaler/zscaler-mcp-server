@@ -283,6 +283,82 @@ You do **not** need to copy the image into your own ECR. You also do **not** nee
 
 ---
 
+## VPC connectivity
+
+The deploy script's **Step 7.5** prompts for a network mode. There are two concerns that look related but are independently configured — read the table before picking.
+
+| Concern | Where the ENIs live | What it enables | Configured via |
+|---|---|---|---|
+| **Runtime in VPC mode** (covered by this script) | AgentCore creates ENIs in **your** subnets / SGs | The container can reach private resources in your VPC: RDS, internal APIs, Zscaler private DNS, etc. | `AGENTCORE_NETWORK_MODE=VPC` + `AGENTCORE_VPC_SUBNETS` + `AGENTCORE_VPC_SECURITY_GROUPS` |
+| **PrivateLink for caller traffic** (not provisioned by this script) | A VPC Interface Endpoint in **your caller's** VPC | EC2 / Lambda / ECS in a VPC call `bedrock-agentcore:InvokeAgentRuntime` over PrivateLink instead of the public internet | `aws ec2 create-vpc-endpoint --service-name com.amazonaws.<region>.bedrock-agentcore --vpc-endpoint-type Interface` |
+
+You don't need the PrivateLink endpoint just to use VPC mode (or vice versa). A caller inside a VPC can already reach AgentCore's public service endpoint over SigV4 without any extra plumbing — the PrivateLink endpoint is only needed when you want that **caller → AgentCore API** hop to stay on the AWS backbone.
+
+### When to pick PUBLIC
+
+The default. AgentCore runs on the AWS-managed network, outbound internet works out of the box, Zscaler OneAPI is directly reachable, and you pay nothing extra for networking. Use this unless the container itself needs to reach private resources you own.
+
+### When to pick VPC
+
+When the MCP container needs to reach **private** resources — a private RDS, an internal API behind a corporate Transit Gateway, your Zscaler tenant's private DNS, anything not on the public internet.
+
+Hard constraints AWS enforces:
+
+1. **Supported Availability Zones only.** The subnets you pass must live in AgentCore-supported AZ IDs (e.g. `use1-az1`, not `us-east-1a` — note these are AZ **IDs**, not names; AWS randomises the name→ID mapping per account). The full per-region table is at <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#supported-az>. The deploy script bundles this table and rejects unsupported subnets **before** launching the stack.
+2. **Private subnet + NAT gateway for outbound internet.** Placing AgentCore in a public subnet does **not** give it internet. If the container needs to call Zscaler OneAPI (or any other public endpoint), put the ENIs in private subnets with a NAT gateway route. AgentCore behaves identically to Lambda-in-VPC in this regard — IGW is for inbound, NAT GW is for outbound from a private subnet.
+3. **Service-linked role.** The first VPC-mode deploy in an account creates the `AWSServiceRoleForBedrockAgentCoreNetwork` SLR. The IAM nested stack grants the narrow `iam:CreateServiceLinkedRole` perm needed for that automatically when you set `NetworkMode=VPC` (and grants nothing when you stay on PUBLIC). This mirrors the relevant slice of the AWS managed policy `BedrockAgentCoreFullAccess`.
+4. **Best practice: >=2 subnets in different AZs.** Not enforced by AWS, but the deploy script warns if you only pick one. ENIs are shared across agents using the same subnet+SG, and unused ENIs may linger for up to 8 hours after the agent is deleted.
+
+### Interactive VPC deploy
+
+Just run `python aws_mcp_operations.py deploy`. Step 7.5 will:
+
+1. Prompt **PUBLIC vs VPC**.
+2. If VPC: list every VPC in the region with the default VPC pinned to the top.
+3. List every subnet in the chosen VPC, **filtered** to AgentCore-supported AZ IDs (subnets in unsupported AZs are hidden with a count).
+4. List every security group in the chosen VPC.
+5. Hard-validate the selection via `ec2:DescribeSubnets` before kicking off the stack.
+
+### Non-interactive VPC deploy
+
+```bash
+cat > .env <<EOF
+# ... your Zscaler creds and the other usual settings ...
+AGENTCORE_NETWORK_MODE=VPC
+AGENTCORE_VPC_SUBNETS=subnet-0123abcd,subnet-0456efgh
+AGENTCORE_VPC_SECURITY_GROUPS=sg-0123abcd
+EOF
+python aws_mcp_operations.py deploy --non-interactive
+```
+
+The validator still runs in `--non-interactive` mode — bad AZ IDs hard-fail with the list of supported AZ IDs for the region.
+
+### Verifying outbound connectivity from inside the VPC
+
+Once VPC mode is up, the standard `InvokeAgentRuntime` API still works the same way. If the agent can't reach a private resource, check (in order):
+
+1. The SG you passed has an **outbound** rule for the target resource's port + IP/SG.
+2. The target's SG has an **inbound** rule for your AgentCore SG.
+3. Private subnet route table has `0.0.0.0/0` → NAT gateway (only if outbound internet is needed).
+4. Enable VPC Flow Logs and tail them while the agent runs — every connection attempt shows up there.
+
+### Adding a PrivateLink endpoint for caller traffic (optional, not provisioned)
+
+If your *callers* (EC2 / Lambda / ECS in a VPC) need to invoke AgentCore over PrivateLink instead of the public internet:
+
+```bash
+aws ec2 create-vpc-endpoint \
+    --vpc-id vpc-CALLER \
+    --service-name com.amazonaws.<region>.bedrock-agentcore \
+    --vpc-endpoint-type Interface \
+    --subnet-ids subnet-CALLER_PRIVATE_1 subnet-CALLER_PRIVATE_2 \
+    --security-group-ids sg-FOR-ENDPOINT
+```
+
+This is a separate, optional step. It does **not** change anything about the runtime itself.
+
+---
+
 ## Tearing down
 
 ```bash
@@ -328,6 +404,10 @@ Sensible defaults are baked in; override only when you need to.
 | `ZSCALER_MCP_DISABLED_TOOLS` | (unset) | Wildcard blocklist for individual tools. |
 | `ZSCALER_MCP_DISABLED_SERVICES` | (unset) | Comma-separated service blocklist (e.g. `zcc,zdx`). |
 | `ZSCALER_MCP_LOG_TOOL_CALLS` | `true` | Audit every tool call to CloudWatch. |
+| `AGENTCORE_NETWORK_MODE` | `PUBLIC` | `PUBLIC` (default — AWS-managed network) or `VPC` (place ENIs in your subnets). See [VPC connectivity](#vpc-connectivity). |
+| `AGENTCORE_VPC_SUBNETS` | (unset) | Comma-separated subnet IDs. Required when `AGENTCORE_NETWORK_MODE=VPC`. Must be in [AgentCore-supported AZ IDs](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#supported-az). |
+| `AGENTCORE_VPC_SECURITY_GROUPS` | (unset) | Comma-separated security group IDs. Required when `AGENTCORE_NETWORK_MODE=VPC`. |
+| `AGENTCORE_VPC_ID` | (unset) | Optional — pre-select the VPC in the interactive picker. No effect in `--non-interactive` (subnets / SGs are taken verbatim). |
 
 ### User-facing — authentication (mode-dependent)
 

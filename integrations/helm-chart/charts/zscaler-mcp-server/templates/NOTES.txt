@@ -1,0 +1,120 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Zscaler MCP Server — release "{{ .Release.Name }}" deployed to namespace "{{ .Release.Namespace }}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Image:       {{ include "zscaler-mcp-server.image" . }}
+Transport:   {{ .Values.mcp.transport }}
+Auth mode:   {{ .Values.mcp.auth.mode }}
+Replicas:    {{ .Values.replicaCount }}
+{{- if .Values.secret.create }}
+Secret:      {{ include "zscaler-mcp-server.secretName" . }}   (chart-managed)
+{{- else }}
+Secret:      {{ include "zscaler-mcp-server.secretName" . }}   (pre-existing)
+{{- end }}
+
+────────────────────────────────────────────────────────────────────────────
+ STEP 1 — Wait for the pod to become Ready
+────────────────────────────────────────────────────────────────────────────
+
+  kubectl --namespace {{ .Release.Namespace }} rollout status \
+    deployment/{{ include "zscaler-mcp-server.fullname" . }} --timeout=180s
+
+  If the rollout never finishes, inspect what's blocking it with:
+
+    kubectl --namespace {{ .Release.Namespace }} get pods \
+      -l app.kubernetes.io/instance={{ .Release.Name }}
+    kubectl --namespace {{ .Release.Namespace }} describe pod \
+      -l app.kubernetes.io/instance={{ .Release.Name }} | sed -n '/Events:/,$p'
+
+  Most common failure: `ImagePullBackOff` — your cluster can't reach
+  Docker Hub. Re-run with `--set image.repository=<your-mirror>`.
+
+────────────────────────────────────────────────────────────────────────────
+ STEP 2 — Confirm the server is healthy
+────────────────────────────────────────────────────────────────────────────
+
+{{- if .Values.ingress.enabled }}
+
+  Probe through the Ingress:
+    {{- range .Values.ingress.hosts }}
+    curl {{ if $.Values.ingress.tls }}https{{ else }}http{{ end }}://{{ .host }}/health
+    {{- end }}
+{{- else if .Values.httproute.enabled }}
+
+  Probe through the Gateway:
+    {{- range .Values.httproute.hostnames }}
+    curl https://{{ . }}/health
+    {{- end }}
+{{- else }}
+
+  Port-forward the in-cluster Service to localhost:
+
+    kubectl --namespace {{ .Release.Namespace }} port-forward \
+      svc/{{ include "zscaler-mcp-server.fullname" . }} 8000:{{ .Values.service.port }} &
+    curl http://localhost:8000/health
+{{- end }}
+
+────────────────────────────────────────────────────────────────────────────
+ STEP 3 — Wire up an MCP client (Cursor / Claude Desktop / Gemini CLI)
+────────────────────────────────────────────────────────────────────────────
+
+{{- if eq .Values.mcp.auth.mode "zscaler" }}
+
+  Easiest path: use the bundled interactive deployment script. From the
+  repo root:
+
+    python integrations/helm-chart/helm_mcp_operations.py configure
+
+  …which reads the recorded deployment state (release name, namespace,
+  Secret name, MCP URL), pulls the OneAPI credentials from the cluster
+  Secret, builds the `Authorization: Basic` header, (re)starts a
+  background `kubectl port-forward`, and writes ready-to-use entries
+  into ~/.cursor/mcp.json and the Claude Desktop config.
+
+  Manual fallback — derive the auth header by hand:
+
+    AUTH=$(kubectl --namespace {{ .Release.Namespace }} get secret \
+             {{ include "zscaler-mcp-server.secretName" . }} \
+             -o jsonpath='{.data.ZSCALER_CLIENT_ID}:{.data.ZSCALER_CLIENT_SECRET}' \
+             | base64 -d | tr -d '\n' | base64)
+    echo "Authorization: Basic $AUTH"
+
+{{- else if eq .Values.mcp.auth.mode "api-key" }}
+
+  Auth header (api-key mode):
+    Authorization: Bearer <your-api-key>
+
+  The chart does NOT inject a value here. Configure your client with
+  the API key you generated via `zscaler-mcp --generate-auth-token`.
+{{- else if eq .Values.mcp.auth.mode "jwt" }}
+
+  Auth header (jwt mode):
+    Authorization: Bearer <your-jwt>
+
+  The chart does NOT inject a value here. Your IdP issues the token.
+{{- else }}
+
+  Auth: disabled (mcp.auth.mode = none). Recommended only for local
+  development behind a private network.
+{{- end }}
+
+  The MCP endpoint path is `/mcp`. Your Cursor `mcp.json` entry looks
+  roughly like this once the configurator has run:
+
+    "zscaler-mcp-server": {
+      "url": "http://localhost:8000/mcp",
+      "headers": { "Authorization": "Basic <base64 of id:secret>" }
+    }
+
+────────────────────────────────────────────────────────────────────────────
+ STEP 4 — Run the chart's bundled smoke test
+────────────────────────────────────────────────────────────────────────────
+
+  helm test {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+
+For the full configuration reference (every values.yaml key, every
+override, the OIDCProxy walk-through, the digest-pinning recipe), see:
+
+  https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/helm-chart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
