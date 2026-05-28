@@ -23,7 +23,8 @@
           ".cursor-plugin/plugin.json",
           "gemini-extension.json",
           "server.json",
-          "manifest.json"
+          "manifest.json",
+          "docsrc/conf.py"
         ],
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }
