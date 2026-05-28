@@ -17,7 +17,7 @@ Deploy the Zscaler MCP Server to **any** Kubernetes cluster via Helm — EKS, GK
 | Install into an existing K8s cluster (any cloud, any distro, on-prem) | **This chart** |
 | Wire into ArgoCD / Flux / a corporate GitOps pipeline | **This chart** (Helm-source `Application` or `HelmRelease`) |
 | Run locally on Claude Code / Cursor / Gemini CLI without containers | `uvx zscaler-mcp` (see top-level `README.md`) |
-| Run a single container without Kubernetes | `docker run zscaler/zscaler-mcp-server` (see [`docs-site/docs/deployment/docker.md`](../../docs-site/docs/deployment/docker.md)) |
+| Run a single container without Kubernetes | `docker run zscaler/zscaler-mcp-server` (see [`docsrc/guides/docker.rst`](../../docsrc/guides/docker.rst)) |
 | Have AWS host the runtime for you on Bedrock | [`integrations/aws/bedrock-agentcore/`](../aws/bedrock-agentcore/) |
 | Stand up brand-new Azure infra and deploy on top | [`integrations/azure/`](../azure/) |
 | Stand up brand-new GCP infra and deploy on top | [`integrations/google/gcp/`](../google/gcp/) |
