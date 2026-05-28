@@ -1,0 +1,382 @@
+# =============================================================================
+# Zscaler MCP Server — default values
+# =============================================================================
+#
+# Every key below maps 1:1 to either a runtime CLI flag or an environment
+# variable that the server already understands. The chart never invents a
+# new contract — it just declaratively wires the same surface that
+# `zscaler-mcp --help` already exposes.
+#
+# Two paths are supported for OneAPI credentials:
+#
+#   1. Chart-managed Secret (dev / single-cluster):
+#        secret.create: true
+#        secret.values.clientId: "..."
+#        secret.values.clientSecret: "..."
+#
+#   2. Pre-existing Secret (prod / GitOps / External Secrets Operator):
+#        secret.create: false
+#        secret.existingName: "my-zscaler-creds"
+#
+#      The referenced Secret must contain keys matching `secret.envKeys.*`
+#      below (defaults: ZSCALER_CLIENT_ID, ZSCALER_CLIENT_SECRET,
+#      ZSCALER_VANITY_DOMAIN, ZSCALER_CUSTOMER_ID).
+# =============================================================================
+
+replicaCount: 1
+
+image:
+  repository: zscaler/zscaler-mcp-server
+  # Docker Hub publishes only `latest` today, so the chart defaults to
+  # it. Pinning by digest is strongly recommended for production:
+  #   image.digest: "sha256:..."
+  # Override .tag to "0.12.3" / etc. once versioned tags are published.
+  tag: "latest"
+  digest: ""            # if set, overrides .tag entirely
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+# - name: my-registry-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# Service identity
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  # Set this when reusing a pre-existing ServiceAccount (e.g. wired up by
+  # External Secrets Operator, Vault Agent Injector, or IRSA / Workload
+  # Identity Federation / Workload Identity for cloud-managed clusters).
+  name: ""
+  annotations: {}
+  # Set to false if you want kubelet to skip mounting the token (the server
+  # itself does not call the K8s API).
+  automountServiceAccountToken: true
+
+# -----------------------------------------------------------------------------
+# Pod / container shape
+# -----------------------------------------------------------------------------
+podAnnotations: {}
+podLabels: {}
+
+# Pod-level security context. The image runs as the non-root `app` user
+# (uid=1000, gid=1000) from the Dockerfile. We MUST pin runAsUser/runAsGroup
+# numerically here — Kubernetes cannot introspect a `USER <name>` directive,
+# so without a numeric uid `runAsNonRoot: true` fails the admission check
+# with: "image has non-numeric user (app), cannot verify user is non-root".
+# fsGroup matches so any mounted volume is writable by the app user.
+# seccompProfile=RuntimeDefault satisfies the Restricted pod-security-standard.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context. runAsUser/runAsGroup are repeated here
+# defensively so the container is non-root even when a downstream chart or
+# operator overrides podSecurityContext. readOnlyRootFilesystem is
+# intentionally false by default because uv/Python may write to /tmp on cold
+# start; flip to true and add an emptyDir for /tmp via
+# `extraVolumes`/`extraVolumeMounts` if you need the Restricted PSS profile.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+
+priorityClassName: ""
+
+# -----------------------------------------------------------------------------
+# Service (front-door inside the cluster)
+# -----------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 80                      # service port
+  targetPort: 8000              # container port — matches ZSCALER_MCP_PORT
+  annotations: {}
+  # Only honoured when service.type is LoadBalancer / NodePort.
+  nodePort: ""
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+
+# -----------------------------------------------------------------------------
+# Ingress (mutually exclusive with httproute)
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: false
+  className: ""                 # e.g. "nginx", "traefik", "alb"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-production
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: zscaler-mcp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: zscaler-mcp-tls
+    #   hosts:
+    #     - zscaler-mcp.example.com
+
+# -----------------------------------------------------------------------------
+# Gateway API HTTPRoute (mutually exclusive with ingress)
+# -----------------------------------------------------------------------------
+httproute:
+  enabled: false
+  annotations: {}
+  hostnames:
+    - zscaler-mcp.example.com
+  parentRefs:
+    - name: my-gateway
+      # namespace: gateway-system
+      # sectionName: https
+
+# -----------------------------------------------------------------------------
+# cert-manager Certificate (optional, only useful with ingress.tls)
+# -----------------------------------------------------------------------------
+certificate:
+  enabled: false
+  secretName: zscaler-mcp-tls
+  commonName: zscaler-mcp.example.com
+  dnsNames:
+    - zscaler-mcp.example.com
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+    # group: cert-manager.io
+
+# -----------------------------------------------------------------------------
+# PodDisruptionBudget
+# -----------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: ""        # mutually exclusive with minAvailable
+
+# -----------------------------------------------------------------------------
+# Liveness / readiness probes
+# -----------------------------------------------------------------------------
+# The MCP server exposes a /health endpoint when running on the
+# streamable-http transport — see zscaler_mcp/auth.py HealthCheckMiddleware.
+probes:
+  liveness:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  readiness:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  startup:
+    enabled: false
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 30
+    successThreshold: 1
+
+# -----------------------------------------------------------------------------
+# Horizontal Pod Autoscaler (off by default — most MCP workloads run 1-3
+# pods and saturate on API rate limits long before CPU)
+# -----------------------------------------------------------------------------
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# =============================================================================
+# Zscaler MCP runtime configuration
+# =============================================================================
+# Every option below is forwarded to the container as a ZSCALER_MCP_* env
+# var. Power users wanting to set something that isn't exposed here can
+# always use `extraEnv` at the bottom.
+# =============================================================================
+mcp:
+  # Container-side transport. streamable-http is the right choice for K8s
+  # deployments; stdio is for local CLIs and not useful in a Pod.
+  transport: streamable-http
+
+  # Host:port the server binds to inside the container.
+  host: "0.0.0.0"
+  port: 8000
+
+  # MCP client authentication (controls who can connect to the server).
+  # This is *separate* from the Zscaler OneAPI credentials used to talk
+  # to Zscaler's APIs — see `secret.values.*` below for those.
+  auth:
+    enabled: true
+    # One of: jwt | api-key | zscaler | none
+    # When mode is "none", set auth.enabled: false (or leave true to log
+    # a warning every boot). For OAuth 2.1 + DCR (OIDCProxy), wire up
+    # OIDCProxy via the programmatic `auth=` parameter — not yet exposed
+    # via env vars and out of scope for this chart's v1.
+    mode: zscaler
+    # jwt mode
+    jwt:
+      jwksUri: ""               # ZSCALER_MCP_AUTH_JWKS_URI
+      issuer: ""                # ZSCALER_MCP_AUTH_JWT_ISSUER
+      audience: ""              # ZSCALER_MCP_AUTH_JWT_AUDIENCE
+    # api-key mode — value is pulled from the same Secret as the OneAPI
+    # creds. Set the Secret key with `secret.envKeys.apiKey`.
+    apiKey:
+      # Leave empty to use the default key name `ZSCALER_MCP_AUTH_API_KEY`
+      # inside the Secret; override only if your existing Secret uses a
+      # different key.
+      secretKey: ""
+
+  # Toolset selection.
+  toolsets:
+    enabled: ""                 # ZSCALER_MCP_TOOLSETS, e.g. "default", "all", "zia_url_filtering,zpa_app_segments"
+    disabled: ""                # ZSCALER_MCP_DISABLED_TOOLSETS
+
+  services:
+    enabled: ""                 # ZSCALER_MCP_SERVICES, e.g. "zia,zpa,zdx"
+    disabled: ""                # ZSCALER_MCP_DISABLED_SERVICES
+
+  tools:
+    disabled: ""                # ZSCALER_MCP_DISABLED_TOOLS, fnmatch patterns
+
+  # Write tools are disabled by default. Enabling them allows agents to
+  # mutate the Zscaler tenant. Destructive operations still require an
+  # HMAC-confirmation handshake on top.
+  writeTools:
+    enabled: false              # ZSCALER_MCP_WRITE_ENABLED
+    allowlist: ""               # ZSCALER_MCP_WRITE_TOOLS, fnmatch patterns
+
+  # OneAPI entitlement filter trims the loaded toolsets to the products
+  # the configured ZSCALER_CLIENT_ID is entitled to. Emergency override
+  # only — leave on in production.
+  disableEntitlementFilter: false
+
+  # Defense-in-depth output sanitization (BiDi / zero-width / HTML / fake
+  # code-fence stripping). On by default; only flip to true for
+  # diagnostics under audit.
+  disableOutputSanitization: false
+
+  # Tool-call audit logging. Logs every invocation with arg redaction.
+  logToolCalls: false
+
+  # Host header / source IP ACLs (HTTP transports only).
+  security:
+    disableHostValidation: false  # ZSCALER_MCP_DISABLE_HOST_VALIDATION
+    allowedHosts: ""              # ZSCALER_MCP_ALLOWED_HOSTS, comma-separated
+    allowedSourceIPs: ""          # ZSCALER_MCP_ALLOWED_SOURCE_IPS, comma-separated CIDRs
+
+  # TLS termination *inside* the container. Almost always you want TLS to
+  # terminate at the Ingress / Gateway instead — leave allowHttp: true to
+  # let the in-cluster Service speak plain HTTP to the Ingress, and let
+  # the Ingress handle the public-facing TLS via cert-manager.
+  tls:
+    allowHttp: true              # ZSCALER_MCP_ALLOW_HTTP
+    # In-container TLS termination (rarely needed):
+    certSecret:
+      name: ""                   # references a TLS-typed Secret
+      certKey: tls.crt
+      keyKey: tls.key
+
+# =============================================================================
+# Secret containing OneAPI credentials (the credentials the MCP server
+# uses to talk *to* Zscaler's APIs).
+# =============================================================================
+secret:
+  # When true, the chart renders a Secret containing the values below.
+  # When false, the chart references `existingName` — your responsibility
+  # to create that Secret out-of-band (recommended for production via
+  # External Secrets Operator, SealedSecrets, sops-encrypted GitOps, etc.).
+  create: true
+  existingName: ""
+
+  # Keys inside the Secret. The defaults match the env var names the
+  # server reads. Override only if your pre-existing Secret uses
+  # different key names.
+  envKeys:
+    clientId: ZSCALER_CLIENT_ID
+    clientSecret: ZSCALER_CLIENT_SECRET
+    vanityDomain: ZSCALER_VANITY_DOMAIN
+    customerId: ZSCALER_CUSTOMER_ID
+    privateKey: ZSCALER_PRIVATE_KEY
+    apiKey: ZSCALER_MCP_AUTH_API_KEY
+    jwtKey: ZSCALER_MCP_AUTH_JWT_SECRET
+
+  # Plain values (only consulted when secret.create is true). Leave any
+  # blank string out — only non-empty keys land in the rendered Secret.
+  values:
+    clientId: ""
+    clientSecret: ""
+    vanityDomain: ""             # e.g. "acme.zsapi.net"
+    customerId: ""               # required for ZPA tools
+    privateKey: ""               # optional, in place of clientSecret (JWT auth to Zscaler)
+    apiKey: ""                   # MCP client API key (auth.mode = api-key)
+
+# =============================================================================
+# Extra knobs for power users
+# =============================================================================
+
+# Free-form env vars. Anything you set here is rendered verbatim and wins
+# over the structured `mcp.*` mappings above when names collide.
+extraEnv: []
+# - name: ZSCALER_CLOUD
+#   value: zscalertwo
+# - name: ZSCALER_MCP_USER_AGENT_COMMENT
+#   value: "k8s-helm-chart"
+
+# Free-form `envFrom` references (e.g. extra Secrets / ConfigMaps).
+extraEnvFrom: []
+# - secretRef:
+#     name: my-other-secret
+
+extraVolumes: []
+extraVolumeMounts: []
+extraInitContainers: []
+extraContainers: []
+
+# Lifecycle hooks (e.g. preStop sleep for graceful drain).
+lifecycle: {}
+# preStop:
+#   exec:
+#     command: ["/bin/sh", "-c", "sleep 10"]
+
+# How long the pod has to drain in-flight MCP sessions.
+terminationGracePeriodSeconds: 30
+
+# =============================================================================
+# Tests (helm test) — used by templates/tests/test-connection.yaml
+# =============================================================================
+tests:
+  enabled: true
+  image:
+    repository: curlimages/curl
+    tag: "8.10.1"
+    pullPolicy: IfNotPresent

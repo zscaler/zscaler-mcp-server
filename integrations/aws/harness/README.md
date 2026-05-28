@@ -416,12 +416,12 @@ next commands to run (`logs` / `invoke` / `destroy`).
 ```
 ── Deployment summary ─────────────────────────────────────────────────────────
   HarnessId              = zscaler-mcp-harness-AbCdEfGhIj
-  HarnessArn             = arn:aws:bedrock-agentcore:us-east-1:123456789012:harness/zscaler-mcp-harness-AbCdEfGhIj
+  HarnessArn             = arn:aws:bedrock-agentcore:us-east-1:202719523534:harness/zscaler-mcp-harness-AbCdEfGhIj
   Model                  = us.anthropic.claude-sonnet-4-5-20250929-v1:0
   MCP URL                = https://abc123.ecs.us-east-1.on.aws/mcp
   MCP Host               = ECS Express — zscaler-mcp-server (cluster: zscaler-mcp)
-  Execution Role         = arn:aws:iam::123456789012:role/zscaler-mcp-harness-execution-role
-  Credential Provider    = arn:aws:bedrock-agentcore:us-east-1:123456789012:token-vault/default/apikeycredentialprovider/zscaler-mcp-creds
+  Execution Role         = arn:aws:iam::202719523534:role/zscaler-mcp-harness-execution-role
+  Credential Provider    = arn:aws:bedrock-agentcore:us-east-1:202719523534:token-vault/default/apikeycredentialprovider/zscaler-mcp-creds
   Console                = https://us-east-1.console.aws.amazon.com/bedrock-agentcore/home?region=us-east-1#/harnesses/zscaler-mcp-harness-AbCdEfGhIj
 ```
 

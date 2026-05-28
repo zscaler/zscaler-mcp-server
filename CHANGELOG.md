@@ -1,5 +1,15 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.12.4 (May 26, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- [PR #75](https://github.com/zscaler/zscaler-mcp-server/pull/75) - **Helm chart deployment.** Added a cluster-vendor-agnostic Helm chart under `integrations/helm-chart/` for deploying the Zscaler MCP Server to any Kubernetes cluster — EKS, GKE, AKS, OpenShift, Rancher, k3s, Talos, or `kind` / `minikube` for local dev. Ships with an interactive Python deployer (`helm_mcp_operations.py`) that mirrors the Azure / GCP scripts (`deploy`, `destroy`, `status`, `logs`, `configure`, `test`), materialises a Kubernetes `Secret` directly from your existing `.env` (no translation into `values.yaml`), and auto-configures Claude Desktop + Cursor with the right `Authorization: Basic` header. Five credential-setup paths are supported (interactive script, `kubectl create secret --from-env-file`, inline `--set`, pre-existing `Secret` for GitOps, and External Secrets Operator). Full chart reference in [`integrations/helm-chart/README.md`](https://github.com/zscaler/zscaler-mcp-server/blob/master/integrations/helm-chart/README.md) and [`docs-site/docs/deployment/helm-chart.md`](https://zscaler.github.io/zscaler-mcp-server/docs/deployment/helm-chart).
+
 ## 0.12.3 (May 22, 2026)
 
 ### Notes

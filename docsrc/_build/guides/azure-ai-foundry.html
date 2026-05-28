@@ -1,0 +1,907 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Entra ID OIDCProxy" href="entra-id-oidcproxy.html" /><link rel="prev" title="Azure Deployment" href="azure-deployment.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Azure AI Foundry Agent</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../toolsets/index.html">Toolsets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills/index.html">Skills</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Platform Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../integrations/mcp-clients/index.html">MCP Clients</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of MCP Clients</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/claude.html">Claude</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/cursor.html">Cursor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/gemini-cli.html">Gemini CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/kiro.html">Kiro IDE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/vscode.html">VS Code + GitHub Copilot</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/registries.html">Registries and Marketplaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/github-registry.html">GitHub MCP Registry</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jmespath-filtering.html">JMESPath Filtering on List Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="audit-logging.html">Tool-Call Audit Logging</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-local.html">Local</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Local</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="setup-script.html">One-step setup script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docker.html">Docker</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-aws.html">AWS</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of AWS</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="strands-agentcore.html">Strands Agent client for AgentCore Runtime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aws-harness.html">AWS Harness — AgentCore Harness deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="secrets-manager.html">AWS Secrets Manager Integration with Bedrock AgentCore</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="deployment-azure.html">Azure</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Azure</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Azure AI Foundry Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="entra-id-oidcproxy.html">Entra ID OIDCProxy</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-gcp.html">Google Cloud</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Google Cloud</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-kubernetes.html">Kubernetes</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Kubernetes</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="helm-chart.html">Kubernetes (Helm Chart)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="claude-desktop-extension.html">Claude Desktop Extension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../security/index.html">Security</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of Security</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../security/write-operations.html">Write Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/mcp-client-auth.html">MCP Client Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/tls-and-hardening.html">TLS and Hardening</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/output-sanitization.html">Output Sanitization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/lifecycle.html">Process Lifecycle Management</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/guides/azure-ai-foundry.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="azure-ai-foundry-agent">
+<span id="guide-azure-ai-foundry"></span><h1>Azure AI Foundry Agent<a class="headerlink" href="#azure-ai-foundry-agent" title="Link to this heading">¶</a></h1>
+<p>This guide covers integrating the Zscaler MCP Server with <a class="reference external" href="https://ai.azure.com">Azure AI Foundry</a> to create autonomous security agents powered by GPT-4o (or GPT-4) that can call 300+ Zscaler tools.</p>
+<p>There are two ways to configure the Foundry agent:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+<col style="width: 25.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Best For</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>API (CLI)</strong></p></td>
+<td><p>Create and manage the agent via <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> commands</p></td>
+<td><p>Automation, CI/CD, scripted deployments</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>UI (Portal)</strong></p></td>
+<td><p>Configure the agent through the Azure AI Foundry portal</p></td>
+<td><p>Visual setup, exploring capabilities</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Both methods result in the same Foundry agent — they differ only in how you create and manage it.</p>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h2>
+<img alt="Azure AI Foundry agent architecture — GPT-4o reasoning, MCPTool binding, Container Apps / VM / AKS hosting, Key Vault secret storage, and the OneAPI path to the Zero Trust Exchange" class="align-center" src="../_images/azure-ai-foundry.png" />
+<p><strong>Data flow:</strong></p>
+<ol class="arabic simple">
+<li><p>You send a natural language request (e.g., “List my ZPA application segments”)</p></li>
+<li><p>Azure AI Foundry’s GPT-4o interprets the request and selects the right MCP tool</p></li>
+<li><p>Foundry calls your deployed MCP server via the <code class="docutils literal notranslate"><span class="pre">MCPTool</span></code> integration</p></li>
+<li><p>The MCP server authenticates to the Zscaler API and returns results</p></li>
+<li><p>GPT-4o formats the response and presents it to you</p></li>
+</ol>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<p>Before setting up the Foundry agent, you need:</p>
+<ol class="arabic">
+<li><p><strong>A deployed Zscaler MCP Server</strong> — Deploy via Container Apps or VM first:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/azure
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+<p>This gives you a public MCP URL (e.g., <code class="docutils literal notranslate"><span class="pre">https://zscaler-mcp-xxx.azurecontainerapps.io/mcp</span></code>).</p>
+</li>
+<li><p><strong>An Azure AI Foundry project</strong> — See <a class="reference internal" href="#creating-a-foundry-project">Creating a Foundry Project</a> below.</p></li>
+<li><p><strong>Azure CLI authenticated</strong> — <code class="docutils literal notranslate"><span class="pre">az</span> <span class="pre">login</span></code></p></li>
+<li><p><strong>Python packages</strong> — installed automatically when needed, or manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>azure-ai-projects<span class="w"> </span>azure-identity
+</pre></div>
+</div>
+</li>
+<li><p><strong>Environment variables</strong> (in your <code class="docutils literal notranslate"><span class="pre">integrations/azure/.env</span></code> file):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">AZURE_AI_PROJECT_ENDPOINT</span><span class="o">=</span>https://&lt;resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
+<span class="nv">AZURE_OPENAI_MODEL</span><span class="o">=</span>gpt-4o
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="creating-a-foundry-project">
+<h2>Creating a Foundry Project<a class="headerlink" href="#creating-a-foundry-project" title="Link to this heading">¶</a></h2>
+<p>If you don’t already have an Azure AI Foundry project, follow these steps:</p>
+<section id="open-azure-ai-foundry">
+<h3>1. Open Azure AI Foundry<a class="headerlink" href="#open-azure-ai-foundry" title="Link to this heading">¶</a></h3>
+<p>Go to <a class="reference external" href="https://ai.azure.com">ai.azure.com</a>. You’ll see the Foundry home page with your recent projects (if any).</p>
+<img alt="Foundry Home" class="align-center" src="../_images/foundry-01-home.png" />
+</section>
+<section id="create-a-new-project">
+<h3>2. Create a New Project<a class="headerlink" href="#create-a-new-project" title="Link to this heading">¶</a></h3>
+<p>Click <strong>Create new project</strong> from the left sidebar dropdown. Fill in:</p>
+<ul class="simple">
+<li><p><strong>Project name:</strong> e.g., <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-server</span></code></p></li>
+<li><p><strong>Foundry resource:</strong> Select an existing resource or create a new one (e.g., <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-server-resource</span></code>)</p></li>
+<li><p><strong>Region:</strong> Choose a region (e.g., <code class="docutils literal notranslate"><span class="pre">East</span> <span class="pre">US</span> <span class="pre">2</span></code>)</p></li>
+<li><p><strong>Subscription:</strong> Your Azure subscription</p></li>
+<li><p><strong>Resource group:</strong> Select or create one</p></li>
+</ul>
+<p>Click <strong>Create</strong>.</p>
+<img alt="Create Project" class="align-center" src="../_images/foundry-02-create-project.png" />
+</section>
+<section id="wait-for-project-creation">
+<h3>3. Wait for Project Creation<a class="headerlink" href="#wait-for-project-creation" title="Link to this heading">¶</a></h3>
+<p>Foundry will take a few seconds to provision the project and its resources.</p>
+<img alt="Creating Project" class="align-center" src="../_images/foundry-03-creating.png" />
+</section>
+<section id="project-ready">
+<h3>4. Project Ready<a class="headerlink" href="#project-ready" title="Link to this heading">¶</a></h3>
+<p>Once complete, you’ll see a confirmation dialog — click <strong>Let’s go</strong>.</p>
+<img alt="Project Ready" class="align-center" src="../_images/foundry-04-ready.png" />
+</section>
+<section id="copy-the-project-endpoint">
+<h3>5. Copy the Project Endpoint<a class="headerlink" href="#copy-the-project-endpoint" title="Link to this heading">¶</a></h3>
+<p>The project overview page displays three key values:</p>
+<ul class="simple">
+<li><p><strong>API key</strong> — Used for direct API access (not needed for the CLI method)</p></li>
+<li><p><strong>Project endpoint</strong> — This is the <code class="docutils literal notranslate"><span class="pre">AZURE_AI_PROJECT_ENDPOINT</span></code> value you need</p></li>
+<li><p><strong>Azure OpenAI endpoint</strong> — Used for direct OpenAI API access</p></li>
+</ul>
+<p>Copy the <strong>Project endpoint</strong> URL. It looks like:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>https://&lt;resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
+</pre></div>
+</div>
+<img alt="Project Endpoint" class="align-center" src="../_images/foundry-05-endpoint.png" />
+</section>
+<section id="add-to-your-env-file">
+<h3>6. Add to Your .env File<a class="headerlink" href="#add-to-your-env-file" title="Link to this heading">¶</a></h3>
+<p>Paste the endpoint into your <code class="docutils literal notranslate"><span class="pre">integrations/azure/.env</span></code> file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">AZURE_AI_PROJECT_ENDPOINT</span><span class="o">=</span>https://zscaler-mcp-server-resource.services.ai.azure.com/api/projects/zscaler-mcp-server
+<span class="nv">AZURE_OPENAI_MODEL</span><span class="o">=</span>gpt-4o
+</pre></div>
+</div>
+<p>When running <code class="docutils literal notranslate"><span class="pre">agent_create</span></code>, if this variable is set in the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file, it is automatically detected and you won’t be prompted for it.</p>
+</section>
+</section>
+<section id="method-1-api-cli-integration">
+<h2>Method 1: API (CLI) Integration<a class="headerlink" href="#method-1-api-cli-integration" title="Link to this heading">¶</a></h2>
+<p>The CLI method uses <code class="docutils literal notranslate"><span class="pre">azure_mcp_operations.py</span></code> subcommands to manage the agent lifecycle.</p>
+<section id="step-1-deploy-the-mcp-server">
+<h3>Step 1: Deploy the MCP Server<a class="headerlink" href="#step-1-deploy-the-mcp-server" title="Link to this heading">¶</a></h3>
+<p>If you haven’t already:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/azure
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+<p>Follow the interactive prompts to select deployment target, auth mode, and credentials. Note the MCP URL printed at the end.</p>
+</section>
+<section id="step-2-create-the-foundry-agent">
+<h3>Step 2: Create the Foundry Agent<a class="headerlink" href="#step-2-create-the-foundry-agent" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_create
+</pre></div>
+</div>
+<p>This command:</p>
+<ol class="arabic simple">
+<li><p>Reads the deployed MCP server URL and auth mode from the deployment state</p></li>
+<li><p>Prompts for your Foundry project endpoint and model name (or reads from <code class="docutils literal notranslate"><span class="pre">.env</span></code>)</p></li>
+<li><p>Builds authentication headers based on your MCP auth mode</p></li>
+<li><p>Creates the agent in Azure AI Foundry with an <code class="docutils literal notranslate"><span class="pre">MCPTool</span></code> pointing to your MCP server</p></li>
+</ol>
+<p>The script will prompt for Foundry configuration. You can load it from a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file (option 1) or enter manually (option 2):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Azure AI Foundry Configuration
+----------------------------------------
+
+How would you like to provide Foundry configuration?
+  1. Load from a .env file
+  2. Enter manually
+
+Select [1/2]: 1
+Path to .env file: integrations/azure/.env
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">AZURE_AI_PROJECT_ENDPOINT</span></code> is set in your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file, it is automatically detected. Otherwise, you’ll be prompted to paste the endpoint URL.</p>
+</div>
+<p>Once complete, the script displays a summary:</p>
+<img alt="Agent Created" class="align-center" src="../_images/foundry-06-agent-created.png" />
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>============================================================
+  Foundry Agent Created
+============================================================
+
+  Agent Name:    zscaler-mcp-agent
+  Version:       1
+  Model:         gpt-4o
+  MCP Server:    https://zscaler-mcp-xxx.azurecontainerapps.io/mcp
+
+  Next steps:
+    1. Start a chat session:
+       python azure_mcp_operations.py agent_chat
+</pre></div>
+</div>
+</section>
+<section id="step-3-chat-with-the-agent">
+<h3>Step 3: Chat with the Agent<a class="headerlink" href="#step-3-chat-with-the-agent" title="Link to this heading">¶</a></h3>
+<p><strong>Interactive session:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat
+</pre></div>
+</div>
+<p><strong>Single query:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_chat<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;List all ZPA application segments&quot;</span>
+</pre></div>
+</div>
+<p>The chat session features interactive multi-turn conversation, MCP tool approval prompts (approve/deny each tool call), per-response token usage tracking, and an end-of-session summary (duration, messages, cumulative tokens).</p>
+<p><strong>In-chat commands:</strong></p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">help</span></code></p></td>
+<td><p>Show available commands, usage tips, and example prompts</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">status</span></code></p></td>
+<td><p>Show agent info, project endpoint, session duration, tokens, and messages sent</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">clear</span></code></p></td>
+<td><p>Clear the terminal screen</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">reset</span></code></p></td>
+<td><p>Reset the conversation context (clears response chain, token count, message count)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">quit</span></code> / <code class="docutils literal notranslate"><span class="pre">exit</span></code> / <code class="docutils literal notranslate"><span class="pre">q</span></code></p></td>
+<td><p>End the chat session and display a summary</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="step-4-manage-the-agent">
+<h3>Step 4: Manage the Agent<a class="headerlink" href="#step-4-manage-the-agent" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check agent status</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_status
+
+<span class="c1"># Delete the agent</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_destroy
+
+<span class="c1"># Delete without confirmation prompt</span>
+python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>agent_destroy<span class="w"> </span>-y
+</pre></div>
+</div>
+</section>
+<section id="authentication-between-foundry-and-mcp-server">
+<h3>Authentication Between Foundry and MCP Server<a class="headerlink" href="#authentication-between-foundry-and-mcp-server" title="Link to this heading">¶</a></h3>
+<p>The Foundry agent authenticates to the MCP server using custom HTTP headers passed via <code class="docutils literal notranslate"><span class="pre">MCPTool.headers</span></code>. The headers vary by auth mode:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>MCP Auth Mode</p></th>
+<th class="head"><p>Headers Sent by Foundry</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Zscaler</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-ID</span></code> + <code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-Secret</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>API Key</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">X-MCP-API-Key</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>JWT / OIDCProxy</strong></p></td>
+<td><p>Not directly supported — use API Key or Zscaler mode for Foundry</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>None</strong></p></td>
+<td><p>No headers</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Foundry blocks the standard <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header for security. The MCP server’s custom header authentication (<code class="docutils literal notranslate"><span class="pre">X-Zscaler-Client-ID</span></code>, <code class="docutils literal notranslate"><span class="pre">X-MCP-API-Key</span></code>) works as a workaround.</p>
+</div>
+</section>
+</section>
+<section id="method-2-ui-portal-integration">
+<h2>Method 2: UI (Portal) Integration<a class="headerlink" href="#method-2-ui-portal-integration" title="Link to this heading">¶</a></h2>
+<p>You can also configure the Foundry agent through the Azure AI Foundry portal at <a class="reference external" href="https://ai.azure.com">ai.azure.com</a>.</p>
+<section id="id1">
+<h3>Step 1: Deploy the MCP Server<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<p>Same as Method 1 — you need a running MCP server with a public URL.</p>
+</section>
+<section id="step-2-open-your-foundry-project">
+<h3>Step 2: Open Your Foundry Project<a class="headerlink" href="#step-2-open-your-foundry-project" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Go to <a class="reference external" href="https://ai.azure.com">ai.azure.com</a></p></li>
+<li><p>Open your project</p></li>
+<li><p>Navigate to <strong>Agents</strong> in the left sidebar</p></li>
+</ol>
+</section>
+<section id="step-3-create-an-agent">
+<h3>Step 3: Create an Agent<a class="headerlink" href="#step-3-create-an-agent" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Click <strong>+ New agent</strong></p></li>
+<li><p>Configure the agent:</p>
+<ul class="simple">
+<li><p><strong>Name:</strong> <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-agent</span></code></p></li>
+<li><p><strong>Model:</strong> Select your GPT-4o deployment</p></li>
+<li><p><strong>Instructions:</strong> Paste the agent instructions (see below)</p></li>
+</ul>
+</li>
+<li><p>Under <strong>Tools</strong>, add an <strong>MCP Tool</strong>:</p>
+<ul class="simple">
+<li><p><strong>Server URL:</strong> Your deployed MCP server URL</p></li>
+<li><p><strong>Headers:</strong> Add authentication headers based on your MCP auth mode</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="step-4-test-in-the-portal">
+<h3>Step 4: Test in the Portal<a class="headerlink" href="#step-4-test-in-the-portal" title="Link to this heading">¶</a></h3>
+<p>Use the built-in chat interface in the Foundry portal to test the agent. Ask questions like:</p>
+<ul class="simple">
+<li><p><em>“What Zscaler services are available?”</em></p></li>
+<li><p><em>“List my ZPA application segments”</em></p></li>
+<li><p><em>“Show me ZIA firewall rules”</em></p></li>
+</ul>
+</section>
+<section id="agent-instructions">
+<h3>Agent Instructions<a class="headerlink" href="#agent-instructions" title="Link to this heading">¶</a></h3>
+<p>Use these instructions when creating the agent via the portal:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>You are a Zscaler security assistant powered by the Zscaler MCP Server.
+
+You have access to 300+ tools for managing the Zscaler Zero Trust Exchange:
+- ZPA (Zscaler Private Access): Application segments, access policies, connectors
+- ZIA (Zscaler Internet Access): Firewall rules, URL filtering, DLP, locations
+- ZDX (Zscaler Digital Experience): Application health, device metrics, alerts
+- ZCC (Zscaler Client Connector): Device enrollment, forwarding profiles
+- ZTW (Zscaler Workload Segmentation): IP groups, network services
+- EASM (External Attack Surface Management): Findings, lookalike domains
+- ZIdentity: Users, groups, identity management
+- Z-Insights: Web traffic analytics, cyber incidents, shadow IT
+
+Always start by calling zscaler_get_available_services to discover which services
+and tools are enabled on this server.
+
+When asked to perform operations:
+1. List/get the current state first
+2. Confirm changes with the user before executing writes
+3. For ZIA changes: remind the user to activate configuration after modifications
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cli-command-reference">
+<h2>CLI Command Reference<a class="headerlink" href="#cli-command-reference" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 55.0%" />
+<col style="width: 45.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">deploy</span></code></p></td>
+<td><p>Deploy MCP server (Container Apps or VM)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_create</span></code></p></td>
+<td><p>Create Foundry agent pointing to deployed MCP server</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_chat</span></code></p></td>
+<td><p>Start interactive chat session</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_chat</span> <span class="pre">-m</span> <span class="pre">&quot;query&quot;</span></code></p></td>
+<td><p>Send a single query</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_status</span></code></p></td>
+<td><p>Show agent status</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_destroy</span></code></p></td>
+<td><p>Delete the agent</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">agent_destroy</span> <span class="pre">-y</span></code></p></td>
+<td><p>Delete without confirmation</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">destroy</span></code></p></td>
+<td><p>Tear down all Azure resources</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">status</span></code></p></td>
+<td><p>Show deployment status</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">azure_mcp_operations.py</span> <span class="pre">logs</span></code></p></td>
+<td><p>Stream container/VM logs</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="environment-variables">
+<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 15.0%" />
+<col style="width: 55.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AZURE_AI_PROJECT_ENDPOINT</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Foundry project endpoint URL</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AZURE_OPENAI_MODEL</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Model deployment name (default: <code class="docutils literal notranslate"><span class="pre">gpt-4o</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Zscaler OneAPI client ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Zscaler OneAPI client secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Zscaler vanity domain</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Zscaler customer ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Zscaler cloud (e.g., <code class="docutils literal notranslate"><span class="pre">beta</span></code>, <code class="docutils literal notranslate"><span class="pre">production</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
+<section id="no-deployment-found-when-running-agent-create">
+<h3>“No deployment found” when running agent_create<a class="headerlink" href="#no-deployment-found-when-running-agent-create" title="Link to this heading">¶</a></h3>
+<p>The Foundry agent requires a deployed MCP server. Run <code class="docutils literal notranslate"><span class="pre">deploy</span></code> first:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>deploy
+</pre></div>
+</div>
+</section>
+<section id="agent-can-t-reach-the-mcp-server">
+<h3>Agent can’t reach the MCP server<a class="headerlink" href="#agent-can-t-reach-the-mcp-server" title="Link to this heading">¶</a></h3>
+<p>Verify the MCP server is running and accessible:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>azure_mcp_operations.py<span class="w"> </span>status
+curl<span class="w"> </span>-s<span class="w"> </span>https://&lt;your-mcp-url&gt;/mcp<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
+</pre></div>
+</div>
+</section>
+<section id="mcp-approval-requests-do-not-have-an-approval-error">
+<h3>“MCP approval requests do not have an approval” error<a class="headerlink" href="#mcp-approval-requests-do-not-have-an-approval-error" title="Link to this heading">¶</a></h3>
+<p>This happens when tool approval responses aren’t properly chained. The CLI handles this automatically via <code class="docutils literal notranslate"><span class="pre">previous_response_id</span></code> tracking. If using the portal, ensure you approve tool calls in sequence.</p>
+</section>
+<section id="jwt-oidcproxy-auth-modes-with-foundry">
+<h3>JWT/OIDCProxy auth modes with Foundry<a class="headerlink" href="#jwt-oidcproxy-auth-modes-with-foundry" title="Link to this heading">¶</a></h3>
+<p>Azure AI Foundry blocks the standard <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header in <code class="docutils literal notranslate"><span class="pre">MCPTool.headers</span></code>. If your MCP server uses JWT or OIDCProxy auth, consider:</p>
+<ol class="arabic simple">
+<li><p>Redeploying with <code class="docutils literal notranslate"><span class="pre">api-key</span></code> or <code class="docutils literal notranslate"><span class="pre">zscaler</span></code> auth mode</p></li>
+<li><p>Or adding a reverse proxy that injects the auth token</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="entra-id-oidcproxy.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Entra ID OIDCProxy</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="azure-deployment.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Azure Deployment</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Azure AI Foundry Agent</a><ul>
+<li><a class="reference internal" href="#architecture">Architecture</a></li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#creating-a-foundry-project">Creating a Foundry Project</a><ul>
+<li><a class="reference internal" href="#open-azure-ai-foundry">1. Open Azure AI Foundry</a></li>
+<li><a class="reference internal" href="#create-a-new-project">2. Create a New Project</a></li>
+<li><a class="reference internal" href="#wait-for-project-creation">3. Wait for Project Creation</a></li>
+<li><a class="reference internal" href="#project-ready">4. Project Ready</a></li>
+<li><a class="reference internal" href="#copy-the-project-endpoint">5. Copy the Project Endpoint</a></li>
+<li><a class="reference internal" href="#add-to-your-env-file">6. Add to Your .env File</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#method-1-api-cli-integration">Method 1: API (CLI) Integration</a><ul>
+<li><a class="reference internal" href="#step-1-deploy-the-mcp-server">Step 1: Deploy the MCP Server</a></li>
+<li><a class="reference internal" href="#step-2-create-the-foundry-agent">Step 2: Create the Foundry Agent</a></li>
+<li><a class="reference internal" href="#step-3-chat-with-the-agent">Step 3: Chat with the Agent</a></li>
+<li><a class="reference internal" href="#step-4-manage-the-agent">Step 4: Manage the Agent</a></li>
+<li><a class="reference internal" href="#authentication-between-foundry-and-mcp-server">Authentication Between Foundry and MCP Server</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#method-2-ui-portal-integration">Method 2: UI (Portal) Integration</a><ul>
+<li><a class="reference internal" href="#id1">Step 1: Deploy the MCP Server</a></li>
+<li><a class="reference internal" href="#step-2-open-your-foundry-project">Step 2: Open Your Foundry Project</a></li>
+<li><a class="reference internal" href="#step-3-create-an-agent">Step 3: Create an Agent</a></li>
+<li><a class="reference internal" href="#step-4-test-in-the-portal">Step 4: Test in the Portal</a></li>
+<li><a class="reference internal" href="#agent-instructions">Agent Instructions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cli-command-reference">CLI Command Reference</a></li>
+<li><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li><a class="reference internal" href="#no-deployment-found-when-running-agent-create">“No deployment found” when running agent_create</a></li>
+<li><a class="reference internal" href="#agent-can-t-reach-the-mcp-server">Agent can’t reach the MCP server</a></li>
+<li><a class="reference internal" href="#mcp-approval-requests-do-not-have-an-approval-error">“MCP approval requests do not have an approval” error</a></li>
+<li><a class="reference internal" href="#jwt-oidcproxy-auth-modes-with-foundry">JWT/OIDCProxy auth modes with Foundry</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

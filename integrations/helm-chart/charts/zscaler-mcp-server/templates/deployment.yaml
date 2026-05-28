@@ -1,0 +1,247 @@
+{{- include "zscaler-mcp-server.validateValues" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zscaler-mcp-server.fullname" . }}
+  labels:
+    {{- include "zscaler-mcp-server.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zscaler-mcp-server.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "zscaler-mcp-server.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        # Rolling restart when the credentials Secret changes. Only
+        # fires when the chart manages the Secret; for pre-existing
+        # Secrets the operator owns the restart lifecycle.
+        {{- if .Values.secret.create }}
+        checksum/credentials: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "zscaler-mcp-server.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.extraInitContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: zscaler-mcp-server
+          image: {{ include "zscaler-mcp-server.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          args:
+            - "--transport"
+            - {{ .Values.mcp.transport | quote }}
+            - "--host"
+            - {{ .Values.mcp.host | quote }}
+            - "--port"
+            - {{ .Values.mcp.port | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mcp.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "zscaler-mcp-server.secretName" . }}
+            {{- with .Values.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+            # ---- MCP client auth ------------------------------------------
+            - name: ZSCALER_MCP_AUTH_ENABLED
+              value: {{ ternary "true" "false" (and .Values.mcp.auth.enabled (ne .Values.mcp.auth.mode "none")) | quote }}
+            {{- if ne .Values.mcp.auth.mode "none" }}
+            - name: ZSCALER_MCP_AUTH_MODE
+              value: {{ .Values.mcp.auth.mode | quote }}
+            {{- end }}
+            {{- if eq .Values.mcp.auth.mode "jwt" }}
+            {{- with .Values.mcp.auth.jwt.jwksUri }}
+            - name: ZSCALER_MCP_AUTH_JWKS_URI
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.auth.jwt.issuer }}
+            - name: ZSCALER_MCP_AUTH_JWT_ISSUER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.auth.jwt.audience }}
+            - name: ZSCALER_MCP_AUTH_JWT_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            # ---- Toolsets / services / tools ------------------------------
+            {{- with .Values.mcp.toolsets.enabled }}
+            - name: ZSCALER_MCP_TOOLSETS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.toolsets.disabled }}
+            - name: ZSCALER_MCP_DISABLED_TOOLSETS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.services.enabled }}
+            - name: ZSCALER_MCP_SERVICES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.services.disabled }}
+            - name: ZSCALER_MCP_DISABLED_SERVICES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.tools.disabled }}
+            - name: ZSCALER_MCP_DISABLED_TOOLS
+              value: {{ . | quote }}
+            {{- end }}
+            # ---- Write tools ---------------------------------------------
+            {{- if .Values.mcp.writeTools.enabled }}
+            - name: ZSCALER_MCP_WRITE_ENABLED
+              value: "true"
+            {{- with .Values.mcp.writeTools.allowlist }}
+            - name: ZSCALER_MCP_WRITE_TOOLS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            # ---- Entitlement filter / output sanitization / audit -------
+            {{- if .Values.mcp.disableEntitlementFilter }}
+            - name: ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER
+              value: "true"
+            {{- end }}
+            {{- if .Values.mcp.disableOutputSanitization }}
+            - name: ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION
+              value: "true"
+            {{- end }}
+            {{- if .Values.mcp.logToolCalls }}
+            - name: ZSCALER_MCP_LOG_TOOL_CALLS
+              value: "true"
+            {{- end }}
+            # ---- Host validation / source IP ACL / HTTP allow ------------
+            {{- if .Values.mcp.security.disableHostValidation }}
+            - name: ZSCALER_MCP_DISABLE_HOST_VALIDATION
+              value: "true"
+            {{- end }}
+            {{- with .Values.mcp.security.allowedHosts }}
+            - name: ZSCALER_MCP_ALLOWED_HOSTS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.security.allowedSourceIPs }}
+            - name: ZSCALER_MCP_ALLOWED_SOURCE_IPS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.mcp.tls.allowHttp }}
+            - name: ZSCALER_MCP_ALLOW_HTTP
+              value: "true"
+            {{- end }}
+            {{- if .Values.mcp.tls.certSecret.name }}
+            - name: ZSCALER_MCP_TLS_CERTFILE
+              value: "/etc/zscaler-mcp/tls/{{ .Values.mcp.tls.certSecret.certKey }}"
+            - name: ZSCALER_MCP_TLS_KEYFILE
+              value: "/etc/zscaler-mcp/tls/{{ .Values.mcp.tls.certSecret.keyKey }}"
+            {{- end }}
+            # ---- Power-user passthrough ----------------------------------
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            successThreshold: {{ .Values.probes.liveness.successThreshold }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+          {{- end }}
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            successThreshold: {{ .Values.probes.startup.successThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.lifecycle }}
+          lifecycle:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.mcp.tls.certSecret.name .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- if .Values.mcp.tls.certSecret.name }}
+            - name: tls
+              mountPath: /etc/zscaler-mcp/tls
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+        {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if or .Values.mcp.tls.certSecret.name .Values.extraVolumes }}
+      volumes:
+        {{- if .Values.mcp.tls.certSecret.name }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.mcp.tls.certSecret.name }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

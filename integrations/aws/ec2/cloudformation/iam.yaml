@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on EC2 — IAM nested stack. Provisions the instance
+  role and matching instance profile. The role can:
+    1. Read the Zscaler MCP secret from Secrets Manager (startup credential
+       fetch).
+    2. Write CloudWatch logs (systemd journal forwarding).
+    3. Register with SSM (Session Manager — used in lieu of SSH where
+       possible).
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+  SecretArn:
+    Type: String
+
+Resources:
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-instance-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # SSM Session Manager + Patch Manager + ssm:UpdateInstanceInformation
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        # CloudWatch Agent — log forwarding to /aws/ec2/<prefix>
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: SecretsManagerRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref SecretArn
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${ResourceNamePrefix}-instance-profile
+      Roles: [!Ref InstanceRole]
+
+Outputs:
+
+  InstanceProfileName:
+    Value: !Ref InstanceProfile
+  InstanceProfileArn:
+    Value: !GetAtt InstanceProfile.Arn
+  InstanceRoleArn:
+    Value: !GetAtt InstanceRole.Arn

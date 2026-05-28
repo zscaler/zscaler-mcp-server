@@ -66,14 +66,88 @@ SKY_BLUE = "\033[34;01m" if COLOURS else ""
 BOLD = "\033[1m" if COLOURS else ""
 NC = "\033[0m" if COLOURS else ""
 
-ZSCALER_LOGO = f"""{SKY_BLUE}
-  ______              _
- |___  /             | |
-    / / ___  ___ __ _| | ___ _ __
-   / / / __|/ __/ _` | |/ _ \\ '__|
-  / /__\\__ \\ (_| (_| | |  __/ |
- /_____|___/\\___\\__,_|_|\\___|_|
-{NC}"""
+_ZSCALER_ART = [
+    "███████╗███████╗ ██████╗ █████╗ ██╗     ███████╗██████╗ ",
+    "╚══███╔╝██╔════╝██╔════╝██╔══██╗██║     ██╔════╝██╔══██╗",
+    "  ███╔╝ ███████╗██║     ███████║██║     █████╗  ██████╔╝",
+    " ███╔╝  ╚════██║██║     ██╔══██║██║     ██╔══╝  ██╔══██╗",
+    "███████╗███████║╚██████╗██║  ██║███████╗███████╗██║  ██║",
+    "╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝",
+]
+_TAGLINE = "Google ADK Agent Deployment   |   Cloud Run / Vertex AI / Agentspace"
+
+
+def _supports_truecolor() -> bool:
+    if not sys.stdout.isatty():
+        return False
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit"):
+        return True
+    term = os.environ.get("TERM", "").lower()
+    return "256color" in term or "kitty" in term or "iterm" in term
+
+
+def _rgb(r: int, g: int, b: int) -> str:
+    return f"\x1b[38;2;{r};{g};{b}m"
+
+
+_RESET = "\x1b[0m"
+
+
+def print_zscaler_logo() -> None:
+    """Render a chunky Zscaler ASCII logo with a left-to-right blue gradient."""
+    width = max(len(line) for line in _ZSCALER_ART)
+    pad = 2
+    inner = width + pad * 2
+
+    if not _supports_truecolor():
+        print()
+        print(f"  +{'-' * inner}+")
+        for line in _ZSCALER_ART:
+            print(f"  |{' ' * pad}{line.ljust(width)}{' ' * pad}|")
+        print(f"  +{'-' * inner}+")
+        print(f"  {_TAGLINE}")
+        print()
+        return
+
+    start = (0x55, 0xCC, 0xFF)
+    end = (0x00, 0x3D, 0x99)
+    border = _rgb(0x33, 0x55, 0x99)
+    shadow_color = _rgb(0x00, 0x3D, 0x99)
+
+    def gradient_line(text: str) -> str:
+        out = []
+        last = None
+        padded = text.ljust(width)
+        for i, ch in enumerate(padded):
+            if ch == " ":
+                out.append(" ")
+                continue
+            t = i / max(width - 1, 1)
+            r = int(start[0] + (end[0] - start[0]) * t)
+            g = int(start[1] + (end[1] - start[1]) * t)
+            b = int(start[2] + (end[2] - start[2]) * t)
+            color = (r, g, b)
+            if color != last:
+                out.append(_rgb(*color))
+                last = color
+            out.append(ch)
+        out.append(_RESET)
+        return "".join(out)
+
+    blank = " " * width
+    print()
+    print(f"  {border}╭{'─' * inner}╮{_RESET}")
+    print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
+    for line in _ZSCALER_ART:
+        print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
+    shadow = "░" * width
+    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
+    print(f"  {border}╰{'─' * inner}╯{_RESET}")
+    print(f"  {_TAGLINE}")
+    print()
 
 
 def info(msg: str) -> None:
@@ -354,7 +428,7 @@ def ensure_env_file() -> None:
 def op_deploy(args: argparse.Namespace) -> None:
     """Interactive guided deployment."""
 
-    print(ZSCALER_LOGO)
+    print_zscaler_logo()
     print("=" * 72)
     print(f"  {BOLD}Zscaler MCP Agent — ADK Deployment{NC}")
     print("=" * 72)
@@ -857,7 +931,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.operation:
-        print(ZSCALER_LOGO)
+        print_zscaler_logo()
         parser.print_help()
         sys.exit(1)
 

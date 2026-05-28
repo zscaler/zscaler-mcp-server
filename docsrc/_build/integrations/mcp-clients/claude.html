@@ -1,0 +1,672 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Cursor" href="cursor.html" /><link rel="prev" title="MCP Clients" href="index.html" />
+        <link rel="prefetch" href="../../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Claude</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../toolsets/index.html">Toolsets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../skills/index.html">Skills</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Platform Integrations</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Platform Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">MCP Clients</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of MCP Clients</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Claude</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cursor.html">Cursor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gemini-cli.html">Gemini CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiro.html">Kiro IDE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vscode.html">VS Code + GitHub Copilot</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../registries.html">Registries and Marketplaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../github-registry.html">GitHub MCP Registry</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/jmespath-filtering.html">JMESPath Filtering on List Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/audit-logging.html">Tool-Call Audit Logging</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../guides/deployment-local.html">Local</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Local</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/setup-script.html">One-step setup script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/docker.html">Docker</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../guides/deployment-aws.html">AWS</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of AWS</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/strands-agentcore.html">Strands Agent client for AgentCore Runtime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/aws-harness.html">AWS Harness — AgentCore Harness deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/secrets-manager.html">AWS Secrets Manager Integration with Bedrock AgentCore</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../guides/deployment-azure.html">Azure</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Azure</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/azure-deployment.html">Azure Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/azure-ai-foundry.html">Azure AI Foundry Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/entra-id-oidcproxy.html">Entra ID OIDCProxy</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../guides/deployment-gcp.html">Google Cloud</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Google Cloud</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../guides/deployment-kubernetes.html">Kubernetes</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Kubernetes</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../guides/helm-chart.html">Kubernetes (Helm Chart)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/claude-desktop-extension.html">Claude Desktop Extension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../security/index.html">Security</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of Security</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../security/write-operations.html">Write Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../security/mcp-client-auth.html">MCP Client Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../security/tls-and-hardening.html">TLS and Hardening</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../security/output-sanitization.html">Output Sanitization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../security/lifecycle.html">Process Lifecycle Management</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../../_sources/integrations/mcp-clients/claude.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="claude">
+<span id="claude-desktop-extension"></span><span id="claude-code-plugin"></span><span id="integration-claude"></span><h1>Claude<a class="headerlink" href="#claude" title="Link to this heading">¶</a></h1>
+<p>The Zscaler MCP Server ships in two flavours for Anthropic’s Claude family of products:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 35.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Integration</p></th>
+<th class="head"><p>Surface</p></th>
+<th class="head"><p>Best for</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Claude Code Plugin</strong></p></td>
+<td><p><a class="reference external" href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> CLI</p></td>
+<td><p>Terminal-driven workflows, IDE integrations, and the bundled 42 multi-step skills</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Claude Desktop Extension</strong></p></td>
+<td><p>Claude Desktop app (Directory of Connectors)</p></td>
+<td><p>Point-and-click install from the Desktop app’s built-in Directory, no shell required</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Pick whichever matches the Claude product you already use — both expose the same Zscaler tool surface and read the same OneAPI credentials.</p>
+<section id="id1">
+<h2>Claude Code Plugin<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is available as a native <strong>Claude Code Plugin</strong>, providing AI-assisted management of the Zscaler Zero Trust Exchange platform directly within <a class="reference external" href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>.</p>
+<section id="what-s-included">
+<h3>What’s Included<a class="headerlink" href="#what-s-included" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 35.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Location</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Plugin manifest</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.claude-plugin/plugin.json</span></code></p></td>
+<td><p>Plugin metadata, MCP entry point, skills, and slash commands</p></td>
+</tr>
+<tr class="row-odd"><td><p>Marketplace manifest</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.claude-plugin/marketplace.json</span></code></p></td>
+<td><p>Claude Code marketplace listing and versioning</p></td>
+</tr>
+<tr class="row-even"><td><p>Skills</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">skills/</span></code></p></td>
+<td><p>42 guided multi-step workflows for common Zscaler operations</p></td>
+</tr>
+<tr class="row-odd"><td><p>MCP config</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.mcp.json</span></code></p></td>
+<td><p>MCP server connection configuration</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="skills-42-guided-workflows">
+<h3>Skills (42 guided workflows)<a class="headerlink" href="#skills-42-guided-workflows" title="Link to this heading">¶</a></h3>
+<p>The plugin bundles service-specific skills that Claude auto-activates based on your prompt. See the <a class="reference internal" href="../../skills/index.html"><span class="doc">Skills catalog</span></a> for the full list.</p>
+</section>
+<section id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h3>
+<p><strong>Option 1: From the Claude Code Marketplace</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>zscaler
+</pre></div>
+</div>
+<p><strong>Option 2: From the repository</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/zscaler/zscaler-mcp-server.git
+<span class="nb">cd</span><span class="w"> </span>zscaler-mcp-server
+claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>.
+</pre></div>
+</div>
+<p><strong>Option 3: Manual MCP configuration</strong></p>
+<p>When installed as a Claude Code plugin, the bundled <code class="docutils literal notranslate"><span class="pre">.mcp.json</span></code> resolves the env file relative to the plugin install directory using <code class="docutils literal notranslate"><span class="pre">${CLAUDE_PLUGIN_ROOT}</span></code> — no path editing required:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;${CLAUDE_PLUGIN_ROOT}/.env&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;zscaler-mcp&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If you are wiring the MCP server up <strong>outside</strong> the Claude Code plugin context (e.g. a standalone MCP client), replace <code class="docutils literal notranslate"><span class="pre">${CLAUDE_PLUGIN_ROOT}/.env</span></code> with an absolute path to your own <code class="docutils literal notranslate"><span class="pre">.env</span></code> file, since <code class="docutils literal notranslate"><span class="pre">${CLAUDE_PLUGIN_ROOT}</span></code> is only resolved by Claude Code at runtime.</p>
+<p>Optionally, run the server via the published Docker image instead:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;zscaler-mcp-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;docker&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--rm&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--env-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/absolute/path/to/.env&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;zscaler/zscaler-mcp-server:latest&quot;</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> installed</p></li>
+<li><p><a class="reference external" href="https://docs.astral.sh/uv/">uv</a> installed (provides the <code class="docutils literal notranslate"><span class="pre">uvx</span></code> runner used by the plugin’s <code class="docutils literal notranslate"><span class="pre">.mcp.json</span></code>)</p></li>
+<li><p>Zscaler OneAPI credentials configured in <code class="docutils literal notranslate"><span class="pre">.env</span></code> (copy <code class="docutils literal notranslate"><span class="pre">.env.example</span></code> and fill in the values)</p></li>
+<li><p>Docker is <strong>optional</strong> — only required if you choose the Docker-based manual configuration above</p></li>
+</ul>
+</section>
+<section id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h3>
+<p>The plugin manifest at <code class="docutils literal notranslate"><span class="pre">.claude-plugin/plugin.json</span></code> defines:</p>
+<ul class="simple">
+<li><p><strong>Name</strong>: <code class="docutils literal notranslate"><span class="pre">zscaler</span></code></p></li>
+<li><p><strong>MCP servers</strong>: Configured via <code class="docutils literal notranslate"><span class="pre">.mcp.json</span></code></p></li>
+<li><p><strong>Skills path</strong>: <code class="docutils literal notranslate"><span class="pre">./skills/</span></code></p></li>
+<li><p><strong>Commands path</strong>: <code class="docutils literal notranslate"><span class="pre">./commands/</span></code> (slash commands)</p></li>
+</ul>
+<p>The marketplace manifest at <code class="docutils literal notranslate"><span class="pre">.claude-plugin/marketplace.json</span></code> provides:</p>
+<ul class="simple">
+<li><p><strong>Version</strong>: Current plugin version</p></li>
+<li><p><strong>Category</strong>: Security</p></li>
+<li><p><strong>Owner</strong>: Zscaler (<code class="docutils literal notranslate"><span class="pre">devrel&#64;zscaler.com</span></code>)</p></li>
+</ul>
+</section>
+<section id="verification">
+<h3>Verification<a class="headerlink" href="#verification" title="Link to this heading">¶</a></h3>
+<p>After installation, verify by asking Claude Code:</p>
+<blockquote>
+<div><p><em>“What Zscaler tools are available?”</em></p>
+</div></blockquote>
+<p>or</p>
+<blockquote>
+<div><p><em>“List my ZPA application segments”</em></p>
+</div></blockquote>
+</section>
+</section>
+<section id="id2">
+<h2>Claude Desktop Extension<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server is also published as a <strong>Claude Desktop Extension</strong> — a single-file <code class="docutils literal notranslate"><span class="pre">.mcpb</span></code> bundle installed directly from Claude Desktop’s built-in Directory of Connectors. Once enabled, every read-only Zscaler tool becomes available to your Claude Desktop conversations with no shell, no <code class="docutils literal notranslate"><span class="pre">.env</span></code> file, and no manual MCP configuration.</p>
+<section id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h3>
+<p>Claude Desktop runs its own pre-flight check (the <strong>“All requirements met”</strong> banner on the extension’s detail page) before allowing the install. The extension needs:</p>
+<ul class="simple">
+<li><p><strong>Claude Desktop</strong> — the desktop application, not the Claude Code CLI</p></li>
+<li><p><strong>Python ≥ 3.11</strong> — the bundled MCP server runs as a Python process</p></li>
+<li><p><strong>`uv &lt;https://docs.astral.sh/uv/&gt;`__ on your ``PATH``</strong> — Claude Desktop launches the server with <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">zscaler_mcp.server</span></code> as declared in the bundle’s <code class="docutils literal notranslate"><span class="pre">manifest.json</span></code>. If <code class="docutils literal notranslate"><span class="pre">uv</span></code> cannot be found, the Requirements check fails and the <strong>Install</strong> button stays disabled. (If you don’t have a 3.11+ interpreter handy, <code class="docutils literal notranslate"><span class="pre">uv</span></code> can install one for you via <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">python</span> <span class="pre">install</span></code>.)</p></li>
+<li><p><strong>Zscaler OneAPI credentials</strong> — <code class="docutils literal notranslate"><span class="pre">client_id</span></code>, <code class="docutils literal notranslate"><span class="pre">client_secret</span></code>, <code class="docutils literal notranslate"><span class="pre">customer_id</span></code>, <code class="docutils literal notranslate"><span class="pre">vanity_domain</span></code>. Supplied through the extension’s configuration form after install; no <code class="docutils literal notranslate"><span class="pre">.env</span></code> file is needed.</p></li>
+</ul>
+<p>The “fetch a few dependencies” dialog Claude Desktop shows during install is <code class="docutils literal notranslate"><span class="pre">uv</span></code> resolving the Python packages declared in the bundle’s <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>. First install may take a minute or two depending on network speed; subsequent launches reuse the cached environment and start in seconds.</p>
+</section>
+<section id="installation-walkthrough">
+<h3>Installation walkthrough<a class="headerlink" href="#installation-walkthrough" title="Link to this heading">¶</a></h3>
+<p><strong>Step 1 — Find the extension in the Directory</strong></p>
+<p>Open Claude Desktop → <strong>Directory</strong> → <strong>Connectors</strong> and search for <code class="docutils literal notranslate"><span class="pre">zscaler</span></code>:</p>
+<img alt="Directory search for Zscaler MCP Server" class="align-center" src="../../_images/claude-extension-install01.png" />
+<p><strong>Step 2 — Review the extension details</strong></p>
+<p>Click the result to open the detail view. You’ll see the full description, the live tool count, the Zscaler-developed badge, and — once <code class="docutils literal notranslate"><span class="pre">uv</span></code> is detected on your system — the green <strong>“All requirements met”</strong> banner that enables the <strong>Install</strong> button:</p>
+<img alt="Zscaler MCP Server extension details with All requirements met" class="align-center" src="../../_images/claude-extension-install02.png" />
+<p><strong>Step 3 — Confirm the install</strong></p>
+<p>Click <strong>Install</strong>. Claude Desktop asks for confirmation and notes that it will fetch the Python dependencies declared in the bundle:</p>
+<img alt="Install confirmation dialog" class="align-center" src="../../_images/claude-extension-install03.png" />
+<p><strong>Step 4 — Verify the extension is enabled</strong></p>
+<p>When the install completes, the detail view updates to show the <strong>Enabled</strong> toggle and a <strong>Configure</strong> button. The extension is now installed but not yet usable — it has no credentials:</p>
+<img alt="Extension enabled, with Configure button" class="align-center" src="../../_images/claude-extension-install04.png" />
+<p><strong>Step 5 — Configure your Zscaler credentials</strong></p>
+<p>Click <strong>Configure</strong> to open the credential form. Fill in your OneAPI values:</p>
+<img alt="Configuration form with Zscaler credential fields" class="align-center" src="../../_images/claude-extension-install05.png" />
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code></p></td>
+<td><p>OneAPI client ID from the ZIdentity console</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code></p></td>
+<td><p>OneAPI client secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code></p></td>
+<td><p>Zscaler customer / tenant ID (required for ZPA tools)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code></p></td>
+<td><p>ZIdentity vanity domain (e.g. <code class="docutils literal notranslate"><span class="pre">acme.zsapi.net</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLOUD</span></code></p></td>
+<td><p>Cloud override; leave <code class="docutils literal notranslate"><span class="pre">production</span></code> unless you’re on a non-prod cloud</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Enabled Tools</strong></p></td>
+<td><p>Optional comma-separated allowlist; leave empty to expose every read-only tool the server registers</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>User-Agent comment</strong></p></td>
+<td><p>Optional suffix appended to outbound API calls’ <code class="docutils literal notranslate"><span class="pre">User-Agent</span></code> header — useful for tagging traffic in audit logs</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Click <strong>Save</strong>. The extension is now wired up and Claude Desktop can invoke any read-only Zscaler tool from the chat interface.</p>
+</section>
+<section id="id3">
+<h3>Verification<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<p>In a new Claude Desktop conversation, ask:</p>
+<blockquote>
+<div><p><em>“What Zscaler tools are available?”</em></p>
+</div></blockquote>
+<p>Claude responds with the toolsets loaded for the OneAPI credentials you configured. You can also try a concrete query such as <em>“list my ZPA application segments”</em> — Claude prompts you to approve the tool call (the per-tool approval is part of Claude Desktop’s built-in safety surface), then returns the result.</p>
+</section>
+<section id="building-the-bundle-locally">
+<h3>Building the bundle locally<a class="headerlink" href="#building-the-bundle-locally" title="Link to this heading">¶</a></h3>
+<p>If you want to install a custom build (for example a development branch or a private fork), run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>build-mcpb
+</pre></div>
+</div>
+<p>from the repo root. This refreshes the manifest, packs every runtime file into <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-server-&lt;VERSION&gt;.mcpb</span></code>, and writes the single bundle to the repo root. Drag that file into Claude Desktop’s <strong>Settings → Developer → Install Extension</strong> to install it locally without going through the Directory.</p>
+<p>The bundle pulls all its dependencies via <code class="docutils literal notranslate"><span class="pre">uv</span></code> at install time, so it stays under 500 KB on disk and the lock files inside it pin every Python package to a reproducible version.</p>
+</section>
+<section id="write-tools">
+<h3>Write tools<a class="headerlink" href="#write-tools" title="Link to this heading">¶</a></h3>
+<p>By default the Desktop Extension exposes only read-only tools. To enable create / update / delete operations, set the <strong>Enable Write Tools</strong> toggle in the configuration form (or its underlying <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_ENABLED=true</span></code> env var) and populate the <strong>Write Tools Allowlist</strong> with the patterns you want to permit (e.g. <code class="docutils literal notranslate"><span class="pre">zpa_create_*,zia_update_url_filtering_*</span></code>). Destructive operations still require an in-session HMAC confirmation token — Claude is prompted to confirm before the tool actually executes.</p>
+</section>
+</section>
+<section id="resources">
+<h2>Resources<a class="headerlink" href="#resources" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/README.md">Main README</a></p></li>
+<li><p><a class="reference internal" href="../../guides/claude-desktop-extension.html"><span class="doc">Claude Desktop Extension</span></a></p></li>
+<li><p><a class="reference internal" href="../../security/write-operations.html"><span class="doc">Write Operations</span></a></p></li>
+<li><p><a class="reference internal" href="../../skills/index.html"><span class="doc">Skills</span></a></p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="cursor.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Cursor</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">MCP Clients</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Claude</a><ul>
+<li><a class="reference internal" href="#id1">Claude Code Plugin</a><ul>
+<li><a class="reference internal" href="#what-s-included">What’s Included</a></li>
+<li><a class="reference internal" href="#skills-42-guided-workflows">Skills (42 guided workflows)</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#verification">Verification</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2">Claude Desktop Extension</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#installation-walkthrough">Installation walkthrough</a></li>
+<li><a class="reference internal" href="#id3">Verification</a></li>
+<li><a class="reference internal" href="#building-the-bundle-locally">Building the bundle locally</a></li>
+<li><a class="reference internal" href="#write-tools">Write tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#resources">Resources</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

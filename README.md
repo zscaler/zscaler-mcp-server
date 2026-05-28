@@ -49,6 +49,7 @@
   - [Remote MCP Deployment (EC2, VM, etc.)](#remote-mcp-deployment-ec2-vm-etc)
   - [Azure Container Apps / Virtual Machine / AKS (Preview)](#azure-container-apps--virtual-machine--aks-preview)
   - [Google Cloud (Cloud Run / GKE / VM / ADK Agent)](#google-cloud-cloud-run--gke--vm--adk-agent)
+  - [Kubernetes (Helm Chart)](#kubernetes-helm-chart)
   - [Amazon Bedrock AgentCore](#amazon-bedrock-agentcore)
 - [Using the MCP Server with Agents](#using-the-mcp-server-with-agents)
   - [Claude Desktop](#claude-desktop)
@@ -1229,6 +1230,28 @@ The loader also works on GKE and Compute Engine — anywhere GCP Application Def
 >
 > **📖 Secret Manager deep-dive** (GKE manifests, credential rotation, loader internals): [GCP Secret Manager Integration](docs/deployment/gcp_secrets_manager_integration.md)
 
+### Kubernetes (Helm Chart)
+
+Deploy the Zscaler MCP Server to **any** Kubernetes cluster via Helm — EKS, GKE, AKS, OpenShift, Rancher, k3s, Talos, or `kind` / `minikube` for local dev. The chart is cluster-vendor-agnostic and never calls `aws`, `az`, or `gcloud`. Use this when the cluster is already a fact and your operating model treats every workload as a Helm release; if you instead need to stand up brand-new cloud infra, use the Azure / GCP / AWS deployment sections above.
+
+```bash
+# Interactive guided install — same pattern as the Azure / GCP scripts
+python integrations/helm-chart/helm_mcp_operations.py deploy
+
+# Lifecycle subcommands
+python integrations/helm-chart/helm_mcp_operations.py status      # release + pods + Service + port-forward
+python integrations/helm-chart/helm_mcp_operations.py logs        # tail Deployment logs
+python integrations/helm-chart/helm_mcp_operations.py configure   # re-write Cursor / Claude configs
+python integrations/helm-chart/helm_mcp_operations.py test        # run `helm test` smoke probe
+python integrations/helm-chart/helm_mcp_operations.py destroy     # uninstall + optional ns deletion
+```
+
+The deployment script materialises a Kubernetes `Secret` from your existing `.env` (no translation into `values.yaml`), runs `helm upgrade --install`, waits for the rollout with live per-pod feedback (detects `ImagePullBackOff` / `CreateContainerConfigError` / `CrashLoopBackOff` and exits with a tailored recovery hint), starts a background `kubectl port-forward` when no Ingress is configured, and auto-configures Claude Desktop + Cursor with the right `Authorization: Basic` header.
+
+Five credential-setup paths are supported (interactive script, `kubectl create secret --from-env-file`, inline `--set`, pre-existing `Secret` for GitOps, and External Secrets Operator). All five converge on the same chart contract — the Deployment does `envFrom: secretRef:` so every `ZSCALER_MCP_*` / `ZSCALER_*` key in your secret flows into the container untouched.
+
+For the full chart reference (`values.yaml` keys, Ingress / HTTPRoute / cert-manager / HPA / PDB toggles, ExternalSecret examples), see [`integrations/helm-chart/README.md`](integrations/helm-chart/README.md).
+
 ### Amazon Bedrock AgentCore
 
 > [!IMPORTANT]
@@ -1380,6 +1403,7 @@ The Zscaler MCP Server ships with native integrations for several AI development
 | **Azure (Container Apps / VM)** | Deployment + Agent | `python azure_mcp_operations.py deploy` | [integrations/azure/](integrations/azure/README.md) |
 | **Google Cloud (Cloud Run / GKE / VM)** | Deployment | `python gcp_mcp_operations.py deploy` | [integrations/google/](integrations/google/README.md) |
 | **Google ADK Agent** | Agent | `python adk_agent_operations.py deploy` | [integrations/google/adk/](integrations/google/adk/README.md) |
+| **Kubernetes (Helm Chart)** | Deployment | `python helm_mcp_operations.py deploy` | [integrations/helm-chart/](integrations/helm-chart/README.md) |
 | **GitHub MCP Registry** | Registry | `mcp-publisher publish` | [integrations/github/](integrations/github/README.md) |
 
 For full documentation on all integrations, see the [Platform Integrations Guide](integrations/README.md).

@@ -1,0 +1,46 @@
+apiVersion: v2
+name: zscaler-mcp-server
+description: |-
+  Zscaler MCP Server — Model Context Protocol server exposing 300+ tools
+  for the Zscaler Zero Trust Exchange (ZIA, ZPA, ZDX, ZCC, ZTW, ZIdentity,
+  EASM, Z-Insights, ZMS) to AI assistants and agentic workflows.
+type: application
+
+# Chart version (semver, bumped per chart change — independent from the MCP
+# server's app version). Increment on every chart-template or values-schema
+# change, regardless of whether the underlying app version moved.
+version: 0.1.0
+
+# The version of the MCP server application this chart deploys.
+# `image.tag` defaults to `latest` (the only floating tag on Docker Hub
+# today) — this field is purely informational, tracking which release
+# of the server the chart was last validated against. Bump in lockstep
+# with the runtime release.
+appVersion: "0.12.3"
+
+kubeVersion: ">=1.24.0-0"
+
+home: https://github.com/zscaler/zscaler-mcp-server
+sources:
+  - https://github.com/zscaler/zscaler-mcp-server
+
+icon: https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/zscaler-logo.png
+
+keywords:
+  - zscaler
+  - mcp
+  - model-context-protocol
+  - zia
+  - zpa
+  - zdx
+  - zero-trust
+  - ai-agents
+  - security
+
+maintainers:
+  - name: Zscaler
+    url: https://github.com/zscaler
+
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: MIT

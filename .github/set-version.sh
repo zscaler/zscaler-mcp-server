@@ -64,6 +64,15 @@ sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/gemini-extension.j
 echo "Updating server.json"
 sed -i.bak -E 's/"version": ".+"/"version": "'"$1"'"/' "$ROOT/server.json" && rm "$ROOT/server.json.bak"
 
+# Set version + release in docsrc/conf.py (Sphinx documentation builder).
+# Both the short `version` and the full `release` are pinned to the new
+# release so the rendered docs always advertise the current version.
+echo "Updating docsrc/conf.py"
+grep -E '^version = ".+"$' "$ROOT/docsrc/conf.py" >/dev/null
+sed -i.bak -E "s/^version = \".+\"$/version = \"$1\"/" "$ROOT/docsrc/conf.py" && rm "$ROOT/docsrc/conf.py.bak"
+grep -E '^release = ".+"$' "$ROOT/docsrc/conf.py" >/dev/null
+sed -i.bak -E "s/^release = \".+\"$/release = \"$1\"/" "$ROOT/docsrc/conf.py" && rm "$ROOT/docsrc/conf.py.bak"
+
 # Generate requirements.txt from pyproject.toml
 echo "Updating requirements.txt"
 uv pip compile pyproject.toml --output-file requirements.txt

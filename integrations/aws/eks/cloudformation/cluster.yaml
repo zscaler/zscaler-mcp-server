@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on EKS — Cluster nested stack. Provisions an EKS
+  control plane, a managed node group, and the OIDC provider needed for
+  IAM Roles for Service Accounts (IRSA). The node group uses a single
+  instance type (t3.medium by default) in the private subnets. Only invoked
+  when the root stack's ClusterMode=CreateNew.
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+  ClusterName:
+    Type: String
+  KubernetesVersion:
+    Type: String
+    # Default lives on 1.33 — the version AWS recommends in the EKS
+    # console banner ("Rather than wait for automatic upgrades, we
+    # recommend you update your cluster to 1.33 or higher"). 1.30 and
+    # below are still listed in AllowedValues so operators with an
+    # explicit reason to pin can opt in, but new clusters land on
+    # standard support out of the box.
+    Default: '1.33'
+    AllowedValues: ['1.28', '1.29', '1.30', '1.31', '1.32', '1.33']
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  ControlPlaneSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: >-
+      All subnets (public + private) the EKS control plane ENIs should be
+      reachable from. The root template merges public + private into a
+      single list before passing here.
+  NodeInstanceType:
+    Type: String
+    Default: t3.medium
+  NodeDesiredCount:
+    Type: Number
+    Default: 1
+  NodeMinCount:
+    Type: Number
+    Default: 1
+  NodeMaxCount:
+    Type: Number
+    Default: 3
+  NodeDiskSize:
+    Type: Number
+    Default: 20
+
+Resources:
+
+  # ── Cluster IAM role ────────────────────────────────────────────────
+  ClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-cluster-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+
+  # ── Node IAM role ───────────────────────────────────────────────────
+  NodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-node-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  # ── EKS cluster ─────────────────────────────────────────────────────
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref ClusterName
+      Version: !Ref KubernetesVersion
+      RoleArn: !GetAtt ClusterRole.Arn
+      ResourcesVpcConfig:
+        SubnetIds: !Ref ControlPlaneSubnetIds
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+        BootstrapClusterCreatorAdminPermissions: true
+      Logging:
+        ClusterLogging:
+          EnabledTypes:
+            - Type: api
+            - Type: audit
+            - Type: authenticator
+      Tags:
+        - { Key: Application, Value: zscaler-mcp-server }
+
+  # ── Managed node group ─────────────────────────────────────────────
+  NodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref Cluster
+      NodegroupName: !Sub ${ResourceNamePrefix}-ng
+      NodeRole: !GetAtt NodeRole.Arn
+      Subnets: !Ref PrivateSubnetIds
+      InstanceTypes: [!Ref NodeInstanceType]
+      AmiType: AL2023_x86_64_STANDARD
+      DiskSize: !Ref NodeDiskSize
+      ScalingConfig:
+        DesiredSize: !Ref NodeDesiredCount
+        MinSize: !Ref NodeMinCount
+        MaxSize: !Ref NodeMaxCount
+      UpdateConfig:
+        MaxUnavailable: 1
+      Tags:
+        Application: zscaler-mcp-server
+
+  # ── OIDC provider (for IRSA — Pod gets an AWS role via SA annotation) ─
+  # CloudFormation has no direct OIDC resource that consumes a cluster's
+  # issuer URL, so we construct it via a tiny custom resource. Lambda-less
+  # by using AWS::IAM::OIDCProvider with a Wait-derived attribute.
+  OidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: !GetAtt Cluster.OpenIdConnectIssuerUrl
+      ClientIdList: [sts.amazonaws.com]
+      ThumbprintList:
+        # AWS root CA thumbprint used by EKS issuer in every region
+        - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+      Tags:
+        - { Key: Application, Value: zscaler-mcp-server }
+
+Outputs:
+
+  ClusterName:
+    Value: !Ref Cluster
+  ClusterArn:
+    Value: !GetAtt Cluster.Arn
+  ClusterEndpoint:
+    Value: !GetAtt Cluster.Endpoint
+  ClusterOidcIssuerUrl:
+    Value: !GetAtt Cluster.OpenIdConnectIssuerUrl
+  ClusterOidcProviderArn:
+    Value: !Ref OidcProvider
+  NodeGroupName:
+    Value: !Ref NodeGroup
+  NodeRoleArn:
+    Value: !GetAtt NodeRole.Arn
+  ClusterSecurityGroupId:
+    Value: !GetAtt Cluster.ClusterSecurityGroupId
