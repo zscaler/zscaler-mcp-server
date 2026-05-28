@@ -1,0 +1,785 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="AWS Secrets Manager Integration with Bedrock AgentCore" href="secrets-manager.html" /><link rel="prev" title="Strands Agent client for AgentCore Runtime" href="strands-agentcore.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>AWS Harness — AgentCore Harness deployment</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../toolsets/index.html">Toolsets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills/index.html">Skills</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Platform Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../integrations/mcp-clients/index.html">MCP Clients</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of MCP Clients</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/claude.html">Claude</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/cursor.html">Cursor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/gemini-cli.html">Gemini CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/kiro.html">Kiro IDE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/vscode.html">VS Code + GitHub Copilot</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/registries.html">Registries and Marketplaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/github-registry.html">GitHub MCP Registry</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jmespath-filtering.html">JMESPath Filtering on List Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="audit-logging.html">Tool-Call Audit Logging</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-local.html">Local</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Local</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="setup-script.html">One-step setup script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="docker.html">Docker</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="deployment-aws.html">AWS</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of AWS</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="strands-agentcore.html">Strands Agent client for AgentCore Runtime</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">AWS Harness — AgentCore Harness deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="secrets-manager.html">AWS Secrets Manager Integration with Bedrock AgentCore</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-azure.html">Azure</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Azure</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="azure-deployment.html">Azure Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="azure-ai-foundry.html">Azure AI Foundry Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="entra-id-oidcproxy.html">Entra ID OIDCProxy</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-gcp.html">Google Cloud</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Google Cloud</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="deployment-kubernetes.html">Kubernetes</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Kubernetes</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="helm-chart.html">Kubernetes (Helm Chart)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="claude-desktop-extension.html">Claude Desktop Extension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../security/index.html">Security</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of Security</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../security/write-operations.html">Write Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/mcp-client-auth.html">MCP Client Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/tls-and-hardening.html">TLS and Hardening</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/output-sanitization.html">Output Sanitization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/lifecycle.html">Process Lifecycle Management</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/guides/aws-harness.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="aws-harness-agentcore-harness-deployment">
+<span id="guide-aws-harness"></span><h1>AWS Harness — AgentCore Harness deployment<a class="headerlink" href="#aws-harness-agentcore-harness-deployment" title="Link to this heading">¶</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><strong>Status: Preview.</strong> AgentCore Harness is a managed agent layer announced at AWS re:Invent 2025 — currently in <strong>preview</strong> with limited regional coverage. This integration tracks the preview API surface; expect breaking changes before GA.</p>
+</div>
+<p>This guide covers the deployment of the Zscaler MCP Server as an AgentCore <strong>Harness</strong> tool. For the existing <strong>AgentCore Runtime</strong> deployment (Direct Runtime + experimental Gateway), see <a class="reference internal" href="amazon-bedrock-agentcore.html"><span class="doc">Amazon Bedrock AgentCore Deployment</span></a>.</p>
+<section id="pick-a-topology">
+<h2>Pick a topology<a class="headerlink" href="#pick-a-topology" title="Link to this heading">¶</a></h2>
+<p>The script supports two end-to-end deployment shapes. Pass <code class="docutils literal notranslate"><span class="pre">--topology</span></code> (or set <code class="docutils literal notranslate"><span class="pre">TOPOLOGY</span></code> in <code class="docutils literal notranslate"><span class="pre">.env</span></code>); omit both and the script prompts interactively.</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16.0%" />
+<col style="width: 16.0%" />
+<col style="width: 28.0%" />
+<col style="width: 12.0%" />
+<col style="width: 28.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Topology</p></th>
+<th class="head"><p>Tool type</p></th>
+<th class="head"><p>MCP server runs on</p></th>
+<th class="head"><p>IdP</p></th>
+<th class="head"><p>When to pick</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ecs</span></code> (default)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code></p></td>
+<td><p>ECS Express Mode service (Fargate + auto-ALB)</p></td>
+<td><p>n/a (Basic auth from Token Vault)</p></td>
+<td><p>Simplest path; fewest moving parts; no Cognito to manage.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gateway</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agentcore_gateway</span></code></p></td>
+<td><p>AgentCore Runtime (managed)</p></td>
+<td><p>Amazon Cognito</p></td>
+<td><p>No ALB / ECS / Fargate. Same Gateway can later front other MCP clients (Cursor/Claude/Strands) with a real OIDC login.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ecs topology                          gateway topology
+─────────────────────                 ─────────────────────────
+User ──SigV4──► Harness              User ──SigV4──► Harness
+                  │                                    │
+                  │ remote_mcp                         │ agentcore_gateway
+                  │ (Token Vault Basic)                │ (Token Vault OAuth)
+                  ▼                                    ▼
+            ECS Express                          AgentCore Gateway
+              (ALB+HTTPS)                       (CUSTOM_JWT Cognito)
+                  │                                    │
+                  ▼                                    │ OAuth2 outbound
+            MCP container                              ▼
+                                                AgentCore Runtime
+                                                   (jwt Cognito)
+                                                       │
+                                                       ▼
+                                                MCP container
+</pre></div>
+</div>
+</section>
+<section id="what-is-agentcore-harness">
+<h2>What is AgentCore Harness?<a class="headerlink" href="#what-is-agentcore-harness" title="Link to this heading">¶</a></h2>
+<p><strong>Harness is a managed agent.</strong> You declare <code class="docutils literal notranslate"><span class="pre">model</span></code>, <code class="docutils literal notranslate"><span class="pre">systemPrompt</span></code>, <code class="docutils literal notranslate"><span class="pre">tools</span></code>, <code class="docutils literal notranslate"><span class="pre">memory</span></code>, and <code class="docutils literal notranslate"><span class="pre">limits</span></code> once via <code class="docutils literal notranslate"><span class="pre">bedrock-agentcore-control:CreateHarness</span></code>; AWS runs the agent loop. Under the hood it is Strands Agents on AgentCore Runtime — both still exist; Harness is just the higher-level surface AWS now markets as the go-to-production path.</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Detail</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Service</strong></p></td>
+<td><p>Amazon Bedrock AgentCore — <code class="docutils literal notranslate"><span class="pre">bedrock-agentcore-control</span></code> (control plane) + <code class="docutils literal notranslate"><span class="pre">bedrock-agentcore</span></code> (data plane)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>API</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CreateHarness</span></code>, <code class="docutils literal notranslate"><span class="pre">GetHarness</span></code>, <code class="docutils literal notranslate"><span class="pre">UpdateHarness</span></code>, <code class="docutils literal notranslate"><span class="pre">DeleteHarness</span></code>, <code class="docutils literal notranslate"><span class="pre">ListHarnesses</span></code>, <code class="docutils literal notranslate"><span class="pre">InvokeHarness</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>boto3</strong></p></td>
+<td><p>≥ 1.43.0 (earlier versions don’t expose the API)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Tools</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code>, <code class="docutils literal notranslate"><span class="pre">agentcore_gateway</span></code>, <code class="docutils literal notranslate"><span class="pre">agentcore_browser</span></code>, <code class="docutils literal notranslate"><span class="pre">agentcore_code_interpreter</span></code>, <code class="docutils literal notranslate"><span class="pre">inline_function</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Auth</strong></p></td>
+<td><p>Static <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header (plain or resolved from AgentCore Identity Token Vault)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Memory</strong></p></td>
+<td><p>Optional (AgentCore Memory). Opt-in per harness.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Observability</strong></p></td>
+<td><p>Auto-emitted to CloudWatch under <code class="docutils literal notranslate"><span class="pre">/aws/bedrock-agentcore/harness/&lt;id&gt;</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The Zscaler MCP Server fits exclusively as a <strong>``remote_mcp``</strong> tool — a URL Harness will call over HTTPS with whatever headers we configure.</p>
+</section>
+<section id="critical-constraint-remote-mcp-headers-are-static">
+<h2>Critical constraint — <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code> headers are static<a class="headerlink" href="#critical-constraint-remote-mcp-headers-are-static" title="Link to this heading">¶</a></h2>
+<p>Harness’s <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code> tool can <strong>only send static ``Authorization`` headers</strong>. It has no SigV4 signer. That means:</p>
+<ul class="simple">
+<li><p><strong>A SigV4-protected AgentCore Runtime URL will not work</strong> as a <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code> target. Pointing Harness at <code class="docutils literal notranslate"><span class="pre">https://bedrock-agentcore.&lt;region&gt;.amazonaws.com/runtimes/...</span></code> produces HTTP 403 on every invocation.</p></li>
+<li><p><strong>Recommended:</strong> let this script deploy the MCP server to ECS Express Mode (default path — auto-managed ALB + HTTPS). Or stand it up yourself behind any other non-SigV4 endpoint and pass the URL via <code class="docutils literal notranslate"><span class="pre">MCP_URL=…</span></code>.</p></li>
+<li><p><strong>Alternative (now shipped):</strong> AgentCore Gateway between Harness and a SigV4 Runtime URL — the Gateway does the OAuth → SigV4 protocol switch for you. Set <code class="docutils literal notranslate"><span class="pre">--topology</span> <span class="pre">gateway</span></code> (or <code class="docutils literal notranslate"><span class="pre">TOPOLOGY=gateway</span></code>).</p></li>
+</ul>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Requirement</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>AWS account with <strong>AgentCore Harness preview</strong> access</p></td>
+<td><p>Currently limited to a subset of regions. Confirm via <code class="docutils literal notranslate"><span class="pre">aws</span> <span class="pre">bedrock-agentcore-control</span> <span class="pre">list-harnesses</span> <span class="pre">--region</span> <span class="pre">&lt;r&gt;</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>AWS CLI / boto3 credentials</p></td>
+<td><p>The script uses the default credential chain. <code class="docutils literal notranslate"><span class="pre">aws</span> <span class="pre">sts</span> <span class="pre">get-caller-identity</span></code> should succeed.</p></td>
+</tr>
+<tr class="row-even"><td><p>Python 3.10+</p></td>
+<td><p>One runtime dependency (<code class="docutils literal notranslate"><span class="pre">boto3</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p>Bedrock model access</p></td>
+<td><p>At minimum the Claude Sonnet 4.6 inference profile (or whichever model you pick). Anthropic models additionally require a one-time <strong>use-case form</strong> in the Bedrock console.</p></td>
+</tr>
+<tr class="row-even"><td><p>Permission to call <code class="docutils literal notranslate"><span class="pre">ecs:CreateExpressGatewayService</span></code> and <code class="docutils literal notranslate"><span class="pre">iam:PassRole</span></code></p></td>
+<td><p>Granted by <code class="docutils literal notranslate"><span class="pre">AdministratorAccess</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Default VPC in the target region</p></td>
+<td><p>ECS Express auto-selects subnets + security groups from the default VPC.</p></td>
+</tr>
+<tr class="row-even"><td><p>AWS Marketplace subscription to Zscaler MCP Server</p></td>
+<td><p>Free (BYOL). Required if you let the script use the default Marketplace image.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">linux/amd64</span></code> image</p></td>
+<td><p>The Marketplace image is multi-arch; <strong>dev builds must include ``linux/amd64``</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p>Zscaler OneAPI credentials</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_CUSTOMER_ID</span></code>, <code class="docutils literal notranslate"><span class="pre">ZSCALER_VANITY_DOMAIN</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="install">
+<h2>Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>integrations/aws/harness
+uv<span class="w"> </span>venv<span class="w"> </span>.harness-venv<span class="w"> </span>--python<span class="w"> </span><span class="m">3</span>.11
+<span class="nb">source</span><span class="w"> </span>.harness-venv/bin/activate
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="configure">
+<h2>Configure<a class="headerlink" href="#configure" title="Link to this heading">¶</a></h2>
+<p>Copy the template and fill in your Zscaler credentials:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>env.properties<span class="w"> </span>.env
+<span class="si">${</span><span class="nv">EDITOR</span><span class="k">:-</span><span class="nv">vim</span><span class="si">}</span><span class="w"> </span>.env
+</pre></div>
+</div>
+<p>You can also pass values as CLI flags or let the script prompt you interactively — <code class="docutils literal notranslate"><span class="pre">env.properties</span></code> is for convenience.</p>
+</section>
+<section id="deploy">
+<h2>Deploy<a class="headerlink" href="#deploy" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>harness_mcp_operations.py<span class="w"> </span>deploy<span class="w"> </span>--region<span class="w"> </span>us-east-1
+</pre></div>
+</div>
+<p>The script walks the full stack in one run (≈4-5 minutes — most of it is the ECS Express ALB + target group health-check warm-up). The deploy creates:</p>
+<ol class="arabic simple">
+<li><p><strong>ECS task execution + infrastructure roles</strong> — for cross-account ECR pull, CloudWatch Logs, and the auto-ALB provisioning.</p></li>
+<li><p><strong>ECS cluster</strong> (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp</span></code>) — created if missing; preserved on destroy if it pre-existed.</p></li>
+<li><p><strong>CloudWatch log group</strong> (<code class="docutils literal notranslate"><span class="pre">/ecs/zscaler-mcp</span></code>).</p></li>
+<li><p><strong>ECS Express service</strong> (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp-server</span></code>) — single <code class="docutils literal notranslate"><span class="pre">CreateExpressGatewayService</span></code> call provisions ALB + target group + security groups + auto-scaling. Returns a stable public HTTPS endpoint of the form <code class="docutils literal notranslate"><span class="pre">xxxxx.ecs.&lt;region&gt;.on.aws</span></code>.</p></li>
+<li><p><strong>AgentCore Identity Token Vault credential provider</strong> (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp-creds</span></code>) — stores <code class="docutils literal notranslate"><span class="pre">Basic</span> <span class="pre">base64(client_id:client_secret)</span></code>.</p></li>
+<li><p><strong>AWS IAM Harness execution role</strong> (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp-harness-execution-role</span></code>) — mirrors the AWS-published harness execution role policy.</p></li>
+<li><p><strong>AgentCore Harness</strong> (<code class="docutils literal notranslate"><span class="pre">zscaler-mcp-harness</span></code>) — wired to a model + system prompt + the <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code> tool block pointing at the ECS Express URL with the Token Vault credential provider as the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> substitution target.</p></li>
+</ol>
+<p>State persisted to <code class="docutils literal notranslate"><span class="pre">.aws-harness-state.json</span></code> (gitignored).</p>
+<section id="what-success-looks-like">
+<h3>What success looks like<a class="headerlink" href="#what-success-looks-like" title="Link to this heading">¶</a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>── Deployment summary ─────────────────────────────────────────────────────────
+  HarnessId              = zscaler-mcp-harness-AbCdEfGhIj
+  HarnessArn             = arn:aws:bedrock-agentcore:us-east-1:111122223333:harness/zscaler-mcp-harness-AbCdEfGhIj
+  Model                  = us.anthropic.claude-sonnet-4-5-20250929-v1:0
+  MCP URL                = https://abc123.ecs.us-east-1.on.aws/mcp
+  MCP Host               = ECS Express — zscaler-mcp-server (cluster: zscaler-mcp)
+  Execution Role         = arn:aws:iam::111122223333:role/zscaler-mcp-harness-execution-role
+  Credential Provider    = arn:aws:bedrock-agentcore:us-east-1:111122223333:token-vault/default/apikeycredentialprovider/zscaler-mcp-creds
+</pre></div>
+</div>
+</section>
+</section>
+<section id="lifecycle-commands">
+<h2>Lifecycle commands<a class="headerlink" href="#lifecycle-commands" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>harness_mcp_operations.py<span class="w"> </span>status<span class="w">   </span>--region<span class="w"> </span>us-east-1
+python<span class="w"> </span>harness_mcp_operations.py<span class="w"> </span>logs<span class="w">     </span>--region<span class="w"> </span>us-east-1
+python<span class="w"> </span>harness_mcp_operations.py<span class="w"> </span>invoke<span class="w"> </span><span class="s2">&quot;list my zpa segment groups&quot;</span><span class="w"> </span>--region<span class="w"> </span>us-east-1
+python<span class="w"> </span>harness_mcp_operations.py<span class="w"> </span>destroy<span class="w">  </span>--region<span class="w"> </span>us-east-1<span class="w"> </span><span class="o">[</span>--yes<span class="o">]</span><span class="w"> </span><span class="o">[</span>--keep-role<span class="o">]</span><span class="w"> </span><span class="o">[</span>--keep-ecs<span class="o">]</span>
+</pre></div>
+</div>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18.0%" />
+<col style="width: 82.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deploy</span></code></p></td>
+<td><p>End-to-end walk-through. Idempotent on re-deploy — reuses existing ECS cluster, ECS Express service, IAM roles, log group, and credential provider when they already exist by name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">status</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GetHarness</span></code> + pretty-print of status, model, tool list, timestamps. When the ECS Express host is in state, also prints the service status, cluster, image, and public endpoint.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">logs</span></code></p></td>
+<td><p>Tails the auto-managed AgentCore runtime log group under <code class="docutils literal notranslate"><span class="pre">/aws/bedrock-agentcore/runtimes/&lt;runtime-id&gt;</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">invoke</span></code></p></td>
+<td><p>One-shot smoke test: opens an <code class="docutils literal notranslate"><span class="pre">InvokeHarness</span></code> event stream, prints text deltas, surfaces the stop reason and token usage.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">destroy</span></code></p></td>
+<td><p>Reverse-order tear-down. Use <code class="docutils literal notranslate"><span class="pre">--keep-role</span></code> to preserve IAM roles and <code class="docutils literal notranslate"><span class="pre">--keep-ecs</span></code> to preserve the MCP host across redeploys.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="authentication-design">
+<h2>Authentication design<a class="headerlink" href="#authentication-design" title="Link to this heading">¶</a></h2>
+<p>The Zscaler MCP Server has five auth modes (<code class="docutils literal notranslate"><span class="pre">OIDCProxy</span></code>, <code class="docutils literal notranslate"><span class="pre">JWT</span></code>, <code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">Key</span></code>, <code class="docutils literal notranslate"><span class="pre">Zscaler</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>). Harness’s <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code> tool pairs with them as follows:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 55.0%" />
+<col style="width: 25.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>MCP auth mode</p></th>
+<th class="head"><p>Harness header config</p></th>
+<th class="head"><p>Recommended?</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Zscaler</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">${arn:…/zscaler-mcp-creds}</span></code> — Token Vault resolves to <code class="docutils literal notranslate"><span class="pre">Basic</span> <span class="pre">base64(client_id:client_secret)</span></code></p></td>
+<td><p><strong>Yes — this script’s default.</strong> Rotation handled by Token Vault.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>API Key</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">${arn:…/zscaler-api-key}</span></code> — plain bearer</p></td>
+<td><p>Yes, if you’d rather use a static bearer instead of OneAPI.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>JWT</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Authorization:</span> <span class="pre">Bearer</span> <span class="pre">&lt;long-lived</span> <span class="pre">JWT&gt;</span></code> plaintext, or Token-Vault resolved if rotation is needed</p></td>
+<td><p>Less common. JWT is usually short-lived.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>OIDCProxy</strong></p></td>
+<td><p>Use <code class="docutils literal notranslate"><span class="pre">agentcore_gateway</span></code> tool type instead, with <code class="docutils literal notranslate"><span class="pre">outboundAuth.oauth</span></code> configured on the Gateway</p></td>
+<td><p>Topology C. The OIDC flow can’t run from inside <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>None</strong></p></td>
+<td><p>No <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header</p></td>
+<td><p>Dev / testing only. Do not deploy without auth.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="secrets-manager-where-zscaler-credentials-live">
+<h2>Secrets Manager — where Zscaler credentials live<a class="headerlink" href="#secrets-manager-where-zscaler-credentials-live" title="Link to this heading">¶</a></h2>
+<p>By default this script does <strong>not</strong> put <code class="docutils literal notranslate"><span class="pre">ZSCALER_CLIENT_SECRET</span></code> in the ECS task definition as plaintext env vars. The five-key credential bundle goes to AWS Secrets Manager and the container fetches it at boot.</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 35.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>How to activate</p></th>
+<th class="head"><p>Lifecycle</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Default — script-managed secret</strong></p></td>
+<td><p>Leave <code class="docutils literal notranslate"><span class="pre">ZSCALER_SECRET_NAME</span></code> unset in <code class="docutils literal notranslate"><span class="pre">.env</span></code>. The script creates <code class="docutils literal notranslate"><span class="pre">zscaler-mcp-harness/credentials</span></code> and seeds it from your <code class="docutils literal notranslate"><span class="pre">ZSCALER_*</span></code> <code class="docutils literal notranslate"><span class="pre">.env</span></code> values.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">destroy</span></code> schedules deletion with a 7-day recovery window. Use <code class="docutils literal notranslate"><span class="pre">--force-secret-delete</span></code> to skip the window.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Bring-your-own secret</strong></p></td>
+<td><p>Set <code class="docutils literal notranslate"><span class="pre">ZSCALER_SECRET_NAME=&lt;arn-or-name&gt;</span></code> in <code class="docutils literal notranslate"><span class="pre">.env</span></code>, pointing at a pre-existing secret managed by Terraform / CloudFormation / another team.</p></td>
+<td><p>The script verifies the secret exists, scopes the IAM policy to its ARN, but <strong>never overwrites the value or deletes the secret</strong> — even on <code class="docutils literal notranslate"><span class="pre">destroy</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Plaintext opt-out</strong> (dev/debug only)</p></td>
+<td><p>Pass <code class="docutils literal notranslate"><span class="pre">--no-secrets-manager</span></code> to <code class="docutils literal notranslate"><span class="pre">deploy</span></code>.</p></td>
+<td><p>Restores the legacy behaviour where the 5 credential keys go straight into the ECS task definition. <strong>Production deploys should never use this.</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="troubleshooting-highlights">
+<h2>Troubleshooting (highlights)<a class="headerlink" href="#troubleshooting-highlights" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 45.0%" />
+<col style="width: 55.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symptom</p></th>
+<th class="head"><p>Cause / Fix</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Harness playground</strong> returns <code class="docutils literal notranslate"><span class="pre">Failed</span> <span class="pre">to</span> <span class="pre">start</span> <span class="pre">MCP</span> <span class="pre">client:</span> <span class="pre">...</span> <span class="pre">unhandled</span> <span class="pre">errors</span> <span class="pre">in</span> <span class="pre">a</span> <span class="pre">TaskGroup</span></code></p></td>
+<td><p>Harness execution role is missing one of the AWS-mandated grants — most commonly <code class="docutils literal notranslate"><span class="pre">ecr-public:GetAuthorizationToken</span></code> + <code class="docutils literal notranslate"><span class="pre">sts:GetServiceBearerToken</span></code>. <code class="docutils literal notranslate"><span class="pre">destroy</span> <span class="pre">--keep-ecs</span></code> and <code class="docutils literal notranslate"><span class="pre">deploy</span></code> again — the script now mirrors the full AWS-published harness execution role policy.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">runtimeClientError:</span> <span class="pre">Failed</span> <span class="pre">to</span> <span class="pre">load</span> <span class="pre">tool</span> <span class="pre">'zscaler'</span> <span class="pre">(type=remote_mcp):</span> <span class="pre">…</span> <span class="pre">not</span> <span class="pre">authorized</span> <span class="pre">to</span> <span class="pre">perform:</span> <span class="pre">bedrock-agentcore:GetResourceApiKey</span></code></p></td>
+<td><p>AgentCore Identity does multiple distinct IAM authz checks per <code class="docutils literal notranslate"><span class="pre">GetResourceApiKey</span></code> / <code class="docutils literal notranslate"><span class="pre">GetResourceOauth2Token</span></code> call — and every one of them must independently pass. <strong>IAM-matching gotcha</strong>: IAM ARN matching is exact (no prefix matching). <code class="docutils literal notranslate"><span class="pre">destroy</span> <span class="pre">--keep-ecs</span> <span class="pre">&amp;&amp;</span> <span class="pre">deploy</span></code> rewrites the policy with all five required resource ARNs.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">botocore.exceptions.NoCredentialsError</span></code></p></td>
+<td><p>No AWS creds resolved. <code class="docutils literal notranslate"><span class="pre">aws</span> <span class="pre">configure</span></code>, set <code class="docutils literal notranslate"><span class="pre">AWS_PROFILE</span></code>, or export <code class="docutils literal notranslate"><span class="pre">AWS_ACCESS_KEY_ID</span></code> / <code class="docutils literal notranslate"><span class="pre">AWS_SECRET_ACCESS_KEY</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">EndpointConnectionError:</span> <span class="pre">bedrock-agentcore-control.&lt;region&gt;.amazonaws.com</span></code></p></td>
+<td><p>Harness preview not available in that region. Pick a region from the AWS preview list. As of writing, <code class="docutils literal notranslate"><span class="pre">us-east-1</span></code> is the safest bet.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ValidationException:</span> <span class="pre">harnessName</span> <span class="pre">…</span> <span class="pre">must</span> <span class="pre">satisfy</span> <span class="pre">regular</span> <span class="pre">expression</span> <span class="pre">pattern:</span> <span class="pre">[a-zA-Z][a-zA-Z0-9_]{0,39}</span></code></p></td>
+<td><p>Invalid characters in <code class="docutils literal notranslate"><span class="pre">--harness-name</span></code> — most commonly hyphens. Use letters, digits, and <strong>underscores only</strong>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>First <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/mcp</span></code> in CloudWatch returns <code class="docutils literal notranslate"><span class="pre">421</span> <span class="pre">Misdirected</span> <span class="pre">Request</span></code> with <code class="docutils literal notranslate"><span class="pre">Invalid</span> <span class="pre">Host</span> <span class="pre">header</span></code></p></td>
+<td><p>FastMCP’s DNS-rebinding guard rejects every request whose <code class="docutils literal notranslate"><span class="pre">Host</span></code> header isn’t in <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_ALLOWED_HOSTS</span></code>. The script <strong>merges</strong> the discovered FQDN into the container’s allowlist on every deploy.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exec</span> <span class="pre">/usr/local/bin/python:</span> <span class="pre">exec</span> <span class="pre">format</span> <span class="pre">error</span></code> in ECS task logs</p></td>
+<td><p>The image at <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_IMAGE_URI</span></code> is single-arch ARM64 (what <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> defaults to on Apple Silicon), while ECS Fargate Express runs AMD64. Rebuild with <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker-build-multiarch</span> <span class="pre">IMAGE=&lt;your-ecr-uri&gt;:&lt;tag&gt;</span> <span class="pre">PLATFORMS=linux/amd64</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The full Harness troubleshooting matrix lives in <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/blob/master/integrations/aws/harness/README.md">integrations/aws/harness/README.md</a>.</p>
+</section>
+<section id="where-to-go-next">
+<h2>Where to go next<a class="headerlink" href="#where-to-go-next" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="amazon-bedrock-agentcore.html"><span class="doc">Amazon Bedrock AgentCore Deployment</span></a> — the AgentCore Runtime deployment path (the URL we co-deploy from here, or the alternative if you don’t need Harness at all).</p></li>
+<li><p><a class="reference internal" href="strands-agentcore.html"><span class="doc">Strands Agent client for AgentCore Runtime</span></a> — local terminal client for the AgentCore Runtime path; the equivalent for the Harness path is the <code class="docutils literal notranslate"><span class="pre">invoke</span></code> subcommand of the Harness script.</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="secrets-manager.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">AWS Secrets Manager Integration with Bedrock AgentCore</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="strands-agentcore.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Strands Agent client for AgentCore Runtime</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">AWS Harness — AgentCore Harness deployment</a><ul>
+<li><a class="reference internal" href="#pick-a-topology">Pick a topology</a></li>
+<li><a class="reference internal" href="#what-is-agentcore-harness">What is AgentCore Harness?</a></li>
+<li><a class="reference internal" href="#critical-constraint-remote-mcp-headers-are-static">Critical constraint — <code class="docutils literal notranslate"><span class="pre">remote_mcp</span></code> headers are static</a></li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#install">Install</a></li>
+<li><a class="reference internal" href="#configure">Configure</a></li>
+<li><a class="reference internal" href="#deploy">Deploy</a><ul>
+<li><a class="reference internal" href="#what-success-looks-like">What success looks like</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#lifecycle-commands">Lifecycle commands</a></li>
+<li><a class="reference internal" href="#authentication-design">Authentication design</a></li>
+<li><a class="reference internal" href="#secrets-manager-where-zscaler-credentials-live">Secrets Manager — where Zscaler credentials live</a></li>
+<li><a class="reference internal" href="#troubleshooting-highlights">Troubleshooting (highlights)</a></li>
+<li><a class="reference internal" href="#where-to-go-next">Where to go next</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

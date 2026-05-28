@@ -1,0 +1,623 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Skills" href="../skills/index.html" /><link rel="prev" title="Zscaler Microsegmentation (ZMS) Tools" href="../tools/zms/index.html" />
+        <link rel="prefetch" href="../_static/logo.svg" as="image" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>Toolsets</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=4cbd6b35" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Zscaler Integrations MCP Server</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">Getting Started with Zscaler Integrations MCP Server</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tools/index.html">Zscaler Integrations MCP Server Tools</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Zscaler Integrations MCP Server Tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zcc/index.html">Zscaler Client Connector (ZCC) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zia/index.html">Zscaler Internet Access (ZIA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zpa/index.html">Zscaler Private Access (ZPA) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zdx/index.html">Zscaler Digital Experience (ZDX) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/ztw/index.html">Zscaler Cloud &amp; Branch Connector (ZTW) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zid/index.html">Zscaler Identity (Zidentity) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/easm/index.html">Zscaler External Attack Surface Management (EASM) Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zins/index.html">Zscaler Z-Insights Analytics Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools/zms/index.html">Zscaler Microsegmentation (ZMS) Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Toolsets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../skills/index.html">Skills</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../integrations/index.html">Platform Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Platform Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../integrations/mcp-clients/index.html">MCP Clients</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of MCP Clients</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/claude.html">Claude</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/cursor.html">Cursor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/gemini-cli.html">Gemini CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/kiro.html">Kiro IDE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/mcp-clients/vscode.html">VS Code + GitHub Copilot</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/registries.html">Registries and Marketplaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrations/github-registry.html">GitHub MCP Registry</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../guides/index.html">Guides</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guides/configuration.html">Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/examples.html">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/jmespath-filtering.html">JMESPath Filtering on List Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/audit-logging.html">Tool-Call Audit Logging</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../guides/deployment-local.html">Local</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Local</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guides/setup-script.html">One-step setup script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/docker.html">Docker</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../guides/deployment-aws.html">AWS</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of AWS</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guides/amazon-bedrock-agentcore.html">Amazon Bedrock AgentCore Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/strands-agentcore.html">Strands Agent client for AgentCore Runtime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/aws-harness.html">AWS Harness — AgentCore Harness deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/secrets-manager.html">AWS Secrets Manager Integration with Bedrock AgentCore</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../guides/deployment-azure.html">Azure</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Azure</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guides/azure-deployment.html">Azure Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/azure-ai-foundry.html">Azure AI Foundry Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/entra-id-oidcproxy.html">Entra ID OIDCProxy</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../guides/deployment-gcp.html">Google Cloud</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Google Cloud</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guides/gcp-cloud-run.html">GCP Cloud Run Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/gcp-gke.html">GCP GKE Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/gcp-compute-engine-vm.html">GCP Compute Engine VM Deployment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guides/gcp-adk-agent.html">GCP ADK Agent Deployment</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../guides/deployment-kubernetes.html">Kubernetes</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Kubernetes</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guides/helm-chart.html">Kubernetes (Helm Chart)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/claude-desktop-extension.html">Claude Desktop Extension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/support.html">Support Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guides/release-notes.html">Release Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../security/index.html">Security</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of Security</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../security/write-operations.html">Write Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/mcp-client-auth.html">MCP Client Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/tls-and-hardening.html">TLS and Hardening</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/output-sanitization.html">Output Sanitization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../security/lifecycle.html">Process Lifecycle Management</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/server.html">Server API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/client.html">Client API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/services.html">Services API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/utils.html">Utils API</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/toolsets/index.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="toolsets">
+<span id="id1"></span><h1>Toolsets<a class="headerlink" href="#toolsets" title="Link to this heading">¶</a></h1>
+<p>Tools are grouped into named <strong>toolsets</strong> so you can load only the slice of tools an agent actually needs — for example <code class="docutils literal notranslate"><span class="pre">zia_url_filtering</span></code> (5 tools) instead of every tool from every service (~300+). Toolsets are the recommended way to scope what an agent can see when you don’t need the full catalog.</p>
+<section id="why-toolsets-exist">
+<h2>Why toolsets exist<a class="headerlink" href="#why-toolsets-exist" title="Link to this heading">¶</a></h2>
+<p>Most MCP clients (Claude Desktop, Cursor, Gemini CLI) use <strong>deferred tool loading</strong> — they don’t load all 300+ tools upfront. They search for relevant tools based on the user’s prompt. Loading the whole catalog has three costs:</p>
+<ul class="simple">
+<li><p><strong>Tool search noise.</strong> The client returns the <em>closest N</em> tools regardless of relevance. With 300+ tools loaded, many of those matches are unrelated.</p></li>
+<li><p><strong>Context window pressure.</strong> Every loaded tool occupies a slice of the agent’s prompt budget.</p></li>
+<li><p><strong>Audit blast radius.</strong> Disabled-by-default narrowing is the cleanest way to keep a server scoped to “this agent only handles ZIA URL filtering.”</p></li>
+</ul>
+<p>The toolset system solves all three: pick the toolsets you want, and only those tools are registered.</p>
+</section>
+<section id="the-catalog">
+<h2>The catalog<a class="headerlink" href="#the-catalog" title="Link to this heading">¶</a></h2>
+<p>There are <strong>52 toolsets</strong> today, organized by service:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 10.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Service</p></th>
+<th class="head"><p>Toolsets</p></th>
+<th class="head"><p>Identifiers</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>ZIA</strong></p></td>
+<td><p>21</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zia_url_filtering</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_cloud_firewall</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_ssl_inspection</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_dlp</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_cloud_app_control</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_file_type_control</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_sandbox</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_locations</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_url_categories</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_users</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_devices</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_authentication_settings</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_rule_labels</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_workload_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_time_intervals</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_shadow_it</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_atp_policy</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_atp_malware</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_advanced_settings</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_admin</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_misc</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>ZPA</strong></p></td>
+<td><p>19</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zpa_app_segments</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_access_policies</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_policy</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_app_connector_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_connectors</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_server_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_segment_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_service_edge_groups</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_provisioning_keys</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_application_servers</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_pra</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_ba_certificates</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_app_protection</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_posture</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_trusted_networks</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_isolation</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_idp</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_microtenants</span></code>, <code class="docutils literal notranslate"><span class="pre">zpa_misc</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>ZDX</strong></p></td>
+<td><p>5</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zdx_alerts</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx_locations</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx_software_inventory</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx_troubleshooting</span></code>, <code class="docutils literal notranslate"><span class="pre">zdx_reports</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>ZCC</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zcc</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>ZTW</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ztw</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>ZIdentity</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zid</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>EASM</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zeasm</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Z-Insights</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zins</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>ZMS</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zms</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Meta (always-on)</strong></p></td>
+<td><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">meta</span></code> — cross-service discovery tools (<code class="docutils literal notranslate"><span class="pre">zscaler_check_connectivity</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler_get_available_services</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler_get_toolset_tools</span></code>, <code class="docutils literal notranslate"><span class="pre">zscaler_enable_toolset</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">meta</span></code> toolset is always loaded regardless of selection — it provides the discovery tools an agent uses to find other toolsets.</p>
+</section>
+<section id="selecting-toolsets-at-startup">
+<h2>Selecting toolsets at startup<a class="headerlink" href="#selecting-toolsets-at-startup" title="Link to this heading">¶</a></h2>
+<p>Three layers of selection control which toolsets are registered when the server starts:</p>
+<ol class="arabic simple">
+<li><p><strong>Explicit selection</strong> — <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> flag or <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code> env var.</p></li>
+<li><p><strong>Implicit fallback</strong> — every toolset whose service is in <code class="docutils literal notranslate"><span class="pre">--services</span></code> is loaded.</p></li>
+<li><p><strong>Entitlement filter</strong> — the selection is intersected with the products entitled by your OneAPI bearer token.</p></li>
+</ol>
+<p>The most precise form is a comma-separated list of identifiers:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>zscaler-mcp<span class="w"> </span>--toolsets<span class="w"> </span>zia_url_filtering,zpa_app_segments
+</pre></div>
+</div>
+<p>Two special values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--toolsets</span> <span class="pre">default</span></code> loads a curated default-on subset (the operationally common toolsets for each service).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--toolsets</span> <span class="pre">all</span></code> loads every toolset.</p></li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> is unset, the server falls back to “every toolset whose service is enabled” — preserving the legacy behaviour where <code class="docutils literal notranslate"><span class="pre">--services</span> <span class="pre">zia,zpa</span></code> loads every ZIA and ZPA tool.</p>
+</section>
+<section id="selection-precedence">
+<h2>Selection precedence<a class="headerlink" href="#selection-precedence" title="Link to this heading">¶</a></h2>
+<p>The filter order is fixed:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--disabled-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code> (negative blocklist with <code class="docutils literal notranslate"><span class="pre">fnmatch</span></code> wildcards)</p></li>
+<li><p>Toolset selection (from <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> or <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--enabled-tools</span></code> (positive allowlist, if set)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--write-tools</span></code> (write-specific allowlist)</p></li>
+</ol>
+<p>So <code class="docutils literal notranslate"><span class="pre">--disabled-tools</span> <span class="pre">&quot;zia_*&quot;</span></code> always wins, regardless of toolset selection. This is the right precedence — you can revoke a specific tool that the toolset would otherwise include.</p>
+</section>
+<section id="the-oneapi-entitlement-filter">
+<h2>The OneAPI entitlement filter<a class="headerlink" href="#the-oneapi-entitlement-filter" title="Link to this heading">¶</a></h2>
+<p>After the operator-driven <code class="docutils literal notranslate"><span class="pre">selected_toolsets</span></code> is resolved, the server intersects the selection with the products listed in the OneAPI bearer token’s <code class="docutils literal notranslate"><span class="pre">service-info[].prd</span></code> claim. The practical effect: if your tenant isn’t entitled to ZMS, the <code class="docutils literal notranslate"><span class="pre">zms</span></code> toolset is silently dropped from the selection even if you asked for it.</p>
+<p>The filter is <strong>on by default</strong> and is non-fatal — missing credentials, decode failure, network error, or empty <code class="docutils literal notranslate"><span class="pre">service-info</span></code> all log a single WARN line and the selection passes through unchanged. To opt out:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># CLI flag</span>
+zscaler-mcp<span class="w"> </span>--no-entitlement-filter
+
+<span class="c1"># Or env var</span>
+<span class="nv">ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>zscaler-mcp
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">meta</span></code> toolset is always preserved regardless of entitlement.</p>
+</section>
+<section id="runtime-toolset-enable">
+<h2>Runtime toolset enable<a class="headerlink" href="#runtime-toolset-enable" title="Link to this heading">¶</a></h2>
+<p>Toolset selection happens at server startup, but an agent can also enable a toolset on the fly by calling the always-on meta tool:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>zscaler_enable_toolset(toolset=&quot;zia_url_filtering&quot;)
+</pre></div>
+</div>
+<p>This registers every tool in the toolset using the same filter precedence as startup, so all rules (<code class="docutils literal notranslate"><span class="pre">disabled_tools</span></code>, <code class="docutils literal notranslate"><span class="pre">write_tools</span></code>) still apply. Useful when the agent encounters a request that needs tools it wasn’t initially given.</p>
+</section>
+<section id="discovery">
+<h2>Discovery<a class="headerlink" href="#discovery" title="Link to this heading">¶</a></h2>
+<p>Three always-loaded meta tools cover toolset discovery:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Tool</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zscaler_list_toolsets</span></code></p></td>
+<td><p>List the catalog with <code class="docutils literal notranslate"><span class="pre">currently_enabled</span></code>, <code class="docutils literal notranslate"><span class="pre">tool_count</span></code>, <code class="docutils literal notranslate"><span class="pre">can_enable</span></code>, and (when <code class="docutils literal notranslate"><span class="pre">can_enable:</span> <span class="pre">false</span></code>) <code class="docutils literal notranslate"><span class="pre">unavailable_reason</span></code> for each row. Filterable by <code class="docutils literal notranslate"><span class="pre">name_contains</span></code> / <code class="docutils literal notranslate"><span class="pre">description_contains</span></code> / <code class="docutils literal notranslate"><span class="pre">service</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">zscaler_get_toolset_tools</span></code></p></td>
+<td><p>List the member tools of a specific toolset with <code class="docutils literal notranslate"><span class="pre">available</span></code> and (when <code class="docutils literal notranslate"><span class="pre">available:</span> <span class="pre">false</span></code>) <code class="docutils literal notranslate"><span class="pre">unavailable_reason</span></code> per row.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">zscaler_enable_toolset</span></code></p></td>
+<td><p>Register a toolset’s tools at runtime (see above).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>A toolset whose service is currently disabled returns <code class="docutils literal notranslate"><span class="pre">can_enable:</span> <span class="pre">false</span></code> with a reason explaining why — instead of leaving the agent to guess.</p>
+</section>
+<section id="per-toolset-instructions">
+<h2>Per-toolset instructions<a class="headerlink" href="#per-toolset-instructions" title="Link to this heading">¶</a></h2>
+<p>Each toolset can carry an <code class="docutils literal notranslate"><span class="pre">instructions</span></code> snippet that’s only sent to the agent <strong>when the matching tools are loaded</strong>. Snippets shared across multiple toolsets (for example the rule-family <code class="docutils literal notranslate"><span class="pre">order</span></code>/<code class="docutils literal notranslate"><span class="pre">rank</span></code> reminder bound to all five ZIA rule toolsets) are de-duplicated at compose time.</p>
+<p>This keeps the model’s prompt focused: if you’re loaded with <code class="docutils literal notranslate"><span class="pre">zpa_app_segments</span></code>, you get ZPA segment-onboarding context; you don’t also get ZIA cloud-firewall rule-ordering guidance.</p>
+</section>
+<section id="helm-chart-and-kubernetes-deployments">
+<h2>Helm chart and Kubernetes deployments<a class="headerlink" href="#helm-chart-and-kubernetes-deployments" title="Link to this heading">¶</a></h2>
+<p>The Helm chart accepts a comma-separated <code class="docutils literal notranslate"><span class="pre">--set</span> <span class="pre">toolsets=zia_url_filtering,zpa_app_segments</span></code> value and forwards it to the container as <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code>. See the chart README at <a class="reference external" href="https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/helm-chart">integrations/helm-chart</a> for the full Helm story.</p>
+</section>
+<section id="environment-summary">
+<h2>Environment summary<a class="headerlink" href="#environment-summary" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable / flag</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_TOOLSETS</span></code></p></td>
+<td><p>Comma-separated toolset identifiers. <code class="docutils literal notranslate"><span class="pre">default</span></code> and <code class="docutils literal notranslate"><span class="pre">all</span></code> are accepted as special values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--services</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_SERVICES</span></code></p></td>
+<td><p>When <code class="docutils literal notranslate"><span class="pre">--toolsets</span></code> is unset, every toolset whose service appears here is loaded.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--no-entitlement-filter</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER</span></code></p></td>
+<td><p>Skip the OneAPI entitlement-product intersection (emergency override).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--disabled-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_DISABLED_TOOLS</span></code></p></td>
+<td><p>Negative blocklist applied after toolset selection. Supports <code class="docutils literal notranslate"><span class="pre">fnmatch</span></code> wildcards (<code class="docutils literal notranslate"><span class="pre">zcc_*</span></code>, <code class="docutils literal notranslate"><span class="pre">zia_list_device*</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--enabled-tools</span></code></p></td>
+<td><p>Positive allowlist applied after toolset selection.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--write-tools</span></code> / <code class="docutils literal notranslate"><span class="pre">ZSCALER_MCP_WRITE_TOOLS</span></code></p></td>
+<td><p>Write-specific allowlist. Wildcards supported.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="../tools/index.html"><span class="doc">Zscaler Integrations MCP Server Tools</span></a> — full catalog of underlying tools</p></li>
+<li><p><a class="reference internal" href="../skills/index.html"><span class="doc">Skills</span></a> — guided multi-step workflows</p></li>
+<li><p><a class="reference internal" href="../integrations/index.html#platform-integrations"><span class="std std-ref">Platform Integrations</span></a> — wiring the server into specific MCP clients</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../skills/index.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Skills</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../tools/zms/index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Zscaler Microsegmentation (ZMS) Tools</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Zscaler Inc.
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Toolsets</a><ul>
+<li><a class="reference internal" href="#why-toolsets-exist">Why toolsets exist</a></li>
+<li><a class="reference internal" href="#the-catalog">The catalog</a></li>
+<li><a class="reference internal" href="#selecting-toolsets-at-startup">Selecting toolsets at startup</a></li>
+<li><a class="reference internal" href="#selection-precedence">Selection precedence</a></li>
+<li><a class="reference internal" href="#the-oneapi-entitlement-filter">The OneAPI entitlement filter</a></li>
+<li><a class="reference internal" href="#runtime-toolset-enable">Runtime toolset enable</a></li>
+<li><a class="reference internal" href="#discovery">Discovery</a></li>
+<li><a class="reference internal" href="#per-toolset-instructions">Per-toolset instructions</a></li>
+<li><a class="reference internal" href="#helm-chart-and-kubernetes-deployments">Helm chart and Kubernetes deployments</a></li>
+<li><a class="reference internal" href="#environment-summary">Environment summary</a></li>
+<li><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b9afe91b"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
