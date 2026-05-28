@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+  labels:
+    app.kubernetes.io/name: zscaler-mcp-server
+    app.kubernetes.io/managed-by: ec2-mcp-operations

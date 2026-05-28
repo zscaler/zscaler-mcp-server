@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on EKS — IAM nested stack. Provisions the Pod
+  identity role (IRSA): a role the Pod assumes via service-account
+  federation so it can read the Zscaler credentials from Secrets Manager.
+  No long-lived AWS credentials inside the cluster.
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+  SecretArn:
+    Type: String
+  ClusterOidcProviderArn:
+    Type: String
+    Description: ARN of the OIDC provider associated with the EKS cluster.
+  Namespace:
+    Type: String
+    Default: zscaler-mcp
+  ServiceAccountName:
+    Type: String
+    Default: zscaler-mcp-sa
+
+Resources:
+
+  # IRSA trust policy. YAML doesn't allow !Sub as a map key, and we need
+  # `<issuer-without-https>:aud` and `:sub` as the dynamic keys inside
+  # StringEquals — so we express the whole policy document as a JSON
+  # string and let Fn::Sub interpolate the issuer host. The issuer host
+  # (without `https://`) is derived from the OIDC provider ARN, whose
+  # canonical form is:
+  #   arn:aws:iam::<acct>:oidc-provider/<issuer-host>
+  PodRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-pod-role
+      AssumeRolePolicyDocument:
+        Fn::Sub:
+          - |
+            {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Federated": "${OidcProviderArn}"},
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                  "StringEquals": {
+                    "${IssuerHost}:aud": "sts.amazonaws.com",
+                    "${IssuerHost}:sub": "system:serviceaccount:${Namespace}:${ServiceAccountName}"
+                  }
+                }
+              }]
+            }
+          - OidcProviderArn: !Ref ClusterOidcProviderArn
+            IssuerHost: !Select [1, !Split ["oidc-provider/", !Ref ClusterOidcProviderArn]]
+            Namespace: !Ref Namespace
+            ServiceAccountName: !Ref ServiceAccountName
+      Policies:
+        - PolicyName: SecretsManagerRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref SecretArn
+      Description: >-
+        IRSA role assumed by the Zscaler MCP Server Pod via the K8s
+        ServiceAccount token. Scoped to read the dedicated SM secret only.
+
+Outputs:
+
+  PodRoleArn:
+    Value: !GetAtt PodRole.Arn
+  PodRoleName:
+    Value: !Ref PodRole

@@ -50,6 +50,37 @@ Parameters:
   LambdaCodeBucket:          { Type: String, Description: S3 bucket holding the provisioner Lambda zip. }
   LambdaCodeKey:             { Type: String, Description: S3 key for runtime_provisioner.zip. }
 
+  # ── Network configuration (SEP-VPC support) ─────────────────────────────
+  NetworkMode:
+    Type: String
+    Default: PUBLIC
+    AllowedValues: [PUBLIC, VPC]
+    Description: >-
+      AgentCore Runtime network mode. PUBLIC (default) places the runtime
+      on the AWS-managed network — outbound internet works out of the box,
+      no VPC plumbing required. VPC injects ENIs into subnets/SGs you own
+      so the container can reach private resources (RDS, internal APIs,
+      private Zscaler endpoints, etc.). VPC subnets must live in
+      AgentCore-supported Availability Zones — see
+      https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html#supported-az
+  VpcSubnetIds:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated subnet IDs for the VPC ENIs (e.g.
+      "subnet-aaa,subnet-bbb"). Required when NetworkMode=VPC. At least
+      one; AWS recommends >=2 across different AZs for high availability.
+      Place these in private subnets with a NAT gateway if the container
+      needs outbound internet — placing AgentCore in a public subnet
+      does NOT give it internet access.
+  VpcSecurityGroupIds:
+    Type: String
+    Default: ''
+    Description: >-
+      Comma-separated security group IDs attached to the ENIs (e.g.
+      "sg-aaa,sg-bbb"). Required when NetworkMode=VPC. Outbound rules
+      must allow whichever private resources the container will talk to.
+
 Resources:
 
   RuntimeProvisionerLambda:
@@ -86,6 +117,9 @@ Resources:
       JwtAllowedClients:      !Ref JwtAllowedClients
       ApiKey:                 !Ref ApiKey
       EnableToolCallLogging:  !Ref EnableToolCallLogging
+      NetworkMode:            !Ref NetworkMode
+      VpcSubnetIds:           !Ref VpcSubnetIds
+      VpcSecurityGroupIds:    !Ref VpcSecurityGroupIds
 
 Outputs:
 

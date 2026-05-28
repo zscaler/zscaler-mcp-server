@@ -1,0 +1,323 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on AWS ECS-Fargate — root nested stack. Provisions
+  (optionally) a fresh VPC, an Application Load Balancer (with optional
+  ACM-managed TLS via Route53), and an ECS-Fargate service running the
+  official Zscaler MCP Server container. Credentials are sourced from
+  AWS Secrets Manager — either an existing secret you point at, or one
+  this stack creates from CloudFormation parameters.
+
+Parameters:
+
+  # ── Asset bucket (where the nested templates live) ─────────────────────
+  AssetBucket:
+    Type: String
+    Description: >-
+      S3 bucket holding the nested-stack templates (network.yaml,
+      iam.yaml, secrets.yaml, ecs.yaml). Upload all four templates to
+      this bucket under AssetPrefix before launching this root stack.
+  AssetPrefix:
+    Type: String
+    Default: zscaler-mcp/
+    Description: S3 key prefix for the nested-stack templates. Must end with '/'.
+
+  # ── Identifiers ────────────────────────────────────────────────────────
+  ResourceNamePrefix:
+    Type: String
+    Default: zscaler-mcp
+    AllowedPattern: '^[a-z][a-z0-9-]{1,30}[a-z0-9]$'
+    ConstraintDescription: >-
+      Must start with a lowercase letter, contain only lowercase letters,
+      digits, and dashes, and be 3-32 characters long.
+
+  # ── Image source ───────────────────────────────────────────────────────
+  ImageUri:
+    Type: String
+    Default: zscaler/zscaler-mcp-server:latest
+    Description: >-
+      Container image URI. Defaults to the public Docker Hub image.
+      Override only for private mirrors or specific version pins.
+
+  # ── Credential management ──────────────────────────────────────────────
+  CredentialSource:
+    Type: String
+    Default: UseExisting
+    AllowedValues: [UseExisting, CreateNew]
+    Description: >-
+      UseExisting (recommended) references a pre-existing Secrets Manager
+      secret. CreateNew provisions a fresh secret from the parameters
+      below — values appear in stack parameters, so prefer UseExisting
+      for production.
+  ExistingSecretArn:
+    Type: String
+    Default: ''
+    Description: >-
+      Full ARN of an existing Secrets Manager secret (must include the
+      6-char random suffix AWS appends, e.g.
+      arn:aws:secretsmanager:us-east-1:123456789012:secret:zscaler-mcp/creds-AbCdEf).
+      Required when CredentialSource=UseExisting. The secret JSON must
+      contain ZSCALER_CLIENT_ID, ZSCALER_CLIENT_SECRET,
+      ZSCALER_VANITY_DOMAIN, ZSCALER_CUSTOMER_ID, and ZSCALER_CLOUD. The
+      orchestrator script resolves a friendly name to this full ARN for
+      you — never pass the bare friendly name here.
+  ZscalerClientId:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerVanityDomain:
+    Type: String
+    Default: ''
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerCustomerId:
+    Type: String
+    Default: ''
+    Description: Required when CredentialSource=CreateNew.
+  ZscalerCloud:
+    Type: String
+    Default: production
+
+  # ── Network configuration ──────────────────────────────────────────────
+  NetworkMode:
+    Type: String
+    Default: CreateNew
+    AllowedValues: [CreateNew, UseExisting]
+    Description: >-
+      CreateNew → root stack provisions a fresh VPC (2 public + 2 private
+      subnets, IGW, NAT). UseExisting → caller supplies an existing VPC
+      and subnet IDs.
+  NewVpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+    AllowedPattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/(8|16|17|18|19|20)$'
+    Description: VPC CIDR block. Consulted only when NetworkMode=CreateNew.
+  ExistingVpcId:
+    Type: String
+    Default: ''
+    Description: VPC ID. Required when NetworkMode=UseExisting.
+  ExistingPublicSubnetIds:
+    Type: CommaDelimitedList
+    Default: ''
+    Description: >-
+      Comma-separated public subnet IDs for the ALB (>=2 in different AZs).
+      Required when NetworkMode=UseExisting.
+  ExistingPrivateSubnetIds:
+    Type: CommaDelimitedList
+    Default: ''
+    Description: >-
+      Comma-separated private subnet IDs for Fargate tasks (>=2 in different
+      AZs). Required when NetworkMode=UseExisting. Each subnet must have a
+      route to a NAT gateway for outbound HTTPS to Zscaler OneAPI.
+
+  # ── TLS / DNS ──────────────────────────────────────────────────────────
+  TlsMode:
+    Type: String
+    Default: None
+    AllowedValues: [AcmManaged, AcmExisting, None]
+  HostedZoneId:
+    Type: String
+    Default: ''
+  DomainName:
+    Type: String
+    Default: ''
+  ExistingCertArn:
+    Type: String
+    Default: ''
+
+  # ── MCP-client authentication ──────────────────────────────────────────
+  McpAuthMode:
+    Type: String
+    Default: zscaler
+    AllowedValues: [zscaler, jwt, api-key, none, oidcproxy]
+  JwtJwksUri:
+    Type: String
+    Default: ''
+  JwtIssuer:
+    Type: String
+    Default: ''
+  JwtAudience:
+    Type: String
+    Default: zscaler-mcp-server
+  ApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+  OidcProxyClientId:
+    Type: String
+    Default: ''
+  OidcProxyClientSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+  OidcProxyIssuer:
+    Type: String
+    Default: ''
+  OidcProxyAudience:
+    Type: String
+    Default: ''
+
+  # ── MCP feature flags / capacity ───────────────────────────────────────
+  WriteToolsEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  WriteToolsAllowlist:
+    Type: String
+    Default: ''
+  DisabledTools:
+    Type: String
+    Default: ''
+  DisabledServices:
+    Type: String
+    Default: ''
+  Toolsets:
+    Type: String
+    Default: ''
+  DisabledToolsets:
+    Type: String
+    Default: ''
+  EnableToolCallLogging:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+  DesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 20
+  TaskCpu:
+    Type: String
+    Default: '512'
+    AllowedValues: ['256', '512', '1024', '2048', '4096']
+  TaskMemory:
+    Type: String
+    Default: '1024'
+    AllowedValues: ['512', '1024', '2048', '3072', '4096', '5120', '6144', '7168', '8192']
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+
+Conditions:
+
+  CreateNetwork: !Equals [!Ref NetworkMode, CreateNew]
+  CreateNewSecret: !Equals [!Ref CredentialSource, CreateNew]
+
+Resources:
+
+  # ── Network (CreateNew only) ───────────────────────────────────────────
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNetwork
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}network.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        VpcCidr: !Ref NewVpcCidr
+      TimeoutInMinutes: 15
+
+  # ── Secrets Manager (CreateNew only) ───────────────────────────────────
+  SecretsStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateNewSecret
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}secrets.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ZscalerClientId: !Ref ZscalerClientId
+        ZscalerClientSecret: !Ref ZscalerClientSecret
+        ZscalerVanityDomain: !Ref ZscalerVanityDomain
+        ZscalerCustomerId: !Ref ZscalerCustomerId
+        ZscalerCloud: !Ref ZscalerCloud
+      TimeoutInMinutes: 5
+
+  # ── IAM ────────────────────────────────────────────────────────────────
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}iam.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        SecretArn: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretArn
+          - !Ref ExistingSecretArn
+      TimeoutInMinutes: 10
+
+  # ── ECS workload ───────────────────────────────────────────────────────
+  EcsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${AssetBucket}.s3.amazonaws.com/${AssetPrefix}ecs.yaml
+      Parameters:
+        ResourceNamePrefix: !Ref ResourceNamePrefix
+        ImageUri: !Ref ImageUri
+        # Full secret ARN — for an existing secret we still have to
+        # resolve the random suffix because ECS needs the exact ARN.
+        # `secret-name-*` only works in IAM policies, never in ECS
+        # task-definition `ValueFrom`. We rely on the orchestrator to
+        # pre-resolve `ExistingSecretArn` (with suffix) and pass it in.
+        SecretArn: !If
+          - CreateNewSecret
+          - !GetAtt SecretsStack.Outputs.SecretArn
+          - !Ref ExistingSecretArn
+        VpcId: !If [CreateNetwork, !GetAtt NetworkStack.Outputs.VpcId, !Ref ExistingVpcId]
+        PublicSubnetIds: !If
+          - CreateNetwork
+          - !GetAtt NetworkStack.Outputs.PublicSubnetIds
+          - !Join [',', !Ref ExistingPublicSubnetIds]
+        PrivateSubnetIds: !If
+          - CreateNetwork
+          - !GetAtt NetworkStack.Outputs.PrivateSubnetIds
+          - !Join [',', !Ref ExistingPrivateSubnetIds]
+        TaskExecutionRoleArn: !GetAtt IamStack.Outputs.TaskExecutionRoleArn
+        TaskRoleArn: !GetAtt IamStack.Outputs.TaskRoleArn
+        DesiredCount: !Ref DesiredCount
+        TaskCpu: !Ref TaskCpu
+        TaskMemory: !Ref TaskMemory
+        LogRetentionDays: !Ref LogRetentionDays
+        TlsMode: !Ref TlsMode
+        HostedZoneId: !Ref HostedZoneId
+        DomainName: !Ref DomainName
+        ExistingCertArn: !Ref ExistingCertArn
+        McpAuthMode: !Ref McpAuthMode
+        JwtJwksUri: !Ref JwtJwksUri
+        JwtIssuer: !Ref JwtIssuer
+        JwtAudience: !Ref JwtAudience
+        ApiKey: !Ref ApiKey
+        OidcProxyClientId: !Ref OidcProxyClientId
+        OidcProxyClientSecret: !Ref OidcProxyClientSecret
+        OidcProxyIssuer: !Ref OidcProxyIssuer
+        OidcProxyAudience: !Ref OidcProxyAudience
+        WriteToolsEnabled: !Ref WriteToolsEnabled
+        WriteToolsAllowlist: !Ref WriteToolsAllowlist
+        DisabledTools: !Ref DisabledTools
+        DisabledServices: !Ref DisabledServices
+        Toolsets: !Ref Toolsets
+        DisabledToolsets: !Ref DisabledToolsets
+        EnableToolCallLogging: !Ref EnableToolCallLogging
+      TimeoutInMinutes: 30
+
+Outputs:
+
+  McpUrl:
+    Description: Publicly accessible MCP endpoint URL.
+    Value: !GetAtt EcsStack.Outputs.McpUrl
+  AlbDnsName:
+    Description: Raw ALB DNS name (use this when no managed DNS record was created).
+    Value: !GetAtt EcsStack.Outputs.AlbDnsName
+  ClusterName:
+    Value: !GetAtt EcsStack.Outputs.ClusterName
+  ServiceName:
+    Value: !GetAtt EcsStack.Outputs.ServiceName
+  LogGroupName:
+    Value: !GetAtt EcsStack.Outputs.LogGroupName
+  SecretArn:
+    Description: Full ARN (with random suffix) of the Secrets Manager secret in use.
+    Value: !If [CreateNewSecret, !GetAtt SecretsStack.Outputs.SecretArn, !Ref ExistingSecretArn]
+  VpcId:
+    Value: !If [CreateNetwork, !GetAtt NetworkStack.Outputs.VpcId, !Ref ExistingVpcId]

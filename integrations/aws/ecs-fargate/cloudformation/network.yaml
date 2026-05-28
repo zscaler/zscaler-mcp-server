@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Zscaler MCP Server on ECS-Fargate — Network nested stack. Provisions a
+  brand-new VPC with two public subnets (for the ALB), two private subnets
+  (for Fargate tasks), an Internet Gateway, a single NAT gateway, and the
+  associated route tables. Only invoked when the root stack's
+  NetworkMode=CreateNew. When NetworkMode=UseExisting, this stack is skipped
+  and the caller provides VPC + subnet IDs directly to the ECS stack.
+
+Parameters:
+
+  ResourceNamePrefix:
+    Type: String
+  VpcCidr:
+    Type: String
+    Default: 10.42.0.0/16
+    Description: >-
+      VPC CIDR block. The VPC is carved into four /20 subnets via the
+      CloudFormation Cidr function — two public + two private across
+      two Availability Zones.
+    AllowedPattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}/(8|16|17|18|19|20)$'
+    ConstraintDescription: Must be a CIDR /20 or larger.
+
+Resources:
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-vpc' }
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-igw' }
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  # ── Public subnets (host the ALB) ──────────────────────────────────────
+  # !Cidr [block, count, cidrBits] carves the VPC into N sub-blocks. With
+  # count=4 / cidrBits=12 we get four /20s (e.g. 10.42.0.0/20, 10.42.16.0/20,
+  # 10.42.32.0/20, 10.42.48.0/20 for a 10.42.0.0/16 VPC).
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Select [0, !Cidr [!Ref VpcCidr, 4, 12]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-public-a' }
+        - { Key: 'kubernetes.io/role/elb', Value: '1' }
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Select [1, !Cidr [!Ref VpcCidr, 4, 12]]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-public-b' }
+        - { Key: 'kubernetes.io/role/elb', Value: '1' }
+
+  # ── Private subnets (host Fargate tasks / EC2 / EKS nodes) ─────────────
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Select [2, !Cidr [!Ref VpcCidr, 4, 12]]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-private-a' }
+        - { Key: 'kubernetes.io/role/internal-elb', Value: '1' }
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Select [3, !Cidr [!Ref VpcCidr, 4, 12]]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-private-b' }
+        - { Key: 'kubernetes.io/role/internal-elb', Value: '1' }
+
+  # ── NAT (single NAT for cost; HA-deploys should bump to per-AZ) ────────
+
+  NatEip:
+    Type: AWS::EC2::EIP
+    DependsOn: AttachGateway
+    Properties:
+      Domain: vpc
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-nat-eip' }
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip.AllocationId
+      SubnetId: !Ref PublicSubnetA
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-nat' }
+
+  # ── Route tables ──────────────────────────────────────────────────────
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-public-rt' }
+
+  PublicDefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetARouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+
+  PublicSubnetBRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetB
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - { Key: Name, Value: !Sub '${ResourceNamePrefix}-private-rt' }
+
+  PrivateDefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetARouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnetA
+
+  PrivateSubnetBRouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnetB
+
+Outputs:
+
+  VpcId:
+    Value: !Ref Vpc
+  PublicSubnetIds:
+    Description: Comma-separated public subnet IDs (for the ALB).
+    Value: !Join [',', [!Ref PublicSubnetA, !Ref PublicSubnetB]]
+  PrivateSubnetIds:
+    Description: Comma-separated private subnet IDs (for Fargate tasks / EC2 / EKS nodes).
+    Value: !Join [',', [!Ref PrivateSubnetA, !Ref PrivateSubnetB]]

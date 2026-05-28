@@ -1,0 +1,37 @@
+{{- if .Values.tests.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "zscaler-mcp-server.fullname" . }}-test-connection
+  labels:
+    {{- include "zscaler-mcp-server.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: curl
+      image: "{{ .Values.tests.image.repository }}:{{ .Values.tests.image.tag }}"
+      imagePullPolicy: {{ .Values.tests.image.pullPolicy }}
+      command:
+        - sh
+        - -c
+        - |
+          set -eu
+          HOST="{{ include "zscaler-mcp-server.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+          PORT="{{ .Values.service.port }}"
+          echo "Probing http://${HOST}:${PORT}/health ..."
+          # /health is unauthenticated and served by HealthCheckMiddleware
+          # on every transport that runs an HTTP listener.
+          status=$(curl -sS -o /tmp/body -w "%{http_code}" \
+            --connect-timeout 5 --max-time 15 \
+            "http://${HOST}:${PORT}/health")
+          echo "HTTP ${status}"
+          cat /tmp/body
+          test "${status}" = "200" || {
+            echo "Expected HTTP 200 from /health, got ${status}"
+            exit 1
+          }
+          echo "Smoke test passed."
+{{- end }}

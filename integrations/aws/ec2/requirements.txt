@@ -1,0 +1,3 @@
+# Runtime dependencies for ec2_mcp_operations.py
+boto3>=1.34.0
+botocore>=1.34.0

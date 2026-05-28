@@ -1,0 +1,15 @@
+# Per-deployment state — contains stack IDs, MCP URL, configured client paths.
+# Not secret on its own but typically per-developer.
+.aws-deploy-state.json
+
+# Local credentials and overrides.
+.env
+.env.local
+.env.*.local
+
+# Python build artifacts.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
