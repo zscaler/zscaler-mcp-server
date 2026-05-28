@@ -57,7 +57,9 @@ help:
 	@echo "$(COLOR_WARNING)documentation$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-build                    Build Sphinx documentation$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-clean                    Clean documentation build artifacts$(COLOR_NONE)"
-	@echo "$(COLOR_OK)  docs-install-deps             Install documentation dependencies$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docs-install-deps             Install pinned documentation dependencies$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docs-update-deps              Refresh docsrc/requirements.txt from requirements.in$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  docs-check-deps               Verify docsrc/requirements.txt is in sync with requirements.in (CI)$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-github                   Build docs and copy to docs/ for GitHub Pages$(COLOR_NONE)"
 
 clean: clean-build clean-pyc clean-test
@@ -171,7 +173,34 @@ docs-clean:
 docs-install-deps:
 	cd docsrc && uv pip install -r requirements.txt
 
+# Refresh docsrc/requirements.txt from docsrc/requirements.in with the
+# latest compatible versions. Run this whenever requirements.in changes
+# or you want to pull in upstream Sphinx/Furo/MyST releases.
+docs-update-deps:
+	@echo "$(COLOR_WARNING)Refreshing docsrc/requirements.txt from requirements.in...$(COLOR_NONE)"
+	uv pip compile docsrc/requirements.in --upgrade \
+		--custom-compile-command "make docs-update-deps" \
+		--output-file docsrc/requirements.txt
+	@echo "$(COLOR_OK)Lockfile refreshed. Commit docsrc/requirements.txt.$(COLOR_NONE)"
+
+# CI guard: re-compile into a scratch file and diff against the committed
+# lockfile. Exits non-zero when the committed copy is stale.
+docs-check-deps:
+	@echo "$(COLOR_WARNING)Checking docsrc/requirements.txt is in sync with requirements.in...$(COLOR_NONE)"
+	@tmpfile=$$(mktemp); \
+	uv pip compile docsrc/requirements.in --upgrade \
+		--custom-compile-command "make docs-update-deps" \
+		--output-file "$$tmpfile" --quiet; \
+	if ! diff -u docsrc/requirements.txt "$$tmpfile" > /dev/null; then \
+		echo "$(COLOR_ERROR)docsrc/requirements.txt is stale. Run 'make docs-update-deps' and commit the result.$(COLOR_NONE)"; \
+		diff -u docsrc/requirements.txt "$$tmpfile" || true; \
+		rm -f "$$tmpfile"; \
+		exit 1; \
+	fi; \
+	rm -f "$$tmpfile"; \
+	echo "$(COLOR_OK)docsrc/requirements.txt is up to date.$(COLOR_NONE)"
+
 docs-github:
 	cd docsrc && python -m sphinx -b html . _build && cp -a _build/. ../docs
 
-.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-github
+.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-update-deps docs-check-deps docs-github

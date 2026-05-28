@@ -37,6 +37,9 @@ jobs:
       - name: Check auto-generated docs are in sync with the live tool inventory
         run: uv run python -m zscaler_mcp.server --check-docs
 
+      - name: Check docsrc/requirements.txt lockfile is in sync with requirements.in
+        run: make docs-check-deps
+
       - name: Run tests with coverage
         run: |
           uv run pytest \
