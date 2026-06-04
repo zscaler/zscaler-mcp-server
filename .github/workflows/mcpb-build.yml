@@ -1,8 +1,16 @@
 name: MCPB Bundle Build & Attach
 
-# Builds the cross-platform Claude Desktop (.mcpb) bundle and attaches it
-# as an asset to the GitHub Release. Modeled after docker-build-push.yml:
-# its own standalone workflow triggered on release publication.
+# Manual / fallback workflow for building, signing, and attaching the
+# cross-platform Claude Desktop (.mcpb) bundle to a GitHub Release.
+#
+# The HAPPY PATH is automated elsewhere: the `mcpb-bundle-attach` job in
+# release.yml runs in the same workflow run as semantic-release and attaches
+# the bundle on every new release. This workflow is NOT triggered on
+# `release: published` because GitHub suppresses events raised by the built-in
+# GITHUB_TOKEN that semantic-release uses to publish the release — so that
+# trigger would never fire. Use this workflow to RE-ATTACH a bundle to an
+# existing release (if the release.yml job failed) or for a PR-less dry-run
+# build, via workflow_dispatch.
 #
 # The bundle uses the `uv` runtime pattern (server.type: "uv"), so a single
 # source-only .mcpb works on macOS, Windows, and Linux across Python
@@ -23,10 +31,8 @@ name: MCPB Bundle Build & Attach
 #   shasum -a 256 -c zscaler-mcp-server-<v>.mcpb.sha256
 
 on:
-  release:
-    types: [published]
   # Manual trigger for re-attaching a bundle to an existing release (e.g.
-  # if the first run failed) or for a dry-run build without attaching.
+  # if the release.yml job failed) or for a dry-run build without attaching.
   workflow_dispatch:
     inputs:
       tag:
@@ -46,10 +52,9 @@ jobs:
       - name: Resolve ref
         id: ref
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "ref=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-            echo "attach=true" >> "$GITHUB_OUTPUT"
-          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+          # workflow_dispatch only: a tag input attaches to that release;
+          # a blank input is a dry-run build off the default branch.
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
             echo "ref=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
             echo "attach=true" >> "$GITHUB_OUTPUT"
           else
