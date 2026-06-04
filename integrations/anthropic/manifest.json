@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.4",
   "name": "Zscaler MCP Server",
-  "version": "0.12.4",
+  "version": "0.12.5",
   "description": "Zscaler MCP Server — AI-powered management of the Zscaler Zero Trust Exchange across ZIA, ZPA, ZDX, ZCC, ZTW, ZIdentity, EASM, Z-Insights, and ZMS via the Model Context Protocol.",
   "long_description": "Zscaler MCP Server is a Model Context Protocol (MCP) server for managing Zscaler products with LLMs (Claude, ChatGPT, Gemini, etc.). It exposes hundreds of tools across nine Zscaler services. Read-only operations are available by default; create / update / delete tools require explicit allowlisting via the 'Enable Write Tools' and 'Write Tools Allowlist' settings below, and destructive operations additionally require an in-session HMAC confirmation token.",
   "author": {
