@@ -6,6 +6,16 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.12.6 (June 4, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+`PR #78 <https://github.com/zscaler/zscaler-mcp-server/pull/78>`_ - **Attach the signed MCPB bundle automatically on every release.** The standalone ``mcpb-build.yml`` workflow was triggered on ``release: published``, but that event never fired — GitHub deliberately suppresses workflow events raised by the built-in ``GITHUB_TOKEN`` that ``semantic-release`` uses to publish the release, so ``v0.12.5`` shipped without the bundle attached. The build/sign/attach step now runs as a ``mcpb-bundle-attach`` job chained off the ``release`` job in ``.github/workflows/release.yml`` (gated on ``new_release_published``), executing in the **same workflow run** as ``semantic-release`` and sidestepping the token suppression entirely — the cross-platform ``uv``-runtime ``.mcpb``, its detached PGP signature (``.asc``), and SHA-256 checksum are now attached to the GitHub Release the moment a release is cut from ``master``, with no manual step. ``mcpb-build.yml`` is retained as a ``workflow_dispatch``-only workflow for manually re-attaching a bundle to an existing release or running a dry-run build.
+
 ## 0.12.5 (June 4, 2026)
 
 ### Notes
