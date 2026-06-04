@@ -28,10 +28,12 @@ MANIFEST
 
 # MCPB (Claude Desktop Directory) bundle build artifacts.
 # The bundle is produced on demand by `make build-mcpb` and uploaded
-# to GitHub Releases — it never lives in version control. The
-# `manifest.json` at the repo root IS tracked (it's the docgen-owned
-# source the bundle is built from).
+# to GitHub Releases — it never lives in version control. The canonical
+# manifest is committed at integrations/anthropic/manifest.json (docgen-
+# owned). The build copies it to the repo root only transiently at pack
+# time, so the repo-root copy must never be committed.
 *.mcpb
+/manifest.json
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

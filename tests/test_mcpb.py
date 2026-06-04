@@ -296,14 +296,34 @@ class TestRendererContract(unittest.TestCase):
         self.assertEqual(a, b)
 
 
-class TestRepoRootManifest(unittest.TestCase):
-    """The committed `manifest.json` at the repo root must match
-    what the generator would emit right now.
+class TestCommittedManifest(unittest.TestCase):
+    """The committed manifest at ``integrations/anthropic/manifest.json``
+    must match what the generator would emit right now.
 
     Equivalent to the `tests/test_docgen.py::TestRepoIsInSync` guard
     but scoped to just the MCPB manifest — the error message is
     actionable enough to be worth surfacing as its own test.
     """
+
+    def test_canonical_manifest_path(self):
+        # Guards the location decision: the committed manifest lives under
+        # integrations/anthropic/ (not the repo root). The build flow copies
+        # it to the root only transiently at pack time.
+        self.assertEqual(
+            mcpb.MANIFEST_RELATIVE_PATH, "integrations/anthropic/manifest.json"
+        )
+
+    def test_root_manifest_is_not_committed(self):
+        # A repo-root manifest.json is a transient build artifact and must
+        # never be committed (it would go stale and confuse `mcpb pack`).
+        from zscaler_mcp.common.docgen import REPO_ROOT
+
+        self.assertFalse(
+            (REPO_ROOT / "manifest.json").is_file(),
+            "A repo-root manifest.json exists. It is a transient pack-time "
+            "artifact and must not be committed — the canonical copy lives "
+            "at integrations/anthropic/manifest.json.",
+        )
 
     def test_committed_manifest_is_current(self):
 
@@ -317,7 +337,7 @@ class TestRepoRootManifest(unittest.TestCase):
         self.assertEqual(
             on_disk,
             expected,
-            "Committed manifest.json is stale. Run `make generate-docs` "
+            "Committed manifest is stale. Run `make generate-docs` "
             "(or `zscaler-mcp --generate-docs`) and commit the result.",
         )
 
