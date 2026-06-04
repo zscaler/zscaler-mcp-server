@@ -8,7 +8,7 @@
 
 ### Enhancements
 
-- [PR #76](https://github.com/zscaler/zscaler-mcp-server/pull/76) - **Automated, signed MCPB (Claude Desktop) bundle releases.** The canonical MCPB manifest now lives at `integrations/anthropic/manifest.json` (was the repo root); `scripts/build_mcpb.py` + `make build-mcpb` produce a cross-platform, source-only `uv`-runtime bundle and validate it before packing. A new standalone workflow (`.github/workflows/mcpb-build.yml`) triggers on release publication, builds the `.mcpb`, **signs it with the project PGP key** (`GPG_PRIVATE_KEY` + `PASSPHRASE`, same as `release.yml`), and attaches the bundle, its detached signature (`.asc`), and a SHA-256 checksum to the GitHub Release.
+- [PR #77](https://github.com/zscaler/zscaler-mcp-server/pull/77) - **Automated, signed MCPB (Claude Desktop) bundle releases.** The canonical MCPB manifest now lives at `integrations/anthropic/manifest.json` (was the repo root); `scripts/build_mcpb.py` + `make build-mcpb` produce a cross-platform, source-only `uv`-runtime bundle and validate it before packing. A new standalone workflow (`.github/workflows/mcpb-build.yml`) triggers on release publication, builds the `.mcpb`, **signs it with the project PGP key** (`GPG_PRIVATE_KEY` + `PASSPHRASE`, same as `release.yml`), and attaches the bundle, its detached signature (`.asc`), and a SHA-256 checksum to the GitHub Release.
 
 ## 0.12.4 (May 26, 2026)
 
