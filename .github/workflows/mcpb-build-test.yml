@@ -1,0 +1,117 @@
+name: MCPB Build Test
+
+# Validates the Claude Desktop (.mcpb) bundle on pull requests, before it
+# can ever reach the release-attach workflow (mcpb-build.yml). Mirrors
+# docker-build-test.yml: PR-triggered, path-scoped, builds WITHOUT
+# attaching or signing, and runs smoke checks on the result.
+#
+# What it guards against (all things mcpb-build.yml would otherwise only
+# discover at release time):
+#   * a stale committed manifest (out of sync with the live tool inventory)
+#   * server.type drifting away from "uv" (would ship a platform-locked bundle)
+#   * `mcpb pack` failing manifest / icon validation
+#   * the bundle regaining its pre-uv bloat (size ceiling check)
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'zscaler_mcp/common/mcpb.py'
+      - 'zscaler_mcp/common/docgen.py'
+      - 'zscaler_mcp/services.py'
+      - 'zscaler_mcp/tools/**'
+      - 'integrations/anthropic/manifest.json'
+      - 'scripts/build_mcpb.py'
+      - '.mcpbignore'
+      - 'pyproject.toml'
+      - 'assets/icon.png'
+      - 'tests/test_mcpb.py'
+      - '.github/workflows/mcpb-build-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mcpb-build-test:
+    name: Build & validate .mcpb
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          activate-environment: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Set up Node (for mcpb pack via npx)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: MCPB unit tests
+        run: uv run pytest tests/test_mcpb.py -q
+
+      - name: Verify generated manifest is in sync
+        run: uv run python -m zscaler_mcp.server --check-docs
+
+      - name: Build the .mcpb bundle (no attach / no sign)
+        run: uv run python scripts/build_mcpb.py --output-dir dist
+
+      - name: Smoke-validate the bundle
+        run: |
+          set -euo pipefail
+
+          BUNDLE=$(ls dist/zscaler-mcp-server-*.mcpb | head -n1)
+          if [ -z "$BUNDLE" ] || [ ! -f "$BUNDLE" ]; then
+            echo "::error::No .mcpb produced in dist/"
+            exit 1
+          fi
+          echo "Built: $BUNDLE"
+
+          # A .mcpb is a zip archive — confirm it's structurally valid and
+          # contains the manifest at the pack root. The anchored pattern
+          # (whitespace + name + EOL) matches the root entry but not a
+          # nested path like integrations/anthropic/manifest.json.
+          unzip -l "$BUNDLE" >/dev/null
+          if ! unzip -l "$BUNDLE" | grep -Eq '[[:space:]]manifest\.json$'; then
+            echo "::error::Bundle is missing manifest.json at its root"
+            exit 1
+          fi
+
+          # The uv-runtime bundle is source-only and must stay lean. The
+          # broken pre-uv (pip --target) bundle was ~31 MB; a regression
+          # back to vendoring compiled wheels would blow past this ceiling.
+          MAX_BYTES=$((5 * 1024 * 1024))   # 5 MB hard ceiling (bundle is ~460 KB)
+          SIZE=$(stat -c%s "$BUNDLE")
+          echo "Bundle size: ${SIZE} bytes (ceiling ${MAX_BYTES})"
+          if [ "$SIZE" -gt "$MAX_BYTES" ]; then
+            echo "::error::Bundle is ${SIZE} bytes, over the ${MAX_BYTES}-byte ceiling. "
+            echo "::error::This usually means dependencies got vendored (server.type left uv) "
+            echo "::error::or a large directory slipped past .mcpbignore."
+            exit 1
+          fi
+
+          # mcpb's own validation pass (manifest schema + icon).
+          npx @anthropic-ai/mcpb@latest info "$BUNDLE"
+
+          echo "✅ MCPB bundle smoke tests passed!"
+
+      - name: Upload bundle as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpb-build-test
+          path: dist/*.mcpb
+          if-no-files-found: ignore
