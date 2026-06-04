@@ -1,0 +1,167 @@
+name: MCPB Bundle Build & Attach
+
+# Builds the cross-platform Claude Desktop (.mcpb) bundle and attaches it
+# as an asset to the GitHub Release. Modeled after docker-build-push.yml:
+# its own standalone workflow triggered on release publication.
+#
+# The bundle uses the `uv` runtime pattern (server.type: "uv"), so a single
+# source-only .mcpb works on macOS, Windows, and Linux across Python
+# versions — dependencies (including compiled wheels like pydantic_core /
+# orjson / cryptography) are resolved on the user's machine at install time
+# rather than vendored per-platform. One artifact, every platform; no build
+# matrix required.
+#
+# Anthropic's directory pipeline can detect each new release and pull this
+# attached artifact automatically, so no manual resubmission per version.
+#
+# The bundle is signed with the project's PGP key (same key + secrets used
+# by the main Release workflow: GPG_PRIVATE_KEY + PASSPHRASE). A detached
+# ASCII-armored signature (`.mcpb.asc`) and a SHA-256 checksum file are
+# attached alongside the bundle so downstream consumers can verify
+# authenticity and integrity:
+#   gpg --verify zscaler-mcp-server-<v>.mcpb.asc zscaler-mcp-server-<v>.mcpb
+#   shasum -a 256 -c zscaler-mcp-server-<v>.mcpb.sha256
+
+on:
+  release:
+    types: [published]
+  # Manual trigger for re-attaching a bundle to an existing release (e.g.
+  # if the first run failed) or for a dry-run build without attaching.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to build + attach (e.g. v0.12.4). Leave blank for a dry run."
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # upload release assets
+
+jobs:
+  build-mcpb:
+    name: Build & attach .mcpb
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Resolve ref
+        id: ref
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "ref=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "attach=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "ref=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "attach=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.ref }}" >> "$GITHUB_OUTPUT"
+            echo "attach=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          activate-environment: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Set up Node (for mcpb pack via npx)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify generated manifest is in sync
+        run: uv run python -m zscaler_mcp.server --check-docs
+
+      - name: Build the .mcpb bundle
+        run: uv run python scripts/build_mcpb.py --output-dir dist
+
+      # Same key + secrets as the main Release workflow. The action loads
+      # the private key into the runner's GPG keyring and exposes the
+      # fingerprint for the signing step below.
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+
+      - name: Sign the bundle (detached PGP signature + SHA-256 checksum)
+        env:
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          VERSIONED=$(ls dist/zscaler-mcp-server-*.mcpb | head -n1)
+          echo "Signing $VERSIONED with key $GPG_FINGERPRINT"
+
+          # Detached, ASCII-armored signature. --batch + --pinentry-mode
+          # loopback + --passphrase keep gpg non-interactive on the runner.
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$PASSPHRASE" \
+            --local-user "$GPG_FINGERPRINT" \
+            --detach-sign --armor \
+            --output "${VERSIONED}.asc" \
+            "$VERSIONED"
+
+          # SHA-256 checksum (path-relative so the file verifies from dist/).
+          ( cd dist && shasum -a 256 "$(basename "$VERSIONED")" > "$(basename "$VERSIONED").sha256" )
+
+          # Self-verify before we attach anything.
+          gpg --verify "${VERSIONED}.asc" "$VERSIONED"
+          ( cd dist && shasum -a 256 -c "$(basename "$VERSIONED").sha256" )
+          echo "Signature and checksum verified."
+
+      - name: Upload bundle + signature as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zscaler-mcp-server-mcpb
+          path: |
+            dist/*.mcpb
+            dist/*.asc
+            dist/*.sha256
+          if-no-files-found: error
+
+      - name: Attach bundle + signature to the GitHub Release
+        if: steps.ref.outputs.attach == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.ref.outputs.ref }}"
+          # Attach only the versioned bundle (+ its signature + checksum) to
+          # keep the release page clean.
+          VERSIONED=$(ls dist/zscaler-mcp-server-*.mcpb | head -n1)
+          echo "Attaching $VERSIONED (+ .asc, .sha256) to release $TAG"
+          gh release upload "$TAG" \
+            "$VERSIONED" "${VERSIONED}.asc" "${VERSIONED}.sha256" \
+            --clobber
+
+      - name: Job summary
+        run: |
+          echo "## Claude Desktop (.mcpb) Bundle" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Ref:** ${{ steps.ref.outputs.ref }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Attached to release:** ${{ steps.ref.outputs.attach }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Signed with key:** ${{ steps.import_gpg.outputs.fingerprint }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Verify:**" >> "$GITHUB_STEP_SUMMARY"
+          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
+          echo "gpg --verify zscaler-mcp-server-<version>.mcpb.asc zscaler-mcp-server-<version>.mcpb" >> "$GITHUB_STEP_SUMMARY"
+          echo "shasum -a 256 -c zscaler-mcp-server-<version>.mcpb.sha256" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -lh dist/zscaler-mcp-server-*.mcpb dist/*.asc dist/*.sha256 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

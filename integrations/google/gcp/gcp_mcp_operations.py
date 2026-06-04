@@ -45,6 +45,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -58,7 +59,7 @@ SYSTEM = platform.system()
 
 SERVER_NAME = "zscaler-mcp-server"
 DOCKER_HUB_IMAGE = "zscaler/zscaler-mcp-server:latest"
-GCP_MARKETPLACE_IMAGE = "marketplace.gcr.io/zscaler/zscaler-mcp-server:latest"
+GCP_MARKETPLACE_IMAGE = "us-docker.pkg.dev/business-development-sa-team/zscaler/zscaler-mcp-server:latest"
 PYPI_PACKAGE = "zscaler-mcp"
 
 STATE_FILE = SCRIPT_DIR / ".gcp-deploy-state.json"
@@ -831,6 +832,97 @@ def _update_client_configs(mcp_url: str, creds: dict) -> None:
 # ════════════════════════════════════════════════════════════════════════
 
 
+def _ensure_public_and_ready(
+    service_name: str,
+    region: str,
+    project: str,
+    mcp_url: str,
+    *,
+    attempts: int = 24,
+    delay: int = 5,
+) -> bool:
+    """Make the Cloud Run service publicly invokable, then wait until requests
+    actually reach the MCP app (not Cloud Run's ingress).
+
+    Why this exists: ``gcloud run deploy --allow-unauthenticated`` applies the
+    ``allUsers`` invoker binding as a *separate* step that propagates a few
+    seconds after the revision starts serving. During that window Cloud Run's
+    ingress returns 401 to every request — and ``mcp-remote`` (the Claude /
+    Cursor bridge) latches onto that 401 as an OAuth challenge and gets stuck.
+    So we (1) re-assert the binding explicitly (idempotent) and (2) block until
+    a probe reaches the app, before writing client configs and declaring done.
+
+    Returns True when the app is reachable; False if public access could not be
+    granted (e.g. an org policy blocks ``allUsers``) or it never came up.
+    """
+    info("Ensuring public invoker access (allUsers)...")
+    res = run_gcloud(
+        [
+            "run", "services", "add-iam-policy-binding", service_name,
+            "--region", region, "--project", project,
+            "--member=allUsers", "--role=roles/run.invoker", "--quiet",
+        ],
+        check=False,
+        capture=True,
+    )
+    if res.returncode != 0:
+        warn("Could not grant public access (allUsers).")
+        warn("Your GCP org likely enforces constraints/iam.allowedPolicyMemberDomains.")
+        warn("Cloud Run will require IAM auth, which mcp-remote cannot satisfy.")
+        warn("Use the Compute Engine VM or GKE target, or IAP — see")
+        warn("integrations/google/README.md ('Enterprise Considerations').")
+        return False
+    ok("Public access granted")
+
+    info("Waiting for the service to become reachable (this is the fix for the")
+    info("transient 401s during rollout — not a manual step you need to repeat)...")
+    probe = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "deploy-readiness-check", "version": "1"},
+            },
+        }
+    ).encode()
+
+    for _ in range(attempts):
+        try:
+            req = urllib.request.Request(
+                mcp_url,
+                data=probe,
+                method="POST",
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                body = resp.read().decode(errors="replace")
+            # A JSON-RPC body means the request reached the MCP app itself.
+            if "jsonrpc" in body:
+                ok("Service is reachable — MCP app is responding")
+                return True
+        except urllib.error.HTTPError as exc:
+            # The app returns 401 (with a jsonrpc body) when no creds are sent;
+            # that still proves we got *past* Cloud Run's ingress to the app.
+            body = exc.read().decode(errors="replace") if exc.fp else ""
+            if "jsonrpc" in body:
+                ok("Service is reachable — MCP app is responding")
+                return True
+        except urllib.error.URLError:
+            pass
+        time.sleep(delay)
+
+    warn("Service did not become reachable within the timeout.")
+    warn("It may still be propagating; if your client shows 401s, wait ~1 min")
+    warn("and fully restart Claude / Cursor so mcp-remote reconnects.")
+    return False
+
+
 def _deploy_cloud_run(creds: dict) -> None:
     """Deploy to Google Cloud Run."""
     env = creds["env"]
@@ -936,6 +1028,13 @@ def _deploy_cloud_run(creds: dict) -> None:
         "auth_mode": creds["auth_mode"],
         "use_secret_manager": use_sm,
     })
+
+    # Guarantee public access is in effect AND the app is actually answering
+    # before we hand a config to the MCP client. This closes the rollout-window
+    # race that otherwise leaves mcp-remote stuck on a transient ingress 401.
+    if creds["auth_mode"] != "none":
+        _ensure_public_and_ready(service_name, region, project, mcp_url)
+        print()
 
     _update_client_configs(mcp_url, creds)
 

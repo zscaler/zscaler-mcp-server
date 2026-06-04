@@ -19,8 +19,18 @@ field that the catalog needs is either:
 
 The :func:`build_manifest` entry point assembles the full document. The
 docgen pipeline (``zscaler_mcp/common/docgen.py``) calls it to emit the
-repo-root ``manifest.json`` as a whole-file target. It's the only
-whole-file (no marker pair) target in :data:`docgen.TARGETS` today.
+canonical ``integrations/anthropic/manifest.json`` as a whole-file
+target. It's the only whole-file (no marker pair) target in
+:data:`docgen.TARGETS` today.
+
+The MCPB CLI (``mcpb pack``) requires the manifest at the *root* of the
+directory it packs, alongside ``zscaler_mcp/``, ``pyproject.toml`` and
+``assets/icon.png``. We keep the committed copy under
+``integrations/anthropic/`` (so the repo root stays uncluttered) and the
+build/CI flow copies it to the repo root only at pack time — the root
+copy is never committed. The ``icon`` and ``entry_point`` paths in the
+manifest are therefore relative to the repo root (the pack root), not to
+``integrations/anthropic/``.
 
 Architectural decisions encoded here (originally raised by Bryan
 Thompson from Anthropic in PR #30):
@@ -33,8 +43,7 @@ Thompson from Anthropic in PR #30):
    selection to install time, so the bundle stays source-only and
    cross-platform. Bundle size drops from ~58 MB to ~250 KB.
 
-2. **MCPB spec version 0.4** (the current shipping spec — the 0.2
-   manifest in ``local_dev/anthropic_requirements/`` is stale).
+2. **MCPB spec version 0.4** (the current shipping spec).
 
 3. **Env-var name corrections.** The previous manifest set
    ``ZSCALER_MCP_ENABLED_SERVICES`` / ``_ENABLED_TOOLS`` / ``_DEBUG_MODE``
@@ -70,10 +79,13 @@ __all__ = [
 # Output location
 # ---------------------------------------------------------------------------
 
-# The MCPB CLI (`npx @anthropic-ai/mcpb@latest pack`) expects the manifest
-# at the working directory root. We commit it at the repo root so `pack`
-# can be invoked from any contributor's checkout without extra flags.
-MANIFEST_RELATIVE_PATH = "manifest.json"
+# Canonical committed location of the generated manifest, relative to the
+# repo root. The MCPB CLI (`npx @anthropic-ai/mcpb@latest pack`) expects
+# the manifest at the *pack root* (repo root) — the build/CI flow copies
+# this file there at pack time (see scripts/build_mcpb.py). Keeping the
+# committed copy under integrations/anthropic/ keeps the repo root clean
+# and groups it with the other platform-integration assets.
+MANIFEST_RELATIVE_PATH = "integrations/anthropic/manifest.json"
 
 
 # ---------------------------------------------------------------------------

@@ -580,7 +580,7 @@ Three Markdown files are partially auto-generated from the live tool inventory. 
 | `README.md` | `<!-- generated:start service-summary -->` | Per-service tool counts derived from the same source. |
 | `docs/guides/toolsets.md` | `<!-- generated:start toolset-catalog -->` | Toolset metadata in `zscaler_mcp/common/toolsets.py` + per-toolset tool counts from the inventory. |
 | `docs-site/src/data/toolsets.json` | (whole file) | Same source — feeds the docs-site React `ToolsetsCatalog` component which renders the card-grid view at `/docs/guides/toolsets`. The whole file is generated; there are no markers. |
-| `manifest.json` (repo root) | (whole file) | MCPB (Claude Desktop Directory) bundle manifest. Static template + live tool inventory + version from `zscaler_mcp.__version__`. Owned by `zscaler_mcp/common/mcpb.py`. See "MCPB bundle" below. |
+| `integrations/anthropic/manifest.json` | (whole file) | MCPB (Claude Desktop Directory) bundle manifest. Static template + live tool inventory + version from `zscaler_mcp.__version__`. Owned by `zscaler_mcp/common/mcpb.py` (path is `mcpb.MANIFEST_RELATIVE_PATH`). Copied to the repo root only transiently at pack time. See "MCPB bundle" below. |
 
 Outside the marker pairs (and outside whole-file targets), every file is fully hand-written and the generator never touches it. Whole-file targets are fully owned by the generator — manual edits get stomped on the next `make generate-docs`.
 
@@ -744,7 +744,7 @@ Interactive deployment to Azure via `integrations/azure/azure_mcp_operations.py`
 - **Smart destroy:** if the script created the cluster → deletes the entire resource group (everything goes with it, including the UAMI and Key Vault). If you used an existing cluster → only the K8s objects we created are removed (Deployment, Service, and on the KV path also ServiceAccount, SecretProviderClass, synced Secret) plus the per-deployment UAMI and federated credential. The Key Vault is preserved when the cluster is preserved.
 - **Status / logs:** `op_status` runs `az aks show` + `kubectl get pods` + `kubectl get svc`; `op_logs` runs `kubectl logs deployment/zscaler-mcp-server -n <ns> -f` with graceful Ctrl+C handling.
 - **Helpers:** `run_kubectl()` wraps `kubectl` calls (alongside `run_az()`); `_build_aks_env_vars()` and `_build_aks_kv_env_vars()` build the env lists for the two storage paths; `_build_aks_kv_manifest()` renders the full KV-path manifest; `_create_uami()`, `_grant_uami_kv_role()`, `_create_federated_credential()`, `_enable_aks_workload_identity()`, and `_enable_aks_kv_csi()` orchestrate the federation setup.
-- **Preview limitations:** OIDCProxy auth mode unsupported; no Ingress/TLS (LoadBalancer exposes plain HTTP — production deployments need NGINX Ingress + cert-manager + DNS); single replica default; no HPA. See `local_dev/azure_mcp_deployment/azure_mcp_deployment_plan_v4.md` "Enterprise Hardening — Future Work" table for the AKS GA roadmap.
+- **Preview limitations:** OIDCProxy auth mode unsupported; no Ingress/TLS (LoadBalancer exposes plain HTTP — production deployments need NGINX Ingress + cert-manager + DNS); single replica default; no HPA. The AKS GA roadmap (enterprise hardening — Ingress/TLS, HPA, multi-replica) is tracked separately.
 
 ### Auth Mode Differences
 
@@ -1008,35 +1008,30 @@ The server is published to the [GitHub MCP Registry](https://github.com/modelcon
 
 The server ships as a `.mcpb` (MCP Bundle) on Anthropic's Claude Desktop Directory. MCPB is the format for **local stdio** MCP servers — there is no MCPB path for remote/HTTP servers; Claude-Desktop users wanting the remote variant configure `mcp-remote` in `claude_desktop_config.json` directly.
 
-**Repo-root files (committed):**
+**Committed files:**
 
-- **`manifest.json`** — MCPB v0.4 manifest. **Auto-generated** by `zscaler_mcp/common/mcpb.py` (a docgen whole-file target). Never hand-edit; run `make generate-docs` after touching the tool inventory and commit the result. CI's `make check-docs` step fails the build if it drifts.
-- **`.mcpbignore`** — `.gitignore`-style exclusion list for `mcpb pack`. Keeps the bundle to ~460 KB by stripping `docs/`, `docs-site/`, `tests/`, `integrations/`, `assets/`, `skills/`, `commands/`, `local_dev/`, etc. — everything that isn't `zscaler_mcp/` source + `pyproject.toml` + `manifest.json` + `icon.png` + `README.md` + `LICENSE`.
-- **`icon.png`** — directory listing icon (405 x 245 PNG).
+- **`integrations/anthropic/manifest.json`** — MCPB v0.4 manifest. **Auto-generated** by `zscaler_mcp/common/mcpb.py` (a docgen whole-file target; its path is the `mcpb.MANIFEST_RELATIVE_PATH` constant). Never hand-edit; run `make generate-docs` after touching the tool inventory and commit the result. `make check-docs` (CI) fails the build if it drifts. **`mcpb pack` requires the manifest at the pack root**, so `scripts/build_mcpb.py` copies it to the repo root transiently at pack time; that root copy is `.gitignore`d (`/manifest.json`) and must never be committed.
+- **`.mcpbignore`** — `.gitignore`-style exclusion list for `mcpb pack`. Keeps the bundle to ~460 KB by stripping `docs/`, `docs-site/`, `docsrc/`, `tests/`, `integrations/`, `assets/` (except `assets/icon.png`), `skills/`, `commands/`, `requirements.txt`, etc. — everything that isn't `zscaler_mcp/` source + `pyproject.toml` + the (root-copied) `manifest.json` + `assets/icon.png` + `README.md` + `LICENSE`.
+- **`assets/icon.png`** — directory listing icon. Un-ignored explicitly in `.mcpbignore` via `!assets/icon.png`.
 
 **Architectural decisions encoded in `mcpb.py`:**
 
-1. **`server.type: "uv"`** instead of `"python"`. The legacy `python` + `pip install --target` approach embedded platform-locked compiled wheels (`cryptography`, `pydantic-core`, `orjson` all ship `.so` / `.pyd`), producing an OS-and-arch-locked bundle that silently failed on other platforms. `uv run` defers wheel selection to install time, so the bundle stays source-only and cross-platform. Bundle size went from ~58 MB to ~460 KB.
+1. **`server.type: "uv"`** instead of `"python"`. The legacy `python` + `pip install --target` approach embedded platform-locked compiled wheels (`cryptography`, `pydantic-core`, `orjson` all ship `.so` / `.pyd`), producing an OS-and-arch-locked bundle that silently failed on other platforms / Python versions. `uv run` defers wheel selection to install time, so the bundle stays source-only and **cross-platform** (one `.mcpb` for darwin/win32/linux). Bundle size went from ~58 MB to ~460 KB. `scripts/build_mcpb.py` asserts `server.type == "uv"` and refuses to build otherwise.
 2. **MCPB spec 0.4** — current shipping spec. Bump only when Anthropic releases a new one and we audit for breaking changes.
 3. **Env-var fixes** — the previous manifest set `ZSCALER_MCP_ENABLED_SERVICES` / `_ENABLED_TOOLS` / `_DEBUG_MODE` in the runtime env, but `zscaler_mcp/server.py` reads `ZSCALER_MCP_SERVICES` / `_TOOLS` / `_DEBUG`. The old names were silently ignored, so Claude-Desktop users toggling "Enabled Services" / "Debug Mode" got no effect. Fixed in `mcpb.py::_STATIC_TEMPLATE` and asserted by `tests/test_mcpb.py::TestServerConfig::test_env_uses_correct_zscaler_mcp_var_names`.
-4. **Repo-root placement** — `mcpb pack` defaults to the CWD; placing the manifest at the repo root means contributors can `npx @anthropic-ai/mcpb@latest pack` from any clean checkout without extra flags. (Historical placement under `local_dev/anthropic_requirements/` was non-standard maintainer scratch space; that directory is gitignored and can be deleted from local checkouts — nothing committed depends on it.)
+4. **`integrations/anthropic/` placement** — the committed manifest lives with the other platform-integration assets rather than cluttering the repo root. The build copies it to the pack root (`mcpb pack`'s requirement) only at build time. `icon`/`entry_point` paths in the manifest stay relative to the pack root (repo root). Asserted by `tests/test_mcpb.py::TestCommittedManifest`.
 
 **Commands:**
 
-- `make build-mcpb` — the single command for cutting a submission. Regenerates `manifest.json` from the live tool inventory (dependency on `make generate-docs`) and packs the bundle via `npx @anthropic-ai/mcpb@latest pack`. Outputs both `zscaler-mcp-server.mcpb` and the versioned `zscaler-mcp-server-<VERSION>.mcpb`. Upload the versioned one to Anthropic's submission form.
-- `make info-mcpb FILE=<bundle.mcpb>` — `mcpb info` on a built bundle (size, file count, "signed" status).
-- `make generate-docs` — regenerates `manifest.json` (alongside all other docgen targets). Run after adding/renaming/removing a tool. `make build-mcpb` already depends on this, so for the release flow you don't need to run it explicitly.
-- `make check-docs` — CI guard that fails if the committed manifest drifts.
+- `make build-mcpb` — the single command for cutting a bundle, wrapping `scripts/build_mcpb.py`. Regenerates the manifest from the live tool inventory, validates it's in sync + `server.type == "uv"` + all three platforms, copies the manifest to the pack root, packs via `npx @anthropic-ai/mcpb@latest pack`, and emits `dist/zscaler-mcp-server.mcpb` + the versioned `dist/zscaler-mcp-server-<VERSION>.mcpb`.
+- `make generate-docs` — regenerates the manifest (alongside all other docgen targets). Run after adding/renaming/removing a tool.
+- `make check-docs` — CI guard that fails if the committed manifest (or any other generated doc) drifts.
 
-**Release integration:**
+**Release integration (automated):**
 
-The `set-version.sh` script regenerates `manifest.json` after bumping `__init__.py::__version__` so the committed manifest tracks the new release. `manifest.json` is listed in `@semantic-release/git`'s assets so the regen lands in the version-bump commit. There is no separate CI workflow that builds or attaches the bundle — Anthropic's submission flow is manual via [their Google Form](https://docs.google.com/forms/d/e/1FAIpQLScHtjkiCNjpqnWtFLIQStChXlvVcvX8NPXkMfjtYPDPymgang/viewform), there is no API, and reverse-engineering the form submission is brittle (file upload requires a Google Drive auth handshake bound to the form session) and bad-faith with the vendor anyway. The maintainer runs `make build-mcpb` when ready and uploads the resulting `.mcpb` by hand.
-
-### Docker + OIDCProxy Setup
-
-One self-contained script in `local_dev/scripts/` for OIDCProxy (OAuth 2.1 + DCR):
-
-- **`setup-oidcproxy-auth.py`** — End-to-end orchestration script. Loads Auth0 credentials from `.env`, builds the Docker image, starts the container with an inline entrypoint (passed via `python -c`), verifies OAuth endpoints, and updates Claude Desktop / Cursor configs. The entrypoint code is embedded directly in the script — no separate file needed. Run from the project root.
+- `.github/set-version.sh` regenerates the manifest after bumping `__init__.py::__version__` so the committed manifest tracks the new release. `integrations/anthropic/manifest.json` is listed in `@semantic-release/git`'s assets so the regen lands in the version-bump commit.
+- `.github/workflows/mcpb-build.yml` is a **standalone workflow** (modeled after `docker-build-push.yml`) that triggers on `release: published`. It checks out the release tag, verifies the manifest is in sync (`--check-docs`), builds the cross-platform `.mcpb` via `scripts/build_mcpb.py`, **PGP-signs it**, and **attaches the versioned bundle + signature + checksum to the GitHub Release** as assets. It also supports `workflow_dispatch` (optional `tag` input) for re-attaching to an existing release or a dry-run build. Anthropic's directory pipeline can detect each new release and pull the attached `.mcpb` automatically — no manual per-version resubmission.
+- **Signing.** The workflow imports the project's PGP key via `crazy-max/ghaction-import-gpg@v6` using the same `GPG_PRIVATE_KEY` + `PASSPHRASE` repo secrets as the main `release.yml`, then produces a detached ASCII-armored signature (`<bundle>.mcpb.asc`) and a SHA-256 checksum (`<bundle>.mcpb.sha256`), self-verifies both, and attaches all three. Consumers verify with `gpg --verify <bundle>.mcpb.asc <bundle>.mcpb` and `shasum -a 256 -c <bundle>.mcpb.sha256`.
 
 ### Local Setup Script (`scripts/setup-mcp-server.py`)
 

@@ -61,6 +61,10 @@ help:
 	@echo "$(COLOR_OK)  docs-update-deps              Refresh docsrc/requirements.txt from requirements.in$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-check-deps               Verify docsrc/requirements.txt is in sync with requirements.in (CI)$(COLOR_NONE)"
 	@echo "$(COLOR_OK)  docs-github                   Build docs and copy to docs/ for GitHub Pages$(COLOR_NONE)"
+	@echo "$(COLOR_WARNING)generated docs + bundle$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  generate-docs                 Regenerate auto-docs + MCPB manifest from the tool inventory$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  check-docs                    Verify auto-docs + MCPB manifest are in sync (CI)$(COLOR_NONE)"
+	@echo "$(COLOR_OK)  build-mcpb                    Build the cross-platform .mcpb (Claude Desktop) bundle$(COLOR_NONE)"
 
 clean: clean-build clean-pyc clean-test
 
@@ -218,4 +222,27 @@ docs-check-deps:
 docs-github:
 	cd docsrc && python -m sphinx -b html . _build && cp -a _build/. ../docs
 
-.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-update-deps docs-check-deps docs-github
+# ---------------------------------------------------------------------------
+# Auto-generated docs + MCPB (Claude Desktop) bundle
+# ---------------------------------------------------------------------------
+
+# Regenerate every auto-generated region (supported-tools, README service
+# summary, toolset catalog) AND the MCPB manifest at
+# integrations/anthropic/manifest.json. Run after adding/renaming/removing
+# a tool, then commit the result.
+generate-docs:
+	uv run python -m zscaler_mcp.server --generate-docs
+
+# CI guard: exit non-zero if any auto-generated file (including the MCPB
+# manifest) is out of sync with the live tool inventory.
+check-docs:
+	uv run python -m zscaler_mcp.server --check-docs
+
+# Build the cross-platform (uv-runtime) .mcpb bundle for the Claude Desktop
+# Directory. Validates the manifest is in sync + server.type == uv, copies
+# the canonical integrations/anthropic/manifest.json to the pack root,
+# packs, and emits dist/zscaler-mcp-server-<version>.mcpb.
+build-mcpb:
+	uv run python scripts/build_mcpb.py
+
+.PHONY: clean-pyc clean-build docs clean docker-clean docker-build docker-rebuild docker-run docker-run-http docker-stop docker-generate-auth-token docker-save docs-build docs-clean docs-install-deps docs-update-deps docs-check-deps docs-github generate-docs check-docs build-mcpb

@@ -1,5 +1,15 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.12.5 (June 4, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- [PR #77](https://github.com/zscaler/zscaler-mcp-server/pull/77) - **Automated, signed MCPB (Claude Desktop) bundle releases.** The canonical MCPB manifest now lives at `integrations/anthropic/manifest.json` (was the repo root); `scripts/build_mcpb.py` + `make build-mcpb` produce a cross-platform, source-only `uv`-runtime bundle and validate it before packing. A new standalone workflow (`.github/workflows/mcpb-build.yml`) triggers on release publication, builds the `.mcpb`, **signs it with the project PGP key** (`GPG_PRIVATE_KEY` + `PASSPHRASE`, same as `release.yml`), and attaches the bundle, its detached signature (`.asc`), and a SHA-256 checksum to the GitHub Release.
+
 ## 0.12.4 (May 26, 2026)
 
 ### Notes
