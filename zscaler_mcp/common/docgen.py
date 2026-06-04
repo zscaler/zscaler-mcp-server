@@ -500,12 +500,13 @@ TARGETS: List[Tuple[str, Optional[str], Callable[[Inventory, ToolsetCatalog], st
         "toolset-catalog",
         _render_toolset_catalog_region,
     ),
-    # MCPB (MCP Bundle) manifest — the repo-root `manifest.json` shipped
-    # in the Claude Desktop extension bundle. Whole-file target because
-    # the entire document is generated from `zscaler_mcp.common.mcpb`'s
-    # static template plus the live tool inventory. See that module's
-    # docstring for why the manifest lives at the repo root and why
-    # `server.type = "uv"` instead of `"python"`.
+    # MCPB (MCP Bundle) manifest — the `integrations/anthropic/manifest.json`
+    # shipped in the Claude Desktop extension bundle. Whole-file target
+    # because the entire document is generated from
+    # `zscaler_mcp.common.mcpb`'s static template plus the live tool
+    # inventory. See that module's docstring for why the committed manifest
+    # lives under integrations/anthropic/ (copied to the pack root at build
+    # time) and why `server.type = "uv"` instead of `"python"`.
     (
         _mcpb.MANIFEST_RELATIVE_PATH,
         None,
