@@ -254,3 +254,111 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           ls -lh dist/zscaler-mcp-server-*.mcpb dist/*.asc dist/*.sha256 >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Docker Versioned Image Publish
+  # ---------------------------------------------------------------------------
+  # After every successful release, build the multi-platform Docker image from
+  # the release tag and push the immutable + rolling semver tags
+  # (X.Y.Z, X.Y, and X once the major version is > 0) to Docker Hub.
+  #
+  # WHY THIS LIVES HERE (and not in docker-build-push.yml's release trigger):
+  # same GITHUB_TOKEN event-suppression as mcpb-bundle-attach above — the
+  # `release: published` trigger in a standalone workflow never fires for
+  # releases that semantic-release publishes with GITHUB_TOKEN. The semver tag
+  # config that previously lived in docker-build-push.yml was dead code for
+  # exactly that reason (no versioned tag was ever pushed). Chaining the build
+  # off the `release` job sidesteps the suppression, mirroring PR #78.
+  #
+  # docker-build-push.yml still exists as a standalone workflow: it builds
+  # `latest` on every master push and offers a workflow_dispatch path to
+  # backfill versioned tags for an existing release.
+  #
+  # Failure here is non-fatal for the release itself — PyPI / GitHub release /
+  # MCP Registry are already done; operators can backfill via
+  # `gh workflow run docker-build-push.yml -f tag=vX.Y.Z`.
+  docker-image-publish:
+    name: Publish versioned Docker image
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write          # Required for provenance attestation signing
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+        with:
+          # Build from the exact tag the release job just created so the
+          # image's version matches PyPI / GitHub / the MCPB bundle.
+          ref: v${{ needs.release.outputs.new_release_version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Derive rolling version tags
+        id: ver
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.release.outputs.new_release_version }}"
+          MAJOR="${VERSION%%.*}"
+          REST="${VERSION#*.}"
+          MINOR="${REST%%.*}"
+          {
+            echo "version=${VERSION}"
+            echo "major_minor=${MAJOR}.${MINOR}"
+            echo "major=${MAJOR}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f
+        with:
+          images: zscaler/zscaler-mcp-server
+          tags: |
+            type=raw,value=${{ steps.ver.outputs.version }}
+            type=raw,value=${{ steps.ver.outputs.major_minor }}
+            type=raw,value=${{ steps.ver.outputs.major }},enable=${{ steps.ver.outputs.major != '0' }}
+          flavor: |
+            latest=false
+          labels: |
+            org.opencontainers.image.title=Zscaler Integrations MCP Server
+            org.opencontainers.image.description=Model Context Protocol server for Zscaler API
+            org.opencontainers.image.vendor=Zscaler
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.source=https://github.com/zscaler/zscaler-mcp-server
+            org.opencontainers.image.documentation=https://github.com/zscaler/zscaler-mcp-server/blob/main/README.md
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          sbom: true
+          provenance: mode=max
+
+      - name: Job summary
+        run: |
+          echo "## 🐳 Versioned Docker Image Published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Release:** v${{ needs.release.outputs.new_release_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Registry:** docker.io/zscaler/zscaler-mcp-server" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tags:**" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Platforms:** linux/amd64, linux/arm64" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Attestations:** SBOM + Provenance (max)" >> "$GITHUB_STEP_SUMMARY"
