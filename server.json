@@ -9,12 +9,12 @@
     "source": "github",
     "id": "992692668"
   },
-  "version": "0.12.6",
+  "version": "0.12.7",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "zscaler-mcp",
-      "version": "0.12.6",
+      "version": "0.12.7",
       "transport": {
         "type": "stdio"
       },
