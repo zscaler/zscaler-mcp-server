@@ -1,5 +1,17 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.12.7 (June 10, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- [PR #79](https://github.com/zscaler/zscaler-mcp-server/pull/79) - New `zscaler-mcp update` subcommand — version check + on-demand in-place upgrade.** `zscaler-mcp update` checks GitHub Releases (PyPI fallback) and reports installed vs. latest version, the detected install channel, and the channel-correct upgrade instruction. `zscaler-mcp update --apply` (pip/venv and system installs only) pin-upgrades the package in the running server's interpreter environment, verifies the install in a fresh interpreter (printing the exact rollback pin on failure), then SIGUSR2-restarts the server so the new version loads in place — same PID, no redeploy. Inside containers `--apply` refuses and prints the image-pull recipe instead: the image is the source of truth there. Unattended updates on a VM: put `zscaler-mcp update --apply` in a cron job or systemd timer.
+
+- [PR #79](https://github.com/zscaler/zscaler-mcp-server/pull/79) - **Publish versioned Docker tags on every release.** The `release: published` trigger in `docker-build-push.yml` never fired (same `GITHUB_TOKEN` event suppression PR #78 fixed for the MCPB bundle), so no semver-tagged image was ever pushed — Docker Hub only had `latest`. The versioned build now runs as a `docker-image-publish` job chained off the `release` job in `release.yml`, pushing immutable + rolling tags (`X.Y.Z`, `X.Y`) so production deployments can pin versions and ecosystem tooling (Renovate, Flux, Watchtower) can track releases. `docker-build-push.yml` retains `latest`-on-master-push and gains a `workflow_dispatch` path to backfill tags for existing releases (`-f tag=v0.12.6`).
+
 ## 0.12.6 (June 4, 2026)
 
 ### Notes

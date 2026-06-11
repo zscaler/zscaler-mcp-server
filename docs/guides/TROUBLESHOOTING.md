@@ -257,4 +257,71 @@ The server automatically scans `.env` files for plaintext secrets (values contai
 
 ---
 
+## Updating the Server
+
+### How do I know a new version is out?
+
+Run the built-in version check from any machine where the CLI is installed (or via `docker exec` against a running container):
+
+```bash
+zscaler-mcp update
+```
+
+It queries GitHub Releases (falling back to PyPI if GitHub is unreachable) and reports the installed version, the latest release, the detected install channel, and the correct upgrade instruction for that channel:
+
+```text
+zscaler-mcp update check
+========================================
+  installed       : 0.12.6
+  latest          : 0.13.0
+  install channel : venv
+  release notes   : https://github.com/zscaler/zscaler-mcp-server/releases/tag/v0.13.0
+Update available: 0.12.6 -> 0.13.0
+  how to update   : run `zscaler-mcp update --apply` to upgrade in place and restart.
+```
+
+The check is read-only and changes nothing. It exits non-zero only when neither GitHub nor PyPI is reachable (e.g. no network egress).
+
+### Updating a pip/venv install (systemd VM, local install)
+
+This is the one channel where the server can update itself in place:
+
+```bash
+zscaler-mcp update --apply
+```
+
+What it does, in order:
+
+1. Pin-upgrades the package (`pip install --upgrade zscaler-mcp==<latest>`) in the **running server's** interpreter environment — resolved from the PID file, so it targets the right venv even when the CLI is invoked from outside it. When no server is running, it upgrades the CLI's own environment.
+2. Verifies the install by importing the package version in a fresh interpreter. On a pip failure or a verification mismatch it prints the exact rollback command (`pip install zscaler-mcp==<previous>`) and exits non-zero without touching the running server.
+3. Sends SIGUSR2 to the running server, which re-execs itself in place (same PID) and re-imports the freshly upgraded code. If no server is running, it reminds you to restart your service (e.g. `systemctl restart zscaler-mcp`).
+
+The upgrade always runs in the CLI process, never inside the server — the server process is never asked to modify its own loaded packages.
+
+To keep a VM permanently current, put `zscaler-mcp update --apply` in a cron job or systemd timer. Deployments that prefer controlled change windows simply run it manually instead.
+
+### Updating a container (Docker, Kubernetes, Cloud Run, Container Apps)
+
+`--apply` deliberately refuses inside a container (exit 2): the image is the source of truth, and an in-place change would be silently lost on the next recreate, pod reschedule, or scale event. (The shipped image's uv-built venv contains no pip, so an in-place install would not work anyway.) Update by pulling the new image tag and recreating:
+
+```bash
+docker pull zscaler/zscaler-mcp-server:<latest>
+docker rm -f zscaler-mcp-server
+docker run -d --name zscaler-mcp-server ... zscaler/zscaler-mcp-server:<latest>
+```
+
+or for Helm/Kubernetes:
+
+```bash
+helm upgrade <release> ... --set image.tag=<latest>
+```
+
+Each release publishes immutable and rolling semver tags (`X.Y.Z`, `X.Y`), so standard ecosystem tooling (Renovate, Dependabot, Flux image automation, Watchtower) can track releases automatically if you want unattended container updates.
+
+### Updating a uvx install
+
+Nothing to do in most cases — `uvx zscaler-mcp` re-resolves from PyPI, so a fresh client session already picks up the new version. For a persistent uv tool install, run `uv tool upgrade zscaler-mcp`.
+
+---
+
 ## Project-Specific Issues
