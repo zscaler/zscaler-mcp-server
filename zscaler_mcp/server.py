@@ -2266,7 +2266,7 @@ def main():
         pid_file_arg = getattr(args, "pid_file", None)
         if isinstance(pid_file_arg, str) and pid_file_arg:
             os.environ["ZSCALER_MCP_PID_FILE"] = pid_file_arg
-        sys.exit(lifecycle.dispatch(command))
+        sys.exit(lifecycle.dispatch(command, args))
 
     # Re-resolve dotenv with the explicit CLI flag in mind. Records the
     # final path so the lifecycle handlers know what file to re-read.

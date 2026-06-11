@@ -11,6 +11,76 @@ description: |-
 
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
+## 0.12.7 (June 10, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- [PR #79](https://github.com/zscaler/zscaler-mcp-server/pull/79) - New `zscaler-mcp update` subcommand — version check + on-demand in-place upgrade.** `zscaler-mcp update` checks GitHub Releases (PyPI fallback) and reports installed vs. latest version, the detected install channel, and the channel-correct upgrade instruction. `zscaler-mcp update --apply` (pip/venv and system installs only) pin-upgrades the package in the running server's interpreter environment, verifies the install in a fresh interpreter (printing the exact rollback pin on failure), then SIGUSR2-restarts the server so the new version loads in place — same PID, no redeploy. Inside containers `--apply` refuses and prints the image-pull recipe instead: the image is the source of truth there. Unattended updates on a VM: put `zscaler-mcp update --apply` in a cron job or systemd timer.
+
+- [PR #79](https://github.com/zscaler/zscaler-mcp-server/pull/79) - **Publish versioned Docker tags on every release.** The `release: published` trigger in `docker-build-push.yml` never fired (same `GITHUB_TOKEN` event suppression PR #78 fixed for the MCPB bundle), so no semver-tagged image was ever pushed — Docker Hub only had `latest`. The versioned build now runs as a `docker-image-publish` job chained off the `release` job in `release.yml`, pushing immutable + rolling tags (`X.Y.Z`, `X.Y`) so production deployments can pin versions and ecosystem tooling (Renovate, Flux, Watchtower) can track releases. `docker-build-push.yml` retains `latest`-on-master-push and gains a `workflow_dispatch` path to backfill tags for existing releases (`-f tag=v0.12.6`).
+
+## 0.12.6 (June 4, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- [PR #78](https://github.com/zscaler/zscaler-mcp-server/pull/78) - **Attach the signed MCPB bundle automatically on every release.** The standalone `mcpb-build.yml` workflow was triggered on `release: published`, but that event never fired — GitHub deliberately suppresses workflow events raised by the built-in `GITHUB_TOKEN` that `semantic-release` uses to publish the release, so `v0.12.5` shipped without the bundle attached. The build/sign/attach step now runs as a `mcpb-bundle-attach` job chained off the `release` job in `.github/workflows/release.yml` (gated on `new_release_published`), executing in the **same workflow run** as `semantic-release` and sidestepping the token suppression entirely — the cross-platform `uv`-runtime `.mcpb`, its detached PGP signature (`.asc`), and SHA-256 checksum are now attached to the GitHub Release the moment a release is cut from `master`, with no manual step. `mcpb-build.yml` is retained as a `workflow_dispatch`-only workflow for manually re-attaching a bundle to an existing release or running a dry-run build.
+
+## 0.12.5 (June 4, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- [PR #77](https://github.com/zscaler/zscaler-mcp-server/pull/77) - **Automated, signed MCPB (Claude Desktop) bundle releases.** The canonical MCPB manifest now lives at `integrations/anthropic/manifest.json` (was the repo root); `scripts/build_mcpb.py` + `make build-mcpb` produce a cross-platform, source-only `uv`-runtime bundle and validate it before packing. A new standalone workflow (`.github/workflows/mcpb-build.yml`) triggers on release publication, builds the `.mcpb`, **signs it with the project PGP key** (`GPG_PRIVATE_KEY` + `PASSPHRASE`, same as `release.yml`), and attaches the bundle, its detached signature (`.asc`), and a SHA-256 checksum to the GitHub Release.
+
+## 0.12.4 (May 26, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- [PR #75](https://github.com/zscaler/zscaler-mcp-server/pull/75) - **Helm chart deployment.** Added a cluster-vendor-agnostic Helm chart under `integrations/helm-chart/` for deploying the Zscaler MCP Server to any Kubernetes cluster — EKS, GKE, AKS, OpenShift, Rancher, k3s, Talos, or `kind` / `minikube` for local dev. Ships with an interactive Python deployer (`helm_mcp_operations.py`) that mirrors the Azure / GCP scripts (`deploy`, `destroy`, `status`, `logs`, `configure`, `test`), materialises a Kubernetes `Secret` directly from your existing `.env` (no translation into `values.yaml`), and auto-configures Claude Desktop + Cursor with the right `Authorization: Basic` header. Five credential-setup paths are supported (interactive script, `kubectl create secret --from-env-file`, inline `--set`, pre-existing `Secret` for GitOps, and External Secrets Operator). Full chart reference in [`integrations/helm-chart/README.md`](https://github.com/zscaler/zscaler-mcp-server/blob/master/integrations/helm-chart/README.md) and [`docs-site/docs/deployment/helm-chart.md`](https://zscaler.github.io/zscaler-mcp-server/docs/deployment/helm-chart).
+
+## 0.12.3 (May 22, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **Strands Agent client for AgentCore Runtime.** Added `integrations/aws/bedrock-agentcore/strands_agent_chat.py` — a self-contained interactive CLI that drives a deployed AgentCore Runtime from any laptop with AWS credentials. SigV4-signs every `InvokeAgentRuntime` call, auto-discovers the runtime from `.aws-deploy-state.json`, walks the operator through a curated Bedrock model picker (Claude Sonnet 4.6 / Opus 4.7 / Opus 4.6, Amazon Nova Pro, Llama 3.3 70B) and a tool-filter preset picker (Discovery / ZPA / ZIA / ZDX read-only / policy-investigation / custom regex / all), and drops into a chat loop with per-message stats (latency, token usage), a session summary on exit, and in-chat `help` / `status` / `tools` / `clear` / `reset` / `quit` commands. Pinned dependencies live in `integrations/aws/bedrock-agentcore/requirements.txt` (boto3, strands-agents, httpx). Companion `integrations/aws/bedrock-agentcore/.gitignore` keeps `.strands-venv/` and the local state file out of git.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **Reorganized `integrations/aws/` into `bedrock-agentcore/` and `harness/` subfolders.** All existing AgentCore Runtime artifacts (`aws_mcp_operations.py`, `strands_agent_chat.py`, `cloudformation/`, `env.properties`, `requirements.txt`, READMEs, `.gitignore`) now live under `integrations/aws/bedrock-agentcore/`. A sibling `integrations/aws/harness/` placeholder reserves space for the upcoming AWS-recommended AgentCore Harness deployment path. The MCP server image is unchanged — Harness consumes it as a standard `remote_mcp` tool over streamable-HTTP.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **MCP streamable-http handshake.** The Strands client now performs the spec-compliant MCP session handshake against the AgentCore runtime — `POST initialize` (advertising protocol version `2025-11-25`), captures the server-issued `Mcp-Session-Id` response header, fires the `notifications/initialized` notification, then echoes that header on every subsequent `tools/list` / `tools/call`. This is mandatory on the `v0.12.x+` runtime image (where `web_server.py`'s Genesis NDJSON wrapper no longer bypasses the MCP transport layer). Falls back gracefully to session-less mode against the legacy `v0.10.x` Genesis-wrapped image, so the same client works against both deployments without flags.
+
+### Bug Fixes
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - Packaged several ZDX Skill templates for better display and parsing of the response.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - Fixed ZIA `cloud_app_control` tools by adding further docstrings instructions for proper workflow construction.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **ZPA list-tool pagination types.** Re-typed `page` and `page_size` as `Annotated[Optional[int], Field(ge=1, ...)]` across all 9 ZPA list tools (`zpa_list_segment_groups`, `zpa_list_server_groups`, `zpa_list_app_connectors`, `zpa_list_app_connector_groups`, `zpa_list_service_edges`, `zpa_list_lss_configs`, `zpa_list_application_segments`, `zpa_list_application_segments_ba`, `zpa_list_application_segments_pra`). The previous `Optional[str]` declaration caused Pydantic to reject every Bedrock-driven invocation with `Input should be a valid string`, because modern Claude / Nova models naturally emit JSON integers for numeric-looking arguments. The tools now convert back to `str` at the SDK call site so the underlying API call is unchanged.
+
+### Documentation
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - Added `docs/deployment/strands-agentcore-client.md` — full reference for the new Strands client: architecture, the two-session-id model (Bedrock affinity vs. MCP transport), prerequisites, install, the MCP handshake flow, the Bedrock model catalogue, tool filter presets, interactive flow walkthrough, chat commands, CLI flags, the `--list-tools` smoke test, and a troubleshooting table covering the `-32010` handshake error, the Anthropic use-case form, the ZPA pagination Pydantic error, missing AWS creds, and `DEBUG_MCP_WIRE` for wire-level debugging.
+
+- [PR #69](https://github.com/zscaler/zscaler-mcp-server/pull/69) - **Migrated the documentation portal from Sphinx to Docusaurus 3**, deployed to GitHub Pages. Added new sections for Skills, published Registries (Cursor, Claude, Official MCP, Docker, GitHub), and a hand-curated sitemap.
+
 ## 0.12.2 (May 18, 2026)
 
 ### Notes
