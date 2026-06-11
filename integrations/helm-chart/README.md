@@ -330,7 +330,7 @@ Every key below is also documented inline in [`charts/zscaler-mcp-server/values.
 | Key | Default | Description |
 |---|---|---|
 | `image.repository` | `zscaler/zscaler-mcp-server` | Docker Hub repo. Override to point at a private mirror / Marketplace ECR. |
-| `image.tag` | `latest` | Docker Hub currently publishes only the `latest` floating tag. Pin in production via `image.digest`. |
+| `image.tag` | `latest` | Each release publishes immutable + rolling semver tags (`X.Y.Z`, `X.Y`). Pin a version in production — or pin via `image.digest`, which wins over `image.tag`. Releases ≤ v0.12.6 have no versioned tags unless backfilled. |
 | `image.digest` | `""` | Pin by digest (`sha256:...`). When set, wins over `image.tag`. Recommended for production. |
 | `image.pullPolicy` | `IfNotPresent` | |
 | `imagePullSecrets` | `[]` | Image pull Secrets for private registries. |

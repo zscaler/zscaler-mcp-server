@@ -371,12 +371,13 @@ Server & security env vars:
 
 ### Lifecycle Subcommands
 
-In addition to the top-level flags above, the CLI exposes four subcommands for managing a running server. They are mutually exclusive with the serve path — running `zscaler-mcp` with no subcommand starts the server as before.
+In addition to the top-level flags above, the CLI exposes five subcommands for managing a running server. They are mutually exclusive with the serve path — running `zscaler-mcp` with no subcommand starts the server as before.
 
 - `zscaler-mcp reload` — Soft reload (SIGHUP). Re-reads `.env` and re-applies env-driven toggles. MCP sessions and the listening socket survive.
 - `zscaler-mcp restart` — Hard restart (SIGUSR2). Re-reads `.env`, then `os.execvp`'s a fresh Python interpreter with the original argv. Same PID, fresh memory, fresh env. Sessions die — clients reconnect.
 - `zscaler-mcp status` — Print PID, uptime, transport, port, and `.env` path of the running server (or report none running).
 - `zscaler-mcp stop` — Clean shutdown (SIGTERM, no respawn). Same signal Docker uses, so the running server has no SIGTERM handler installed and falls through to FastMCP/uvicorn's default shutdown.
+- `zscaler-mcp update` — Check GitHub Releases (PyPI JSON fallback) for a newer version and report installed vs latest plus a channel-correct upgrade instruction. With `--apply` (pip/venv and system installs only): pin-upgrade via `pip install --upgrade zscaler-mcp==<latest>` in the **running server's** interpreter environment (falls back to the CLI's own when no server is running), verify the install in a fresh interpreter, then SIGUSR2-restart the server so the execvp re-imports the new code in place. `--apply` refuses with exit 2 on the `container` channel (the image is the source of truth; in-place changes are lost on recreate — and the shipped image's uv-built venv has no pip anyway), on `uvx` (uv re-resolves from PyPI itself), and on `editable` installs (update the checkout via git). Channel detection: `/.dockerenv` / PID-1 cgroup → container; `uv` in `sys.prefix` → uvx; `direct_url.json` editable flag or missing dist-info → editable; else venv/system.
 
 See **Process Lifecycle Management** below for the full design.
 
@@ -446,7 +447,7 @@ Disabling sanitization removes a defense-in-depth layer; only do this temporaril
 
 ## Process Lifecycle Management
 
-Operators can reconfigure a running server (locally or inside a Docker container) without recreating the container, via four CLI subcommands: `zscaler-mcp reload`, `zscaler-mcp restart`, `zscaler-mcp status`, `zscaler-mcp stop`.
+Operators can reconfigure a running server (locally or inside a Docker container) without recreating the container, via five CLI subcommands: `zscaler-mcp reload`, `zscaler-mcp restart`, `zscaler-mcp status`, `zscaler-mcp stop`, `zscaler-mcp update`.
 
 ### Design
 
@@ -536,11 +537,11 @@ SIGHUP and SIGUSR2 are Unix-only. On Windows the `reload`/`restart` subcommands 
 
 ### Implementation
 
-- **`zscaler_mcp/lifecycle.py`** — PID-file dataclass + read/write/remove, signal-handler installer (`install_serve_handlers`), four `cmd_*` subcommand entry points (`cmd_reload`, `cmd_restart`, `cmd_status`, `cmd_stop`), argparse subparser registration (`register_subparsers`), and the soft-reload helper (`_do_soft_reload`).
+- **`zscaler_mcp/lifecycle.py`** — PID-file dataclass + read/write/remove, signal-handler installer (`install_serve_handlers`), five `cmd_*` subcommand entry points (`cmd_reload`, `cmd_restart`, `cmd_status`, `cmd_stop`, `cmd_update`), argparse subparser registration (`register_subparsers`), the soft-reload helper (`_do_soft_reload`), and the update machinery (`_fetch_latest_version` — GitHub Releases primary / PyPI fallback, `_detect_install_channel`, `_apply_update`). The pip upgrade always runs in the CLI process, never inside the server — the server only ever receives the SIGUSR2 that makes its execvp re-import the already-updated venv.
 - **`zscaler_mcp/server.py::_resolve_dotenv_path()`** — single source of truth for `.env` discovery, recorded in the PID file.
 - **`zscaler_mcp/server.py::main()`** — wires lifecycle: short-circuits to `lifecycle.dispatch()` for subcommands, otherwise writes the PID file + installs handlers + atexit-registers cleanup before calling `server.run()`.
 - **`zscaler_mcp/common/tool_helpers.py::refresh_tool_call_logging()`** — re-applies the `ZSCALER_MCP_LOG_TOOL_CALLS` toggle from current `os.environ`. Called by the SIGHUP handler.
-- **`tests/test_lifecycle.py`** — 45 tests covering PID-file round-trip, default-path resolution, every subcommand against missing/stale/live PID files, the SIGHUP-triggered env reload (raises the signal against `os.getpid()` and asserts the env update lands), env-source classification (every branch including the `docker cp`-fed `fresh-discovery` path), reload/restart messaging accuracy, and argparse integration.
+- **`tests/test_lifecycle.py`** — 72 tests covering PID-file round-trip, default-path resolution, every subcommand against missing/stale/live PID files, the SIGHUP-triggered env reload (raises the signal against `os.getpid()` and asserts the env update lands), env-source classification (every branch including the `docker cp`-fed `fresh-discovery` path), reload/restart messaging accuracy, argparse integration, and the `update` subcommand (version-tuple ordering, GitHub→PyPI fallback, container/uvx/editable channel detection and `--apply` refusal, pip-failure rollback messaging, post-install verification mismatch, and the SIGUSR2 restart against a live PID).
 
 ## Development
 
@@ -918,7 +919,7 @@ On any terminal state, the script automatically dumps the last 20 pod events so 
 
 - **Pre-existing Secret + Secret rotation.** When `secret.create: false`, the chart **does not** render the `checksum/credentials` pod annotation. Secret rotation is the operator's responsibility (External Secrets Operator handles this natively via [Stakater reloader](https://github.com/stakater/Reloader) or its own reconciliation). Chart-managed Secrets DO render the annotation, so any change to `secret.values.*` triggers a rolling restart automatically.
 
-- **The Docker Hub image only publishes `latest`.** `image.tag` defaults to `latest`. For production, pin via `image.digest` (`sha256:...`) which wins over `image.tag`.
+- **Pin a versioned tag (or digest) in production.** `image.tag` defaults to `latest`. Each release publishes immutable + rolling semver tags (`X.Y.Z`, `X.Y`, and `X` once the major version is > 0) via the `docker-image-publish` job chained inside `release.yml` — NOT via a `release:` trigger in `docker-build-push.yml`, which GitHub suppresses for releases that semantic-release publishes with `GITHUB_TOKEN` (same suppression PR #78 fixed for the MCPB bundle). Releases ≤ v0.12.6 predate this job and have no versioned tags unless backfilled via `gh workflow run docker-build-push.yml -f tag=vX.Y.Z`. For maximum strictness, pin `image.digest` (`sha256:...`), which wins over `image.tag`.
 
 - **Helm chart vs hyperscaler scripts.** This chart is the answer when **the cluster is already a fact**. If you need to *stand up* cluster infrastructure (EKS, AKS, GKE, networking, IAM, Key Vault), use `integrations/azure/azure_mcp_operations.py` (Container Apps / VM / AKS-Preview), `integrations/google/gcp/gcp_mcp_operations.py` (Cloud Run / GKE / Compute Engine), or `integrations/aws/bedrock-agentcore/aws_mcp_operations.py`. Those scripts provision and manage the underlying cloud infrastructure end-to-end. The Helm chart deliberately doesn't.
 
@@ -1030,7 +1031,7 @@ The server ships as a `.mcpb` (MCP Bundle) on Anthropic's Claude Desktop Directo
 **Release integration (automated):**
 
 - `.github/set-version.sh` regenerates the manifest after bumping `__init__.py::__version__` so the committed manifest tracks the new release. `integrations/anthropic/manifest.json` is listed in `@semantic-release/git`'s assets so the regen lands in the version-bump commit.
-- `.github/workflows/mcpb-build.yml` is a **standalone workflow** (modeled after `docker-build-push.yml`) that triggers on `release: published`. It checks out the release tag, verifies the manifest is in sync (`--check-docs`), builds the cross-platform `.mcpb` via `scripts/build_mcpb.py`, **PGP-signs it**, and **attaches the versioned bundle + signature + checksum to the GitHub Release** as assets. It also supports `workflow_dispatch` (optional `tag` input) for re-attaching to an existing release or a dry-run build. Anthropic's directory pipeline can detect each new release and pull the attached `.mcpb` automatically — no manual per-version resubmission.
+- `.github/workflows/mcpb-build.yml` is a **standalone, `workflow_dispatch`-only workflow** (optional `tag` input) for re-attaching a bundle to an existing release or a dry-run build. It checks out the release tag, verifies the manifest is in sync (`--check-docs`), builds the cross-platform `.mcpb` via `scripts/build_mcpb.py`, **PGP-signs it**, and **attaches the versioned bundle + signature + checksum to the GitHub Release** as assets. The *automatic* happy path is the `mcpb-bundle-attach` job chained inside `release.yml` (`needs: release`) — a standalone `release: published` trigger would never fire, because GitHub suppresses workflow events raised by the `GITHUB_TOKEN` that semantic-release uses to publish releases (see PR #78). Anthropic's directory pipeline can detect each new release and pull the attached `.mcpb` automatically — no manual per-version resubmission.
 - **Signing.** The workflow imports the project's PGP key via `crazy-max/ghaction-import-gpg@v6` using the same `GPG_PRIVATE_KEY` + `PASSPHRASE` repo secrets as the main `release.yml`, then produces a detached ASCII-armored signature (`<bundle>.mcpb.asc`) and a SHA-256 checksum (`<bundle>.mcpb.sha256`), self-verifies both, and attaches all three. Consumers verify with `gpg --verify <bundle>.mcpb.asc <bundle>.mcpb` and `shasum -a 256 -c <bundle>.mcpb.sha256`.
 
 ### Local Setup Script (`scripts/setup-mcp-server.py`)

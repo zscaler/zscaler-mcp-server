@@ -230,9 +230,7 @@ class TestCmdStatus:
         assert "live" in out
         assert "re-read" in out
 
-    def test_status_flags_fresh_discovery(
-        self, pid_file, with_default_dotenv, capsys
-    ):
+    def test_status_flags_fresh_discovery(self, pid_file, with_default_dotenv, capsys):
         # Simulates the docker cp workflow: PID file says no .env was
         # tracked at startup, but a .env now exists in a default search
         # path. The classifier should tell the user that restart will
@@ -377,9 +375,21 @@ class TestArgparseSubparsers:
         assert args.transport == "stdio"
 
         # Each subcommand parses cleanly.
-        for cmd in ("reload", "restart", "status", "stop"):
+        for cmd in ("reload", "restart", "status", "stop", "update"):
             args = parser.parse_args([cmd])
             assert args.command == cmd
+
+    def test_update_apply_flag(self):
+        import argparse
+
+        parser = argparse.ArgumentParser()
+        lifecycle.register_subparsers(parser)
+
+        args = parser.parse_args(["update"])
+        assert args.apply is False
+
+        args = parser.parse_args(["update", "--apply"])
+        assert args.apply is True
 
     def test_dispatch_unknown_returns_2(self, capsys):
         rc = lifecycle.dispatch("bogus")
@@ -449,9 +459,7 @@ class TestClassifyEnvSource:
         assert "after restart" in advice
         assert "SIGHUP reload alone will NOT" in advice
 
-    def test_fresh_discovery_supersedes_missing_recorded_path(
-        self, tmp_path, with_default_dotenv
-    ):
+    def test_fresh_discovery_supersedes_missing_recorded_path(self, tmp_path, with_default_dotenv):
         # PID file recorded a path that no longer exists, but a default-
         # path .env was placed since then. Restart-then-discover beats
         # the stale "missing" message.
@@ -560,9 +568,7 @@ class TestSoftReloadMissingDotenv:
     def test_logs_info_when_no_dotenv_path(self, caplog):
         with caplog.at_level("INFO", logger="zscaler_mcp.lifecycle"):
             lifecycle._do_soft_reload(None)
-        assert any(
-            "no dotenv path recorded" in r.getMessage() for r in caplog.records
-        )
+        assert any("no dotenv path recorded" in r.getMessage() for r in caplog.records)
 
 
 class TestFormatUptime:
@@ -577,3 +583,266 @@ class TestFormatUptime:
     )
     def test_renders_human_friendly(self, seconds, expected_substring):
         assert expected_substring in lifecycle._format_uptime(seconds)
+
+
+# ---------------------------------------------------------------------------
+# `update` subcommand — version check + on-demand upgrade
+# ---------------------------------------------------------------------------
+
+
+class TestVersionTuple:
+    @pytest.mark.parametrize(
+        "newer,older",
+        [
+            ("0.13.0", "0.12.6"),
+            ("0.12.10", "0.12.9"),
+            ("1.0.0", "0.99.99"),
+            ("0.13.0", "0.13"),
+        ],
+    )
+    def test_ordering(self, newer, older):
+        assert lifecycle._version_tuple(newer) > lifecycle._version_tuple(older)
+
+    def test_equal(self):
+        assert lifecycle._version_tuple("0.12.6") == lifecycle._version_tuple("0.12.6")
+
+    def test_non_numeric_components_never_raise(self):
+        assert lifecycle._version_tuple("3rc1.x.2") == (3, 0, 2)
+        assert lifecycle._version_tuple("") == (0,)
+
+
+class TestFetchLatestVersion:
+    def test_github_primary(self, monkeypatch):
+        monkeypatch.setattr(
+            lifecycle,
+            "_http_get_json",
+            lambda url: {
+                "tag_name": "v0.13.0",
+                "html_url": "https://github.com/zscaler/zscaler-mcp-server/releases/tag/v0.13.0",
+            },
+        )
+        version, url = lifecycle._fetch_latest_version()
+        assert version == "0.13.0"
+        assert "releases/tag/v0.13.0" in url
+
+    def test_pypi_fallback_when_github_fails(self, monkeypatch):
+        def fake_get(url):
+            if "api.github.com" in url:
+                raise OSError("rate limited")
+            return {"info": {"version": "0.13.0"}}
+
+        monkeypatch.setattr(lifecycle, "_http_get_json", fake_get)
+        version, url = lifecycle._fetch_latest_version()
+        assert version == "0.13.0"
+        assert url == lifecycle.PYPI_PROJECT_URL
+
+    def test_none_when_both_fail(self, monkeypatch):
+        def fake_get(url):
+            raise OSError("no egress")
+
+        monkeypatch.setattr(lifecycle, "_http_get_json", fake_get)
+        assert lifecycle._fetch_latest_version() is None
+
+
+class TestRunningInContainer:
+    def test_dockerenv_marker(self, tmp_path):
+        marker = tmp_path / ".dockerenv"
+        marker.touch()
+        assert lifecycle._running_in_container(dockerenv=marker, cgroup=tmp_path / "absent")
+
+    def test_cgroup_marker(self, tmp_path):
+        cgroup = tmp_path / "cgroup"
+        cgroup.write_text("12:memory:/docker/abc123\n")
+        assert lifecycle._running_in_container(dockerenv=tmp_path / "absent", cgroup=cgroup)
+
+    def test_kubepods_marker(self, tmp_path):
+        cgroup = tmp_path / "cgroup"
+        cgroup.write_text("0::/kubepods.slice/kubepods-pod\n")
+        assert lifecycle._running_in_container(dockerenv=tmp_path / "absent", cgroup=cgroup)
+
+    def test_plain_host(self, tmp_path):
+        cgroup = tmp_path / "cgroup"
+        cgroup.write_text("0::/init.scope\n")
+        assert not lifecycle._running_in_container(dockerenv=tmp_path / "absent", cgroup=cgroup)
+
+    def test_no_cgroup_file(self, tmp_path):
+        assert not lifecycle._running_in_container(
+            dockerenv=tmp_path / "absent", cgroup=tmp_path / "also-absent"
+        )
+
+
+@pytest.fixture
+def update_check(monkeypatch):
+    """Pin the version check to installed=0.12.6, latest=0.13.0."""
+    monkeypatch.setattr(lifecycle, "_current_version", lambda: "0.12.6")
+    monkeypatch.setattr(
+        lifecycle,
+        "_fetch_latest_version",
+        lambda: ("0.13.0", "https://example.invalid/v0.13.0"),
+    )
+
+
+class TestCmdUpdateCheckOnly:
+    def test_up_to_date(self, monkeypatch, capsys):
+        monkeypatch.setattr(lifecycle, "_current_version", lambda: "0.13.0")
+        monkeypatch.setattr(
+            lifecycle,
+            "_fetch_latest_version",
+            lambda: ("0.13.0", "https://example.invalid/v0.13.0"),
+        )
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "venv")
+        rc = lifecycle.cmd_update(apply=False)
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "Already up to date." in out
+
+    def test_update_available_reports_hint(self, update_check, monkeypatch, capsys):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "venv")
+        rc = lifecycle.cmd_update(apply=False)
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "Update available: 0.12.6 -> 0.13.0" in out
+        assert "--apply" in out
+
+    def test_container_hint_points_at_image_pull(self, update_check, monkeypatch, capsys):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "container")
+        rc = lifecycle.cmd_update(apply=False)
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "docker pull zscaler/zscaler-mcp-server:0.13.0" in out
+
+    def test_check_failure_returns_1(self, monkeypatch, capsys):
+        monkeypatch.setattr(lifecycle, "_current_version", lambda: "0.12.6")
+        monkeypatch.setattr(lifecycle, "_fetch_latest_version", lambda: None)
+        rc = lifecycle.cmd_update(apply=False)
+        err = capsys.readouterr().err
+        assert rc == 1
+        assert "could not reach GitHub or PyPI" in err
+
+
+class TestCmdUpdateApply:
+    @pytest.mark.parametrize("channel", ["container", "uvx", "editable"])
+    def test_refuses_unsupported_channels(self, update_check, monkeypatch, capsys, channel):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: channel)
+
+        def boom(*args, **kwargs):
+            raise AssertionError("subprocess must not run for refused channels")
+
+        monkeypatch.setattr(lifecycle.subprocess, "run", boom)
+        rc = lifecycle.cmd_update(apply=True)
+        err = capsys.readouterr().err
+        assert rc == 2
+        assert f"'{channel}'" in err
+
+    def test_apply_no_running_server(self, update_check, monkeypatch, pid_file, capsys):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "venv")
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+
+            class Result:
+                returncode = 0
+                stderr = ""
+                # The verify subprocess prints the freshly-installed version.
+                stdout = "0.13.0\n"
+
+            return Result()
+
+        monkeypatch.setattr(lifecycle.subprocess, "run", fake_run)
+        rc = lifecycle.cmd_update(apply=True)
+        out = capsys.readouterr().out
+
+        assert rc == 0
+        # First call: the pip upgrade, pinned to the resolved latest.
+        assert calls[0][1:] == ["-m", "pip", "install", "--upgrade", "zscaler-mcp==0.13.0"]
+        # Second call: fresh-interpreter verification.
+        assert calls[1][1] == "-c"
+        assert "Upgraded to 0.13.0." in out
+        assert "No running server found" in out
+
+    def test_apply_pip_failure_prints_rollback(self, update_check, monkeypatch, pid_file, capsys):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "venv")
+
+        def fake_run(cmd, **kwargs):
+            class Result:
+                returncode = 1
+                stderr = "ERROR: No matching distribution found"
+                stdout = ""
+
+            return Result()
+
+        monkeypatch.setattr(lifecycle.subprocess, "run", fake_run)
+        rc = lifecycle.cmd_update(apply=True)
+        err = capsys.readouterr().err
+        assert rc == 1
+        assert "pip upgrade failed" in err
+        assert "zscaler-mcp==0.12.6" in err  # rollback pin
+
+    def test_apply_verify_mismatch_fails(self, update_check, monkeypatch, pid_file, capsys):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "venv")
+
+        def fake_run(cmd, **kwargs):
+            class Result:
+                returncode = 0
+                stderr = ""
+                stdout = "0.12.6\n"  # verify still sees the old version
+
+            return Result()
+
+        monkeypatch.setattr(lifecycle.subprocess, "run", fake_run)
+        rc = lifecycle.cmd_update(apply=True)
+        err = capsys.readouterr().err
+        assert rc == 1
+        assert "verification failed" in err
+
+    @pytest.mark.skipif(not hasattr(signal, "SIGUSR2"), reason="SIGUSR2 is Unix-only")
+    def test_apply_restarts_running_server(self, update_check, monkeypatch, pid_file, capsys):
+        monkeypatch.setattr(lifecycle, "_detect_install_channel", lambda: "venv")
+
+        # A live "server": this very process, with a no-op SIGUSR2 handler
+        # installed so the kill() doesn't terminate pytest.
+        received = []
+        previous = signal.signal(signal.SIGUSR2, lambda s, f: received.append(s))
+        try:
+            state = lifecycle.LifecycleState(
+                pid=os.getpid(),
+                started_at=time.time(),
+                python_executable=sys.executable,
+            )
+            lifecycle.write_pid_file(state, pid_file)
+
+            def fake_run(cmd, **kwargs):
+                # The upgrade must target the running server's interpreter.
+                assert cmd[0] == sys.executable
+
+                class Result:
+                    returncode = 0
+                    stderr = ""
+                    stdout = "0.13.0\n"
+
+                return Result()
+
+            monkeypatch.setattr(lifecycle.subprocess, "run", fake_run)
+            rc = lifecycle.cmd_update(apply=True)
+            out = capsys.readouterr().out
+
+            assert rc == 0
+            assert received == [signal.SIGUSR2]
+            assert "Sent SIGUSR2" in out
+        finally:
+            signal.signal(signal.SIGUSR2, previous)
+
+    def test_dispatch_routes_update_with_apply(self, monkeypatch):
+        import argparse
+
+        seen = {}
+
+        def fake_cmd_update(apply=False):
+            seen["apply"] = apply
+            return 0
+
+        monkeypatch.setattr(lifecycle, "cmd_update", fake_cmd_update)
+        args = argparse.Namespace(apply=True)
+        assert lifecycle.dispatch("update", args) == 0
+        assert seen == {"apply": True}
