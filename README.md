@@ -1,3 +1,5 @@
+<img width="254" height="80" alt="image" src="https://github.com/user-attachments/assets/14efd6d8-214a-4e83-9404-40c02d4c8d06" />
+<img width="254" height="80" alt="image" src="https://github.com/user-attachments/assets/01e86b5a-302b-4f84-852e-8ed262897b8f" />
 ![Zscaler MCP](https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/docs/media/zscaler.svg)
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
@@ -548,7 +550,7 @@ Then edit `.env` with your Zscaler API credentials:
 
 - `ZSCALER_CLIENT_ID`: Your Zscaler OAuth client ID
 - `ZSCALER_CLIENT_SECRET`: Your Zscaler OAuth client secret
-- `ZSCALER_CUSTOMER_ID`: Your Zscaler customer ID
+- `ZSCALER_CUSTOMER_ID`: Your Zscaler customer ID (specifically the ZPA Tenant ID)
 - `ZSCALER_VANITY_DOMAIN`: Your Zscaler vanity domain
 
 **Optional Configuration:**
@@ -777,7 +779,7 @@ Create a `.env` file in your project root (or wherever you start the MCP server)
 # OneAPI credentials (required)
 ZSCALER_CLIENT_ID=your_client_id
 ZSCALER_CLIENT_SECRET=your_client_secret
-ZSCALER_CUSTOMER_ID=your_customer_id
+ZSCALER_CUSTOMER_ID=your_zpa_customer_id
 ZSCALER_VANITY_DOMAIN=your_vanity_domain
 
 # Optional: only required when targeting the Beta tenant
@@ -792,7 +794,7 @@ ZSCALER_CLOUD=beta
 |---------------------|----------|-------------|
 | `ZSCALER_CLIENT_ID` | Yes | OneAPI client ID from the ZIdentity console |
 | `ZSCALER_CLIENT_SECRET` | Yes (or `ZSCALER_PRIVATE_KEY`) | OneAPI client secret |
-| `ZSCALER_CUSTOMER_ID` | Yes (for ZPA tools) | Zscaler customer/tenant ID |
+| `ZSCALER_CUSTOMER_ID` | Yes (for ZPA tools) | Zscaler ZPA customer/tenant ID |
 | `ZSCALER_VANITY_DOMAIN` | Yes | Your organization's vanity domain (e.g., `acme`) |
 | `ZSCALER_CLOUD` | No | Cloud override (e.g., `beta`, `zscalertwo`); omit for production |
 | `ZSCALER_PRIVATE_KEY` | No | PEM-encoded private key for JWT auth (used in place of `ZSCALER_CLIENT_SECRET`) |
@@ -993,7 +995,7 @@ docker run --rm --env-file /path/to/.env \
 
 # Alternative: Individual environment variables
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
-  -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain \
+  -e ZSCALER_CUSTOMER_ID=your_zpa_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain \
   zscaler/zscaler-mcp-server:latest
 ```
 
@@ -1007,7 +1009,7 @@ docker build -t zscaler-mcp-server .
 
 # Run the locally built image
 docker run --rm -e ZSCALER_CLIENT_ID=your_client_id -e ZSCALER_CLIENT_SECRET=your_secret \
-  -e ZSCALER_CUSTOMER_ID=your_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain zscaler-mcp-server
+  -e ZSCALER_CUSTOMER_ID=your_zpa_customer_id -e ZSCALER_VANITY_DOMAIN=your_vanity_domain zscaler-mcp-server
 ```
 
 **Note**: When using HTTP transports in Docker, always set `--host 0.0.0.0` to allow external connections to the container.
