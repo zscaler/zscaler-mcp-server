@@ -4,10 +4,14 @@
 .gitattributes
 
 # Documentation
+# README.md is deliberately re-included below: the hatchling build backend reads
+# it during the wheel build (pyproject `readme = "README.md"`), so it MUST be in
+# the Docker build context or `uv sync --no-editable` fails with
+# "Readme file does not exist: README.md". Keep the rest of the docs excluded.
 *.md
+!README.md
 docs/
 docsrc/
-README.md
 
 # Python cache and bytecode
 __pycache__/

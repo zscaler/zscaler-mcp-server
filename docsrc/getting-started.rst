@@ -50,9 +50,16 @@ OneAPI Authentication
    ZSCALER_CLIENT_SECRET="your_client_secret"
    ZSCALER_CUSTOMER_ID="your_customer_id"  # required only for ZPA tools
    ZSCALER_VANITY_DOMAIN="your_vanity_domain"
+   ZCELL_CUSTOMER_ID="your_zscaler_cellular_customer_id"  # required only for Zscaler Cellular (ZCell) tools
 
 For JWT-based auth, set ``ZSCALER_PRIVATE_KEY`` (PEM-encoded) in place of
 ``ZSCALER_CLIENT_SECRET``.
+
+.. note::
+   ``ZCELL_CUSTOMER_ID`` is your **Zscaler Cellular** customer ID and is
+   distinct from ``ZSCALER_CUSTOMER_ID`` (used by ZPA). Set it only if you use
+   ZCell tools; set both if you use ZPA and ZCell together. It may also be
+   supplied programmatically as the ``zcellCustomerId`` config key.
 
 .. warning::
    Do not commit ``.env`` to source control. Add it to your ``.gitignore``.

@@ -35,108 +35,118 @@ The `meta` toolset (containing the connectivity check, service discovery, tool s
 
 <!-- generated:start toolset-catalog -->
 
-### Always-on
-
-| Id | Tools | Purpose |
-|---|---|---|
-| `meta` | `zscaler_check_connectivity`, `zscaler_enable_toolset`, `zscaler_get_available_services`, `zscaler_get_toolset_tools`, `zscaler_list_toolsets` | Cross-service meta-tools (connectivity check, service discovery, tool search, toolset discovery). Always loaded — never filtered. |
-
 ### ZIA — Internet Access
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zia_admin` | yes | 2 | ZIA tenant administration: activation, admin users/roles, auth settings, audit/intermediate-CA configuration. |
-| `zia_advanced_settings` | yes | 2 | ZIA Advanced Settings: the tenant-wide singleton surfaced under Administration → Advanced Settings in the ZIA Admin Portal (zia_get_advanced_settings / zia_update_advanced_settings, backed by the SDK's zscaler.zia.advanced_settings.AdvancedSettingsAPI). Around 50 knobs across authentication / Kerberos / digest bypass URLs and apps, DNS optimization on transparent proxy (IPv4 + IPv6), Office 365 one-click, UI session timeout, surrogate IP enforcement, HTTP tunnel handling, domain-fronting block, HTTP/2 non-browser traffic, ECS-for-all, dynamic user risk, CONNECT-host / SNI mismatch handling, and SIPA XFF header insertion. PUT-replace update contract — fetch + merge + write, then call zia_activate_configuration to apply. |
-| `zia_atp_malware` | yes | 8 | ZIA Advanced Threat Protection (ATP) Malware Protection Policy: tenant-wide malware singletons that sit alongside zia_atp_policy under cyberThreatProtection. File-handling toggles (zia_get_atp_malware_policy / zia_update_atp_malware_policy — block_unscannable_files, block_password_protected_archive_files), traffic-direction inspection (zia_get_atp_malware_inspection / zia_update_atp_malware_inspection — inspect_inbound, inspect_outbound), protocol-level inspection (zia_get_atp_malware_protocols / zia_update_atp_malware_protocols — inspect_http, inspect_ftp_over_http, inspect_ftp), and the 16-field threat-class settings block (zia_get_malware_settings / zia_update_malware_settings — virus / trojan / worm / adware / spyware / ransomware / remote-access-tool / unwanted-applications blocked + capture toggles). All backed by the SDK's zscaler.zia.malware_protection_policy.MalwareProtectionPolicyAPI; every update is PUT-replace and writes are staged until zia_activate_configuration is called. |
-| `zia_atp_policy` | yes | 7 | ZIA Advanced Threat Protection (ATP) policy: tenant-wide threat protection settings (zia_get_atp_settings / zia_update_atp_settings), the ATP security-exception bypass URL list (zia_get_atp_security_exceptions / zia_update_atp_security_exceptions), and the ATP malicious-URL denylist (zia_list_atp_malicious_urls / zia_add_atp_malicious_urls / zia_delete_atp_malicious_urls). All backed by the SDK's zscaler.zia.atp_policy.ATPPolicyAPI. |
-| `zia_authentication_settings` | yes | 3 | ZIA authentication settings: cookie-auth exempt URL list (zia_list_auth_exempt_urls / zia_add_auth_exempt_urls / zia_delete_auth_exempt_urls). Distinct from the ATP security-exception bypass list (see zia_atp_policy). |
-| `zia_cloud_app_control` | no | 8 | ZIA Cloud App Control policy rules + cloud-app catalog browsers. |
-| `zia_cloud_firewall` | yes | 58 | ZIA Cloud Firewall rules (filtering, DNS, IPS), network services, network application groups, IP source/destination groups. |
-| `zia_devices` | yes | 3 | ZIA device inventory: zia_list_devices, zia_list_devices_lite, zia_list_device_groups. Read-only — device enrollment lives in ZCC, not ZIA. |
-| `zia_dlp` | no | 8 | ZIA Web DLP rules, DLP dictionaries, DLP engines, DLP notification templates, ICAP servers. |
-| `zia_file_type_control` | no | 6 | ZIA File Type Control rules and file type categories. |
-| `zia_locations` | yes | 26 | ZIA location and sub-location management, location groups, VPN credentials, static IPs, GRE tunnels. |
-| `zia_misc` | no | 0 | Miscellaneous ZIA resources that don't fit the above buckets (rule labels, forwarding rules, FTP control, etc.). |
-| `zia_rule_labels` | yes | 5 | ZIA rule labels — generic tagging objects referenced by every ZIA policy rule family via the `labels` operand. CRUD: zia_list_rule_labels, zia_get_rule_label, zia_create_rule_label, zia_update_rule_label, zia_delete_rule_label. |
-| `zia_sandbox` | no | 9 | ZIA Sandbox policy rules and sandbox report/quota inspection. |
-| `zia_shadow_it` | no | 3 | ZIA Shadow IT analytics: cloud application catalog, custom tags, bulk sanctioning. |
-| `zia_ssl_inspection` | no | 5 | ZIA SSL Inspection policy rules. |
-| `zia_threat_settings` | yes | 2 | ZIA threat-related tenant-wide singletons that don't belong to the ATP / ATP-malware policy blocks. Currently holds the Mobile Advanced Threat Settings (zia_get_mobile_advanced_settings / zia_update_mobile_advanced_settings, backed by zscaler.zia.mobile_threat_settings.MobileAdvancedSettingsAPI) — the Mobile Malware Protection policy applied to traffic from mobile clients (iOS / Android via the Zscaler Client Connector). 8 boolean knobs for blocking apps with malicious activity, known vulnerabilities, unencrypted credential / location / PII / device-ID leakage, ad-website beacons, and communication with unknown remote servers. PUT-replace update contract — fetch + merge + write, then call zia_activate_configuration to apply. Distinct from zia_atp_policy (the desktop / web ATP block) and zia_atp_malware (the malware inspection / file-handling block). |
-| `zia_time_intervals` | no | 5 | Reusable time-interval objects referenced by all ZIA rule types via the `time_windows` field. |
-| `zia_url_categories` | yes | 10 | ZIA URL category catalog (custom + predefined). Includes the predefined-category mutation tools. |
-| `zia_url_filtering` | yes | 5 | ZIA URL Filtering policy rules (zia_*_url_filtering_rule). |
-| `zia_users` | yes | 3 | ZIA users, user groups, departments. Device inventory lives in the dedicated `zia_devices` toolset. |
-| `zia_workload_groups` | no | 2 | ZIA workload groups (used as a rule operand). |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zia_admin` | 2 | `zia_activate_configuration`, `zia_get_activation_status` |
+| `zia_advanced_settings` | 2 | `zia_get_advanced_settings`, `zia_update_advanced_settings` |
+| `zia_atp_malware` | 8 | `zia_get_atp_malware_inspection`, `zia_get_atp_malware_policy`, `zia_get_atp_malware_protocols`, `zia_get_malware_settings`, `zia_update_atp_malware_inspection`, `zia_update_atp_malware_policy`, `zia_update_atp_malware_protocols`, `zia_update_malware_settings` |
+| `zia_atp_policy` | 7 | `zia_add_atp_malicious_urls`, `zia_delete_atp_malicious_urls`, `zia_get_atp_security_exceptions`, `zia_get_atp_settings`, `zia_list_atp_malicious_urls`, `zia_update_atp_security_exceptions`, `zia_update_atp_settings` |
+| `zia_authentication_settings` | 3 | `zia_add_auth_exempt_urls`, `zia_delete_auth_exempt_urls`, `zia_list_auth_exempt_urls` |
+| `zia_cloud_app_control` | 7 | `zia_create_cloud_app_control_rule`, `zia_delete_cloud_app_control_rule`, `zia_get_cloud_app_control_rule`, `zia_list_cloud_app_control_actions`, `zia_list_cloud_app_control_rules`, `zia_list_cloud_app_policy`, `zia_update_cloud_app_control_rule` |
+| `zia_cloud_firewall` | 47 | `zia_create_cloud_firewall_dns_rule`, `zia_create_cloud_firewall_ips_rule`, `zia_create_cloud_firewall_rule`, `zia_create_ip_destination_group`, `zia_create_ip_source_group`, `zia_create_ips_signature_rule`, `zia_create_network_app_group`, `zia_create_network_service`, `zia_create_network_svc_group`, `zia_delete_cloud_firewall_dns_rule`, `zia_delete_cloud_firewall_ips_rule`, `zia_delete_cloud_firewall_rule`, `zia_delete_ip_destination_group`, `zia_delete_ip_source_group`, `zia_delete_ips_signature_rule`, `zia_delete_network_app_group`, `zia_delete_network_service`, `zia_delete_network_svc_group`, `zia_get_cloud_firewall_dns_rule`, `zia_get_cloud_firewall_ips_rule`, `zia_get_cloud_firewall_rule`, `zia_get_ip_destination_group`, `zia_get_ip_source_group`, `zia_get_ips_signature_rule`, `zia_get_network_app`, `zia_get_network_app_group`, `zia_get_network_service`, `zia_get_network_svc_group`, `zia_list_cloud_firewall_dns_rules`, `zia_list_cloud_firewall_ips_rules`, `zia_list_cloud_firewall_rules`, `zia_list_ip_destination_groups`, `zia_list_ip_source_groups`, `zia_list_ips_signature_rules`, `zia_list_network_app_groups`, `zia_list_network_apps`, `zia_list_network_services`, `zia_list_network_svc_groups`, `zia_update_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_ips_rule`, `zia_update_cloud_firewall_rule`, `zia_update_ip_destination_group`, `zia_update_ip_source_group`, `zia_update_ips_signature_rule`, `zia_update_network_app_group`, `zia_update_network_service`, `zia_update_network_svc_group` |
+| `zia_devices` | 3 | `zia_list_device_groups`, `zia_list_devices`, `zia_list_devices_lite` |
+| `zia_dlp` | 8 | `get_zia_dlp_dictionaries`, `get_zia_dlp_engines`, `zia_create_web_dlp_rule`, `zia_delete_web_dlp_rule`, `zia_get_web_dlp_rule`, `zia_list_web_dlp_rules`, `zia_list_web_dlp_rules_lite`, `zia_update_web_dlp_rule` |
+| `zia_file_type_control` | 6 | `zia_create_file_type_control_rule`, `zia_delete_file_type_control_rule`, `zia_get_file_type_control_rule`, `zia_list_file_type_categories`, `zia_list_file_type_control_rules`, `zia_update_file_type_control_rule` |
+| `zia_locations` | 23 | `zia_create_gre_tunnel`, `zia_create_location`, `zia_create_static_ip`, `zia_create_vpn_credential`, `zia_delete_gre_tunnel`, `zia_delete_location`, `zia_delete_static_ip`, `zia_delete_vpn_credential`, `zia_geo_search`, `zia_get_gre_tunnel`, `zia_get_location`, `zia_get_location_group`, `zia_get_static_ip`, `zia_get_vpn_credential`, `zia_list_gre_ranges`, `zia_list_gre_tunnels`, `zia_list_location_groups`, `zia_list_locations`, `zia_list_static_ips`, `zia_list_vpn_credentials`, `zia_update_location`, `zia_update_static_ip`, `zia_update_vpn_credential` |
+| `zia_misc` | 2 | `zia_get_mobile_advanced_settings`, `zia_update_mobile_advanced_settings` |
+| `zia_rule_labels` | 5 | `zia_create_rule_label`, `zia_delete_rule_label`, `zia_get_rule_label`, `zia_list_rule_labels`, `zia_update_rule_label` |
+| `zia_sandbox` | 9 | `zia_create_sandbox_rule`, `zia_delete_sandbox_rule`, `zia_get_sandbox_behavioral_analysis`, `zia_get_sandbox_file_hash_count`, `zia_get_sandbox_quota`, `zia_get_sandbox_report`, `zia_get_sandbox_rule`, `zia_list_sandbox_rules`, `zia_update_sandbox_rule` |
+| `zia_shadow_it` | 3 | `zia_bulk_update_shadow_it_apps`, `zia_list_shadow_it_apps`, `zia_list_shadow_it_custom_tags` |
+| `zia_ssl_inspection` | 6 | `zia_create_ssl_inspection_rule`, `zia_delete_ssl_inspection_rule`, `zia_get_ssl_inspection_rule`, `zia_list_cloud_app_ssl_policy`, `zia_list_ssl_inspection_rules`, `zia_update_ssl_inspection_rule` |
+| `zia_time_intervals` | 5 | `zia_create_time_interval`, `zia_delete_time_interval`, `zia_get_time_interval`, `zia_list_time_intervals`, `zia_update_time_interval` |
+| `zia_url_categories` | 10 | `zia_add_urls_to_category`, `zia_create_url_category`, `zia_delete_url_category`, `zia_get_url_category`, `zia_get_url_category_predefined`, `zia_list_url_categories`, `zia_remove_urls_from_category`, `zia_update_url_category`, `zia_update_url_category_predefined`, `zia_url_lookup` |
+| `zia_url_filtering` | 5 | `zia_create_url_filtering_rule`, `zia_delete_url_filtering_rule`, `zia_get_url_filtering_rule`, `zia_list_url_filtering_rules`, `zia_update_url_filtering_rule` |
+| `zia_users` | 3 | `get_zia_user_departments`, `get_zia_user_groups`, `get_zia_users` |
+| `zia_workload_groups` | 2 | `zia_get_workload_group`, `zia_list_workload_groups` |
 
 ### ZPA — Private Access
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zpa_access_policies` | yes | 5 | ZPA Access Policy rules — the primary application-access control surface. CRUD: zpa_list_access_policy_rules, zpa_get_access_policy_rule, zpa_create_access_policy_rule, zpa_update_access_policy_rule, zpa_delete_access_policy_rule. Operands typically reference resources from zpa_app_segments, zpa_segment_groups, zpa_server_groups, zpa_idp, zpa_posture, and zpa_trusted_networks. |
-| `zpa_app_connector_groups` | yes | 5 | ZPA app connector groups (CRUD): zpa_list_app_connector_groups, zpa_get_app_connector_group, zpa_create_app_connector_group, zpa_update_app_connector_group, zpa_delete_app_connector_group. Individual app connectors, service edges, provisioning keys, and enrollment certificates live in zpa_connectors. |
-| `zpa_app_protection` | no | 1 | ZPA AppProtection (Inspection) profiles — the operand referenced by app-protection policy rules. Read tool: get_zpa_app_protection_profile. The matching policy-rule CRUD (zpa_*_app_protection_rule) lives under zpa_policy. |
-| `zpa_app_segments` | yes | 16 | ZPA application segments (incl. PRA, browser-access, inspection variants). Server groups and segment groups — both referenced by application segments AND by access policy rules — live in their own dedicated toolsets (zpa_server_groups, zpa_segment_groups). |
-| `zpa_application_servers` | no | 5 | ZPA application servers (the legacy server-object operand referenced by server groups). CRUD: zpa_list_application_servers, zpa_get_application_server, zpa_create_application_server, zpa_update_application_server, zpa_delete_application_server. |
-| `zpa_ba_certificates` | no | 4 | ZPA browser-access certificates (issued + intermediate). Used by browser-access application segments. Tools: zpa_list_ba_certificates, zpa_get_ba_certificate, zpa_create_ba_certificate, zpa_delete_ba_certificate. |
-| `zpa_connectors` | yes | 6 | ZPA app connectors (individual connector inventory + enrollment certificates). App connector groups, service edge groups, and provisioning keys each live in their own dedicated toolsets (zpa_app_connector_groups, zpa_service_edge_groups, zpa_provisioning_keys). |
-| `zpa_idp` | no | 3 | ZPA identity providers, SAML attributes, SCIM attributes, SCIM groups, machine groups, customer version profiles. Posture profiles, trusted networks, isolation profiles, and app-protection profiles each live in their own dedicated toolset (zpa_posture, zpa_trusted_networks, zpa_isolation, zpa_app_protection). |
-| `zpa_isolation` | no | 1 | ZPA Cloud Browser Isolation profiles. Read-only operand referenced by isolation policy rules: get_zpa_isolation_profile. |
-| `zpa_microtenants` | no | 0 | ZPA microtenants and microtenant scope management. |
-| `zpa_misc` | no | 6 | Other ZPA resources that don't fit the dedicated resource-family toolsets. Currently a small catch-all for legacy reads not yet split out; most ZPA surfaces (PRA, BA certificates, application servers, app-protection profiles, isolation/posture/trusted networks, app connector groups) now live in their own toolsets. |
-| `zpa_policy` | yes | 20 | ZPA policy rules other than access policies: app-protection, forwarding, isolation, timeout, capabilities, conditional access, client/credential/console. Access policy CRUD lives in the dedicated zpa_access_policies toolset. |
-| `zpa_posture` | no | 1 | ZPA device posture profiles. Read-only operand referenced by access policy rules: get_zpa_posture_profile. |
-| `zpa_pra` | no | 10 | ZPA Privileged Remote Access (PRA): credentials and portals. Tools: zpa_list_pra_credentials / zpa_get_pra_credential / zpa_create_pra_credential / zpa_update_pra_credential / zpa_delete_pra_credential, plus the matching pra_portal CRUD. |
-| `zpa_provisioning_keys` | yes | 5 | ZPA provisioning keys (CRUD): zpa_list_provisioning_keys, zpa_get_provisioning_key, zpa_create_provisioning_key, zpa_update_provisioning_key, zpa_delete_provisioning_key. Bootstrap tokens used to enroll app connectors and service edges; reference an enrollment certificate (zpa_connectors) and an app connector group or service edge group. |
-| `zpa_segment_groups` | yes | 5 | ZPA segment groups (CRUD): zpa_list_segment_groups, zpa_get_segment_group, zpa_create_segment_group, zpa_update_segment_group, zpa_delete_segment_group. Referenced by application segments via segment_group_id and by access policy rules as the APP_GROUP operand. |
-| `zpa_server_groups` | yes | 5 | ZPA server groups (CRUD): zpa_list_server_groups, zpa_get_server_group, zpa_create_server_group, zpa_update_server_group, zpa_delete_server_group. Bind app connector groups to application segments and are also referenced by access policy rules. |
-| `zpa_service_edge_groups` | yes | 10 | ZPA service edges and service edge groups — the cloud-hosted broker family (CRUD on groups + read/update/delete on the individual edge instances). Group tools: zpa_list_service_edge_groups, zpa_get_service_edge_group, zpa_create_service_edge_group, zpa_update_service_edge_group, zpa_delete_service_edge_group. Individual edge tools: zpa_list_service_edges, zpa_get_service_edge, zpa_update_service_edge, zpa_delete_service_edge, zpa_bulk_delete_service_edges. Edges are enrolled into a group via the bootstrap tokens managed in zpa_provisioning_keys. |
-| `zpa_trusted_networks` | no | 1 | ZPA trusted networks. Read-only operand referenced by access and forwarding policy rules: get_zpa_trusted_network. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zpa_access_policies` | 25 | `zpa_create_access_policy_rule`, `zpa_create_app_protection_rule`, `zpa_create_forwarding_policy_rule`, `zpa_create_isolation_policy_rule`, `zpa_create_timeout_policy_rule`, `zpa_delete_access_policy_rule`, `zpa_delete_app_protection_rule`, `zpa_delete_forwarding_policy_rule`, `zpa_delete_isolation_policy_rule`, `zpa_delete_timeout_policy_rule`, `zpa_get_access_policy_rule`, `zpa_get_app_protection_rule`, `zpa_get_forwarding_policy_rule`, `zpa_get_isolation_policy_rule`, `zpa_get_timeout_policy_rule`, `zpa_list_access_policy_rules`, `zpa_list_app_protection_rules`, `zpa_list_forwarding_policy_rules`, `zpa_list_isolation_policy_rules`, `zpa_list_timeout_policy_rules`, `zpa_update_access_policy_rule`, `zpa_update_app_protection_rule`, `zpa_update_forwarding_policy_rule`, `zpa_update_isolation_policy_rule`, `zpa_update_timeout_policy_rule` |
+| `zpa_app_connector_groups` | 5 | `zpa_create_app_connector_group`, `zpa_delete_app_connector_group`, `zpa_get_app_connector_group`, `zpa_list_app_connector_groups`, `zpa_update_app_connector_group` |
+| `zpa_app_segments` | 16 | `get_zpa_app_segments_by_type`, `zpa_create_application_segment`, `zpa_create_application_segment_ba`, `zpa_create_application_segment_pra`, `zpa_delete_application_segment`, `zpa_delete_application_segment_ba`, `zpa_delete_application_segment_pra`, `zpa_get_application_segment`, `zpa_get_application_segment_ba`, `zpa_get_application_segment_pra`, `zpa_list_application_segments`, `zpa_list_application_segments_ba`, `zpa_list_application_segments_pra`, `zpa_update_application_segment`, `zpa_update_application_segment_ba`, `zpa_update_application_segment_pra` |
+| `zpa_application_servers` | 5 | `zpa_create_application_server`, `zpa_delete_application_server`, `zpa_get_application_server`, `zpa_list_application_servers`, `zpa_update_application_server` |
+| `zpa_ba_certificates` | 4 | `zpa_create_ba_certificate`, `zpa_delete_ba_certificate`, `zpa_get_ba_certificate`, `zpa_list_ba_certificates` |
+| `zpa_connectors` | 5 | `zpa_bulk_delete_app_connectors`, `zpa_delete_app_connector`, `zpa_get_app_connector`, `zpa_list_app_connectors`, `zpa_update_app_connector` |
+| `zpa_idp` | 3 | `get_zpa_saml_attribute`, `get_zpa_scim_attribute`, `get_zpa_scim_group` |
+| `zpa_misc` | 10 | `get_zpa_app_protection_profile`, `get_zpa_isolation_profile`, `get_zpa_posture_profile`, `get_zpa_trusted_network`, `zpa_get_lss_config`, `zpa_get_lss_log_format`, `zpa_list_lss_client_types`, `zpa_list_lss_configs`, `zpa_list_lss_log_types`, `zpa_list_lss_status_codes` |
+| `zpa_pra` | 10 | `zpa_create_pra_credential`, `zpa_create_pra_portal`, `zpa_delete_pra_credential`, `zpa_delete_pra_portal`, `zpa_get_pra_credential`, `zpa_get_pra_portal`, `zpa_list_pra_credentials`, `zpa_list_pra_portals`, `zpa_update_pra_credential`, `zpa_update_pra_portal` |
+| `zpa_provisioning_keys` | 6 | `get_zpa_enrollment_certificate`, `zpa_create_provisioning_key`, `zpa_delete_provisioning_key`, `zpa_get_provisioning_key`, `zpa_list_provisioning_keys`, `zpa_update_provisioning_key` |
+| `zpa_segment_groups` | 5 | `zpa_create_segment_group`, `zpa_delete_segment_group`, `zpa_get_segment_group`, `zpa_list_segment_groups`, `zpa_update_segment_group` |
+| `zpa_server_groups` | 5 | `zpa_create_server_group`, `zpa_delete_server_group`, `zpa_get_server_group`, `zpa_list_server_groups`, `zpa_update_server_group` |
+| `zpa_service_edge_groups` | 10 | `zpa_bulk_delete_service_edges`, `zpa_create_service_edge_group`, `zpa_delete_service_edge`, `zpa_delete_service_edge_group`, `zpa_get_service_edge`, `zpa_get_service_edge_group`, `zpa_list_service_edge_groups`, `zpa_list_service_edges`, `zpa_update_service_edge`, `zpa_update_service_edge_group` |
 
 ### ZDX — Digital Experience
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zdx_alerts` | yes | 4 | ZDX alerts: list ongoing alerts, list historical alerts, get a single alert by id, and enumerate the devices affected by an alert. Read-only. |
-| `zdx_locations` | yes | 2 | ZDX administration operand catalog: tenant locations and departments. These are the scope filters that every other ZDX query tool accepts (`location_id`, `department_id`). Read-only. |
-| `zdx_reports` | yes | 10 | ZDX reports: device inventory, application performance metrics, application score trends, application users, and device-level web-probe / cloudpath-probe results. Covers every `zdx_application_*` tool. Read-only. |
-| `zdx_software_inventory` | yes | 2 | ZDX software inventory: list installed software across the device fleet and fetch detailed information (versions, hosts) for a specific software entry. Read-only. |
-| `zdx_troubleshooting` | yes | 13 | ZDX deep-trace troubleshooting and analysis: start/stop deep traces and analyses, list deep traces per device, fetch deep-trace events, top processes, web-probe metrics, cloudpath metrics, cloudpath topology, and health metrics. This is the only ZDX toolset with write tools (start/delete for deep traces and analyses). |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zdx_alerts` | 4 | `zdx_get_alert`, `zdx_list_alert_affected_devices`, `zdx_list_alerts`, `zdx_list_historical_alerts` |
+| `zdx_reports` | 10 | `zdx_get_application`, `zdx_get_application_metric`, `zdx_get_application_score_trend`, `zdx_get_application_user`, `zdx_get_device`, `zdx_list_application_users`, `zdx_list_applications`, `zdx_list_departments`, `zdx_list_devices`, `zdx_list_locations` |
+| `zdx_software_inventory` | 2 | `zdx_get_software_details`, `zdx_list_software` |
+| `zdx_troubleshooting` | 15 | `zdx_delete_analysis`, `zdx_delete_deeptrace`, `zdx_get_analysis`, `zdx_get_deeptrace_cloudpath`, `zdx_get_deeptrace_cloudpath_metrics`, `zdx_get_deeptrace_events`, `zdx_get_deeptrace_health_metrics`, `zdx_get_deeptrace_webprobe_metrics`, `zdx_get_device_deep_trace`, `zdx_get_web_probes`, `zdx_list_cloudpath_probes`, `zdx_list_deeptrace_top_processes`, `zdx_list_device_deep_traces`, `zdx_start_analysis`, `zdx_start_deeptrace` |
 
 ### ZCC — Client Connector
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zcc` | yes | 4 | Zscaler Client Connector: enrolled-device inventory, trusted networks, forwarding profiles. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zcc_devices` | 2 | `zcc_get_device_otp`, `zcc_list_devices` |
+| `zcc_forwarding_profiles` | 1 | `zcc_list_forwarding_profiles` |
+| `zcc_trusted_networks` | 1 | `zcc_list_trusted_networks` |
 
 ### ZTW — Workload Segmentation
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `ztw` | no | 9 | Zscaler Workload Segmentation administration. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `ztw` | 19 | `ztw_create_ip_destination_group`, `ztw_create_ip_group`, `ztw_create_ip_source_group`, `ztw_delete_ip_destination_group`, `ztw_delete_ip_group`, `ztw_delete_ip_source_group`, `ztw_get_discovery_settings`, `ztw_list_admins`, `ztw_list_ip_destination_groups`, `ztw_list_ip_destination_groups_lite`, `ztw_list_ip_groups`, `ztw_list_ip_groups_lite`, `ztw_list_ip_source_groups`, `ztw_list_ip_source_groups_lite`, `ztw_list_network_service_groups`, `ztw_list_network_services`, `ztw_list_public_account_details`, `ztw_list_public_cloud_info`, `ztw_list_roles` |
 
 ### ZIdentity
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zid` | no | 10 | ZIdentity user, group, role, and entitlement administration. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zid_groups` | 5 | `zid_get_group`, `zid_get_group_users`, `zid_get_group_users_by_name`, `zid_list_groups`, `zid_search_groups` |
+| `zid_users` | 5 | `zid_get_user`, `zid_get_user_groups`, `zid_get_user_groups_by_name`, `zid_list_users`, `zid_search_users` |
 
 ### EASM — External Attack Surface Management
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zeasm` | no | 7 | Zscaler External Attack Surface Management: assets, findings, discovery. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zeasm` | 1 | `zeasm_list_organizations` |
+| `zeasm_findings` | 4 | `zeasm_get_finding_details`, `zeasm_get_finding_evidence`, `zeasm_get_finding_scan_output`, `zeasm_list_findings` |
+| `zeasm_lookalike_domains` | 2 | `zeasm_get_lookalike_domain`, `zeasm_list_lookalike_domains` |
 
 ### Z-Insights
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zins` | no | 12 | Z-Insights queries: network and security log analytics. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zins_cyber_security` | 4 | `zins_get_cyber_incidents`, `zins_get_cyber_incidents_by_location`, `zins_get_cyber_incidents_by_threat_and_app`, `zins_get_cyber_incidents_daily` |
+| `zins_firewall` | 3 | `zins_get_firewall_by_action`, `zins_get_firewall_by_location`, `zins_get_firewall_network_services` |
+| `zins_iot` | 1 | `zins_get_iot_device_stats` |
+| `zins_saas` | 1 | `zins_get_casb_app_report` |
+| `zins_shadow_it` | 2 | `zins_get_shadow_it_apps`, `zins_get_shadow_it_summary` |
+| `zins_web_traffic` | 5 | `zins_get_threat_class`, `zins_get_threat_super_categories`, `zins_get_web_protocols`, `zins_get_web_traffic_by_location`, `zins_get_web_traffic_no_grouping` |
 
 ### ZMS — Microsegmentation
 
-| Id | Default | Tools | Coverage |
-|---|---|---|---|
-| `zms` | no | 20 | Zscaler Microsegmentation (GraphQL, read-only): agents, resources, policy rules, app zones, tags. |
+| Toolset | Tools | Members |
+|---|---|---|
+| `zms` | 20 | `zms_get_agent_connection_status_statistics`, `zms_get_agent_group_totp_secrets`, `zms_get_agent_version_statistics`, `zms_get_metadata`, `zms_get_nonce`, `zms_get_resource_group_members`, `zms_get_resource_group_protection_status`, `zms_get_resource_protection_status`, `zms_list_agent_groups`, `zms_list_agents`, `zms_list_app_catalog`, `zms_list_app_zones`, `zms_list_default_policy_rules`, `zms_list_nonces`, `zms_list_policy_rules`, `zms_list_resource_groups`, `zms_list_resources`, `zms_list_tag_keys`, `zms_list_tag_namespaces`, `zms_list_tag_values` |
+
+### ZCell — Cellular
+
+| Toolset | Tools | Members |
+|---|---|---|
+| `zcell_anomaly_policy` | 4 | `zcell_list_anomaly_policies`, `zcell_list_anomaly_policy_logs`, `zcell_list_anomaly_policy_violations`, `zcell_list_iccid_violations` |
+| `zcell_audit_data_handling` | 2 | `zcell_list_audit_customers_search`, `zcell_list_audit_metadata` |
+| `zcell_customer_data_handling` | 1 | `zcell_get_customer_data_handling` |
+| `zcell_customer_region_handling` | 2 | `zcell_list_region_operational_status`, `zcell_list_regions` |
+| `zcell_network_events` | 1 | `zcell_list_network_events` |
+| `zcell_sim_analytics` | 5 | `zcell_list_sim_analytics_map`, `zcell_list_sim_analytics_summary`, `zcell_list_sim_usage_by_country`, `zcell_list_sim_usage_by_day`, `zcell_list_sim_usage_by_sim` |
+| `zcell_sim_handling` | 2 | `zcell_get_sim_details`, `zcell_list_sims` |
+| `zcell_sim_location_groups` | 2 | `zcell_get_sim_location_group`, `zcell_list_sim_location_groups` |
+| `zcell_tag_handling` | 1 | `zcell_list_tags` |
 
 <!-- generated:end toolset-catalog -->
 

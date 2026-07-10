@@ -25,7 +25,10 @@ from pathlib import Path
 import pytest
 
 from zscaler_mcp import lifecycle
-from zscaler_mcp.common import tool_helpers
+
+# v2 relocated the tool-call-logging toggles from ``common.tool_helpers`` into
+# the ``security`` package; alias so the v1 test body ports unchanged.
+from zscaler_mcp import security as tool_helpers
 
 # ---------------------------------------------------------------------------
 # Fixtures

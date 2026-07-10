@@ -6,6 +6,40 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.13.0 (July 10, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### New Services
+
+**New service: Zscaler Cellular (ZCell) — 20 read-only tools.** The server now supports Zscaler Cellular, exposing SIM inventory, usage analytics, anomaly policies, audit logs, and network/session events. ZCell requires **one additional credential**: your Zscaler Cellular customer ID, supplied via the ``ZCELL_CUSTOMER_ID`` environment variable (or the ``zcellCustomerId`` config key). This is separate from ``ZSCALER_CUSTOMER_ID`` (which ZPA uses) — set both if you use ZPA and ZCell together. All other OneAPI credentials (``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECRET`` / ``ZSCALER_PRIVATE_KEY``, ``ZSCALER_VANITY_DOMAIN``) are shared. Tools, grouped by toolset:
+
+- **SIM inventory** (``zcell_sim_handling``): ``zcell_list_sims``, ``zcell_get_sim_details``
+- **SIM analytics** (``zcell_sim_analytics``): ``zcell_list_sim_analytics_summary``, ``zcell_list_sim_analytics_map``, ``zcell_list_sim_usage_by_sim``, ``zcell_list_sim_usage_by_day``, ``zcell_list_sim_usage_by_country``
+- **SIM location groups** (``zcell_sim_location_groups``): ``zcell_list_sim_location_groups``, ``zcell_get_sim_location_group``
+- **Anomaly policies** (``zcell_anomaly_policy``): ``zcell_list_anomaly_policies``, ``zcell_list_anomaly_policy_logs``, ``zcell_list_anomaly_policy_violations``, ``zcell_list_iccid_violations``
+- **Customer profile** (``zcell_customer_data_handling``): ``zcell_get_customer_data_handling``
+- **Regions** (``zcell_customer_region_handling``): ``zcell_list_regions``, ``zcell_list_region_operational_status``
+- **Audit logs** (``zcell_audit_data_handling``): ``zcell_list_audit_customers_search``, ``zcell_list_audit_metadata``
+- **Network events** (``zcell_network_events``): ``zcell_list_network_events``
+- **SIM tags** (``zcell_tag_handling``): ``zcell_list_tags``
+
+Time-bounded ZCell queries (analytics, audit search, network events, anomaly logs) accept a ``days`` lookback shorthand (e.g. ``days=7``). ZCell is read-only.
+
+### Enhancements
+
+**Guided prompts (MCP Prompts).** The server now ships parameterized, server-side prompt playbooks that walk an AI agent through common multi-step investigations. MCP clients that support prompts (Claude Desktop, Cursor, etc.) surface these as slash-command-style starting points — the agent fills in a few arguments and the server returns a step-by-step plan wired to the right tools. Launch prompts include ZDX troubleshooting playbooks and ZCell workflows (``zcell_investigate_sim``, ``zcell_audit_data_usage``, ``zcell_review_anomaly_policies``).
+
+**Restored CLI convenience flags.** ``--version`` / ``-v`` prints the server version and exits; ``--list-tools`` prints every registered tool (name, action, one-line description), honouring ``--services`` / ``--disabled-services``; ``--generate-auth-token [basic|bearer]`` prints ready-to-paste MCP client config snippets (Cursor, Claude Desktop, raw-header) from your ``ZSCALER_CLIENT_ID`` / ``ZSCALER_CLIENT_SECRET``.
+
+**Service-level selection flags.** ``--services`` / ``-s`` (env: ``ZSCALER_MCP_SERVICES``) enables only the listed services; ``--disabled-services`` (env: ``ZSCALER_MCP_DISABLED_SERVICES``) removes entire services. Use these to scope the server to just the products you need (e.g. ``--services zcell,zpa``).
+
+**User-Agent customization.** ``--user-agent-comment`` (env: ``ZSCALER_MCP_USER_AGENT_COMMENT``) appends a comment to the outbound User-Agent the server sends to Zscaler APIs — useful for identifying which client (e.g. ``"Claude Desktop 1.0"``) originated a request in tenant audit logs.
+
+**Process lifecycle management.** ``zscaler-mcp status`` / ``reload`` / ``restart`` / ``stop`` / ``update`` subcommands let operators inspect and control a running server without recreating it. ``reload`` (SIGHUP) re-reads ``.env`` while keeping sessions alive; ``restart`` (SIGUSR2) re-reads ``.env`` and re-execs in place; ``stop`` performs a clean shutdown; ``update`` checks for and (with ``--apply``) installs a newer release. ``--dotenv-path`` / ``ZSCALER_MCP_DOTENV_PATH`` points at an explicit ``.env``; ``--pid-file`` / ``ZSCALER_MCP_PID_FILE`` overrides the PID-file location for running multiple instances on one host.
+
 ## 0.12.6 (June 4, 2026)
 
 ### Notes
