@@ -1,54 +1,41 @@
+"""Shared pytest fixtures.
+
+The OneAPI entitlement filter is network-touching by nature (it exchanges
+credentials for a bearer token). To keep the suite hermetic and fast, we
+neutralize it by default for every test via an autouse fixture, so a developer
+with live ``ZSCALER_*`` creds in their shell doesn't trigger real ``/token``
+calls during ``build_server()``. Tests that exercise the filter directly inject
+their own ``token_provider`` stub into ``apply_entitlement_filter`` and don't go
+through this path.
 """
-Pytest configuration file for the tests.
-"""
+
+from __future__ import annotations
 
 import pytest
 
 
-def pytest_addoption(parser):
+@pytest.fixture(autouse=True)
+def _neutralize_entitlement_filter(monkeypatch, request):
+    """Make the server-startup entitlement filter a no-op (skip) in tests.
+
+    Opt out per-test with ``@pytest.mark.real_entitlement`` if a test needs the
+    genuine codepath (none currently do — the unit tests target the function
+    directly with a stub provider).
     """
-    Add the --run-e2e option to pytest.
-    """
-    parser.addoption(
-        "--run-e2e",
-        action="store_true",
-        default=False,
-        help="run e2e tests",
+    if request.node.get_closest_marker("real_entitlement"):
+        return
+
+    import zscaler_mcp.server as server_mod
+
+    monkeypatch.setattr(
+        server_mod,
+        "apply_entitlement_filter",
+        lambda available, **kw: (None, "entitlement filter skipped (neutralized in tests)"),
     )
 
 
 def pytest_configure(config):
-    """
-    Register the e2e marker.
-    """
-    config.addinivalue_line("markers", "e2e: mark test as e2e to run")
-
-
-def pytest_collection_modifyitems(config, items):
-    """
-    Skip e2e tests if --run-e2e is not given.
-    """
-    if config.getoption("--run-e2e"):
-        return
-    skip_e2e = pytest.mark.skip(reason="need --run-e2e option to run")
-    for item in items:
-        if "e2e" in item.keywords:
-            item.add_marker(skip_e2e)
-
-
-@pytest.fixture
-def verbosity_level(request):
-    """Return the verbosity level from pytest config."""
-    return request.config.option.verbose
-
-
-@pytest.fixture(autouse=True)
-def _disable_entitlement_filter_by_default(monkeypatch):
-    """Globally disable the OneAPI entitlement filter for unit tests.
-
-    The filter calls out to ZIdentity at server startup. For unit tests
-    that build a ``ZscalerMCPServer`` we don't want either the network
-    call or the warning noise. Tests that *exercise* the filter override
-    this with ``monkeypatch.delenv("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", raising=False)``.
-    """
-    monkeypatch.setenv("ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER", "true")
+    config.addinivalue_line(
+        "markers",
+        "real_entitlement: run the genuine entitlement-filter startup path",
+    )
