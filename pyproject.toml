@@ -1,9 +1,21 @@
 [project]
-name = "zscaler-mcp-server"
+name = "zscaler-mcp"
 version = "0.13.0"
-description = "Agent-first ('second step') Zscaler MCP server — curated, schema-backed tool responses over the Zscaler Python SDK."
+description = "Official Zscaler Integrations MCP Server"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<4.0"
+license = "MIT"
+authors = [
+  { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     # Transport / auth shim — UNCHANGED from v1. The SDK still does every
     # API call, token exchange, pagination, and retry. v2 only changes the
