@@ -11,7 +11,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
-from zscaler_mcp.registry import UPDATE, READ, tool
+from zscaler_mcp.registry import READ, UPDATE, tool
 from zscaler_mcp.shaping import AgentView, pick
 
 

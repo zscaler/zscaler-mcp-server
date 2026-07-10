@@ -42,6 +42,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
+from zscaler_mcp.common import mcpb
+
 __all__ = [
     "ToolEntry",
     "Inventory",
@@ -374,8 +376,9 @@ def _render_toolset_catalog_region(inv: Inventory) -> str:
 # When ``region`` is a string, the renderer's output replaces the body between
 # matching ``<!-- generated:start <region> -->`` / end markers in a hand-edited
 # Markdown file. When ``region`` is ``None``, the renderer output IS the entire
-# file content (whole-file target). No whole-file targets ship in v2 yet (the
-# v1 MCPB manifest target has no v2 equivalent).
+# file content (whole-file target). The MCPB manifest is the one whole-file
+# target: it's pure generated JSON with no hand-edited prose to preserve
+# (``mcpb`` is imported at the top of the module).
 TARGETS: List[Tuple[str, Optional[str], Callable[[Inventory], str]]] = [
     (
         "docs/guides/supported-tools.md",
@@ -391,6 +394,11 @@ TARGETS: List[Tuple[str, Optional[str], Callable[[Inventory], str]]] = [
         "docs/guides/toolsets.md",
         "toolset-catalog",
         _render_toolset_catalog_region,
+    ),
+    (
+        mcpb.MANIFEST_RELATIVE_PATH,
+        None,
+        mcpb.render_manifest_json,
     ),
 ]
 

@@ -14,7 +14,8 @@ from zscaler_mcp.tools.zms.app_catalog import AppCatalogSummary, _shape_entry
 from zscaler_mcp.tools.zms.app_zones import AppZoneSummary, _shape_zone
 from zscaler_mcp.tools.zms.nonces import NonceSummary, _shape_nonce
 from zscaler_mcp.tools.zms.policy_rules import PolicyRuleSummary, _shape_rule
-from zscaler_mcp.tools.zms.resource_groups import ResourceGroupSummary, _shape_group as _shape_rg
+from zscaler_mcp.tools.zms.resource_groups import ResourceGroupSummary
+from zscaler_mcp.tools.zms.resource_groups import _shape_group as _shape_rg
 from zscaler_mcp.tools.zms.resources import ResourceSummary, _shape_resource
 from zscaler_mcp.tools.zms.tags import (
     TagKeySummary,

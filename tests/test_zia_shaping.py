@@ -32,6 +32,8 @@ from zscaler_mcp.tools.zia.gre_ranges import shape_range as shape_gre_range
 from zscaler_mcp.tools.zia.gre_tunnels import shape_tunnel as shape_gre_tunnel
 from zscaler_mcp.tools.zia.ip_source_groups import (
     SourceGroupSummary,
+)
+from zscaler_mcp.tools.zia.ip_source_groups import (
     shape_summary as shape_src_summary,
 )
 from zscaler_mcp.tools.zia.location_management import shape_loc_detail, shape_loc_summary
@@ -41,11 +43,14 @@ from zscaler_mcp.tools.zia.static_ips import shape_summary as shape_static_summa
 from zscaler_mcp.tools.zia.time_intervals import shape_summary as shape_ti_summary
 from zscaler_mcp.tools.zia.url_categories import (
     UrlCategorySummary,
-    shape_detail as shape_cat_detail,
     shape_lookup,
+)
+from zscaler_mcp.tools.zia.url_categories import (
+    shape_detail as shape_cat_detail,
+)
+from zscaler_mcp.tools.zia.url_categories import (
     shape_summary as shape_cat_summary,
 )
-
 
 # =============================================================================
 # Helpers: rank / order

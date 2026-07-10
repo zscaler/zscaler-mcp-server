@@ -18,7 +18,6 @@ from zscaler_mcp.prompts import (
 from zscaler_mcp.prompts.registry import PROMPT_REGISTRY
 from zscaler_mcp.server import build_server
 
-
 # ---------------------------------------------------------------------------
 # Registry + decorator
 # ---------------------------------------------------------------------------

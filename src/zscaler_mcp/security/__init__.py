@@ -24,16 +24,16 @@ from zscaler_mcp.security.auth import (
     get_registered_zscaler_providers,
     resolve_fastmcp_auth,
 )
+from zscaler_mcp.security.elicitation import (
+    check_confirmation,
+    extract_confirmed_from_kwargs,
+    should_skip_confirmations,
+)
 from zscaler_mcp.security.entitlements import (
     apply_entitlement_filter,
     decode_oneapi_token,
     extract_entitled_services,
     obtain_oneapi_token,
-)
-from zscaler_mcp.security.elicitation import (
-    check_confirmation,
-    extract_confirmed_from_kwargs,
-    should_skip_confirmations,
 )
 from zscaler_mcp.security.hardening import (
     SourceIPMiddleware,

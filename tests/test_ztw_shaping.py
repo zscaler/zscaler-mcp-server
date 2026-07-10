@@ -16,11 +16,17 @@ from zscaler_mcp.tools.ztw.account_details import _shape_account_detail
 from zscaler_mcp.tools.ztw.discovery_service import DiscoverySettings
 from zscaler_mcp.tools.ztw.ip_destination_groups import (
     DestinationGroupSummary,
+)
+from zscaler_mcp.tools.ztw.ip_destination_groups import (
     shape_detail as shape_dest_detail,
+)
+from zscaler_mcp.tools.ztw.ip_destination_groups import (
     shape_summary as shape_dest_summary,
 )
 from zscaler_mcp.tools.ztw.ip_groups import (
     shape_detail as shape_ipg_detail,
+)
+from zscaler_mcp.tools.ztw.ip_groups import (
     shape_summary as shape_ipg_summary,
 )
 from zscaler_mcp.tools.ztw.ip_source_groups import shape_summary as shape_src_summary
@@ -29,7 +35,6 @@ from zscaler_mcp.tools.ztw.list_roles import RoleSummary, shape_role
 from zscaler_mcp.tools.ztw.network_service_groups import shape_group as shape_nsg
 from zscaler_mcp.tools.ztw.network_services import shape_service as shape_ns
 from zscaler_mcp.tools.ztw.public_cloud_info import _shape_cloud_info
-
 
 # =============================================================================
 # Country helper

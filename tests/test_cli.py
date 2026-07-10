@@ -19,7 +19,6 @@ import pytest
 from zscaler_mcp import __version__, server
 from zscaler_mcp.common.utils import get_combined_user_agent, get_mcp_user_agent
 
-
 # ---------------------------------------------------------------------------
 # argparse wiring
 # ---------------------------------------------------------------------------
