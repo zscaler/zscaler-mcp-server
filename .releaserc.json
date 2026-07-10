@@ -16,7 +16,7 @@
         "assets": [
           "pyproject.toml",
           "README.md",
-          "zscaler_mcp/__init__.py",
+          "src/zscaler_mcp/__init__.py",
           ".claude-plugin/marketplace.json",
           ".claude-plugin/plugin.json",
           ".mcp.json",
