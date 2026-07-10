@@ -1,0 +1,197 @@
+"""ZIA URL Filtering rules — list, get, create, update, delete.
+
+Mirrors v1's ``client.zia.url_filtering`` SDK calls. Common rule fields are typed; the
+long tail rides an ``advanced`` dict (snake_case keys, merged into the SDK
+payload). Writes are staged until ``zia_activate_configuration``.
+"""
+
+from __future__ import annotations
+
+from typing import Annotated, Any, Optional
+
+from pydantic import BaseModel, Field
+
+from zscaler_mcp.client import get_zscaler_client
+from zscaler_mcp.common.zia_helpers import (
+    ORDER_FIELD_DESCRIPTION,
+    RANK_FIELD_DESCRIPTION,
+    apply_default_order,
+    apply_default_rank,
+    build_rule_payload,
+    validate_order,
+    validate_rank,
+)
+from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
+from zscaler_mcp.shaping import shape_many
+
+from ._rules_common import (
+    OperationResult,
+    RuleDetail,
+    RuleSummary,
+    shape_rule_detail,
+    shape_rule_summary,
+)
+
+_ADVANCED_DESC = (
+    "Passthrough for less-common rule fields (snake_case), merged into the "
+    "payload. Includes relational ID lists (locations, location_groups, groups, "
+    "departments, users, labels, time_windows, devices, device_groups), "
+    "URL-filtering fields (url_categories, request_methods, user_agent_types, protocols, cbi_profile, user_risk_score_levels), and any other SDK-supported field. List values may be JSON strings."
+)
+
+ACTION_DESC = "URL filtering action: ALLOW, BLOCK, CAUTION, ISOLATE, etc."
+
+
+class ListInput(BaseModel):
+    search: Annotated[
+        Optional[str], Field(default=None, description="Substring match on rule name.")
+    ] = None
+
+
+class GetInput(BaseModel):
+    rule_id: Annotated[str, Field(description="Rule ID (string, even if numeric).")]
+
+
+class CreateInput(BaseModel):
+    name: Annotated[str, Field(description="Rule name.")]
+    action: Annotated[str, Field(description=ACTION_DESC)]
+    description: Annotated[Optional[str], Field(default=None, description="Admin description.")] = (
+        None
+    )
+    enabled: Annotated[
+        Optional[bool], Field(default=True, description="Whether the rule is on.")
+    ] = True
+    order: Annotated[Optional[int], Field(default=None, description=ORDER_FIELD_DESCRIPTION)] = None
+    rank: Annotated[Optional[int], Field(default=None, description=RANK_FIELD_DESCRIPTION)] = None
+    advanced: Annotated[
+        Optional[dict[str, Any]], Field(default=None, description=_ADVANCED_DESC)
+    ] = None
+
+
+class UpdateInput(BaseModel):
+    rule_id: Annotated[str, Field(description="Rule ID to update.")]
+    name: Annotated[Optional[str], Field(default=None, description="New name.")] = None
+    action: Annotated[Optional[str], Field(default=None, description="New action.")] = None
+    description: Annotated[Optional[str], Field(default=None, description="New description.")] = (
+        None
+    )
+    enabled: Annotated[Optional[bool], Field(default=None, description="Enable/disable.")] = None
+    order: Annotated[Optional[int], Field(default=None, description="New order.")] = None
+    rank: Annotated[Optional[int], Field(default=None, description="New rank.")] = None
+    advanced: Annotated[
+        Optional[dict[str, Any]], Field(default=None, description=_ADVANCED_DESC)
+    ] = None
+
+
+class DeleteInput(BaseModel):
+    rule_id: Annotated[str, Field(description="Rule ID to delete.")]
+
+
+@tool(
+    action=READ,
+    service="zia",
+    toolset="zia_url_filtering",
+    input_model=ListInput,
+    output_view=RuleSummary,
+    is_list=True,
+)
+def zia_list_url_filtering_rules(args: ListInput) -> list[dict[str, Any]]:
+    """List ZIA URL Filtering rules as curated summaries."""
+    client = get_zscaler_client(service="zia")
+    qp = {"search": args.search} if args.search else {}
+    rules, _, err = client.zia.url_filtering.list_rules(query_params=qp)
+    if err:
+        raise RuntimeError(f"Failed to list URL Filtering rules: {err}")
+    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+
+
+@tool(
+    action=READ,
+    service="zia",
+    toolset="zia_url_filtering",
+    input_model=GetInput,
+    output_view=RuleDetail,
+    is_list=False,
+)
+def zia_get_url_filtering_rule(args: GetInput) -> dict[str, Any]:
+    """Get a single ZIA URL Filtering rule by ID with member references."""
+    client = get_zscaler_client(service="zia")
+    rule, _, err = client.zia.url_filtering.get_rule(args.rule_id)
+    if err:
+        raise RuntimeError(f"Failed to get URL Filtering rule {args.rule_id}: {err}")
+    return shape_rule_detail(rule.as_dict()).model_dump()
+
+
+@tool(
+    action=CREATE,
+    service="zia",
+    toolset="zia_url_filtering",
+    input_model=CreateInput,
+    output_view=RuleDetail,
+    is_list=False,
+)
+def zia_create_url_filtering_rule(args: CreateInput) -> dict[str, Any]:
+    """Create a ZIA URL Filtering rule (write). Activate after."""
+    payload = build_rule_payload(
+        scalars={
+            "name": args.name,
+            "action": args.action,
+            "description": args.description,
+            "enabled": args.enabled,
+            "order": apply_default_order(args.order),
+            "rank": apply_default_rank(args.rank),
+        },
+        advanced=args.advanced,
+    )
+    client = get_zscaler_client(service="zia")
+    rule, _, err = client.zia.url_filtering.add_rule(**payload)
+    if err:
+        raise RuntimeError(f"Failed to create URL Filtering rule: {err}")
+    return shape_rule_detail(rule.as_dict()).model_dump()
+
+
+@tool(
+    action=UPDATE,
+    service="zia",
+    toolset="zia_url_filtering",
+    input_model=UpdateInput,
+    output_view=RuleDetail,
+    is_list=False,
+)
+def zia_update_url_filtering_rule(args: UpdateInput) -> dict[str, Any]:
+    """Update a ZIA URL Filtering rule (write, PUT-replace). Activate after."""
+    payload = build_rule_payload(
+        scalars={
+            "name": args.name,
+            "action": args.action,
+            "description": args.description,
+            "enabled": args.enabled,
+            "order": validate_order(args.order) if args.order is not None else None,
+            "rank": validate_rank(args.rank) if args.rank is not None else None,
+        },
+        advanced=args.advanced,
+    )
+    client = get_zscaler_client(service="zia")
+    rule, _, err = client.zia.url_filtering.update_rule(args.rule_id, **payload)
+    if err:
+        raise RuntimeError(f"Failed to update URL Filtering rule {args.rule_id}: {err}")
+    return shape_rule_detail(rule.as_dict()).model_dump()
+
+
+@tool(
+    action=DELETE,
+    service="zia",
+    toolset="zia_url_filtering",
+    input_model=DeleteInput,
+    output_view=OperationResult,
+    is_list=False,
+)
+def zia_delete_url_filtering_rule(args: DeleteInput) -> dict[str, Any]:
+    """Delete a ZIA URL Filtering rule (destructive). Activate after."""
+    client = get_zscaler_client(service="zia")
+    _, _, err = client.zia.url_filtering.delete_rule(args.rule_id)
+    if err:
+        raise RuntimeError(f"Failed to delete URL Filtering rule {args.rule_id}: {err}")
+    return OperationResult(
+        success=True, message=f"URL Filtering rule {args.rule_id} deleted successfully."
+    ).model_dump()

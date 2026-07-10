@@ -1684,6 +1684,7 @@ These are always required, regardless of Layer 1 auth settings.
 | `ZSCALER_CLIENT_ID` | Yes | Zscaler OAuth client ID |
 | `ZSCALER_CLIENT_SECRET` | Yes | Zscaler OAuth client secret |
 | `ZSCALER_CUSTOMER_ID` | Yes | Zscaler customer ID |
+| `ZCELL_CUSTOMER_ID` | Yes (for Zscaler Cellular tools) | Zscaler Cellular customer ID — distinct from `ZSCALER_CUSTOMER_ID`; also accepted as the `zcellCustomerId` config key |
 | `ZSCALER_VANITY_DOMAIN` | Yes | Zscaler vanity domain |
 | `ZSCALER_CLOUD` | No | Cloud environment (`production`, `beta`) |
 

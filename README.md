@@ -79,7 +79,7 @@ The Zscaler Integrations MCP Server brings context to your agents. Try prompts l
 > - **Good**: *"Show ZIA firewall rules"* — clear service (`zia`) and action (`list`)
 > - **Less effective**: *"Show me my devices"* — ambiguous; multiple services expose device-related tools
 >
-> When a service is [disabled](#additional-command-line-options), its tools are fully removed from the server. However, the AI agent may still attempt to find related tools in other services. If you get unexpected results, refine your prompt with the specific service name (e.g. `zpa`, `zia`, `zdx`, `zcc`, `zms`).
+> When a service is [disabled](#additional-command-line-options), its tools are fully removed from the server. However, the AI agent may still attempt to find related tools in other services. If you get unexpected results, refine your prompt with the specific service name (e.g. `zpa`, `zia`, `zdx`, `zcc`, `zcell`, `zms`).
 
 ## 🔒 Security & Permissions
 
@@ -506,13 +506,14 @@ When `auth=` is provided:
 
 <!-- generated:start service-summary -->
 
-The Zscaler Integrations MCP Server provides **382 tools** for all major Zscaler services:
+The Zscaler Integrations MCP Server provides **402 tools** for all major Zscaler services:
 
 | Service | Description | Tools |
 |---------|-------------|-------|
 | **ZIA** | Zscaler Internet Access — Security policies | 166 read/write |
 | **ZPA** | Zscaler Private Access — Application access | 109 read/write |
 | **ZDX** | Zscaler Digital Experience — Monitoring & analytics | 31 read/write |
+| **ZCell** | Zscaler Cellular — SIM inventory, usage analytics & anomaly policies | 20 read-only |
 | **ZMS** | Zscaler Microsegmentation — Agents, resources, policies | 20 read-only |
 | **ZTW** | Zscaler Workload Segmentation | 19 read/write |
 | **Z-Insights** | Z-Insights analytics — Web traffic, cyber incidents, shadow IT | 16 read-only |
@@ -759,7 +760,9 @@ Available command-line flags:
 
 ## Zscaler API Credentials & Authentication
 
-The Zscaler Integrations MCP Server uses **OneAPI** authentication exclusively. A single set of credentials authenticates the server to every Zscaler product (ZIA, ZPA, ZCC, ZDX, ZTW, ZIdentity, ZMS, Z-Insights, EASM).
+The Zscaler Integrations MCP Server uses **OneAPI** authentication exclusively. A single set of credentials authenticates the server to every Zscaler product (ZIA, ZPA, ZCC, ZDX, Zscaler Cellular, ZTW, ZIdentity, ZMS, Z-Insights, EASM).
+
+> **Zscaler Cellular (ZCell)** needs one extra credential — your Zscaler Cellular customer ID via `ZCELL_CUSTOMER_ID` — which is separate from `ZSCALER_CUSTOMER_ID` (used by ZPA). See the environment-variable table below.
 
 ### OneAPI Authentication
 
@@ -780,6 +783,9 @@ ZSCALER_CLIENT_SECRET=your_client_secret
 ZSCALER_CUSTOMER_ID=your_customer_id
 ZSCALER_VANITY_DOMAIN=your_vanity_domain
 
+# Required only for Zscaler Cellular (ZCell) tools
+ZCELL_CUSTOMER_ID=your_zscaler_cellular_customer_id
+
 # Optional: only required when targeting the Beta tenant
 ZSCALER_CLOUD=beta
 ```
@@ -793,6 +799,7 @@ ZSCALER_CLOUD=beta
 | `ZSCALER_CLIENT_ID` | Yes | OneAPI client ID from the ZIdentity console |
 | `ZSCALER_CLIENT_SECRET` | Yes (or `ZSCALER_PRIVATE_KEY`) | OneAPI client secret |
 | `ZSCALER_CUSTOMER_ID` | Yes (for ZPA tools) | Zscaler customer/tenant ID |
+| `ZCELL_CUSTOMER_ID` | Yes (for Zscaler Cellular tools) | Zscaler Cellular customer ID (distinct from `ZSCALER_CUSTOMER_ID`; also accepted as the `zcellCustomerId` config key) |
 | `ZSCALER_VANITY_DOMAIN` | Yes | Your organization's vanity domain (e.g., `acme`) |
 | `ZSCALER_CLOUD` | No | Cloud override (e.g., `beta`, `zscalertwo`); omit for production |
 | `ZSCALER_PRIVATE_KEY` | No | PEM-encoded private key for JWT auth (used in place of `ZSCALER_CLIENT_SECRET`) |
@@ -927,7 +934,7 @@ server = ZscalerMCPServer(
 server.run("stdio")
 ```
 
-**Available Services**: `zcc`, `zdx`, `zia`, `zid`, `zms`, `zpa`
+**Available Services**: `zcc`, `zdx`, `zcell`, `zia`, `zid`, `zeasm`, `zins`, `zms`, `zpa`, `ztw`
 
 **Example with Environment Variables**:
 
