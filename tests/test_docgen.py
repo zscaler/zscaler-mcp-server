@@ -1,18 +1,19 @@
-"""Tests for the documentation generator (zscaler_mcp/common/docgen.py).
+"""Tests for the documentation generator (zscaler_mcp/common/docgen.py, v2).
 
 Covers:
     * Marker-based rewrite (round-trip, idempotency, error cases).
-    * Inventory walk (every registered tool ends up classified).
+    * Inventory walk (every registered tool ends up classified from the registry).
     * Per-region renderers (the three shipped today).
-    * Repo-wide :func:`check_docs` invariant — once :func:`generate_docs`
-      has run, ``check_docs()`` must come back clean.
-    * The CI guardrail invariant: the version of the docs committed in
-      git must already be in sync with the live inventory. If this test
-      fails, run ``zscaler-mcp --generate-docs``.
+    * Repo-wide :func:`check_docs` invariant — once :func:`generate_docs` has run,
+      ``check_docs()`` must come back clean.
+    * The CI guardrail: the committed docs must already be in sync with the live
+      inventory. If it fails, run ``zscaler-mcp --generate-docs``.
 """
 
 from __future__ import annotations
 
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 from textwrap import dedent
@@ -102,12 +103,12 @@ class TestMarkerRewrite(unittest.TestCase):
 
 
 class TestInventory(unittest.TestCase):
-    """Walking the live tool inventory."""
+    """Walking the live tool inventory (registry-driven)."""
 
     def test_inventory_has_tools_from_every_service(self):
         inv = build_inventory()
         services = {t.service for t in inv.tools}
-        for required in ("zia", "zpa", "zdx", "zcc", "meta"):
+        for required in ("zia", "zpa", "zdx", "zcc", "zcell"):
             self.assertIn(required, services)
 
     def test_every_tool_has_toolset(self):
@@ -115,16 +116,11 @@ class TestInventory(unittest.TestCase):
         for t in inv.tools:
             self.assertTrue(t.toolset, f"{t.name} has empty toolset")
 
-    def test_meta_tools_present(self):
+    def test_zcell_is_read_only(self):
         inv = build_inventory()
-        names = {t.name for t in inv.tools}
-        for required in (
-            "zscaler_check_connectivity",
-            "zscaler_list_toolsets",
-            "zscaler_get_toolset_tools",
-            "zscaler_enable_toolset",
-        ):
-            self.assertIn(required, names)
+        zcell = [t for t in inv.tools if t.service == "zcell"]
+        self.assertEqual(len(zcell), 20)
+        self.assertTrue(all(not t.is_write for t in zcell))
 
     def test_write_tools_flagged(self):
         inv = build_inventory()
@@ -160,7 +156,7 @@ class TestRenderers(unittest.TestCase):
                     "zpa_app_segments",
                     False,
                 ),
-                ToolEntry("zscaler_list_toolsets", "Discover toolsets.", "meta", "meta", False),
+                ToolEntry("zcell_list_sims", "Search SIMs.", "zcell", "zcell_sim_handling", False),
             ]
         )
 
@@ -170,13 +166,12 @@ class TestRenderers(unittest.TestCase):
             "zia_list_locations",
             "zia_create_location",
             "zpa_list_app_segments",
-            "zscaler_list_toolsets",
+            "zcell_list_sims",
         ):
             self.assertIn(name, out, f"missing {name} in supported-tools region")
 
     def test_supported_tools_region_marks_write(self):
         out = render_region("tools", self.inv)
-        # Find the row for zia_create_location and assert it carries 'Write'.
         lines = [ln for ln in out.splitlines() if "zia_create_location" in ln]
         self.assertEqual(len(lines), 1)
         self.assertIn("Write", lines[0])
@@ -185,18 +180,17 @@ class TestRenderers(unittest.TestCase):
         out = render_region("service-summary", self.inv)
         self.assertIn("**ZIA**", out)
         self.assertIn("**ZPA**", out)
-        # Meta is intentionally excluded from the user-facing summary.
-        self.assertNotIn("**META**", out)
+        self.assertIn("**ZCell**", out)
         # Counts are present.
         self.assertIn("2 read/write", out)  # 1 read + 1 write for zia
         self.assertIn("1 read-only", out)  # 1 read for zpa
 
     def test_toolset_catalog_region_groups_by_service(self):
         out = render_region("toolset-catalog", self.inv)
-        self.assertIn("Always-on", out)
-        self.assertIn("`meta`", out)
         self.assertIn("ZIA — Internet Access", out)
         self.assertIn("`zia_locations`", out)
+        self.assertIn("ZCell — Cellular", out)
+        self.assertIn("`zcell_sim_handling`", out)
 
     def test_unknown_region_raises(self):
         with self.assertRaisesRegex(KeyError, "Unknown region"):
@@ -204,34 +198,20 @@ class TestRenderers(unittest.TestCase):
 
 
 class TestEndToEndOnTempCopy(unittest.TestCase):
-    """Run generate / check against an isolated repo-tree copy.
-
-    Avoids touching the real docs from a test run, while still
-    exercising the full file-rewrite path.
-    """
+    """Run generate / check against an isolated repo-tree copy."""
 
     def test_check_then_generate_then_check_clean(self):
-        import shutil
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmpdir:
             tmproot = Path(tmpdir)
-            # Materialise just enough of the repo tree to satisfy TARGETS.
-            # Two flavours coexist: marker-region targets (Markdown with a
-            # generated:start/end pair) and whole-file targets (region is
-            # None — the generator owns the entire file content).
             for relpath, region, _ in docgen.TARGETS:
                 src = docgen.REPO_ROOT / relpath
                 dst = tmproot / relpath
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 if region is None:
-                    # Whole-file target — write a known-stale stub so the
-                    # rewriter has something to overwrite.
                     dst.write_text("stale-whole-file\n", encoding="utf-8")
                     continue
                 shutil.copy2(src, dst)
-                # Stuff the marker block with a known-stale value so we
-                # know the rewrite ran.
+                # Stuff the marker block with a known-stale value.
                 content = dst.read_text(encoding="utf-8")
                 content = content.replace(
                     f"<!-- generated:end {region} -->",
@@ -241,34 +221,25 @@ class TestEndToEndOnTempCopy(unittest.TestCase):
 
             inv = build_inventory()
 
-            # First check should report all targets stale.
             stale_before = docgen.check_docs(repo_root=tmproot, inv=inv)
             self.assertEqual(len(stale_before), len(docgen.TARGETS))
 
-            # Generate to refresh.
             written = docgen.generate_docs(repo_root=tmproot, inv=inv)
             self.assertEqual(
-                set(p.name for p in written), set(Path(rel).name for rel, _, _ in docgen.TARGETS)
+                {p.name for p in written}, {Path(rel).name for rel, _, _ in docgen.TARGETS}
             )
 
-            # Second check should be clean.
             stale_after = docgen.check_docs(repo_root=tmproot, inv=inv)
             self.assertEqual(stale_after, [])
 
-            # Generating again is a no-op.
             written_again = docgen.generate_docs(repo_root=tmproot, inv=inv)
             self.assertEqual(written_again, [])
 
 
 class TestRepoIsInSync(unittest.TestCase):
-    """The CI guardrail.
+    """CI guardrail: committed docs MUST match the live inventory.
 
-    The committed docs in this repo MUST be in sync with the live tool
-    inventory. If this test fails, run::
-
-        zscaler-mcp --generate-docs
-
-    and commit the resulting changes.
+    If this fails, run ``zscaler-mcp --generate-docs`` and commit the result.
     """
 
     def test_committed_docs_are_in_sync(self):
@@ -276,8 +247,8 @@ class TestRepoIsInSync(unittest.TestCase):
         self.assertEqual(
             stale,
             [],
-            "Committed docs are stale. Run `zscaler-mcp --generate-docs` "
-            "and commit the changes. Stale files: " + ", ".join(str(p) for p in stale),
+            "Committed docs are stale. Run `zscaler-mcp --generate-docs` and commit "
+            "the changes. Stale files: " + ", ".join(str(p) for p in stale),
         )
 
 

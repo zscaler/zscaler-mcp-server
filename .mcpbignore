@@ -5,7 +5,7 @@
 # from the zip archive. The goal is a lean bundle (~250 KB) containing
 # ONLY what Claude Desktop needs to invoke the server:
 #
-#   * zscaler_mcp/        — the Python package
+#   * src/zscaler_mcp/    — the Python package (v2 src/ layout)
 #   * pyproject.toml      — uv reads this at install time to resolve deps
 #   * manifest.json       — the MCPB manifest. The committed copy lives at
 #                           integrations/anthropic/manifest.json (auto-

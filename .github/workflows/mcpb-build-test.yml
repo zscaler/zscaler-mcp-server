@@ -30,7 +30,7 @@ on:
   pull_request:
     branches: [master]
     paths:
-      - 'zscaler_mcp/**'
+      - 'src/zscaler_mcp/**'
       - 'integrations/anthropic/manifest.json'
       - 'docs/guides/supported-tools.md'
       - 'docs/guides/toolsets.md'

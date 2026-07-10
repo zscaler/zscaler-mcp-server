@@ -1,20 +1,18 @@
-"""Tests for the MCPB manifest builder (zscaler_mcp/common/mcpb.py).
+"""Tests for the MCPB manifest builder (src/zscaler_mcp/common/mcpb.py).
 
-The docgen test suite (`tests/test_docgen.py`) already covers the
-generic "whole-file" generation pathway and the repo-sync invariant.
-This file targets the MCPB-specific contracts that would silently
-ship a broken Claude Desktop extension if regressed:
+The docgen test suite (`tests/test_docgen.py`) covers the generic whole-file
+generation pathway and the repo-sync invariant. This file targets the
+MCPB-specific contracts that would silently ship a broken Claude Desktop
+extension if regressed:
 
 * Spec version and required top-level fields.
-* Server type pinned to "uv" (NOT "python" — the old pip-target
-  bundle was platform-locked; see commit/PR #30).
-* Env-var names match what `zscaler_mcp/server.py` actually reads
-  (these were silently broken pre-fix: ZSCALER_MCP_ENABLED_SERVICES
-  / _ENABLED_TOOLS / _DEBUG_MODE were ignored at runtime).
-* Version comes from `zscaler_mcp.__version__`, not a hand-edited
-  string.
-* `tools` array is non-empty and contains the right ordering
-  invariants (meta first, then service-grouped).
+* Server type pinned to "uv" (NOT "python" — the old pip-target bundle was
+  platform-locked; see PR #30).
+* Env-var names match what `src/zscaler_mcp/server.py` actually reads (the v2
+  server exposes ZSCALER_MCP_TOOLSETS, not the v1 ZSCALER_MCP_TOOLS).
+* `src/` layout: entry_point + PYTHONPATH point at src/.
+* Version comes from `zscaler_mcp.__version__`, not a hand-edited string.
+* `tools` array is non-empty with the right ordering invariants.
 * Manifest is valid JSON and round-trips through json.loads.
 """
 
@@ -26,7 +24,6 @@ import unittest
 from zscaler_mcp import __version__
 from zscaler_mcp.common import mcpb
 from zscaler_mcp.common.docgen import build_inventory
-from zscaler_mcp.common.toolsets import TOOLSETS
 
 
 class TestSpecCompliance(unittest.TestCase):
@@ -42,7 +39,6 @@ class TestSpecCompliance(unittest.TestCase):
         self.assertEqual(self.manifest["manifest_version"], "0.4")
 
     def test_required_top_level_fields_present(self):
-        # Per https://github.com/anthropics/mcpb/blob/main/MANIFEST.md
         for field in (
             "manifest_version",
             "name",
@@ -63,9 +59,6 @@ class TestSpecCompliance(unittest.TestCase):
         self.assertTrue(author["email"].endswith("@zscaler.com"))
 
     def test_icon_path_matches_repo_root_file(self):
-        # Icon lives under ``assets/`` to keep the repo root clean.
-        # ``.mcpbignore`` un-ignores this single file with
-        # ``!assets/icon.png`` so it still ships in the bundle.
         from zscaler_mcp.common.docgen import REPO_ROOT
 
         self.assertEqual(self.manifest["icon"], "assets/icon.png")
@@ -93,26 +86,32 @@ class TestServerConfig(unittest.TestCase):
     def test_server_type_is_uv_not_python(self):
         """``uv`` defers wheel resolution to install time — required for
         cross-platform bundles. ``python`` with pip --target embeds
-        platform-locked compiled extensions (.so/.pyd) and silently
-        fails on the other OSes. PR #30 root-caused this.
+        platform-locked compiled extensions (.so/.pyd) and silently fails on
+        the other OSes. PR #30 root-caused this.
         """
         self.assertEqual(self.server["type"], "uv")
         self.assertNotEqual(self.server["type"], "python")
 
     def test_entry_point_is_relative_and_exists(self):
-
         from zscaler_mcp.common.docgen import REPO_ROOT
 
         entry = self.server["entry_point"]
-        # Must NOT lead with "/", "./", or refer to anything outside
-        # the bundle root (Claude Desktop refuses absolute paths).
+        # v2 src/ layout: the entry point lives under src/.
+        self.assertEqual(entry, "src/zscaler_mcp/server.py")
+        # Must NOT lead with "/", "./", or refer to anything outside the
+        # bundle root (Claude Desktop refuses absolute paths).
         self.assertFalse(entry.startswith(("/", "./", "../")))
         self.assertTrue((REPO_ROOT / entry).is_file(), f"entry point missing: {entry}")
 
+    def test_pythonpath_points_at_src(self):
+        """The v2 package is under src/, so PYTHONPATH must include it."""
+        env = self.server["mcp_config"]["env"]
+        self.assertEqual(env.get("PYTHONPATH"), "${__dirname}/src")
+
     def test_uv_invocation_args(self):
         """``uv run python -m zscaler_mcp.server`` is the canonical
-        invocation. Anything else either skips dependency resolution
-        or runs the wrong module.
+        invocation. Anything else either skips dependency resolution or runs
+        the wrong module.
         """
         cfg = self.server["mcp_config"]
         self.assertEqual(cfg["command"], "uv")
@@ -121,44 +120,41 @@ class TestServerConfig(unittest.TestCase):
     def test_env_uses_correct_zscaler_mcp_var_names(self):
         """Catches the silent-ignore bug from PR #30 commit 2.
 
-        The manifest used to set ZSCALER_MCP_ENABLED_SERVICES /
-        _ENABLED_TOOLS / _DEBUG_MODE, but ``zscaler_mcp/server.py``
-        reads ZSCALER_MCP_SERVICES / _TOOLS / _DEBUG. The old names
-        were silently ignored. Anyone using the Claude Desktop UI
-        toggles got no effect.
+        v2 exposes ZSCALER_MCP_TOOLSETS (not the v1 ZSCALER_MCP_TOOLS). Any
+        env var name `server.py` doesn't read is silently ignored by Claude
+        Desktop's UI toggles.
         """
         env = self.server["mcp_config"]["env"]
 
-        # These must be present (the correct names).
+        # Correct v2 names must be present.
         self.assertIn("ZSCALER_MCP_SERVICES", env)
-        self.assertIn("ZSCALER_MCP_TOOLS", env)
+        self.assertIn("ZSCALER_MCP_TOOLSETS", env)
         self.assertIn("ZSCALER_MCP_DEBUG", env)
+        self.assertIn("ZSCALER_MCP_WRITE_ENABLED", env)
+        self.assertIn("ZSCALER_MCP_WRITE_TOOLS", env)
 
-        # These must NOT be present (the broken names).
+        # Broken / stale names must NOT be present.
         self.assertNotIn("ZSCALER_MCP_ENABLED_SERVICES", env)
         self.assertNotIn("ZSCALER_MCP_ENABLED_TOOLS", env)
         self.assertNotIn("ZSCALER_MCP_DEBUG_MODE", env)
+        # v1 name dropped in v2 (replaced by ZSCALER_MCP_TOOLSETS).
+        self.assertNotIn("ZSCALER_MCP_TOOLS", env)
 
     def test_env_vars_match_runtime_reads(self):
         """The env vars the manifest writes are actually consumed by
-        ``zscaler_mcp/server.py``. We grep the source — a stronger
+        `src/zscaler_mcp/server.py`. We grep the source — a stronger
         guarantee than the name-shape check above.
         """
-
         from zscaler_mcp.common.docgen import REPO_ROOT
 
-        server_py = (REPO_ROOT / "zscaler_mcp" / "server.py").read_text(
-            encoding="utf-8"
-        )
+        server_py = (REPO_ROOT / "src" / "zscaler_mcp" / "server.py").read_text(encoding="utf-8")
         env = self.server["mcp_config"]["env"]
 
-        # PYTHONPATH is a Python runtime var, not consumed by server.py.
-        # Same for the credential vars — those are read by the Zscaler
-        # SDK, not server.py. We only assert on the server.py-controlled
-        # toggles where the bug actually was.
+        # PYTHONPATH + credential vars are read by Python / the Zscaler SDK,
+        # not server.py. We only assert on the server.py-controlled toggles.
         for var in (
             "ZSCALER_MCP_SERVICES",
-            "ZSCALER_MCP_TOOLS",
+            "ZSCALER_MCP_TOOLSETS",
             "ZSCALER_MCP_DEBUG",
             "ZSCALER_MCP_WRITE_ENABLED",
             "ZSCALER_MCP_WRITE_TOOLS",
@@ -173,10 +169,16 @@ class TestServerConfig(unittest.TestCase):
                 "is here to catch.",
             )
 
+    def test_zcell_customer_id_is_wired(self):
+        """ZCell requires a separate customer ID env var (read by the SDK)."""
+        env = self.server["mcp_config"]["env"]
+        self.assertIn("ZCELL_CUSTOMER_ID", env)
+        self.assertEqual(env["ZCELL_CUSTOMER_ID"], "${user_config.zcell_customer_id}")
+
     def test_every_user_config_reference_resolves(self):
-        """If env has ``${user_config.foo}``, ``foo`` must exist in
-        the manifest's user_config block — otherwise Claude Desktop
-        substitutes the literal placeholder string.
+        """If env has ``${user_config.foo}``, ``foo`` must exist in the
+        manifest's user_config block — otherwise Claude Desktop substitutes
+        the literal placeholder string.
         """
         import re
 
@@ -205,9 +207,6 @@ class TestToolsArray(unittest.TestCase):
         cls.tools = mcpb.build_manifest(cls.inv)["tools"]
 
     def test_tools_array_is_non_empty(self):
-        # Stale / hand-curated manifest used to drift to zero or 265
-        # tools while the live inventory had >300. The whole point of
-        # this generator is to keep the array honest.
         self.assertGreater(
             len(self.tools), 200, "tools array suspiciously small — generator may be broken"
         )
@@ -233,17 +232,10 @@ class TestToolsArray(unittest.TestCase):
         )
 
     def test_meta_tools_appear_first(self):
-        """Service-grouped ordering: ``meta`` first, then ZIA, ZPA, etc.
-        Matches the convention used by every other docgen target.
-        """
+        """Service-grouped ordering: ``meta`` first, then ZIA, ZPA, etc."""
         names = [t["name"] for t in self.tools]
-        # First meta tool's index should be lower than the first non-meta tool.
-        meta_indices = [
-            i for i, n in enumerate(names) if n.startswith("zscaler_")
-        ]
-        non_meta_indices = [
-            i for i, n in enumerate(names) if not n.startswith("zscaler_")
-        ]
+        meta_indices = [i for i, n in enumerate(names) if n.startswith("zscaler_")]
+        non_meta_indices = [i for i, n in enumerate(names) if not n.startswith("zscaler_")]
         if meta_indices and non_meta_indices:
             self.assertLess(
                 max(meta_indices),
@@ -252,16 +244,9 @@ class TestToolsArray(unittest.TestCase):
             )
 
     def test_descriptions_are_single_sentence(self):
-        """The MCPB directory only shows a one-line description per
-        tool. The renderer should trim each description to its first
-        sentence to keep the catalog row scannable.
-        """
+        """The MCPB directory shows a one-line description per tool."""
         for entry in self.tools:
             desc = entry["description"]
-            # Allow embedded periods inside parens/inline code, but the
-            # post-trim text should end with exactly one period (the
-            # sentence terminator) and not contain ". " mid-string
-            # (that would be sentence #2 leaking through).
             self.assertTrue(
                 desc.endswith(".") or desc.endswith("..."),
                 f"description doesn't end with period: {entry['name']!r}: {desc!r}",
@@ -272,50 +257,36 @@ class TestRendererContract(unittest.TestCase):
     """The docgen integration."""
 
     def test_render_manifest_json_signature(self):
-        # Must match the (Inventory, ToolsetCatalog) -> str contract.
+        # Must match the v2 (Inventory) -> str renderer contract.
         inv = build_inventory()
-        result = mcpb.render_manifest_json(inv, TOOLSETS)
+        result = mcpb.render_manifest_json(inv)
         self.assertIsInstance(result, str)
-        # Trailing newline for POSIX-friendliness.
         self.assertTrue(result.endswith("\n"))
 
     def test_renderer_output_is_valid_json(self):
-        out = mcpb.render_manifest_json(build_inventory(), TOOLSETS)
-        # No-throw round trip.
+        out = mcpb.render_manifest_json(build_inventory())
         roundtrip = json.loads(out)
         self.assertEqual(roundtrip["name"], "Zscaler MCP Server")
 
     def test_renderer_is_deterministic(self):
-        """Two calls with the same inventory produce byte-identical
-        output. Without this, ``check-docs`` would oscillate between
-        clean and stale on every CI run.
+        """Two calls with the same inventory produce byte-identical output.
+        Without this, ``check-docs`` would oscillate between clean and stale.
         """
         inv = build_inventory()
-        a = mcpb.render_manifest_json(inv, TOOLSETS)
-        b = mcpb.render_manifest_json(inv, TOOLSETS)
+        a = mcpb.render_manifest_json(inv)
+        b = mcpb.render_manifest_json(inv)
         self.assertEqual(a, b)
 
 
 class TestCommittedManifest(unittest.TestCase):
-    """The committed manifest at ``integrations/anthropic/manifest.json``
-    must match what the generator would emit right now.
-
-    Equivalent to the `tests/test_docgen.py::TestRepoIsInSync` guard
-    but scoped to just the MCPB manifest — the error message is
-    actionable enough to be worth surfacing as its own test.
+    """The committed manifest at ``integrations/anthropic/manifest.json`` must
+    match what the generator would emit right now.
     """
 
     def test_canonical_manifest_path(self):
-        # Guards the location decision: the committed manifest lives under
-        # integrations/anthropic/ (not the repo root). The build flow copies
-        # it to the root only transiently at pack time.
-        self.assertEqual(
-            mcpb.MANIFEST_RELATIVE_PATH, "integrations/anthropic/manifest.json"
-        )
+        self.assertEqual(mcpb.MANIFEST_RELATIVE_PATH, "integrations/anthropic/manifest.json")
 
     def test_root_manifest_is_not_committed(self):
-        # A repo-root manifest.json is a transient build artifact and must
-        # never be committed (it would go stale and confuse `mcpb pack`).
         from zscaler_mcp.common.docgen import REPO_ROOT
 
         self.assertFalse(
@@ -326,14 +297,13 @@ class TestCommittedManifest(unittest.TestCase):
         )
 
     def test_committed_manifest_is_current(self):
-
         from zscaler_mcp.common.docgen import REPO_ROOT
 
         path = REPO_ROOT / mcpb.MANIFEST_RELATIVE_PATH
         self.assertTrue(path.is_file(), f"manifest not at expected path: {path}")
 
         on_disk = path.read_text(encoding="utf-8")
-        expected = mcpb.render_manifest_json(build_inventory(), TOOLSETS)
+        expected = mcpb.render_manifest_json(build_inventory())
         self.assertEqual(
             on_disk,
             expected,

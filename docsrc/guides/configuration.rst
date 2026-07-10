@@ -26,8 +26,15 @@ credentials.
 
 .. code-block:: bash
 
+   export ZCELL_CUSTOMER_ID="your_zcell_id"  # Zscaler Cellular customer ID (required only for ZCell tools)
    export ZSCALER_CLOUD="production"        # Cloud environment (production, beta, zscalerone.net, etc.)
    export ZSCALER_PRIVATE_KEY="path/to/key" # Path to private key for JWT authentication
+
+.. note::
+
+   ``ZCELL_CUSTOMER_ID`` is the **Zscaler Cellular** customer ID and is separate
+   from ``ZSCALER_CUSTOMER_ID`` (used by ZPA). Set both if you use ZPA and ZCell
+   together. It is also accepted as the ``zcellCustomerId`` config key.
 
 Server Configuration
 --------------------
@@ -398,6 +405,7 @@ Complete List of All Supported Variables
 - ``ZSCALER_CLIENT_ID`` - OAuth client ID (required)
 - ``ZSCALER_CLIENT_SECRET`` - OAuth client secret (required)
 - ``ZSCALER_CUSTOMER_ID`` - Customer/tenant ID (required for ZPA)
+- ``ZCELL_CUSTOMER_ID`` - Zscaler Cellular customer ID (required for ZCell; distinct from ``ZSCALER_CUSTOMER_ID``)
 - ``ZSCALER_VANITY_DOMAIN`` - Vanity domain (required)
 - ``ZSCALER_CLOUD`` - Cloud environment (optional)
 - ``ZSCALER_PRIVATE_KEY`` - Private key path for JWT (optional)
@@ -422,8 +430,20 @@ CLI Flags Reference
    --generate-auth-token     Generate an authorization token from configured credentials
    --list-tools              List all registered tools and exit
    --user-agent-comment      Additional comment appended to the User-Agent header
+   --dotenv-path             Explicit path to the .env file to load
+   --pid-file                Override the PID-file location (for multiple instances)
    --version                 Show server version and exit
    --debug                   Enable debug logging
+
+Lifecycle subcommands (run instead of starting the server):
+
+.. code-block:: text
+
+   zscaler-mcp status        Show PID, uptime, transport, port, and .env path of a running server
+   zscaler-mcp reload        Re-read .env without dropping sessions (SIGHUP)
+   zscaler-mcp restart       Re-read .env and re-exec in place (SIGUSR2)
+   zscaler-mcp stop          Clean shutdown (SIGTERM)
+   zscaler-mcp update        Check for a newer release (use --apply to upgrade in place)
 
 Troubleshooting
 ---------------

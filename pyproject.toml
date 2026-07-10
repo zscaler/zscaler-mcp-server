@@ -1,108 +1,74 @@
 [project]
-name = "zscaler-mcp"
-version = "0.12.7"
-description = "Official Zscaler Integrations MCP Server"
+name = "zscaler-mcp-server"
+version = "0.13.0"
+description = "Agent-first ('second step') Zscaler MCP server — curated, schema-backed tool responses over the Zscaler Python SDK."
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
-license = "MIT"
-authors = [
-  { name = "Zscaler, Inc.", email = "devrel@zscaler.com" }
-]
-classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-]
+requires-python = ">=3.10"
 dependencies = [
-  "zscaler-sdk-python",
-  "mcp[cli]>=1.23.0",
-  "fastmcp>=2.13.0",
-  "python-dotenv",
-  "click",
-  "uvicorn",
-  "fastapi",
-  "pycountry",
-  "authlib>=1.6.8",
-  "cryptography>=46.0.5",
-  "huggingface-hub>=0.35.0",
-  "jmespath>=1.0.0",
-  "jiter>=0.11.0",
-  "langsmith>=0.4.28",
-  "openai>=1.107.3",
-  "posthog>=6.7.5",
-  "pydantic>=2.11.9",
-  "starlette>=0.49.1",
-  "zstandard>=0.25.0",
-  "package-name>=0.1",
-  "urllib3>=2.6.3",
-  "werkzeug>=3.1.5",
-  "filelock>=3.20.3",
-  "python-multipart>=0.0.22",
-  "wheel>=0.46.2",
-  "orjson>=3.11.7",
-  "PyJWT[crypto]>=2.8.0",
-  "bleach>=6.2.0",
+    # Transport / auth shim — UNCHANGED from v1. The SDK still does every
+    # API call, token exchange, pagination, and retry. v2 only changes the
+    # SHAPE of what the agent sees, not how we talk to Zscaler.
+    # Intentionally unconstrained so installs always pull the latest SDK
+    # (new Zscaler product/API support lands here first).
+    "zscaler-sdk-python",
+    # MCP server framework. FastMCP gives us the ASGI app factories
+    # (streamable_http_app / sse_app) that every piece of the auth /
+    # hardening layer wraps as middleware — same foundation as v1.
+    "mcp[cli]>=1.23.0",
+    "fastmcp>=2.13.0",
+    # Pydantic powers BOTH the input models and the output VIEWS. A view's
+    # model_json_schema() is the source of truth for the tool's outputSchema,
+    # so the curated view and the advertised schema can never drift.
+    "pydantic>=2.6.0",
+    "python-dotenv>=1.0.0",
+    # HTTP transport + auth middleware stack (parity with v1).
+    "uvicorn>=0.30.0",
+    "starlette>=0.40.0",
+    # JWT auth mode (external IdP via JWKS).
+    "PyJWT[crypto]>=2.8.0",
+    # Zscaler-mode credential validation against /oauth2/v1/token.
+    "requests>=2.31.0",
+    # Output sanitization (HTML / Markdown stripping).
+    "bleach>=6.2.0",
+    # Exact token accounting (o200k_base). Token usage is a NATIVE, always-on
+    # feature — the bridge logs a [TOKENS] line per call — so this is a runtime
+    # dependency, not dev-only. Without it the count degrades to a len/4 estimate.
+    "tiktoken>=0.7.0",
+    # Country-name/ISO-code → Zscaler COUNTRY_XX conversion (ZTW IP destination
+    # groups by-country, ZIA locations, …). Same dependency v1 uses.
+    "pycountry>=24.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.6.0",
+]
+# GCP Secret Manager support (parity with v1's [gcp] extra; referenced by
+# the Dockerfile's final `uv sync --extra gcp`).
+gcp = [
+    "google-cloud-secret-manager>=2.18.0",
 ]
 
 [project.scripts]
 zscaler-mcp = "zscaler_mcp.server:main"
-
-[project.optional-dependencies]
-dev = [
-  "pytest",
-  "pytest-cov",
-  "black",
-  "mypy",
-  "ipython",
-  "ruff>=0.15.13",
-  "pycountry",
-  "pytest-asyncio>=0.21.0",
-  "langchain-openai>=0.3.28",
-  "mcp-use[search]>=1.3.7"
-]
-gcp = [
-  "google-cloud-secret-manager>=2.18.0",
-]
-
-[tool.black]
-line-length = 100
-target-version = ["py311"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-
-[tool.ruff]
-target-version = "py311"
-line-length = 100
-
-[tool.uv]
-# Override transitive pillow to fix CVE (out-of-bounds write in PSD loader)
-# https://pillow.readthedocs.io/en/stable/releasenotes/
-override-dependencies = [
-    "pillow>=12.1.1",
-    "authlib>=1.6.8",
-]
+zscaler-mcp-tokens = "zscaler_mcp.common.token_comparison:main"
 
 [build-system]
-requires = ["setuptools>=78.1.1", "wheel>=0.46.2"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/zscaler_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# local_dev/ is maintainer scratch material copied from the v1 tree; it is not
+# part of the v2 package and must never gate the v2 lint.
+extend-exclude = ["local_dev"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-filterwarnings = [
-    "ignore::DeprecationWarning:websockets.*:",
-    "ignore::DeprecationWarning:uvicorn.protocols.websockets.*:",
-    "ignore::pydantic.PydanticDeprecatedSince20:langchain_core.*:"
-]
-
-[tool.setuptools.packages.find]
-include = ["zscaler_mcp*"]
-exclude = ["notes*", "local_dev*", "tests*"]

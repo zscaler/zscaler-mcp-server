@@ -15,6 +15,7 @@ The tools are organized into the following categories:
    zia/index
    zpa/index
    zdx/index
+   zcell/index
    ztw/index
    zid/index
    easm/index
@@ -56,7 +57,7 @@ Tool Parameters
 
 Most tools accept the following common parameters:
 
-- **service**: The Zscaler service to use (zcc, zia, zpa, zdx, ztw, zid, zeasm, zins, zms)
+- **service**: The Zscaler service to use (zcc, zia, zpa, zdx, zcell, ztw, zid, zeasm, zins, zms)
 - **page**: Page number for paginated results
 - **page_size**: Number of results per page
 - **search**: Search string for filtering results

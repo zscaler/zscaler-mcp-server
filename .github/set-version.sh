@@ -35,10 +35,10 @@ echo "Updating pyproject.toml"
 grep -E '^version = ".+"$' "$ROOT/pyproject.toml" || exit 1
 sed -i.bak -E "s/^version = \".+\"$/version = \"$1\"/" "$ROOT/pyproject.toml" && rm "$ROOT/pyproject.toml.bak"
 
-# Set version in zscaler_mcp/__init__.py
-echo "Updating zscaler_mcp/__init__.py"
-grep -E '^__version__ = ".+"$' "$ROOT/zscaler_mcp/__init__.py" >/dev/null
-sed -i.bak -E "s/^__version__ = \".+\"$/__version__ = \"$NEW_VERSION\"/" "$ROOT/zscaler_mcp/__init__.py" && rm "$ROOT/zscaler_mcp/__init__.py.bak"
+# Set version in src/zscaler_mcp/__init__.py
+echo "Updating src/zscaler_mcp/__init__.py"
+grep -E '^__version__ = ".+"$' "$ROOT/src/zscaler_mcp/__init__.py" >/dev/null
+sed -i.bak -E "s/^__version__ = \".+\"$/__version__ = \"$NEW_VERSION\"/" "$ROOT/src/zscaler_mcp/__init__.py" && rm "$ROOT/src/zscaler_mcp/__init__.py.bak"
 
 # Set version in .claude-plugin/marketplace.json
 echo "Updating .claude-plugin/marketplace.json"
