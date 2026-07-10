@@ -25,17 +25,20 @@ from zscaler_mcp.tools.zcell.sim_analytics import (
     _shape_country,
     _shape_day,
     _shape_map,
-    _shape_sim as _shape_usage_sim,
     _shape_summary,
+)
+from zscaler_mcp.tools.zcell.sim_analytics import (
+    _shape_sim as _shape_usage_sim,
 )
 from zscaler_mcp.tools.zcell.sim_handling import SimDetail, _shape_search, _shape_sim
 from zscaler_mcp.tools.zcell.sim_location_groups import (
     SimLocationGroupSummary,
     _shape_detail,
+)
+from zscaler_mcp.tools.zcell.sim_location_groups import (
     _shape_summary as _shape_slg_summary,
 )
 from zscaler_mcp.tools.zcell.tag_handling import TagView, _shape_tag
-
 
 # =============================================================================
 # Anomaly Policy

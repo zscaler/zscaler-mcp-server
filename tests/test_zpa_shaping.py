@@ -9,29 +9,40 @@ No SDK / no credentials.
 import pytest
 from pydantic import ValidationError
 
+from zscaler_mcp.tools.zpa._refs import RefItem, shape_ref
 from zscaler_mcp.tools.zpa.app_segments import (
     AppSegmentSummary,
+)
+from zscaler_mcp.tools.zpa.app_segments import (
     shape_detail as seg_detail,
+)
+from zscaler_mcp.tools.zpa.app_segments import (
     shape_summary as seg_summary,
 )
 from zscaler_mcp.tools.zpa.app_segments_ba import (
     shape_detail as ba_detail,
+)
+from zscaler_mcp.tools.zpa.app_segments_ba import (
     shape_summary as ba_summary,
 )
 from zscaler_mcp.tools.zpa.app_segments_pra import (
     shape_detail as pra_detail,
+)
+from zscaler_mcp.tools.zpa.app_segments_pra import (
     shape_summary as pra_summary,
 )
-from zscaler_mcp.tools.zpa._refs import RefItem, shape_ref
 from zscaler_mcp.tools.zpa.get_segments_by_type import (
     _shape_segment_by_type as shape_segment_by_type,
 )
 from zscaler_mcp.tools.zpa.lss import (
     Catalog,
+)
+from zscaler_mcp.tools.zpa.lss import (
     shape_detail as lss_detail,
+)
+from zscaler_mcp.tools.zpa.lss import (
     shape_summary as lss_summary,
 )
-
 
 # =============================================================================
 # Standard application segments

@@ -8,25 +8,27 @@ uncurated fields. No SDK / no credentials.
 
 import pytest
 
-# ZCC
-from zscaler_mcp.tools.zcc.list_devices import DeviceSummary as ZccDeviceSummary, _shape_device
-from zscaler_mcp.tools.zcc.list_forwarding_profiles import _shape_profile
-from zscaler_mcp.tools.zcc.list_trusted_networks import _shape_network
-
 # EASM
 from zscaler_mcp.tools.easm.findings import FindingSummary, _shape_finding_summary
 from zscaler_mcp.tools.easm.lookalike_domains import _shape_lookalike_summary
 from zscaler_mcp.tools.easm.organizations import OrganizationSummary, _shape_organization
+
+# ZCC
+from zscaler_mcp.tools.zcc.list_devices import DeviceSummary as ZccDeviceSummary
+from zscaler_mcp.tools.zcc.list_devices import _shape_device
+from zscaler_mcp.tools.zcc.list_forwarding_profiles import _shape_profile
+from zscaler_mcp.tools.zcc.list_trusted_networks import _shape_network
 
 # ZIdentity
 from zscaler_mcp.tools.zid.groups import GroupSummary, shape_group
 from zscaler_mcp.tools.zid.users import UserSummary, shape_user
 
 # Z-Insights
-from zscaler_mcp.tools.zins.firewall import FirewallRow, _shape_row as _shape_fw_row
+from zscaler_mcp.tools.zins.firewall import FirewallRow
+from zscaler_mcp.tools.zins.firewall import _shape_row as _shape_fw_row
 from zscaler_mcp.tools.zins.shadow_it import ShadowItApp, _shape_app
-from zscaler_mcp.tools.zins.web_traffic import TrafficRow, _shape_row as _shape_traffic_row
-
+from zscaler_mcp.tools.zins.web_traffic import TrafficRow
+from zscaler_mcp.tools.zins.web_traffic import _shape_row as _shape_traffic_row
 
 # =============================================================================
 # ZCC
