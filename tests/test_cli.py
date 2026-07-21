@@ -52,6 +52,20 @@ def test_parser_list_tools_flag():
     assert args.list_tools is True
 
 
+def test_parser_enable_write_tools_flag():
+    args = server.build_parser().parse_args(["--enable-write-tools"])
+    assert args.enable_write_tools is True
+    # Default is off for safety (assuming the env var is not set in CI).
+    default = server.build_parser().parse_args([])
+    assert default.enable_write_tools is False
+
+
+def test_enable_write_tools_env_default(monkeypatch):
+    monkeypatch.setenv("ZSCALER_MCP_WRITE_ENABLED", "true")
+    args = server.build_parser().parse_args([])
+    assert args.enable_write_tools is True
+
+
 @pytest.mark.parametrize("value,expected", [([], "basic"), (["bearer"], "bearer")])
 def test_parser_generate_auth_token(value, expected):
     args = server.build_parser().parse_args(["--generate-auth-token", *value])
@@ -165,3 +179,60 @@ def test_user_agent_comment_appended():
 def test_user_agent_no_comment_is_base():
     assert get_combined_user_agent(None) == get_mcp_user_agent()
     assert get_combined_user_agent("  ") == get_mcp_user_agent()
+
+
+# ---------------------------------------------------------------------------
+# TLS config (ZSCALER_MCP_TLS_CERTFILE / KEYFILE / PASSWORD / CA_CERTS)
+# ---------------------------------------------------------------------------
+
+
+def _clear_tls_env(monkeypatch):
+    for var in (
+        "ZSCALER_MCP_TLS_CERTFILE",
+        "ZSCALER_MCP_TLS_KEYFILE",
+        "ZSCALER_MCP_TLS_KEYFILE_PASSWORD",
+        "ZSCALER_MCP_TLS_CA_CERTS",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+
+def test_tls_kwargs_empty_when_unset(monkeypatch):
+    _clear_tls_env(monkeypatch)
+    assert server._tls_kwargs_from_env() == {}
+
+
+def test_tls_kwargs_incomplete_config_raises(monkeypatch):
+    _clear_tls_env(monkeypatch)
+    monkeypatch.setenv("ZSCALER_MCP_TLS_CERTFILE", "/tmp/cert.pem")
+    with pytest.raises(SystemExit) as exc:
+        server._tls_kwargs_from_env()
+    assert "Incomplete TLS" in str(exc.value)
+
+
+def test_tls_kwargs_missing_file_raises(monkeypatch, tmp_path):
+    _clear_tls_env(monkeypatch)
+    monkeypatch.setenv("ZSCALER_MCP_TLS_CERTFILE", str(tmp_path / "nope-cert.pem"))
+    monkeypatch.setenv("ZSCALER_MCP_TLS_KEYFILE", str(tmp_path / "nope-key.pem"))
+    with pytest.raises(SystemExit) as exc:
+        server._tls_kwargs_from_env()
+    assert "not found" in str(exc.value)
+
+
+def test_tls_kwargs_full_config(monkeypatch, tmp_path):
+    _clear_tls_env(monkeypatch)
+    cert = tmp_path / "cert.pem"
+    key = tmp_path / "key.pem"
+    ca = tmp_path / "ca.pem"
+    for f in (cert, key, ca):
+        f.write_text("x")
+    monkeypatch.setenv("ZSCALER_MCP_TLS_CERTFILE", str(cert))
+    monkeypatch.setenv("ZSCALER_MCP_TLS_KEYFILE", str(key))
+    monkeypatch.setenv("ZSCALER_MCP_TLS_KEYFILE_PASSWORD", "pw")
+    monkeypatch.setenv("ZSCALER_MCP_TLS_CA_CERTS", str(ca))
+    kwargs = server._tls_kwargs_from_env()
+    assert kwargs == {
+        "ssl_certfile": str(cert),
+        "ssl_keyfile": str(key),
+        "ssl_keyfile_password": "pw",
+        "ssl_ca_certs": str(ca),
+    }
