@@ -109,6 +109,149 @@ class SourceIPMiddleware:
 
 
 # ---------------------------------------------------------------------------
+# Host header validation (DNS-rebinding protection)
+# ---------------------------------------------------------------------------
+
+
+def get_allowed_hosts() -> Optional[list[str]]:
+    """Parse ``ZSCALER_MCP_ALLOWED_HOSTS`` into a list, or ``None``.
+
+    Entries may be exact (``example.com:443``), port-wildcarded
+    (``example.com:*``), bare host (``example.com``), or the ``*`` catch-all.
+    """
+    raw = os.getenv("ZSCALER_MCP_ALLOWED_HOSTS", "").strip()
+    if not raw:
+        return None
+    entries = [e.strip() for e in raw.split(",") if e.strip()]
+    return entries or None
+
+
+def host_validation_disabled() -> bool:
+    """True when ``ZSCALER_MCP_DISABLE_HOST_VALIDATION`` opts out of Host checks."""
+    return os.getenv("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").strip().lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+
+
+def _split_host_port(value: str) -> tuple[str, str]:
+    """Split a ``host[:port]`` value, leaving IPv6 literals (``[::1]:80``) intact."""
+    value = value.strip().lower()
+    if value.startswith("["):  # bracketed IPv6 literal
+        host, sep, port = value.rpartition("]:")
+        if sep:
+            return host + "]", port
+        return value, ""
+    if value.count(":") == 1:
+        host, _, port = value.rpartition(":")
+        return host, port
+    return value, ""
+
+
+def _host_matches(host_header: str, allowed: list[str]) -> bool:
+    """Match a request ``Host`` header against the configured allowlist.
+
+    Supports ``*`` (any host), ``host:*`` (any port), exact ``host:port``, and
+    bare ``host`` (any port). Empty Host headers are rejected when an allowlist
+    is configured.
+    """
+    host_header = host_header.strip().lower()
+    if not host_header:
+        return False
+    h_host, h_port = _split_host_port(host_header)
+    for entry in allowed:
+        e = entry.strip().lower()
+        if not e:
+            continue
+        if e == "*" or e == host_header:
+            return True
+        e_host, e_port = _split_host_port(e)
+        if ":" in e:
+            if e_port == "*" and e_host == h_host:
+                return True
+            if e_host == h_host and e_port == h_port:
+                return True
+        elif e == h_host:
+            return True
+    return False
+
+
+class HostValidationMiddleware:
+    """ASGI middleware that rejects requests whose ``Host`` header is not allowed.
+
+    Zero-trust DNS-rebinding protection: only active when
+    ``ZSCALER_MCP_ALLOWED_HOSTS`` is configured (and not disabled via
+    ``ZSCALER_MCP_DISABLE_HOST_VALIDATION``). Health-check paths bypass the
+    check so load-balancer probes keep working.
+    """
+
+    SKIP_PATHS = frozenset({"/health", "/healthz", "/ready"})
+
+    def __init__(self, app: Any, allowed_hosts: list[str]):
+        self.app = app
+        self.allowed_hosts = allowed_hosts
+
+    async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
+        if scope.get("type") != "http":
+            await self.app(scope, receive, send)
+            return
+
+        if scope.get("path", "") in self.SKIP_PATHS:
+            await self.app(scope, receive, send)
+            return
+
+        host = ""
+        for name, value in scope.get("headers", []):
+            if name == b"host":
+                try:
+                    host = value.decode("latin-1")
+                except UnicodeDecodeError:
+                    host = ""
+                break
+
+        if not _host_matches(host, self.allowed_hosts):
+            from starlette.responses import JSONResponse
+
+            body = {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32001,
+                    "message": (
+                        f"Misdirected request: Host header '{host}' is not in the "
+                        "allowed list (possible DNS rebinding attempt)"
+                    ),
+                },
+            }
+            # 421 Misdirected Request — the same status the MCP SDK's transport
+            # security returns for a rejected Host.
+            response = JSONResponse(body, status_code=421)
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
+
+
+def validate_host_binding(host: str) -> None:
+    """Refuse to bind a public interface without explicit Host validation config.
+
+    Mirrors v1: binding to ``0.0.0.0`` requires either an
+    ``ZSCALER_MCP_ALLOWED_HOSTS`` allowlist (recommended) or an explicit
+    ``ZSCALER_MCP_DISABLE_HOST_VALIDATION=true`` opt-out. Anything else exits.
+    """
+    if host != "0.0.0.0":
+        return
+    if host_validation_disabled() or get_allowed_hosts() is not None:
+        return
+    raise SystemExit(
+        "ERROR: Cannot bind to 0.0.0.0 without host validation configuration.\n"
+        "Set one of:\n"
+        "  ZSCALER_MCP_ALLOWED_HOSTS=your-host:*,localhost:*  (recommended)\n"
+        "  ZSCALER_MCP_DISABLE_HOST_VALIDATION=true           (disables protection)\n"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Transport hardening middlewares
 # ---------------------------------------------------------------------------
 
@@ -261,4 +404,27 @@ def apply_transport_hardening(
     if transport == "streamable-http":
         inner = RejectNonSSEGetMiddleware(inner, mcp_path=mcp_path)
     inner = StripTrailingSlashMiddleware(NormalizeContentTypeMiddleware(inner))
+
+    # Host header validation (DNS-rebinding protection). ENABLED by default when
+    # an allowlist is configured; explicitly disable via
+    # ZSCALER_MCP_DISABLE_HOST_VALIDATION=true.
+    if host_validation_disabled():
+        from zscaler_mcp.common.logging import log_security_warning
+
+        log_security_warning(
+            "Host Header Validation is DISABLED",
+            [
+                "The server is vulnerable to DNS rebinding attacks.",
+                "This is NOT recommended for production deployments.",
+                "",
+                "To enable, set ZSCALER_MCP_ALLOWED_HOSTS with your expected hostnames.",
+                "Remove ZSCALER_MCP_DISABLE_HOST_VALIDATION=true to re-enable.",
+            ],
+        )
+    else:
+        allowed_hosts = get_allowed_hosts()
+        if allowed_hosts:
+            logger.info("Host header allowlist active: %s", allowed_hosts)
+            inner = HostValidationMiddleware(inner, allowed_hosts)
+
     return HealthCheckMiddleware(inner, path=health_path)

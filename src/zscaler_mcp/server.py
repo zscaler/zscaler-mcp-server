@@ -44,6 +44,7 @@ from zscaler_mcp.security import (
     apply_transport_hardening,
     get_allowed_source_ips,
     resolve_fastmcp_auth,
+    validate_host_binding,
 )
 
 logger = logging.getLogger("zscaler_mcp")
@@ -155,6 +156,52 @@ def build_server(
 # ---------------------------------------------------------------------------
 
 
+def _tls_kwargs_from_env() -> dict:
+    """Build TLS/SSL kwargs for uvicorn from environment variables (v1 parity).
+
+    Env vars:
+        ZSCALER_MCP_TLS_CERTFILE          - Path to PEM certificate file
+        ZSCALER_MCP_TLS_KEYFILE           - Path to PEM private key file
+        ZSCALER_MCP_TLS_KEYFILE_PASSWORD  - Password for encrypted key (optional)
+        ZSCALER_MCP_TLS_CA_CERTS          - CA bundle for client cert validation (optional)
+
+    Returns an empty dict when TLS is not configured. Raises ``SystemExit`` when
+    the configuration is incomplete or a referenced file is missing.
+    """
+    certfile = os.getenv("ZSCALER_MCP_TLS_CERTFILE", "").strip()
+    keyfile = os.getenv("ZSCALER_MCP_TLS_KEYFILE", "").strip()
+
+    if not certfile and not keyfile:
+        return {}
+
+    if bool(certfile) != bool(keyfile):
+        raise SystemExit(
+            "ERROR: Incomplete TLS configuration.\n"
+            "Both ZSCALER_MCP_TLS_CERTFILE and ZSCALER_MCP_TLS_KEYFILE must be set.\n"
+            f"  ZSCALER_MCP_TLS_CERTFILE = {'(set)' if certfile else '(missing)'}\n"
+            f"  ZSCALER_MCP_TLS_KEYFILE  = {'(set)' if keyfile else '(missing)'}\n"
+        )
+
+    if not os.path.isfile(certfile):
+        raise SystemExit(f"ERROR: TLS certificate file not found: {certfile}")
+    if not os.path.isfile(keyfile):
+        raise SystemExit(f"ERROR: TLS key file not found: {keyfile}")
+
+    tls_kwargs: dict = {"ssl_certfile": certfile, "ssl_keyfile": keyfile}
+
+    password = os.getenv("ZSCALER_MCP_TLS_KEYFILE_PASSWORD", "").strip()
+    if password:
+        tls_kwargs["ssl_keyfile_password"] = password
+
+    ca_certs = os.getenv("ZSCALER_MCP_TLS_CA_CERTS", "").strip()
+    if ca_certs:
+        if not os.path.isfile(ca_certs):
+            raise SystemExit(f"ERROR: TLS CA certificate file not found: {ca_certs}")
+        tls_kwargs["ssl_ca_certs"] = ca_certs
+
+    return tls_kwargs
+
+
 def _run_http(
     server: FastMCP,
     *,
@@ -170,19 +217,30 @@ def _run_http(
     """
     import uvicorn
 
+    # TLS: when certs are configured, uvicorn terminates HTTPS in-process and the
+    # plaintext-HTTP policy is satisfied without ZSCALER_MCP_ALLOW_HTTP.
+    tls_kwargs = _tls_kwargs_from_env()
+    scheme = "https" if tls_kwargs else "http"
+
     allow_http = os.getenv("ZSCALER_MCP_ALLOW_HTTP", "").lower() in ("true", "1", "yes")
-    if host not in ("127.0.0.1", "localhost", "::1") and not allow_http:
+    is_localhost = host in ("127.0.0.1", "localhost", "::1")
+    if not tls_kwargs and not is_localhost and not allow_http:
         log_security_warning(
             "Refusing to bind a non-localhost address over plaintext HTTP",
             [
                 f"The server was asked to listen on {host}:{port} without TLS.",
-                "Set ZSCALER_MCP_ALLOW_HTTP=true to allow plaintext (only if TLS is",
+                "Provide TLS certs (ZSCALER_MCP_TLS_CERTFILE / ZSCALER_MCP_TLS_KEYFILE),",
+                "or set ZSCALER_MCP_ALLOW_HTTP=true to allow plaintext (only if TLS is",
                 "terminated by an overlay/reverse proxy), or bind to 127.0.0.1.",
             ],
         )
         raise SystemExit(
-            "ERROR: plaintext HTTP on a non-localhost bind requires ZSCALER_MCP_ALLOW_HTTP=true"
+            "ERROR: plaintext HTTP on a non-localhost bind requires TLS certs "
+            "or ZSCALER_MCP_ALLOW_HTTP=true"
         )
+
+    # Refuse to bind a public interface without explicit Host validation config.
+    validate_host_binding(host)
 
     fastmcp_transport = "http" if transport == "streamable-http" else "sse"
     app = server.http_app(path=DEFAULT_MCP_PATH, transport=fastmcp_transport)
@@ -196,11 +254,25 @@ def _run_http(
         logger.info("Source IP ACL active: %s", allowed_ips)
         app = SourceIPMiddleware(app, allowed_ips)
 
-    # 3. Transport hardening (outermost: health/slash/content-type/GET-405).
+    # 3. Transport hardening (outermost: health/host-validation/slash/content-type/GET-405).
     app = apply_transport_hardening(app, transport, mcp_path=DEFAULT_MCP_PATH)
 
-    logger.info("Starting %s transport on %s:%d (path=%s)", transport, host, port, DEFAULT_MCP_PATH)
-    uvicorn.run(app, host=host, port=port, log_level="debug" if debug else "info")
+    logger.info(
+        "Starting %s transport on %s://%s:%d (path=%s, tls=%s)",
+        transport,
+        scheme,
+        host,
+        port,
+        DEFAULT_MCP_PATH,
+        "on" if tls_kwargs else "off",
+    )
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level="debug" if debug else "info",
+        **tls_kwargs,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -476,11 +548,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comma-separated toolset ids to enable (default: all).",
     )
     p.add_argument(
+        "--enable-write-tools",
+        action="store_true",
+        default=os.getenv("ZSCALER_MCP_WRITE_ENABLED", "").lower() in ("true", "1", "yes"),
+        help=(
+            "Enable write operations (create/update/delete). Off by default for safety. "
+            "Combine with --write-tools to narrow the allowlist "
+            "(env: ZSCALER_MCP_WRITE_ENABLED)."
+        ),
+    )
+    p.add_argument(
         "--write-tools",
         default=os.getenv("ZSCALER_MCP_WRITE_TOOLS", ""),
         help=(
             "Enable + allowlist write tools (fnmatch patterns, e.g. 'zpa_create_*'). "
-            "Write tools are disabled unless this is set."
+            "Write tools are disabled unless this or --enable-write-tools is set."
         ),
     )
     p.add_argument(
@@ -686,12 +768,11 @@ def main() -> None:
     # stdio must log to stderr so stdout stays a clean JSON-RPC stream.
     configure_logging(debug=args.debug, name="zscaler_mcp", use_stderr=(args.transport == "stdio"))
 
-    # Write tools are enabled when an allowlist is given OR
-    # ZSCALER_MCP_WRITE_ENABLED=true (parity with v1's two-knob model).
+    # Write tools are enabled when an allowlist is given, --enable-write-tools is
+    # passed, OR ZSCALER_MCP_WRITE_ENABLED=true (parity with v1's two-knob model:
+    # --enable-write-tools flips the master switch; --write-tools narrows scope).
     write_allowlist = _parse_csv(args.write_tools)
-    write_enabled = write_allowlist is not None or os.getenv(
-        "ZSCALER_MCP_WRITE_ENABLED", ""
-    ).lower() in ("true", "1", "yes")
+    write_enabled = write_allowlist is not None or args.enable_write_tools
 
     # oidcproxy env-var mode → build a fastmcp auth provider FastMCP wires
     # natively. Every other mode returns None (handled by AuthMiddleware at the

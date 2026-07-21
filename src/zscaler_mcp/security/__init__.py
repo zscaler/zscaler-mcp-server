@@ -36,9 +36,13 @@ from zscaler_mcp.security.entitlements import (
     obtain_oneapi_token,
 )
 from zscaler_mcp.security.hardening import (
+    HostValidationMiddleware,
     SourceIPMiddleware,
     apply_transport_hardening,
+    get_allowed_hosts,
     get_allowed_source_ips,
+    host_validation_disabled,
+    validate_host_binding,
 )
 from zscaler_mcp.security.sanitize import (
     is_sanitization_enabled,
@@ -64,8 +68,12 @@ __all__ = [
     "obtain_oneapi_token",
     # hardening
     "SourceIPMiddleware",
+    "HostValidationMiddleware",
     "apply_transport_hardening",
     "get_allowed_source_ips",
+    "get_allowed_hosts",
+    "host_validation_disabled",
+    "validate_host_binding",
     # elicitation
     "check_confirmation",
     "extract_confirmed_from_kwargs",
