@@ -6,6 +6,30 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.13.3 (July 21, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+**Dependency refresh.** All Python dependencies were upgraded to their latest compatible releases (including the latest ``zscaler-sdk-python`` and ``fastmcp``). ``zscaler-sdk-python`` stays unpinned so new installs always resolve the newest SDK. No configuration changes are required.
+
+## 0.13.2 (July 21, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+**Restored in-process TLS for HTTP transports.** The ``streamable-http`` / ``sse`` transports can once again terminate HTTPS directly in the server. Set ``ZSCALER_MCP_TLS_CERTFILE`` and ``ZSCALER_MCP_TLS_KEYFILE`` (optionally ``ZSCALER_MCP_TLS_KEYFILE_PASSWORD`` for an encrypted key, and ``ZSCALER_MCP_TLS_CA_CERTS`` for mutual-TLS client validation). When TLS is configured the server listens over ``https://`` and the non-localhost plaintext guard is satisfied without ``ZSCALER_MCP_ALLOW_HTTP``.
+
+**Restored Host header validation (DNS-rebinding protection).** Set ``ZSCALER_MCP_ALLOWED_HOSTS`` (e.g. ``your-host:*,localhost:*``) to reject requests whose ``Host`` header is not on the allowlist. Binding to ``0.0.0.0`` now refuses to start unless an allowlist is provided or validation is explicitly disabled via ``ZSCALER_MCP_DISABLE_HOST_VALIDATION=true``.
+
+**Restored the write-tools master switch.** The ``--enable-write-tools`` flag (env: ``ZSCALER_MCP_WRITE_ENABLED``) turns on write operations (create / update / delete) again. It is off by default; combine with ``--write-tools`` to narrow the allowlist to specific tool patterns.
+
 ## 0.13.0 (July 10, 2026)
 
 ### Notes
