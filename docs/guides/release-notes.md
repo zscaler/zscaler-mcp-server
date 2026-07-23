@@ -11,6 +11,16 @@ description: |-
 
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
+## 0.13.4 (July 23, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- **Fixed listing ZIA SSL Inspection rules.** `zia_list_ssl_inspection_rules` (and `zia_get_ssl_inspection_rule`) failed with a validation error because the SSL Inspection API returns each rule's `action` as a nested object (e.g. `{"type": "DO_NOT_DECRYPT", ...}`) rather than the plain enum string used by the other ZIA rule families. The rule views now normalize that object to its action `type`, so the tools return results correctly. The list tool also no longer advertises a `search` parameter — the SSL Inspection API returns a flat list with no server-side search or pagination.
+
 ## 0.13.3 (July 21, 2026)
 
 ### Notes

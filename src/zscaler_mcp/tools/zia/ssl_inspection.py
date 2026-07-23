@@ -44,9 +44,11 @@ ACTION_DESC = "SSL inspection action object or string (see ZIA docs)."
 
 
 class ListInput(BaseModel):
-    search: Annotated[
-        Optional[str], Field(default=None, description="Substring match on rule name.")
-    ] = None
+    """No parameters.
+
+    The ZIA SSL Inspection rules API returns a flat list — it exposes neither a
+    server-side search nor pagination, so the tool takes no filtering arguments.
+    """
 
 
 class GetInput(BaseModel):
@@ -99,8 +101,7 @@ class DeleteInput(BaseModel):
 def zia_list_ssl_inspection_rules(args: ListInput) -> list[dict[str, Any]]:
     """List ZIA SSL Inspection rules as curated summaries."""
     client = get_zscaler_client(service="zia")
-    qp = {"search": args.search} if args.search else {}
-    rules, _, err = client.zia.ssl_inspection_rules.list_rules(query_params=qp)
+    rules, _, err = client.zia.ssl_inspection_rules.list_rules()
     if err:
         raise RuntimeError(f"Failed to list SSL Inspection rules: {err}")
     return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)

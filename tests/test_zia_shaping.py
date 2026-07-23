@@ -131,6 +131,33 @@ def test_rule_summary_counts_members_and_drops_noise():
     assert "lastModifiedTime" not in s and "accessControl" not in s
 
 
+def test_rule_summary_collapses_object_action():
+    """SSL inspection reports ``action`` as a nested object; the summary must
+    collapse it to its ``type`` string instead of failing validation."""
+    raw = {
+        "id": 184200,
+        "name": "Zscaler Recommended Exemptions",
+        "order": 1,
+        "rank": 7,
+        "urlCategories": ["GLOBAL_INT_GBL_SSL_BYPASS"],
+        "action": {
+            "type": "DO_NOT_DECRYPT",
+            "doNotDecryptSubActions": {"bypassOtherPolicies": True},
+            "overrideDefaultCertificate": False,
+        },
+        "state": "ENABLED",
+        "predefined": True,
+    }
+    s = shape_rule_summary(raw).model_dump()
+    assert s["id"] == "184200"
+    assert s["action"] == "DO_NOT_DECRYPT"
+    assert s["enabled"] is True
+    assert s["member_counts"]["url_categories"] == 1
+    # Detail view collapses the same way.
+    d = shape_rule_detail(raw).model_dump()
+    assert d["action"] == "DO_NOT_DECRYPT"
+
+
 def test_rule_detail_surfaces_member_ids():
     raw = {
         "id": "5",

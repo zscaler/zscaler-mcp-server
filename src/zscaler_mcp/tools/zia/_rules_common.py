@@ -70,7 +70,15 @@ def _enabled(raw: dict[str, Any]) -> Optional[bool]:
 
 
 def _action(raw: dict[str, Any]) -> Optional[str]:
-    return pick(raw, "action", "rule_action")
+    val = pick(raw, "action", "rule_action")
+    # Most ZIA rule families report ``action`` as a plain enum string
+    # (ALLOW / BLOCK / …). A few — notably SSL inspection — return it as a
+    # nested object (``{"type": "DO_NOT_DECRYPT", ...}``); its ``type`` is the
+    # canonical action string. Collapse the object to that string so the lean
+    # summary/detail views (which type ``action`` as ``str``) stay valid.
+    if isinstance(val, dict):
+        return val.get("type") or val.get("action_type")
+    return val if isinstance(val, str) else None
 
 
 def _member_counts(raw: dict[str, Any]) -> dict[str, int]:

@@ -1,0 +1,91 @@
+name: Auto-upgrade zscaler-sdk-python
+
+# Keeps the committed lockfiles (uv.lock + requirements.txt) tracking the latest
+# zscaler-sdk-python release without any manual editing.
+#
+# Why this exists: pyproject.toml leaves zscaler-sdk-python unpinned, so PyPI /
+# uvx installs already resolve the newest SDK. But lockfiles pin by design (for
+# reproducible, security-assessed builds), so the Docker image + `uv sync
+# --frozen` keep shipping the locked version until the lock is refreshed. This
+# job does that refresh on a schedule and opens a PR, so the only manual step is
+# reviewing/merging (or enabling auto-merge).
+#
+# The job runs the test suite against the upgraded SDK before opening the PR, so
+# the change is pre-validated even though GITHUB_TOKEN-authored PRs don't
+# themselves re-trigger the standard PR checks.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # every Monday 06:00 UTC
+  workflow_dispatch: {} # allow manual runs on demand
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upgrade-sdk:
+    name: Bump zscaler-sdk-python to latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Upgrade zscaler-sdk-python in the lockfiles
+        # Uses --refresh-package (bust stale index cache) + --upgrade-package
+        # (ignore the existing requirements.txt pin, which uv pip compile
+        # otherwise honours as a version preference). See `make upgrade-sdk-only`.
+        run: make upgrade-sdk-only
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- uv.lock requirements.txt; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "zscaler-sdk-python is already at the latest release — nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            NEW_VERSION="$(grep -E '^zscaler-sdk-python==' requirements.txt | head -1 | cut -d= -f3)"
+            echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "Upgraded zscaler-sdk-python to ${NEW_VERSION}."
+          fi
+
+      - name: Validate the upgrade against the test suite
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          uv sync --extra dev
+          uv pip install pytest pytest-asyncio
+          uv run pytest tests/ --ignore=tests/e2e -q
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Open pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/upgrade-zscaler-sdk-python
+          delete-branch: true
+          commit-message: "fix: upgrade zscaler-sdk-python to ${{ steps.diff.outputs.new_version }}"
+          title: "fix: upgrade zscaler-sdk-python to ${{ steps.diff.outputs.new_version }}"
+          body: |
+            Automated bump of `zscaler-sdk-python` to its latest release
+            (**${{ steps.diff.outputs.new_version }}**) in `uv.lock` and
+            `requirements.txt`.
+
+            `pyproject.toml` stays unpinned, so this only refreshes the committed
+            lockfiles that reproducible / Docker builds consume. The test suite
+            was run against the upgraded SDK in the scheduled job before this PR
+            was opened.
+          labels: |
+            dependencies
