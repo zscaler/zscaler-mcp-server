@@ -130,6 +130,23 @@ update-deps:  ## Update all dependencies (uv.lock, pyproject.toml)
 	uv add --upgrade authlib cryptography fastapi huggingface-hub jiter langsmith openai posthog pydantic starlette zstandard
 	@echo "$(COLOR_OK)All dependencies updated successfully!$(COLOR_NONE)"
 
+.PHONY: upgrade-sdk
+upgrade-sdk:  ## Upgrade all deps to latest incl. zscaler-sdk-python, refreshing uv.lock + requirements.txt
+	@echo "$(COLOR_WARNING)Upgrading uv.lock (all packages, fresh index)...$(COLOR_NONE)"
+	uv lock --upgrade --refresh
+	@echo "$(COLOR_WARNING)Regenerating requirements.txt from the latest resolution...$(COLOR_NONE)"
+	uv pip compile pyproject.toml --output-file requirements.txt --upgrade
+	@echo "$(COLOR_OK)uv.lock + requirements.txt refreshed to latest.$(COLOR_NONE)"
+	@echo "$(COLOR_OK)(pyproject.toml is intentionally unpinned so PyPI/uvx installs always resolve latest.)$(COLOR_NONE)"
+	@echo "$(COLOR_OK)zscaler-sdk-python now at: $$(grep -E '^zscaler-sdk-python==' requirements.txt)$(COLOR_NONE)"
+
+.PHONY: upgrade-sdk-only
+upgrade-sdk-only:  ## Bump ONLY zscaler-sdk-python to latest (minimal-churn uv.lock + requirements.txt)
+	@echo "$(COLOR_WARNING)Upgrading only zscaler-sdk-python to latest (fresh index)...$(COLOR_NONE)"
+	uv lock --upgrade-package zscaler-sdk-python --refresh-package zscaler-sdk-python
+	uv pip compile pyproject.toml --output-file requirements.txt --upgrade-package zscaler-sdk-python
+	@echo "$(COLOR_OK)zscaler-sdk-python now at: $$(grep -E '^zscaler-sdk-python==' requirements.txt)$(COLOR_NONE)"
+
 docker-clean:
 	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q | xargs -r $(DOCKER) rm -f
 	-$(DOCKER) rmi -f $(BINARY_NAME):$(VERSION) 2>/dev/null || true
