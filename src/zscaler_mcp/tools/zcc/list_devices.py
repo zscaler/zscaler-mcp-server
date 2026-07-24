@@ -55,6 +55,9 @@ class DeviceSummary(AgentView):
     registration_state: Optional[str] = Field(
         default=None, description="Enrollment/registration state (decision-bearing)."
     )
+    policy_name: Optional[str] = Field(
+        default=None, description="Policy assigned to this enrolled device."
+    )
 
 
 def _shape_device(raw: dict[str, Any]) -> DeviceSummary:
@@ -65,6 +68,7 @@ def _shape_device(raw: dict[str, Any]) -> DeviceSummary:
         os_version=pick(raw, "os_version", "osVersion"),
         agent_version=pick(raw, "agent_version", "agentVersion"),
         registration_state=pick(raw, "registration_state", "registrationState"),
+        policy_name=pick(raw, "policy_name", "policyName"),
     )
 
 
@@ -84,9 +88,10 @@ def _shape_device(raw: dict[str, Any]) -> DeviceSummary:
 def zcc_list_devices(args: ListDevicesInput) -> list[dict[str, Any]]:
     """List ZCC enrolled devices as curated, agent-facing views.
 
-    Read-only. Returns the identifying + state fields (udid, user, hostname,
-    OS, agent version, registration state) rather than the full ~40-field SDK
-    enrollment record. Use the returned `udid` with `zcc_get_device_otp`.
+    Read-only. Returns the identifying + decision-bearing fields (udid, user,
+    hostname, OS, agent version, registration state, assigned policy) rather
+    than the full ~40-field SDK enrollment record. Use the returned `udid`
+    with `zcc_get_device_otp`.
     """
     client = get_zscaler_client(service="zcc")
 

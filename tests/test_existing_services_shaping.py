@@ -43,6 +43,7 @@ def test_zcc_device_curates_and_keeps_udid():
         "osVersion": "macOS 14",
         "agentVersion": "4.2",
         "registrationState": "REGISTERED",
+        "policyName": "Contractors",
         "policyBlob": {"x": 1},
     }
     view = _shape_device(raw)
@@ -50,7 +51,12 @@ def test_zcc_device_curates_and_keeps_udid():
     d = view.model_dump()
     assert d["udid"] == "d-29-9b"
     assert d["registration_state"] == "REGISTERED"
+    assert d["policy_name"] == "Contractors"
     assert "policyBlob" not in d
+
+
+def test_zcc_device_policy_name_accepts_sdk_snake_case():
+    assert _shape_device({"udid": "d-1", "policy_name": "Employees"}).policy_name == "Employees"
 
 
 def test_zcc_profile_and_network_shape():
