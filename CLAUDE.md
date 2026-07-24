@@ -85,6 +85,8 @@ Two independent exclusion mechanisms, applied at registration time (not runtime)
 
 - **`--disabled-tools` / `ZSCALER_MCP_DISABLED_TOOLS`** — removes individual tools by name pattern. Supports `fnmatch` wildcards (e.g., `zcc_*`, `zia_list_device*`). Applied in `register_read_tools()` and `register_write_tools()` via `fnmatch.fnmatch()`.
 
+- **`--disabled-toolsets` / `ZSCALER_MCP_DISABLED_TOOLSETS`** — removes entire toolsets. The blocklist complement to `--toolsets` (include-only): load everything *except* the named toolsets, instead of enumerating the ~60 you want. Exact toolset ids only (no wildcards, like `--disabled-services`). In v2 this is a `Registry.select(disabled_toolsets=…)` filter — precedence `disabled_toolsets > enabled_toolsets` (disable wins when a toolset is both selected and disabled). Example: `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin`.
+
 **Cross-service overlap**: Some Zscaler APIs expose overlapping data. For example, ZIA has device management tools (`zia_list_devices`) that return the same data as ZCC's tools. Disabling the `zcc` service removes all `zcc_*` tools but does NOT remove ZIA's device tools. Use `--disabled-tools` to also block the ZIA overlap if needed.
 
 The `zscaler_get_available_services` tool exposes disabled services to the AI agent so it can inform users instead of searching for workarounds.
@@ -300,6 +302,41 @@ Destructive write operations (delete, bulk update) use cryptographic confirmatio
 
 Implementation: `zscaler_mcp/common/elicitation.py` — `generate_confirmation_token()` and `verify_confirmation_token()`.
 
+## MCP Protocol Posture, Tool Annotations & Conformance
+
+The server tracks the **published** MCP protocol baseline (`2025-11-25`, served by `mcp` 1.x / `fastmcp` 3.x) and validates against it in CI. The next spec, `2026-07-28` (stateless core, `InputRequiredResult` return types, native multi-round-trip elicitation), ships in `mcp` 2.x / `fastmcp` 4.x and is a **staged migration**, not an automatic upgrade. Full posture + migration roadmap: `docs/guides/mcp-protocol.md`.
+
+### SDK version caps (`mcp<2`, `fastmcp<4`)
+
+`pyproject.toml` pins **deliberate** upper bounds: `mcp[cli]>=1.23.0,<2` and `fastmcp>=2.13.0,<4`. This is not lazy pinning — the majors carry the `2026-07-28` rewrite and cascade prerelease foundations (an alpha Pydantic, the `fastmcp` → `fastmcp-slim` split). A routine `uvx zscaler-mcp` / `uv sync` must not pull them in silently the day they GA. Lifting a cap is a reviewed act done in lockstep with the migration.
+
+- **Guarded by** `tests/test_dependency_caps.py` — behavioural assertions (the current GA line resolves, the breaking major does not) plus a check that the rationale comment survives. Dropping or weakening a cap fails CI.
+
+### Tool annotations (advisory hints, NOT a security control)
+
+Every tool advertises MCP `ToolAnnotations` so a client can decide how to present it — notably whether to surface a human-facing confirmation before running it. The hints are **derived from the single action verb**, never hand-declared, so they can never disagree with the tool's behaviour:
+
+| action | `readOnlyHint` | `destructiveHint`     | `idempotentHint` | `openWorldHint` |
+| ------ | -------------- | --------------------- | ---------------- | --------------- |
+| read   | `true`         | (unset)               | (unset)          | `false`         |
+| create | `false`        | `false`               | `false`          | `false`         |
+| update | `false`        | `true` (PUT-replace)  | `true`           | `false`         |
+| delete | `false`        | `true`                | `true`           | `false`         |
+
+- **Source of truth:** `ToolSpec.read_only` / `.destructive` / `.idempotent` (`src/zscaler_mcp/registry/spec.py`) → `_tool_annotations()` renders the MCP wire type (`src/zscaler_mcp/registry/fastmcp_bridge.py`) → passed to `FunctionTool.from_function(annotations=...)`.
+- `openWorldHint` is `false` for every tool: they all operate against one closed system (the configured Zscaler tenant), never an open-ended external world.
+- Write-only hints (`destructiveHint` / `idempotentHint`) are left **unset** on read-only tools rather than sent as a misleading `false`.
+- **These are HINTS, not gates.** The authoritative controls stay server-side: read-only-by-default, the `--write-tools` allowlist, and HMAC confirmation for deletes — enforced regardless of any hint.
+- **Guarded by** `tests/test_tool_annotations.py` — per-action rendering plus a registry-wide invariant asserted across every real tool.
+
+### Official conformance suite in CI
+
+`.github/workflows/mcp-conformance.yml` runs the **official** `@modelcontextprotocol/conformance` runner (pinned `@0.1.16`) in **server mode**: it boots the server over streamable-http (auth + entitlement filter disabled; no Zscaler creds needed because the SDK client is created lazily on first tool call) and connects as an MCP client to assert protocol behaviour against the **published `2025-11-25`** baseline — never `draft` / `latest`.
+
+- **Reality today:** every scenario applicable to a production server passes (initialize, ping, logging-set-level, tools-list, tools-call text/error, sse multi-stream, resources-list, prompts-list, dns-rebinding-protection). The 20 baselined scenarios in `.github/conformance-baseline.yml` are inapplicable — they need the reference "everything" server's synthetic test fixtures (a tool that returns an image, a prompt named `test_simple_prompt`) or capabilities we intentionally don't advertise (resources, completions, elicitation).
+- **The baseline can't silently rot:** a NEW failure fails CI (regression); a baselined scenario that starts PASSING also fails CI (stale entry to remove).
+- **Run locally:** `make conformance` (needs `node`/`npx`). Config guarded by `tests/test_conformance_config.py`.
+
 ## ZDX Filtering
 
 ZDX query tools accept optional filters that significantly improve result quality:
@@ -339,6 +376,7 @@ Server & security env vars:
 - `ZSCALER_MCP_DISABLED_TOOLS` — Comma-separated tool patterns to exclude (wildcards via fnmatch)
 - `ZSCALER_MCP_DISABLED_SERVICES` — Comma-separated service names to exclude
 - `ZSCALER_MCP_TOOLSETS` — Comma-separated toolset ids to enable (e.g. `zia_url_filtering,zpa_app_segments`). Special values: `default` (curated default-on subset) and `all` (every toolset). When unset, every toolset whose service is enabled is loaded. The `meta` toolset is always loaded. See `docs/guides/toolsets.md`.
+- `ZSCALER_MCP_DISABLED_TOOLSETS` — Comma-separated toolset ids to exclude (blocklist complement to `ZSCALER_MCP_TOOLSETS`). Exact ids only (no wildcards). Wins over the toolset include-list when both name a toolset. See `docs/guides/toolsets.md`.
 - `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` — Skip the OneAPI entitlement filter (`true`/`false`). When `false` (default), the server intersects the selected toolsets with the products entitled by the OneAPI bearer token (`service-info[].prd`). Set `true` as an emergency override.
 - `ZSCALER_MCP_WRITE_ENABLED` — Enable write tools (`true`/`false`)
 - `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
@@ -355,6 +393,7 @@ Server & security env vars:
 - `--disabled-services` — Comma-separated services to exclude (e.g., `zcc,zdx`)
 - `--disabled-tools` — Comma-separated tool patterns to exclude (wildcards: `"zcc_*,zia_list_device*"`)
 - `--toolsets` — Comma-separated toolset ids to enable. Use `default` for the curated default-on subset, `all` for everything (e.g. `"zia_url_filtering,zpa_app_segments"` or `"default"`). See `docs/guides/toolsets.md`.
+- `--disabled-toolsets` — Comma-separated toolset ids to exclude (blocklist complement to `--toolsets`). Exact ids only (no wildcards). Load everything except these; wins over `--toolsets`. (e.g. `--toolsets all --disabled-toolsets "zia_ssl_inspection,zia_admin"`)
 - `--no-entitlement-filter` — Skip the OneAPI entitlement filter that trims `selected_toolsets` to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only; the filter is non-fatal by default and skips itself on any failure.
 - `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
 - `--generate-auth-token` — Generate an API key for MCP client authentication

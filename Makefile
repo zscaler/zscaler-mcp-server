@@ -147,6 +147,31 @@ upgrade-sdk-only:  ## Bump ONLY zscaler-sdk-python to latest (minimal-churn uv.l
 	uv pip compile pyproject.toml --output-file requirements.txt --upgrade-package zscaler-sdk-python
 	@echo "$(COLOR_OK)zscaler-sdk-python now at: $$(grep -E '^zscaler-sdk-python==' requirements.txt)$(COLOR_NONE)"
 
+# Official MCP conformance suite (server mode). Boots the server over
+# streamable-http, points the PINNED runner at it for the PUBLISHED 2025-11-25
+# baseline, and gates on .github/conformance-baseline.yml. Mirrors the CI job in
+# .github/workflows/mcp-conformance.yml so you can reproduce it locally. Needs
+# node/npx on PATH. Override CONFORMANCE_PORT if 8123 is taken.
+CONFORMANCE_PORT ?= 8123
+CONFORMANCE_RUNNER ?= @modelcontextprotocol/conformance@0.1.16
+CONFORMANCE_SPEC_VERSION ?= 2025-11-25
+.PHONY: conformance
+conformance:  ## Run the official MCP conformance suite against a local server
+	@echo "$(COLOR_WARNING)Starting server on 127.0.0.1:$(CONFORMANCE_PORT)...$(COLOR_NONE)"
+	@ZSCALER_MCP_AUTH_ENABLED=false \
+	  ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true \
+	  ZSCALER_MCP_PID_FILE=/tmp/zscaler-mcp-conformance.pid \
+	  uv run zscaler-mcp --transport streamable-http --host 127.0.0.1 --port $(CONFORMANCE_PORT) \
+	  > /tmp/mcp-conformance-server.log 2>&1 & echo $$! > /tmp/mcp-conformance.pid
+	@for _ in $$(seq 1 30); do \
+	  curl -sf http://127.0.0.1:$(CONFORMANCE_PORT)/health >/dev/null && break; sleep 1; done
+	@echo "$(COLOR_WARNING)Running conformance suite ($(CONFORMANCE_SPEC_VERSION))...$(COLOR_NONE)"
+	@npx --yes $(CONFORMANCE_RUNNER) server \
+	  --url http://127.0.0.1:$(CONFORMANCE_PORT)/mcp \
+	  --suite active --spec-version $(CONFORMANCE_SPEC_VERSION) \
+	  --expected-failures .github/conformance-baseline.yml; \
+	  status=$$?; kill $$(cat /tmp/mcp-conformance.pid) 2>/dev/null || true; exit $$status
+
 docker-clean:
 	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q | xargs -r $(DOCKER) rm -f
 	-$(DOCKER) rmi -f $(BINARY_NAME):$(VERSION) 2>/dev/null || true

@@ -122,6 +122,26 @@ def should_skip_confirmations() -> bool:
     return os.environ.get("ZSCALER_MCP_SKIP_CONFIRMATIONS", "").lower() == "true"
 
 
+def _resource_identifier(params: Dict[str, Any]) -> str:
+    """Best-effort human-readable identifier for the resource being acted on.
+
+    Delete tools across services use different primary-key parameter names —
+    ``id``, ``connector_id``, ``group_id``, ``segment_id``, ``rule_id`` … — so a
+    fixed lookup of ``id``/``connector_id``/``name`` prints ``unknown`` for most
+    of them, defeating the whole point of the human-facing confirmation prompt.
+    Prefer an explicit ``id``/``name``, then fall back to the first ``*_id``
+    parameter present (deterministic ordering), then ``unknown``.
+    """
+    if params.get("id"):
+        return str(params["id"])
+    if params.get("name"):
+        return str(params["name"])
+    for key in sorted(params):
+        if key.endswith("_id") and params[key]:
+            return f"{params[key]} ({key})"
+    return "unknown"
+
+
 def generate_confirmation_message(tool_name: str, params: Dict[str, Any], token: str) -> str:
     """Build a human-readable confirmation message carrying the token."""
     display_params = {
@@ -136,9 +156,7 @@ def generate_confirmation_message(tool_name: str, params: Dict[str, Any], token:
 
     if "delete_" in tool_name or "bulk_delete_" in tool_name:
         resource_type = tool_name.split("delete_", 1)[-1].replace("_", " ").title()
-        resource_id = (
-            params.get("id") or params.get("connector_id") or params.get("name") or "unknown"
-        )
+        resource_id = _resource_identifier(params)
         return (
             f"DESTRUCTIVE OPERATION - CONFIRMATION REQUIRED\n\n"
             f"Operation: DELETE {resource_type}\n"

@@ -24,7 +24,7 @@ from typing import Any
 import pydantic_core
 from fastmcp.tools import FunctionTool
 from fastmcp.tools.tool import ToolResult
-from mcp.types import TextContent
+from mcp.types import TextContent, ToolAnnotations
 
 from zscaler_mcp.common.token_metrics import is_token_reporting_enabled, token_usage_block
 from zscaler_mcp.encoding import encode
@@ -133,6 +133,41 @@ def _to_tool_result(spec: ToolSpec, value: Any) -> ToolResult:
     )
 
 
+def _tool_annotations(spec: ToolSpec) -> ToolAnnotations:
+    """Build the MCP ``ToolAnnotations`` hints for a spec.
+
+    These are behavioural HINTS the client uses to decide how to present a tool
+    (e.g. whether to surface a confirmation prompt before running it) — they are
+    advisory metadata, never a security control. The authoritative gate stays
+    server-side: reads are always safe, and writes require the ``--write-tools``
+    allowlist plus (for deletes) HMAC confirmation regardless of what any hint
+    says (DESIGN.md §6).
+
+    The values are DERIVED from the spec's single action verb via the domain
+    properties on :class:`ToolSpec`, so they can never disagree with the tool's
+    actual behaviour:
+
+    * read  -> ``readOnlyHint=True``
+    * create -> not read-only, not destructive, not idempotent
+    * update -> not read-only, destructive (PUT-replace), idempotent
+    * delete -> not read-only, destructive, idempotent
+
+    ``openWorldHint`` is ``False`` for every tool: they all operate against a
+    single, closed system (the configured Zscaler tenant), never an open-ended
+    external world (contrast a web-search tool). Hint fields that the MCP spec
+    treats as meaningful only for writes are left unset (``None``) on read-only
+    tools rather than sent as ``False``.
+    """
+    if spec.read_only:
+        return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+    return ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=spec.destructive,
+        idempotentHint=spec.idempotent,
+        openWorldHint=False,
+    )
+
+
 def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str, Any]]:
     """Flatten the input model's fields into callable parameters.
 
@@ -236,6 +271,7 @@ def build_function_tool(spec: ToolSpec) -> FunctionTool:
         name=spec.name,
         description=spec.description,
         output_schema=output_schema,
+        annotations=_tool_annotations(spec),
     )
 
 

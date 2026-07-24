@@ -245,10 +245,15 @@ Tools are grouped into named **toolsets** so you can load only the slice an agen
    # Or load every registered toolset explicitly
    zscaler-mcp --toolsets all
 
+   # Load everything EXCEPT a couple of toolsets (blocklist)
+   zscaler-mcp --toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin
+
    # Equivalent via environment variable
    export ZSCALER_MCP_TOOLSETS="zia_url_filtering,zpa_app_segments"
 
 When ``--toolsets`` is unspecified, every toolset whose service is enabled is loaded (preserves the historical default).
+
+``--disabled-toolsets`` (env ``ZSCALER_MCP_DISABLED_TOOLSETS``) is the blocklist complement to ``--toolsets``: instead of enumerating the dozens of toolsets you want, name only the ones to exclude. It takes exact toolset ids (no wildcards, like ``--disabled-services``) and **wins over ``--toolsets``** when both name the same toolset.
 
 The ``meta`` toolset (server discovery) is always loaded regardless of selection. The agent can also enable additional toolsets at runtime through the always-on ``zscaler_list_toolsets``, ``zscaler_get_toolset_tools``, and ``zscaler_enable_toolset`` tools.
 
@@ -366,6 +371,7 @@ Complete List of All Supported Variables
 - ``ZSCALER_MCP_DISABLED_SERVICES`` - Comma-separated services to exclude (e.g., ``zcc,zdx``)
 - ``ZSCALER_MCP_DISABLED_TOOLS`` - Comma-separated tools to exclude, supports wildcards (e.g., ``zcc_*,zia_list_devices``)
 - ``ZSCALER_MCP_TOOLSETS`` - Comma-separated toolset ids to enable (e.g. ``zia_url_filtering,zpa_app_segments``). Special values: ``default`` (curated default-on subset), ``all`` (every toolset). When unset, every toolset whose service is enabled is loaded. The ``meta`` toolset is always loaded. See the Toolsets section below.
+- ``ZSCALER_MCP_DISABLED_TOOLSETS`` - Comma-separated toolset ids to exclude (blocklist complement to ``ZSCALER_MCP_TOOLSETS``). Exact ids only (no wildcards). Wins over the toolset include-list when both name a toolset.
 - ``ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`` - Skip the OneAPI entitlement filter (default: ``false``). The filter trims toolsets to the products the configured ``ZSCALER_CLIENT_ID`` is entitled to. It is non-fatal by default; set to ``true`` only as an emergency override.
 - ``ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION`` - Disable defense-in-depth output sanitization (default: ``false``). Sanitization strips invisible/BiDi/zero-width characters, raw HTML, dangerous Markdown link/image syntax, and suspicious code-fence info-strings from every tool response before it reaches the agent. Disabling removes a prompt-injection defense layer; only set to ``true`` for diagnostics.
 - ``ZSCALER_MCP_LOG_TOOL_CALLS`` - Enable per-tool-call audit logging (default: ``false``)
@@ -423,6 +429,7 @@ CLI Flags Reference
    --tools                   Comma-separated list of specific tools to enable
    --disabled-tools          Comma-separated tool patterns to exclude (wildcards supported)
    --toolsets                Comma-separated toolset ids to enable (use 'default' or 'all' as keywords)
+   --disabled-toolsets       Comma-separated toolset ids to exclude (blocklist; wins over --toolsets)
    --no-entitlement-filter   Skip the OneAPI entitlement filter (emergency override)
    --enable-write-tools      Enable write (create/update/delete) tools
    --write-tools             Mandatory allowlist of write tools (supports wildcards)

@@ -85,6 +85,7 @@ def build_server(
     enabled_services: Iterable[str] | None = None,
     disabled_services: Iterable[str] | None = None,
     enabled_toolsets: Iterable[str] | None = None,
+    disabled_toolsets: Iterable[str] | None = None,
     enable_write: bool = False,
     write_allowlist: Iterable[str] | None = None,
     disabled_patterns: Iterable[str] | None = None,
@@ -114,6 +115,7 @@ def build_server(
         enabled_services=enabled_services,
         disabled_services=disabled_services,
         enabled_toolsets=enabled_toolsets,
+        disabled_toolsets=disabled_toolsets,
         entitled_services=entitled_services,
         enable_write=enable_write,
         write_allowlist=write_allowlist,
@@ -548,6 +550,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comma-separated toolset ids to enable (default: all).",
     )
     p.add_argument(
+        "--disabled-toolsets",
+        default=os.getenv("ZSCALER_MCP_DISABLED_TOOLSETS", ""),
+        metavar="TOOLSET1,TOOLSET2,...",
+        help=(
+            "Comma-separated toolset ids to exclude (e.g. 'zia_ssl_inspection,zia_admin'). "
+            "The blocklist complement to --toolsets: load everything except these. "
+            "Exact ids only (no wildcards); wins over --toolsets when both name a "
+            "toolset (env: ZSCALER_MCP_DISABLED_TOOLSETS)."
+        ),
+    )
+    p.add_argument(
         "--enable-write-tools",
         action="store_true",
         default=os.getenv("ZSCALER_MCP_WRITE_ENABLED", "").lower() in ("true", "1", "yes"),
@@ -785,6 +798,7 @@ def main() -> None:
         enabled_services=enabled_services,
         disabled_services=disabled_services,
         enabled_toolsets=_resolve_toolsets(args.toolsets),
+        disabled_toolsets=_parse_csv(args.disabled_toolsets),
         enable_write=write_enabled,
         write_allowlist=write_allowlist,
         disabled_patterns=_parse_csv(args.disabled_tools),

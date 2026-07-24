@@ -18,7 +18,9 @@ The Zscaler MCP server groups its 280+ tools into **toolsets** — small, named 
 | Run with the curated default-on subset | `--toolsets default` |
 | Run with everything explicitly | `--toolsets all` |
 | Run with a narrow custom set | `--toolsets zia_url_filtering,zpa_app_segments` |
+| Run with everything except a few | `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin` |
 | Set via environment variable | `ZSCALER_MCP_TOOLSETS=zia_url_filtering,zpa_app_segments` |
+| Exclude via environment variable | `ZSCALER_MCP_DISABLED_TOOLSETS=zia_ssl_inspection,zia_admin` |
 | Discover what exists | Call `zscaler_list_toolsets` from your client. |
 | Inspect a toolset | Call `zscaler_get_toolset_tools` with a toolset id. |
 | Enable more at runtime | Call `zscaler_enable_toolset` with a toolset id. |
@@ -159,6 +161,7 @@ The selection pipeline is deterministic:
 3. **`--toolsets all`** → every registered toolset.
 4. **`--toolsets a,b,default`** → explicit ids `a` and `b` plus the `default` expansion.
 5. **`--toolsets a,unknown`** → `a` is loaded; `unknown` produces a startup WARNING listing the valid ids.
+6. **`--disabled-toolsets x,y`** → after the include-list resolves, toolsets `x` and `y` are subtracted. The blocklist **wins**: `--toolsets x --disabled-toolsets x` yields zero tools from `x`. Exact ids only (no wildcards, matching `--disabled-services`).
 
 The `meta` toolset is always force-added. Tools belonging to the `meta` toolset bypass the toolset filter entirely.
 
@@ -178,6 +181,8 @@ Concrete examples:
 | `--toolsets zia_url_filtering` | 5 read tools (list, get, list_lite). No writes. |
 | `--toolsets zia_url_filtering --enable-write-tools --write-tools 'zia_*'` | All 8 tools (5 read + 3 write). |
 | `--toolsets all --disabled-tools 'zcc_*'` | Every tool except ZCC. |
+| `--toolsets all --disabled-toolsets zia_ssl_inspection` | Every toolset except SSL inspection. |
+| `--toolsets zia_url_filtering --disabled-toolsets zia_url_filtering` | 0 tools (blocklist wins over include-list). |
 | `--toolsets zia_url_filtering --disabled-tools 'zia_*url_filtering*'` | 0 tools (exclusion wins). |
 
 ## OneAPI entitlement filter

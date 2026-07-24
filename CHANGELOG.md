@@ -1,5 +1,21 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.14.0 (July 24, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- **New `--disabled-toolsets` flag (and `ZSCALER_MCP_DISABLED_TOOLSETS`).** The blocklist complement to `--toolsets`: load everything *except* the toolsets you name, instead of having to enumerate the dozens you want. Takes exact toolset ids (no wildcards) and wins over `--toolsets` when both name the same toolset. Example: `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin`. See the [Toolsets guide](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/toolsets.md).
+
+- **Clearer destructive-operation confirmations.** The confirmation prompt shown before a delete now names the specific resource being removed for every tool — previously tools whose identifier isn't literally `id`/`name` (e.g. ZPA's `group_id`) showed `unknown`. The prompt now falls back to the resource's `*_id` parameter so you can always see what you are approving.
+
+- **Tool behavior hints for MCP clients.** Every tool now advertises standard MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) derived from its action. Supported clients use these to decide when to surface a confirmation — read tools run freely, while create/update/delete are flagged as writes (delete and PUT-replace updates as destructive).
+
+- **MCP protocol posture hardened.** The MCP SDK dependencies are now capped to their current major versions (`mcp<2`, `fastmcp<4`) so a routine install cannot silently jump onto the in-progress next protocol revision before it is validated. The server is also verified against the official MCP conformance suite in CI against the published `2025-11-25` protocol.
+
 ## 0.13.4 (July 23, 2026)
 
 ### Notes
