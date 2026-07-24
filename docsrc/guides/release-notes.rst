@@ -22,6 +22,10 @@ Zscaler Integrations MCP Server Changelog
 
 **MCP protocol posture hardened.** The MCP SDK dependencies are now capped to their current major versions (``mcp<2``, ``fastmcp<4``) so a routine install cannot silently jump onto the in-progress next protocol revision before it is validated. The server is also verified against the official MCP conformance suite in CI against the published ``2025-11-25`` protocol.
 
+### Bug Fixes
+
+**Restored ``policy_name`` (and the rest of the device record) on ``zcc_list_devices``** (`#88 <https://github.com/zscaler/zscaler-mcp-server/issues/88>`_). Since v0.13.0 the tool projected each device down to a 6-field summary and dropped ``policy_name`` along with most enrollment/telemetry fields, so per-device policy assignment could no longer be determined through the server. ``policy_name`` is now part of the default summary, and a new ``detail='full'`` option returns the rest of the record (owner, MAC, manufacturer, VPN/tunnel state, download count, and the enrollment / keep-alive timestamps).
+
 ## 0.13.4 (July 23, 2026)
 
 ### Notes
