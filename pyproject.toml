@@ -26,8 +26,16 @@ dependencies = [
     # MCP server framework. FastMCP gives us the ASGI app factories
     # (streamable_http_app / sse_app) that every piece of the auth /
     # hardening layer wraps as middleware — same foundation as v1.
-    "mcp[cli]>=1.23.0",
-    "fastmcp>=2.13.0",
+    #
+    # Upper bounds are DELIBERATE, not lazy pinning. The MCP 2026-07-28 spec
+    # ships in `mcp` 2.x and `fastmcp` 4.x — a stateless-core rewrite
+    # (CallToolResult/InputRequiredResult return types, ServerRunner, native
+    # multi-round-trip elicitation). Those majors are a planned, staged
+    # migration (see docs/guides/mcp-protocol.md), NOT something a routine
+    # `uvx zscaler-mcp` / `uv sync` should pull in silently the day they GA.
+    # Lift the caps only together with that migration.
+    "mcp[cli]>=1.23.0,<2",
+    "fastmcp>=2.13.0,<4",
     # Pydantic powers BOTH the input models and the output VIEWS. A view's
     # model_json_schema() is the source of truth for the tool's outputSchema,
     # so the curated view and the advertised schema can never drift.

@@ -64,6 +64,7 @@ class Registry:
         enabled_services: Iterable[str] | None = None,
         disabled_services: Iterable[str] | None = None,
         enabled_toolsets: Iterable[str] | None = None,
+        disabled_toolsets: Iterable[str] | None = None,
         entitled_services: Iterable[str] | None = None,
         enable_write: bool = False,
         write_allowlist: Iterable[str] | None = None,
@@ -83,8 +84,14 @@ class Registry:
                 are excluded — the operator's ``--disabled-services`` blocklist.
                 Applied after ``enabled_services`` (a service can be both enabled
                 and then disabled; disable wins).
-            enabled_toolsets: If given, only tools in these toolsets are kept.
-                ``None`` keeps every toolset.
+            enabled_toolsets: If given, only tools in these toolsets are kept —
+                the operator's ``--toolsets`` allowlist. ``None`` keeps every
+                toolset.
+            disabled_toolsets: If given, tools in these toolsets are excluded —
+                the operator's ``--disabled-toolsets`` blocklist. Applied after
+                ``enabled_toolsets`` so the blocklist wins (a toolset can be both
+                selected and then disabled; disable wins), mirroring the
+                ``disabled_services`` / ``disabled_patterns`` precedence.
             entitled_services: If given, only tools whose ``service`` is in this
                 set are kept — the OneAPI product-entitlement downscope. ``None``
                 applies no entitlement filtering (filter skipped/disabled).
@@ -100,6 +107,7 @@ class Registry:
         enabled_svc = set(enabled_services) if enabled_services is not None else None
         disabled_svc = set(disabled_services) if disabled_services is not None else None
         toolsets = set(enabled_toolsets) if enabled_toolsets is not None else None
+        disabled_ts = set(disabled_toolsets) if disabled_toolsets is not None else None
         entitled = set(entitled_services) if entitled_services is not None else None
         allow = list(write_allowlist) if write_allowlist is not None else None
 
@@ -114,6 +122,8 @@ class Registry:
             if entitled is not None and spec.service not in entitled:
                 continue
             if toolsets is not None and spec.toolset not in toolsets:
+                continue
+            if disabled_ts is not None and spec.toolset in disabled_ts:
                 continue
             if spec.is_write:
                 if not enable_write:

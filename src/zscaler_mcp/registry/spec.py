@@ -87,3 +87,39 @@ class ToolSpec:
     def is_write(self) -> bool:
         """True if this tool mutates the tenant (create/update/delete)."""
         return self.action in _WRITE_ACTIONS
+
+    # ---- MCP tool-annotation semantics ------------------------------------
+    # These three booleans are the domain-level source of truth for the MCP
+    # ``ToolAnnotations`` hints (readOnlyHint / destructiveHint / idempotentHint)
+    # the bridge advertises. They are DERIVED from the single ``action`` verb —
+    # never hand-declared per tool — so the "one tool = one action" invariant
+    # (DESIGN.md §2) automatically produces correct, uniform hints. Kept here
+    # (not in the bridge) so the semantics are pure domain logic, unit-testable
+    # without importing the MCP wire types. See MCP spec ToolAnnotations.
+
+    @property
+    def read_only(self) -> bool:
+        """True if the tool does not modify the tenant (``readOnlyHint``)."""
+        return not self.is_write
+
+    @property
+    def destructive(self) -> bool:
+        """True if the tool can remove or overwrite existing tenant state.
+
+        Only meaningful when :attr:`read_only` is ``False`` (the MCP spec says
+        ``destructiveHint`` is ignored for read-only tools). ``delete`` removes
+        resources; ``update`` is PUT-replace (a full overwrite that can drop
+        fields — see CLAUDE.md) so it is destructive too. ``create`` only adds a
+        new resource, so it is NOT destructive.
+        """
+        return self.action in (UPDATE, DELETE)
+
+    @property
+    def idempotent(self) -> bool:
+        """True if repeating the call with the same args yields the same state.
+
+        Only meaningful when :attr:`read_only` is ``False``. ``update``
+        (PUT-replace) and ``delete`` converge to the same end state on repeat;
+        ``create`` appends a new resource on every call, so it is NOT idempotent.
+        """
+        return self.action in (UPDATE, DELETE)
