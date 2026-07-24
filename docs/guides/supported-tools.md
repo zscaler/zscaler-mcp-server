@@ -363,7 +363,7 @@ All 4 tools are read-only.
 | Tool | Toolset | Type | Description |
 |------|---------|------|-------------|
 | `zcc_get_device_otp` | `zcc_devices` | Read-only | Get the OTP bundle for a ZCC device (logout / exit / uninstall / disable OTPs).      Read-only (GET, no tenant mutation) but the returned values ARE sensitive     short-lived credentials — treat them like passwords. Requires the device's     `udid` (from `zcc_list_devices`). |
-| `zcc_list_devices` | `zcc_devices` | Read-only | List ZCC enrolled devices as curated, agent-facing views.      Read-only. Returns the identifying + state fields (udid, user, hostname,     OS, agent version, registration state) rather than the full ~40-field SDK     enrollment record. Use the returned `udid` with `zcc_get_device_otp`. |
+| `zcc_list_devices` | `zcc_devices` | Read-only | List ZCC enrolled devices as curated, agent-facing views.      Read-only. Returns lean summaries by default (`detail='summary'`): the     identifying + state fields (udid, user, hostname, OS, agent version,     registration state) plus the assigned `policy_name`. Pass `detail='full'`     to also get the rest of the enrollment/telemetry record (owner, MAC,     manufacturer, VPN/tunnel state, download count, and the enrollment /     keep-alive timestamps). Use the returned `udid` with `zcc_get_device_otp`. |
 | `zcc_list_forwarding_profiles` | `zcc_forwarding_profiles` | Read-only | List ZCC forwarding profiles (by company) as curated, agent-facing views. Read-only. |
 | `zcc_list_trusted_networks` | `zcc_trusted_networks` | Read-only | List ZCC trusted networks (by company) as curated, agent-facing views. Read-only. |
 

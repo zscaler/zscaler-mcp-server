@@ -15,7 +15,7 @@ from zscaler_mcp.tools.easm.organizations import OrganizationSummary, _shape_org
 
 # ZCC
 from zscaler_mcp.tools.zcc.list_devices import DeviceSummary as ZccDeviceSummary
-from zscaler_mcp.tools.zcc.list_devices import _shape_device
+from zscaler_mcp.tools.zcc.list_devices import _shape_device, _shape_device_detail
 from zscaler_mcp.tools.zcc.list_forwarding_profiles import _shape_profile
 from zscaler_mcp.tools.zcc.list_trusted_networks import _shape_network
 
@@ -43,6 +43,7 @@ def test_zcc_device_curates_and_keeps_udid():
         "osVersion": "macOS 14",
         "agentVersion": "4.2",
         "registrationState": "REGISTERED",
+        "policyName": "SGIOLab",
         "policyBlob": {"x": 1},
     }
     view = _shape_device(raw)
@@ -50,7 +51,62 @@ def test_zcc_device_curates_and_keeps_udid():
     d = view.model_dump()
     assert d["udid"] == "d-29-9b"
     assert d["registration_state"] == "REGISTERED"
+    # Regression (issue #88): policy_name must survive the summary shaping.
+    assert d["policy_name"] == "SGIOLab"
     assert "policyBlob" not in d
+
+
+def test_zcc_device_full_detail_restores_enrollment_fields():
+    """Regression (issue #88): detail='full' restores the dropped record."""
+    raw = {
+        "companyName": "William Guilherme",
+        "type": 3,
+        "state": 3,
+        "udid": "VMware-42:92DA",
+        "macAddress": "00:50:56:82:34:A2",
+        "user": "adam.ashcroft@securitygeek.io",
+        "detail": "VMware, Inc. VMware Virtual Platform",
+        "policyName": "SGIOLab",
+        "last_seen_time": "1759822506",
+        "osVersion": "Microsoft Windows 10 Pro;64 bit;amd64",
+        "agentVersion": "4.7.0.88 (64-bit)",
+        "registrationState": "Remove pending",
+        "owner": "WilliamGuilherme",
+        "machineHostname": "VCD138-WIN10",
+        "manufacturer": "VMware, Inc.",
+        "download_count": 1,
+        "registration_time": "1759822502",
+        "deregistrationTimestamp": "1759796303",
+        "config_download_time": "1759822502",
+        "keepAliveTime": "1759822506",
+        "tunnelVersion": "20:1",
+        "vpnState": 0,
+        "upmVersion": "4.5.0.33 (32-bit)",
+        "zappArch": "x64",
+    }
+    d = _shape_device_detail(raw).model_dump()
+    # summary fields survive
+    assert d["udid"] == "VMware-42:92DA"
+    assert d["policy_name"] == "SGIOLab"
+    assert d["registration_state"] == "Remove pending"
+    # full-only fields are restored
+    assert d["company_name"] == "William Guilherme"
+    assert d["owner"] == "WilliamGuilherme"
+    assert d["mac_address"] == "00:50:56:82:34:A2"
+    assert d["manufacturer"] == "VMware, Inc."
+    assert d["hardware_detail"] == "VMware, Inc. VMware Virtual Platform"
+    assert d["device_type"] == 3
+    assert d["state"] == 3
+    assert d["vpn_state"] == 0
+    assert d["tunnel_version"] == "20:1"
+    assert d["upm_version"] == "4.5.0.33 (32-bit)"
+    assert d["zapp_arch"] == "x64"
+    assert d["download_count"] == 1
+    assert d["registration_time"] == "1759822502"
+    assert d["deregistration_timestamp"] == "1759796303"
+    assert d["config_download_time"] == "1759822502"
+    assert d["keep_alive_time"] == "1759822506"
+    assert d["last_seen_time"] == "1759822506"
 
 
 def test_zcc_profile_and_network_shape():
