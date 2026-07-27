@@ -715,7 +715,7 @@
     },
     {
       "name": "get_zpa_app_segments_by_type",
-      "description": "Retrieve ZPA application segments filtered by application type (read-only).\n\n`application_type` must be BROWSER_ACCESS, INSPECT, or SECURE_REMOTE_ACCESS."
+      "description": "Retrieve ZPA application segments filtered by application type (read-only).\n\n    `application_type` must be BROWSER_ACCESS, INSPECT, or SECURE_REMOTE_ACCESS."
     },
     {
       "name": "get_zpa_enrollment_certificate",
@@ -759,15 +759,15 @@
     },
     {
       "name": "zpa_create_app_connector_group",
-      "description": "Create a ZPA app connector group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA app connector group (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_create_app_protection_rule",
-      "description": "Create a ZPA app-protection (inspection) policy rule (write).\n\nGated by HMAC + `--write-tools`."
+      "description": "Create a ZPA app-protection (inspection) policy rule (write).\n\n    Gated by HMAC + `--write-tools`."
     },
     {
       "name": "zpa_create_application_segment",
-      "description": "Create a ZPA application segment (write).\n\nRequires `name` + `segment_group_id` and at least one port range (TCP or UDP,\nvia `tcp_port_ranges`/`udp_port_ranges` or `advanced`)."
+      "description": "Create a ZPA application segment (write).\n\n    Requires `name` + `segment_group_id` and at least one port range (TCP or UDP,\n    via `tcp_port_ranges`/`udp_port_ranges` or `advanced`)."
     },
     {
       "name": "zpa_create_application_segment_ba",
@@ -779,11 +779,11 @@
     },
     {
       "name": "zpa_create_application_server",
-      "description": "Create a ZPA application server (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA application server (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_create_ba_certificate",
-      "description": "Create a ZPA Browser Access certificate from a PEM blob (write).\n\nGated by HMAC + `--write-tools`."
+      "description": "Create a ZPA Browser Access certificate from a PEM blob (write).\n\n    Gated by HMAC + `--write-tools`."
     },
     {
       "name": "zpa_create_forwarding_policy_rule",
@@ -807,15 +807,15 @@
     },
     {
       "name": "zpa_create_segment_group",
-      "description": "Create a ZPA segment group and return the full record.\n\nWrite tool: gated by the server's HMAC write-confirmation."
+      "description": "Create a ZPA segment group and return the full record.\n\n    Write tool: gated by the server's HMAC write-confirmation."
     },
     {
       "name": "zpa_create_server_group",
-      "description": "Create a ZPA server group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA server group (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_create_service_edge_group",
-      "description": "Create a ZPA service edge group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA service edge group (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_create_timeout_policy_rule",
@@ -831,7 +831,7 @@
     },
     {
       "name": "zpa_delete_app_connector_group",
-      "description": "Delete a ZPA app connector group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA app connector group (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zpa_delete_app_protection_rule",
@@ -851,7 +851,7 @@
     },
     {
       "name": "zpa_delete_application_server",
-      "description": "Delete a ZPA application server (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA application server (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zpa_delete_ba_certificate",
@@ -879,11 +879,11 @@
     },
     {
       "name": "zpa_delete_segment_group",
-      "description": "Delete a ZPA segment group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA segment group (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zpa_delete_server_group",
-      "description": "Delete a ZPA server group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA server group (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zpa_delete_service_edge",
@@ -891,7 +891,7 @@
     },
     {
       "name": "zpa_delete_service_edge_group",
-      "description": "Delete a ZPA service edge group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA service edge group (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zpa_delete_timeout_policy_rule",
@@ -999,7 +999,7 @@
     },
     {
       "name": "zpa_list_application_segments",
-      "description": "List ZPA application segments.\n\nEach row is the full segment record with normalized highlights on top\n(ids, member domains/server groups, ports, and behavior toggles)."
+      "description": "List ZPA application segments.\n\n    Each row is the full segment record with normalized highlights on top\n    (ids, member domains/server groups, ports, and behavior toggles)."
     },
     {
       "name": "zpa_list_application_segments_ba",
@@ -1055,7 +1055,7 @@
     },
     {
       "name": "zpa_list_segment_groups",
-      "description": "List ZPA segment groups.\n\nEach row is the full segment-group record with normalized highlights\n(ids, enabled state, application-segment counts/ids, timestamps) on top."
+      "description": "List ZPA segment groups.\n\n    Each row is the full segment-group record with normalized highlights\n    (ids, enabled state, application-segment counts/ids, timestamps) on top."
     },
     {
       "name": "zpa_list_server_groups",
@@ -1067,7 +1067,7 @@
     },
     {
       "name": "zpa_list_service_edges",
-      "description": "List individual ZPA Service Edges with health/status (read-only).\n\nDistinct from `zpa_list_service_edge_groups` (the parent group resource)."
+      "description": "List individual ZPA Service Edges with health/status (read-only).\n\n    Distinct from `zpa_list_service_edge_groups` (the parent group resource)."
     },
     {
       "name": "zpa_list_timeout_policy_rules",
@@ -1083,7 +1083,7 @@
     },
     {
       "name": "zpa_update_app_connector_group",
-      "description": "Update a ZPA app connector group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA app connector group (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_update_app_protection_rule",
@@ -1103,7 +1103,7 @@
     },
     {
       "name": "zpa_update_application_server",
-      "description": "Update a ZPA application server (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA application server (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_update_forwarding_policy_rule",
@@ -1127,11 +1127,11 @@
     },
     {
       "name": "zpa_update_segment_group",
-      "description": "Update a ZPA segment group and return the full record (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA segment group and return the full record (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_update_server_group",
-      "description": "Update a ZPA server group (write).\n\nPartial update."
+      "description": "Update a ZPA server group (write).\n\n    Partial update."
     },
     {
       "name": "zpa_update_service_edge",
@@ -1139,7 +1139,7 @@
     },
     {
       "name": "zpa_update_service_edge_group",
-      "description": "Update a ZPA service edge group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA service edge group (write).\n\n    Gated by HMAC write-confirmation and `--write-tools`."
     },
     {
       "name": "zpa_update_timeout_policy_rule",
@@ -1147,35 +1147,35 @@
     },
     {
       "name": "zdx_delete_analysis",
-      "description": "Stop/delete a running ZDX score analysis (destructive write).\n\nCannot be undone."
+      "description": "Stop/delete a running ZDX score analysis (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zdx_delete_deeptrace",
-      "description": "Delete a ZDX deep-trace session (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZDX deep-trace session (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "zdx_get_alert",
-      "description": "Get one ZDX alert as a curated, agent-facing detail view.\n\nRead-only."
+      "description": "Get one ZDX alert as a curated, agent-facing detail view.\n\n    Read-only."
     },
     {
       "name": "zdx_get_analysis",
-      "description": "Get the status/result of a ZDX score analysis (full record).\n\nRead-only."
+      "description": "Get the status/result of a ZDX score analysis (full record).\n\n    Read-only."
     },
     {
       "name": "zdx_get_application",
-      "description": "Get the ZDX score for one application, with its most-impacted regions.\n\nRead-only."
+      "description": "Get the ZDX score for one application, with its most-impacted regions.\n\n    Read-only."
     },
     {
       "name": "zdx_get_application_metric",
-      "description": "Get ZDX performance metrics for one application (time-series).\n\nRead-only."
+      "description": "Get ZDX performance metrics for one application (time-series).\n\n    Read-only."
     },
     {
       "name": "zdx_get_application_score_trend",
-      "description": "Get the ZDX score trend (over time) for one application.\n\nRead-only."
+      "description": "Get the ZDX score trend (over time) for one application.\n\n    Read-only."
     },
     {
       "name": "zdx_get_application_user",
-      "description": "Get one user's ZDX detail for an application (per-device breakdown).\n\nRead-only."
+      "description": "Get one user's ZDX detail for an application (per-device breakdown).\n\n    Read-only."
     },
     {
       "name": "zdx_get_deeptrace_cloudpath",
@@ -1199,83 +1199,83 @@
     },
     {
       "name": "zdx_get_device",
-      "description": "Get one active ZDX device.\n\nRead-only."
+      "description": "Get one active ZDX device.\n\n    Read-only."
     },
     {
       "name": "zdx_get_device_deep_trace",
-      "description": "Get one ZDX deep-trace session.\n\nRead-only."
+      "description": "Get one ZDX deep-trace session.\n\n    Read-only."
     },
     {
       "name": "zdx_get_software_details",
-      "description": "Expand one ZDX software key into its per-user/device install rows.\n\nRead-only."
+      "description": "Expand one ZDX software key into its per-user/device install rows.\n\n    Read-only."
     },
     {
       "name": "zdx_get_web_probes",
-      "description": "List web probes for an app on a ZDX device (full records).\n\nRead-only."
+      "description": "List web probes for an app on a ZDX device (full records).\n\n    Read-only."
     },
     {
       "name": "zdx_list_alert_affected_devices",
-      "description": "List devices affected by a ZDX alert.\n\nRead-only."
+      "description": "List devices affected by a ZDX alert.\n\n    Read-only."
     },
     {
       "name": "zdx_list_alerts",
-      "description": "List ongoing ZDX alerts.\n\nRead-only."
+      "description": "List ongoing ZDX alerts.\n\n    Read-only."
     },
     {
       "name": "zdx_list_application_users",
-      "description": "List users/devices that accessed a ZDX application, as curated rows.\n\nRead-only."
+      "description": "List users/devices that accessed a ZDX application, as curated rows.\n\n    Read-only."
     },
     {
       "name": "zdx_list_applications",
-      "description": "List active ZDX applications.\n\nRead-only."
+      "description": "List active ZDX applications.\n\n    Read-only."
     },
     {
       "name": "zdx_list_cloudpath_probes",
-      "description": "List cloud-path probes for an app on a ZDX device (full records).\n\nRead-only."
+      "description": "List cloud-path probes for an app on a ZDX device (full records).\n\n    Read-only."
     },
     {
       "name": "zdx_list_deeptrace_top_processes",
-      "description": "List the top processes captured during a ZDX deep trace (full records).\n\nRead-only."
+      "description": "List the top processes captured during a ZDX deep trace (full records).\n\n    Read-only."
     },
     {
       "name": "zdx_list_departments",
-      "description": "List ZDX departments as curated id/name rows.\n\nRead-only."
+      "description": "List ZDX departments as curated id/name rows.\n\n    Read-only."
     },
     {
       "name": "zdx_list_device_deep_traces",
-      "description": "List deep-trace sessions for a ZDX device (full records).\n\nRead-only."
+      "description": "List deep-trace sessions for a ZDX device (full records).\n\n    Read-only."
     },
     {
       "name": "zdx_list_devices",
-      "description": "List active ZDX devices.\n\nRead-only."
+      "description": "List active ZDX devices.\n\n    Read-only."
     },
     {
       "name": "zdx_list_historical_alerts",
-      "description": "List historical (ended) ZDX alerts.\n\nRead-only."
+      "description": "List historical (ended) ZDX alerts.\n\n    Read-only."
     },
     {
       "name": "zdx_list_locations",
-      "description": "List ZDX locations as curated id/name rows.\n\nRead-only."
+      "description": "List ZDX locations as curated id/name rows.\n\n    Read-only."
     },
     {
       "name": "zdx_list_software",
-      "description": "List the ZDX software inventory.\n\nRead-only."
+      "description": "List the ZDX software inventory.\n\n    Read-only."
     },
     {
       "name": "zdx_start_analysis",
-      "description": "Start a ZDX score analysis on a device/app (write).\n\nEvaluates connectivity and performance metrics over the optional\n`t0`/`t1` epoch range."
+      "description": "Start a ZDX score analysis on a device/app (write).\n\n    Evaluates connectivity and performance metrics over the optional\n    `t0`/`t1` epoch range."
     },
     {
       "name": "zdx_start_deeptrace",
-      "description": "Start a ZDX deep-trace session (write).\n\nCaptures network path, web-probe, health, and event data for\ntroubleshooting."
+      "description": "Start a ZDX deep-trace session (write).\n\n    Captures network path, web-probe, health, and event data for\n    troubleshooting."
     },
     {
       "name": "zcc_get_device_otp",
-      "description": "Get the OTP bundle for a ZCC device (logout / exit / uninstall / disable OTPs).\n\nRead-only (GET, no tenant mutation) but the returned values ARE sensitive\nshort-lived credentials — treat them like passwords."
+      "description": "Get the OTP bundle for a ZCC device (logout / exit / uninstall / disable OTPs).\n\n    Read-only (GET, no tenant mutation) but the returned values ARE sensitive\n    short-lived credentials — treat them like passwords."
     },
     {
       "name": "zcc_list_devices",
-      "description": "List ZCC enrolled devices (read-only).\n\nEach row is the full device record — identity, OS, agent version,\nregistration state, assigned `policy_name`, ownership, hardware,\nVPN/tunnel state, and the enrollment / keep-alive timestamps."
+      "description": "List ZCC enrolled devices (read-only).\n\n    Each row is the full device record — identity, OS, agent version,\n    registration state, assigned `policy_name`, ownership, hardware,\n    VPN/tunnel state, and the enrollment / keep-alive timestamps."
     },
     {
       "name": "zcc_list_forwarding_profiles",
@@ -1287,7 +1287,7 @@
     },
     {
       "name": "ztw_create_ip_destination_group",
-      "description": "Create a ZTW IP destination group (write).\n\nCountry names/codes are converted to COUNTRY_XX and are only valid for\nDSTN_OTHER groups."
+      "description": "Create a ZTW IP destination group (write).\n\n    Country names/codes are converted to COUNTRY_XX and are only valid for\n    DSTN_OTHER groups."
     },
     {
       "name": "ztw_create_ip_group",
@@ -1299,7 +1299,7 @@
     },
     {
       "name": "ztw_delete_ip_destination_group",
-      "description": "Delete a ZTW IP destination group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZTW IP destination group (destructive write).\n\n    Cannot be undone."
     },
     {
       "name": "ztw_delete_ip_group",
@@ -1311,7 +1311,7 @@
     },
     {
       "name": "ztw_get_discovery_settings",
-      "description": "Get ZTW workload-discovery settings (read-only singleton).\n\nReturns the decision-bearing knobs plus the full payload in `settings`."
+      "description": "Get ZTW workload-discovery settings (read-only singleton).\n\n    Returns the decision-bearing knobs plus the full payload in `settings`."
     },
     {
       "name": "ztw_list_admins",
@@ -1319,27 +1319,27 @@
     },
     {
       "name": "ztw_list_ip_destination_groups",
-      "description": "List ZTW IP destination groups.\n\nUse `exclude_type` to omit a group type (e.g."
+      "description": "List ZTW IP destination groups.\n\n    Use `exclude_type` to omit a group type (e.g."
     },
     {
       "name": "ztw_list_ip_destination_groups_lite",
-      "description": "List ZTW IP destination groups via the lighter SDK endpoint (read-only).\n\nSame records as `ztw_list_ip_destination_groups`; uses the lite endpoint."
+      "description": "List ZTW IP destination groups via the lighter SDK endpoint (read-only).\n\n    Same records as `ztw_list_ip_destination_groups`; uses the lite endpoint."
     },
     {
       "name": "ztw_list_ip_groups",
-      "description": "List ZTW IP groups.\n\n`search` is a server-side substring match on the group name."
+      "description": "List ZTW IP groups.\n\n    `search` is a server-side substring match on the group name."
     },
     {
       "name": "ztw_list_ip_groups_lite",
-      "description": "List ZTW IP groups via the lighter SDK endpoint (read-only).\n\nSame records as `ztw_list_ip_groups`; uses the lite endpoint."
+      "description": "List ZTW IP groups via the lighter SDK endpoint (read-only).\n\n    Same records as `ztw_list_ip_groups`; uses the lite endpoint."
     },
     {
       "name": "ztw_list_ip_source_groups",
-      "description": "List ZTW IP source groups.\n\n`search` is a server-side substring match on the group name."
+      "description": "List ZTW IP source groups.\n\n    `search` is a server-side substring match on the group name."
     },
     {
       "name": "ztw_list_ip_source_groups_lite",
-      "description": "List ZTW IP source groups via the lighter SDK endpoint (read-only).\n\nSame records as `ztw_list_ip_source_groups`; uses the lite endpoint."
+      "description": "List ZTW IP source groups via the lighter SDK endpoint (read-only).\n\n    Same records as `ztw_list_ip_source_groups`; uses the lite endpoint."
     },
     {
       "name": "ztw_list_network_service_groups",
@@ -1347,7 +1347,7 @@
     },
     {
       "name": "ztw_list_network_services",
-      "description": "List ZTW network services.\n\nOptionally filter by `protocol` or `search`."
+      "description": "List ZTW network services.\n\n    Optionally filter by `protocol` or `search`."
     },
     {
       "name": "ztw_list_public_account_details",
@@ -1383,11 +1383,11 @@
     },
     {
       "name": "zid_get_user_groups_by_name",
-      "description": "List a ZIdentity user's group memberships, resolving the user by name.\n\nRead-only."
+      "description": "List a ZIdentity user's group memberships, resolving the user by name.\n\n    Read-only."
     },
     {
       "name": "zid_list_groups",
-      "description": "List ZIdentity groups.\n\nRead-only."
+      "description": "List ZIdentity groups.\n\n    Read-only."
     },
     {
       "name": "zid_list_users",
@@ -1403,31 +1403,31 @@
     },
     {
       "name": "zeasm_get_finding_details",
-      "description": "Get the full detail for one EASM finding.\n\nRead-only."
+      "description": "Get the full detail for one EASM finding.\n\n    Read-only."
     },
     {
       "name": "zeasm_get_finding_evidence",
-      "description": "Get the scan evidence attributed to one EASM finding.\n\nRead-only."
+      "description": "Get the scan evidence attributed to one EASM finding.\n\n    Read-only."
     },
     {
       "name": "zeasm_get_finding_scan_output",
-      "description": "Get the complete scan output for one EASM finding.\n\nRead-only."
+      "description": "Get the complete scan output for one EASM finding.\n\n    Read-only."
     },
     {
       "name": "zeasm_get_lookalike_domain",
-      "description": "Get full detail for one EASM lookalike domain.\n\nRead-only."
+      "description": "Get full detail for one EASM lookalike domain.\n\n    Read-only."
     },
     {
       "name": "zeasm_list_findings",
-      "description": "List EASM findings for an organization.\n\nRead-only."
+      "description": "List EASM findings for an organization.\n\n    Read-only."
     },
     {
       "name": "zeasm_list_lookalike_domains",
-      "description": "List EASM lookalike domains for an organization.\n\nRead-only."
+      "description": "List EASM lookalike domains for an organization.\n\n    Read-only."
     },
     {
       "name": "zeasm_list_organizations",
-      "description": "List ZEASM organizations.\n\nRead-only."
+      "description": "List ZEASM organizations.\n\n    Read-only."
     },
     {
       "name": "zins_get_casb_app_report",
@@ -1495,163 +1495,163 @@
     },
     {
       "name": "zms_get_agent_connection_status_statistics",
-      "description": "Get ZMS agent connection-status statistics (curated aggregate view).\n\nRead-only."
+      "description": "Get ZMS agent connection-status statistics (curated aggregate view).\n\n    Read-only."
     },
     {
       "name": "zms_get_agent_group_totp_secrets",
-      "description": "Get the TOTP secrets for a ZMS agent group (full record).\n\nRead-only API call, but the returned values ARE sensitive enrollment\ncredentials — treat them like secrets."
+      "description": "Get the TOTP secrets for a ZMS agent group (full record).\n\n    Read-only API call, but the returned values ARE sensitive enrollment\n    credentials — treat them like secrets."
     },
     {
       "name": "zms_get_agent_version_statistics",
-      "description": "Get ZMS agent version statistics (curated aggregate view).\n\nRead-only."
+      "description": "Get ZMS agent version statistics (curated aggregate view).\n\n    Read-only."
     },
     {
       "name": "zms_get_metadata",
-      "description": "Get ZMS resource event metadata (full record).\n\nRead-only."
+      "description": "Get ZMS resource event metadata (full record).\n\n    Read-only."
     },
     {
       "name": "zms_get_nonce",
-      "description": "Get one ZMS nonce.\n\nRead-only."
+      "description": "Get one ZMS nonce.\n\n    Read-only."
     },
     {
       "name": "zms_get_resource_group_members",
-      "description": "List the members of a ZMS resource group.\n\nRead-only."
+      "description": "List the members of a ZMS resource group.\n\n    Read-only."
     },
     {
       "name": "zms_get_resource_group_protection_status",
-      "description": "Get the ZMS resource-group protection-status summary (aggregate view).\n\nRead-only."
+      "description": "Get the ZMS resource-group protection-status summary (aggregate view).\n\n    Read-only."
     },
     {
       "name": "zms_get_resource_protection_status",
-      "description": "Get the ZMS resource protection-status summary (curated aggregate view).\n\nRead-only."
+      "description": "Get the ZMS resource protection-status summary (curated aggregate view).\n\n    Read-only."
     },
     {
       "name": "zms_list_agent_groups",
-      "description": "List ZMS agent groups.\n\nRead-only."
+      "description": "List ZMS agent groups.\n\n    Read-only."
     },
     {
       "name": "zms_list_agents",
-      "description": "List ZMS microsegmentation agents.\n\nRead-only."
+      "description": "List ZMS microsegmentation agents.\n\n    Read-only."
     },
     {
       "name": "zms_list_app_catalog",
-      "description": "List the ZMS application catalog.\n\nRead-only."
+      "description": "List the ZMS application catalog.\n\n    Read-only."
     },
     {
       "name": "zms_list_app_zones",
-      "description": "List ZMS app zones.\n\nRead-only."
+      "description": "List ZMS app zones.\n\n    Read-only."
     },
     {
       "name": "zms_list_default_policy_rules",
-      "description": "List ZMS default policy rules.\n\nRead-only."
+      "description": "List ZMS default policy rules.\n\n    Read-only."
     },
     {
       "name": "zms_list_nonces",
-      "description": "List ZMS enrollment nonces.\n\nRead-only."
+      "description": "List ZMS enrollment nonces.\n\n    Read-only."
     },
     {
       "name": "zms_list_policy_rules",
-      "description": "List ZMS microsegmentation policy rules.\n\nRead-only."
+      "description": "List ZMS microsegmentation policy rules.\n\n    Read-only."
     },
     {
       "name": "zms_list_resource_groups",
-      "description": "List ZMS resource groups.\n\nRead-only."
+      "description": "List ZMS resource groups.\n\n    Read-only."
     },
     {
       "name": "zms_list_resources",
-      "description": "List ZMS resources (workloads).\n\nRead-only."
+      "description": "List ZMS resources (workloads).\n\n    Read-only."
     },
     {
       "name": "zms_list_tag_keys",
-      "description": "List ZMS tag keys within a namespace.\n\nRead-only."
+      "description": "List ZMS tag keys within a namespace.\n\n    Read-only."
     },
     {
       "name": "zms_list_tag_namespaces",
-      "description": "List ZMS tag namespaces.\n\nRead-only."
+      "description": "List ZMS tag namespaces.\n\n    Read-only."
     },
     {
       "name": "zms_list_tag_values",
-      "description": "List ZMS tag values for a key.\n\nRead-only."
+      "description": "List ZMS tag values for a key.\n\n    Read-only."
     },
     {
       "name": "zcell_get_customer_data_handling",
-      "description": "Get the logged-in Zscaler Cellular customer's profile and SIM totals.\n\nRead-only."
+      "description": "Get the logged-in Zscaler Cellular customer's profile and SIM totals.\n\n    Read-only."
     },
     {
       "name": "zcell_get_sim_details",
-      "description": "Get the full Zscaler Cellular record for one SIM by ICCID.\n\nRead-only."
+      "description": "Get the full Zscaler Cellular record for one SIM by ICCID.\n\n    Read-only."
     },
     {
       "name": "zcell_get_sim_location_group",
-      "description": "Get one Zscaler Cellular SIM location group.\n\nRead-only."
+      "description": "Get one Zscaler Cellular SIM location group.\n\n    Read-only."
     },
     {
       "name": "zcell_list_anomaly_policies",
-      "description": "List Zscaler Cellular anomaly policies.\n\nRead-only."
+      "description": "List Zscaler Cellular anomaly policies.\n\n    Read-only."
     },
     {
       "name": "zcell_list_anomaly_policy_logs",
-      "description": "List the activity log for one Zscaler Cellular anomaly policy.\n\nRead-only."
+      "description": "List the activity log for one Zscaler Cellular anomaly policy.\n\n    Read-only."
     },
     {
       "name": "zcell_list_anomaly_policy_violations",
-      "description": "List the ICCIDs that violated a Zscaler Cellular anomaly policy.\n\nRead-only."
+      "description": "List the ICCIDs that violated a Zscaler Cellular anomaly policy.\n\n    Read-only."
     },
     {
       "name": "zcell_list_audit_customers_search",
-      "description": "Search Zscaler Cellular audit-log entries over a lookback window.\n\nRead-only."
+      "description": "Search Zscaler Cellular audit-log entries over a lookback window.\n\n    Read-only."
     },
     {
       "name": "zcell_list_audit_metadata",
-      "description": "List the Zscaler Cellular audit filter vocabulary.\n\nRead-only."
+      "description": "List the Zscaler Cellular audit filter vocabulary.\n\n    Read-only."
     },
     {
       "name": "zcell_list_iccid_violations",
-      "description": "List the anomaly-policy violation events for one ICCID.\n\nRead-only."
+      "description": "List the anomaly-policy violation events for one ICCID.\n\n    Read-only."
     },
     {
       "name": "zcell_list_network_events",
-      "description": "Search Zscaler Cellular network/session events over a lookback window.\n\nRead-only."
+      "description": "Search Zscaler Cellular network/session events over a lookback window.\n\n    Read-only."
     },
     {
       "name": "zcell_list_region_operational_status",
-      "description": "List Zscaler Cellular configured regions with their operational status.\n\nRead-only."
+      "description": "List Zscaler Cellular configured regions with their operational status.\n\n    Read-only."
     },
     {
       "name": "zcell_list_regions",
-      "description": "List the Zscaler Cellular regions available/configured for the customer.\n\nRead-only."
+      "description": "List the Zscaler Cellular regions available/configured for the customer.\n\n    Read-only."
     },
     {
       "name": "zcell_list_sim_analytics_map",
-      "description": "List Zscaler Cellular SIM map points (dashboard lat/lng summary).\n\nRead-only."
+      "description": "List Zscaler Cellular SIM map points (dashboard lat/lng summary).\n\n    Read-only."
     },
     {
       "name": "zcell_list_sim_analytics_summary",
-      "description": "List the Zscaler Cellular SIM status summary (total/used/active/inactive).\n\nRead-only."
+      "description": "List the Zscaler Cellular SIM status summary (total/used/active/inactive).\n\n    Read-only."
     },
     {
       "name": "zcell_list_sim_location_groups",
-      "description": "List Zscaler Cellular SIM location groups.\n\nRead-only."
+      "description": "List Zscaler Cellular SIM location groups.\n\n    Read-only."
     },
     {
       "name": "zcell_list_sim_usage_by_country",
-      "description": "List Zscaler Cellular data usage grouped by country (top countries).\n\nRead-only."
+      "description": "List Zscaler Cellular data usage grouped by country (top countries).\n\n    Read-only."
     },
     {
       "name": "zcell_list_sim_usage_by_day",
-      "description": "List Zscaler Cellular data usage per day over the window.\n\nRead-only."
+      "description": "List Zscaler Cellular data usage per day over the window.\n\n    Read-only."
     },
     {
       "name": "zcell_list_sim_usage_by_sim",
-      "description": "List Zscaler Cellular data usage grouped by SIM (top SIMs).\n\nRead-only."
+      "description": "List Zscaler Cellular data usage grouped by SIM (top SIMs).\n\n    Read-only."
     },
     {
       "name": "zcell_list_sims",
-      "description": "Search the Zscaler Cellular SIM inventory with filters and pagination.\n\nRead-only (browses the inventory)."
+      "description": "Search the Zscaler Cellular SIM inventory with filters and pagination.\n\n    Read-only (browses the inventory)."
     },
     {
       "name": "zcell_list_tags",
-      "description": "List the Zscaler Cellular SIM tags defined for the customer.\n\nRead-only."
+      "description": "List the Zscaler Cellular SIM tags defined for the customer.\n\n    Read-only."
     }
   ],
   "compatibility": {
