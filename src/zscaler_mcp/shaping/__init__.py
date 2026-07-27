@@ -15,7 +15,7 @@ Import from this package::
     from zscaler_mcp.shaping import AgentView, pick, coalesce, shape_many
 """
 
-from zscaler_mcp.shaping.helpers import coalesce, pick, shape_many
+from zscaler_mcp.shaping.helpers import coalesce, pick, shape_many, shape_one
 from zscaler_mcp.shaping.views import AgentView
 
-__all__ = ["AgentView", "pick", "coalesce", "shape_many"]
+__all__ = ["AgentView", "pick", "coalesce", "shape_many", "shape_one"]

@@ -21,14 +21,10 @@ from zscaler_mcp.common.zia_helpers import (
     validate_rank,
 )
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 from ._rules_common import (
     OperationResult,
-    RuleDetail,
-    RuleSummary,
-    shape_rule_detail,
-    shape_rule_summary,
 )
 
 _RULE_TYPE_DESC = (
@@ -114,16 +110,6 @@ class DeleteRuleInput(BaseModel):
 # =============================================================================
 
 
-class AvailableAction(AgentView):
-    value: str = Field(description="Action enum value usable in a CAC rule.")
-
-
-def shape_action(raw: Any) -> AvailableAction:
-    if isinstance(raw, dict):
-        return AvailableAction(value=str(pick(raw, "value", "action", "name", default="")))
-    return AvailableAction(value=str(raw))
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -134,7 +120,6 @@ def shape_action(raw: Any) -> AvailableAction:
     service="zia",
     toolset="zia_cloud_app_control",
     input_model=ListActionsInput,
-    output_view=AvailableAction,
     is_list=True,
 )
 def zia_list_cloud_app_control_actions(args: ListActionsInput) -> list[dict[str, Any]]:
@@ -145,7 +130,7 @@ def zia_list_cloud_app_control_actions(args: ListActionsInput) -> list[dict[str,
     )
     if err:
         raise RuntimeError(f"Failed to list CAC actions for {args.rule_type}: {err}")
-    return shape_many(list(actions or []), shape_action)
+    return shape_many(list(actions or []))
 
 
 @tool(
@@ -153,16 +138,15 @@ def zia_list_cloud_app_control_actions(args: ListActionsInput) -> list[dict[str,
     service="zia",
     toolset="zia_cloud_app_control",
     input_model=ListRulesInput,
-    output_view=RuleSummary,
     is_list=True,
 )
 def zia_list_cloud_app_control_rules(args: ListRulesInput) -> list[dict[str, Any]]:
-    """List ZIA Cloud App Control rules for a category as curated summaries."""
+    """List ZIA Cloud App Control rules for a category."""
     client = get_zscaler_client(service="zia")
     rules, _, err = client.zia.cloudappcontrol.list_rules(args.rule_type)
     if err:
         raise RuntimeError(f"Failed to list CAC rules for {args.rule_type}: {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 @tool(
@@ -170,7 +154,6 @@ def zia_list_cloud_app_control_rules(args: ListRulesInput) -> list[dict[str, Any
     service="zia",
     toolset="zia_cloud_app_control",
     input_model=GetRuleInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_get_cloud_app_control_rule(args: GetRuleInput) -> dict[str, Any]:
@@ -179,7 +162,7 @@ def zia_get_cloud_app_control_rule(args: GetRuleInput) -> dict[str, Any]:
     rule, _, err = client.zia.cloudappcontrol.get_rule(args.rule_type, args.rule_id)
     if err:
         raise RuntimeError(f"Failed to get CAC rule {args.rule_id} ({args.rule_type}): {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -187,7 +170,6 @@ def zia_get_cloud_app_control_rule(args: GetRuleInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_app_control",
     input_model=CreateRuleInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_create_cloud_app_control_rule(args: CreateRuleInput) -> dict[str, Any]:
@@ -207,7 +189,7 @@ def zia_create_cloud_app_control_rule(args: CreateRuleInput) -> dict[str, Any]:
     rule, _, err = client.zia.cloudappcontrol.add_rule(args.rule_type, **payload)
     if err:
         raise RuntimeError(f"Failed to create CAC rule ({args.rule_type}): {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -215,7 +197,6 @@ def zia_create_cloud_app_control_rule(args: CreateRuleInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_app_control",
     input_model=UpdateRuleInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_update_cloud_app_control_rule(args: UpdateRuleInput) -> dict[str, Any]:
@@ -235,7 +216,7 @@ def zia_update_cloud_app_control_rule(args: UpdateRuleInput) -> dict[str, Any]:
     rule, _, err = client.zia.cloudappcontrol.update_rule(args.rule_type, args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update CAC rule {args.rule_id} ({args.rule_type}): {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(

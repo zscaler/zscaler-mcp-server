@@ -63,44 +63,40 @@ async def test_input_schema_is_flat():
     # Flat fields, NOT a nested {"args": {...}} wrapper.
     assert "args" not in props
     assert "search" in props
-    assert "detail" in props
+    assert "microtenant_id" in props
 
 
 @pytest.mark.asyncio
-async def test_list_output_schema_wrapped_object():
-    server = build_server()
-    tools = {t.name: t for t in await server.list_tools()}
-    out = tools["zpa_list_segment_groups"].output_schema
-    assert out["type"] == "object"
-    assert out.get("x-fastmcp-wrap-result") is True
-    assert out["properties"]["result"]["type"] == "array"
-
-
-@pytest.mark.asyncio
-async def test_object_output_schema_plain():
-    server = build_server()
-    tools = {t.name: t for t in await server.list_tools()}
-    out = tools["zpa_get_segment_group"].output_schema
-    assert out["type"] == "object"
-    assert "x-fastmcp-wrap-result" not in out
-
-
-@pytest.mark.asyncio
-async def test_only_delete_tool_has_no_output_schema():
-    # Only DELETE is polymorphic (HMAC confirmation prompt on the first call,
-    # OperationResult on the confirmed call). Declaring a strict outputSchema
-    # makes the MCP server reject the confirmation envelope with "outputSchema
-    # defined but no structured output returned", so DELETE registers WITHOUT an
-    # outputSchema. create/update are NOT confirmation-gated (v1 parity: only
-    # destructive ops confirm) — they always return their shaped resource, so
-    # they keep a strict outputSchema exactly like reads.
+async def test_record_tools_advertise_no_output_schema():
+    # Tools returning a Zscaler API record declare NO outputSchema. The set of
+    # attributes a resource carries belongs to the API, so any schema we wrote
+    # here would be a snapshot that silently goes stale the moment engineering
+    # ships a new field — the failure mode behind issue #88. The SDK documents
+    # reads the same way: query params are enumerated, the response is just
+    # `record.as_dict()`.
     server = build_server(enable_write=True, write_allowlist=["zpa_*"])
     tools = {t.name: t for t in await server.list_tools()}
-    assert tools["zpa_delete_segment_group"].output_schema is None
-    # create/update and reads all keep their strict schema.
-    assert tools["zpa_create_segment_group"].output_schema is not None
-    assert tools["zpa_update_segment_group"].output_schema is not None
-    assert tools["zpa_list_segment_groups"].output_schema is not None
+    for name in (
+        "zpa_list_segment_groups",
+        "zpa_get_segment_group",
+        "zpa_create_segment_group",
+        "zpa_update_segment_group",
+        "zpa_delete_segment_group",
+    ):
+        assert tools[name].output_schema is None, f"{name} should not declare an outputSchema"
+
+
+@pytest.mark.asyncio
+async def test_synthetic_result_tools_keep_their_schema():
+    # The exception: results the SERVER constructs (catalogs, status envelopes)
+    # really are our shape, so they still advertise it. The Catalog wrapper is
+    # itself a passthrough — the ZPA payload rides untouched under `items`.
+    server = build_server()
+    tools = {t.name: t for t in await server.list_tools()}
+    out = tools["zpa_list_lss_log_types"].output_schema
+    assert out is not None
+    assert out["type"] == "object"
+    assert set(out["properties"]) == {"kind", "items"}
 
 
 @pytest.mark.asyncio

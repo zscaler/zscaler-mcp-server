@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -39,26 +39,6 @@ class ListAppZonesInput(BaseModel):
 # =============================================================================
 # OUTPUT VIEW
 # =============================================================================
-
-
-class AppZoneSummary(AgentView):
-    """Lean view — one ZMS app zone row."""
-
-    id: str = Field(description="App zone ID.")
-    name: Optional[str] = Field(default=None, description="App zone name.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    resource_count: Optional[int] = Field(
-        default=None, description="Number of resources mapped to this zone."
-    )
-
-
-def _shape_zone(raw: dict[str, Any]) -> AppZoneSummary:
-    return AppZoneSummary(
-        id=str(pick(raw, "id", "app_zone_id", "appZoneId", default="")),
-        name=pick(raw, "name", "app_zone_name", "appZoneName"),
-        description=pick(raw, "description"),
-        resource_count=pick(raw, "resource_count", "resourceCount", "num_resources"),
-    )
 
 
 def _build_zone_order(sort_order: Optional[str]):
@@ -87,11 +67,10 @@ def _build_zone_filter(name: Optional[str]):
     service="zms",
     toolset="zms",
     input_model=ListAppZonesInput,
-    output_view=AppZoneSummary,
     is_list=True,
 )
 def zms_list_app_zones(args: ListAppZonesInput) -> list[dict[str, Any]]:
-    """List ZMS app zones as curated, agent-facing views.
+    """List ZMS app zones.
 
     Read-only. Returns one row per app zone (id, name, description, resource
     count). Requires ZSCALER_CUSTOMER_ID.
@@ -112,4 +91,4 @@ def zms_list_app_zones(args: ListAppZonesInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.app_zones.list_app_zones(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS app zones: {err}")
-    return shape_many(nodes_of(result), _shape_zone)
+    return shape_many(nodes_of(result))

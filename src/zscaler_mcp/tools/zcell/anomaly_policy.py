@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zcell._common import WindowInput, as_dicts
 
 # =============================================================================
@@ -79,95 +79,6 @@ class IccidViolationsInput(WindowInput):
 # =============================================================================
 
 
-class AnomalyPolicySummary(AgentView):
-    """Lean view — what an agent needs to LIST and REFERENCE an anomaly policy."""
-
-    id: Optional[str] = Field(
-        default=None, description="Policy ID. Use with the *_logs / *_violations tools."
-    )
-    policy_name: Optional[str] = Field(default=None, description="Policy display name.")
-    policy_type: Optional[str] = Field(default=None, description="Policy type (e.g. GEOFENCING).")
-    enabled: Optional[bool] = Field(
-        default=None, description="Whether the policy is enabled (decision-bearing)."
-    )
-    running_status: Optional[str] = Field(default=None, description="Runtime status of the policy.")
-    created_at: Optional[Any] = Field(default=None, description="Creation timestamp.")
-    enabled_at: Optional[Any] = Field(default=None, description="When the policy was last enabled.")
-    sim_location_group_ids: list[Any] = Field(
-        default_factory=list,
-        description="SIM location group IDs the policy applies to (relational).",
-    )
-    violations: Optional[Any] = Field(
-        default=None, description="Violation count/summary for the policy."
-    )
-
-
-class AnomalyPolicyLogEntry(AgentView):
-    """One anomaly-policy activity log line."""
-
-    policy_id: Optional[str] = Field(default=None, description="Policy ID the log belongs to.")
-    status: Optional[str] = Field(default=None, description="Status recorded for this entry.")
-    message: Optional[str] = Field(default=None, description="Human-readable log message.")
-    recorded_at: Optional[Any] = Field(default=None, description="When the entry was recorded.")
-
-
-class IccidViolationDetail(AgentView):
-    """One violation event attributed to a specific ICCID."""
-
-    policy_id: Optional[str] = Field(default=None, description="Policy ID the violation is under.")
-    iccid: Optional[str] = Field(default=None, description="ICCID that violated the policy.")
-    imsi: Optional[str] = Field(default=None, description="IMSI of the SIM.")
-    event_type: Optional[str] = Field(default=None, description="Violation event type.")
-    policy_type: Optional[str] = Field(
-        default=None, description="Policy type at time of violation."
-    )
-    zone_id: Optional[Any] = Field(default=None, description="Geo-fence zone ID involved, if any.")
-    timestamp: Optional[Any] = Field(default=None, description="When the violation occurred.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_policy(raw: dict[str, Any]) -> AnomalyPolicySummary:
-    return AnomalyPolicySummary(
-        id=_opt_str(pick(raw, "id")),
-        policy_name=pick(raw, "policy_name", "policyName"),
-        policy_type=pick(raw, "policy_type", "policyType"),
-        enabled=pick(raw, "enabled"),
-        running_status=pick(raw, "running_status", "runningStatus"),
-        created_at=pick(raw, "created_at", "createdAt"),
-        enabled_at=pick(raw, "enabled_at", "enabledAt"),
-        sim_location_group_ids=pick(
-            raw, "sim_location_group_ids", "simLocationGroupIds", default=[]
-        )
-        or [],
-        violations=pick(raw, "violations"),
-    )
-
-
-def _shape_log(raw: dict[str, Any]) -> AnomalyPolicyLogEntry:
-    return AnomalyPolicyLogEntry(
-        policy_id=_opt_str(pick(raw, "policy_id", "policyId")),
-        status=pick(raw, "status"),
-        message=pick(raw, "message"),
-        recorded_at=pick(raw, "recorded_at", "recordedAt"),
-    )
-
-
-def _shape_iccid_violation(raw: dict[str, Any]) -> IccidViolationDetail:
-    return IccidViolationDetail(
-        policy_id=_opt_str(pick(raw, "policy_id", "policyId")),
-        iccid=pick(raw, "iccid"),
-        imsi=pick(raw, "imsi"),
-        event_type=pick(raw, "event_type", "eventType"),
-        policy_type=pick(raw, "policy_type", "policyType"),
-        zone_id=pick(raw, "zone_id", "zoneId"),
-        timestamp=pick(raw, "timestamp"),
-    )
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
@@ -186,11 +97,10 @@ def _query(*pairs: tuple[str, Any]) -> dict[str, Any]:
     service="zcell",
     toolset="zcell_anomaly_policy",
     input_model=ListAnomalyPoliciesInput,
-    output_view=AnomalyPolicySummary,
     is_list=True,
 )
 def zcell_list_anomaly_policies(args: ListAnomalyPoliciesInput) -> list[dict[str, Any]]:
-    """List Zscaler Cellular anomaly policies as curated, agent-facing views.
+    """List Zscaler Cellular anomaly policies.
 
     Read-only. Returns one row per policy (id, name, type, enabled state, run
     status, applied SIM location groups, violation count) over a `days`
@@ -207,7 +117,7 @@ def zcell_list_anomaly_policies(args: ListAnomalyPoliciesInput) -> list[dict[str
     )
     if err:
         raise RuntimeError(f"Failed to list anomaly policies: {err}")
-    return shape_many(as_dicts(policies), _shape_policy)
+    return shape_many(as_dicts(policies))
 
 
 @tool(
@@ -215,7 +125,6 @@ def zcell_list_anomaly_policies(args: ListAnomalyPoliciesInput) -> list[dict[str
     service="zcell",
     toolset="zcell_anomaly_policy",
     input_model=AnomalyPolicyLogsInput,
-    output_view=AnomalyPolicyLogEntry,
     is_list=True,
 )
 def zcell_list_anomaly_policy_logs(args: AnomalyPolicyLogsInput) -> list[dict[str, Any]]:
@@ -234,7 +143,7 @@ def zcell_list_anomaly_policy_logs(args: AnomalyPolicyLogsInput) -> list[dict[st
     )
     if err:
         raise RuntimeError(f"Failed to list anomaly policy logs for {args.policy_id}: {err}")
-    return shape_many(as_dicts(logs), _shape_log)
+    return shape_many(as_dicts(logs))
 
 
 @tool(
@@ -242,7 +151,6 @@ def zcell_list_anomaly_policy_logs(args: AnomalyPolicyLogsInput) -> list[dict[st
     service="zcell",
     toolset="zcell_anomaly_policy",
     input_model=AnomalyPolicyViolationsInput,
-    output_view=AnomalyPolicySummary,
     is_list=True,
 )
 def zcell_list_anomaly_policy_violations(
@@ -266,7 +174,7 @@ def zcell_list_anomaly_policy_violations(
     )
     if err:
         raise RuntimeError(f"Failed to list anomaly policy violations for {args.policy_id}: {err}")
-    return shape_many(as_dicts(violations), _shape_policy)
+    return shape_many(as_dicts(violations))
 
 
 @tool(
@@ -274,7 +182,6 @@ def zcell_list_anomaly_policy_violations(
     service="zcell",
     toolset="zcell_anomaly_policy",
     input_model=IccidViolationsInput,
-    output_view=IccidViolationDetail,
     is_list=True,
 )
 def zcell_list_iccid_violations(args: IccidViolationsInput) -> list[dict[str, Any]]:
@@ -296,4 +203,4 @@ def zcell_list_iccid_violations(args: IccidViolationsInput) -> list[dict[str, An
     )
     if err:
         raise RuntimeError(f"Failed to list violations for ICCID {args.iccid}: {err}")
-    return shape_many(as_dicts(events), _shape_iccid_violation)
+    return shape_many(as_dicts(events))

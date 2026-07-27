@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -53,45 +53,12 @@ class AgentGroupTotpInput(BaseModel):
 # =============================================================================
 
 
-class AgentGroupSummary(AgentView):
-    """Lean view — one ZMS agent group row."""
-
-    eyez_id: str = Field(description="Agent group eyez_id — canonical identifier.")
-    name: Optional[str] = Field(default=None, description="Group name.")
-    agent_group_type: Optional[str] = Field(default=None, description="Group type (e.g. LINUX).")
-    cloud_provider: Optional[str] = Field(default=None, description="Cloud provider.")
-    agent_count: Optional[int] = Field(default=None, description="Number of agents in the group.")
-    policy_status: Optional[str] = Field(
-        default=None, description="Policy status (decision-bearing)."
-    )
-    tamper_protection: Optional[bool] = Field(
-        default=None, description="Whether tamper protection is enabled."
-    )
-
-
 class TotpSecrets(AgentView):
     """ZMS agent-group TOTP secrets — SENSITIVE; nested payload."""
 
     eyez_id: Optional[str] = Field(default=None, description="Agent group eyez_id (echoed).")
     data: dict = Field(
         default_factory=dict, description="TOTP secret bundle (treat as sensitive credentials)."
-    )
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_group(raw: dict[str, Any]) -> AgentGroupSummary:
-    return AgentGroupSummary(
-        eyez_id=str(pick(raw, "eyez_id", "eyezId", "id", default="")),
-        name=pick(raw, "name"),
-        agent_group_type=pick(raw, "agent_group_type", "agentGroupType", "type"),
-        cloud_provider=pick(raw, "cloud_provider", "cloudProvider"),
-        agent_count=pick(raw, "agent_count", "agentCount", "num_agents"),
-        policy_status=pick(raw, "policy_status", "policyStatus"),
-        tamper_protection=pick(raw, "tamper_protection", "tamperProtection"),
     )
 
 
@@ -105,11 +72,10 @@ def _shape_group(raw: dict[str, Any]) -> AgentGroupSummary:
     service="zms",
     toolset="zms",
     input_model=ListAgentGroupsInput,
-    output_view=AgentGroupSummary,
     is_list=True,
 )
 def zms_list_agent_groups(args: ListAgentGroupsInput) -> list[dict[str, Any]]:
-    """List ZMS agent groups as curated, agent-facing views.
+    """List ZMS agent groups.
 
     Read-only. Returns one row per group (eyez_id, name, type, cloud provider,
     agent count, policy/tamper status). Requires ZSCALER_CUSTOMER_ID.
@@ -131,7 +97,7 @@ def zms_list_agent_groups(args: ListAgentGroupsInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.agent_groups.list_agent_groups(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS agent groups: {err}")
-    return shape_many(nodes_of(result), _shape_group)
+    return shape_many(nodes_of(result))
 
 
 @tool(
@@ -144,7 +110,7 @@ def zms_list_agent_groups(args: ListAgentGroupsInput) -> list[dict[str, Any]]:
     wire_format=WireFormat.JSON,
 )
 def zms_get_agent_group_totp_secrets(args: AgentGroupTotpInput) -> dict[str, Any]:
-    """Get the TOTP secrets for a ZMS agent group (curated view).
+    """Get the TOTP secrets for a ZMS agent group (full record).
 
     Read-only API call, but the returned values ARE sensitive enrollment
     credentials — treat them like secrets. Keyed by `eyez_id`. Requires

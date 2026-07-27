@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -56,33 +56,6 @@ class ListDefaultPolicyRulesInput(BaseModel):
 # =============================================================================
 
 
-class PolicyRuleSummary(AgentView):
-    """Lean view — one ZMS policy rule row."""
-
-    id: str = Field(description="Policy rule ID.")
-    name: Optional[str] = Field(default=None, description="Rule name.")
-    action: Optional[str] = Field(default=None, description="ALLOW / BLOCK (decision-bearing).")
-    priority: Optional[int] = Field(default=None, description="Evaluation priority/order.")
-    enabled: Optional[bool] = Field(default=None, description="Whether the rule is enabled.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-
-
-# =============================================================================
-# SHAPER
-# =============================================================================
-
-
-def _shape_rule(raw: dict[str, Any]) -> PolicyRuleSummary:
-    return PolicyRuleSummary(
-        id=str(pick(raw, "id", "rule_id", "ruleId", default="")),
-        name=pick(raw, "name"),
-        action=pick(raw, "action"),
-        priority=pick(raw, "priority", "order"),
-        enabled=pick(raw, "enabled"),
-        description=pick(raw, "description"),
-    )
-
-
 def _build_rule_filter(args: ListPolicyRulesInput):
     if not any([args.name, args.action]):
         return None
@@ -104,11 +77,10 @@ def _build_rule_filter(args: ListPolicyRulesInput):
     service="zms",
     toolset="zms",
     input_model=ListPolicyRulesInput,
-    output_view=PolicyRuleSummary,
     is_list=True,
 )
 def zms_list_policy_rules(args: ListPolicyRulesInput) -> list[dict[str, Any]]:
-    """List ZMS microsegmentation policy rules as curated, agent-facing views.
+    """List ZMS microsegmentation policy rules.
 
     Read-only. Returns one row per rule (id, name, action, priority, enabled).
     Filter by name/action. `fetch_all` bypasses pagination — use sparingly.
@@ -128,7 +100,7 @@ def zms_list_policy_rules(args: ListPolicyRulesInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.policy_rules.list_policy_rules(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS policy rules: {err}")
-    return shape_many(nodes_of(result), _shape_rule)
+    return shape_many(nodes_of(result))
 
 
 @tool(
@@ -136,11 +108,10 @@ def zms_list_policy_rules(args: ListPolicyRulesInput) -> list[dict[str, Any]]:
     service="zms",
     toolset="zms",
     input_model=ListDefaultPolicyRulesInput,
-    output_view=PolicyRuleSummary,
     is_list=True,
 )
 def zms_list_default_policy_rules(args: ListDefaultPolicyRulesInput) -> list[dict[str, Any]]:
-    """List ZMS default policy rules as curated, agent-facing views.
+    """List ZMS default policy rules.
 
     Read-only. The built-in default rules evaluated when no custom rule matches.
     Requires ZSCALER_CUSTOMER_ID.
@@ -152,4 +123,4 @@ def zms_list_default_policy_rules(args: ListDefaultPolicyRulesInput) -> list[dic
     )
     if err:
         raise RuntimeError(f"Failed to list ZMS default policy rules: {err}")
-    return shape_many(nodes_of(result), _shape_rule)
+    return shape_many(nodes_of(result))

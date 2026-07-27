@@ -5,7 +5,7 @@ registered under the v1 name ``get_zia_user_departments`` (list with optional
 filters/sorting, or fetch one by ID via the full or lite endpoint). Backed by
 ``client.zia.user_management``.
 
-Only the output is changed vs v1: the curated ``DepartmentSummary`` view is returned
+The department records are returned exactly as the ZIA API provides them
 instead of the raw SDK dict, to keep token usage low.
 """
 
@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class DepartmentInput(BaseModel):
@@ -56,26 +56,11 @@ class DepartmentInput(BaseModel):
     ] = None
 
 
-class DepartmentSummary(AgentView):
-    id: str = Field(description="Department ID. Use in policy-rule payloads.")
-    name: str = Field(description="Display name.")
-    comments: Optional[str] = Field(default=None, description="Admin comments.")
-
-
-def shape_summary(raw: dict[str, Any]) -> DepartmentSummary:
-    return DepartmentSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        comments=pick(raw, "comments"),
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_users",
     input_model=DepartmentInput,
-    output_view=DepartmentSummary,
     is_list=True,
 )
 def get_zia_user_departments(args: DepartmentInput) -> list[dict[str, Any]]:
@@ -90,7 +75,7 @@ def get_zia_user_departments(args: DepartmentInput) -> list[dict[str, Any]]:
             dept, _, err = api.get_department(args.department_id)
         if err:
             raise RuntimeError(f"Failed to get department {args.department_id}: {err}")
-        return shape_many([dept.as_dict()], shape_summary)
+        return shape_many([dept.as_dict()])
 
     qp: dict[str, Any] = {}
     if args.limit_search is not None:
@@ -110,4 +95,4 @@ def get_zia_user_departments(args: DepartmentInput) -> list[dict[str, Any]]:
     depts, _, err = api.list_departments(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list departments: {err}")
-    return shape_many([d.as_dict() for d in (depts or [])], shape_summary)
+    return shape_many([d.as_dict() for d in (depts or [])])

@@ -18,18 +18,16 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.zpa_helpers import normalize_v2_rule_response
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
+from zscaler_mcp.shaping import shape_one
 from zscaler_mcp.tools.zpa._policy_common import (
     DeleteRuleInput,
     GetRuleInput,
     ListRulesInput,
     OperationResult,
-    PolicyRuleDetail,
-    PolicyRuleSummary,
     delete_rule,
     get_rule,
     list_rules,
     processed_conditions,
-    shape_detail,
 )
 
 
@@ -68,11 +66,10 @@ class UpdateIsolationRuleInput(CreateIsolationRuleInput):
     service="zpa",
     toolset="zpa_access_policies",
     input_model=ListRulesInput,
-    output_view=PolicyRuleSummary,
     is_list=True,
 )
 def zpa_list_isolation_policy_rules(args: ListRulesInput) -> list[dict[str, Any]]:
-    """List ZPA isolation policy rules as curated views (read-only)."""
+    """List ZPA isolation policy rules (read-only)."""
     return list_rules("isolation", args)
 
 
@@ -81,11 +78,10 @@ def zpa_list_isolation_policy_rules(args: ListRulesInput) -> list[dict[str, Any]
     service="zpa",
     toolset="zpa_access_policies",
     input_model=GetRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_get_isolation_policy_rule(args: GetRuleInput) -> dict[str, Any]:
-    """Get one ZPA isolation policy rule as a curated view (read-only)."""
+    """Get one ZPA isolation policy rule (read-only)."""
     return get_rule("isolation", args)
 
 
@@ -94,7 +90,6 @@ def zpa_get_isolation_policy_rule(args: GetRuleInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_access_policies",
     input_model=CreateIsolationRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_create_isolation_policy_rule(args: CreateIsolationRuleInput) -> dict[str, Any]:
@@ -119,7 +114,7 @@ def zpa_create_isolation_policy_rule(args: CreateIsolationRuleInput) -> dict[str
     created, response, err = client.zpa.policies.add_isolation_rule_v2(**payload)
     if err:
         raise RuntimeError(f"Failed to create isolation policy rule: {err}")
-    return shape_detail(normalize_v2_rule_response(created, response)).model_dump()
+    return shape_one(normalize_v2_rule_response(created, response))
 
 
 @tool(
@@ -127,7 +122,6 @@ def zpa_create_isolation_policy_rule(args: CreateIsolationRuleInput) -> dict[str
     service="zpa",
     toolset="zpa_access_policies",
     input_model=UpdateIsolationRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_update_isolation_policy_rule(args: UpdateIsolationRuleInput) -> dict[str, Any]:
@@ -147,7 +141,7 @@ def zpa_update_isolation_policy_rule(args: UpdateIsolationRuleInput) -> dict[str
     updated, response, err = client.zpa.policies.update_isolation_rule_v2(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update isolation policy rule {args.rule_id}: {err}")
-    return shape_detail(normalize_v2_rule_response(updated, response)).model_dump()
+    return shape_one(normalize_v2_rule_response(updated, response))
 
 
 @tool(

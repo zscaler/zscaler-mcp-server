@@ -47,12 +47,17 @@ class ToolSpec:
         fn: The tool implementation. Takes the validated input model instance and
             returns a shaped dict or list of dicts (pre-encoding).
         input_model: Pydantic model for the tool's inputs (the ``inputSchema``).
-        output_view: Curated :class:`AgentView` subclass (the ``outputSchema``
-            source of truth).
+        output_view: Optional :class:`AgentView` subclass describing a SYNTHETIC
+            result the server constructs itself (``OperationResult``, a catalog
+            wrapper, an aggregate status). ``None`` — the norm — means the tool
+            returns a Zscaler API record verbatim and therefore advertises no
+            ``outputSchema``: the set of attributes a resource carries is owned
+            by the API, not by this server, so enumerating it here would go
+            stale the moment engineering ships a new field (issue #88).
         description: Agent-facing description (defaults to the function docstring).
         service: Owning Zscaler product (``zpa`` / ``zia`` / ...).
         toolset: Toolset id this tool belongs to (catalog-level grouping).
-        is_list: True if the tool returns a list of ``output_view`` rows.
+        is_list: True if the tool returns a list of records/rows.
         wire_format: Default serialization policy. ``AUTO`` = flat list -> CSV,
             object -> JSON.
     """
@@ -61,7 +66,7 @@ class ToolSpec:
     action: str
     fn: Callable[[Any], Any]
     input_model: type[BaseModel]
-    output_view: type[AgentView]
+    output_view: type[AgentView] | None
     description: str
     service: str
     toolset: str
@@ -77,9 +82,11 @@ class ToolSpec:
             )
         if not self.name:
             raise ValueError("ToolSpec.name must be non-empty")
-        if not isinstance(self.output_view, type) or not issubclass(self.output_view, AgentView):
+        if self.output_view is not None and (
+            not isinstance(self.output_view, type) or not issubclass(self.output_view, AgentView)
+        ):
             raise TypeError(
-                f"ToolSpec '{self.name}': output_view must be an AgentView subclass, "
+                f"ToolSpec '{self.name}': output_view must be an AgentView subclass or None, "
                 f"got {self.output_view!r}."
             )
 
@@ -87,6 +94,26 @@ class ToolSpec:
     def is_write(self) -> bool:
         """True if this tool mutates the tenant (create/update/delete)."""
         return self.action in _WRITE_ACTIONS
+
+    @property
+    def supports_query(self) -> bool:
+        """True if the bridge should offer this tool a JMESPath ``query`` parameter.
+
+        Filtering/projection is offered on tools that return a COLLECTION, which
+        is where it pays for itself: many rows in, only what the caller asked for
+        out. That is ``is_list`` tools, plus the handful of ``*_list_*`` reads
+        whose SDK call returns a single envelope object wrapping the collection
+        (auth-exempt URLs, the ATP denylist, SIM inventory) — v1 offered ``query``
+        on those too.
+
+        Excluded: single-object gets (nothing to filter down), writes (the result
+        is an acknowledgement, not data), and tools advertising an ``output_view``
+        (a synthetic shape the server declares — filtering would contradict the
+        schema on the wire).
+        """
+        if self.output_view is not None or self.is_write:
+            return False
+        return self.is_list or "_list_" in self.name
 
     # ---- MCP tool-annotation semantics ------------------------------------
     # These three booleans are the domain-level source of truth for the MCP

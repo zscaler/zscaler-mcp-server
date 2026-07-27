@@ -17,17 +17,13 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.zpa_helpers import convert_v1_to_v2_response, convert_v2_to_sdk_format
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
 
 __all__ = [
     "ListRulesInput",
     "GetRuleInput",
     "DeleteRuleInput",
-    "PolicyRuleSummary",
-    "PolicyRuleDetail",
     "OperationResult",
-    "shape_summary",
-    "shape_detail",
     "list_rules",
     "get_rule",
     "delete_rule",
@@ -43,9 +39,6 @@ __all__ = [
 class ListRulesInput(BaseModel):
     """Inputs for listing a ZPA policy-rule family."""
 
-    detail: Annotated[
-        str, Field(default="summary", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -55,9 +48,6 @@ class GetRuleInput(BaseModel):
     """Inputs for getting one ZPA policy rule."""
 
     rule_id: Annotated[str, Field(description="Policy rule ID (string, even if numeric).")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -77,28 +67,6 @@ class DeleteRuleInput(BaseModel):
 # =============================================================================
 
 
-class PolicyRuleSummary(AgentView):
-    """Lean view — identify and reason about a policy rule."""
-
-    id: str = Field(description="Policy rule ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    action: Optional[str] = Field(default=None, description="Rule action (decision-bearing).")
-    rule_order: Optional[str] = Field(default=None, description="Evaluation order (top-to-bottom).")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    condition_count: int = Field(description="Number of condition blocks (complexity signal).")
-
-
-class PolicyRuleDetail(PolicyRuleSummary):
-    """Full view — summary plus the v2-shaped conditions + provenance."""
-
-    conditions: list[dict] = Field(
-        default_factory=list, description="Conditions in v2 (operator/operands) shape."
-    )
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-    created_time: Optional[str] = Field(default=None, description="Creation timestamp.")
-    modified_time: Optional[str] = Field(default=None, description="Last-modified timestamp.")
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
@@ -115,33 +83,6 @@ def _conditions(raw: dict[str, Any]) -> list[dict]:
     return [c for c in conds if isinstance(c, dict)]
 
 
-def shape_summary(raw: dict[str, Any]) -> PolicyRuleSummary:
-    return PolicyRuleSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        action=pick(raw, "action", "action_type", "actionType"),
-        rule_order=_opt_str(pick(raw, "rule_order", "ruleOrder", "order")),
-        description=pick(raw, "description"),
-        condition_count=len(_conditions(raw)),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> PolicyRuleDetail:
-    conds = _conditions(raw)
-    return PolicyRuleDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        action=pick(raw, "action", "action_type", "actionType"),
-        rule_order=_opt_str(pick(raw, "rule_order", "ruleOrder", "order")),
-        description=pick(raw, "description"),
-        condition_count=len(conds),
-        conditions=conds,
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-        created_time=pick(raw, "creation_time", "creationTime"),
-        modified_time=pick(raw, "modified_time", "modifiedTime"),
-    )
-
-
 # =============================================================================
 # SHARED PLUMBING
 # =============================================================================
@@ -155,8 +96,7 @@ def list_rules(policy_type: str, args: ListRulesInput) -> list[dict[str, Any]]:
     rules, _, err = client.zpa.policies.list_rules(policy_type, query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list {policy_type} policy rules: {err}")
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shape_many([r.as_dict() for r in (rules or [])], shaper)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 def get_rule(policy_type: str, args: GetRuleInput) -> dict[str, Any]:
@@ -171,8 +111,7 @@ def get_rule(policy_type: str, args: GetRuleInput) -> dict[str, Any]:
     raw = result.as_dict()
     if "conditions" in raw:
         raw["conditions"] = convert_v1_to_v2_response(raw["conditions"])
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shaper(raw).model_dump()
+    return shape_one(raw)
 
 
 def delete_rule(policy_type: str, args: DeleteRuleInput, label: str) -> dict[str, Any]:

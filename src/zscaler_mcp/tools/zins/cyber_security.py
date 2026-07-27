@@ -21,7 +21,7 @@ from pydantic import Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zins._common import (
     VALID_INCIDENTS_CATEGORIZE_BY,
     VALID_INCIDENTS_CATEGORIZE_BY_WITH_ID,
@@ -99,37 +99,6 @@ class CyberIncidentsTrendInput(_IncidentWindowInput):
 # =============================================================================
 
 
-class IncidentLocationRow(AgentView):
-    """A single location/dimension incident bucket (flat → CSV-friendly)."""
-
-    id: Optional[str] = Field(
-        default=None, description="Dimension id (location/app/user/department)."
-    )
-    name: Optional[str] = Field(default=None, description="Dimension display name.")
-    total: Optional[float] = Field(default=None, description="Incident count for this bucket.")
-
-
-class IncidentBucket(AgentView):
-    """An incident bucket with its (possibly nested) breakdown (nested → JSON)."""
-
-    name: Optional[str] = Field(
-        default=None, description="Bucket label (threat category / day / app, …)."
-    )
-    id: Optional[str] = Field(
-        default=None, description="Bucket identifier, when the API returns one."
-    )
-    total: Optional[float] = Field(default=None, description="Incident count for this bucket.")
-    entries: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Nested sub-buckets for multi-dimension groupings (e.g. apps within a threat category); empty when flat.",
-    )
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
 def _as_opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
@@ -143,24 +112,6 @@ def _as_opt_float(value: Any) -> Optional[float]:
         return None
 
 
-def _shape_location_row(raw: dict[str, Any]) -> IncidentLocationRow:
-    return IncidentLocationRow(
-        id=_as_opt_str(pick(raw, "id")),
-        name=pick(raw, "name", "label", "key"),
-        total=_as_opt_float(pick(raw, "total", "count", "value")),
-    )
-
-
-def _shape_bucket(raw: dict[str, Any]) -> IncidentBucket:
-    nested = raw.get("entries") or raw.get("children") or raw.get("buckets") or []
-    return IncidentBucket(
-        name=pick(raw, "name", "label", "key"),
-        id=_as_opt_str(pick(raw, "id")),
-        total=_as_opt_float(pick(raw, "total", "count", "value")),
-        entries=list(nested) if isinstance(nested, list) else [],
-    )
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -171,7 +122,6 @@ def _shape_bucket(raw: dict[str, Any]) -> IncidentBucket:
     service="zins",
     toolset="zins_cyber_security",
     input_model=CyberIncidentsInput,
-    output_view=IncidentBucket,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -197,7 +147,7 @@ def zins_get_cyber_incidents(args: CyberIncidentsInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get cyber incidents: {err}")
     raise_for_graphql_errors(response, "get_incidents")
 
-    return shape_many(as_dicts(entries), _shape_bucket)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -205,7 +155,6 @@ def zins_get_cyber_incidents(args: CyberIncidentsInput) -> list[dict[str, Any]]:
     service="zins",
     toolset="zins_cyber_security",
     input_model=CyberIncidentsByLocationInput,
-    output_view=IncidentLocationRow,
     is_list=True,
 )
 def zins_get_cyber_incidents_by_location(
@@ -230,7 +179,7 @@ def zins_get_cyber_incidents_by_location(
         raise RuntimeError(f"Failed to get cyber incidents by location: {err}")
     raise_for_graphql_errors(response, "get_incidents_by_location")
 
-    return shape_many(as_dicts(entries), _shape_location_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -238,7 +187,6 @@ def zins_get_cyber_incidents_by_location(
     service="zins",
     toolset="zins_cyber_security",
     input_model=CyberIncidentsTrendInput,
-    output_view=IncidentBucket,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -261,7 +209,7 @@ def zins_get_cyber_incidents_daily(args: CyberIncidentsTrendInput) -> list[dict[
         raise RuntimeError(f"Failed to get daily cyber incidents: {err}")
     raise_for_graphql_errors(response, "get_incidents_daily")
 
-    return shape_many(as_dicts(entries), _shape_bucket)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -269,7 +217,6 @@ def zins_get_cyber_incidents_daily(args: CyberIncidentsTrendInput) -> list[dict[
     service="zins",
     toolset="zins_cyber_security",
     input_model=CyberIncidentsTrendInput,
-    output_view=IncidentBucket,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -296,4 +243,4 @@ def zins_get_cyber_incidents_by_threat_and_app(
         raise RuntimeError(f"Failed to get cyber incidents by threat and app: {err}")
     raise_for_graphql_errors(response, "get_incidents_by_threat_and_app")
 
-    return shape_many(as_dicts(entries), _shape_bucket)
+    return shape_many(as_dicts(entries))

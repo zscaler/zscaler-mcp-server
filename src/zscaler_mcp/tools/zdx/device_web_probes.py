@@ -15,7 +15,7 @@ from typing import Any
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zdx._common import ProbeInput, ProbeSummary, _shape_probe
+from zscaler_mcp.tools.zdx._common import ProbeInput
 
 
 @tool(
@@ -23,11 +23,10 @@ from zscaler_mcp.tools.zdx._common import ProbeInput, ProbeSummary, _shape_probe
     service="zdx",
     toolset="zdx_troubleshooting",
     input_model=ProbeInput,
-    output_view=ProbeSummary,
     is_list=True,
 )
 def zdx_get_web_probes(args: ProbeInput) -> list[dict[str, Any]]:
-    """List web probes for an app on a ZDX device (curated views).
+    """List web probes for an app on a ZDX device (full records).
 
     Read-only. Call this BEFORE `zdx_start_deeptrace` to obtain the
     `web_probe_id` the deep-trace payload needs.
@@ -42,4 +41,4 @@ def zdx_get_web_probes(args: ProbeInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to get ZDX web probes: {err}")
     raw = [item.as_dict() if hasattr(item, "as_dict") else item for item in (result or [])]
-    return shape_many(raw, _shape_probe)
+    return shape_many(raw)

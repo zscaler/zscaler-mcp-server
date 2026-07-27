@@ -53,9 +53,7 @@ def test_parser_list_tools_flag():
 
 
 def test_parser_disabled_toolsets_flag():
-    args = server.build_parser().parse_args(
-        ["--disabled-toolsets", "zia_ssl_inspection,zia_admin"]
-    )
+    args = server.build_parser().parse_args(["--disabled-toolsets", "zia_ssl_inspection,zia_admin"])
     assert args.disabled_toolsets == "zia_ssl_inspection,zia_admin"
     assert server._parse_csv(args.disabled_toolsets) == ["zia_ssl_inspection", "zia_admin"]
     # Default is empty -> _parse_csv resolves to None (no blocklist).

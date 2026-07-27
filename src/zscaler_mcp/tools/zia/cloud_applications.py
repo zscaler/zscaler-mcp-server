@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListInput(BaseModel):
@@ -29,22 +29,6 @@ class ListInput(BaseModel):
     group_results: Annotated[
         Optional[bool], Field(default=None, description="Group results by application class.")
     ] = None
-
-
-class CloudApp(AgentView):
-    id: Optional[str] = Field(default=None, description="App identifier.")
-    val: Optional[Any] = Field(default=None, description="Canonical enum value (e.g. ONEDRIVE).")
-    name: Optional[str] = Field(default=None, description="Friendly app name.")
-    app_class: Optional[str] = Field(default=None, description="Application class.")
-
-
-def shape_app(raw: dict[str, Any]) -> CloudApp:
-    return CloudApp(
-        id=(lambda v: str(v) if v is not None else None)(pick(raw, "id")),
-        val=pick(raw, "val", "value"),
-        name=pick(raw, "name"),
-        app_class=pick(raw, "app_class", "appClass"),
-    )
 
 
 def _query_params(args: ListInput) -> dict[str, Any]:
@@ -67,7 +51,6 @@ def _query_params(args: ListInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_app_control",
     input_model=ListInput,
-    output_view=CloudApp,
     is_list=True,
 )
 def zia_list_cloud_app_policy(args: ListInput) -> list[dict[str, Any]]:
@@ -79,7 +62,7 @@ def zia_list_cloud_app_policy(args: ListInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list cloud app policy catalog: {err}")
     rows = [a if isinstance(a, dict) else a.as_dict() for a in (apps or [])]
-    return shape_many(rows, shape_app)
+    return shape_many(rows)
 
 
 @tool(
@@ -87,7 +70,6 @@ def zia_list_cloud_app_policy(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_ssl_inspection",
     input_model=ListInput,
-    output_view=CloudApp,
     is_list=True,
 )
 def zia_list_cloud_app_ssl_policy(args: ListInput) -> list[dict[str, Any]]:
@@ -99,4 +81,4 @@ def zia_list_cloud_app_ssl_policy(args: ListInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list cloud app SSL policy catalog: {err}")
     rows = [a if isinstance(a, dict) else a.as_dict() for a in (apps or [])]
-    return shape_many(rows, shape_app)
+    return shape_many(rows)

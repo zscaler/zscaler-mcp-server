@@ -22,14 +22,10 @@ from zscaler_mcp.common.zia_helpers import (
     validate_rank,
 )
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 from ._rules_common import (
     OperationResult,
-    RuleDetail,
-    RuleSummary,
-    shape_rule_detail,
-    shape_rule_summary,
 )
 
 _ADVANCED_DESC = (
@@ -92,17 +88,16 @@ class DeleteInput(BaseModel):
     service="zia",
     toolset="zia_file_type_control",
     input_model=ListInput,
-    output_view=RuleSummary,
     is_list=True,
 )
 def zia_list_file_type_control_rules(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA File Type Control rules as curated summaries."""
+    """List ZIA File Type Control rules."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     rules, _, err = client.zia.file_type_control_rule.list_rules(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list File Type Control rules: {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 class _FileTypeCategoriesInput(BaseModel):
@@ -114,17 +109,11 @@ class _FileTypeCategoriesInput(BaseModel):
     ] = None
 
 
-class _FileTypeCategory(AgentView):
-    name: Optional[str] = Field(default=None, description="Category name.")
-    description: Optional[str] = Field(default=None, description="Category description.")
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_file_type_control",
     input_model=_FileTypeCategoriesInput,
-    output_view=_FileTypeCategory,
     is_list=True,
 )
 def zia_list_file_type_categories(args: _FileTypeCategoriesInput) -> list[dict[str, Any]]:
@@ -140,11 +129,9 @@ def zia_list_file_type_categories(args: _FileTypeCategoriesInput) -> list[dict[s
     )
     if err:
         raise RuntimeError(f"Failed to list file-type categories: {err}")
-    rows = [c if isinstance(c, dict) else c.as_dict() for c in (cats or [])]
-    return [
-        _FileTypeCategory(name=r.get("name"), description=r.get("description")).model_dump()
-        for r in rows
-    ]
+    # Return the full category records (name/description plus any other fields
+    # the API carries) — no stripping.
+    return [c if isinstance(c, dict) else c.as_dict() for c in (cats or [])]
 
 
 @tool(
@@ -152,7 +139,6 @@ def zia_list_file_type_categories(args: _FileTypeCategoriesInput) -> list[dict[s
     service="zia",
     toolset="zia_file_type_control",
     input_model=GetInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_get_file_type_control_rule(args: GetInput) -> dict[str, Any]:
@@ -161,7 +147,7 @@ def zia_get_file_type_control_rule(args: GetInput) -> dict[str, Any]:
     rule, _, err = client.zia.file_type_control_rule.get_rule(args.rule_id)
     if err:
         raise RuntimeError(f"Failed to get File Type Control rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -169,7 +155,6 @@ def zia_get_file_type_control_rule(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_file_type_control",
     input_model=CreateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_create_file_type_control_rule(args: CreateInput) -> dict[str, Any]:
@@ -189,7 +174,7 @@ def zia_create_file_type_control_rule(args: CreateInput) -> dict[str, Any]:
     rule, _, err = client.zia.file_type_control_rule.add_rule(**payload)
     if err:
         raise RuntimeError(f"Failed to create File Type Control rule: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -197,7 +182,6 @@ def zia_create_file_type_control_rule(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_file_type_control",
     input_model=UpdateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_update_file_type_control_rule(args: UpdateInput) -> dict[str, Any]:
@@ -217,7 +201,7 @@ def zia_update_file_type_control_rule(args: UpdateInput) -> dict[str, Any]:
     rule, _, err = client.zia.file_type_control_rule.update_rule(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update File Type Control rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(

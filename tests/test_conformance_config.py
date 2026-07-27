@@ -13,9 +13,9 @@ coherent and honest:
 
 from __future__ import annotations
 
-import tomllib  # noqa: F401  (kept for parity with sibling config tests)
 from pathlib import Path
 
+import tomllib  # noqa: F401  (kept for parity with sibling config tests)
 import yaml
 
 _REPO = Path(__file__).resolve().parent.parent

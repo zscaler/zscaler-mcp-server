@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -54,32 +54,9 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class RuleLabelSummary(AgentView):
-    id: str = Field(description="Rule label ID. Use in policy-rule payloads.")
-    name: str = Field(description="Display name.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    referenced_rule_count: Optional[int] = Field(
-        default=None, description="How many rules reference this label, if reported."
-    )
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def shape_summary(raw: dict[str, Any]) -> RuleLabelSummary:
-    return RuleLabelSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        referenced_rule_count=pick(raw, "referenced_rule_count", "referencedRuleCount"),
-    )
 
 
 # =============================================================================
@@ -92,17 +69,16 @@ def shape_summary(raw: dict[str, Any]) -> RuleLabelSummary:
     service="zia",
     toolset="zia_rule_labels",
     input_model=ListInput,
-    output_view=RuleLabelSummary,
     is_list=True,
 )
 def zia_list_rule_labels(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA rule labels as curated summaries."""
+    """List ZIA rule labels."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     labels, _, err = client.zia.rule_labels.list_labels(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list rule labels: {err}")
-    return shape_many([lbl.as_dict() for lbl in (labels or [])], shape_summary)
+    return shape_many([lbl.as_dict() for lbl in (labels or [])])
 
 
 @tool(
@@ -110,7 +86,6 @@ def zia_list_rule_labels(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_rule_labels",
     input_model=GetInput,
-    output_view=RuleLabelSummary,
     is_list=False,
 )
 def zia_get_rule_label(args: GetInput) -> dict[str, Any]:
@@ -119,7 +94,7 @@ def zia_get_rule_label(args: GetInput) -> dict[str, Any]:
     label, _, err = client.zia.rule_labels.get_label(label_id=args.label_id)
     if err:
         raise RuntimeError(f"Failed to get rule label {args.label_id}: {err}")
-    return shape_summary(label.as_dict()).model_dump()
+    return shape_one(label.as_dict())
 
 
 @tool(
@@ -127,7 +102,6 @@ def zia_get_rule_label(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_rule_labels",
     input_model=CreateInput,
-    output_view=RuleLabelSummary,
     is_list=False,
 )
 def zia_create_rule_label(args: CreateInput) -> dict[str, Any]:
@@ -139,7 +113,7 @@ def zia_create_rule_label(args: CreateInput) -> dict[str, Any]:
     label, _, err = client.zia.rule_labels.add_label(**payload)
     if err:
         raise RuntimeError(f"Failed to create rule label: {err}")
-    return shape_summary(label.as_dict()).model_dump()
+    return shape_one(label.as_dict())
 
 
 @tool(
@@ -147,7 +121,6 @@ def zia_create_rule_label(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_rule_labels",
     input_model=UpdateInput,
-    output_view=RuleLabelSummary,
     is_list=False,
 )
 def zia_update_rule_label(args: UpdateInput) -> dict[str, Any]:
@@ -163,7 +136,7 @@ def zia_update_rule_label(args: UpdateInput) -> dict[str, Any]:
     label, _, err = client.zia.rule_labels.update_label(label_id=args.label_id, **fields)
     if err:
         raise RuntimeError(f"Failed to update rule label {args.label_id}: {err}")
-    return shape_summary(label.as_dict()).model_dump()
+    return shape_one(label.as_dict())
 
 
 @tool(

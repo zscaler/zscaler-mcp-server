@@ -1,7 +1,7 @@
 """ZIA IP source groups — list, get, create, update, delete.
 
 Mirrors v1's ``client.zia.cloud_firewall`` IP source group SDK calls, returning
-curated views. Writes are staged until ``zia_activate_configuration``.
+full records. Writes are staged until ``zia_activate_configuration``.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -58,49 +58,13 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class SourceGroupSummary(AgentView):
-    id: str = Field(description="Source group ID. Use in follow-up calls.")
-    name: str = Field(description="Display name.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    ip_address_count: int = Field(description="Number of IP/CIDR members.")
-
-
-class SourceGroupDetail(SourceGroupSummary):
-    ip_addresses: list[str] = Field(default_factory=list, description="IP/CIDR members.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
 
 
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
 def _ips(raw: dict[str, Any]) -> list[Any]:
     return coalesce(raw, "ip_addresses", "ipAddresses", "addresses")
-
-
-def shape_summary(raw: dict[str, Any]) -> SourceGroupSummary:
-    return SourceGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        ip_address_count=len(_ips(raw)),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> SourceGroupDetail:
-    ips = _ips(raw)
-    return SourceGroupDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        ip_address_count=len(ips),
-        ip_addresses=[str(i) for i in ips],
-    )
 
 
 # =============================================================================
@@ -113,17 +77,16 @@ def shape_detail(raw: dict[str, Any]) -> SourceGroupDetail:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListInput,
-    output_view=SourceGroupSummary,
     is_list=True,
 )
 def zia_list_ip_source_groups(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA IP source groups as curated summaries."""
+    """List ZIA IP source groups."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     groups, _, err = client.zia.cloud_firewall.list_ip_source_groups(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list IP source groups: {err}")
-    return shape_many([g.as_dict() for g in (groups or [])], shape_summary)
+    return shape_many([g.as_dict() for g in (groups or [])])
 
 
 @tool(
@@ -131,7 +94,6 @@ def zia_list_ip_source_groups(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetInput,
-    output_view=SourceGroupDetail,
     is_list=False,
 )
 def zia_get_ip_source_group(args: GetInput) -> dict[str, Any]:
@@ -140,7 +102,7 @@ def zia_get_ip_source_group(args: GetInput) -> dict[str, Any]:
     group, _, err = client.zia.cloud_firewall.get_ip_source_group(args.group_id)
     if err:
         raise RuntimeError(f"Failed to get IP source group {args.group_id}: {err}")
-    return shape_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -148,7 +110,6 @@ def zia_get_ip_source_group(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=CreateInput,
-    output_view=SourceGroupDetail,
     is_list=False,
 )
 def zia_create_ip_source_group(args: CreateInput) -> dict[str, Any]:
@@ -161,7 +122,7 @@ def zia_create_ip_source_group(args: CreateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create IP source group: {err}")
-    return shape_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -169,7 +130,6 @@ def zia_create_ip_source_group(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=UpdateInput,
-    output_view=SourceGroupDetail,
     is_list=False,
 )
 def zia_update_ip_source_group(args: UpdateInput) -> dict[str, Any]:
@@ -183,7 +143,7 @@ def zia_update_ip_source_group(args: UpdateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to update IP source group {args.group_id}: {err}")
-    return shape_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(

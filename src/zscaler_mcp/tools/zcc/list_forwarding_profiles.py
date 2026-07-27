@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListForwardingProfilesInput(BaseModel):
@@ -27,32 +27,15 @@ class ListForwardingProfilesInput(BaseModel):
     ] = None
 
 
-class ForwardingProfileSummary(AgentView):
-    """Lean view of a ZCC forwarding profile."""
-
-    id: str = Field(description="Forwarding profile ID.")
-    name: Optional[str] = Field(default=None, description="Profile name.")
-    active: Optional[bool] = Field(default=None, description="Whether the profile is active.")
-
-
-def _shape_profile(raw: dict[str, Any]) -> ForwardingProfileSummary:
-    return ForwardingProfileSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name"),
-        active=pick(raw, "active"),
-    )
-
-
 @tool(
     action=READ,
     service="zcc",
     toolset="zcc_forwarding_profiles",
     input_model=ListForwardingProfilesInput,
-    output_view=ForwardingProfileSummary,
     is_list=True,
 )
 def zcc_list_forwarding_profiles(args: ListForwardingProfilesInput) -> list[dict[str, Any]]:
-    """List ZCC forwarding profiles (by company) as curated, agent-facing views. Read-only."""
+    """List ZCC forwarding profiles (by company). Read-only."""
     client = get_zscaler_client(service="zcc")
 
     qp: dict[str, Any] = {}
@@ -67,4 +50,4 @@ def zcc_list_forwarding_profiles(args: ListForwardingProfilesInput) -> list[dict
     if err:
         raise RuntimeError(f"Failed to list ZCC forwarding profiles: {err}")
 
-    return shape_many([p.as_dict() for p in (profiles or [])], _shape_profile)
+    return shape_many([p.as_dict() for p in (profiles or [])])

@@ -58,6 +58,14 @@ class Registry:
         """
         return {spec.service for spec in self._specs.values()}
 
+    def toolsets(self) -> set[str]:
+        """Every distinct ``toolset`` id across the registered specs.
+
+        Used to validate operator-supplied ``--toolsets`` / ``--disabled-toolsets``
+        ids so a typo surfaces as a warning instead of a silently empty server.
+        """
+        return {spec.toolset for spec in self._specs.values()}
+
     def select(
         self,
         *,

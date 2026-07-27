@@ -18,18 +18,16 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.zpa_helpers import normalize_v2_rule_response
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
+from zscaler_mcp.shaping import shape_one
 from zscaler_mcp.tools.zpa._policy_common import (
     DeleteRuleInput,
     GetRuleInput,
     ListRulesInput,
     OperationResult,
-    PolicyRuleDetail,
-    PolicyRuleSummary,
     delete_rule,
     get_rule,
     list_rules,
     processed_conditions,
-    shape_detail,
 )
 
 
@@ -68,11 +66,10 @@ class UpdateAppProtectionRuleInput(CreateAppProtectionRuleInput):
     service="zpa",
     toolset="zpa_access_policies",
     input_model=ListRulesInput,
-    output_view=PolicyRuleSummary,
     is_list=True,
 )
 def zpa_list_app_protection_rules(args: ListRulesInput) -> list[dict[str, Any]]:
-    """List ZPA app-protection (inspection) policy rules as curated views (read-only)."""
+    """List ZPA app-protection (inspection) policy rules (read-only)."""
     return list_rules("inspection", args)
 
 
@@ -81,11 +78,10 @@ def zpa_list_app_protection_rules(args: ListRulesInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_access_policies",
     input_model=GetRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_get_app_protection_rule(args: GetRuleInput) -> dict[str, Any]:
-    """Get one ZPA app-protection (inspection) policy rule as a curated view (read-only)."""
+    """Get one ZPA app-protection (inspection) policy rule (read-only)."""
     return get_rule("inspection", args)
 
 
@@ -94,7 +90,6 @@ def zpa_get_app_protection_rule(args: GetRuleInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_access_policies",
     input_model=CreateAppProtectionRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_create_app_protection_rule(args: CreateAppProtectionRuleInput) -> dict[str, Any]:
@@ -120,7 +115,7 @@ def zpa_create_app_protection_rule(args: CreateAppProtectionRuleInput) -> dict[s
     created, response, err = client.zpa.policies.add_app_protection_rule_v2(**payload)
     if err:
         raise RuntimeError(f"Failed to create app protection rule: {err}")
-    return shape_detail(normalize_v2_rule_response(created, response)).model_dump()
+    return shape_one(normalize_v2_rule_response(created, response))
 
 
 @tool(
@@ -128,7 +123,6 @@ def zpa_create_app_protection_rule(args: CreateAppProtectionRuleInput) -> dict[s
     service="zpa",
     toolset="zpa_access_policies",
     input_model=UpdateAppProtectionRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_update_app_protection_rule(args: UpdateAppProtectionRuleInput) -> dict[str, Any]:
@@ -150,7 +144,7 @@ def zpa_update_app_protection_rule(args: UpdateAppProtectionRuleInput) -> dict[s
     )
     if err:
         raise RuntimeError(f"Failed to update app protection rule {args.rule_id}: {err}")
-    return shape_detail(normalize_v2_rule_response(updated, response)).model_dump()
+    return shape_one(normalize_v2_rule_response(updated, response))
 
 
 @tool(

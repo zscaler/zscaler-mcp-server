@@ -16,6 +16,8 @@ Zscaler Integrations MCP Server Changelog
 
 **New ``--disabled-toolsets`` flag (and ``ZSCALER_MCP_DISABLED_TOOLSETS``).** The blocklist complement to ``--toolsets``: load everything *except* the toolsets you name, instead of having to enumerate the dozens you want. Takes exact toolset ids (no wildcards) and wins over ``--toolsets`` when both name the same toolset. Example: ``--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin``.
 
+**Unknown toolset ids are now reported.** A typo in ``--toolsets`` previously matched nothing and started a server with **zero tools**, silently. Both ``--toolsets`` and ``--disabled-toolsets`` now log a warning naming the unrecognized id and listing the valid ones, then continue.
+
 **Clearer destructive-operation confirmations.** The confirmation prompt shown before a delete now names the specific resource being removed for every tool — previously tools whose identifier isn't literally ``id``/``name`` (e.g. ZPA's ``group_id``) showed ``unknown``. The prompt now falls back to the resource's ``*_id`` parameter so you can always see what you are approving.
 
 **Tool behavior hints for MCP clients.** Every tool now advertises standard MCP annotations (``readOnlyHint``, ``destructiveHint``, ``idempotentHint``) derived from its action. Supported clients use these to decide when to surface a confirmation — read tools run freely, while create/update/delete are flagged as writes (delete and PUT-replace updates as destructive).
@@ -24,7 +26,13 @@ Zscaler Integrations MCP Server Changelog
 
 ### Bug Fixes
 
-**Restored ``policy_name`` (and the rest of the device record) on ``zcc_list_devices``** (`#88 <https://github.com/zscaler/zscaler-mcp-server/issues/88>`_). Since v0.13.0 the tool projected each device down to a 6-field summary and dropped ``policy_name`` along with most enrollment/telemetry fields, so per-device policy assignment could no longer be determined through the server. ``policy_name`` is now part of the default summary, and a new ``detail='full'`` option returns the rest of the record (owner, MAC, manufacturer, VPN/tunnel state, download count, and the enrollment / keep-alive timestamps).
+**Read tools no longer drop attributes — every field the Zscaler API returns is now included** (`#88 <https://github.com/zscaler/zscaler-mcp-server/issues/88>`_). Since v0.13.0, read tools projected each resource down to a fixed subset of fields, so any attribute outside that subset silently disappeared. The most visible case was ``zcc_list_devices`` dropping ``policy_name`` (along with most enrollment and telemetry fields), which made per-device policy assignment impossible to determine through the server — but the same trimming affected resources across every service.
+
+Read tools now return the **complete record**, exactly as the Zscaler API provides it. The server no longer declares an output schema enumerating a resource's attributes either, so a field Zscaler adds in future reaches you with **no server upgrade required**. (Create and update tools still document every settable input field, exactly as the Zscaler SDK does.)
+
+Two follow-on changes come with this: the ``detail='summary'|'full'`` parameter on the ZCC and ZPA list/get tools is **removed** (it existed only to opt out of the trimming, and with the full record always returned it no longer selected anything — callers passing ``detail`` should drop the argument); and field names in responses are now exactly what the Zscaler API returns (for example ``policyName``, ``registrationState``) rather than a server-invented spelling.
+
+**Restored: JMESPath client-side filtering on list tools.** The optional ``query`` parameter (originally added in `PR #45 <https://github.com/zscaler/zscaler-mcp-server/pull/45>`_) was lost during the internal rewrite and is back on **164** collection-returning tools. Pass a `JMESPath <https://jmespath.org/>`_ expression to filter or project results before they reach the agent — ``[*].{user: user, policy: policyName}`` or ``length(@)``. Omit it to get the full records. Together with ``--toolsets``, this is the supported way to keep responses small: the caller chooses what to drop, instead of the server guessing.
 
 ## 0.13.4 (July 23, 2026)
 
