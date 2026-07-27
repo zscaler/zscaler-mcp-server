@@ -247,7 +247,7 @@ This multi-layered approach ensures that even if one security control is bypasse
 
 ### Toolsets
 
-Tools are grouped into named **toolsets** so you can load only the slice an agent actually needs (e.g. `zia_url_filtering` (5 tools) instead of every tool from every service (~280)). Toolsets reduce the agent's context cost and improve tool-selection accuracy. The `meta` toolset (server discovery) is always loaded.
+Tools are grouped into 63 named **toolsets** so you can load only the slice an agent actually needs (e.g. `zia_url_filtering` (5 tools) instead of every tool from every service (402)). Toolsets reduce the agent's context cost and improve tool-selection accuracy.
 
 ```bash
 # Load just two slices
