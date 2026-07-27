@@ -3,8 +3,8 @@
 The Zscaler MCP server groups its 402 tools into 63 **toolsets** — small, named bundles of related tools. Toolsets let you load only the slice of tools an agent actually needs, instead of every tool the server can expose.
 
 > **⚠️ Runtime discovery tools are NOT available in the current build.** The `meta` toolset and its tools (`zscaler_list_toolsets`, `zscaler_get_toolset_tools`, `zscaler_enable_toolset`, `zscaler_get_available_services`, `zscaler_check_connectivity`) shipped in an earlier version and are absent today — verified against the live registry. Rows and sections below that reference them are retained as the design of record while we decide whether to restore them; most MCP clients now use deferred tool loading, which may make catalog discovery redundant. **Toolset selection via `--toolsets` / `--disabled-toolsets` is unaffected and works as documented.**
-
-> **Applies to every transport.** Toolsets, the toolset selection flags, the runtime discovery tools, and the OneAPI entitlement filter described on this page work identically on `stdio`, `sse`, and `streamable-http`. They are tool-level controls, not transport-level controls.
+>
+> **Applies to every transport.** Toolsets, the toolset selection flags, and the OneAPI entitlement filter described on this page work identically on `stdio`, `sse`, and `streamable-http`. They are tool-level controls, not transport-level controls.
 
 ## Why toolsets exist
 
