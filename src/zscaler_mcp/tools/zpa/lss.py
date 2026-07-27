@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -88,20 +88,8 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _connector_groups(raw: dict[str, Any]) -> list[Any]:
-    cfg = pick(raw, "config") if isinstance(pick(raw, "config"), dict) else raw
-    return coalesce(
-        raw, "connector_groups", "connectorGroups", "app_connector_group_ids"
-    ) or coalesce(cfg, "connector_groups", "connectorGroups")
 
 
-def _cfg(raw: dict[str, Any]) -> dict[str, Any]:
-    """LSS records nest most fields under `config`; merge for picking."""
-    cfg = pick(raw, "config")
-    merged = dict(raw)
-    if isinstance(cfg, dict):
-        merged = {**cfg, **{k: v for k, v in raw.items() if k != "config"}}
-    return merged
 
 
 # =============================================================================

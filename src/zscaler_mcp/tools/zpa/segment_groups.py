@@ -34,7 +34,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # 1. INPUT MODELS  (typed + validated; the inputSchema source of truth)
@@ -134,8 +134,6 @@ class OperationResult(AgentView):
 # =============================================================================
 
 
-def _app_segments(raw: dict[str, Any]) -> list[dict[str, Any]]:
-    return coalesce(raw, "applications", "app_segments", "applicationSegments")
 
 
 # =============================================================================

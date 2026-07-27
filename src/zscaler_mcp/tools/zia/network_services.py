@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 
 class ListServicesInput(BaseModel):
@@ -78,12 +78,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def _ranges(raw: dict[str, Any], *keys: str) -> list[PortRange]:
-    out: list[PortRange] = []
-    for r in coalesce(raw, *keys):
-        if isinstance(r, dict):
-            out.append(PortRange(start=r.get("start"), end=r.get("end")))
-    return out
 
 
 def _ports(ports: Optional[list[list[str]]]) -> Optional[list[tuple]]:

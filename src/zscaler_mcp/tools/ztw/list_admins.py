@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListAdminsInput(BaseModel):
@@ -38,11 +38,6 @@ class ListAdminsInput(BaseModel):
     ] = None
 
 
-def _role_name(raw: dict[str, Any]) -> Optional[str]:
-    role = pick(raw, "role")
-    if isinstance(role, dict):
-        return pick(role, "name")
-    return pick(raw, "role_name", "roleName")
 
 
 @tool(

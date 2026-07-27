@@ -99,17 +99,8 @@ class CyberIncidentsTrendInput(_IncidentWindowInput):
 # =============================================================================
 
 
-def _as_opt_str(value: Any) -> Optional[str]:
-    return None if value is None else str(value)
 
 
-def _as_opt_float(value: Any) -> Optional[float]:
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 # =============================================================================

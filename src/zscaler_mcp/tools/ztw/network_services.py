@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import coalesce, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListNetworkServicesInput(BaseModel):
@@ -32,8 +32,6 @@ class ListNetworkServicesInput(BaseModel):
     ] = None
 
 
-def _port_ranges(raw: dict[str, Any], *keys: str) -> list[Any]:
-    return coalesce(raw, *keys)
 
 
 @tool(

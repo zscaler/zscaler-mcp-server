@@ -12,7 +12,7 @@ returns one object (is_list=False).
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
@@ -46,13 +46,6 @@ class IotDeviceStatsInput(BaseModel):
 # =============================================================================
 
 
-def _as_opt_float(value: Any) -> Optional[float]:
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 # =============================================================================

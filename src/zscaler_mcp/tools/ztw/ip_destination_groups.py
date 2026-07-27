@@ -15,7 +15,7 @@ from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.common.ztw_helpers import validate_and_convert_country_codes
 from zscaler_mcp.registry import CREATE, DELETE, READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -82,12 +82,8 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def _addresses(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "addresses", "ip_addresses", "ipAddresses")
 
 
-def _countries(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "countries")
 
 
 # =============================================================================

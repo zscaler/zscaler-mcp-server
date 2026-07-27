@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.zpa_helpers import normalize_iso_country_code
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -175,16 +175,10 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def _service_edges(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "service_edges", "serviceEdges", "service_edge_ids")
 
 
-def _trusted_networks(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "trusted_networks", "trustedNetworks", "trusted_network_ids")
 
 
-def _ids(items: list[Any]) -> list[str]:
-    return [str(i.get("id") if isinstance(i, dict) else i) for i in items]
 
 
 def _build_body(args: Any) -> dict[str, Any]:

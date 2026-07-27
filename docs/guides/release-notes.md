@@ -38,7 +38,7 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
   Two follow-on changes come with this:
 
   - The `detail='summary'|'full'` parameter on the ZCC and ZPA list/get tools is **removed**. It existed only to opt out of the trimming; with the full record always returned it no longer selected anything. Callers passing `detail` should drop the argument.
-  - Field names in responses are now exactly what the Zscaler API returns (for example `policyName`, `registrationState`), rather than a server-invented spelling.
+  - Field names in responses are now exactly what the Zscaler API returns (for example `policyName`, `registrationState`), rather than a server-invented spelling. This covers the 243 read tools that return a resource record. The remaining 11 return a container the server itself builds — the ZPA LSS metadata catalogs, the ZMS status / nonce / TOTP envelopes, `zdx_get_analysis`, and `ztw_get_discovery_settings` — which keep their own field names and carry the API payload intact inside.
 
 - **Restored: JMESPath client-side filtering on list tools.** The optional `query` parameter (originally added in [PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45)) was lost during the internal rewrite and is back on **164** collection-returning tools. Pass a [JMESPath](https://jmespath.org/) expression to filter or project results before they reach the agent — `[*].{user: user, policy: policyName}`, `` [?enabled==`true`] ``, or `length(@)`. Omit it to get the full records. Together with `--toolsets`, this is the supported way to keep responses small: the caller chooses what to drop, instead of the server guessing.
 
