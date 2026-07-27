@@ -17,6 +17,7 @@ Usage::
 
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable
 
 from pydantic import BaseModel
@@ -66,7 +67,13 @@ def tool(
 
     def decorate(fn: Callable[[Any], Any]) -> Callable[[Any], Any]:
         resolved_name = name or fn.__name__
-        resolved_desc = (description or fn.__doc__ or "").strip()
+        # ``cleandoc`` (not ``.strip()``) because Python 3.13+ dedents docstrings
+        # at compile time while 3.11/3.12 do not: a raw ``fn.__doc__`` keeps the
+        # source indentation on older interpreters, so the same tool would ship a
+        # differently-indented description depending on the runtime — and the
+        # generated docs would flip-flop between contributors. Normalizing here
+        # makes the description interpreter-independent.
+        resolved_desc = inspect.cleandoc(description or fn.__doc__ or "")
         if not resolved_desc:
             raise ValueError(
                 f"Tool '{resolved_name}' has no description (add a docstring or "

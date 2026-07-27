@@ -60,7 +60,10 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # >=22 is required: the conformance runner imports `globSync` from
+          # `node:fs`, which does not exist on Node 20 (added in Node 22), so the
+          # suite dies with a SyntaxError before running a single scenario.
+          node-version: 22
 
       - name: Install the server
         run: uv sync --frozen
