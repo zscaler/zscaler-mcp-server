@@ -79,6 +79,12 @@ jobs:
           ZSCALER_MCP_AUTH_ENABLED: "false"
           ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER: "true"
           ZSCALER_MCP_PID_FILE: "/tmp/zscaler-mcp-conformance.pid"
+          # Host-header validation is opt-in (see docs: set this to your expected
+          # hostnames). The suite's `dns-rebinding-protection` scenario forges a
+          # Host header and requires the server to reject it, so the server has to
+          # run in the documented hardened posture for that check to mean anything.
+          # Without it the scenario fails — correctly — because nothing is enforcing.
+          ZSCALER_MCP_ALLOWED_HOSTS: "127.0.0.1:*,localhost:*"
         run: |
           uv run zscaler-mcp \
             --transport streamable-http --host 127.0.0.1 --port "${MCP_PORT}" \
