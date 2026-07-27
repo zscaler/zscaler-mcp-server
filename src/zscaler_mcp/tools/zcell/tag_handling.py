@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zcell._common import as_dicts
 
 # =============================================================================
@@ -48,35 +48,6 @@ class ListTagsInput(BaseModel):
 # =============================================================================
 
 
-class TagView(AgentView):
-    """A SIM tag defined for the customer."""
-
-    id: Optional[str] = Field(default=None, description="Tag ID. Use when assigning tags to SIMs.")
-    name: Optional[str] = Field(default=None, description="Tag name.")
-    creation_time: Optional[Any] = Field(default=None, description="When the tag was created.")
-    modified_by_user_id: Optional[str] = Field(
-        default=None, description="User that last modified the tag."
-    )
-    tenant_id: Optional[str] = Field(default=None, description="Owning tenant ID.")
-    mvno_customer_id: Optional[str] = Field(default=None, description="Owning MVNO customer ID.")
-
-
-# =============================================================================
-# SHAPER
-# =============================================================================
-
-
-def _shape_tag(raw: dict[str, Any]) -> TagView:
-    return TagView(
-        id=_opt_str(pick(raw, "id")),
-        name=pick(raw, "name"),
-        creation_time=pick(raw, "creation_time", "creationTime"),
-        modified_by_user_id=_opt_str(pick(raw, "modified_by_user_id", "modifiedByUserId")),
-        tenant_id=_opt_str(pick(raw, "tenant_id", "tenantId")),
-        mvno_customer_id=_opt_str(pick(raw, "mvno_customer_id", "mvnoCustomerId")),
-    )
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
@@ -95,7 +66,6 @@ def _query(*pairs: tuple[str, Any]) -> dict[str, Any]:
     service="zcell",
     toolset="zcell_tag_handling",
     input_model=ListTagsInput,
-    output_view=TagView,
     is_list=True,
 )
 def zcell_list_tags(args: ListTagsInput) -> list[dict[str, Any]]:
@@ -111,4 +81,4 @@ def zcell_list_tags(args: ListTagsInput) -> list[dict[str, Any]]:
     )
     if err:
         raise RuntimeError(f"Failed to list tags: {err}")
-    return shape_many(as_dicts(tags), _shape_tag)
+    return shape_many(as_dicts(tags))

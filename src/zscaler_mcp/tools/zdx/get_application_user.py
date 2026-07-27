@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 from zscaler_mcp.tools.zdx._common import scope_query_params, unwrap_nested
 
 # =============================================================================
@@ -67,49 +67,6 @@ class GetApplicationUserInput(BaseModel):
 # =============================================================================
 
 
-class ApplicationUserSummary(AgentView):
-    """Lean view — identify a user accessing an app and read their score."""
-
-    id: str = Field(description="User ID. Use with `zdx_get_application_user`.")
-    name: Optional[str] = Field(default=None, description="User name.")
-    email: Optional[str] = Field(default=None, description="User email.")
-    score: Optional[float] = Field(default=None, description="User's ZDX score for this app.")
-
-
-class ApplicationUserDetail(AgentView):
-    """Detail view — the per-user device breakdown for an application.
-
-    The `devices` array carries each device's nested metrics; preserved as-is.
-    """
-
-    id: str = Field(description="User ID.")
-    name: Optional[str] = Field(default=None, description="User name.")
-    email: Optional[str] = Field(default=None, description="User email.")
-    score: Optional[float] = Field(default=None, description="User's ZDX score for this app.")
-    devices: list[dict] = Field(
-        default_factory=list, description="Per-device detail/metrics (nested)."
-    )
-
-
-def _shape_user_summary(raw: dict[str, Any]) -> ApplicationUserSummary:
-    return ApplicationUserSummary(
-        id=str(pick(raw, "id", "user_id", "userId", default="")),
-        name=pick(raw, "name", "user_name", "userName"),
-        email=pick(raw, "email"),
-        score=pick(raw, "score"),
-    )
-
-
-def _shape_user_detail(raw: dict[str, Any]) -> ApplicationUserDetail:
-    return ApplicationUserDetail(
-        id=str(pick(raw, "id", "user_id", "userId", default="")),
-        name=pick(raw, "name", "user_name", "userName"),
-        email=pick(raw, "email"),
-        score=pick(raw, "score"),
-        devices=coalesce(raw, "devices"),
-    )
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -120,7 +77,6 @@ def _shape_user_detail(raw: dict[str, Any]) -> ApplicationUserDetail:
     service="zdx",
     toolset="zdx_reports",
     input_model=ListApplicationUsersInput,
-    output_view=ApplicationUserSummary,
     is_list=True,
 )
 def zdx_list_application_users(args: ListApplicationUsersInput) -> list[dict[str, Any]]:
@@ -148,7 +104,7 @@ def zdx_list_application_users(args: ListApplicationUsersInput) -> list[dict[str
         raise RuntimeError(f"Failed to list ZDX application users for {args.app_id}: {err}")
 
     raw_users = unwrap_nested(result, "users")
-    return shape_many(raw_users, _shape_user_summary)
+    return shape_many(raw_users)
 
 
 @tool(
@@ -156,7 +112,6 @@ def zdx_list_application_users(args: ListApplicationUsersInput) -> list[dict[str
     service="zdx",
     toolset="zdx_reports",
     input_model=GetApplicationUserInput,
-    output_view=ApplicationUserDetail,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -182,5 +137,5 @@ def zdx_get_application_user(args: GetApplicationUserInput) -> dict[str, Any]:
         )
 
     if result and len(result) > 0:
-        return _shape_user_detail(result[0].as_dict()).model_dump()
-    return _shape_user_detail({}).model_dump()
+        return shape_one(result[0].as_dict())
+    return shape_one({})

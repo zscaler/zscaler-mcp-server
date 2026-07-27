@@ -11,13 +11,13 @@ bucket is one row.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zins._common import (
     TimeWindowInput,
     as_dicts,
@@ -43,39 +43,8 @@ class FirewallInput(TimeWindowInput):
 # =============================================================================
 
 
-class FirewallRow(AgentView):
-    """A single firewall traffic bucket (action / location / network service)."""
-
-    id: Optional[str] = Field(
-        default=None, description="Bucket identifier, when the API returns one (e.g. location id)."
-    )
-    name: Optional[str] = Field(
-        default=None, description="Bucket label (action, location, or network service name)."
-    )
-    total: Optional[float] = Field(
-        default=None, description="Aggregated traffic total for this bucket."
-    )
 
 
-def _as_opt_str(value: Any) -> Optional[str]:
-    return None if value is None else str(value)
-
-
-def _as_opt_float(value: Any) -> Optional[float]:
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _shape_row(raw: dict[str, Any]) -> FirewallRow:
-    return FirewallRow(
-        id=_as_opt_str(pick(raw, "id")),
-        name=pick(raw, "name", "label", "key"),
-        total=_as_opt_float(pick(raw, "total", "count", "value")),
-    )
 
 
 # =============================================================================
@@ -88,7 +57,6 @@ def _shape_row(raw: dict[str, Any]) -> FirewallRow:
     service="zins",
     toolset="zins_firewall",
     input_model=FirewallInput,
-    output_view=FirewallRow,
     is_list=True,
 )
 def zins_get_firewall_by_action(args: FirewallInput) -> list[dict[str, Any]]:
@@ -107,7 +75,7 @@ def zins_get_firewall_by_action(args: FirewallInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get firewall traffic by action: {err}")
     raise_for_graphql_errors(response, "get_traffic_by_action")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -115,7 +83,6 @@ def zins_get_firewall_by_action(args: FirewallInput) -> list[dict[str, Any]]:
     service="zins",
     toolset="zins_firewall",
     input_model=FirewallInput,
-    output_view=FirewallRow,
     is_list=True,
 )
 def zins_get_firewall_by_location(args: FirewallInput) -> list[dict[str, Any]]:
@@ -134,7 +101,7 @@ def zins_get_firewall_by_location(args: FirewallInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get firewall traffic by location: {err}")
     raise_for_graphql_errors(response, "get_traffic_by_location")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -142,7 +109,6 @@ def zins_get_firewall_by_location(args: FirewallInput) -> list[dict[str, Any]]:
     service="zins",
     toolset="zins_firewall",
     input_model=FirewallInput,
-    output_view=FirewallRow,
     is_list=True,
 )
 def zins_get_firewall_network_services(args: FirewallInput) -> list[dict[str, Any]]:
@@ -161,4 +127,4 @@ def zins_get_firewall_network_services(args: FirewallInput) -> list[dict[str, An
         raise RuntimeError(f"Failed to get firewall network services: {err}")
     raise_for_graphql_errors(response, "get_network_services")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))

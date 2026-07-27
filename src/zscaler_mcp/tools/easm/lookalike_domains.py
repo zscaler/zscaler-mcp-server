@@ -4,23 +4,23 @@ Mirrors v1's ``zscaler_mcp/tools/easm/lookalike_domains.py``. Two read-only
 tools surface the lookalike/impersonation domains EASM detects for an
 organization's brand:
 
-    * zeasm_list_lookalike_domains — one curated row per detected lookalike domain
+    * zeasm_list_lookalike_domains — one row per detected lookalike domain
     * zeasm_get_lookalike_domain   — full detail for one lookalike domain by name
 
-The SDK ``LookALikeDomains`` wrapper (results / total_results) is curated down to
+The SDK ``LookALikeDomains`` wrapper (results / total_results) is unwrapped to
 the identifying + risk-bearing subset an analyst reasons about (which domain,
 what it impersonates, how risky, is it live, how to remediate).
 """
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -59,82 +59,6 @@ class GetLookalikeDomainInput(BaseModel):
 # =============================================================================
 
 
-class LookalikeDomainSummary(AgentView):
-    """Lean view — what an analyst needs to TRIAGE a lookalike domain.
-
-    Identifying (the lookalike + the domain it impersonates), decision-bearing
-    (risk, registration state, status), and relational (deception methods).
-    """
-
-    lookalike_raw: str = Field(
-        description="The detected lookalike domain. The canonical identifier; use it in get calls."
-    )
-    original_domain: Optional[str] = Field(
-        default=None, description="The legitimate domain this lookalike impersonates (relational)."
-    )
-    risk_category: Optional[str] = Field(default=None, description="Risk category classification.")
-    risk_score: Optional[float] = Field(default=None, description="Numeric risk score.")
-    status: Optional[str] = Field(default=None, description="Tracking status of the lookalike.")
-    is_registered: Optional[bool] = Field(
-        default=None, description="Whether the lookalike domain is currently registered (live)."
-    )
-    deception_method: list[str] = Field(
-        default_factory=list, description="Detected impersonation/deception techniques."
-    )
-
-
-class LookalikeDomainDetail(LookalikeDomainSummary):
-    """Full view — summary plus registration provenance + remediation guidance."""
-
-    description: Optional[str] = Field(default=None, description="Detailed description.")
-    registrar: Optional[str] = Field(default=None, description="Domain registrar, if registered.")
-    registered_by: Optional[str] = Field(
-        default=None, description="Registrant/owner of the lookalike domain, if known."
-    )
-    created_date: Optional[str] = Field(default=None, description="Domain creation date.")
-    expiration_date: Optional[str] = Field(default=None, description="Domain expiration date.")
-    updated_date: Optional[str] = Field(default=None, description="Last-updated date.")
-    remediation: Optional[Any] = Field(
-        default=None, description="Suggested remediation guidance for this lookalike."
-    )
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_lookalike_summary(raw: dict[str, Any]) -> LookalikeDomainSummary:
-    return LookalikeDomainSummary(
-        lookalike_raw=str(pick(raw, "lookalike_raw", "lookalikeRaw", default="")),
-        original_domain=pick(raw, "original_domain", "originalDomain"),
-        risk_category=pick(raw, "risk_category", "riskCategory"),
-        risk_score=pick(raw, "risk_score", "riskScore"),
-        status=pick(raw, "status"),
-        is_registered=pick(raw, "is_registered", "isRegistered"),
-        deception_method=[str(m) for m in coalesce(raw, "deception_method", "deceptionMethod")],
-    )
-
-
-def _shape_lookalike_detail(raw: dict[str, Any]) -> LookalikeDomainDetail:
-    return LookalikeDomainDetail(
-        lookalike_raw=str(pick(raw, "lookalike_raw", "lookalikeRaw", default="")),
-        original_domain=pick(raw, "original_domain", "originalDomain"),
-        risk_category=pick(raw, "risk_category", "riskCategory"),
-        risk_score=pick(raw, "risk_score", "riskScore"),
-        status=pick(raw, "status"),
-        is_registered=pick(raw, "is_registered", "isRegistered"),
-        deception_method=[str(m) for m in coalesce(raw, "deception_method", "deceptionMethod")],
-        description=pick(raw, "description"),
-        registrar=pick(raw, "registrar"),
-        registered_by=pick(raw, "registered_by", "registeredBy"),
-        created_date=pick(raw, "created_date", "createdDate"),
-        expiration_date=pick(raw, "expiration_date", "expirationDate"),
-        updated_date=pick(raw, "updated_date", "updatedDate"),
-        remediation=pick(raw, "remediation"),
-    )
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -145,11 +69,10 @@ def _shape_lookalike_detail(raw: dict[str, Any]) -> LookalikeDomainDetail:
     service="zeasm",
     toolset="zeasm_lookalike_domains",
     input_model=ListLookalikeDomainsInput,
-    output_view=LookalikeDomainSummary,
     is_list=True,
 )
 def zeasm_list_lookalike_domains(args: ListLookalikeDomainsInput) -> list[dict[str, Any]]:
-    """List EASM lookalike domains for an organization as curated views.
+    """List EASM lookalike domains for an organization.
 
     Read-only. Returns one triage row per detected lookalike/impersonation
     domain (the lookalike, the domain it impersonates, risk, registration
@@ -168,7 +91,7 @@ def zeasm_list_lookalike_domains(args: ListLookalikeDomainsInput) -> list[dict[s
         )
 
     results = getattr(domains, "results", None) or []
-    return shape_many([d.as_dict() for d in results], _shape_lookalike_summary)
+    return shape_many([d.as_dict() for d in results])
 
 
 @tool(
@@ -176,11 +99,10 @@ def zeasm_list_lookalike_domains(args: ListLookalikeDomainsInput) -> list[dict[s
     service="zeasm",
     toolset="zeasm_lookalike_domains",
     input_model=GetLookalikeDomainInput,
-    output_view=LookalikeDomainDetail,
     is_list=False,
 )
 def zeasm_get_lookalike_domain(args: GetLookalikeDomainInput) -> dict[str, Any]:
-    """Get full detail for one EASM lookalike domain as a curated view.
+    """Get full detail for one EASM lookalike domain.
 
     Read-only. Adds description, registrar/registrant + lifecycle dates, and
     remediation guidance on top of the triage fields. Look the domain up by its
@@ -201,4 +123,4 @@ def zeasm_get_lookalike_domain(args: GetLookalikeDomainInput) -> dict[str, Any]:
             f"Failed to get EASM lookalike domain details for {args.lookalike_raw}: {err}"
         )
 
-    return _shape_lookalike_detail(domain.as_dict()).model_dump()
+    return shape_one(domain.as_dict())

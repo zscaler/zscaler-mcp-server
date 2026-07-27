@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListNetworkServiceGroupsInput(BaseModel):
@@ -24,34 +24,15 @@ class ListNetworkServiceGroupsInput(BaseModel):
     ] = None
 
 
-class NetworkServiceGroupSummary(AgentView):
-    """Lean view of a ZTW network service group."""
-
-    id: str = Field(description="Network service group ID.")
-    name: str = Field(description="Group name.")
-    description: Optional[str] = Field(default=None, description="Description.")
-    service_count: int = Field(description="Number of member network services.")
-
-
-def shape_group(raw: dict[str, Any]) -> NetworkServiceGroupSummary:
-    return NetworkServiceGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        service_count=len(coalesce(raw, "services", "nw_services", "nwServices")),
-    )
-
-
 @tool(
     action=READ,
     service="ztw",
     toolset="ztw",
     input_model=ListNetworkServiceGroupsInput,
-    output_view=NetworkServiceGroupSummary,
     is_list=True,
 )
 def ztw_list_network_service_groups(args: ListNetworkServiceGroupsInput) -> list[dict[str, Any]]:
-    """List ZTW network service groups as curated, agent-facing summaries (read-only)."""
+    """List ZTW network service groups (read-only)."""
     client = get_zscaler_client(service="ztw")
     api = client.ztw.nw_service_groups
 
@@ -60,4 +41,4 @@ def ztw_list_network_service_groups(args: ListNetworkServiceGroupsInput) -> list
     if err:
         raise RuntimeError(f"Failed to list ZTW network service groups: {err}")
 
-    return shape_many([g.as_dict() for g in (groups or [])], shape_group)
+    return shape_many([g.as_dict() for g in (groups or [])])

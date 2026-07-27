@@ -22,14 +22,10 @@ from zscaler_mcp.common.zia_helpers import (
     validate_rank,
 )
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 from ._rules_common import (
     OperationResult,
-    RuleDetail,
-    RuleSummary,
-    shape_rule_detail,
-    shape_rule_summary,
 )
 
 _ADVANCED_DESC = (
@@ -92,17 +88,16 @@ class DeleteInput(BaseModel):
     service="zia",
     toolset="zia_dlp",
     input_model=ListInput,
-    output_view=RuleSummary,
     is_list=True,
 )
 def zia_list_web_dlp_rules(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA Web DLP rules as curated summaries."""
+    """List ZIA Web DLP rules."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     rules, _, err = client.zia.dlp_web_rules.list_rules(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list Web DLP rules: {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 @tool(
@@ -110,17 +105,16 @@ def zia_list_web_dlp_rules(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_dlp",
     input_model=ListInput,
-    output_view=RuleSummary,
     is_list=True,
 )
 def zia_list_web_dlp_rules_lite(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA Web DLP rules via the lighter SDK endpoint (same curated shape)."""
+    """List ZIA Web DLP rules via the lighter SDK endpoint."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     rules, _, err = client.zia.dlp_web_rules.list_rules_lite(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list Web DLP rules (lite): {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 @tool(
@@ -128,7 +122,6 @@ def zia_list_web_dlp_rules_lite(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_dlp",
     input_model=GetInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_get_web_dlp_rule(args: GetInput) -> dict[str, Any]:
@@ -137,7 +130,7 @@ def zia_get_web_dlp_rule(args: GetInput) -> dict[str, Any]:
     rule, _, err = client.zia.dlp_web_rules.get_rule(args.rule_id)
     if err:
         raise RuntimeError(f"Failed to get Web DLP rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -145,7 +138,6 @@ def zia_get_web_dlp_rule(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_dlp",
     input_model=CreateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_create_web_dlp_rule(args: CreateInput) -> dict[str, Any]:
@@ -165,7 +157,7 @@ def zia_create_web_dlp_rule(args: CreateInput) -> dict[str, Any]:
     rule, _, err = client.zia.dlp_web_rules.add_rule(**payload)
     if err:
         raise RuntimeError(f"Failed to create Web DLP rule: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -173,7 +165,6 @@ def zia_create_web_dlp_rule(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_dlp",
     input_model=UpdateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_update_web_dlp_rule(args: UpdateInput) -> dict[str, Any]:
@@ -193,7 +184,7 @@ def zia_update_web_dlp_rule(args: UpdateInput) -> dict[str, Any]:
     rule, _, err = client.zia.dlp_web_rules.update_rule(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update Web DLP rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(

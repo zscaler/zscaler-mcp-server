@@ -5,7 +5,7 @@ tool name ``get_zpa_enrollment_certificate`` (a single read tool that lists all
 certs, or fetches one by name or by ID). Enrollment certs are referenced by
 connector provisioning keys.
 
-Only the output is changed vs v1: the curated ``CertSummary`` view (id + name +
+Only the output is changed vs v1: the curated ``CertDetail`` view (id + name +
 expiry) is returned instead of the raw SDK dict, to keep token usage low.
 """
 
@@ -18,7 +18,6 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa.ba_certificate import CertSummary, shape_cert_summary
 
 
 class EnrollmentCertInput(BaseModel):
@@ -45,7 +44,6 @@ class EnrollmentCertInput(BaseModel):
     toolset="zpa_provisioning_keys",
     name="get_zpa_enrollment_certificate",
     input_model=EnrollmentCertInput,
-    output_view=CertSummary,
     is_list=True,
 )
 def get_zpa_enrollment_certificate(args: EnrollmentCertInput) -> list[dict[str, Any]]:
@@ -60,16 +58,16 @@ def get_zpa_enrollment_certificate(args: EnrollmentCertInput) -> list[dict[str, 
         matches = [c for c in (certs or []) if getattr(c, "name", "").lower() == args.name.lower()]
         if not matches:
             raise ValueError(f"No enrollment certificate found matching name '{args.name}'")
-        return shape_many([matches[0].as_dict()], shape_cert_summary)
+        return shape_many([matches[0].as_dict()])
 
     if args.certificate_id:
         cert, _, err = api.get_enrolment(args.certificate_id)
         if err:
             raise RuntimeError(f"Failed to get enrollment certificate {args.certificate_id}: {err}")
-        return shape_many([cert.as_dict()], shape_cert_summary)
+        return shape_many([cert.as_dict()])
 
     qp: dict[str, Any] = {"search": args.search} if args.search else {}
     certs, _, err = api.list_enrolment(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list enrollment certificates: {err}")
-    return shape_many([c.as_dict() for c in (certs or [])], shape_cert_summary)
+    return shape_many([c.as_dict() for c in (certs or [])])

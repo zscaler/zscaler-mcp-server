@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 # =============================================================================
 # INPUT MODELS
@@ -44,28 +44,6 @@ class ListDevicesInput(BaseModel):
 # =============================================================================
 
 
-class DeviceSummary(AgentView):
-    """Lean view — what an agent needs to identify and reason about a device."""
-
-    udid: str = Field(description="Device UDID — the canonical identifier; use in follow-up calls.")
-    user: Optional[str] = Field(default=None, description="Enrolled user (email/username).")
-    machine_hostname: Optional[str] = Field(default=None, description="Device hostname.")
-    os_version: Optional[str] = Field(default=None, description="Operating system + version.")
-    agent_version: Optional[str] = Field(default=None, description="ZCC agent version.")
-    registration_state: Optional[str] = Field(
-        default=None, description="Enrollment/registration state (decision-bearing)."
-    )
-
-
-def _shape_device(raw: dict[str, Any]) -> DeviceSummary:
-    return DeviceSummary(
-        udid=str(pick(raw, "udid", "udId", "device_id", default="")),
-        user=pick(raw, "user", "owner", "username"),
-        machine_hostname=pick(raw, "machine_hostname", "machineHostname", "hostname"),
-        os_version=pick(raw, "os_version", "osVersion"),
-        agent_version=pick(raw, "agent_version", "agentVersion"),
-        registration_state=pick(raw, "registration_state", "registrationState"),
-    )
 
 
 # =============================================================================
@@ -78,15 +56,15 @@ def _shape_device(raw: dict[str, Any]) -> DeviceSummary:
     service="zcc",
     toolset="zcc_devices",
     input_model=ListDevicesInput,
-    output_view=DeviceSummary,
     is_list=True,
 )
 def zcc_list_devices(args: ListDevicesInput) -> list[dict[str, Any]]:
-    """List ZCC enrolled devices as curated, agent-facing views.
+    """List ZCC enrolled devices (read-only).
 
-    Read-only. Returns the identifying + state fields (udid, user, hostname,
-    OS, agent version, registration state) rather than the full ~40-field SDK
-    enrollment record. Use the returned `udid` with `zcc_get_device_otp`.
+    Each row is the full device record — identity, OS, agent version,
+    registration state, assigned `policy_name`, ownership, hardware,
+    VPN/tunnel state, and the enrollment / keep-alive timestamps. Use the
+    returned `udid` with `zcc_get_device_otp`.
     """
     client = get_zscaler_client(service="zcc")
 
@@ -104,4 +82,4 @@ def zcc_list_devices(args: ListDevicesInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list ZCC devices: {err}")
 
-    return shape_many([d.as_dict() for d in (devices or [])], _shape_device)
+    return shape_many([d.as_dict() for d in (devices or [])])

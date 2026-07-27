@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -54,26 +54,6 @@ class ListAppCatalogInput(BaseModel):
 # =============================================================================
 
 
-class AppCatalogSummary(AgentView):
-    """Lean view — one ZMS app-catalog entry (identity + nested port specs)."""
-
-    id: str = Field(description="Application catalog entry ID.")
-    name: Optional[str] = Field(default=None, description="Application name.")
-    category: Optional[str] = Field(default=None, description="Application category.")
-    ports: list[dict] = Field(
-        default_factory=list, description="Port/protocol/process specs (nested)."
-    )
-
-
-def _shape_entry(raw: dict[str, Any]) -> AppCatalogSummary:
-    return AppCatalogSummary(
-        id=str(pick(raw, "id", "app_id", "appId", default="")),
-        name=pick(raw, "name", "app_name", "appName"),
-        category=pick(raw, "category"),
-        ports=coalesce(raw, "ports", "port_specs", "portSpecs", "protocols"),
-    )
-
-
 def _build_filter(name: Optional[str], category: Optional[str]):
     if not any([name, category]):
         return None
@@ -105,12 +85,11 @@ def _build_order(sort_by: Optional[str], sort_order: Optional[str]):
     service="zms",
     toolset="zms",
     input_model=ListAppCatalogInput,
-    output_view=AppCatalogSummary,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
 def zms_list_app_catalog(args: ListAppCatalogInput) -> list[dict[str, Any]]:
-    """List the ZMS application catalog as curated, agent-facing views.
+    """List the ZMS application catalog.
 
     Read-only. Returns one row per discovered application (id, name, category)
     plus its nested port/protocol/process specs — useful for policy planning.
@@ -133,4 +112,4 @@ def zms_list_app_catalog(args: ListAppCatalogInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.app_catalog.list_app_catalog(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS app catalog: {err}")
-    return shape_many(nodes_of(result), _shape_entry)
+    return shape_many(nodes_of(result))

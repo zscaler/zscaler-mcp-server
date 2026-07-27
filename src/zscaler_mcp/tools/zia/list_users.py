@@ -4,7 +4,7 @@ Mirrors v1's ``list_users.py`` exactly: a single multiplexed read tool registere
 under the v1 name ``get_zia_users`` (list users with optional filters, or fetch one
 by ID). Backed by ``client.zia.user_management``.
 
-Only the output is changed vs v1: the curated ``UserSummary`` view is returned
+The user records are returned exactly as the ZIA API provides them
 instead of the raw SDK dict, to keep token usage low.
 """
 
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class UsersInput(BaseModel):
@@ -40,33 +40,11 @@ class UsersInput(BaseModel):
     ] = None
 
 
-class UserSummary(AgentView):
-    id: str = Field(description="User ID.")
-    name: Optional[str] = Field(default=None, description="User display name.")
-    email: Optional[str] = Field(default=None, description="User email.")
-    department: Optional[str] = Field(default=None, description="Department name.")
-    group_count: int = Field(description="Number of group memberships.")
-
-
-def shape_summary(raw: dict[str, Any]) -> UserSummary:
-    dept = raw.get("department")
-    dept_name = dept.get("name") if isinstance(dept, dict) else dept
-    groups = raw.get("groups") or []
-    return UserSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name"),
-        email=pick(raw, "email"),
-        department=dept_name,
-        group_count=len(groups) if isinstance(groups, list) else 0,
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_users",
     input_model=UsersInput,
-    output_view=UserSummary,
     is_list=True,
 )
 def get_zia_users(args: UsersInput) -> list[dict[str, Any]]:
@@ -78,7 +56,7 @@ def get_zia_users(args: UsersInput) -> list[dict[str, Any]]:
         user, _, err = api.get_user(args.user_id)
         if err:
             raise RuntimeError(f"Failed to get user {args.user_id}: {err}")
-        return shape_many([user.as_dict()], shape_summary)
+        return shape_many([user.as_dict()])
 
     qp: dict[str, Any] = {}
     for key in ("name", "dept", "group", "page", "page_size"):
@@ -90,4 +68,4 @@ def get_zia_users(args: UsersInput) -> list[dict[str, Any]]:
     users, _, err = api.list_users(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list users: {err}")
-    return shape_many([u.as_dict() for u in (users or [])], shape_summary)
+    return shape_many([u.as_dict() for u in (users or [])])

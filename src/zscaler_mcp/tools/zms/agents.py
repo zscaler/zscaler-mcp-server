@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -58,54 +58,6 @@ class AgentStatsInput(BaseModel):
 # =============================================================================
 
 
-class AgentSummary(AgentView):
-    """Lean view — one ZMS agent row."""
-
-    eyez_id: str = Field(description="Agent eyez_id — the canonical identifier.")
-    name: Optional[str] = Field(default=None, description="Agent name.")
-    connection_status: Optional[str] = Field(
-        default=None, description="CONNECTED / DISCONNECTED (decision-bearing)."
-    )
-    version: Optional[str] = Field(default=None, description="Agent software version.")
-    os_type: Optional[str] = Field(default=None, description="Operating system type.")
-    ip_address: Optional[str] = Field(default=None, description="Primary IP address.")
-
-
-class AgentStats(AgentView):
-    """ZMS agent fleet statistics — aggregate, kept as a nested payload."""
-
-    total: Optional[int] = Field(default=None, description="Total agent count, if reported.")
-    data: dict = Field(default_factory=dict, description="Full aggregate statistics payload.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_agent(raw: dict[str, Any]) -> AgentSummary:
-    ips = pick(raw, "ip_addresses", "ipAddresses", default=None)
-    ip = None
-    if isinstance(ips, list) and ips:
-        ip = str(ips[0])
-    elif isinstance(ips, str):
-        ip = ips
-    return AgentSummary(
-        eyez_id=str(pick(raw, "eyez_id", "eyezId", "id", default="")),
-        name=pick(raw, "name"),
-        connection_status=pick(raw, "connection_status", "connectionStatus"),
-        version=pick(raw, "version", "agent_version", "agentVersion"),
-        os_type=pick(raw, "os_type", "osType", "platform"),
-        ip_address=ip or pick(raw, "ip_address", "ipAddress"),
-    )
-
-
-def _shape_stats(raw: dict[str, Any]) -> AgentStats:
-    if not isinstance(raw, dict):
-        raw = {}
-    return AgentStats(total=pick(raw, "total", "total_count", "totalCount"), data=raw)
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -116,11 +68,10 @@ def _shape_stats(raw: dict[str, Any]) -> AgentStats:
     service="zms",
     toolset="zms",
     input_model=ListAgentsInput,
-    output_view=AgentSummary,
     is_list=True,
 )
 def zms_list_agents(args: ListAgentsInput) -> list[dict[str, Any]]:
-    """List ZMS microsegmentation agents as curated, agent-facing views.
+    """List ZMS microsegmentation agents.
 
     Read-only. Returns one row per agent (eyez_id, name, connection status,
     version, OS, IP). Requires ZSCALER_CUSTOMER_ID. Use a returned `eyez_id` with
@@ -143,7 +94,7 @@ def zms_list_agents(args: ListAgentsInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.agents.list_agents(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS agents: {err}")
-    return shape_many(nodes_of(result), _shape_agent)
+    return shape_many(nodes_of(result))
 
 
 @tool(
@@ -151,7 +102,6 @@ def zms_list_agents(args: ListAgentsInput) -> list[dict[str, Any]]:
     service="zms",
     toolset="zms",
     input_model=AgentStatsInput,
-    output_view=AgentStats,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -169,7 +119,7 @@ def zms_get_agent_connection_status_statistics(args: AgentStatsInput) -> dict[st
     result, _, err = client.zms.agents.get_agent_connection_status_statistics(**kwargs)
     if err:
         raise RuntimeError(f"Failed to get ZMS agent connection statistics: {err}")
-    return _shape_stats(result or {}).model_dump()
+    return shape_one(result or {})
 
 
 @tool(
@@ -177,7 +127,6 @@ def zms_get_agent_connection_status_statistics(args: AgentStatsInput) -> dict[st
     service="zms",
     toolset="zms",
     input_model=AgentStatsInput,
-    output_view=AgentStats,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -195,4 +144,4 @@ def zms_get_agent_version_statistics(args: AgentStatsInput) -> dict[str, Any]:
     result, _, err = client.zms.agents.get_agent_version_statistics(**kwargs)
     if err:
         raise RuntimeError(f"Failed to get ZMS agent version statistics: {err}")
-    return _shape_stats(result or {}).model_dump()
+    return shape_one(result or {})

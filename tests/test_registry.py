@@ -195,6 +195,25 @@ def test_select_toolset_filter():
     assert names == {"zia_list_rules"}  # reads in zia_fw only (writes off)
 
 
+def test_select_disabled_toolsets_blocklist():
+    reg = _populated_registry()
+    names = {s.name for s in reg.select(disabled_toolsets=["zia_fw"])}
+    assert names == {"zpa_list_groups"}  # zia_fw gone, zpa reads remain
+
+
+def test_select_disabled_toolset_wins_over_enabled_toolset():
+    reg = _populated_registry()
+    # A toolset both selected and disabled → disable wins (mirrors services).
+    names = {s.name for s in reg.select(enabled_toolsets=["zia_fw"], disabled_toolsets=["zia_fw"])}
+    assert names == set()
+
+
+def test_select_disabled_toolsets_none_keeps_all():
+    reg = _populated_registry()
+    # None (the default) applies no blocklist — same as omitting it.
+    assert {s.name for s in reg.select(disabled_toolsets=None)} == {s.name for s in reg.select()}
+
+
 def test_select_enabled_services_allowlist():
     reg = _populated_registry()
     names = {s.name for s in reg.select(enabled_services=["zia"])}

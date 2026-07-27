@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -35,9 +35,6 @@ class ListCredentialsInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str, Field(default="summary", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -47,9 +44,6 @@ class GetCredentialInput(BaseModel):
     """Inputs for getting one PRA credential."""
 
     credential_id: Annotated[str, Field(description="PRA credential ID (string, even if numeric).")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -123,55 +117,11 @@ class DeleteCredentialInput(BaseModel):
 # =============================================================================
 
 
-class CredentialSummary(AgentView):
-    """Lean view — identify a PRA credential. Secrets are NEVER included."""
-
-    id: str = Field(description="Credential ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    credential_type: Optional[str] = Field(
-        default=None, description="USERNAME_PASSWORD / PASSWORD / SSH_KEY."
-    )
-    user_name: Optional[str] = Field(default=None, description="Username, where applicable.")
-
-
-class CredentialDetail(CredentialSummary):
-    """Full view — summary plus domain + provenance. Still NO secrets."""
-
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    user_domain: Optional[str] = Field(default=None, description="User domain.")
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-    created_time: Optional[str] = Field(default=None, description="Creation timestamp.")
-    modified_time: Optional[str] = Field(default=None, description="Last-modified timestamp.")
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-def _credential_summary(raw: dict[str, Any]) -> CredentialSummary:
-    return CredentialSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        credential_type=pick(raw, "credential_type", "credentialType"),
-        user_name=pick(raw, "user_name", "userName"),
-    )
-
-
-def _credential_detail(raw: dict[str, Any]) -> CredentialDetail:
-    return CredentialDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        credential_type=pick(raw, "credential_type", "credentialType"),
-        user_name=pick(raw, "user_name", "userName"),
-        description=pick(raw, "description"),
-        user_domain=pick(raw, "user_domain", "userDomain"),
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-        created_time=pick(raw, "creation_time", "creationTime"),
-        modified_time=pick(raw, "modified_time", "modifiedTime"),
-    )
 
 
 def _credential_body(
@@ -219,11 +169,10 @@ def _credential_body(
     service="zpa",
     toolset="zpa_pra",
     input_model=ListCredentialsInput,
-    output_view=CredentialSummary,
     is_list=True,
 )
 def zpa_list_pra_credentials(args: ListCredentialsInput) -> list[dict[str, Any]]:
-    """List ZPA PRA credentials as curated views (read-only). Secrets are never returned."""
+    """List ZPA PRA credentials (read-only). Secrets are never returned."""
     client = get_zscaler_client(service="zpa")
     qp: dict[str, Any] = {}
     if args.search:
@@ -233,8 +182,7 @@ def zpa_list_pra_credentials(args: ListCredentialsInput) -> list[dict[str, Any]]
     creds, _, err = client.zpa.pra_credential.list_credentials(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list PRA credentials: {err}")
-    shaper = _credential_detail if args.detail == "full" else _credential_summary
-    return shape_many([c.as_dict() for c in (creds or [])], shaper)
+    return shape_many([c.as_dict() for c in (creds or [])])
 
 
 @tool(
@@ -242,7 +190,6 @@ def zpa_list_pra_credentials(args: ListCredentialsInput) -> list[dict[str, Any]]
     service="zpa",
     toolset="zpa_pra",
     input_model=GetCredentialInput,
-    output_view=CredentialDetail,
     is_list=False,
 )
 def zpa_get_pra_credential(args: GetCredentialInput) -> dict[str, Any]:
@@ -256,8 +203,7 @@ def zpa_get_pra_credential(args: GetCredentialInput) -> dict[str, Any]:
     result, _, err = client.zpa.pra_credential.get_credential(args.credential_id, query_params=qp)
     if err:
         raise RuntimeError(f"Failed to get PRA credential {args.credential_id}: {err}")
-    shaper = _credential_detail if args.detail == "full" else _credential_summary
-    return shaper(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(
@@ -265,7 +211,6 @@ def zpa_get_pra_credential(args: GetCredentialInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_pra",
     input_model=CreateCredentialInput,
-    output_view=CredentialDetail,
     is_list=False,
 )
 def zpa_create_pra_credential(args: CreateCredentialInput) -> dict[str, Any]:
@@ -290,7 +235,7 @@ def zpa_create_pra_credential(args: CreateCredentialInput) -> dict[str, Any]:
     created, _, err = client.zpa.pra_credential.add_credential(**body)
     if err:
         raise RuntimeError(f"Failed to create PRA credential: {err}")
-    return _credential_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(
@@ -298,7 +243,6 @@ def zpa_create_pra_credential(args: CreateCredentialInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_pra",
     input_model=UpdateCredentialInput,
-    output_view=CredentialDetail,
     is_list=False,
 )
 def zpa_update_pra_credential(args: UpdateCredentialInput) -> dict[str, Any]:
@@ -332,7 +276,7 @@ def zpa_update_pra_credential(args: UpdateCredentialInput) -> dict[str, Any]:
     updated, _, err = client.zpa.pra_credential.update_credential(args.credential_id, **body)
     if err:
         raise RuntimeError(f"Failed to update PRA credential {args.credential_id}: {err}")
-    return _credential_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

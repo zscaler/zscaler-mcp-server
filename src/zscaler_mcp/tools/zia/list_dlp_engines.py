@@ -4,7 +4,7 @@ Mirrors v1's ``list_dlp_engines.py`` exactly: a single multiplexed read tool
 registered under the v1 name ``get_zia_dlp_engines`` (list all, list lite, or fetch
 one by ID). Backed by ``client.zia.dlp_engine``.
 
-Only the output is changed vs v1: the curated ``DlpEngineSummary`` view is returned
+The engine records are returned exactly as the ZIA API provides them
 instead of the raw SDK dict, to keep token usage low.
 """
 
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class DlpEngineInput(BaseModel):
@@ -38,31 +38,11 @@ class DlpEngineInput(BaseModel):
     ] = None
 
 
-class DlpEngineSummary(AgentView):
-    id: str = Field(description="Engine ID. Use in web-DLP rules.")
-    name: str = Field(description="Display name.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    predefined: Optional[bool] = Field(
-        default=None, description="Whether the engine is predefined."
-    )
-
-
-def shape_summary(raw: dict[str, Any]) -> DlpEngineSummary:
-    return DlpEngineSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", "predefined_engine_name", default=""),
-        description=pick(raw, "description"),
-        predefined=pick(raw, "predefined", "custom_dlp_engine") is not None
-        and not bool(pick(raw, "custom_dlp_engine")),
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_dlp",
     input_model=DlpEngineInput,
-    output_view=DlpEngineSummary,
     is_list=True,
 )
 def get_zia_dlp_engines(args: DlpEngineInput) -> list[dict[str, Any]]:
@@ -75,7 +55,7 @@ def get_zia_dlp_engines(args: DlpEngineInput) -> list[dict[str, Any]]:
         engine, _, err = api.get_dlp_engines(args.engine_id)
         if err:
             raise RuntimeError(f"Failed to get DLP engine {args.engine_id}: {err}")
-        return shape_many([engine.as_dict()], shape_summary)
+        return shape_many([engine.as_dict()])
 
     if args.action == "read_lite":
         engines, _, err = api.list_dlp_engines_lite(query_params=qp)
@@ -83,4 +63,4 @@ def get_zia_dlp_engines(args: DlpEngineInput) -> list[dict[str, Any]]:
         engines, _, err = api.list_dlp_engines(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list DLP engines: {err}")
-    return shape_many([e.as_dict() for e in (engines or [])], shape_summary)
+    return shape_many([e.as_dict() for e in (engines or [])])

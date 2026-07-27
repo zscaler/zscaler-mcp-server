@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zcell._common import as_dicts
 
 # =============================================================================
@@ -49,48 +49,6 @@ class RegionOperationalStatusInput(BaseModel):
 # =============================================================================
 
 
-class RegionView(AgentView):
-    """A region and whether it is configured for the customer."""
-
-    region: Optional[str] = Field(default=None, description="Region code (e.g. AMER, EMEA, APAC).")
-    configured: Optional[bool] = Field(
-        default=None, description="Whether the region is configured."
-    )
-
-
-class RegionOperationalStatus(AgentView):
-    """A configured region with its broker/app-connector operational status (nested → JSON)."""
-
-    region: Optional[str] = Field(default=None, description="Region code.")
-    operational_status: Optional[Any] = Field(
-        default=None, description="Overall operational status."
-    )
-    bc: Optional[Any] = Field(default=None, description="Broker-cluster status block.")
-    ac: Optional[Any] = Field(default=None, description="App-connector status block.")
-    map_a_c_status: Optional[Any] = Field(default=None, description="MAP A-C link status.")
-    map_b_c_status: Optional[Any] = Field(default=None, description="MAP B-C link status.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_region(raw: dict[str, Any]) -> RegionView:
-    return RegionView(region=pick(raw, "region"), configured=pick(raw, "configured"))
-
-
-def _shape_status(raw: dict[str, Any]) -> RegionOperationalStatus:
-    return RegionOperationalStatus(
-        region=pick(raw, "region"),
-        operational_status=pick(raw, "operational_status", "operationalStatus"),
-        bc=pick(raw, "bc"),
-        ac=pick(raw, "ac"),
-        map_a_c_status=pick(raw, "map_a_c_status", "mapACStatus"),
-        map_b_c_status=pick(raw, "map_b_c_status", "mapBCStatus"),
-    )
-
-
 def _query(*pairs: tuple[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in pairs if value is not None}
 
@@ -105,7 +63,6 @@ def _query(*pairs: tuple[str, Any]) -> dict[str, Any]:
     service="zcell",
     toolset="zcell_customer_region_handling",
     input_model=ListRegionsInput,
-    output_view=RegionView,
     is_list=True,
 )
 def zcell_list_regions(args: ListRegionsInput) -> list[dict[str, Any]]:
@@ -120,7 +77,7 @@ def zcell_list_regions(args: ListRegionsInput) -> list[dict[str, Any]]:
     )
     if err:
         raise RuntimeError(f"Failed to list regions: {err}")
-    return shape_many(as_dicts(regions), _shape_region)
+    return shape_many(as_dicts(regions))
 
 
 @tool(
@@ -128,7 +85,6 @@ def zcell_list_regions(args: ListRegionsInput) -> list[dict[str, Any]]:
     service="zcell",
     toolset="zcell_customer_region_handling",
     input_model=RegionOperationalStatusInput,
-    output_view=RegionOperationalStatus,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -147,4 +103,4 @@ def zcell_list_region_operational_status(
     )
     if err:
         raise RuntimeError(f"Failed to list region operational status: {err}")
-    return shape_many(as_dicts(statuses), _shape_status)
+    return shape_many(as_dicts(statuses))

@@ -52,6 +52,28 @@ logger = logging.getLogger("zscaler_mcp")
 DEFAULT_MCP_PATH = "/mcp"
 
 
+def _warn_unknown_toolsets(selection: Iterable[str] | None, flag: str) -> None:
+    """Warn about toolset ids that match nothing in the registry.
+
+    Toolset ids are exact (no globbing), so a typo would otherwise be silent —
+    and for ``--toolsets`` it is silent in the worst possible way: the selection
+    matches nothing and the server starts with ZERO tools. Warn and continue,
+    which is the documented contract, rather than failing the boot.
+    """
+    if not selection:
+        return
+    known = REGISTRY.toolsets()
+    unknown = sorted(set(selection) - known)
+    if not unknown:
+        return
+    logger.warning(
+        "%s: unknown toolset id(s) %s — ignored. Known toolsets: %s",
+        flag,
+        ", ".join(repr(u) for u in unknown),
+        ", ".join(sorted(known)),
+    )
+
+
 def _resolve_entitled_services(disable_entitlement_filter: bool) -> set[str] | None:
     """Return the set of OneAPI-entitled service codes, or ``None`` to skip.
 
@@ -85,6 +107,7 @@ def build_server(
     enabled_services: Iterable[str] | None = None,
     disabled_services: Iterable[str] | None = None,
     enabled_toolsets: Iterable[str] | None = None,
+    disabled_toolsets: Iterable[str] | None = None,
     enable_write: bool = False,
     write_allowlist: Iterable[str] | None = None,
     disabled_patterns: Iterable[str] | None = None,
@@ -108,12 +131,16 @@ def build_server(
     """
     discover_tools()
 
+    _warn_unknown_toolsets(enabled_toolsets, "--toolsets")
+    _warn_unknown_toolsets(disabled_toolsets, "--disabled-toolsets")
+
     entitled_services = _resolve_entitled_services(disable_entitlement_filter)
 
     selected = REGISTRY.select(
         enabled_services=enabled_services,
         disabled_services=disabled_services,
         enabled_toolsets=enabled_toolsets,
+        disabled_toolsets=disabled_toolsets,
         entitled_services=entitled_services,
         enable_write=enable_write,
         write_allowlist=write_allowlist,
@@ -504,7 +531,7 @@ def _resolve_toolsets(value: str | None) -> list[str] | None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="zscaler-mcp",
-        description="Agent-first Zscaler MCP server (v2) — curated, schema-backed tool responses.",
+        description="Zscaler MCP server — typed tool inputs, verbatim Zscaler API records out.",
     )
     p.add_argument(
         "--transport",
@@ -546,6 +573,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--toolsets",
         default=os.getenv("ZSCALER_MCP_TOOLSETS", ""),
         help="Comma-separated toolset ids to enable (default: all).",
+    )
+    p.add_argument(
+        "--disabled-toolsets",
+        default=os.getenv("ZSCALER_MCP_DISABLED_TOOLSETS", ""),
+        metavar="TOOLSET1,TOOLSET2,...",
+        help=(
+            "Comma-separated toolset ids to exclude (e.g. 'zia_ssl_inspection,zia_admin'). "
+            "The blocklist complement to --toolsets: load everything except these. "
+            "Exact ids only (no wildcards); wins over --toolsets when both name a "
+            "toolset (env: ZSCALER_MCP_DISABLED_TOOLSETS)."
+        ),
     )
     p.add_argument(
         "--enable-write-tools",
@@ -785,6 +823,7 @@ def main() -> None:
         enabled_services=enabled_services,
         disabled_services=disabled_services,
         enabled_toolsets=_resolve_toolsets(args.toolsets),
+        disabled_toolsets=_parse_csv(args.disabled_toolsets),
         enable_write=write_enabled,
         write_allowlist=write_allowlist,
         disabled_patterns=_parse_csv(args.disabled_tools),

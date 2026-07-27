@@ -1,23 +1,29 @@
-"""ZPA segment groups — reference v2 ("second step") tool family.
+"""ZPA segment groups — the reference tool family. Copy this shape.
 
-This is the canonical example of the agent-first pattern described in DESIGN.md.
-Compare it to v1's ``zscaler_mcp/tools/zpa/segment_groups.py``:
+    fetch ──► record.as_dict() ──► agent        (the API's record, untouched)
 
-    v1:  fetch ──► result.as_dict() ──► agent          (the full SDK object)
-    v2:  fetch ──► raw SDK model ──► SHAPER ──► curated, schema-backed view
+A tool has three parts:
 
-A v2 tool has these parts (vs v1's two — fetch + ``as_dict()``):
+    1. Input model   — typed, validated (Pydantic). ENUMERATE every field here:
+                       inputs are a closed set the caller cannot discover on its
+                       own, which is why the Zscaler SDK documents every settable
+                       attribute of ``add_segment`` while describing the response
+                       as just ``record.as_dict()``.
+    2. SDK call      — unchanged: ``client.zpa.segment_groups.list_groups(...)``.
+    3. @tool         — declares action/schemas/toolset AT the definition site and
+                       self-registers at import time; there is no central catalog
+                       to keep in sync.
 
-    1. Input model   — typed, validated (Pydantic)
-    2. Output view   — Pydantic model declaring the curated agent-facing shape
-    3. Shaper        — deterministic SDK-dict -> view mapping (the design work)
-    4. SDK call      — UNCHANGED: client.zpa.segment_groups.list_groups(...)
-    5. @tool         — declares the tool (action/schemas/toolset) AT the
-                       definition site and self-registers at import time; no
-                       separate catalog entry (DESIGN.md §6).
+There is deliberately NO output view. A read returns the API record verbatim,
+because a resource's attribute set belongs to the API: any list written here
+would be a snapshot that goes stale the moment engineering ships a field, and
+before issue #88 it doubled as a whitelist that deleted what it didn't
+recognize. Response size is the CALLER's lever — every list tool accepts a
+JMESPath ``query`` (wired centrally in ``registry/fastmcp_bridge``), so the
+agent projects what it wants instead of the server guessing.
 
-The SDK still does the API call. The new things are the shaper, the declared
-output schema, and the self-registration.
+``OperationResult`` below is the one legitimate view: a delete acknowledgement
+is a shape the server invents, not a record it fetched.
 """
 
 from __future__ import annotations
@@ -28,7 +34,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # 1. INPUT MODELS  (typed + validated; the inputSchema source of truth)
@@ -49,18 +55,6 @@ class ListSegmentGroupsInput(BaseModel):
             ),
         ),
     ] = None
-    detail: Annotated[
-        str,
-        Field(
-            default="summary",
-            pattern="^(summary|full)$",
-            description=(
-                "Response verbosity. 'summary' (default) returns the lean, "
-                "agent-purposed view. 'full' adds provenance/audit fields for "
-                "the rare case you genuinely need them."
-            ),
-        ),
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -76,10 +70,6 @@ class GetSegmentGroupInput(BaseModel):
     group_id: Annotated[
         str, Field(description="ID of the segment group (string, even if numeric).")
     ]
-    detail: Annotated[
-        str,
-        Field(default="full", pattern="^(summary|full)$", description="Response verbosity."),
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -132,42 +122,6 @@ class DeleteSegmentGroupInput(BaseModel):
 # =============================================================================
 
 
-class SegmentGroupSummary(AgentView):
-    """Lean view — what an agent needs to LIST and REFERENCE a segment group.
-
-    Field policy (DESIGN.md §5 Pillar A): every field here is identifying, decision-
-    bearing, relational, or explanatory. Provenance/transport fields from the
-    SDK object (creationTime, modifiedBy, configSpace, href, ...) are dropped.
-    """
-
-    id: str = Field(description="Segment group ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    enabled: bool = Field(description="Whether the group is enabled (decision-bearing).")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    application_segment_count: int = Field(
-        description="Number of application segments in this group (relational signal)."
-    )
-
-
-class SegmentGroupDetail(SegmentGroupSummary):
-    """Full view — summary plus the relational + provenance fields.
-
-    Returned only when ``detail='full'``. Still curated (not the raw SDK dict):
-    relational ids are surfaced explicitly, audit fields are named clearly.
-    """
-
-    application_segment_ids: list[str] = Field(
-        default_factory=list, description="IDs of the application segments in this group."
-    )
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-    created_time: Optional[str] = Field(
-        default=None, description="Creation timestamp (provenance)."
-    )
-    modified_time: Optional[str] = Field(
-        default=None, description="Last-modified timestamp (provenance)."
-    )
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
@@ -180,35 +134,6 @@ class OperationResult(AgentView):
 # =============================================================================
 
 
-def _app_segments(raw: dict[str, Any]) -> list[dict[str, Any]]:
-    return coalesce(raw, "applications", "app_segments", "applicationSegments")
-
-
-def shape_summary(raw: dict[str, Any]) -> SegmentGroupSummary:
-    """Map a raw SDK segment-group dict onto the lean summary view."""
-    return SegmentGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        enabled=bool(pick(raw, "enabled", default=False)),
-        description=pick(raw, "description"),
-        application_segment_count=len(_app_segments(raw)),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> SegmentGroupDetail:
-    """Map a raw SDK segment-group dict onto the full detail view."""
-    segs = _app_segments(raw)
-    return SegmentGroupDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        enabled=bool(pick(raw, "enabled", default=False)),
-        description=pick(raw, "description"),
-        application_segment_count=len(segs),
-        application_segment_ids=[str(pick(s, "id", default="")) for s in segs],
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-        created_time=pick(raw, "creation_time", "creationTime"),
-        modified_time=pick(raw, "modified_time", "modifiedTime"),
-    )
 
 
 # =============================================================================
@@ -221,15 +146,13 @@ def shape_detail(raw: dict[str, Any]) -> SegmentGroupDetail:
     service="zpa",
     toolset="zpa_segment_groups",
     input_model=ListSegmentGroupsInput,
-    output_view=SegmentGroupSummary,  # the default-detail shape
     is_list=True,
 )
 def zpa_list_segment_groups(args: ListSegmentGroupsInput) -> list[dict[str, Any]]:
-    """List ZPA segment groups as curated, agent-facing views.
+    """List ZPA segment groups.
 
-    Returns lean summaries by default (`detail='summary'`); pass `detail='full'`
-    for the relational + provenance fields. The response shape is declared by
-    the tool's outputSchema (SegmentGroupSummary / SegmentGroupDetail).
+    Each row is the full segment-group record with normalized highlights
+    (ids, enabled state, application-segment counts/ids, timestamps) on top.
     """
     client = get_zscaler_client(service="zpa")
     sg = client.zpa.segment_groups
@@ -247,8 +170,7 @@ def zpa_list_segment_groups(args: ListSegmentGroupsInput) -> list[dict[str, Any]
         raise RuntimeError(f"Failed to list segment groups: {err}")
 
     raw_dicts = [g.as_dict() for g in (groups or [])]
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shape_many(raw_dicts, shaper)
+    return shape_many(raw_dicts)
 
 
 @tool(
@@ -256,11 +178,10 @@ def zpa_list_segment_groups(args: ListSegmentGroupsInput) -> list[dict[str, Any]
     service="zpa",
     toolset="zpa_segment_groups",
     input_model=GetSegmentGroupInput,
-    output_view=SegmentGroupDetail,
     is_list=False,
 )
 def zpa_get_segment_group(args: GetSegmentGroupInput) -> dict[str, Any]:
-    """Get one ZPA segment group as a curated, agent-facing view."""
+    """Get one ZPA segment group."""
     if not args.group_id:
         raise ValueError("group_id is required")
 
@@ -274,8 +195,7 @@ def zpa_get_segment_group(args: GetSegmentGroupInput) -> dict[str, Any]:
         raise RuntimeError(f"Failed to get segment group {args.group_id}: {err}")
 
     raw = result.as_dict()
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shaper(raw).model_dump()
+    return shape_one(raw)
 
 
 @tool(
@@ -283,11 +203,10 @@ def zpa_get_segment_group(args: GetSegmentGroupInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_segment_groups",
     input_model=CreateSegmentGroupInput,
-    output_view=SegmentGroupDetail,
     is_list=False,
 )
 def zpa_create_segment_group(args: CreateSegmentGroupInput) -> dict[str, Any]:
-    """Create a ZPA segment group and return the curated detail view.
+    """Create a ZPA segment group and return the full record.
 
     Write tool: gated by the server's HMAC write-confirmation. The first call
     returns a confirmation prompt + token; the agent re-issues with the token
@@ -310,7 +229,7 @@ def zpa_create_segment_group(args: CreateSegmentGroupInput) -> dict[str, Any]:
     if err:
         raise RuntimeError(f"Failed to create segment group: {err}")
 
-    return shape_detail(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(
@@ -318,11 +237,10 @@ def zpa_create_segment_group(args: CreateSegmentGroupInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_segment_groups",
     input_model=UpdateSegmentGroupInput,
-    output_view=SegmentGroupDetail,
     is_list=False,
 )
 def zpa_update_segment_group(args: UpdateSegmentGroupInput) -> dict[str, Any]:
-    """Update a ZPA segment group and return the curated detail view (write).
+    """Update a ZPA segment group and return the full record (write).
 
     Gated by HMAC write-confirmation and `--write-tools`. Only the provided
     fields are sent (uses the SDK's v2 update path).
@@ -344,7 +262,7 @@ def zpa_update_segment_group(args: UpdateSegmentGroupInput) -> dict[str, Any]:
     result, _, err = sg.update_group_v2(args.group_id, **body)
     if err:
         raise RuntimeError(f"Failed to update segment group {args.group_id}: {err}")
-    return shape_detail(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(

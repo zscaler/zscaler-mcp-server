@@ -17,9 +17,7 @@ from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zdx._common import scope_query_params, unwrap_nested
 from zscaler_mcp.tools.zdx.list_alerts import (
-    AlertSummary,
     _AlertScopeInput,
-    _shape_alert_summary,
 )
 
 
@@ -32,11 +30,10 @@ class ListHistoricalAlertsInput(_AlertScopeInput):
     service="zdx",
     toolset="zdx_alerts",
     input_model=ListHistoricalAlertsInput,
-    output_view=AlertSummary,
     is_list=True,
 )
 def zdx_list_historical_alerts(args: ListHistoricalAlertsInput) -> list[dict[str, Any]]:
-    """List historical (ended) ZDX alerts as curated, agent-facing views.
+    """List historical (ended) ZDX alerts.
 
     Read-only. Like `zdx_list_alerts` but for alert rules that have an Ended On
     date. `since` is in HOURS (default 2h, max 14 days = 336h).
@@ -53,4 +50,4 @@ def zdx_list_historical_alerts(args: ListHistoricalAlertsInput) -> list[dict[str
     result, _, err = client.zdx.alerts.list_historical(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list ZDX historical alerts: {err}")
-    return shape_many(unwrap_nested(result, "alerts"), _shape_alert_summary)
+    return shape_many(unwrap_nested(result, "alerts"))

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 
 class ListServicesInput(BaseModel):
@@ -68,23 +68,9 @@ class DeleteServiceInput(BaseModel):
     service_id: Annotated[str, Field(description="Service ID to delete.")]
 
 
-class ServiceSummary(AgentView):
-    id: str = Field(description="Network service ID.")
-    name: str = Field(description="Display name.")
-    type: Optional[str] = Field(default=None, description="STANDARD / PREDEFINED / CUSTOM.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-
-
 class PortRange(BaseModel):
     start: Optional[int] = Field(default=None, description="Start port.")
     end: Optional[int] = Field(default=None, description="End port (range only).")
-
-
-class ServiceDetail(ServiceSummary):
-    src_tcp_ports: list[PortRange] = Field(default_factory=list, description="Source TCP ranges.")
-    dest_tcp_ports: list[PortRange] = Field(default_factory=list, description="Dest TCP ranges.")
-    src_udp_ports: list[PortRange] = Field(default_factory=list, description="Source UDP ranges.")
-    dest_udp_ports: list[PortRange] = Field(default_factory=list, description="Dest UDP ranges.")
 
 
 class OperationResult(AgentView):
@@ -92,34 +78,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def _ranges(raw: dict[str, Any], *keys: str) -> list[PortRange]:
-    out: list[PortRange] = []
-    for r in coalesce(raw, *keys):
-        if isinstance(r, dict):
-            out.append(PortRange(start=r.get("start"), end=r.get("end")))
-    return out
-
-
-def shape_service_summary(raw: dict[str, Any]) -> ServiceSummary:
-    return ServiceSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        type=pick(raw, "type"),
-        description=pick(raw, "description"),
-    )
-
-
-def shape_service_detail(raw: dict[str, Any]) -> ServiceDetail:
-    return ServiceDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        type=pick(raw, "type"),
-        description=pick(raw, "description"),
-        src_tcp_ports=_ranges(raw, "src_tcp_ports", "srcTcpPorts"),
-        dest_tcp_ports=_ranges(raw, "dest_tcp_ports", "destTcpPorts"),
-        src_udp_ports=_ranges(raw, "src_udp_ports", "srcUdpPorts"),
-        dest_udp_ports=_ranges(raw, "dest_udp_ports", "destUdpPorts"),
-    )
 
 
 def _ports(ports: Optional[list[list[str]]]) -> Optional[list[tuple]]:
@@ -134,7 +92,6 @@ def _ports(ports: Optional[list[list[str]]]) -> Optional[list[tuple]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListServicesInput,
-    output_view=ServiceSummary,
     is_list=True,
 )
 def zia_list_network_services(args: ListServicesInput) -> list[dict[str, Any]]:
@@ -152,7 +109,7 @@ def zia_list_network_services(args: ListServicesInput) -> list[dict[str, Any]]:
     if args.name:
         needle = args.name.strip().lower()
         rows = [r for r in rows if needle in str(r.get("name", "")).lower()]
-    return shape_many(rows, shape_service_summary)
+    return shape_many(rows)
 
 
 @tool(
@@ -160,7 +117,6 @@ def zia_list_network_services(args: ListServicesInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetServiceInput,
-    output_view=ServiceDetail,
     is_list=False,
 )
 def zia_get_network_service(args: GetServiceInput) -> dict[str, Any]:
@@ -169,7 +125,7 @@ def zia_get_network_service(args: GetServiceInput) -> dict[str, Any]:
     svc, _, err = client.zia.cloud_firewall.get_network_service(args.service_id)
     if err:
         raise RuntimeError(f"Failed to get network service {args.service_id}: {err}")
-    return shape_service_detail(svc.as_dict()).model_dump()
+    return shape_one(svc.as_dict())
 
 
 @tool(
@@ -177,7 +133,6 @@ def zia_get_network_service(args: GetServiceInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=CreateServiceInput,
-    output_view=ServiceDetail,
     is_list=False,
 )
 def zia_create_network_service(args: CreateServiceInput) -> dict[str, Any]:
@@ -189,7 +144,7 @@ def zia_create_network_service(args: CreateServiceInput) -> dict[str, Any]:
     svc, _, err = client.zia.cloud_firewall.add_network_service(ports=_ports(args.ports), **kwargs)
     if err:
         raise RuntimeError(f"Failed to create network service: {err}")
-    return shape_service_detail(svc.as_dict()).model_dump()
+    return shape_one(svc.as_dict())
 
 
 @tool(
@@ -197,7 +152,6 @@ def zia_create_network_service(args: CreateServiceInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=UpdateServiceInput,
-    output_view=ServiceDetail,
     is_list=False,
 )
 def zia_update_network_service(args: UpdateServiceInput) -> dict[str, Any]:
@@ -211,7 +165,7 @@ def zia_update_network_service(args: UpdateServiceInput) -> dict[str, Any]:
     svc, _, err = client.zia.cloud_firewall.update_network_service(args.service_id, **kwargs)
     if err:
         raise RuntimeError(f"Failed to update network service {args.service_id}: {err}")
-    return shape_service_detail(svc.as_dict()).model_dump()
+    return shape_one(svc.as_dict())
 
 
 @tool(

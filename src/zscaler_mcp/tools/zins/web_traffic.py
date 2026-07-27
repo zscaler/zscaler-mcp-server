@@ -4,7 +4,7 @@ Mirrors v1's ``zscaler_mcp/tools/zins/web_traffic.py``. Read-only analytics over
 the Z-Insights GraphQL API: traffic by location, total traffic, protocol mix,
 and threat super-category / threat-class breakdowns.
 
-These are aggregated/grouped reports, not CRUD objects. Each curated row carries
+These are aggregated/grouped reports, not CRUD objects. Each row carries
 the meaningful summary fields (name/id + the aggregated total) and, when the
 caller asks for trend data, the time-series under a nested ``trend`` field —
 which is why the trend-capable tools are forced to JSON wire format.
@@ -19,7 +19,7 @@ from pydantic import Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zins._common import (
     VALID_ACTION_FILTERS,
     VALID_DLP_ENGINE_FILTERS,
@@ -126,72 +126,8 @@ class TrafficCategoryInput(TimeWindowInput):
 # =============================================================================
 
 
-class TrafficRow(AgentView):
-    """A single aggregated traffic bucket (flat → CSV-friendly)."""
-
-    name: Optional[str] = Field(
-        default=None, description="Bucket label (location / protocol / category name)."
-    )
-    id: Optional[str] = Field(
-        default=None, description="Bucket identifier, when the API returns one."
-    )
-    total: Optional[float] = Field(
-        default=None, description="Aggregated total (transactions or bytes) for this bucket."
-    )
 
 
-class TrafficTrendRow(AgentView):
-    """An aggregated traffic bucket plus its optional time-series trend (nested → JSON)."""
-
-    name: Optional[str] = Field(
-        default=None, description="Bucket label (location name, or 'overall' when ungrouped)."
-    )
-    id: Optional[str] = Field(
-        default=None, description="Bucket identifier, when the API returns one."
-    )
-    total: Optional[float] = Field(
-        default=None, description="Aggregated total (transactions or bytes) for this bucket."
-    )
-    trend: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Time-series points for this bucket when include_trend=True; else empty.",
-    )
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_row(raw: dict[str, Any]) -> TrafficRow:
-    return TrafficRow(
-        name=pick(raw, "name", "label", "key"),
-        id=_as_opt_str(pick(raw, "id")),
-        total=_as_opt_float(pick(raw, "total", "count", "value")),
-    )
-
-
-def _shape_trend_row(raw: dict[str, Any]) -> TrafficTrendRow:
-    trend = raw.get("trend") or raw.get("trends") or raw.get("series") or []
-    return TrafficTrendRow(
-        name=pick(raw, "name", "label", "key"),
-        id=_as_opt_str(pick(raw, "id")),
-        total=_as_opt_float(pick(raw, "total", "count", "value")),
-        trend=list(trend) if isinstance(trend, list) else [],
-    )
-
-
-def _as_opt_str(value: Any) -> Optional[str]:
-    return None if value is None else str(value)
-
-
-def _as_opt_float(value: Any) -> Optional[float]:
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
 
 
 # =============================================================================
@@ -204,7 +140,6 @@ def _as_opt_float(value: Any) -> Optional[float]:
     service="zins",
     toolset="zins_web_traffic",
     input_model=WebTrafficByLocationInput,
-    output_view=TrafficTrendRow,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -234,7 +169,7 @@ def zins_get_web_traffic_by_location(args: WebTrafficByLocationInput) -> list[di
         raise RuntimeError(f"Failed to get web traffic by location: {err}")
     raise_for_graphql_errors(response, "get_traffic_by_location")
 
-    return shape_many(as_dicts(entries), _shape_trend_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -242,7 +177,6 @@ def zins_get_web_traffic_by_location(args: WebTrafficByLocationInput) -> list[di
     service="zins",
     toolset="zins_web_traffic",
     input_model=WebTrafficNoGroupingInput,
-    output_view=TrafficTrendRow,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -276,7 +210,7 @@ def zins_get_web_traffic_no_grouping(args: WebTrafficNoGroupingInput) -> list[di
         raise RuntimeError(f"Failed to get total web traffic: {err}")
     raise_for_graphql_errors(response, "get_no_grouping")
 
-    return shape_many(as_dicts(entries), _shape_trend_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -284,7 +218,6 @@ def zins_get_web_traffic_no_grouping(args: WebTrafficNoGroupingInput) -> list[di
     service="zins",
     toolset="zins_web_traffic",
     input_model=TrafficCategoryInput,
-    output_view=TrafficRow,
     is_list=True,
 )
 def zins_get_web_protocols(args: TrafficCategoryInput) -> list[dict[str, Any]]:
@@ -306,7 +239,7 @@ def zins_get_web_protocols(args: TrafficCategoryInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get web protocols: {err}")
     raise_for_graphql_errors(response, "get_protocols")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -314,7 +247,6 @@ def zins_get_web_protocols(args: TrafficCategoryInput) -> list[dict[str, Any]]:
     service="zins",
     toolset="zins_web_traffic",
     input_model=TrafficCategoryInput,
-    output_view=TrafficRow,
     is_list=True,
 )
 def zins_get_threat_super_categories(args: TrafficCategoryInput) -> list[dict[str, Any]]:
@@ -337,7 +269,7 @@ def zins_get_threat_super_categories(args: TrafficCategoryInput) -> list[dict[st
         raise RuntimeError(f"Failed to get threat super categories: {err}")
     raise_for_graphql_errors(response, "get_threat_super_categories")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -345,7 +277,6 @@ def zins_get_threat_super_categories(args: TrafficCategoryInput) -> list[dict[st
     service="zins",
     toolset="zins_web_traffic",
     input_model=TrafficCategoryInput,
-    output_view=TrafficRow,
     is_list=True,
 )
 def zins_get_threat_class(args: TrafficCategoryInput) -> list[dict[str, Any]]:
@@ -368,4 +299,4 @@ def zins_get_threat_class(args: TrafficCategoryInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get threat class: {err}")
     raise_for_graphql_errors(response, "get_threat_class")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))

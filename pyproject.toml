@@ -15,6 +15,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     # Transport / auth shim — UNCHANGED from v1. The SDK still does every
@@ -26,8 +27,16 @@ dependencies = [
     # MCP server framework. FastMCP gives us the ASGI app factories
     # (streamable_http_app / sse_app) that every piece of the auth /
     # hardening layer wraps as middleware — same foundation as v1.
-    "mcp[cli]>=1.23.0",
-    "fastmcp>=2.13.0",
+    #
+    # Upper bounds are DELIBERATE, not lazy pinning. The MCP 2026-07-28 spec
+    # ships in `mcp` 2.x and `fastmcp` 4.x — a stateless-core rewrite
+    # (CallToolResult/InputRequiredResult return types, ServerRunner, native
+    # multi-round-trip elicitation). Those majors are a planned, staged
+    # migration (see docs/guides/mcp-protocol.md), NOT something a routine
+    # `uvx zscaler-mcp` / `uv sync` should pull in silently the day they GA.
+    # Lift the caps only together with that migration.
+    "mcp[cli]>=1.23.0,<2",
+    "fastmcp>=2.13.0,<4",
     # Pydantic powers BOTH the input models and the output VIEWS. A view's
     # model_json_schema() is the source of truth for the tool's outputSchema,
     # so the curated view and the advertised schema can never drift.
@@ -80,6 +89,21 @@ target-version = "py310"
 # local_dev/ is maintainer scratch material copied from the v1 tree; it is not
 # part of the v2 package and must never gate the v2 lint.
 extend-exclude = ["local_dev"]
+
+[tool.ruff.lint]
+# Pin the rule set EXPLICITLY. Ruff's default selection is not a stable API — it
+# widened in 0.16.0 (adding pyupgrade / flake8-simplify / tryceratops / … ), which
+# turned a routine lockfile refresh into ~1.8k new findings across untouched code
+# and broke CI with zero source changes. Naming the rules here means a ruff
+# upgrade can no longer move the goalposts on its own.
+#
+# This is the set the project has always enforced in practice:
+#   E4/E7/E9  pycodestyle errors (imports, statements, syntax)
+#   F         pyflakes (undefined names, unused imports/variables)
+#   I         isort (import ordering — also run standalone in CI)
+# Adopting a broader set (UP, SIM, …) is a deliberate, separate cleanup, not
+# something to inherit silently from a dependency bump.
+select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

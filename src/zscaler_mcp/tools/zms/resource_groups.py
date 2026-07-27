@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -64,59 +64,10 @@ class PageInput(BaseModel):
 # =============================================================================
 
 
-class ResourceGroupSummary(AgentView):
-    """Lean view — one ZMS resource group row."""
-
-    id: str = Field(description="Resource group ID. Use with `zms_get_resource_group_members`.")
-    name: Optional[str] = Field(default=None, description="Group name.")
-    group_type: Optional[str] = Field(
-        default=None, description="ManagedResourceGroup / UnmanagedResourceGroup."
-    )
-    origin: Optional[str] = Field(default=None, description="Group origin.")
-    member_count: Optional[int] = Field(default=None, description="Number of members.")
-    cidrs: list[str] = Field(default_factory=list, description="CIDRs (unmanaged groups).")
-    fqdns: list[str] = Field(default_factory=list, description="FQDNs (unmanaged groups).")
-
-
-class GroupMemberSummary(AgentView):
-    """Lean view — one resource-group member."""
-
-    id: str = Field(description="Member resource ID.")
-    name: Optional[str] = Field(default=None, description="Member hostname/name.")
-    resource_type: Optional[str] = Field(default=None, description="Member resource type.")
-    status: Optional[str] = Field(default=None, description="Member status.")
-
-
 class AggregateStatus(AgentView):
     """Aggregate ZMS protection-status payload — kept nested."""
 
     data: dict = Field(default_factory=dict, description="Aggregate payload (counts/percentages).")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_group(raw: dict[str, Any]) -> ResourceGroupSummary:
-    return ResourceGroupSummary(
-        id=str(pick(raw, "id", "group_id", "groupId", default="")),
-        name=pick(raw, "name"),
-        group_type=pick(raw, "group_type", "groupType", "__typename", "type"),
-        origin=pick(raw, "origin"),
-        member_count=pick(raw, "member_count", "memberCount", "num_members"),
-        cidrs=[str(c) for c in coalesce(raw, "cidrs", "CIDRs")],
-        fqdns=[str(f) for f in coalesce(raw, "fqdns", "FQDNs")],
-    )
-
-
-def _shape_member(raw: dict[str, Any]) -> GroupMemberSummary:
-    return GroupMemberSummary(
-        id=str(pick(raw, "id", "resource_id", "resourceId", default="")),
-        name=pick(raw, "name", "hostname"),
-        resource_type=pick(raw, "resource_type", "resourceType", "type"),
-        status=pick(raw, "status"),
-    )
 
 
 def _build_groups_filter(args: ListResourceGroupsInput):
@@ -142,11 +93,10 @@ def _build_groups_filter(args: ListResourceGroupsInput):
     service="zms",
     toolset="zms",
     input_model=ListResourceGroupsInput,
-    output_view=ResourceGroupSummary,
     is_list=True,
 )
 def zms_list_resource_groups(args: ListResourceGroupsInput) -> list[dict[str, Any]]:
-    """List ZMS resource groups as curated, agent-facing views.
+    """List ZMS resource groups.
 
     Read-only. Returns one row per group (id, name, managed/unmanaged type,
     origin, member count, and CIDRs/FQDNs for unmanaged groups). Requires
@@ -165,7 +115,7 @@ def zms_list_resource_groups(args: ListResourceGroupsInput) -> list[dict[str, An
     result, _, err = client.zms.resource_groups.list_resource_groups(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS resource groups: {err}")
-    return shape_many(nodes_of(result), _shape_group)
+    return shape_many(nodes_of(result))
 
 
 @tool(
@@ -173,11 +123,10 @@ def zms_list_resource_groups(args: ListResourceGroupsInput) -> list[dict[str, An
     service="zms",
     toolset="zms",
     input_model=GroupMembersInput,
-    output_view=GroupMemberSummary,
     is_list=True,
 )
 def zms_get_resource_group_members(args: GroupMembersInput) -> list[dict[str, Any]]:
-    """List the members of a ZMS resource group as curated views.
+    """List the members of a ZMS resource group.
 
     Read-only. Returns one row per member workload. Obtain `group_id` from
     `zms_list_resource_groups`. Requires ZSCALER_CUSTOMER_ID.
@@ -194,7 +143,7 @@ def zms_get_resource_group_members(args: GroupMembersInput) -> list[dict[str, An
     )
     if err:
         raise RuntimeError(f"Failed to get ZMS resource group members: {err}")
-    return shape_many(nodes_of(result), _shape_member)
+    return shape_many(nodes_of(result))
 
 
 @tool(

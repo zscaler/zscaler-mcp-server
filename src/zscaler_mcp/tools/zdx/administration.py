@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 # =============================================================================
 # INPUT MODELS
@@ -40,20 +40,6 @@ class ListAdminInput(BaseModel):
 # =============================================================================
 
 
-class AdminEntity(AgentView):
-    """Lean view — the identifying id/name pair for a department or location."""
-
-    id: str = Field(description="Resource ID. Pass as `department_id` / `location_id` elsewhere.")
-    name: Optional[str] = Field(default=None, description="Display name.")
-
-
-def _shape_entity(raw: dict[str, Any]) -> AdminEntity:
-    return AdminEntity(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name"),
-    )
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -64,7 +50,6 @@ def _shape_entity(raw: dict[str, Any]) -> AdminEntity:
     service="zdx",
     toolset="zdx_reports",
     input_model=ListAdminInput,
-    output_view=AdminEntity,
     is_list=True,
 )
 def zdx_list_departments(args: ListAdminInput) -> list[dict[str, Any]]:
@@ -85,7 +70,7 @@ def zdx_list_departments(args: ListAdminInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list ZDX departments: {err}")
 
-    return shape_many([d.as_dict() for d in (departments or [])], _shape_entity)
+    return shape_many([d.as_dict() for d in (departments or [])])
 
 
 @tool(
@@ -93,7 +78,6 @@ def zdx_list_departments(args: ListAdminInput) -> list[dict[str, Any]]:
     service="zdx",
     toolset="zdx_reports",
     input_model=ListAdminInput,
-    output_view=AdminEntity,
     is_list=True,
 )
 def zdx_list_locations(args: ListAdminInput) -> list[dict[str, Any]]:
@@ -114,4 +98,4 @@ def zdx_list_locations(args: ListAdminInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list ZDX locations: {err}")
 
-    return shape_many([loc.as_dict() for loc in (locations or [])], _shape_entity)
+    return shape_many([loc.as_dict() for loc in (locations or [])])
