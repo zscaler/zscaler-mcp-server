@@ -12,14 +12,14 @@ returns one object (is_list=False).
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick
+from zscaler_mcp.shaping import shape_one
 from zscaler_mcp.tools.zins._common import raise_for_graphql_errors
 
 # =============================================================================
@@ -46,45 +46,6 @@ class IotDeviceStatsInput(BaseModel):
 # =============================================================================
 
 
-class IotDeviceStats(AgentView):
-    """IoT device-visibility current-state stats (nested classifications → JSON)."""
-
-    devices_count: Optional[float] = Field(
-        default=None, description="Total devices detected on the network."
-    )
-    iot_devices_count: Optional[float] = Field(default=None, description="Classified IoT devices.")
-    user_devices_count: Optional[float] = Field(default=None, description="Unmanaged user devices.")
-    server_devices_count: Optional[float] = Field(default=None, description="Server devices.")
-    un_classified_devices_count: Optional[float] = Field(
-        default=None, description="Devices that could not be classified."
-    )
-    entries: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="Per-classification breakdown (device category + count).",
-    )
-
-
-def _as_opt_float(value: Any) -> Optional[float]:
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _shape_stats(raw: dict[str, Any]) -> IotDeviceStats:
-    entries = raw.get("entries") or raw.get("classifications") or []
-    return IotDeviceStats(
-        devices_count=_as_opt_float(pick(raw, "devices_count", "devicesCount")),
-        iot_devices_count=_as_opt_float(pick(raw, "iot_devices_count", "iotDevicesCount")),
-        user_devices_count=_as_opt_float(pick(raw, "user_devices_count", "userDevicesCount")),
-        server_devices_count=_as_opt_float(pick(raw, "server_devices_count", "serverDevicesCount")),
-        un_classified_devices_count=_as_opt_float(
-            pick(raw, "un_classified_devices_count", "unClassifiedDevicesCount")
-        ),
-        entries=list(entries) if isinstance(entries, list) else [],
-    )
 
 
 # =============================================================================
@@ -97,7 +58,6 @@ def _shape_stats(raw: dict[str, Any]) -> IotDeviceStats:
     service="zins",
     toolset="zins_iot",
     input_model=IotDeviceStatsInput,
-    output_view=IotDeviceStats,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -119,4 +79,4 @@ def zins_get_iot_device_stats(args: IotDeviceStatsInput) -> dict[str, Any]:
     raw = stats.as_dict() if hasattr(stats, "as_dict") else (stats or {})
     if not isinstance(raw, dict):
         raw = {}
-    return _shape_stats(raw).model_dump()
+    return shape_one(raw)

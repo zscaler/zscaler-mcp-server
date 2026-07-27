@@ -1,6 +1,6 @@
 # Zscaler MCP Server
 
-300+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
+254 read tools (plus write tools, off by default) for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, ZCell, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
 
 > **Cross-tool conventions.** The most-violated rules in this repo are mirrored at `.claude/CONVENTIONS.md` (Claude Code) so they survive even if this file is trimmed. A parallel Cursor mirror at `.cursor/rules/zscaler-conventions.mdc` (auto-applied in Cursor sessions) is **planned but not yet committed** — until it lands, Cursor sessions rely on this `CLAUDE.md` being loaded explicitly. The full convention set lives below; **Helper-file convention** is in [Helper File Convention (DO NOT FRAGMENT)](#helper-file-convention-do-not-fragment) — read it before adding any new file under `zscaler_mcp/common/`.
 
@@ -19,10 +19,10 @@ zscaler_mcp/
 │   └── gcp_secrets.py   # GCP Secret Manager credential loader (opt-in via ZSCALER_MCP_GCP_SECRET_MANAGER=true)
 ├── common/
 │   ├── tool_helpers.py    # register_read_tools / register_write_tools with disabled_tools filtering
-│   ├── jmespath_utils.py  # apply_jmespath() — shared JMESPath client-side filtering for all list tools
+│   ├── jmespath_utils.py  # apply_jmespath() — caller-opt-in `query` filtering, wired centrally in registry/fastmcp_bridge.py
 │   ├── elicitation.py     # HMAC-SHA256 confirmation tokens for destructive actions
 │   └── logging.py         # log_security_warning helper
-└── tools/                # 112 tool modules organized by service (zia/, zpa/, zdx/, zcc/, ztw/, zid/, easm/, zins/, zms/)
+└── tools/                # 142 tool modules organized by service (zia/, zpa/, zdx/, zcc/, zcell/, ztw/, zid/, easm/, zins/, zms/)
 ```
 
 ### Request Flow
@@ -71,7 +71,7 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 
 ### Deferred Tool Loading & AI Agent Behavior
 
-Most MCP clients (Claude Desktop, Cursor) use **deferred tool loading** — they don't load all 360+ tools upfront. Instead, they search for relevant tools based on the user's prompt. This has important implications:
+Most MCP clients (Claude Desktop, Cursor) use **deferred tool loading** — they don't load all 254 tools upfront. Instead, they search for relevant tools based on the user's prompt. This has important implications:
 
 - **Tool search returns "closest N" results**, even if none are relevant. If a service is disabled, the search will return unrelated tools from other services rather than saying "not found."
 - **The `zscaler_get_available_services` tool** was designed to solve this. It returns enabled services with tool counts AND explicitly lists disabled services with a note instructing the agent to inform the user. Its description mentions all service names (ZCC, ZDX, ZPA, ZIA, ZTW, etc.) so it surfaces in tool search when someone asks about any service.
@@ -84,6 +84,8 @@ Two independent exclusion mechanisms, applied at registration time (not runtime)
 - **`--disabled-services` / `ZSCALER_MCP_DISABLED_SERVICES`** — removes entire services. Values are service names: `zcc`, `zdx`, `zpa`, `zia`, `ztw`, `zid`, `zeasm`, `zins`, `zms`. The service class is never instantiated and its tools are never registered. Does NOT support wildcards (exact service names only).
 
 - **`--disabled-tools` / `ZSCALER_MCP_DISABLED_TOOLS`** — removes individual tools by name pattern. Supports `fnmatch` wildcards (e.g., `zcc_*`, `zia_list_device*`). Applied in `register_read_tools()` and `register_write_tools()` via `fnmatch.fnmatch()`.
+
+- **`--disabled-toolsets` / `ZSCALER_MCP_DISABLED_TOOLSETS`** — removes entire toolsets. The blocklist complement to `--toolsets` (include-only): load everything *except* the named toolsets, instead of enumerating the ~60 you want. Exact toolset ids only (no wildcards, like `--disabled-services`). In v2 this is a `Registry.select(disabled_toolsets=…)` filter — precedence `disabled_toolsets > enabled_toolsets` (disable wins when a toolset is both selected and disabled). Example: `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin`.
 
 **Cross-service overlap**: Some Zscaler APIs expose overlapping data. For example, ZIA has device management tools (`zia_list_devices`) that return the same data as ZCC's tools. Disabling the `zcc` service removes all `zcc_*` tools but does NOT remove ZIA's device tools. Use `--disabled-tools` to also block the ZIA overlap if needed.
 
@@ -201,48 +203,44 @@ ZMS tools use the ZMS GraphQL API (`/zms/graphql`) for querying microsegmentatio
 
 ## JMESPath Client-Side Filtering
 
-All list tools across every service support JMESPath client-side filtering via an optional `query` parameter. This leverages the `jmespath` library (already a dependency of `zscaler-sdk-python`) to filter and project results after the API call returns.
+Every collection-returning tool (**164** of them) accepts an optional `query` parameter carrying a [JMESPath](https://jmespath.org/) expression, applied to the result **after** the API call returns. This is the caller-opt-in counterpart to the verbatim-record contract in [Response Shaping](#response-shaping-api-records-verbatim): the server never decides which attributes matter, but the agent — which knows the question being asked — can project exactly what it wants. It is also the honest way to shrink a response, because nothing is lost that the caller didn't choose to drop.
 
 ### Architecture
 
-- **`zscaler_mcp/common/jmespath_utils.py`** — shared `apply_jmespath(data, expression)` helper used by all services
-- **`zscaler_mcp/tools/zms/__init__.py`** — ZMS-specific wrapper that preserves the `[result]` envelope for GraphQL responses
-- When `query` is `None`, results pass through unchanged (full backward compatibility)
-- Invalid expressions return `[{"error": "Invalid JMESPath expression: ..."}]` instead of crashing
+- **`src/zscaler_mcp/common/jmespath_utils.py`** — the shared `apply_jmespath(data, expression)` helper.
+- **The wiring is CENTRAL, not per-tool.** `registry/fastmcp_bridge.py` adds the `query` parameter in `_build_signature()` and applies it in `impl()` just before `_to_tool_result()`. No tool module opts in, none can forget, and a new tool inherits it automatically. (Same reason the HMAC confirmation channel lives there.)
+- **`ToolSpec.supports_query`** (`registry/spec.py`) is the single rule for which tools get it: `is_list` tools, plus `*_list_*` reads whose SDK call returns one envelope object wrapping the collection (auth-exempt URLs, ATP denylist, SIM inventory — v1 offered `query` on those too). Excluded: single-object gets (nothing to filter), writes (the result is an acknowledgement), and the synthetic-envelope tools that advertise an `output_view` (filtering would contradict the schema on the wire).
+- Filtering runs **before** the encoder and the `[TOKENS]` audit line, so both measure what the agent actually receives.
 
-### How It Works
+### Semantics
 
-Every `*_list_*` tool (88 total across ZIA, ZPA, ZDX, ZCC, ZTW, ZID, EASM, ZMS) accepts an optional `query` parameter. The JMESPath expression is applied to the tool's result data **after** the API call completes:
-
-```python
-# Non-ZMS tools: result is a list of dicts
-results = [x.as_dict() for x in items]
-return apply_jmespath(results, query)  # filters the list
-
-# ZMS tools: result is a GraphQL connection dict {"nodes": [...], "page_info": {...}}
-return apply_jmespath_query(result, query)  # filters within the envelope
-```
+| Case | Result |
+|---|---|
+| `query` omitted / empty | Data passes through unchanged — the default path |
+| No match | `[]` |
+| Scalar result (`length(@)`, `sum(...)`) | Wrapped in a list, so a list tool keeps returning a list |
+| Invalid expression | `[{"error": "Invalid JMESPath expression: ..."}]` — the agent sees its mistake; the call does not fail |
 
 ### Expression Syntax
 
-Standard [JMESPath](https://jmespath.org/) syntax. Field names are **snake_case** (the SDK converts camelCase API responses). Examples:
+Field names are **exactly what the Zscaler API returns** — records are passed through verbatim, so expect the API's own spelling (often camelCase, e.g. `policyName`, `registrationState`), not a normalized form. When unsure, call once without `query` and read the keys off the response.
 
 | Service | Expression | What it does |
 |---------|-----------|--------------|
-| ZIA | `[?name=='HQ'].{name: name, id: id}` | Find location named "HQ", project name+id |
-| ZPA | `[?enabled==\`true\`]` | Filter to enabled application segments |
+| ZCC | `[*].{user: user, policy: policyName}` | Project user + assigned policy for every device |
+| ZCC | `[?registrationState=='Quarantined']` | Only quarantined devices |
+| ZIA | `[?name=='HQ'].{name: name, id: id}` | Find the location named "HQ", project name+id |
+| ZPA | `` [?enabled==`true`] `` | Filter to enabled application segments |
 | ZDX | `[?platform=='Windows'].{user_name: user_name}` | Windows devices, project usernames |
-| ZCC | `[*].{name: name, os_type: os_type}` | Project name and OS for all devices |
-| ZMS | `nodes[?cloud_provider=='AWS']` | Filter resources to AWS workloads |
-| EASM | `results[?severity=='critical']` | Filter findings to critical severity |
+| any | `length(@)` | Just the count |
 
-### Adding JMESPath to a New List Tool
+Measured on a real 3-device ZCC response: full records **796 tokens**, `[*].{user: user, policy: policyName}` **47 tokens**, `length(@)` **6 tokens**.
 
-1. Import: `from zscaler_mcp.common.jmespath_utils import apply_jmespath`
-2. Add `query` parameter before `service` in the signature
-3. Wrap the success return: `return apply_jmespath(results, query)`
-4. **Declare the return type as `Any`** — never `List[dict]` / `List[str]`. JMESPath expressions like `length(@)`, `[*].name`, or `sum(...)` produce scalars or differently-shaped lists; a strict element type causes the MCP/Pydantic output validator to reject the response, which forces the AI agent to narrate around the error and exposes implementation details (JMESPath, validation failures) to the user. Document the happy-path shape in the docstring instead.
-5. Update the tool description in `services.py` to mention JMESPath support
+### Adding a new list tool
+
+Nothing to do — declare `is_list=True` on `@tool` and the `query` parameter appears automatically. Do **not** add a `query` field to the tool's input model; it is a bridge-owned channel and is popped before the model is validated.
+
+**Guarded by** `tests/test_jmespath.py` — helper semantics (filter / project / scalar / empty / invalid), an end-to-end call through the real tool path, and a registry-wide sweep asserting the advertised parameter matches `supports_query` for every tool.
 
 ### Response Style for AI Agents
 
@@ -272,13 +270,21 @@ The user is asking a **business question**. Tool plumbing — JMESPath, server-s
 
 ### Tool Discovery via Toolsets
 
+> **⚠️ Status: NOT PRESENT in the current (v2) build.** The meta-tools described below
+> (`zscaler_list_toolsets`, `zscaler_get_toolset_tools`, `zscaler_enable_toolset`,
+> `zscaler_get_available_services`, `zscaler_check_connectivity`) shipped in v1 and were
+> dropped in the `src/` rewrite — verified against the live registry. The section is kept
+> as the design of record while we decide whether to restore them (deferred tool loading
+> in most clients may make catalog discovery redundant). Do not tell a user these tools
+> exist until they are back.
+
 Tool discovery for AI agents goes through the always-on toolset meta-tools, **not** JMESPath against the tool catalog. The flow is:
 
 1. `zscaler_list_toolsets(name_contains=..., description_contains=..., service=...)` — find the relevant toolset (logical grouping per resource family per service). Each row carries `currently_enabled`, `tool_count`, `can_enable`, and (when `can_enable: false`) `unavailable_reason`.
 2. `zscaler_get_toolset_tools(toolset=..., name_contains=..., description_contains=...)` — drill into a toolset to confirm a specific tool is callable. Each row carries `available` and (when `available: false`) `unavailable_reason`.
 3. `zscaler_get_available_services` — service-level overview when you need a one-shot "what is loaded right now". Use for status, not as a discovery primitive.
 
-A `zscaler_search_tools` meta-tool existed in earlier versions; it was removed because it duplicated the toolset discovery path and encouraged the agent to second-guess `available: false` results. The JMESPath helper that powered it lives on (and is still exported by `zscaler_mcp/common/jmespath_utils.py`) — it remains the post-processing engine for the optional `query` parameter on every `*_list_*` tool that returns paginated tenant data.
+A `zscaler_search_tools` meta-tool existed in earlier versions; it was removed because it duplicated the toolset discovery path and encouraged the agent to second-guess `available: false` results. The JMESPath helper that powered it lives on at `src/zscaler_mcp/common/jmespath_utils.py` — it is the post-processing engine for the optional `query` parameter described above.
 
 ## Write Operations — Safety Rules
 
@@ -299,6 +305,71 @@ Destructive write operations (delete, bulk update) use cryptographic confirmatio
 4. Tokens are single-use and tamper-proof — prompt injection cannot forge or replay them
 
 Implementation: `zscaler_mcp/common/elicitation.py` — `generate_confirmation_token()` and `verify_confirmation_token()`.
+
+## MCP Protocol Posture, Tool Annotations & Conformance
+
+The server tracks the **published** MCP protocol baseline (`2025-11-25`, served by `mcp` 1.x / `fastmcp` 3.x) and validates against it in CI. The next spec, `2026-07-28` (stateless core, `InputRequiredResult` return types, native multi-round-trip elicitation), ships in `mcp` 2.x / `fastmcp` 4.x and is a **staged migration**, not an automatic upgrade. Full posture + migration roadmap: `docs/guides/mcp-protocol.md`.
+
+### SDK version caps (`mcp<2`, `fastmcp<4`)
+
+`pyproject.toml` pins **deliberate** upper bounds: `mcp[cli]>=1.23.0,<2` and `fastmcp>=2.13.0,<4`. This is not lazy pinning — the majors carry the `2026-07-28` rewrite and cascade prerelease foundations (an alpha Pydantic, the `fastmcp` → `fastmcp-slim` split). A routine `uvx zscaler-mcp` / `uv sync` must not pull them in silently the day they GA. Lifting a cap is a reviewed act done in lockstep with the migration.
+
+- **Guarded by** `tests/test_dependency_caps.py` — behavioural assertions (the current GA line resolves, the breaking major does not) plus a check that the rationale comment survives. Dropping or weakening a cap fails CI.
+
+### Tool annotations (advisory hints, NOT a security control)
+
+Every tool advertises MCP `ToolAnnotations` so a client can decide how to present it — notably whether to surface a human-facing confirmation before running it. The hints are **derived from the single action verb**, never hand-declared, so they can never disagree with the tool's behaviour:
+
+| action | `readOnlyHint` | `destructiveHint`     | `idempotentHint` | `openWorldHint` |
+| ------ | -------------- | --------------------- | ---------------- | --------------- |
+| read   | `true`         | (unset)               | (unset)          | `false`         |
+| create | `false`        | `false`               | `false`          | `false`         |
+| update | `false`        | `true` (PUT-replace)  | `true`           | `false`         |
+| delete | `false`        | `true`                | `true`           | `false`         |
+
+- **Source of truth:** `ToolSpec.read_only` / `.destructive` / `.idempotent` (`src/zscaler_mcp/registry/spec.py`) → `_tool_annotations()` renders the MCP wire type (`src/zscaler_mcp/registry/fastmcp_bridge.py`) → passed to `FunctionTool.from_function(annotations=...)`.
+- `openWorldHint` is `false` for every tool: they all operate against one closed system (the configured Zscaler tenant), never an open-ended external world.
+- Write-only hints (`destructiveHint` / `idempotentHint`) are left **unset** on read-only tools rather than sent as a misleading `false`.
+- **These are HINTS, not gates.** The authoritative controls stay server-side: read-only-by-default, the `--write-tools` allowlist, and HMAC confirmation for deletes — enforced regardless of any hint.
+- **Guarded by** `tests/test_tool_annotations.py` — per-action rendering plus a registry-wide invariant asserted across every real tool.
+
+### Official conformance suite in CI
+
+`.github/workflows/mcp-conformance.yml` runs the **official** `@modelcontextprotocol/conformance` runner (pinned `@0.1.16`) in **server mode**: it boots the server over streamable-http (auth + entitlement filter disabled; no Zscaler creds needed because the SDK client is created lazily on first tool call) and connects as an MCP client to assert protocol behaviour against the **published `2025-11-25`** baseline — never `draft` / `latest`.
+
+- **Reality today:** every scenario applicable to a production server passes (initialize, ping, logging-set-level, tools-list, tools-call text/error, sse multi-stream, resources-list, prompts-list, dns-rebinding-protection). The 20 baselined scenarios in `.github/conformance-baseline.yml` are inapplicable — they need the reference "everything" server's synthetic test fixtures (a tool that returns an image, a prompt named `test_simple_prompt`) or capabilities we intentionally don't advertise (resources, completions, elicitation).
+- **The baseline can't silently rot:** a NEW failure fails CI (regression); a baselined scenario that starts PASSING also fails CI (stale entry to remove).
+- **Run locally:** `make conformance` (needs `node`/`npx`). Config guarded by `tests/test_conformance_config.py`.
+
+## Response Shaping (API records, verbatim)
+
+**A read tool returns the Zscaler API record unchanged.** The server does not enumerate, rename, trim, or re-declare the attributes of a resource — that attribute set belongs to the API. This is a hard invariant; violating it is the regression class tracked in [#88](https://github.com/zscaler/zscaler-mcp-server/issues/88) (`zcc_list_devices` silently losing `policy_name` and ~34 other device fields).
+
+### Why the server does not describe records
+
+Whatever attribute list we wrote here would be a *snapshot*. The moment engineering ships a new field, that snapshot is wrong — and before #88 it was worse than wrong, because the list doubled as a whitelist that deleted everything it didn't recognize. A new API attribute must reach the agent with **no change to this codebase**, and it does.
+
+The SDK models the same asymmetry, and it's the reference: `list_devices` / `list_segments` document only the **query parameters** and describe the response as `record.as_dict()`, while `add_segment` documents **every settable attribute**. Inputs are a closed set the caller must know; outputs are an open set the server doesn't own.
+
+### The contract
+
+- **Read / create / update tools declare NO `output_view`** and therefore advertise **no `outputSchema`**. `output_view` is optional on `@tool` and defaults to `None`.
+- **`shape_many(items)` / `shape_one(raw)`** (`src/zscaler_mcp/shaping/helpers.py`) are the passthrough chokepoints. They exist to coerce an SDK model object into a plain dict (`as_dict()`), not to reshape it. Both accept an optional shaper that can only ADD to a record (`{**raw, **shaper(raw).model_dump()}`), never restrict it — retained for synthetic results, unused by record tools.
+- **`AgentView` is only for results the SERVER constructs**: `OperationResult` (delete acknowledgements), `Catalog` (metadata catalogs — the payload rides untouched under `items`), and the ZMS/ZDX/ZTW status envelopes (`AggregateStatus`, `AnalysisStatus`, `DiscoverySettings`, `NonceDetail`, `StartedAnalysis`, `StartedTrace`, `TotpSecrets`). Those shapes really are ours, so they keep their schema. The base sets `extra="allow"` so even they can never strip.
+- **Input models are untouched by this rule.** `create` / `update` tools enumerate every settable field, exactly like the SDK's `add_segment`. That is the API contract a caller cannot work without.
+
+### Where token efficiency actually comes from
+
+Not from dropping fields. The two real levers are:
+
+1. **Toolset selection** — the agent loads only the slice of tools it needs (`--toolsets`, deferred loading), so the tool *catalog* stays small.
+2. **CSV wire format** — flat lists serialize to CSV (`src/zscaler_mcp/encoding/`), stating column names once instead of repeating JSON keys on every row. Nested records fall back to JSON. This saves tokens on *syntax*, never on *data*.
+
+### Adding / reviewing a tool
+
+- A read tool returns the record: `return shape_many([x.as_dict() for x in items])` / `return shape_one(obj.as_dict())`. Do **not** add an `output_view`, and never hand-pick keys into a curated dict — both reintroduce #88.
+- Adding an `output_view` is only legitimate for a result the server invents. It requires adding the class name to `SYNTHETIC` in `tests/test_shaping_helpers.py`, which is the deliberate act of asserting "this shape is ours, not the API's".
+- **Guarded by** `tests/test_shaping_helpers.py::test_record_returning_tools_declare_no_output_view` — a registry-wide sweep that fails if any tool re-introduces record enumeration — plus the passthrough/coercion tests in the same file and the schema assertions in `tests/test_server_security.py`.
 
 ## ZDX Filtering
 
@@ -339,6 +410,7 @@ Server & security env vars:
 - `ZSCALER_MCP_DISABLED_TOOLS` — Comma-separated tool patterns to exclude (wildcards via fnmatch)
 - `ZSCALER_MCP_DISABLED_SERVICES` — Comma-separated service names to exclude
 - `ZSCALER_MCP_TOOLSETS` — Comma-separated toolset ids to enable (e.g. `zia_url_filtering,zpa_app_segments`). Special values: `default` (curated default-on subset) and `all` (every toolset). When unset, every toolset whose service is enabled is loaded. The `meta` toolset is always loaded. See `docs/guides/toolsets.md`.
+- `ZSCALER_MCP_DISABLED_TOOLSETS` — Comma-separated toolset ids to exclude (blocklist complement to `ZSCALER_MCP_TOOLSETS`). Exact ids only (no wildcards). Wins over the toolset include-list when both name a toolset. See `docs/guides/toolsets.md`.
 - `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` — Skip the OneAPI entitlement filter (`true`/`false`). When `false` (default), the server intersects the selected toolsets with the products entitled by the OneAPI bearer token (`service-info[].prd`). Set `true` as an emergency override.
 - `ZSCALER_MCP_WRITE_ENABLED` — Enable write tools (`true`/`false`)
 - `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
@@ -355,6 +427,7 @@ Server & security env vars:
 - `--disabled-services` — Comma-separated services to exclude (e.g., `zcc,zdx`)
 - `--disabled-tools` — Comma-separated tool patterns to exclude (wildcards: `"zcc_*,zia_list_device*"`)
 - `--toolsets` — Comma-separated toolset ids to enable. Use `default` for the curated default-on subset, `all` for everything (e.g. `"zia_url_filtering,zpa_app_segments"` or `"default"`). See `docs/guides/toolsets.md`.
+- `--disabled-toolsets` — Comma-separated toolset ids to exclude (blocklist complement to `--toolsets`). Exact ids only (no wildcards). Load everything except these; wins over `--toolsets`. (e.g. `--toolsets all --disabled-toolsets "zia_ssl_inspection,zia_admin"`)
 - `--no-entitlement-filter` — Skip the OneAPI entitlement filter that trims `selected_toolsets` to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only; the filter is non-fatal by default and skips itself on any failure.
 - `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
 - `--generate-auth-token` — Generate an API key for MCP client authentication

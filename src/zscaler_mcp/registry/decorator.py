@@ -9,8 +9,7 @@ There is no separate list a human must keep in sync, so the v1 failure mode
 Usage::
 
     @tool(action=READ, service="zpa", toolset="zpa_segment_groups",
-          input_model=ListSegmentGroupsInput, output_view=SegmentGroupSummary,
-          is_list=True)
+          input_model=ListSegmentGroupsInput, is_list=True)
     def zpa_list_segment_groups(args: ListSegmentGroupsInput) -> list[dict]:
         '''List ZPA segment groups …'''   # docstring becomes the description
         ...
@@ -18,6 +17,7 @@ Usage::
 
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable
 
 from pydantic import BaseModel
@@ -36,7 +36,7 @@ def tool(
     service: str,
     toolset: str,
     input_model: type[BaseModel],
-    output_view: type[AgentView],
+    output_view: type[AgentView] | None = None,
     is_list: bool = False,
     name: str | None = None,
     description: str | None = None,
@@ -53,8 +53,11 @@ def tool(
         service: Owning Zscaler product (``zpa`` / ``zia`` / ...).
         toolset: Toolset id for catalog-level grouping/filtering.
         input_model: Pydantic input model (the ``inputSchema``).
-        output_view: Curated :class:`AgentView` subclass (the ``outputSchema``).
-        is_list: True if the tool returns a list of ``output_view`` rows.
+        output_view: Only for tools returning a SYNTHETIC result the server
+            builds itself (``OperationResult``, catalogs, aggregate status).
+            Leave unset for tools returning Zscaler API records — the API owns
+            that attribute set, so no ``outputSchema`` is advertised.
+        is_list: True if the tool returns a list of records/rows.
         name: Tool name; defaults to the function's ``__name__``.
         description: Agent-facing description; defaults to the function docstring.
         wire_format: Default serialization policy.
@@ -64,7 +67,13 @@ def tool(
 
     def decorate(fn: Callable[[Any], Any]) -> Callable[[Any], Any]:
         resolved_name = name or fn.__name__
-        resolved_desc = (description or fn.__doc__ or "").strip()
+        # ``cleandoc`` (not ``.strip()``) because Python 3.13+ dedents docstrings
+        # at compile time while 3.11/3.12 do not: a raw ``fn.__doc__`` keeps the
+        # source indentation on older interpreters, so the same tool would ship a
+        # differently-indented description depending on the runtime — and the
+        # generated docs would flip-flop between contributors. Normalizing here
+        # makes the description interpreter-independent.
+        resolved_desc = inspect.cleandoc(description or fn.__doc__ or "")
         if not resolved_desc:
             raise ValueError(
                 f"Tool '{resolved_name}' has no description (add a docstring or "

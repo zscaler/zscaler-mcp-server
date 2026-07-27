@@ -52,6 +52,21 @@ def test_parser_list_tools_flag():
     assert args.list_tools is True
 
 
+def test_parser_disabled_toolsets_flag():
+    args = server.build_parser().parse_args(["--disabled-toolsets", "zia_ssl_inspection,zia_admin"])
+    assert args.disabled_toolsets == "zia_ssl_inspection,zia_admin"
+    assert server._parse_csv(args.disabled_toolsets) == ["zia_ssl_inspection", "zia_admin"]
+    # Default is empty -> _parse_csv resolves to None (no blocklist).
+    default = server.build_parser().parse_args([])
+    assert server._parse_csv(default.disabled_toolsets) is None
+
+
+def test_disabled_toolsets_env_default(monkeypatch):
+    monkeypatch.setenv("ZSCALER_MCP_DISABLED_TOOLSETS", "zia_admin")
+    args = server.build_parser().parse_args([])
+    assert args.disabled_toolsets == "zia_admin"
+
+
 def test_parser_enable_write_tools_flag():
     args = server.build_parser().parse_args(["--enable-write-tools"])
     assert args.enable_write_tools is True

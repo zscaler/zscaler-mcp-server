@@ -4,7 +4,7 @@ Mirrors v1's ``zscaler_mcp/tools/zins/shadow_it.py``. Read-only analytics over
 the Z-Insights GraphQL API for discovered Shadow IT applications and the
 aggregate Shadow IT summary.
 
-- ``zins_get_shadow_it_apps`` returns one curated row per discovered app
+- ``zins_get_shadow_it_apps`` returns one row per discovered app
   (name, category, risk, sanctioned state, data volume, user count). The row is
   flat, so it stays AUTO (CSV).
 - ``zins_get_shadow_it_summary`` is a single dashboard object with grouped
@@ -14,14 +14,14 @@ aggregate Shadow IT summary.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 from zscaler_mcp.tools.zins._common import (
     TimeWindowInput,
     as_dicts,
@@ -64,94 +64,10 @@ class ShadowItSummaryInput(TimeWindowInput):
 # =============================================================================
 
 
-class ShadowItApp(AgentView):
-    """A single discovered Shadow IT application (flat → CSV-friendly)."""
-
-    application: Optional[str] = Field(default=None, description="Application name.")
-    application_category: Optional[str] = Field(default=None, description="Application category.")
-    risk_index: Optional[float] = Field(default=None, description="Risk score (higher = riskier).")
-    sanctioned_state: Optional[str] = Field(
-        default=None, description="Sanctioned / unsanctioned governance state (decision-bearing)."
-    )
-    data_consumed: Optional[float] = Field(
-        default=None, description="Total bytes transferred to/from the app."
-    )
-    authenticated_users: Optional[float] = Field(
-        default=None, description="Number of authenticated users of the app."
-    )
 
 
-class ShadowItSummary(AgentView):
-    """Aggregate Shadow IT dashboard (nested breakdowns → JSON)."""
-
-    total_apps: Optional[float] = Field(
-        default=None, description="Total number of discovered shadow apps."
-    )
-    total_bytes: Optional[float] = Field(
-        default=None, description="Total bytes transferred across all shadow apps."
-    )
-    total_upload_bytes: Optional[float] = Field(default=None, description="Total uploaded bytes.")
-    total_download_bytes: Optional[float] = Field(
-        default=None, description="Total downloaded bytes."
-    )
-    by_category: list[dict[str, Any]] = Field(
-        default_factory=list, description="Apps grouped by application category."
-    )
-    by_risk_index: list[dict[str, Any]] = Field(
-        default_factory=list, description="Apps grouped by risk-index band."
-    )
 
 
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _as_opt_str(value: Any) -> Optional[str]:
-    return None if value is None else str(value)
-
-
-def _as_opt_float(value: Any) -> Optional[float]:
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _as_list(value: Any) -> list[dict[str, Any]]:
-    return list(value) if isinstance(value, list) else []
-
-
-def _shape_app(raw: dict[str, Any]) -> ShadowItApp:
-    return ShadowItApp(
-        application=pick(raw, "application", "app", "name"),
-        application_category=pick(raw, "application_category", "applicationCategory", "category"),
-        risk_index=_as_opt_float(pick(raw, "risk_index", "riskIndex")),
-        sanctioned_state=_as_opt_str(pick(raw, "sanctioned_state", "sanctionedState")),
-        data_consumed=_as_opt_float(
-            pick(raw, "data_consumed", "dataConsumed", "total_bytes", "totalBytes")
-        ),
-        authenticated_users=_as_opt_float(
-            pick(raw, "authenticated_users", "authenticatedUsers", "user_count", "userCount")
-        ),
-    )
-
-
-def _shape_summary(raw: dict[str, Any]) -> ShadowItSummary:
-    return ShadowItSummary(
-        total_apps=_as_opt_float(pick(raw, "total_apps", "totalApps")),
-        total_bytes=_as_opt_float(pick(raw, "total_bytes", "totalBytes")),
-        total_upload_bytes=_as_opt_float(pick(raw, "total_upload_bytes", "totalUploadBytes")),
-        total_download_bytes=_as_opt_float(pick(raw, "total_download_bytes", "totalDownloadBytes")),
-        by_category=_as_list(
-            pick(raw, "group_by_app_cat_for_app", "groupByAppCatForApp", "by_category")
-        ),
-        by_risk_index=_as_list(
-            pick(raw, "group_by_risk_index_for_app", "groupByRiskIndexForApp", "by_risk_index")
-        ),
-    )
 
 
 # =============================================================================
@@ -164,7 +80,6 @@ def _shape_summary(raw: dict[str, Any]) -> ShadowItSummary:
     service="zins",
     toolset="zins_shadow_it",
     input_model=ShadowItAppsInput,
-    output_view=ShadowItApp,
     is_list=True,
 )
 def zins_get_shadow_it_apps(args: ShadowItAppsInput) -> list[dict[str, Any]]:
@@ -184,7 +99,7 @@ def zins_get_shadow_it_apps(args: ShadowItAppsInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get shadow IT apps: {err}")
     raise_for_graphql_errors(response, "get_apps")
 
-    return shape_many(as_dicts(entries), _shape_app)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -192,7 +107,6 @@ def zins_get_shadow_it_apps(args: ShadowItAppsInput) -> list[dict[str, Any]]:
     service="zins",
     toolset="zins_shadow_it",
     input_model=ShadowItSummaryInput,
-    output_view=ShadowItSummary,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -216,4 +130,4 @@ def zins_get_shadow_it_summary(args: ShadowItSummaryInput) -> dict[str, Any]:
     raw = summary.as_dict() if hasattr(summary, "as_dict") else (summary or {})
     if not isinstance(raw, dict):
         raw = {}
-    return _shape_summary(raw).model_dump()
+    return shape_one(raw)

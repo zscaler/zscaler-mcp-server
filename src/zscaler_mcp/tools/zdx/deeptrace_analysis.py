@@ -101,7 +101,7 @@ def _opt_str(value: Any) -> Optional[str]:
     wire_format=WireFormat.JSON,
 )
 def zdx_get_analysis(args: GetAnalysisInput) -> dict[str, Any]:
-    """Get the status/result of a ZDX score analysis (curated view).
+    """Get the status/result of a ZDX score analysis (full record).
 
     Read-only. Returns whether the analysis is still running or its results if
     complete. Start one with `zdx_start_analysis`.

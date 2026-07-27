@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 
 class ListAppsInput(BaseModel):
@@ -29,32 +29,15 @@ class GetAppInput(BaseModel):
     app_id: Annotated[str, Field(description="Network app ID (e.g. 'ICMP_ANY', 'HTTP').")]
 
 
-class NetworkAppSummary(AgentView):
-    id: str = Field(description="Network app ID (e.g. 'HTTP').")
-    name: str = Field(description="Display name.")
-    type: Optional[str] = Field(default=None, description="STANDARD / PREDEFINED / CUSTOM.")
-    description: Optional[str] = Field(default=None, description="Description.")
-
-
-def shape_app(raw: dict[str, Any]) -> NetworkAppSummary:
-    return NetworkAppSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        type=pick(raw, "type"),
-        description=pick(raw, "description"),
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListAppsInput,
-    output_view=NetworkAppSummary,
     is_list=True,
 )
 def zia_list_network_apps(args: ListAppsInput) -> list[dict[str, Any]]:
-    """List ZIA network applications (predefined + custom) as curated summaries."""
+    """List ZIA network applications (predefined + custom)."""
     client = get_zscaler_client(service="zia")
     qp: dict[str, Any] = {}
     if args.search:
@@ -64,7 +47,7 @@ def zia_list_network_apps(args: ListAppsInput) -> list[dict[str, Any]]:
     apps, _, err = client.zia.cloud_firewall.list_network_apps(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list network applications: {err}")
-    return shape_many([a.as_dict() for a in (apps or [])], shape_app)
+    return shape_many([a.as_dict() for a in (apps or [])])
 
 
 @tool(
@@ -72,7 +55,6 @@ def zia_list_network_apps(args: ListAppsInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetAppInput,
-    output_view=NetworkAppSummary,
     is_list=False,
 )
 def zia_get_network_app(args: GetAppInput) -> dict[str, Any]:
@@ -81,4 +63,4 @@ def zia_get_network_app(args: GetAppInput) -> dict[str, Any]:
     app, _, err = client.zia.cloud_firewall.get_network_app(args.app_id)
     if err:
         raise RuntimeError(f"Failed to get network application {args.app_id}: {err}")
-    return shape_app(app.as_dict()).model_dump()
+    return shape_one(app.as_dict())

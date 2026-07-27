@@ -19,13 +19,15 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Any
+from typing import Annotated, Any, Optional
 
 import pydantic_core
 from fastmcp.tools import FunctionTool
 from fastmcp.tools.tool import ToolResult
-from mcp.types import TextContent
+from mcp.types import TextContent, ToolAnnotations
+from pydantic import Field
 
+from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.common.token_metrics import is_token_reporting_enabled, token_usage_block
 from zscaler_mcp.encoding import encode
 from zscaler_mcp.registry.spec import DELETE, ToolSpec
@@ -39,19 +41,29 @@ _audit_logger = logging.getLogger("zscaler_mcp.audit")
 # kwargs='{"confirmation_token": "..."}' to confirm a destructive op.
 _KWARGS_PARAM = "kwargs"
 
+# Caller-supplied JMESPath expression on list tools (v1 parity).
+_QUERY_PARAM = "query"
 
-def _output_schema(spec: ToolSpec) -> dict[str, Any]:
-    """The advertised outputSchema for the tool.
 
-    The MCP spec requires an object-typed outputSchema. A single-object tool
-    returns the curated view's object schema directly. A list tool returns an
-    array; the MCP spec can't express a top-level array as a result schema, so
-    FastMCP wraps the array under a ``result`` key in ``structuredContent`` and
-    we mark the schema with ``x-fastmcp-wrap-result`` so FastMCP does the wrap.
-    Either way the advertised structured shape matches what the tool returns
-    (DESIGN.md §5 Pillar B). The human-readable text block is independently
-    produced by the encoder serializer (Pillar D).
+def _output_schema(spec: ToolSpec) -> dict[str, Any] | None:
+    """The advertised outputSchema for the tool, or ``None``.
+
+    ``None`` is the normal case: a tool that returns a Zscaler API record does
+    NOT advertise a schema, because the attribute set of a resource belongs to
+    the API, not to this server. Declaring it here would be a snapshot that
+    silently goes stale the moment engineering adds a field — the failure mode
+    behind issue #88 — and the SDK itself documents reads the same way (query
+    params are enumerated; the response is just ``record.as_dict()``).
+
+    A schema IS advertised for the few tools whose result the server constructs
+    itself (``OperationResult`` and friends), since that shape really is ours.
+    The MCP spec requires an object-typed outputSchema, so a list tool's array
+    is marked with ``x-fastmcp-wrap-result`` and FastMCP wraps it under a
+    ``result`` key — matching what :func:`_to_tool_result` builds either way.
+    The human-readable text block is independently produced by the encoder.
     """
+    if spec.output_view is None:
+        return None
     schema = spec.output_view.output_schema()
     if spec.is_list:
         return {
@@ -133,13 +145,52 @@ def _to_tool_result(spec: ToolSpec, value: Any) -> ToolResult:
     )
 
 
+def _tool_annotations(spec: ToolSpec) -> ToolAnnotations:
+    """Build the MCP ``ToolAnnotations`` hints for a spec.
+
+    These are behavioural HINTS the client uses to decide how to present a tool
+    (e.g. whether to surface a confirmation prompt before running it) — they are
+    advisory metadata, never a security control. The authoritative gate stays
+    server-side: reads are always safe, and writes require the ``--write-tools``
+    allowlist plus (for deletes) HMAC confirmation regardless of what any hint
+    says (DESIGN.md §6).
+
+    The values are DERIVED from the spec's single action verb via the domain
+    properties on :class:`ToolSpec`, so they can never disagree with the tool's
+    actual behaviour:
+
+    * read  -> ``readOnlyHint=True``
+    * create -> not read-only, not destructive, not idempotent
+    * update -> not read-only, destructive (PUT-replace), idempotent
+    * delete -> not read-only, destructive, idempotent
+
+    ``openWorldHint`` is ``False`` for every tool: they all operate against a
+    single, closed system (the configured Zscaler tenant), never an open-ended
+    external world (contrast a web-search tool). Hint fields that the MCP spec
+    treats as meaningful only for writes are left unset (``None``) on read-only
+    tools rather than sent as ``False``.
+    """
+    if spec.read_only:
+        return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+    return ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=spec.destructive,
+        idempotentHint=spec.idempotent,
+        openWorldHint=False,
+    )
+
+
 def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str, Any]]:
     """Flatten the input model's fields into callable parameters.
 
     Returns ``(parameters, annotations)``. Each input-model field becomes a
     keyword parameter with the same name, annotation, and default, so FastMCP's
-    schema generation produces a flat inputSchema. Write tools additionally get
-    an optional ``kwargs`` parameter carrying the HMAC confirmation token.
+    schema generation produces a flat inputSchema.
+
+    Two channels are added here rather than in the tool modules, so no tool can
+    forget them and new tools inherit them for free: list tools get the optional
+    JMESPath ``query`` parameter, and DELETE tools get the ``kwargs`` parameter
+    carrying the HMAC confirmation token.
     """
     params: list[inspect.Parameter] = []
     annotations: dict[str, Any] = {}
@@ -166,6 +217,35 @@ def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str,
                 )
             )
 
+    # Collection-returning tools accept a JMESPath expression so the CALLER can
+    # filter and project the rows it asked for. This is the opt-in counterpart to
+    # the verbatim-record contract: the server never guesses which attributes
+    # matter, but the agent can say exactly what it wants back. See
+    # ``ToolSpec.supports_query`` for which tools qualify and why.
+    if spec.supports_query:
+        query_annotation = Annotated[
+            Optional[str],
+            Field(
+                default=None,
+                description=(
+                    "Optional JMESPath expression applied to the results after the API "
+                    "call, for client-side filtering and projection. Field names are "
+                    "exactly what the Zscaler API returns. Examples: "
+                    '"[?enabled==`true`]", "[*].{name: name, id: id}", "length(@)". '
+                    "Omit to get the full records."
+                ),
+            ),
+        ]
+        annotations[_QUERY_PARAM] = query_annotation
+        params.append(
+            inspect.Parameter(
+                _QUERY_PARAM,
+                inspect.Parameter.KEYWORD_ONLY,
+                annotation=query_annotation,
+                default=None,
+            )
+        )
+
     # Only DELETE carries the HMAC confirmation channel (v1 parity: confirmation
     # is reserved for destructive operations). create/update execute directly
     # once the operator has enabled them via --write-tools, so they get no
@@ -190,8 +270,10 @@ def build_function_tool(spec: ToolSpec) -> FunctionTool:
     params, annotations = _build_signature(spec)
 
     def impl(**call_kwargs: Any) -> ToolResult:
-        # Separate the confirmation channel from the real tool inputs.
+        # Separate the two bridge-owned channels from the real tool inputs, so
+        # neither reaches the input model (which doesn't declare them).
         confirmation = call_kwargs.pop(_KWARGS_PARAM, None)
+        query = call_kwargs.pop(_QUERY_PARAM, None)
 
         # Build + validate the typed input model from the flat kwargs.
         model = spec.input_model.model_validate(call_kwargs)
@@ -211,6 +293,11 @@ def build_function_tool(spec: ToolSpec) -> FunctionTool:
                 return ToolResult(content=[TextContent(type="text", text=message)])
 
         result = secured_fn(model)
+        # Caller-side filtering/projection runs AFTER the tool returns, so the
+        # encoder and the token accounting below both measure what the agent
+        # actually receives.
+        if spec.supports_query:
+            result = apply_jmespath(result, query)
         return _to_tool_result(spec, result)
 
     impl.__name__ = spec.name
@@ -218,17 +305,13 @@ def build_function_tool(spec: ToolSpec) -> FunctionTool:
     impl.__signature__ = inspect.Signature(params)
     impl.__annotations__ = {**annotations, "return": Any}
 
-    # DELETE tools are POLYMORPHIC by design: the first call returns the HMAC
+    # DELETE tools are additionally POLYMORPHIC: the first call returns the HMAC
     # confirmation prompt (a plain-text envelope, no structured content), and only
-    # the confirmed second call returns the shaped resource. A strict outputSchema
-    # can never describe both, and the MCP server rejects any result that lacks
-    # structured content when an outputSchema is declared
-    # ("outputSchema defined but no structured output returned"). So deletes do not
-    # advertise an outputSchema — the success result is still shaped via the
-    # output_view (structured_content is set in _to_tool_result either way); it is
-    # simply not schema-validated on the wire. Reads AND create/update (which are
-    # not confirmation-gated and always return their shaped resource) keep the
-    # strict schema.
+    # the confirmed second call returns a result. A strict outputSchema can never
+    # describe both, and the MCP server rejects any result that lacks structured
+    # content when an outputSchema is declared ("outputSchema defined but no
+    # structured output returned"). So deletes never advertise one, even though
+    # their OperationResult is a synthetic shape we do own.
     output_schema = None if spec.action == DELETE else _output_schema(spec)
 
     return FunctionTool.from_function(
@@ -236,6 +319,7 @@ def build_function_tool(spec: ToolSpec) -> FunctionTool:
         name=spec.name,
         description=spec.description,
         output_schema=output_schema,
+        annotations=_tool_annotations(spec),
     )
 
 

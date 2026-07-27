@@ -18,7 +18,7 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zcell._common import WindowInput, as_dicts
 
 # =============================================================================
@@ -60,51 +60,6 @@ class NetworkEventsSearchInput(WindowInput):
 # =============================================================================
 
 
-class NetworkEventView(AgentView):
-    """A curated network/session event row (decision-bearing subset)."""
-
-    timestamp: Optional[Any] = Field(default=None, description="When the event occurred.")
-    event_name: Optional[str] = Field(default=None, description="Event name/type.")
-    outcome: Optional[str] = Field(default=None, description="Event outcome.")
-    iccid: Optional[str] = Field(default=None, description="ICCID involved.")
-    imsi: Optional[str] = Field(default=None, description="IMSI involved.")
-    sim_name: Optional[str] = Field(default=None, description="Friendly SIM name.")
-    country: Optional[str] = Field(default=None, description="Country the event occurred in.")
-    operator_name: Optional[str] = Field(default=None, description="Mobile operator (carrier).")
-    rat_type: Optional[str] = Field(
-        default=None, description="Radio access technology (e.g. LTE, 5G)."
-    )
-    zone: Optional[str] = Field(default=None, description="Zone the event is attributed to.")
-    ip_address: Optional[str] = Field(default=None, description="IP address assigned/observed.")
-    data_cap_reached: Optional[bool] = Field(
-        default=None, description="Whether the data cap was reached."
-    )
-    account_name: Optional[str] = Field(default=None, description="Account name.")
-
-
-# =============================================================================
-# SHAPER
-# =============================================================================
-
-
-def _shape_event(raw: dict[str, Any]) -> NetworkEventView:
-    return NetworkEventView(
-        timestamp=pick(raw, "timestamp"),
-        event_name=pick(raw, "event_name", "eventName"),
-        outcome=pick(raw, "outcome"),
-        iccid=pick(raw, "iccid"),
-        imsi=pick(raw, "imsi"),
-        sim_name=pick(raw, "sim_name", "simName"),
-        country=pick(raw, "country"),
-        operator_name=pick(raw, "operator_name", "operatorName"),
-        rat_type=pick(raw, "rat_type", "ratType"),
-        zone=pick(raw, "zone"),
-        ip_address=pick(raw, "ip_address", "ipAddress"),
-        data_cap_reached=pick(raw, "data_cap_reached", "dataCapReached"),
-        account_name=pick(raw, "account_name", "accountName"),
-    )
-
-
 # =============================================================================
 # TOOL
 # =============================================================================
@@ -115,7 +70,6 @@ def _shape_event(raw: dict[str, Any]) -> NetworkEventView:
     service="zcell",
     toolset="zcell_network_events",
     input_model=NetworkEventsSearchInput,
-    output_view=NetworkEventView,
     is_list=True,
 )
 def zcell_list_network_events(args: NetworkEventsSearchInput) -> list[dict[str, Any]]:
@@ -142,4 +96,4 @@ def zcell_list_network_events(args: NetworkEventsSearchInput) -> list[dict[str, 
     events, _, err = client.zcell.network_events.list_network_events_search(days=args.days, **body)
     if err:
         raise RuntimeError(f"Failed to search network events: {err}")
-    return shape_many(as_dicts(events), _shape_event)
+    return shape_many(as_dicts(events))

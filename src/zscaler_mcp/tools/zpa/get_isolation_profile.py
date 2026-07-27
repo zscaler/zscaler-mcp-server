@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa._refs import RefItem, shape_ref
 
 
 class IsolationProfileInput(BaseModel):
@@ -31,7 +30,6 @@ class IsolationProfileInput(BaseModel):
     toolset="zpa_misc",
     name="get_zpa_isolation_profile",
     input_model=IsolationProfileInput,
-    output_view=RefItem,
     is_list=True,
 )
 def get_zpa_isolation_profile(args: IsolationProfileInput) -> list[dict[str, Any]]:
@@ -45,4 +43,4 @@ def get_zpa_isolation_profile(args: IsolationProfileInput) -> list[dict[str, Any
         rows = [p for p in rows if p.get("name") == args.name]
         if not rows:
             raise ValueError(f"No CBI profile found with name: {args.name}")
-    return shape_many(rows, shape_ref)
+    return shape_many(rows)

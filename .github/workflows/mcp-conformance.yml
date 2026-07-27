@@ -1,0 +1,120 @@
+name: MCP conformance
+
+# Runs the OFFICIAL MCP conformance suite (@modelcontextprotocol/conformance)
+# against a live instance of this server in server mode: the runner connects as
+# an MCP client over Streamable HTTP and asserts our protocol behaviour matches
+# the specification.
+#
+# Design decisions (see docs/guides/mcp-protocol.md and the release checklist in
+# https://qaskills.sh/blog/mcp-official-conformance-suite-server-guide-2026):
+#   * The runner version is PINNED — an unpinned "latest" could silently change
+#     what "conformant" means between runs.
+#   * We target the PUBLISHED protocol baseline (2025-11-25), never "draft".
+#     Bumping this is a deliberate migration in lockstep with lifting the
+#     mcp<2 / fastmcp<4 caps — not an automatic consequence of a new release.
+#   * Known-inapplicable scenarios (reference-server test fixtures + capabilities
+#     we intentionally don't advertise) are baselined in
+#     .github/conformance-baseline.yml. A NEW failure fails CI (regression); a
+#     baselined scenario that starts PASSING also fails CI (stale entry) — so the
+#     baseline cannot silently rot.
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/zscaler_mcp/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/conformance-baseline.yml"
+      - ".github/workflows/mcp-conformance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The published protocol baseline this server claims conformance to.
+  MCP_SPEC_VERSION: "2025-11-25"
+  # Pinned runner (commit the version bump deliberately).
+  CONFORMANCE_RUNNER: "@modelcontextprotocol/conformance@0.1.16"
+  MCP_PORT: "8123"
+
+jobs:
+  conformance:
+    name: Official MCP conformance suite (server mode)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # >=22 is required: the conformance runner imports `globSync` from
+          # `node:fs`, which does not exist on Node 20 (added in Node 22), so the
+          # suite dies with a SyntaxError before running a single scenario.
+          node-version: 22
+
+      - name: Install the server
+        run: uv sync --frozen
+
+      - name: Start the MCP server (streamable-http; auth off; no Zscaler creds needed)
+        # The server boots without Zscaler credentials because the SDK client is
+        # created lazily on the first tool CALL, not at startup — the conformance
+        # suite only exercises the protocol surface (initialize / tools-list /
+        # tools-call envelope), so no live tenant is required. Auth and the
+        # entitlement filter are disabled so the runner can connect unauthenticated
+        # and the full tool inventory is advertised.
+        env:
+          ZSCALER_MCP_AUTH_ENABLED: "false"
+          ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER: "true"
+          ZSCALER_MCP_PID_FILE: "/tmp/zscaler-mcp-conformance.pid"
+          # Host-header validation is opt-in (see docs: set this to your expected
+          # hostnames). The suite's `dns-rebinding-protection` scenario forges a
+          # Host header and requires the server to reject it, so the server has to
+          # run in the documented hardened posture for that check to mean anything.
+          # Without it the scenario fails — correctly — because nothing is enforcing.
+          ZSCALER_MCP_ALLOWED_HOSTS: "127.0.0.1:*,localhost:*"
+        run: |
+          uv run zscaler-mcp \
+            --transport streamable-http --host 127.0.0.1 --port "${MCP_PORT}" \
+            > /tmp/mcp-conformance-server.log 2>&1 &
+          echo "MCP_SERVER_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for the server to become healthy
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:${MCP_PORT}/health" >/dev/null; then
+              echo "server healthy"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::server did not become healthy in time"
+          cat /tmp/mcp-conformance-server.log
+          exit 1
+
+      - name: Run the official MCP conformance suite
+        run: |
+          npx --yes "${CONFORMANCE_RUNNER}" server \
+            --url "http://127.0.0.1:${MCP_PORT}/mcp" \
+            --suite active \
+            --spec-version "${MCP_SPEC_VERSION}" \
+            --expected-failures .github/conformance-baseline.yml
+
+      - name: Server logs (on failure)
+        if: failure()
+        run: cat /tmp/mcp-conformance-server.log || true
+
+      - name: Stop the server
+        if: always()
+        run: kill "${MCP_SERVER_PID}" 2>/dev/null || true

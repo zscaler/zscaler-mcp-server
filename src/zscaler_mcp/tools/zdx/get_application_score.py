@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick
+from zscaler_mcp.shaping import shape_one
 from zscaler_mcp.tools.zdx._common import scope_query_params
 
 # =============================================================================
@@ -49,60 +49,6 @@ class AppScopeInput(BaseModel):
 # =============================================================================
 
 
-class ApplicationScore(AgentView):
-    """ZDX score for an application, with the most-impacted-region breakdown.
-
-    The headline `score` is the decision-bearing field; `most_impacted_regions`
-    is the nested breakdown the admin asked for and is preserved as-is.
-    """
-
-    id: str = Field(description="Application ID.")
-    name: Optional[str] = Field(default=None, description="Application name.")
-    score: Optional[float] = Field(default=None, description="Current ZDX score (0-100).")
-    most_impacted_regions: list[dict] = Field(
-        default_factory=list,
-        description="Per-region impact breakdown (nested time-series/geo detail).",
-    )
-    stats: Optional[dict] = Field(
-        default=None, description="Aggregate score stats, if reported (nested)."
-    )
-
-
-class ApplicationScoreTrend(AgentView):
-    """ZDX score trend for an application — the datapoint time-series.
-
-    The `datapoints` array is the trend the admin asked for and is preserved.
-    """
-
-    id: str = Field(description="Application ID.")
-    metric: Optional[str] = Field(default=None, description="Trend metric name, if reported.")
-    unit: Optional[str] = Field(default=None, description="Trend value unit, if reported.")
-    datapoints: list[dict] = Field(
-        default_factory=list, description="Score-over-time datapoints (nested time-series)."
-    )
-
-
-def _shape_score(raw: dict[str, Any]) -> ApplicationScore:
-    return ApplicationScore(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name"),
-        score=pick(raw, "score"),
-        most_impacted_regions=coalesce(
-            raw, "most_impacted_regions", "mostImpactedRegions", "most_impacted_region"
-        ),
-        stats=pick(raw, "stats"),
-    )
-
-
-def _shape_trend(raw: dict[str, Any]) -> ApplicationScoreTrend:
-    return ApplicationScoreTrend(
-        id=str(pick(raw, "id", default="")),
-        metric=pick(raw, "metric"),
-        unit=pick(raw, "unit"),
-        datapoints=coalesce(raw, "datapoints", "data_points"),
-    )
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -113,7 +59,6 @@ def _shape_trend(raw: dict[str, Any]) -> ApplicationScoreTrend:
     service="zdx",
     toolset="zdx_reports",
     input_model=AppScopeInput,
-    output_view=ApplicationScore,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -140,8 +85,8 @@ def zdx_get_application(args: AppScopeInput) -> dict[str, Any]:
         raise RuntimeError(f"Failed to get ZDX application score for {args.app_id}: {err}")
 
     if result and len(result) > 0:
-        return _shape_score(result[0].as_dict()).model_dump()
-    return _shape_score({}).model_dump()
+        return shape_one(result[0].as_dict())
+    return shape_one({})
 
 
 @tool(
@@ -149,7 +94,6 @@ def zdx_get_application(args: AppScopeInput) -> dict[str, Any]:
     service="zdx",
     toolset="zdx_reports",
     input_model=AppScopeInput,
-    output_view=ApplicationScoreTrend,
     is_list=False,
     wire_format=WireFormat.JSON,
 )
@@ -177,5 +121,5 @@ def zdx_get_application_score_trend(args: AppScopeInput) -> dict[str, Any]:
         raise RuntimeError(f"Failed to get ZDX application score trend for {args.app_id}: {err}")
 
     if result and len(result) > 0:
-        return _shape_trend(result[0].as_dict()).model_dump()
-    return _shape_trend({}).model_dump()
+        return shape_one(result[0].as_dict())
+    return shape_one({})

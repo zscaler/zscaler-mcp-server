@@ -13,8 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, UPDATE, tool
-
-from ._settings import Settings, to_settings
+from zscaler_mcp.shaping import shape_one
 
 
 class _NoArgs(BaseModel):
@@ -38,7 +37,6 @@ class UpdateInput(BaseModel):
     service="zia",
     toolset="zia_advanced_settings",
     input_model=_NoArgs,
-    output_view=Settings,
     is_list=False,
 )
 def zia_get_advanced_settings(args: _NoArgs) -> dict[str, Any]:
@@ -47,7 +45,7 @@ def zia_get_advanced_settings(args: _NoArgs) -> dict[str, Any]:
     settings, _, err = client.zia.advanced_settings.get_advanced_settings()
     if err:
         raise RuntimeError(f"Failed to get advanced settings: {err}")
-    return to_settings(settings).model_dump()
+    return shape_one(settings)
 
 
 @tool(
@@ -55,7 +53,6 @@ def zia_get_advanced_settings(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_advanced_settings",
     input_model=UpdateInput,
-    output_view=Settings,
     is_list=False,
 )
 def zia_update_advanced_settings(args: UpdateInput) -> dict[str, Any]:
@@ -64,4 +61,4 @@ def zia_update_advanced_settings(args: UpdateInput) -> dict[str, Any]:
     updated, _, err = client.zia.advanced_settings.update_advanced_settings(**args.settings)
     if err:
         raise RuntimeError(f"Failed to update advanced settings: {err}")
-    return to_settings(updated).model_dump()
+    return shape_one(updated)

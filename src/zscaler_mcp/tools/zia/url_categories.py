@@ -21,7 +21,7 @@ from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.common.zia_helpers import resolve_predefined_category
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -132,71 +132,9 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class UrlCategorySummary(AgentView):
-    id: str = Field(description="Category ID. Use in rule url_categories.")
-    configured_name: Optional[str] = Field(default=None, description="Display name.")
-    super_category: Optional[str] = Field(default=None, description="Parent super category.")
-    custom_category: bool = Field(default=False, description="True for custom, False predefined.")
-    url_count: int = Field(default=0, description="Number of URLs in the category.")
-
-
-class UrlCategoryDetail(UrlCategorySummary):
-    description: Optional[str] = Field(default=None, description="Description.")
-    urls: list[str] = Field(default_factory=list, description="Configured URLs.")
-    db_categorized_urls: list[str] = Field(default_factory=list, description="DB-categorized URLs.")
-    keywords: list[str] = Field(default_factory=list, description="Custom keywords.")
-    ip_ranges: list[str] = Field(default_factory=list, description="Custom IP ranges.")
-
-
-class UrlLookupEntry(AgentView):
-    url: str = Field(description="The URL/domain looked up.")
-    url_classifications: list[str] = Field(
-        default_factory=list, description="Category names the URL belongs to."
-    )
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-def shape_summary(raw: dict[str, Any]) -> UrlCategorySummary:
-    urls = coalesce(raw, "urls")
-    return UrlCategorySummary(
-        id=str(pick(raw, "id", default="")),
-        configured_name=pick(raw, "configured_name", "configuredName"),
-        super_category=pick(raw, "super_category", "superCategory"),
-        custom_category=bool(pick(raw, "custom_category", "customCategory", default=False)),
-        url_count=len(urls),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> UrlCategoryDetail:
-    urls = [str(u) for u in coalesce(raw, "urls")]
-    return UrlCategoryDetail(
-        id=str(pick(raw, "id", default="")),
-        configured_name=pick(raw, "configured_name", "configuredName"),
-        super_category=pick(raw, "super_category", "superCategory"),
-        custom_category=bool(pick(raw, "custom_category", "customCategory", default=False)),
-        url_count=len(urls),
-        description=pick(raw, "description"),
-        urls=urls,
-        db_categorized_urls=[
-            str(u) for u in coalesce(raw, "db_categorized_urls", "dbCategorizedUrls")
-        ],
-        keywords=[str(k) for k in coalesce(raw, "keywords")],
-        ip_ranges=[str(i) for i in coalesce(raw, "ip_ranges", "ipRanges")],
-    )
-
-
-def shape_lookup(raw: dict[str, Any]) -> UrlLookupEntry:
-    return UrlLookupEntry(
-        url=str(pick(raw, "url", default="")),
-        url_classifications=[
-            str(c)
-            for c in coalesce(raw, "url_classifications", "urlClassifications", "urlCategories")
-        ],
-    )
 
 
 def _advanced_payload(advanced: Optional[dict[str, Any]]) -> dict[str, Any]:
@@ -221,11 +159,10 @@ def _advanced_payload(advanced: Optional[dict[str, Any]]) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_categories",
     input_model=ListInput,
-    output_view=UrlCategorySummary,
     is_list=True,
 )
 def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA URL categories as curated summaries."""
+    """List ZIA URL categories."""
     client = get_zscaler_client(service="zia")
     qp: dict[str, Any] = {}
     if args.page is not None:
@@ -235,7 +172,7 @@ def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
     results, _, err = client.zia.url_categories.list_categories(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list URL categories: {err}")
-    return shape_many([r.as_dict() for r in (results or [])], shape_summary)
+    return shape_many([r.as_dict() for r in (results or [])])
 
 
 @tool(
@@ -243,7 +180,6 @@ def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_url_categories",
     input_model=LookupInput,
-    output_view=UrlLookupEntry,
     is_list=True,
 )
 def zia_url_lookup(args: LookupInput) -> list[dict[str, Any]]:
@@ -258,7 +194,7 @@ def zia_url_lookup(args: LookupInput) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for r in results or []:
         out.append(r.as_dict() if hasattr(r, "as_dict") else dict(r))
-    return shape_many(out, shape_lookup)
+    return shape_many(out)
 
 
 @tool(
@@ -266,7 +202,6 @@ def zia_url_lookup(args: LookupInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_url_categories",
     input_model=GetInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_get_url_category(args: GetInput) -> dict[str, Any]:
@@ -275,7 +210,7 @@ def zia_get_url_category(args: GetInput) -> dict[str, Any]:
     result, _, err = client.zia.url_categories.get_category(category_id=args.category_id)
     if err:
         raise RuntimeError(f"Failed to get URL category {args.category_id}: {err}")
-    return shape_detail(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(
@@ -283,13 +218,12 @@ def zia_get_url_category(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_categories",
     input_model=GetPredefinedInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_get_url_category_predefined(args: GetPredefinedInput) -> dict[str, Any]:
     """Get a Zscaler-curated **predefined** URL category by ID or display name."""
     client = get_zscaler_client(service="zia")
-    return shape_detail(resolve_predefined_category(client, args.name)).model_dump()
+    return shape_one(resolve_predefined_category(client, args.name))
 
 
 # =============================================================================
@@ -302,7 +236,6 @@ def zia_get_url_category_predefined(args: GetPredefinedInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_categories",
     input_model=CreateInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_create_url_category(args: CreateInput) -> dict[str, Any]:
@@ -326,7 +259,7 @@ def zia_create_url_category(args: CreateInput) -> dict[str, Any]:
     created, _, err = client.zia.url_categories.add_url_category(**payload)
     if err:
         raise RuntimeError(f"Failed to create URL category: {err}")
-    return shape_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(
@@ -334,7 +267,6 @@ def zia_create_url_category(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_categories",
     input_model=UpdateInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_update_url_category(args: UpdateInput) -> dict[str, Any]:
@@ -372,7 +304,7 @@ def zia_update_url_category(args: UpdateInput) -> dict[str, Any]:
     updated, _, err = api.update_url_category(category_id=args.category_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update URL category {args.category_id}: {err}")
-    return shape_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(
@@ -380,7 +312,6 @@ def zia_update_url_category(args: UpdateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_categories",
     input_model=UpdatePredefinedInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_update_url_category_predefined(args: UpdatePredefinedInput) -> dict[str, Any]:
@@ -411,7 +342,7 @@ def zia_update_url_category_predefined(args: UpdatePredefinedInput) -> dict[str,
     updated, _, err = api.update_url_category(category_id=category_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update predefined URL category {category_id}: {err}")
-    return shape_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(
@@ -419,7 +350,6 @@ def zia_update_url_category_predefined(args: UpdatePredefinedInput) -> dict[str,
     service="zia",
     toolset="zia_url_categories",
     input_model=IncrementalUrlsInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_add_urls_to_category(args: IncrementalUrlsInput) -> dict[str, Any]:
@@ -432,7 +362,7 @@ def zia_add_urls_to_category(args: IncrementalUrlsInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to add URLs to category {args.category_id}: {err}")
-    return shape_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(
@@ -440,7 +370,6 @@ def zia_add_urls_to_category(args: IncrementalUrlsInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_categories",
     input_model=IncrementalUrlsInput,
-    output_view=UrlCategoryDetail,
     is_list=False,
 )
 def zia_remove_urls_from_category(args: IncrementalUrlsInput) -> dict[str, Any]:
@@ -453,7 +382,7 @@ def zia_remove_urls_from_category(args: IncrementalUrlsInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to remove URLs from category {args.category_id}: {err}")
-    return shape_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

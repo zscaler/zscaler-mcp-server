@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 # =============================================================================
 # 1. INPUT MODELS  (typed + validated; the inputSchema source of truth)
@@ -108,58 +108,9 @@ class GroupUsersByNameInput(BaseModel):
 # =============================================================================
 
 
-class GroupSummary(AgentView):
-    """Lean view — what an agent needs to LIST and REFERENCE a ZIdentity group."""
-
-    id: str = Field(description="Group ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    is_dynamic_group: Optional[bool] = Field(
-        default=None,
-        description="Whether membership is evaluated dynamically (decision-bearing).",
-    )
-    idp_name: Optional[str] = Field(
-        default=None, description="Identity provider this group originates from (relational)."
-    )
-
-
-class UserSummary(AgentView):
-    """Lean user view shared by group-membership listings.
-
-    Reused across group-member tools (and the parallel user tools) so the agent
-    sees one consistent user shape regardless of how it arrived at the user.
-    """
-
-    id: str = Field(description="User ID. Use this in follow-up calls.")
-    login_name: Optional[str] = Field(default=None, description="Login name / username.")
-    display_name: Optional[str] = Field(default=None, description="Human-readable display name.")
-    primary_email: Optional[str] = Field(default=None, description="Primary email address.")
-
-
 # =============================================================================
 # 4. SHAPERS  (deterministic SDK-dict -> view; THE design work)
 # =============================================================================
-
-
-def shape_group(raw: dict[str, Any]) -> GroupSummary:
-    """Map a raw SDK ZIdentity group dict onto the lean summary view."""
-    return GroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        is_dynamic_group=pick(raw, "is_dynamic_group", "isDynamicGroup"),
-        idp_name=pick(raw, "idp_name", "idpName"),
-    )
-
-
-def shape_user(raw: dict[str, Any]) -> UserSummary:
-    """Map a raw SDK ZIdentity user dict onto the lean user-summary view."""
-    return UserSummary(
-        id=str(pick(raw, "id", default="")),
-        login_name=pick(raw, "login_name", "loginName"),
-        display_name=pick(raw, "display_name", "displayName"),
-        primary_email=pick(raw, "primary_email", "primaryEmail"),
-    )
 
 
 def _records(response: Any) -> list[Any]:
@@ -192,11 +143,10 @@ def _pagination(args: BaseModel) -> dict[str, Any]:
     service="zid",
     toolset="zid_groups",
     input_model=ListGroupsInput,
-    output_view=GroupSummary,
     is_list=True,
 )
 def zid_list_groups(args: ListGroupsInput) -> list[dict[str, Any]]:
-    """List ZIdentity groups as curated, agent-facing views.
+    """List ZIdentity groups.
 
     Read-only. Returns lean group summaries (id, name, description, dynamic
     flag, source IdP) rather than the full SDK group record. Pass `name` for a
@@ -215,7 +165,7 @@ def zid_list_groups(args: ListGroupsInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list groups: {err}")
 
-    return shape_many([g.as_dict() for g in _records(response)], shape_group)
+    return shape_many([g.as_dict() for g in _records(response)])
 
 
 @tool(
@@ -223,11 +173,10 @@ def zid_list_groups(args: ListGroupsInput) -> list[dict[str, Any]]:
     service="zid",
     toolset="zid_groups",
     input_model=GetGroupInput,
-    output_view=GroupSummary,
     is_list=False,
 )
 def zid_get_group(args: GetGroupInput) -> dict[str, Any]:
-    """Get one ZIdentity group by ID as a curated, agent-facing view. Read-only."""
+    """Get one ZIdentity group by ID. Read-only."""
     if not args.group_id:
         raise ValueError("group_id is required")
 
@@ -238,7 +187,7 @@ def zid_get_group(args: GetGroupInput) -> dict[str, Any]:
     if err:
         raise RuntimeError(f"Failed to fetch group {args.group_id}: {err}")
 
-    return shape_group(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -246,7 +195,6 @@ def zid_get_group(args: GetGroupInput) -> dict[str, Any]:
     service="zid",
     toolset="zid_groups",
     input_model=SearchGroupsInput,
-    output_view=GroupSummary,
     is_list=True,
 )
 def zid_search_groups(args: SearchGroupsInput) -> list[dict[str, Any]]:
@@ -268,7 +216,7 @@ def zid_search_groups(args: SearchGroupsInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to search groups: {err}")
 
-    return shape_many([g.as_dict() for g in _records(response)], shape_group)
+    return shape_many([g.as_dict() for g in _records(response)])
 
 
 @tool(
@@ -276,7 +224,6 @@ def zid_search_groups(args: SearchGroupsInput) -> list[dict[str, Any]]:
     service="zid",
     toolset="zid_groups",
     input_model=GroupUsersInput,
-    output_view=UserSummary,
     is_list=True,
 )
 def zid_get_group_users(args: GroupUsersInput) -> list[dict[str, Any]]:
@@ -295,7 +242,7 @@ def zid_get_group_users(args: GroupUsersInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to fetch users for group {args.group_id}: {err}")
 
-    return shape_many([u.as_dict() for u in _records(response)], shape_user)
+    return shape_many([u.as_dict() for u in _records(response)])
 
 
 @tool(
@@ -303,7 +250,6 @@ def zid_get_group_users(args: GroupUsersInput) -> list[dict[str, Any]]:
     service="zid",
     toolset="zid_groups",
     input_model=GroupUsersByNameInput,
-    output_view=UserSummary,
     is_list=True,
 )
 def zid_get_group_users_by_name(args: GroupUsersByNameInput) -> list[dict[str, Any]]:
@@ -335,7 +281,7 @@ def zid_get_group_users_by_name(args: GroupUsersByNameInput) -> list[dict[str, A
     if err:
         raise RuntimeError(f"Failed to fetch users for group '{args.name}' (ID: {group_id}): {err}")
 
-    return shape_many([u.as_dict() for u in _records(users_response)], shape_user)
+    return shape_many([u.as_dict() for u in _records(users_response)])
 
 
 # NOTE: no manual tool list — each function self-registers via @tool at import

@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 KeyType = Literal["connector", "service_edge"]
 
@@ -30,9 +30,6 @@ class ListKeysInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str, Field(default="summary", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -43,9 +40,6 @@ class GetKeyInput(BaseModel):
 
     key_id: Annotated[str, Field(description="Provisioning key ID (string, even if numeric).")]
     key_type: Annotated[KeyType, Field(description="Key type: 'connector' or 'service_edge'.")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
 
 
 class CreateKeyInput(BaseModel):
@@ -103,29 +97,6 @@ class DeleteKeyInput(BaseModel):
     ] = None
 
 
-class KeySummary(AgentView):
-    """Lean view — identify a provisioning key and its usage budget."""
-
-    id: str = Field(description="Provisioning key ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    enabled: Optional[bool] = Field(default=None, description="Whether the key is enabled.")
-    max_usage: Optional[str] = Field(default=None, description="Maximum enrollment count.")
-    usage_count: Optional[str] = Field(default=None, description="Current enrollment count.")
-
-
-class KeyDetail(KeySummary):
-    """Full view — summary plus component binding + provenance."""
-
-    enrollment_cert_id: Optional[str] = Field(default=None, description="Bound enrollment cert ID.")
-    zcomponent_id: Optional[str] = Field(default=None, description="Bound component (group) ID.")
-    zcomponent_name: Optional[str] = Field(
-        default=None, description="Bound component (group) name."
-    )
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-    created_time: Optional[str] = Field(default=None, description="Creation timestamp.")
-    modified_time: Optional[str] = Field(default=None, description="Last-modified timestamp.")
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
@@ -137,40 +108,11 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _key_summary(raw: dict[str, Any]) -> KeySummary:
-    return KeySummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        enabled=pick(raw, "enabled"),
-        max_usage=_opt_str(pick(raw, "max_usage", "maxUsage")),
-        usage_count=_opt_str(pick(raw, "usage_count", "usageCount")),
-    )
-
-
-def _key_detail(raw: dict[str, Any]) -> KeyDetail:
-    return KeyDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        enabled=pick(raw, "enabled"),
-        max_usage=_opt_str(pick(raw, "max_usage", "maxUsage")),
-        usage_count=_opt_str(pick(raw, "usage_count", "usageCount")),
-        enrollment_cert_id=_opt_str(pick(raw, "enrollment_cert_id", "enrollmentCertId")),
-        zcomponent_id=_opt_str(
-            pick(raw, "zcomponent_id", "zcomponentId", "component_id", "componentId")
-        ),
-        zcomponent_name=pick(raw, "zcomponent_name", "zcomponentName"),
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-        created_time=pick(raw, "creation_time", "creationTime"),
-        modified_time=pick(raw, "modified_time", "modifiedTime"),
-    )
-
-
 @tool(
     action=READ,
     service="zpa",
     toolset="zpa_provisioning_keys",
     input_model=ListKeysInput,
-    output_view=KeySummary,
     is_list=True,
 )
 def zpa_list_provisioning_keys(args: ListKeysInput) -> list[dict[str, Any]]:
@@ -186,8 +128,7 @@ def zpa_list_provisioning_keys(args: ListKeysInput) -> list[dict[str, Any]]:
     )
     if err:
         raise RuntimeError(f"Failed to list provisioning keys: {err}")
-    shaper = _key_detail if args.detail == "full" else _key_summary
-    return shape_many([k.as_dict() for k in (keys or [])], shaper)
+    return shape_many([k.as_dict() for k in (keys or [])])
 
 
 @tool(
@@ -195,7 +136,6 @@ def zpa_list_provisioning_keys(args: ListKeysInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_provisioning_keys",
     input_model=GetKeyInput,
-    output_view=KeyDetail,
     is_list=False,
 )
 def zpa_get_provisioning_key(args: GetKeyInput) -> dict[str, Any]:
@@ -208,8 +148,7 @@ def zpa_get_provisioning_key(args: GetKeyInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to get provisioning key {args.key_id}: {err}")
-    shaper = _key_detail if args.detail == "full" else _key_summary
-    return shaper(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(
@@ -217,7 +156,6 @@ def zpa_get_provisioning_key(args: GetKeyInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_provisioning_keys",
     input_model=CreateKeyInput,
-    output_view=KeyDetail,
     is_list=False,
 )
 def zpa_create_provisioning_key(args: CreateKeyInput) -> dict[str, Any]:
@@ -244,7 +182,7 @@ def zpa_create_provisioning_key(args: CreateKeyInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create provisioning key: {err}")
-    return _key_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(
@@ -252,7 +190,6 @@ def zpa_create_provisioning_key(args: CreateKeyInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_provisioning_keys",
     input_model=UpdateKeyInput,
-    output_view=KeyDetail,
     is_list=False,
 )
 def zpa_update_provisioning_key(args: UpdateKeyInput) -> dict[str, Any]:
@@ -274,7 +211,7 @@ def zpa_update_provisioning_key(args: UpdateKeyInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to update provisioning key {args.key_id}: {err}")
-    return _key_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

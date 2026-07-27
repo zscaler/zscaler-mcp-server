@@ -15,9 +15,9 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView
+from zscaler_mcp.shaping import shape_one
 
-from ._settings import OperationResult, Settings, to_settings
+from ._settings import OperationResult
 
 
 class _NoArgs(BaseModel):
@@ -41,24 +41,6 @@ class MaliciousUrlsInput(BaseModel):
     malicious_urls: Annotated[list[str], Field(description="URLs to add/remove on the denylist.")]
 
 
-class UrlList(AgentView):
-    urls: list[str] = Field(default_factory=list, description="The URL list.")
-    count: int = Field(description="Number of URLs.")
-
-
-def _url_list(raw: Any) -> UrlList:
-    if hasattr(raw, "as_dict"):
-        raw = raw.as_dict()
-    if isinstance(raw, dict):
-        urls = raw.get("bypass_urls") or raw.get("bypassUrls") or raw.get("urls") or []
-    elif isinstance(raw, list):
-        urls = raw
-    else:
-        urls = []
-    urls = [str(u) for u in urls]
-    return UrlList(urls=urls, count=len(urls))
-
-
 # =============================================================================
 # ATP SETTINGS
 # =============================================================================
@@ -69,7 +51,6 @@ def _url_list(raw: Any) -> UrlList:
     service="zia",
     toolset="zia_atp_policy",
     input_model=_NoArgs,
-    output_view=Settings,
     is_list=False,
 )
 def zia_get_atp_settings(args: _NoArgs) -> dict[str, Any]:
@@ -78,7 +59,7 @@ def zia_get_atp_settings(args: _NoArgs) -> dict[str, Any]:
     settings, _, err = client.zia.atp_policy.get_atp_settings()
     if err:
         raise RuntimeError(f"Failed to get ATP settings: {err}")
-    return to_settings(settings).model_dump()
+    return shape_one(settings)
 
 
 @tool(
@@ -86,7 +67,6 @@ def zia_get_atp_settings(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_atp_policy",
     input_model=UpdateSettingsInput,
-    output_view=Settings,
     is_list=False,
 )
 def zia_update_atp_settings(args: UpdateSettingsInput) -> dict[str, Any]:
@@ -95,7 +75,7 @@ def zia_update_atp_settings(args: UpdateSettingsInput) -> dict[str, Any]:
     updated, _, err = client.zia.atp_policy.update_atp_settings(**args.settings)
     if err:
         raise RuntimeError(f"Failed to update ATP settings: {err}")
-    return to_settings(updated).model_dump()
+    return shape_one(updated)
 
 
 # =============================================================================
@@ -108,7 +88,6 @@ def zia_update_atp_settings(args: UpdateSettingsInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_atp_policy",
     input_model=_NoArgs,
-    output_view=UrlList,
     is_list=False,
 )
 def zia_get_atp_security_exceptions(args: _NoArgs) -> dict[str, Any]:
@@ -117,7 +96,7 @@ def zia_get_atp_security_exceptions(args: _NoArgs) -> dict[str, Any]:
     result, _, err = client.zia.atp_policy.get_atp_security_exceptions()
     if err:
         raise RuntimeError(f"Failed to get ATP security exceptions: {err}")
-    return _url_list(result).model_dump()
+    return shape_one(result)
 
 
 @tool(
@@ -125,7 +104,6 @@ def zia_get_atp_security_exceptions(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_atp_policy",
     input_model=UpdateExceptionsInput,
-    output_view=UrlList,
     is_list=False,
 )
 def zia_update_atp_security_exceptions(args: UpdateExceptionsInput) -> dict[str, Any]:
@@ -136,7 +114,7 @@ def zia_update_atp_security_exceptions(args: UpdateExceptionsInput) -> dict[str,
     )
     if err:
         raise RuntimeError(f"Failed to update ATP security exceptions: {err}")
-    return _url_list(result).model_dump()
+    return shape_one(result)
 
 
 # =============================================================================
@@ -149,7 +127,6 @@ def zia_update_atp_security_exceptions(args: UpdateExceptionsInput) -> dict[str,
     service="zia",
     toolset="zia_atp_policy",
     input_model=_NoArgs,
-    output_view=UrlList,
     is_list=False,
 )
 def zia_list_atp_malicious_urls(args: _NoArgs) -> dict[str, Any]:
@@ -158,7 +135,7 @@ def zia_list_atp_malicious_urls(args: _NoArgs) -> dict[str, Any]:
     result, _, err = client.zia.atp_policy.get_atp_malicious_urls()
     if err:
         raise RuntimeError(f"Failed to list ATP malicious URLs: {err}")
-    return _url_list(result).model_dump()
+    return shape_one(result)
 
 
 @tool(
@@ -166,7 +143,6 @@ def zia_list_atp_malicious_urls(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_atp_policy",
     input_model=MaliciousUrlsInput,
-    output_view=UrlList,
     is_list=False,
 )
 def zia_add_atp_malicious_urls(args: MaliciousUrlsInput) -> dict[str, Any]:
@@ -177,7 +153,7 @@ def zia_add_atp_malicious_urls(args: MaliciousUrlsInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to add ATP malicious URLs: {err}")
-    return _url_list(result).model_dump()
+    return shape_one(result)
 
 
 @tool(

@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zcell._common import WindowInput, as_dicts
 
 # =============================================================================
@@ -67,61 +67,6 @@ class AuditMetadataInput(BaseModel):
 # =============================================================================
 
 
-class AuditEntry(AgentView):
-    """A single audit-log entry (identifying + operation fields; blobs dropped)."""
-
-    id: Optional[str] = Field(default=None, description="Audit entry ID.")
-    creation_time: Optional[Any] = Field(default=None, description="When the change was recorded.")
-    modified_by_user_id: Optional[str] = Field(
-        default=None, description="User that made the change."
-    )
-    audit_operation_type: Optional[str] = Field(
-        default=None, description="Operation (Create/Update/Delete/Export)."
-    )
-    object_type: Optional[str] = Field(default=None, description="Type of object changed.")
-    object_name: Optional[str] = Field(default=None, description="Name of object changed.")
-    object_id: Optional[str] = Field(default=None, description="ID of object changed.")
-    customer_id: Optional[str] = Field(default=None, description="Customer the change belongs to.")
-    visibility: Optional[str] = Field(default=None, description="Visibility scope (Customer/Root).")
-
-
-class AuditMetadataView(AgentView):
-    """The audit filter vocabulary — valid operations and object types."""
-
-    operations: list[str] = Field(
-        default_factory=list, description="Valid operation-type filter values."
-    )
-    object_types: list[str] = Field(
-        default_factory=list, description="Valid object-type filter values."
-    )
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_entry(raw: dict[str, Any]) -> AuditEntry:
-    return AuditEntry(
-        id=_opt_str(pick(raw, "id")),
-        creation_time=pick(raw, "creation_time", "creationTime"),
-        modified_by_user_id=_opt_str(pick(raw, "modified_by_user_id", "modifiedByUserId")),
-        audit_operation_type=pick(raw, "audit_operation_type", "auditOperationType"),
-        object_type=pick(raw, "object_type", "objectType"),
-        object_name=pick(raw, "object_name", "objectName"),
-        object_id=_opt_str(pick(raw, "object_id", "objectId")),
-        customer_id=_opt_str(pick(raw, "customer_id", "customerId")),
-        visibility=pick(raw, "visibility"),
-    )
-
-
-def _shape_metadata(raw: dict[str, Any]) -> AuditMetadataView:
-    return AuditMetadataView(
-        operations=pick(raw, "operations", default=[]) or [],
-        object_types=pick(raw, "object_types", "objectTypes", default=[]) or [],
-    )
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
@@ -140,7 +85,6 @@ def _body(*pairs: tuple[str, Any]) -> dict[str, Any]:
     service="zcell",
     toolset="zcell_audit_data_handling",
     input_model=AuditSearchInput,
-    output_view=AuditEntry,
     is_list=True,
 )
 def zcell_list_audit_customers_search(args: AuditSearchInput) -> list[dict[str, Any]]:
@@ -166,7 +110,7 @@ def zcell_list_audit_customers_search(args: AuditSearchInput) -> list[dict[str, 
     )
     if err:
         raise RuntimeError(f"Failed to search audit entries: {err}")
-    return shape_many(as_dicts(entries), _shape_entry)
+    return shape_many(as_dicts(entries))
 
 
 @tool(
@@ -174,7 +118,6 @@ def zcell_list_audit_customers_search(args: AuditSearchInput) -> list[dict[str, 
     service="zcell",
     toolset="zcell_audit_data_handling",
     input_model=AuditMetadataInput,
-    output_view=AuditMetadataView,
     is_list=True,
 )
 def zcell_list_audit_metadata(args: AuditMetadataInput) -> list[dict[str, Any]]:
@@ -188,4 +131,4 @@ def zcell_list_audit_metadata(args: AuditMetadataInput) -> list[dict[str, Any]]:
     metadata, _, err = client.zcell.audit_data_handling.list_audit_metadata()
     if err:
         raise RuntimeError(f"Failed to list audit metadata: {err}")
-    return shape_many(as_dicts(metadata), _shape_metadata)
+    return shape_many(as_dicts(metadata))

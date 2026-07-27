@@ -1,0 +1,53 @@
+# MCP conformance baseline — known-inapplicable scenarios.
+#
+# The official conformance runner (@modelcontextprotocol/conformance) exercises
+# every scenario in the "active" suite for the published 2025-11-25 protocol
+# baseline. A production server like this one implements the protocol surface it
+# actually needs (tools + prompts) and deliberately does NOT implement others
+# (resources, completions, server-initiated elicitation), nor does it ship the
+# reference "everything" server's synthetic test FIXTURES (a tool that returns an
+# image, a prompt named `test_simple_prompt`, etc.).
+#
+# Every entry below therefore fails for one of two reasons, both expected:
+#   (a) the scenario needs a synthetic test fixture only the reference server
+#       provides (verified messages: "No image content found",
+#       "Unknown prompt: 'test_simple_prompt'"); or
+#   (b) the scenario exercises a capability we intentionally don't advertise
+#       (resources, completions, elicitation).
+#
+# Everything that DOES apply to this server passes (server-initialize, ping,
+# logging-set-level, tools-list, tools-call-simple-text, tools-call-error,
+# server-sse-multiple-streams, resources-list, prompts-list,
+# dns-rebinding-protection). This baseline lets CI gate on regressions in that
+# real surface while tolerating the inapplicable scenarios.
+#
+# Exit-code contract (enforced by the runner):
+#   * a NEW failure not listed here      -> CI fails (regression)
+#   * a listed scenario that starts PASSING -> CI fails (stale entry, remove it)
+# So this file cannot silently rot: fixing/adding a capability forces an update.
+server:
+  # --- Capabilities we intentionally do not advertise ----------------------
+  - completion-complete            # no completions capability
+  - resources-read-text            # no resources capability (list is empty->passes)
+  - resources-read-binary
+  - resources-templates-read
+  - resources-subscribe
+  - resources-unsubscribe
+  - elicitation-sep1034-defaults   # no server-initiated elicitation (2025-11-25)
+  - elicitation-sep1330-enums
+
+  # --- Require the reference server's synthetic test-fixture TOOLS ----------
+  - tools-call-image               # "No image content found" — no image-returning tool
+  - tools-call-audio
+  - tools-call-embedded-resource
+  - tools-call-mixed-content
+  - tools-call-with-logging
+  - tools-call-with-progress
+  - tools-call-sampling
+  - tools-call-elicitation
+
+  # --- Require the reference server's synthetic test-fixture PROMPTS --------
+  - prompts-get-simple             # "Unknown prompt: 'test_simple_prompt'"
+  - prompts-get-with-args
+  - prompts-get-embedded-resource
+  - prompts-get-with-image

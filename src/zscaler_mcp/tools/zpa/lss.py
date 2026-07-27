@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -72,28 +72,6 @@ class StatusCodesInput(BaseModel):
 # =============================================================================
 
 
-class LssConfigSummary(AgentView):
-    """Lean view of an LSS config — what log feed goes where."""
-
-    id: str = Field(description="LSS config ID.")
-    name: Optional[str] = Field(default=None, description="Config name.")
-    enabled: Optional[bool] = Field(default=None, description="Whether the feed is enabled.")
-    source_log_type: Optional[str] = Field(default=None, description="Log type being streamed.")
-    lss_host: Optional[str] = Field(default=None, description="Destination LSS host.")
-    lss_port: Optional[str] = Field(default=None, description="Destination LSS port.")
-    connector_group_count: int = Field(description="Number of attached App Connector Groups.")
-
-
-class LssConfigDetail(LssConfigSummary):
-    """Full view — adds format, TLS, and filter context."""
-
-    use_tls: Optional[bool] = Field(default=None, description="Whether TLS is enabled on the feed.")
-    filter_count: int = Field(description="Number of status-code filters applied.")
-    policy_rule_id: Optional[str] = Field(
-        default=None, description="Scoping policy-rule ID, if any."
-    )
-
-
 class Catalog(AgentView):
     """Generic catalog wrapper — keeps the SDK payload intact under `items`.
 
@@ -106,59 +84,12 @@ class Catalog(AgentView):
     items: Any = Field(description="The catalog payload as returned by ZPA.")
 
 
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _connector_groups(raw: dict[str, Any]) -> list[Any]:
-    cfg = pick(raw, "config") if isinstance(pick(raw, "config"), dict) else raw
-    return coalesce(
-        raw, "connector_groups", "connectorGroups", "app_connector_group_ids"
-    ) or coalesce(cfg, "connector_groups", "connectorGroups")
 
 
-def _cfg(raw: dict[str, Any]) -> dict[str, Any]:
-    """LSS records nest most fields under `config`; merge for picking."""
-    cfg = pick(raw, "config")
-    merged = dict(raw)
-    if isinstance(cfg, dict):
-        merged = {**cfg, **{k: v for k, v in raw.items() if k != "config"}}
-    return merged
-
-
-def shape_summary(raw: dict[str, Any]) -> LssConfigSummary:
-    m = _cfg(raw)
-    return LssConfigSummary(
-        id=str(pick(raw, "id", default=pick(m, "id", default=""))),
-        name=pick(m, "name"),
-        enabled=pick(m, "enabled"),
-        source_log_type=pick(m, "source_log_type", "sourceLogType"),
-        lss_host=pick(m, "lss_host", "lssHost"),
-        lss_port=_opt_str(pick(m, "lss_port", "lssPort")),
-        connector_group_count=len(_connector_groups(raw)),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> LssConfigDetail:
-    m = _cfg(raw)
-    filters = coalesce(m, "filter", "filters")
-    return LssConfigDetail(
-        id=str(pick(raw, "id", default=pick(m, "id", default=""))),
-        name=pick(m, "name"),
-        enabled=pick(m, "enabled"),
-        source_log_type=pick(m, "source_log_type", "sourceLogType"),
-        lss_host=pick(m, "lss_host", "lssHost"),
-        lss_port=_opt_str(pick(m, "lss_port", "lssPort")),
-        connector_group_count=len(_connector_groups(raw)),
-        use_tls=pick(m, "use_tls", "useTls"),
-        filter_count=len(filters),
-        policy_rule_id=_opt_str(pick(raw, "policy_rule_id", "policyRuleId")),
-    )
 
 
 # =============================================================================
@@ -171,11 +102,10 @@ def shape_detail(raw: dict[str, Any]) -> LssConfigDetail:
     service="zpa",
     toolset="zpa_misc",
     input_model=ListLssConfigsInput,
-    output_view=LssConfigSummary,
     is_list=True,
 )
 def zpa_list_lss_configs(args: ListLssConfigsInput) -> list[dict[str, Any]]:
-    """List ZPA LSS configurations as curated views — what log feed streams where (read-only)."""
+    """List ZPA LSS configurations — what log feed streams where (read-only)."""
     client = get_zscaler_client(service="zpa")
     api = client.zpa.lss
     qp: dict[str, Any] = {}
@@ -188,7 +118,7 @@ def zpa_list_lss_configs(args: ListLssConfigsInput) -> list[dict[str, Any]]:
     configs, _, err = api.list_configs(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list LSS configs: {err}")
-    return shape_many([c.as_dict() for c in (configs or [])], shape_summary)
+    return shape_many([c.as_dict() for c in (configs or [])])
 
 
 @tool(
@@ -196,18 +126,17 @@ def zpa_list_lss_configs(args: ListLssConfigsInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_misc",
     input_model=GetLssConfigInput,
-    output_view=LssConfigDetail,
     is_list=False,
 )
 def zpa_get_lss_config(args: GetLssConfigInput) -> dict[str, Any]:
-    """Get one ZPA LSS configuration by ID as a curated view (read-only)."""
+    """Get one ZPA LSS configuration by ID (read-only)."""
     if not args.lss_config_id:
         raise ValueError("lss_config_id is required")
     client = get_zscaler_client(service="zpa")
     result, _, err = client.zpa.lss.get_config(args.lss_config_id)
     if err:
         raise RuntimeError(f"Failed to get LSS config {args.lss_config_id}: {err}")
-    return shape_detail(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(

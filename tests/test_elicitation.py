@@ -84,3 +84,25 @@ def test_extract_confirmed_from_kwargs():
 def test_message_shape_per_verb(tool_name, expected):
     msg = el.check_confirmation(tool_name, None, {"name": "X", "id": "1"})
     assert expected in msg
+
+
+def test_delete_message_names_resource_via_suffixed_id():
+    """The confirmation prompt must name the resource even when the primary-key
+    param isn't literally ``id``/``name`` (e.g. ZPA's ``group_id``)."""
+    msg = el.check_confirmation(
+        "zpa_delete_segment_group", None, {"group_id": "216196257331405654"}
+    )
+    assert "216196257331405654" in msg
+    assert "group_id" in msg
+    assert "unknown" not in msg
+
+
+def test_resource_identifier_priority_and_fallback():
+    # Explicit id/name win over *_id.
+    assert el._resource_identifier({"id": "42", "group_id": "9"}) == "42"
+    assert el._resource_identifier({"name": "HQ", "rule_id": "9"}) == "HQ"
+    # First *_id (sorted) when no id/name.
+    assert el._resource_identifier({"group_id": "9"}) == "9 (group_id)"
+    assert el._resource_identifier({"segment_id": "7", "rule_id": "3"}) == "3 (rule_id)"
+    # Nothing usable.
+    assert el._resource_identifier({"enabled": True}) == "unknown"

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 _TYPE_PATTERN = "^(DSTN_IP|DSTN_FQDN|DSTN_DOMAIN|DSTN_OTHER)$"
 
@@ -68,60 +68,11 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class DestinationGroupSummary(AgentView):
-    id: str = Field(description="Destination group ID. Use in follow-up calls.")
-    name: str = Field(description="Display name.")
-    type: Optional[str] = Field(default=None, description="Group type.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    address_count: int = Field(description="Number of IP/FQDN members.")
-    country_count: int = Field(description="Number of country members.")
-
-
-class DestinationGroupDetail(DestinationGroupSummary):
-    addresses: list[str] = Field(default_factory=list, description="IP/FQDN members.")
-    countries: list[str] = Field(default_factory=list, description="COUNTRY_XX members.")
-    ip_categories: list[str] = Field(default_factory=list, description="URL-category members.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
 
 
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _addresses(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "addresses", "ip_addresses", "ipAddresses")
-
-
-def shape_summary(raw: dict[str, Any]) -> DestinationGroupSummary:
-    return DestinationGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        type=pick(raw, "type"),
-        description=pick(raw, "description"),
-        address_count=len(_addresses(raw)),
-        country_count=len(coalesce(raw, "countries")),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> DestinationGroupDetail:
-    addrs = _addresses(raw)
-    countries = coalesce(raw, "countries")
-    return DestinationGroupDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        type=pick(raw, "type"),
-        description=pick(raw, "description"),
-        address_count=len(addrs),
-        country_count=len(countries),
-        addresses=[str(a) for a in addrs],
-        countries=[str(c) for c in countries],
-        ip_categories=[str(c) for c in coalesce(raw, "ip_categories", "ipCategories")],
-    )
 
 
 # =============================================================================
@@ -134,17 +85,16 @@ def shape_detail(raw: dict[str, Any]) -> DestinationGroupDetail:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListInput,
-    output_view=DestinationGroupSummary,
     is_list=True,
 )
 def zia_list_ip_destination_groups(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA IP destination groups as curated summaries."""
+    """List ZIA IP destination groups."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     groups, _, err = client.zia.cloud_firewall.list_ip_destination_groups(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list IP destination groups: {err}")
-    return shape_many([g.as_dict() for g in (groups or [])], shape_summary)
+    return shape_many([g.as_dict() for g in (groups or [])])
 
 
 @tool(
@@ -152,7 +102,6 @@ def zia_list_ip_destination_groups(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetInput,
-    output_view=DestinationGroupDetail,
     is_list=False,
 )
 def zia_get_ip_destination_group(args: GetInput) -> dict[str, Any]:
@@ -161,7 +110,7 @@ def zia_get_ip_destination_group(args: GetInput) -> dict[str, Any]:
     group, _, err = client.zia.cloud_firewall.get_ip_destination_group(args.group_id)
     if err:
         raise RuntimeError(f"Failed to get IP destination group {args.group_id}: {err}")
-    return shape_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -169,7 +118,6 @@ def zia_get_ip_destination_group(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=CreateInput,
-    output_view=DestinationGroupDetail,
     is_list=False,
 )
 def zia_create_ip_destination_group(args: CreateInput) -> dict[str, Any]:
@@ -185,7 +133,7 @@ def zia_create_ip_destination_group(args: CreateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create IP destination group: {err}")
-    return shape_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -193,7 +141,6 @@ def zia_create_ip_destination_group(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=UpdateInput,
-    output_view=DestinationGroupDetail,
     is_list=False,
 )
 def zia_update_ip_destination_group(args: UpdateInput) -> dict[str, Any]:
@@ -210,7 +157,7 @@ def zia_update_ip_destination_group(args: UpdateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to update IP destination group {args.group_id}: {err}")
-    return shape_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(

@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -32,9 +32,6 @@ class ListServerGroupsInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str, Field(default="summary", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -48,9 +45,6 @@ class GetServerGroupInput(BaseModel):
     """Inputs for getting one ZPA server group."""
 
     group_id: Annotated[str, Field(description="Server group ID (string, even if numeric).")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -141,35 +135,6 @@ class DeleteServerGroupInput(BaseModel):
 # =============================================================================
 
 
-class ServerGroupSummary(AgentView):
-    """Lean view — identify and reason about a server group."""
-
-    id: str = Field(description="Server group ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    enabled: bool = Field(description="Whether the group is enabled (decision-bearing).")
-    dynamic_discovery: Optional[bool] = Field(
-        default=None, description="Whether dynamic discovery is on (decision-bearing)."
-    )
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    connector_group_count: int = Field(description="Number of bound connector groups (relational).")
-    server_count: int = Field(description="Number of bound application servers (relational).")
-
-
-class ServerGroupDetail(ServerGroupSummary):
-    """Full view — summary plus relational ids + provenance."""
-
-    app_connector_group_ids: list[str] = Field(
-        default_factory=list, description="IDs of bound App Connector Groups."
-    )
-    server_ids: list[str] = Field(
-        default_factory=list, description="IDs of bound Application Servers."
-    )
-    ip_anchored: Optional[bool] = Field(default=None, description="Whether IP anchored.")
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-    created_time: Optional[str] = Field(default=None, description="Creation timestamp.")
-    modified_time: Optional[str] = Field(default=None, description="Last-modified timestamp.")
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
@@ -177,48 +142,10 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def _connector_groups(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "app_connector_groups", "appConnectorGroups", "app_connector_group_ids")
 
 
-def _servers(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "servers", "server_ids", "serverIds")
 
 
-def _ids(items: list[Any]) -> list[str]:
-    return [str(i.get("id") if isinstance(i, dict) else i) for i in items]
-
-
-def _shape_summary(raw: dict[str, Any]) -> ServerGroupSummary:
-    return ServerGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        enabled=bool(pick(raw, "enabled", default=False)),
-        dynamic_discovery=pick(raw, "dynamic_discovery", "dynamicDiscovery"),
-        description=pick(raw, "description"),
-        connector_group_count=len(_connector_groups(raw)),
-        server_count=len(_servers(raw)),
-    )
-
-
-def _shape_detail(raw: dict[str, Any]) -> ServerGroupDetail:
-    cgs = _connector_groups(raw)
-    servers = _servers(raw)
-    return ServerGroupDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        enabled=bool(pick(raw, "enabled", default=False)),
-        dynamic_discovery=pick(raw, "dynamic_discovery", "dynamicDiscovery"),
-        description=pick(raw, "description"),
-        connector_group_count=len(cgs),
-        server_count=len(servers),
-        app_connector_group_ids=_ids(cgs),
-        server_ids=_ids(servers),
-        ip_anchored=pick(raw, "ip_anchored", "ipAnchored"),
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-        created_time=pick(raw, "creation_time", "creationTime"),
-        modified_time=pick(raw, "modified_time", "modifiedTime"),
-    )
 
 
 # =============================================================================
@@ -231,11 +158,10 @@ def _shape_detail(raw: dict[str, Any]) -> ServerGroupDetail:
     service="zpa",
     toolset="zpa_server_groups",
     input_model=ListServerGroupsInput,
-    output_view=ServerGroupSummary,
     is_list=True,
 )
 def zpa_list_server_groups(args: ListServerGroupsInput) -> list[dict[str, Any]]:
-    """List ZPA server groups as curated, agent-facing views (read-only)."""
+    """List ZPA server groups (read-only)."""
     client = get_zscaler_client(service="zpa")
     qp: dict[str, Any] = {"microtenant_id": args.microtenant_id}
     if args.search:
@@ -247,8 +173,7 @@ def zpa_list_server_groups(args: ListServerGroupsInput) -> list[dict[str, Any]]:
     groups, _, err = client.zpa.server_groups.list_groups(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list server groups: {err}")
-    shaper = _shape_detail if args.detail == "full" else _shape_summary
-    return shape_many([g.as_dict() for g in (groups or [])], shaper)
+    return shape_many([g.as_dict() for g in (groups or [])])
 
 
 @tool(
@@ -256,11 +181,10 @@ def zpa_list_server_groups(args: ListServerGroupsInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_server_groups",
     input_model=GetServerGroupInput,
-    output_view=ServerGroupDetail,
     is_list=False,
 )
 def zpa_get_server_group(args: GetServerGroupInput) -> dict[str, Any]:
-    """Get one ZPA server group as a curated, agent-facing view (read-only)."""
+    """Get one ZPA server group (read-only)."""
     if not args.group_id:
         raise ValueError("group_id is required")
     client = get_zscaler_client(service="zpa")
@@ -269,8 +193,7 @@ def zpa_get_server_group(args: GetServerGroupInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to get server group {args.group_id}: {err}")
-    shaper = _shape_detail if args.detail == "full" else _shape_summary
-    return shaper(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -278,7 +201,6 @@ def zpa_get_server_group(args: GetServerGroupInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_server_groups",
     input_model=CreateServerGroupInput,
-    output_view=ServerGroupDetail,
     is_list=False,
 )
 def zpa_create_server_group(args: CreateServerGroupInput) -> dict[str, Any]:
@@ -316,7 +238,7 @@ def zpa_create_server_group(args: CreateServerGroupInput) -> dict[str, Any]:
     created, _, err = client.zpa.server_groups.add_group(**body)
     if err:
         raise RuntimeError(f"Failed to create server group: {err}")
-    return _shape_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(
@@ -324,7 +246,6 @@ def zpa_create_server_group(args: CreateServerGroupInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_server_groups",
     input_model=UpdateServerGroupInput,
-    output_view=ServerGroupDetail,
     is_list=False,
 )
 def zpa_update_server_group(args: UpdateServerGroupInput) -> dict[str, Any]:
@@ -383,7 +304,7 @@ def zpa_update_server_group(args: UpdateServerGroupInput) -> dict[str, Any]:
     updated, _, err = api.update_group(args.group_id, **body)
     if err:
         raise RuntimeError(f"Failed to update server group {args.group_id}: {err}")
-    return _shape_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

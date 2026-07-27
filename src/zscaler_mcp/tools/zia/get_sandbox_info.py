@@ -12,8 +12,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-
-from ._settings import Settings, to_settings
+from zscaler_mcp.shaping import shape_one
 
 
 class _NoArgs(BaseModel):
@@ -33,7 +32,6 @@ class SandboxReportInput(BaseModel):
     service="zia",
     toolset="zia_sandbox",
     input_model=_NoArgs,
-    output_view=Settings,
     is_list=False,
 )
 def zia_get_sandbox_quota(args: _NoArgs) -> dict[str, Any]:
@@ -42,7 +40,7 @@ def zia_get_sandbox_quota(args: _NoArgs) -> dict[str, Any]:
     quota, _, err = client.zia.sandbox.get_quota()
     if err:
         raise RuntimeError(f"Failed to get sandbox quota: {err}")
-    return to_settings(quota).model_dump()
+    return shape_one(quota)
 
 
 @tool(
@@ -50,7 +48,6 @@ def zia_get_sandbox_quota(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_sandbox",
     input_model=_NoArgs,
-    output_view=Settings,
     is_list=False,
 )
 def zia_get_sandbox_behavioral_analysis(args: _NoArgs) -> dict[str, Any]:
@@ -59,7 +56,7 @@ def zia_get_sandbox_behavioral_analysis(args: _NoArgs) -> dict[str, Any]:
     ba, _, err = client.zia.sandbox.get_behavioral_analysis()
     if err:
         raise RuntimeError(f"Failed to get sandbox behavioral analysis: {err}")
-    return to_settings(ba).model_dump()
+    return shape_one(ba)
 
 
 @tool(
@@ -67,7 +64,6 @@ def zia_get_sandbox_behavioral_analysis(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_sandbox",
     input_model=_NoArgs,
-    output_view=Settings,
     is_list=False,
 )
 def zia_get_sandbox_file_hash_count(args: _NoArgs) -> dict[str, Any]:
@@ -76,7 +72,7 @@ def zia_get_sandbox_file_hash_count(args: _NoArgs) -> dict[str, Any]:
     count, _, err = client.zia.sandbox.get_file_hash_count()
     if err:
         raise RuntimeError(f"Failed to get sandbox file hash count: {err}")
-    return to_settings(count).model_dump()
+    return shape_one(count)
 
 
 @tool(
@@ -84,7 +80,6 @@ def zia_get_sandbox_file_hash_count(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_sandbox",
     input_model=SandboxReportInput,
-    output_view=Settings,
     is_list=False,
 )
 def zia_get_sandbox_report(args: SandboxReportInput) -> dict[str, Any]:
@@ -96,4 +91,4 @@ def zia_get_sandbox_report(args: SandboxReportInput) -> dict[str, Any]:
         report, _, err = client.zia.sandbox.get_report(args.md5_hash)
     if err:
         raise RuntimeError(f"Failed to get sandbox report for {args.md5_hash}: {err}")
-    return to_settings(report).model_dump()
+    return shape_one(report)

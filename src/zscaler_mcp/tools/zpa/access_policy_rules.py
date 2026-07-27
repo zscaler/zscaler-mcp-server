@@ -2,7 +2,7 @@
 
 Mirrors v1's ``access_policy_rules.py``. The five tools below hang off
 ``client.zpa.policies`` (policy_type ``access``) and share the v2 condition
-translation and curated views from ``_policy_common.py``.
+translation and full records from ``_policy_common.py``.
 
     zpa_list_access_policy_rules    (READ)
     zpa_get_access_policy_rule      (READ)
@@ -20,18 +20,16 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.zpa_helpers import normalize_v2_rule_response
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
+from zscaler_mcp.shaping import shape_one
 from zscaler_mcp.tools.zpa._policy_common import (
     DeleteRuleInput,
     GetRuleInput,
     ListRulesInput,
     OperationResult,
-    PolicyRuleDetail,
-    PolicyRuleSummary,
     delete_rule,
     get_rule,
     list_rules,
     processed_conditions,
-    shape_detail,
 )
 
 
@@ -70,11 +68,10 @@ class UpdateAccessRuleInput(CreateAccessRuleInput):
     service="zpa",
     toolset="zpa_access_policies",
     input_model=ListRulesInput,
-    output_view=PolicyRuleSummary,
     is_list=True,
 )
 def zpa_list_access_policy_rules(args: ListRulesInput) -> list[dict[str, Any]]:
-    """List ZPA access policy rules as curated, agent-facing views (read-only)."""
+    """List ZPA access policy rules (read-only)."""
     return list_rules("access", args)
 
 
@@ -83,11 +80,10 @@ def zpa_list_access_policy_rules(args: ListRulesInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_access_policies",
     input_model=GetRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_get_access_policy_rule(args: GetRuleInput) -> dict[str, Any]:
-    """Get one ZPA access policy rule as a curated view (read-only)."""
+    """Get one ZPA access policy rule (read-only)."""
     return get_rule("access", args)
 
 
@@ -96,7 +92,6 @@ def zpa_get_access_policy_rule(args: GetRuleInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_access_policies",
     input_model=CreateAccessRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_create_access_policy_rule(args: CreateAccessRuleInput) -> dict[str, Any]:
@@ -117,7 +112,7 @@ def zpa_create_access_policy_rule(args: CreateAccessRuleInput) -> dict[str, Any]
     created, response, err = client.zpa.policies.add_access_rule_v2(**payload)
     if err:
         raise RuntimeError(f"Failed to create access policy rule: {err}")
-    return shape_detail(normalize_v2_rule_response(created, response)).model_dump()
+    return shape_one(normalize_v2_rule_response(created, response))
 
 
 @tool(
@@ -125,7 +120,6 @@ def zpa_create_access_policy_rule(args: CreateAccessRuleInput) -> dict[str, Any]
     service="zpa",
     toolset="zpa_access_policies",
     input_model=UpdateAccessRuleInput,
-    output_view=PolicyRuleDetail,
     is_list=False,
 )
 def zpa_update_access_policy_rule(args: UpdateAccessRuleInput) -> dict[str, Any]:
@@ -146,7 +140,7 @@ def zpa_update_access_policy_rule(args: UpdateAccessRuleInput) -> dict[str, Any]
     updated, response, err = client.zpa.policies.update_access_rule_v2(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update access policy rule {args.rule_id}: {err}")
-    return shape_detail(normalize_v2_rule_response(updated, response)).model_dump()
+    return shape_one(normalize_v2_rule_response(updated, response))
 
 
 @tool(

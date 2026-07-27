@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa._refs import RefItem, resolve_idp_id, shape_ref
+from zscaler_mcp.tools.zpa._refs import resolve_idp_id
 
 
 class SamlAttributeInput(BaseModel):
@@ -36,7 +36,6 @@ class SamlAttributeInput(BaseModel):
     toolset="zpa_idp",
     name="get_zpa_saml_attribute",
     input_model=SamlAttributeInput,
-    output_view=RefItem,
     is_list=True,
 )
 def get_zpa_saml_attribute(args: SamlAttributeInput) -> list[dict[str, Any]]:
@@ -54,4 +53,4 @@ def get_zpa_saml_attribute(args: SamlAttributeInput) -> list[dict[str, Any]]:
         attrs, _, err = client.zpa.saml_attributes.list_saml_attributes(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list SAML attributes: {err}")
-    return shape_many([a.as_dict() for a in (attrs or [])], shape_ref)
+    return shape_many([a.as_dict() for a in (attrs or [])])

@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 from zscaler_mcp.tools.zdx._common import scope_query_params, unwrap_nested
 
 # =============================================================================
@@ -82,27 +82,6 @@ class GetDeviceInput(BaseModel):
 # =============================================================================
 
 
-class DeviceSummary(AgentView):
-    """Lean view — what an agent needs to identify and reference a ZDX device."""
-
-    id: str = Field(description="Device ID. Use this in follow-up ZDX calls.")
-    name: Optional[str] = Field(default=None, description="Device hostname/name.")
-    user_id: Optional[str] = Field(default=None, description="Owning user ID (relational).")
-    user_name: Optional[str] = Field(default=None, description="Owning user (name/email).")
-
-
-def _shape_device(raw: dict[str, Any]) -> DeviceSummary:
-    user = pick(raw, "userdetails", "user", default={})
-    if not isinstance(user, dict):
-        user = {}
-    return DeviceSummary(
-        id=str(pick(raw, "id", "device_id", default="")),
-        name=pick(raw, "name", "hostname"),
-        user_id=_opt_str(pick(raw, "user_id", "userId") or user.get("id")),
-        user_name=pick(raw, "user_name", "userName") or user.get("name") or user.get("email"),
-    )
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
@@ -117,11 +96,10 @@ def _opt_str(value: Any) -> Optional[str]:
     service="zdx",
     toolset="zdx_reports",
     input_model=ListDevicesInput,
-    output_view=DeviceSummary,
     is_list=True,
 )
 def zdx_list_devices(args: ListDevicesInput) -> list[dict[str, Any]]:
-    """List active ZDX devices as curated, agent-facing views.
+    """List active ZDX devices.
 
     Read-only. Returns one identifying row per device (id, hostname, owning
     user). Filter by email, user ID, MAC/IP, location/department/geo, and the
@@ -147,7 +125,7 @@ def zdx_list_devices(args: ListDevicesInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to list ZDX devices: {err}")
 
     raw_devices = unwrap_nested(results, "devices")
-    return shape_many(raw_devices, _shape_device)
+    return shape_many(raw_devices)
 
 
 @tool(
@@ -155,11 +133,10 @@ def zdx_list_devices(args: ListDevicesInput) -> list[dict[str, Any]]:
     service="zdx",
     toolset="zdx_reports",
     input_model=GetDeviceInput,
-    output_view=DeviceSummary,
     is_list=False,
 )
 def zdx_get_device(args: GetDeviceInput) -> dict[str, Any]:
-    """Get one active ZDX device as a curated, agent-facing view.
+    """Get one active ZDX device.
 
     Read-only. The ZDX SDK returns a single-element list; the device record is
     unwrapped and shaped to the identifying fields.
@@ -181,5 +158,5 @@ def zdx_get_device(args: GetDeviceInput) -> dict[str, Any]:
         raise RuntimeError(f"Failed to get ZDX device {args.device_id}: {err}")
 
     if result and len(result) > 0:
-        return _shape_device(result[0].as_dict()).model_dump()
-    return _shape_device({}).model_dump()
+        return shape_one(result[0].as_dict())
+    return shape_one({})

@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zcell._common import WindowInput, as_dicts
 
 # =============================================================================
@@ -71,86 +71,6 @@ class UsageSimsInput(WindowInput):
 # =============================================================================
 
 
-class SimMapPoint(AgentView):
-    """A dashboard map point: SIM identifiers + coordinates + tags (nested → JSON)."""
-
-    iccid: list[str] = Field(default_factory=list, description="ICCID(s) at this point.")
-    imsi: list[str] = Field(default_factory=list, description="IMSI(s) at this point.")
-    lat: Optional[Any] = Field(default=None, description="Latitude.")
-    lng: Optional[Any] = Field(default=None, description="Longitude.")
-    tags: list[str] = Field(default_factory=list, description="Tags associated with the SIM(s).")
-
-
-class SimStatusSummary(AgentView):
-    """SIM status counts for the tenant."""
-
-    total: Optional[Any] = Field(default=None, description="Total SIMs.")
-    used: Optional[Any] = Field(default=None, description="SIMs that have been used.")
-    active: Optional[Any] = Field(default=None, description="Active SIMs.")
-    inactive: Optional[Any] = Field(default=None, description="Inactive SIMs.")
-
-
-class CountryUsage(AgentView):
-    """Data usage for one country."""
-
-    country: Optional[str] = Field(default=None, description="Country name/code.")
-    usage: Optional[Any] = Field(default=None, description="Data usage attributed to the country.")
-
-
-class DayUsage(AgentView):
-    """Data usage for one day in the window."""
-
-    creation_time: Optional[Any] = Field(
-        default=None, description="Day / timestamp of the usage bucket."
-    )
-    usage: Optional[Any] = Field(default=None, description="Data usage for the day.")
-
-
-class SimUsage(AgentView):
-    """Data usage for one SIM."""
-
-    iccid: Optional[str] = Field(default=None, description="ICCID of the SIM.")
-    usage: Optional[Any] = Field(default=None, description="Data usage attributed to the SIM.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_map(raw: dict[str, Any]) -> SimMapPoint:
-    return SimMapPoint(
-        iccid=pick(raw, "iccid", default=[]) or [],
-        imsi=pick(raw, "imsi", default=[]) or [],
-        lat=pick(raw, "lat"),
-        lng=pick(raw, "lng"),
-        tags=pick(raw, "tags", default=[]) or [],
-    )
-
-
-def _shape_summary(raw: dict[str, Any]) -> SimStatusSummary:
-    return SimStatusSummary(
-        total=pick(raw, "total"),
-        used=pick(raw, "used"),
-        active=pick(raw, "active"),
-        inactive=pick(raw, "inactive"),
-    )
-
-
-def _shape_country(raw: dict[str, Any]) -> CountryUsage:
-    return CountryUsage(country=pick(raw, "country"), usage=pick(raw, "usage"))
-
-
-def _shape_day(raw: dict[str, Any]) -> DayUsage:
-    return DayUsage(
-        creation_time=pick(raw, "creation_time", "creationTime"), usage=pick(raw, "usage")
-    )
-
-
-def _shape_sim(raw: dict[str, Any]) -> SimUsage:
-    return SimUsage(iccid=pick(raw, "iccid"), usage=pick(raw, "usage"))
-
-
 def _query(*pairs: tuple[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in pairs if value is not None}
 
@@ -165,7 +85,6 @@ def _query(*pairs: tuple[str, Any]) -> dict[str, Any]:
     service="zcell",
     toolset="zcell_sim_analytics",
     input_model=SimAnalyticsMapInput,
-    output_view=SimMapPoint,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -184,7 +103,7 @@ def zcell_list_sim_analytics_map(args: SimAnalyticsMapInput) -> list[dict[str, A
     points, _, err = client.zcell.sim_analytics.list_sim_analytics_map(**body)
     if err:
         raise RuntimeError(f"Failed to list SIM analytics map: {err}")
-    return shape_many(as_dicts(points), _shape_map)
+    return shape_many(as_dicts(points))
 
 
 @tool(
@@ -192,7 +111,6 @@ def zcell_list_sim_analytics_map(args: SimAnalyticsMapInput) -> list[dict[str, A
     service="zcell",
     toolset="zcell_sim_analytics",
     input_model=SimAnalyticsSummaryInput,
-    output_view=SimStatusSummary,
     is_list=True,
 )
 def zcell_list_sim_analytics_summary(args: SimAnalyticsSummaryInput) -> list[dict[str, Any]]:
@@ -205,7 +123,7 @@ def zcell_list_sim_analytics_summary(args: SimAnalyticsSummaryInput) -> list[dic
     summary, _, err = client.zcell.sim_analytics.list_sim_analytics_summary()
     if err:
         raise RuntimeError(f"Failed to list SIM analytics summary: {err}")
-    return shape_many(as_dicts(summary), _shape_summary)
+    return shape_many(as_dicts(summary))
 
 
 @tool(
@@ -213,7 +131,6 @@ def zcell_list_sim_analytics_summary(args: SimAnalyticsSummaryInput) -> list[dic
     service="zcell",
     toolset="zcell_sim_analytics",
     input_model=UsageCountriesInput,
-    output_view=CountryUsage,
     is_list=True,
 )
 def zcell_list_sim_usage_by_country(args: UsageCountriesInput) -> list[dict[str, Any]]:
@@ -229,7 +146,7 @@ def zcell_list_sim_usage_by_country(args: UsageCountriesInput) -> list[dict[str,
     )
     if err:
         raise RuntimeError(f"Failed to list SIM usage by country: {err}")
-    return shape_many(as_dicts(usage), _shape_country)
+    return shape_many(as_dicts(usage))
 
 
 @tool(
@@ -237,7 +154,6 @@ def zcell_list_sim_usage_by_country(args: UsageCountriesInput) -> list[dict[str,
     service="zcell",
     toolset="zcell_sim_analytics",
     input_model=UsageDayInput,
-    output_view=DayUsage,
     is_list=True,
 )
 def zcell_list_sim_usage_by_day(args: UsageDayInput) -> list[dict[str, Any]]:
@@ -253,7 +169,7 @@ def zcell_list_sim_usage_by_day(args: UsageDayInput) -> list[dict[str, Any]]:
     )
     if err:
         raise RuntimeError(f"Failed to list SIM usage by day: {err}")
-    return shape_many(as_dicts(usage), _shape_day)
+    return shape_many(as_dicts(usage))
 
 
 @tool(
@@ -261,7 +177,6 @@ def zcell_list_sim_usage_by_day(args: UsageDayInput) -> list[dict[str, Any]]:
     service="zcell",
     toolset="zcell_sim_analytics",
     input_model=UsageSimsInput,
-    output_view=SimUsage,
     is_list=True,
 )
 def zcell_list_sim_usage_by_sim(args: UsageSimsInput) -> list[dict[str, Any]]:
@@ -276,4 +191,4 @@ def zcell_list_sim_usage_by_sim(args: UsageSimsInput) -> list[dict[str, Any]]:
     )
     if err:
         raise RuntimeError(f"Failed to list SIM usage by SIM: {err}")
-    return shape_many(as_dicts(usage), _shape_sim)
+    return shape_many(as_dicts(usage))

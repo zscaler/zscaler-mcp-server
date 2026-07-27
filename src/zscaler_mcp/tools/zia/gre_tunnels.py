@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 
 class ListTunnelsInput(BaseModel):
@@ -45,27 +45,9 @@ class DeleteTunnelInput(BaseModel):
     ]
 
 
-class GreTunnelSummary(AgentView):
-    id: str = Field(description="GRE tunnel ID.")
-    source_ip: Optional[str] = Field(default=None, description="Tunnel source (static) IP.")
-    internal_ip_range: Optional[str] = Field(default=None, description="Internal IP range.")
-    ip_unnumbered: Optional[bool] = Field(default=None, description="Unnumbered tunnel flag.")
-    comment: Optional[str] = Field(default=None, description="Admin notes.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-def shape_tunnel(raw: dict[str, Any]) -> GreTunnelSummary:
-    return GreTunnelSummary(
-        id=str(pick(raw, "id", default="")),
-        source_ip=pick(raw, "source_ip", "sourceIp", "sourceIP"),
-        internal_ip_range=pick(raw, "internal_ip_range", "internalIpRange"),
-        ip_unnumbered=pick(raw, "ip_unnumbered", "ipUnnumbered"),
-        comment=pick(raw, "comment"),
-    )
 
 
 @tool(
@@ -73,16 +55,15 @@ def shape_tunnel(raw: dict[str, Any]) -> GreTunnelSummary:
     service="zia",
     toolset="zia_locations",
     input_model=ListTunnelsInput,
-    output_view=GreTunnelSummary,
     is_list=True,
 )
 def zia_list_gre_tunnels(args: ListTunnelsInput) -> list[dict[str, Any]]:
-    """List ZIA GRE tunnels as curated summaries."""
+    """List ZIA GRE tunnels."""
     client = get_zscaler_client(service="zia")
     tunnels, _, err = client.zia.gre_tunnel.list_gre_tunnels()
     if err:
         raise RuntimeError(f"Failed to list GRE tunnels: {err}")
-    return shape_many([t.as_dict() for t in (tunnels or [])], shape_tunnel)
+    return shape_many([t.as_dict() for t in (tunnels or [])])
 
 
 @tool(
@@ -90,7 +71,6 @@ def zia_list_gre_tunnels(args: ListTunnelsInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_locations",
     input_model=GetTunnelInput,
-    output_view=GreTunnelSummary,
     is_list=False,
 )
 def zia_get_gre_tunnel(args: GetTunnelInput) -> dict[str, Any]:
@@ -99,7 +79,7 @@ def zia_get_gre_tunnel(args: GetTunnelInput) -> dict[str, Any]:
     tunnel, _, err = client.zia.gre_tunnel.get_gre_tunnel(args.tunnel_id)
     if err:
         raise RuntimeError(f"Failed to get GRE tunnel {args.tunnel_id}: {err}")
-    return shape_tunnel(tunnel.as_dict()).model_dump()
+    return shape_one(tunnel.as_dict())
 
 
 @tool(
@@ -107,7 +87,6 @@ def zia_get_gre_tunnel(args: GetTunnelInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=CreateTunnelInput,
-    output_view=GreTunnelSummary,
     is_list=False,
 )
 def zia_create_gre_tunnel(args: CreateTunnelInput) -> dict[str, Any]:
@@ -145,7 +124,7 @@ def zia_create_gre_tunnel(args: CreateTunnelInput) -> dict[str, Any]:
     tunnel, _, err = gre_api.add_gre_tunnel(**payload)
     if err:
         raise RuntimeError(f"Failed to create GRE tunnel: {err}")
-    return shape_tunnel(tunnel.as_dict()).model_dump()
+    return shape_one(tunnel.as_dict())
 
 
 @tool(

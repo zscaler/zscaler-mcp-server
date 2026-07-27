@@ -11,6 +11,37 @@ description: |-
 
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
+## 0.14.0 (July 24, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+- **New `--disabled-toolsets` flag (and `ZSCALER_MCP_DISABLED_TOOLSETS`).** The blocklist complement to `--toolsets`: load everything *except* the toolsets you name, instead of having to enumerate the dozens you want. Takes exact toolset ids (no wildcards) and wins over `--toolsets` when both name the same toolset. Example: `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin`. See the [Toolsets guide](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/toolsets.md).
+
+- **Unknown toolset ids are now reported.** A typo in `--toolsets` previously matched nothing and started a server with **zero tools**, silently. Both `--toolsets` and `--disabled-toolsets` now log a warning naming the unrecognized id and listing the valid ones, then continue.
+
+- **Clearer destructive-operation confirmations.** The confirmation prompt shown before a delete now names the resource being removed on 48 of the 50 delete tools — previously any tool whose identifier isn't literally `id`/`name` (e.g. ZPA's `group_id`) showed `unknown`. The prompt now falls back to the resource's `*_id` parameter. The two exceptions are the bulk URL-list deletes (`zia_delete_atp_malicious_urls`, `zia_delete_auth_exempt_urls`), which take a list of URLs rather than an identifier and still show `unknown`.
+
+- **Tool behavior hints for MCP clients.** Every tool now advertises standard MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) derived from its action. Supported clients use these to decide when to surface a confirmation — read tools run freely, while create/update/delete are flagged as writes (delete and PUT-replace updates as destructive).
+
+- **MCP protocol posture hardened.** The MCP SDK dependencies are now capped to their current major versions (`mcp<2`, `fastmcp<4`) so a routine install cannot silently jump onto the in-progress next protocol revision before it is validated. The server is also verified against the official MCP conformance suite in CI against the published `2025-11-25` protocol.
+
+### Bug Fixes
+
+- **Read tools no longer drop attributes — every field the Zscaler API returns is now included** ([#88](https://github.com/zscaler/zscaler-mcp-server/issues/88)). Since v0.13.0, read tools projected each resource down to a fixed subset of fields, so any attribute outside that subset silently disappeared. The most visible case was `zcc_list_devices` dropping `policy_name` (along with most enrollment and telemetry fields), which made per-device policy assignment impossible to determine through the server — but the same trimming affected resources across every service.
+
+  Read tools now return the **complete record**, exactly as the Zscaler API provides it. The server no longer declares an output schema enumerating a resource's attributes either, so a field Zscaler adds in future reaches you with **no server upgrade required**. (Create and update tools still document every settable input field, exactly as the Zscaler SDK does.)
+
+  Two follow-on changes come with this:
+
+  - The `detail='summary'|'full'` parameter on the ZCC and ZPA list/get tools is **removed**. It existed only to opt out of the trimming, and with the full record always returned it no longer selected anything. Note it is rejected rather than ignored — passing it returns an `Unexpected keyword argument` validation error — so drop it from any saved script, workflow, or agent prompt.
+  - Field names in responses are now exactly what the Zscaler API returns (for example `policyName`, `registrationState`), rather than a server-invented spelling. This covers the 243 read tools that return a resource record. The remaining 11 return a container the server itself builds — the ZPA LSS metadata catalogs, the ZMS status / nonce / TOTP envelopes, `zdx_get_analysis`, and `ztw_get_discovery_settings` — which keep their own field names and carry the API payload intact inside.
+
+- **Restored: JMESPath client-side filtering on list tools.** The optional `query` parameter (originally added in [PR #45](https://github.com/zscaler/zscaler-mcp-server/pull/45)) was lost during the internal rewrite and is back on **164** collection-returning tools. Pass a [JMESPath](https://jmespath.org/) expression to filter or project results before they reach the agent — `[*].{user: user, policy: policyName}`, `` [?enabled==`true`] ``, or `length(@)`. Omit it to get the full records. Together with `--toolsets`, this is the supported way to keep responses small: the caller chooses what to drop, instead of the server guessing.
+
 ## 0.13.4 (July 23, 2026)
 
 ### Notes

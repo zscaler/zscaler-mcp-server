@@ -23,14 +23,10 @@ from zscaler_mcp.common.zia_helpers import (
     validate_rank,
 )
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 from ._rules_common import (
     OperationResult,
-    RuleDetail,
-    RuleSummary,
-    shape_rule_detail,
-    shape_rule_summary,
 )
 
 _ADVANCED_DESC = (
@@ -103,17 +99,16 @@ class DeleteInput(BaseModel):
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListInput,
-    output_view=RuleSummary,
     is_list=True,
 )
 def zia_list_cloud_firewall_rules(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA Cloud Firewall rules as curated summaries."""
+    """List ZIA Cloud Firewall rules."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     rules, _, err = client.zia.cloud_firewall_rules.list_rules(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list cloud firewall rules: {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 @tool(
@@ -121,7 +116,6 @@ def zia_list_cloud_firewall_rules(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_get_cloud_firewall_rule(args: GetInput) -> dict[str, Any]:
@@ -130,7 +124,7 @@ def zia_get_cloud_firewall_rule(args: GetInput) -> dict[str, Any]:
     rule, _, err = client.zia.cloud_firewall_rules.get_rule(args.rule_id)
     if err:
         raise RuntimeError(f"Failed to get cloud firewall rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -138,7 +132,6 @@ def zia_get_cloud_firewall_rule(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=CreateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_create_cloud_firewall_rule(args: CreateInput) -> dict[str, Any]:
@@ -158,7 +151,7 @@ def zia_create_cloud_firewall_rule(args: CreateInput) -> dict[str, Any]:
     rule, _, err = client.zia.cloud_firewall_rules.add_rule(**payload)
     if err:
         raise RuntimeError(f"Failed to create cloud firewall rule: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -166,7 +159,6 @@ def zia_create_cloud_firewall_rule(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=UpdateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_update_cloud_firewall_rule(args: UpdateInput) -> dict[str, Any]:
@@ -186,7 +178,7 @@ def zia_update_cloud_firewall_rule(args: UpdateInput) -> dict[str, Any]:
     rule, _, err = client.zia.cloud_firewall_rules.update_rule(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update cloud firewall rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
