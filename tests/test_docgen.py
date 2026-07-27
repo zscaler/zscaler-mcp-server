@@ -254,3 +254,42 @@ class TestRepoIsInSync(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDescriptionsAreInterpreterIndependent:
+    """Tool descriptions must not vary with the Python version.
+
+    Python 3.13+ dedents docstrings at compile time; 3.11/3.12 do not. Reading
+    ``fn.__doc__`` raw therefore yields differently-indented descriptions on
+    different interpreters — which ships indented text to agents on 3.11 AND
+    makes the generated docs flip-flop between contributors (the CI failure that
+    caught this: docs generated on 3.13 were "stale" when checked on 3.11).
+    ``@tool`` normalizes with ``inspect.cleandoc``.
+    """
+
+    def test_no_description_has_indented_continuation_lines(self):
+        from zscaler_mcp.registry import REGISTRY, discover_tools
+
+        discover_tools()
+        offenders = []
+        for spec in REGISTRY:
+            for line in spec.description.splitlines():
+                # cleandoc strips the common leading indent; a surviving 4-space
+                # indent means the raw __doc__ leaked through.
+                if line.startswith("    ") and line.strip():
+                    offenders.append(f"{spec.name}: {line[:60]!r}")
+                    break
+        assert not offenders, (
+            "Descriptions carry raw docstring indentation — use inspect.cleandoc "
+            "(these render differently on Python 3.11 vs 3.13):\n  "
+            + "\n  ".join(offenders[:10])
+        )
+
+    def test_cleandoc_matches_what_the_decorator_stores(self):
+        import inspect
+
+        from zscaler_mcp.registry import REGISTRY, discover_tools
+
+        discover_tools()
+        spec = REGISTRY.get("zpa_list_segment_groups")
+        assert spec.description == inspect.cleandoc(spec.fn.__doc__)
