@@ -89,6 +89,21 @@ target-version = "py310"
 # part of the v2 package and must never gate the v2 lint.
 extend-exclude = ["local_dev"]
 
+[tool.ruff.lint]
+# Pin the rule set EXPLICITLY. Ruff's default selection is not a stable API — it
+# widened in 0.16.0 (adding pyupgrade / flake8-simplify / tryceratops / … ), which
+# turned a routine lockfile refresh into ~1.8k new findings across untouched code
+# and broke CI with zero source changes. Naming the rules here means a ruff
+# upgrade can no longer move the goalposts on its own.
+#
+# This is the set the project has always enforced in practice:
+#   E4/E7/E9  pycodestyle errors (imports, statements, syntax)
+#   F         pyflakes (undefined names, unused imports/variables)
+#   I         isort (import ordering — also run standalone in CI)
+# Adopting a broader set (UP, SIM, …) is a deliberate, separate cleanup, not
+# something to inherit silently from a dependency bump.
+select = ["E4", "E7", "E9", "F", "I"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
