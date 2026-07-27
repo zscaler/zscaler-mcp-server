@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -33,9 +33,6 @@ class GetInput(BaseModel):
 # =============================================================================
 
 
-def _expr_count(raw: dict[str, Any]) -> int:
-    exprs = coalesce(raw, "expressions", "expression_containers", "expressionContainers")
-    return len(exprs)
 
 
 # =============================================================================

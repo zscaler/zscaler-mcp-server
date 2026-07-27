@@ -152,15 +152,8 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def _domains(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "domain_names", "domainNames")
 
 
-def _server_groups(raw: dict[str, Any]) -> list[Any]:
-    sgs = coalesce(raw, "server_groups", "serverGroups")
-    if sgs:
-        return sgs
-    return coalesce(raw, "server_group_ids", "serverGroupIds")
 
 
 def _ports(raw: dict[str, Any], *keys: str) -> list[str]:

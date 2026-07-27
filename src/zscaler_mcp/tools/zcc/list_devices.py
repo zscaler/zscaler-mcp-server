@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 # =============================================================================
 # INPUT MODELS
@@ -44,8 +44,6 @@ class ListDevicesInput(BaseModel):
 # =============================================================================
 
 
-def _policy_name(raw: dict[str, Any]) -> Optional[str]:
-    return pick(raw, "policy_name", "policyName")
 
 
 # =============================================================================

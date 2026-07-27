@@ -84,21 +84,6 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _names(raw: dict[str, Any], *keys: str) -> list[str]:
-    """Extract a list of human names from a list-of-dicts (or list-of-str) field."""
-    for key in keys:
-        value = raw.get(key)
-        if isinstance(value, list):
-            out: list[str] = []
-            for item in value:
-                if isinstance(item, dict):
-                    name = item.get("name") or item.get("id")
-                    if name is not None:
-                        out.append(str(name))
-                elif item is not None:
-                    out.append(str(item))
-            return out
-    return []
 
 
 # =============================================================================

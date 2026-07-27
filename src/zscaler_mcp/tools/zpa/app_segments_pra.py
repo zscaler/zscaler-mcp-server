@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -138,17 +138,10 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _domains(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "domain_names", "domainNames")
 
 
-def _pra_apps(raw: dict[str, Any]) -> list[Any]:
-    return coalesce(raw, "pra_apps", "praApps", "sra_apps", "sraApps")
 
 
-def _server_groups(raw: dict[str, Any]) -> list[Any]:
-    sgs = coalesce(raw, "server_groups", "serverGroups")
-    return sgs or coalesce(raw, "server_group_ids", "serverGroupIds")
 
 
 def _build_body(args: Any) -> dict[str, Any]:

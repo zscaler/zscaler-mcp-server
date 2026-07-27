@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.zpa_helpers import convert_v1_to_v2_response, convert_v2_to_sdk_format
-from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 __all__ = [
     "ListRulesInput",
@@ -78,9 +78,6 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _conditions(raw: dict[str, Any]) -> list[dict]:
-    conds = coalesce(raw, "conditions")
-    return [c for c in conds if isinstance(c, dict)]
 
 
 # =============================================================================
