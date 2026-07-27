@@ -1,14 +1,16 @@
 # Toolsets
 
-The Zscaler MCP server groups its 280+ tools into **toolsets** — small, named bundles of related tools. Toolsets let you load only the slice of tools an agent actually needs, instead of every tool the server can expose.
+The Zscaler MCP server groups its 402 tools into 63 **toolsets** — small, named bundles of related tools. Toolsets let you load only the slice of tools an agent actually needs, instead of every tool the server can expose.
+
+> **⚠️ Runtime discovery tools are NOT available in the current build.** The `meta` toolset and its tools (`zscaler_list_toolsets`, `zscaler_get_toolset_tools`, `zscaler_enable_toolset`, `zscaler_get_available_services`, `zscaler_check_connectivity`) shipped in an earlier version and are absent today — verified against the live registry. Rows and sections below that reference them are retained as the design of record while we decide whether to restore them; most MCP clients now use deferred tool loading, which may make catalog discovery redundant. **Toolset selection via `--toolsets` / `--disabled-toolsets` is unaffected and works as documented.**
 
 > **Applies to every transport.** Toolsets, the toolset selection flags, the runtime discovery tools, and the OneAPI entitlement filter described on this page work identically on `stdio`, `sse`, and `streamable-http`. They are tool-level controls, not transport-level controls.
 
 ## Why toolsets exist
 
-1. **Smaller agent context.** Loading every tool into a model's prompt is expensive and confuses tool selection. Selecting two toolsets (~15 tools) instead of every tool (~280) materially improves the agent's accuracy and speeds responses.
+1. **Smaller agent context.** Loading every tool into a model's prompt is expensive and confuses tool selection. Selecting two toolsets (~15 tools) instead of every tool (402) materially improves the agent's accuracy and speeds responses.
 2. **Per-toolset guidance.** Each toolset can contribute a short paragraph of system instructions, sent to the agent only when the matching tools are loaded — so guidance about (for example) Cloud App Control rule semantics arrives only when those tools are active.
-3. **Dynamic discovery.** Three always-on tools let the agent enumerate the available toolsets and turn additional ones on at runtime when the user asks for a capability that wasn't loaded.
+3. **Dynamic discovery.** *(Not in the current build — see the note above.)* Three always-on tools let the agent enumerate the available toolsets and turn additional ones on at runtime when the user asks for a capability that wasn't loaded.
 
 ## Quick reference
 
@@ -21,12 +23,12 @@ The Zscaler MCP server groups its 280+ tools into **toolsets** — small, named 
 | Run with everything except a few | `--toolsets all --disabled-toolsets zia_ssl_inspection,zia_admin` |
 | Set via environment variable | `ZSCALER_MCP_TOOLSETS=zia_url_filtering,zpa_app_segments` |
 | Exclude via environment variable | `ZSCALER_MCP_DISABLED_TOOLSETS=zia_ssl_inspection,zia_admin` |
-| Discover what exists | Call `zscaler_list_toolsets` from your client. |
-| Inspect a toolset | Call `zscaler_get_toolset_tools` with a toolset id. |
-| Enable more at runtime | Call `zscaler_enable_toolset` with a toolset id. |
+| Discover what exists | *(unavailable — see note above)* `zscaler_list_toolsets` |
+| Inspect a toolset | *(unavailable — see note above)* `zscaler_get_toolset_tools` |
+| Enable more at runtime | *(unavailable — see note above)* `zscaler_enable_toolset` |
 | Skip the entitlement filter | `--no-entitlement-filter` or `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true` |
 
-The `meta` toolset (containing the connectivity check, service discovery, tool search, and the three discovery tools above) is **always** loaded and cannot be filtered out.
+*(Historical: the `meta` toolset — connectivity check, service discovery, and the three discovery tools above — was always loaded and could not be filtered out. It does not exist in the current build.)*
 
 ## Toolset catalog
 
