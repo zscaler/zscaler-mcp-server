@@ -73,7 +73,7 @@ The Zscaler Integrations MCP Server brings context to your agents. Try prompts l
 <!-- markdownlint-disable MD028 -->
 
 > [!TIP]
-> **Writing effective prompts**: This server exposes **300+ tools** across multiple Zscaler services. Most MCP clients (Claude Desktop, Cursor, etc.) use deferred tool loading and will search for relevant tools based on your prompt. For best results, **be specific about the service and action** in your prompts:
+> **Writing effective prompts**: This server exposes **402 tools** across multiple Zscaler services. Most MCP clients (Claude Desktop, Cursor, etc.) use deferred tool loading and will search for relevant tools based on your prompt. For best results, **be specific about the service and action** in your prompts:
 >
 > - **Good**: *"List my ZPA application segments"* — targets the right service and tool directly
 > - **Good**: *"Show ZIA firewall rules"* — clear service (`zia`) and action (`list`)
@@ -203,11 +203,34 @@ This design allows AI assistants (Claude, Cursor, GitHub Copilot) to:
 - Require explicit user confirmation for write operations
 - Clearly understand the intent of each tool from its name
 
+#### Responses: the API record, verbatim
+
+A read tool returns the Zscaler API record **unchanged**. The server does not
+trim, rename, or re-declare a resource's attributes — that attribute set belongs
+to the API, so a field Zscaler adds in future reaches you with no server upgrade.
+
+To keep responses small, you control what comes back rather than the server
+guessing. Two levers:
+
+- **`--toolsets`** — load only the slice of tools you need, so the tool catalog
+  stays small (see [Toolsets](#toolsets)).
+- **`query`** — every list tool accepts an optional [JMESPath](https://jmespath.org/)
+  expression applied to the results, so the agent projects exactly what it wants:
+
+  ```text
+  zcc_list_devices(query="[*].{user: user, policy: policyName}")   # just those two fields
+  zcc_list_devices(query="[?registrationState=='Quarantined']")    # just quarantined devices
+  zcc_list_devices(query="length(@)")                              # just the count
+  ```
+
+  Field names are exactly what the Zscaler API returns. Omit `query` to get the
+  full records.
+
 ### Security Layers
 
 The server implements multiple layers of security (defense-in-depth). The first nine **apply on every transport, including stdio** — they govern which tools are exposed and how dangerous calls are confirmed. The remaining HTTP-only layers (TLS, host-header validation, source-IP ACL, MCP client authentication) are described in the [Network-Level Controls](#network-level-controls-http-only) section further down.
 
-1. **Read-Only Tools Always Enabled**: Safe `list_*` and `get_*` operations are always available (110+ tools).
+1. **Read-Only Tools Always Enabled**: Safe `list_*` and `get_*` operations are always available (254 tools).
 2. **Default Write Mode Disabled**: Write tools are disabled unless explicitly enabled via `--enable-write-tools`.
 3. **Mandatory Allowlist**: Write operations require explicit `--write-tools` allowlist (wildcard support).
 4. **OneAPI Entitlement Filter**: At startup, toolsets for products the OneAPI credentials cannot call are silently dropped (see [OneAPI Entitlement Filter](#oneapi-entitlement-filter) below).
@@ -349,7 +372,7 @@ On startup, the server logs a consolidated **Security Posture Banner** summarizi
 - **Least Privilege**: Use narrowest possible allowlist patterns for your use case
 - **Wildcard Usage**: Use wildcards for service-level control (e.g., `zpa_create_*`) or operation-level control (e.g., `*_create_*`)
 - **Audit Review**: Regularly review which write tools are allowlisted and remove unnecessary ones
-- **Specific Prompts**: With 300+ tools and deferred loading, AI agents match prompts to tools by relevance. Use service-specific prompts (e.g., *"List ZPA segments"* instead of *"Show my segments"*) for accurate tool selection
+- **Specific Prompts**: With 402 tools and deferred loading, AI agents match prompts to tools by relevance. Use service-specific prompts (e.g., *"List ZPA segments"* instead of *"Show my segments"*) for accurate tool selection
 
 ## 🔐 MCP Client Authentication
 

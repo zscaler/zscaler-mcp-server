@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
 
 
 class ListGroupsInput(BaseModel):
@@ -51,19 +51,6 @@ class DeleteGroupInput(BaseModel):
     group_id: Annotated[str, Field(description="Group ID to delete.")]
 
 
-class AppGroupSummary(AgentView):
-    id: str = Field(description="App group ID.")
-    name: str = Field(description="Display name.")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    application_count: int = Field(description="Number of member applications.")
-
-
-class AppGroupDetail(AppGroupSummary):
-    network_applications: list[str] = Field(
-        default_factory=list, description="Member application IDs."
-    )
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
@@ -73,42 +60,21 @@ def _apps(raw: dict[str, Any]) -> list[Any]:
     return coalesce(raw, "network_applications", "networkApplications")
 
 
-def shape_group_summary(raw: dict[str, Any]) -> AppGroupSummary:
-    return AppGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        application_count=len(_apps(raw)),
-    )
-
-
-def shape_group_detail(raw: dict[str, Any]) -> AppGroupDetail:
-    apps = _apps(raw)
-    return AppGroupDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        application_count=len(apps),
-        network_applications=[str(a) for a in apps],
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListGroupsInput,
-    output_view=AppGroupSummary,
     is_list=True,
 )
 def zia_list_network_app_groups(args: ListGroupsInput) -> list[dict[str, Any]]:
-    """List ZIA network application groups as curated summaries."""
+    """List ZIA network application groups."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     groups, _, err = client.zia.cloud_firewall.list_network_app_groups(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list network app groups: {err}")
-    return shape_many([g.as_dict() for g in (groups or [])], shape_group_summary)
+    return shape_many([g.as_dict() for g in (groups or [])])
 
 
 @tool(
@@ -116,7 +82,6 @@ def zia_list_network_app_groups(args: ListGroupsInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetGroupInput,
-    output_view=AppGroupDetail,
     is_list=False,
 )
 def zia_get_network_app_group(args: GetGroupInput) -> dict[str, Any]:
@@ -125,7 +90,7 @@ def zia_get_network_app_group(args: GetGroupInput) -> dict[str, Any]:
     group, _, err = client.zia.cloud_firewall.get_network_app_group(args.group_id)
     if err:
         raise RuntimeError(f"Failed to get network app group {args.group_id}: {err}")
-    return shape_group_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -133,7 +98,6 @@ def zia_get_network_app_group(args: GetGroupInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=CreateGroupInput,
-    output_view=AppGroupDetail,
     is_list=False,
 )
 def zia_create_network_app_group(args: CreateGroupInput) -> dict[str, Any]:
@@ -146,7 +110,7 @@ def zia_create_network_app_group(args: CreateGroupInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create network app group: {err}")
-    return shape_group_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(
@@ -154,7 +118,6 @@ def zia_create_network_app_group(args: CreateGroupInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=UpdateGroupInput,
-    output_view=AppGroupDetail,
     is_list=False,
 )
 def zia_update_network_app_group(args: UpdateGroupInput) -> dict[str, Any]:
@@ -168,7 +131,7 @@ def zia_update_network_app_group(args: UpdateGroupInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to update network app group {args.group_id}: {err}")
-    return shape_group_detail(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())
 
 
 @tool(

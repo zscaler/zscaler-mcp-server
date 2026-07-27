@@ -19,14 +19,10 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 from zscaler_mcp.tools.zpa._connector_common import (
-    ConnectorDetail,
-    ConnectorSummary,
     OperationResult,
     query_params,
-    shape_detail,
-    shape_summary,
 )
 
 _CONN_GROUP = "app_connector_group_id"
@@ -38,10 +34,6 @@ class ListInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str,
-        Field(default="summary", pattern="^(summary|full)$", description="Response verbosity."),
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -55,9 +47,6 @@ class GetConnectorInput(BaseModel):
     """Inputs for getting one app connector."""
 
     connector_id: Annotated[str, Field(description="App connector ID (string, even if numeric).")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -102,7 +91,6 @@ class BulkDeleteConnectorsInput(BaseModel):
     service="zpa",
     toolset="zpa_connectors",
     input_model=ListInput,
-    output_view=ConnectorSummary,
     is_list=True,
 )
 def zpa_list_app_connectors(args: ListInput) -> list[dict[str, Any]]:
@@ -117,10 +105,7 @@ def zpa_list_app_connectors(args: ListInput) -> list[dict[str, Any]]:
     connectors, _, err = client.zpa.app_connectors.list_connectors(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list app connectors: {err}")
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shape_many(
-        [c.as_dict() for c in (connectors or [])], lambda r: shaper(r, group_key=_CONN_GROUP)
-    )
+    return shape_many([c.as_dict() for c in (connectors or [])])
 
 
 @tool(
@@ -128,7 +113,6 @@ def zpa_list_app_connectors(args: ListInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_connectors",
     input_model=GetConnectorInput,
-    output_view=ConnectorDetail,
     is_list=False,
 )
 def zpa_get_app_connector(args: GetConnectorInput) -> dict[str, Any]:
@@ -142,8 +126,7 @@ def zpa_get_app_connector(args: GetConnectorInput) -> dict[str, Any]:
     connector, _, err = client.zpa.app_connectors.get_connector(args.connector_id, query_params=qp)
     if err:
         raise RuntimeError(f"Failed to get app connector {args.connector_id}: {err}")
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shaper(connector.as_dict(), group_key=_CONN_GROUP).model_dump()
+    return shape_one(connector.as_dict())
 
 
 @tool(
@@ -151,7 +134,6 @@ def zpa_get_app_connector(args: GetConnectorInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_connectors",
     input_model=UpdateConnectorInput,
-    output_view=ConnectorDetail,
     is_list=False,
 )
 def zpa_update_app_connector(args: UpdateConnectorInput) -> dict[str, Any]:
@@ -171,7 +153,7 @@ def zpa_update_app_connector(args: UpdateConnectorInput) -> dict[str, Any]:
     updated, _, err = client.zpa.app_connectors.update_connector(args.connector_id, **body)
     if err:
         raise RuntimeError(f"Failed to update app connector {args.connector_id}: {err}")
-    return shape_detail(updated.as_dict(), group_key=_CONN_GROUP).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

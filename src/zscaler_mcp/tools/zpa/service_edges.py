@@ -20,14 +20,10 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 from zscaler_mcp.tools.zpa._connector_common import (
-    ConnectorDetail,
-    ConnectorSummary,
     OperationResult,
     query_params,
-    shape_detail,
-    shape_summary,
 )
 
 _EDGE_GROUP = "service_edge_group_id"
@@ -39,10 +35,6 @@ class ListInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str,
-        Field(default="summary", pattern="^(summary|full)$", description="Response verbosity."),
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -56,9 +48,6 @@ class GetEdgeInput(BaseModel):
     """Inputs for getting one service edge."""
 
     service_edge_id: Annotated[str, Field(description="Service edge ID (string, even if numeric).")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -103,7 +92,6 @@ class BulkDeleteEdgesInput(BaseModel):
     service="zpa",
     toolset="zpa_service_edge_groups",
     input_model=ListInput,
-    output_view=ConnectorSummary,
     is_list=True,
 )
 def zpa_list_service_edges(args: ListInput) -> list[dict[str, Any]]:
@@ -121,10 +109,7 @@ def zpa_list_service_edges(args: ListInput) -> list[dict[str, Any]]:
     edges, _, err = client.zpa.service_edges.list_service_edges(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list service edges: {err}")
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shape_many(
-        [e.as_dict() for e in (edges or [])], lambda r: shaper(r, group_key=_EDGE_GROUP)
-    )
+    return shape_many([e.as_dict() for e in (edges or [])])
 
 
 @tool(
@@ -132,7 +117,6 @@ def zpa_list_service_edges(args: ListInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_service_edge_groups",
     input_model=GetEdgeInput,
-    output_view=ConnectorDetail,
     is_list=False,
 )
 def zpa_get_service_edge(args: GetEdgeInput) -> dict[str, Any]:
@@ -146,8 +130,7 @@ def zpa_get_service_edge(args: GetEdgeInput) -> dict[str, Any]:
     edge = client.zpa.service_edges.get_service_edge(args.service_edge_id, **kwargs)
     if edge is None:
         raise RuntimeError(f"Failed to get service edge {args.service_edge_id}")
-    shaper = shape_detail if args.detail == "full" else shape_summary
-    return shaper(edge.as_dict(), group_key=_EDGE_GROUP).model_dump()
+    return shape_one(edge.as_dict())
 
 
 @tool(
@@ -155,7 +138,6 @@ def zpa_get_service_edge(args: GetEdgeInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_service_edge_groups",
     input_model=UpdateEdgeInput,
-    output_view=ConnectorDetail,
     is_list=False,
 )
 def zpa_update_service_edge(args: UpdateEdgeInput) -> dict[str, Any]:
@@ -175,7 +157,7 @@ def zpa_update_service_edge(args: UpdateEdgeInput) -> dict[str, Any]:
     updated, _, err = client.zpa.service_edges.update_service_edge(args.service_edge_id, **body)
     if err:
         raise RuntimeError(f"Failed to update service edge {args.service_edge_id}: {err}")
-    return shape_detail(updated.as_dict(), group_key=_EDGE_GROUP).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

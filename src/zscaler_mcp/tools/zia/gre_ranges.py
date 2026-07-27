@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListRangesInput(BaseModel):
@@ -27,28 +27,15 @@ class ListRangesInput(BaseModel):
     ] = None
 
 
-class GreRangeSummary(AgentView):
-    start_ip_address: Optional[str] = Field(default=None, description="Range start IP.")
-    end_ip_address: Optional[str] = Field(default=None, description="Range end IP.")
-
-
-def shape_range(raw: dict[str, Any]) -> GreRangeSummary:
-    return GreRangeSummary(
-        start_ip_address=pick(raw, "start_ip_address", "startIPAddress", "startIpAddress"),
-        end_ip_address=pick(raw, "end_ip_address", "endIPAddress", "endIpAddress"),
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_locations",
     input_model=ListRangesInput,
-    output_view=GreRangeSummary,
     is_list=True,
 )
 def zia_list_gre_ranges(args: ListRangesInput) -> list[dict[str, Any]]:
-    """List available ZIA GRE internal-IP ranges as curated summaries."""
+    """List available ZIA GRE internal-IP ranges."""
     client = get_zscaler_client(service="zia")
     qp: dict[str, Any] = {}
     if args.internal_ip_range:
@@ -61,4 +48,4 @@ def zia_list_gre_ranges(args: ListRangesInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list GRE ranges: {err}")
     rows = [r if isinstance(r, dict) else r.as_dict() for r in (ranges or [])]
-    return shape_many(rows, shape_range)
+    return shape_many(rows)

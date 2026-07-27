@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -31,10 +31,6 @@ class ListServersInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str,
-        Field(default="summary", pattern="^(summary|full)$", description="Response verbosity."),
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -48,9 +44,6 @@ class GetServerInput(BaseModel):
     """Inputs for getting one ZPA application server."""
 
     server_id: Annotated[str, Field(description="Application server ID (string, even if numeric).")]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -107,30 +100,6 @@ class DeleteServerInput(BaseModel):
 # =============================================================================
 
 
-class ServerSummary(AgentView):
-    """Lean view — identify and reason about an application server."""
-
-    id: str = Field(description="Application server ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    address: Optional[str] = Field(default=None, description="Domain or IP address.")
-    enabled: bool = Field(description="Whether the server is enabled (decision-bearing).")
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    server_group_count: int = Field(
-        description="Number of associated server groups (relational signal)."
-    )
-
-
-class ServerDetail(ServerSummary):
-    """Full view — summary plus relational ids + provenance."""
-
-    server_group_ids: list[str] = Field(
-        default_factory=list, description="IDs of associated server groups."
-    )
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-    created_time: Optional[str] = Field(default=None, description="Creation timestamp.")
-    modified_time: Optional[str] = Field(default=None, description="Last-modified timestamp.")
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
@@ -144,34 +113,6 @@ def _server_groups(raw: dict[str, Any]) -> list[Any]:
     )
 
 
-def _shape_summary(raw: dict[str, Any]) -> ServerSummary:
-    return ServerSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        address=pick(raw, "address"),
-        enabled=bool(pick(raw, "enabled", default=False)),
-        description=pick(raw, "description"),
-        server_group_count=len(_server_groups(raw)),
-    )
-
-
-def _shape_detail(raw: dict[str, Any]) -> ServerDetail:
-    groups = _server_groups(raw)
-    group_ids = [str(g.get("id") if isinstance(g, dict) else g) for g in groups]
-    return ServerDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        address=pick(raw, "address"),
-        enabled=bool(pick(raw, "enabled", default=False)),
-        description=pick(raw, "description"),
-        server_group_count=len(groups),
-        server_group_ids=group_ids,
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-        created_time=pick(raw, "creation_time", "creationTime"),
-        modified_time=pick(raw, "modified_time", "modifiedTime"),
-    )
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -182,11 +123,10 @@ def _shape_detail(raw: dict[str, Any]) -> ServerDetail:
     service="zpa",
     toolset="zpa_application_servers",
     input_model=ListServersInput,
-    output_view=ServerSummary,
     is_list=True,
 )
 def zpa_list_application_servers(args: ListServersInput) -> list[dict[str, Any]]:
-    """List ZPA application servers as curated, agent-facing views (read-only)."""
+    """List ZPA application servers (read-only)."""
     client = get_zscaler_client(service="zpa")
     qp: dict[str, Any] = {"microtenant_id": args.microtenant_id}
     if args.search:
@@ -198,8 +138,7 @@ def zpa_list_application_servers(args: ListServersInput) -> list[dict[str, Any]]
     servers, _, err = client.zpa.servers.list_servers(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list application servers: {err}")
-    shaper = _shape_detail if args.detail == "full" else _shape_summary
-    return shape_many([s.as_dict() for s in (servers or [])], shaper)
+    return shape_many([s.as_dict() for s in (servers or [])])
 
 
 @tool(
@@ -207,11 +146,10 @@ def zpa_list_application_servers(args: ListServersInput) -> list[dict[str, Any]]
     service="zpa",
     toolset="zpa_application_servers",
     input_model=GetServerInput,
-    output_view=ServerDetail,
     is_list=False,
 )
 def zpa_get_application_server(args: GetServerInput) -> dict[str, Any]:
-    """Get one ZPA application server as a curated, agent-facing view (read-only)."""
+    """Get one ZPA application server (read-only)."""
     if not args.server_id:
         raise ValueError("server_id is required")
     client = get_zscaler_client(service="zpa")
@@ -220,8 +158,7 @@ def zpa_get_application_server(args: GetServerInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to get application server {args.server_id}: {err}")
-    shaper = _shape_detail if args.detail == "full" else _shape_summary
-    return shaper(result.as_dict()).model_dump()
+    return shape_one(result.as_dict())
 
 
 @tool(
@@ -229,7 +166,6 @@ def zpa_get_application_server(args: GetServerInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_application_servers",
     input_model=CreateServerInput,
-    output_view=ServerDetail,
     is_list=False,
 )
 def zpa_create_application_server(args: CreateServerInput) -> dict[str, Any]:
@@ -252,7 +188,7 @@ def zpa_create_application_server(args: CreateServerInput) -> dict[str, Any]:
     created, _, err = client.zpa.servers.add_server(**payload)
     if err:
         raise RuntimeError(f"Failed to create application server: {err}")
-    return _shape_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(
@@ -260,7 +196,6 @@ def zpa_create_application_server(args: CreateServerInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_application_servers",
     input_model=UpdateServerInput,
-    output_view=ServerDetail,
     is_list=False,
 )
 def zpa_update_application_server(args: UpdateServerInput) -> dict[str, Any]:
@@ -284,7 +219,7 @@ def zpa_update_application_server(args: UpdateServerInput) -> dict[str, Any]:
     updated, _, err = client.zpa.servers.update_server(args.server_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update application server {args.server_id}: {err}")
-    return _shape_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -78,42 +78,10 @@ class MetadataInput(BaseModel):
 # =============================================================================
 
 
-class ResourceSummary(AgentView):
-    """Lean view — one ZMS resource (workload) row."""
-
-    id: str = Field(description="Resource ID.")
-    name: Optional[str] = Field(default=None, description="Resource/hostname.")
-    resource_type: Optional[str] = Field(default=None, description="VM / container / bare metal.")
-    status: Optional[str] = Field(default=None, description="Resource status (decision-bearing).")
-    cloud_provider: Optional[str] = Field(default=None, description="Cloud provider.")
-    cloud_region: Optional[str] = Field(default=None, description="Cloud region.")
-    platform_os: Optional[str] = Field(default=None, description="Platform OS.")
-    ip_addresses: list[str] = Field(default_factory=list, description="IP addresses.")
-
-
 class AggregateStatus(AgentView):
     """Aggregate ZMS status/metadata payload — kept nested."""
 
     data: dict = Field(default_factory=dict, description="Aggregate payload (counts/percentages).")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def _shape_resource(raw: dict[str, Any]) -> ResourceSummary:
-    ips = coalesce(raw, "ip_addresses", "ipAddresses")
-    return ResourceSummary(
-        id=str(pick(raw, "id", "resource_id", "resourceId", default="")),
-        name=pick(raw, "name", "hostname"),
-        resource_type=pick(raw, "resource_type", "resourceType", "type"),
-        status=pick(raw, "status"),
-        cloud_provider=pick(raw, "cloud_provider", "cloudProvider"),
-        cloud_region=pick(raw, "cloud_region", "cloudRegion"),
-        platform_os=pick(raw, "platform_os", "platformOs", "os"),
-        ip_addresses=[str(ip) for ip in ips],
-    )
 
 
 def _build_resource_filter(args: ListResourcesInput):
@@ -162,11 +130,10 @@ def _build_resource_order(sort_order: Optional[str]):
     service="zms",
     toolset="zms",
     input_model=ListResourcesInput,
-    output_view=ResourceSummary,
     is_list=True,
 )
 def zms_list_resources(args: ListResourcesInput) -> list[dict[str, Any]]:
-    """List ZMS resources (workloads) as curated, agent-facing views.
+    """List ZMS resources (workloads).
 
     Read-only. Returns one row per workload (id, name, type, status, cloud
     provider/region, OS, IPs). Filter by name/status/type/provider/region/OS.
@@ -190,7 +157,7 @@ def zms_list_resources(args: ListResourcesInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.resources.list_resources(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS resources: {err}")
-    return shape_many(nodes_of(result), _shape_resource)
+    return shape_many(nodes_of(result))
 
 
 @tool(
@@ -229,7 +196,7 @@ def zms_get_resource_protection_status(args: PageInput) -> dict[str, Any]:
     wire_format=WireFormat.JSON,
 )
 def zms_get_metadata(args: MetadataInput) -> dict[str, Any]:
-    """Get ZMS resource event metadata (curated view).
+    """Get ZMS resource event metadata (full record).
 
     Read-only. Returns metadata about the resource-level events available in the
     deployment. Requires ZSCALER_CUSTOMER_ID.

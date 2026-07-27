@@ -5,7 +5,7 @@ registered under the v1 name ``get_zia_user_groups`` (fetch by ID, find by name 
 client-side substring match, or list with optional filters/sorting). Backed by
 ``client.zia.user_management``.
 
-Only the output is changed vs v1: the curated ``GroupSummary`` view is returned
+The group records are returned exactly as the ZIA API provides them
 instead of the raw SDK dict, to keep token usage low.
 """
 
@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 # Maximum page_size accepted by the ZIA list_groups endpoint. Used when `name` is
 # provided so we can pull a wide page and do client-side normalized matching.
@@ -63,26 +63,11 @@ class GroupInput(BaseModel):
     ] = None
 
 
-class GroupSummary(AgentView):
-    id: str = Field(description="Group ID. Use in policy-rule payloads.")
-    name: str = Field(description="Display name.")
-    comments: Optional[str] = Field(default=None, description="Admin comments.")
-
-
-def shape_summary(raw: dict[str, Any]) -> GroupSummary:
-    return GroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        comments=pick(raw, "comments"),
-    )
-
-
 @tool(
     action=READ,
     service="zia",
     toolset="zia_users",
     input_model=GroupInput,
-    output_view=GroupSummary,
     is_list=True,
 )
 def get_zia_user_groups(args: GroupInput) -> list[dict[str, Any]]:
@@ -94,7 +79,7 @@ def get_zia_user_groups(args: GroupInput) -> list[dict[str, Any]]:
         group, _, err = api.get_group(args.group_id)
         if err:
             raise RuntimeError(f"Failed to get user group {args.group_id}: {err}")
-        return shape_many([group.as_dict()], shape_summary)
+        return shape_many([group.as_dict()])
 
     if args.name is not None and not args.name.strip():
         raise ValueError("`name` must be a non-empty string when provided.")
@@ -128,4 +113,4 @@ def get_zia_user_groups(args: GroupInput) -> list[dict[str, Any]]:
         needle = args.name.strip().lower()
         results = [g for g in results if needle in str(g.get("name", "")).lower()]
 
-    return shape_many(results, shape_summary)
+    return shape_many(results)

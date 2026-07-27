@@ -16,7 +16,7 @@ from pydantic import Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zins._common import (
     TimeWindowInput,
     as_dicts,
@@ -42,18 +42,6 @@ class CasbAppReportInput(TimeWindowInput):
 # =============================================================================
 
 
-class CasbAppRow(AgentView):
-    """A single CASB SaaS-application usage bucket."""
-
-    id: Optional[str] = Field(
-        default=None, description="Application identifier, when the API returns one."
-    )
-    name: Optional[str] = Field(default=None, description="SaaS application name.")
-    total: Optional[float] = Field(
-        default=None, description="Aggregated usage total for this application."
-    )
-
-
 def _as_opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
@@ -67,14 +55,6 @@ def _as_opt_float(value: Any) -> Optional[float]:
         return None
 
 
-def _shape_row(raw: dict[str, Any]) -> CasbAppRow:
-    return CasbAppRow(
-        id=_as_opt_str(pick(raw, "id")),
-        name=pick(raw, "name", "label", "key", "application"),
-        total=_as_opt_float(pick(raw, "total", "count", "value")),
-    )
-
-
 # =============================================================================
 # TOOL
 # =============================================================================
@@ -85,7 +65,6 @@ def _shape_row(raw: dict[str, Any]) -> CasbAppRow:
     service="zins",
     toolset="zins_saas",
     input_model=CasbAppReportInput,
-    output_view=CasbAppRow,
     is_list=True,
 )
 def zins_get_casb_app_report(args: CasbAppReportInput) -> list[dict[str, Any]]:
@@ -105,4 +84,4 @@ def zins_get_casb_app_report(args: CasbAppReportInput) -> list[dict[str, Any]]:
         raise RuntimeError(f"Failed to get CASB app report: {err}")
     raise_for_graphql_errors(response, "get_casb_app_report")
 
-    return shape_many(as_dicts(entries), _shape_row)
+    return shape_many(as_dicts(entries))

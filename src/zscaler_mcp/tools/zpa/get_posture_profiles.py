@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa._refs import RefItem, shape_ref
 
 
 class PostureProfileInput(BaseModel):
@@ -34,7 +33,6 @@ class PostureProfileInput(BaseModel):
     toolset="zpa_misc",
     name="get_zpa_posture_profile",
     input_model=PostureProfileInput,
-    output_view=RefItem,
     is_list=True,
 )
 def get_zpa_posture_profile(args: PostureProfileInput) -> list[dict[str, Any]]:
@@ -46,7 +44,7 @@ def get_zpa_posture_profile(args: PostureProfileInput) -> list[dict[str, Any]]:
         profile, _, err = api.get_profile(args.profile_id)
         if err:
             raise RuntimeError(f"Failed to fetch posture profile {args.profile_id}: {err}")
-        return shape_many([profile.as_dict()], shape_ref)
+        return shape_many([profile.as_dict()])
 
     qp = {"search": args.name} if args.name else {}
     profiles, _, err = api.list_posture_profiles(query_params=qp)
@@ -57,4 +55,4 @@ def get_zpa_posture_profile(args: PostureProfileInput) -> list[dict[str, Any]]:
         rows = [p for p in rows if p.get("name") == args.name]
         if not rows:
             raise ValueError(f"No posture profile found with name '{args.name}'")
-    return shape_many(rows, shape_ref)
+    return shape_many(rows)

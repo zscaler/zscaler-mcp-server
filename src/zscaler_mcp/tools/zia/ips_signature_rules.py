@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -66,41 +66,9 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class IpsSignatureSummary(AgentView):
-    id: str = Field(description="Signature rule ID.")
-    name: str = Field(description="Signature name.")
-    description: Optional[str] = Field(default=None, description="Admin note.")
-
-
-class IpsSignatureDetail(IpsSignatureSummary):
-    rule_text: Optional[str] = Field(default=None, description="The signature body.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def shape_summary(raw: dict[str, Any]) -> IpsSignatureSummary:
-    return IpsSignatureSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-    )
-
-
-def shape_detail(raw: dict[str, Any]) -> IpsSignatureDetail:
-    return IpsSignatureDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        description=pick(raw, "description"),
-        rule_text=pick(raw, "rule_text", "ruleText"),
-    )
 
 
 # =============================================================================
@@ -113,17 +81,16 @@ def shape_detail(raw: dict[str, Any]) -> IpsSignatureDetail:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=ListInput,
-    output_view=IpsSignatureSummary,
     is_list=True,
 )
 def zia_list_ips_signature_rules(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA custom IPS signature rules as curated summaries."""
+    """List ZIA custom IPS signature rules."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     rules, _, err = client.zia.ips_signature_rules.list_ips_signature_rules(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list IPS signature rules: {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 @tool(
@@ -131,7 +98,6 @@ def zia_list_ips_signature_rules(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=GetInput,
-    output_view=IpsSignatureDetail,
     is_list=False,
 )
 def zia_get_ips_signature_rule(args: GetInput) -> dict[str, Any]:
@@ -140,7 +106,7 @@ def zia_get_ips_signature_rule(args: GetInput) -> dict[str, Any]:
     rule, _, err = client.zia.ips_signature_rules.get_ips_signature_rule(args.rule_id)
     if err:
         raise RuntimeError(f"Failed to get IPS signature rule {args.rule_id}: {err}")
-    return shape_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -148,7 +114,6 @@ def zia_get_ips_signature_rule(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=CreateInput,
-    output_view=IpsSignatureDetail,
     is_list=False,
 )
 def zia_create_ips_signature_rule(args: CreateInput) -> dict[str, Any]:
@@ -160,7 +125,7 @@ def zia_create_ips_signature_rule(args: CreateInput) -> dict[str, Any]:
     rule, _, err = client.zia.ips_signature_rules.add_ips_signature_rule(**payload)
     if err:
         raise RuntimeError(f"Failed to create IPS signature rule: {err}")
-    return shape_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -168,7 +133,6 @@ def zia_create_ips_signature_rule(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_cloud_firewall",
     input_model=UpdateInput,
-    output_view=IpsSignatureDetail,
     is_list=False,
 )
 def zia_update_ips_signature_rule(args: UpdateInput) -> dict[str, Any]:
@@ -195,7 +159,7 @@ def zia_update_ips_signature_rule(args: UpdateInput) -> dict[str, Any]:
     rule, _, err = client.zia.ips_signature_rules.update_ips_signature_rule(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update IPS signature rule {args.rule_id}: {err}")
-    return shape_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(

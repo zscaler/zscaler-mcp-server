@@ -7,7 +7,7 @@ Mirrors v1's ``ba_certificate.py``.
     zpa_create_ba_certificate   (CREATE)
     zpa_delete_ba_certificate   (DELETE)
 
-The curated ``CertSummary`` / ``CertDetail`` views and their shapers live here
+The curated ``CertDetail`` / ``CertDetail`` views and their shapers live here
 (certificates' canonical home) and are reused by the read-only enrollment
 certificate tool in ``get_enrollment_certificate.py``.
 """
@@ -20,14 +20,9 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
-__all__ = [
-    "CertSummary",
-    "CertDetail",
-    "shape_cert_summary",
-    "shape_cert_detail",
-]
+__all__ = []
 
 
 class ListBaCertsInput(BaseModel):
@@ -36,9 +31,6 @@ class ListBaCertsInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
-    detail: Annotated[
-        str, Field(default="summary", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "summary"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -50,9 +42,6 @@ class GetBaCertInput(BaseModel):
     certificate_id: Annotated[
         str, Field(description="BA certificate ID (string, even if numeric).")
     ]
-    detail: Annotated[
-        str, Field(default="full", pattern="^(summary|full)$", description="Response verbosity.")
-    ] = "full"
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -79,26 +68,6 @@ class DeleteBaCertInput(BaseModel):
     ] = None
 
 
-class CertSummary(AgentView):
-    """Lean view — identify a certificate (BA or enrollment)."""
-
-    id: str = Field(description="Certificate ID. Use this in follow-up calls.")
-    name: str = Field(description="Display name.")
-    valid_to: Optional[str] = Field(default=None, description="Expiry (renewal-planning signal).")
-
-
-class CertDetail(CertSummary):
-    """Full view — summary plus subject/issuer/validity + provenance."""
-
-    description: Optional[str] = Field(default=None, description="Admin description.")
-    cname: Optional[str] = Field(default=None, description="Certificate common name.")
-    issued_to: Optional[str] = Field(default=None, description="Issued-to subject.")
-    issued_by: Optional[str] = Field(default=None, description="Issuing authority.")
-    valid_from: Optional[str] = Field(default=None, description="Validity start.")
-    serial_no: Optional[str] = Field(default=None, description="Certificate serial number.")
-    microtenant_id: Optional[str] = Field(default=None, description="Owning microtenant, if any.")
-
-
 class OperationResult(AgentView):
     """Result of a destructive operation (delete)."""
 
@@ -106,37 +75,11 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-def shape_cert_summary(raw: dict[str, Any]) -> CertSummary:
-    return CertSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        valid_to=pick(raw, "valid_to_in_epochsec", "validToInEpochSec", "valid_to", "validTo"),
-    )
-
-
-def shape_cert_detail(raw: dict[str, Any]) -> CertDetail:
-    return CertDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        valid_to=pick(raw, "valid_to_in_epochsec", "validToInEpochSec", "valid_to", "validTo"),
-        description=pick(raw, "description"),
-        cname=pick(raw, "cname"),
-        issued_to=pick(raw, "issued_to", "issuedTo"),
-        issued_by=pick(raw, "issued_by", "issuedBy"),
-        valid_from=pick(
-            raw, "valid_from_in_epochsec", "validFromInEpochSec", "valid_from", "validFrom"
-        ),
-        serial_no=pick(raw, "serial_no", "serialNo"),
-        microtenant_id=pick(raw, "microtenant_id", "microtenantId"),
-    )
-
-
 @tool(
     action=READ,
     service="zpa",
     toolset="zpa_ba_certificates",
     input_model=ListBaCertsInput,
-    output_view=CertSummary,
     is_list=True,
 )
 def zpa_list_ba_certificates(args: ListBaCertsInput) -> list[dict[str, Any]]:
@@ -150,8 +93,7 @@ def zpa_list_ba_certificates(args: ListBaCertsInput) -> list[dict[str, Any]]:
     certs, _, err = client.zpa.certificates.list_issued_certificates(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list BA certificates: {err}")
-    shaper = shape_cert_detail if args.detail == "full" else shape_cert_summary
-    return shape_many([c.as_dict() for c in (certs or [])], shaper)
+    return shape_many([c.as_dict() for c in (certs or [])])
 
 
 @tool(
@@ -159,7 +101,6 @@ def zpa_list_ba_certificates(args: ListBaCertsInput) -> list[dict[str, Any]]:
     service="zpa",
     toolset="zpa_ba_certificates",
     input_model=GetBaCertInput,
-    output_view=CertDetail,
     is_list=False,
 )
 def zpa_get_ba_certificate(args: GetBaCertInput) -> dict[str, Any]:
@@ -173,8 +114,7 @@ def zpa_get_ba_certificate(args: GetBaCertInput) -> dict[str, Any]:
     cert, _, err = client.zpa.certificates.get_certificate(args.certificate_id, query_params=qp)
     if err:
         raise RuntimeError(f"Failed to get BA certificate {args.certificate_id}: {err}")
-    shaper = shape_cert_detail if args.detail == "full" else shape_cert_summary
-    return shaper(cert.as_dict()).model_dump()
+    return shape_one(cert.as_dict())
 
 
 @tool(
@@ -182,7 +122,6 @@ def zpa_get_ba_certificate(args: GetBaCertInput) -> dict[str, Any]:
     service="zpa",
     toolset="zpa_ba_certificates",
     input_model=CreateBaCertInput,
-    output_view=CertDetail,
     is_list=False,
 )
 def zpa_create_ba_certificate(args: CreateBaCertInput) -> dict[str, Any]:
@@ -199,7 +138,7 @@ def zpa_create_ba_certificate(args: CreateBaCertInput) -> dict[str, Any]:
     created, _, err = client.zpa.certificates.add_certificate(**body)
     if err:
         raise RuntimeError(f"Failed to create BA certificate: {err}")
-    return shape_cert_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(

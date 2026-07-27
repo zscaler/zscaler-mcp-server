@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa._refs import RefItem, resolve_idp_id, shape_ref
+from zscaler_mcp.tools.zpa._refs import resolve_idp_id
 
 
 class ScimAttributeInput(BaseModel):
@@ -37,7 +37,6 @@ class ScimAttributeInput(BaseModel):
     toolset="zpa_idp",
     name="get_zpa_scim_attribute",
     input_model=ScimAttributeInput,
-    output_view=RefItem,
     is_list=True,
 )
 def get_zpa_scim_attribute(args: ScimAttributeInput) -> list[dict[str, Any]]:
@@ -55,8 +54,8 @@ def get_zpa_scim_attribute(args: ScimAttributeInput) -> list[dict[str, Any]]:
         )
         if err:
             raise RuntimeError(f"Failed to fetch SCIM attribute by ID: {err}")
-        return shape_many([attr.as_dict()], shape_ref)
+        return shape_many([attr.as_dict()])
     attrs, _, err = client.zpa.scim_attributes.list_scim_attributes(idp_id=idp_id, query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list SCIM attributes for IdP {args.idp_name}: {err}")
-    return shape_many([a.as_dict() for a in (attrs or [])], shape_ref)
+    return shape_many([a.as_dict() for a in (attrs or [])])

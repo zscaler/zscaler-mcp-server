@@ -52,6 +52,28 @@ logger = logging.getLogger("zscaler_mcp")
 DEFAULT_MCP_PATH = "/mcp"
 
 
+def _warn_unknown_toolsets(selection: Iterable[str] | None, flag: str) -> None:
+    """Warn about toolset ids that match nothing in the registry.
+
+    Toolset ids are exact (no globbing), so a typo would otherwise be silent —
+    and for ``--toolsets`` it is silent in the worst possible way: the selection
+    matches nothing and the server starts with ZERO tools. Warn and continue,
+    which is the documented contract, rather than failing the boot.
+    """
+    if not selection:
+        return
+    known = REGISTRY.toolsets()
+    unknown = sorted(set(selection) - known)
+    if not unknown:
+        return
+    logger.warning(
+        "%s: unknown toolset id(s) %s — ignored. Known toolsets: %s",
+        flag,
+        ", ".join(repr(u) for u in unknown),
+        ", ".join(sorted(known)),
+    )
+
+
 def _resolve_entitled_services(disable_entitlement_filter: bool) -> set[str] | None:
     """Return the set of OneAPI-entitled service codes, or ``None`` to skip.
 
@@ -108,6 +130,9 @@ def build_server(
             env-var ``AuthMiddleware`` path is bypassed for this server.
     """
     discover_tools()
+
+    _warn_unknown_toolsets(enabled_toolsets, "--toolsets")
+    _warn_unknown_toolsets(disabled_toolsets, "--disabled-toolsets")
 
     entitled_services = _resolve_entitled_services(disable_entitlement_filter)
 
@@ -506,7 +531,7 @@ def _resolve_toolsets(value: str | None) -> list[str] | None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="zscaler-mcp",
-        description="Agent-first Zscaler MCP server (v2) — curated, schema-backed tool responses.",
+        description="Zscaler MCP server — typed tool inputs, verbatim Zscaler API records out.",
     )
     p.add_argument(
         "--transport",

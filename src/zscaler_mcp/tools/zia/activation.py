@@ -8,25 +8,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick
+from zscaler_mcp.shaping import shape_one
 
 
 class _NoArgs(BaseModel):
     pass
-
-
-class ActivationStatus(AgentView):
-    status: str = Field(description="Current activation status (e.g. ACTIVE, PENDING).")
-
-
-def _shape_status(raw: Any) -> ActivationStatus:
-    if isinstance(raw, dict):
-        return ActivationStatus(status=str(pick(raw, "status", default="UNKNOWN")))
-    return ActivationStatus(status=str(raw))
 
 
 @tool(
@@ -34,7 +24,6 @@ def _shape_status(raw: Any) -> ActivationStatus:
     service="zia",
     toolset="zia_admin",
     input_model=_NoArgs,
-    output_view=ActivationStatus,
     is_list=False,
 )
 def zia_get_activation_status(args: _NoArgs) -> dict[str, Any]:
@@ -44,7 +33,7 @@ def zia_get_activation_status(args: _NoArgs) -> dict[str, Any]:
     if err:
         raise RuntimeError(f"Failed to get activation status: {err}")
     raw = status_obj.as_dict() if hasattr(status_obj, "as_dict") else status_obj
-    return _shape_status(raw).model_dump()
+    return shape_one(raw)
 
 
 @tool(
@@ -52,7 +41,6 @@ def zia_get_activation_status(args: _NoArgs) -> dict[str, Any]:
     service="zia",
     toolset="zia_admin",
     input_model=_NoArgs,
-    output_view=ActivationStatus,
     is_list=False,
 )
 def zia_activate_configuration(args: _NoArgs) -> dict[str, Any]:
@@ -62,4 +50,4 @@ def zia_activate_configuration(args: _NoArgs) -> dict[str, Any]:
     if err:
         raise RuntimeError(f"Failed to activate configuration: {err}")
     raw = result.as_dict() if hasattr(result, "as_dict") else result
-    return _shape_status(raw).model_dump()
+    return shape_one(raw)

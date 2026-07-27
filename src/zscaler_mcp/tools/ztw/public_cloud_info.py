@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 
 class ListPublicCloudInfoInput(BaseModel):
@@ -29,32 +29,8 @@ class ListPublicCloudInfoInput(BaseModel):
     ] = None
 
 
-class PublicCloudInfoSummary(AgentView):
-    """Lean view — identify a public-cloud account/integration record."""
-
-    id: Optional[str] = Field(default=None, description="Account/record ID, if present.")
-    name: Optional[str] = Field(default=None, description="Account name.")
-    cloud_type: Optional[str] = Field(default=None, description="Cloud provider (AWS/AZURE/GCP).")
-    account_id: Optional[str] = Field(default=None, description="Cloud account identifier.")
-    region: Optional[str] = Field(default=None, description="Cloud region, if present.")
-    status: Optional[str] = Field(
-        default=None, description="Integration status (decision-bearing)."
-    )
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
-
-
-def _shape_cloud_info(raw: dict[str, Any]) -> PublicCloudInfoSummary:
-    return PublicCloudInfoSummary(
-        id=_opt_str(pick(raw, "id")),
-        name=pick(raw, "name", "account_name", "accountName"),
-        cloud_type=pick(raw, "cloud_type", "cloudType", "cloud_provider", "cloudProvider"),
-        account_id=_opt_str(pick(raw, "account_id", "accountId")),
-        region=pick(raw, "region"),
-        status=pick(raw, "status", "state"),
-    )
 
 
 @tool(
@@ -62,11 +38,10 @@ def _shape_cloud_info(raw: dict[str, Any]) -> PublicCloudInfoSummary:
     service="ztw",
     toolset="ztw",
     input_model=ListPublicCloudInfoInput,
-    output_view=PublicCloudInfoSummary,
     is_list=True,
 )
 def ztw_list_public_cloud_info(args: ListPublicCloudInfoInput) -> list[dict[str, Any]]:
-    """List ZTW public-cloud account info as curated, agent-facing views (read-only)."""
+    """List ZTW public-cloud account info (read-only)."""
     client = get_zscaler_client(service="ztw")
     qp: dict[str, Any] = {}
     if args.page is not None:
@@ -80,4 +55,4 @@ def ztw_list_public_cloud_info(args: ListPublicCloudInfoInput) -> list[dict[str,
     accounts, _, err = client.ztw.public_cloud_info.list_public_cloud_info(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list ZTW public cloud info: {err}")
-    return shape_many([a.as_dict() for a in (accounts or [])], _shape_cloud_info)
+    return shape_many([a.as_dict() for a in (accounts or [])])

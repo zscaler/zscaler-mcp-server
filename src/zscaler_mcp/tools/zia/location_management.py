@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, coalesce, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -86,79 +86,13 @@ class GetLocationGroupInput(BaseModel):
 # =============================================================================
 
 
-class LocationSummary(AgentView):
-    id: str = Field(description="Location ID. Use in follow-up calls.")
-    name: str = Field(description="Display name.")
-    country: Optional[str] = Field(default=None, description="Country.")
-    tz: Optional[str] = Field(default=None, description="Timezone.")
-    ip_address_count: int = Field(description="Number of configured IP addresses.")
-    auth_required: Optional[bool] = Field(default=None, description="Authentication required flag.")
-
-
-class LocationDetail(LocationSummary):
-    ip_addresses: list[str] = Field(default_factory=list, description="Configured IP addresses.")
-    profile: Optional[str] = Field(default=None, description="Profile tag (CORPORATE/SERVER/...).")
-    description: Optional[str] = Field(default=None, description="Notes.")
-    xff_forward_enabled: Optional[bool] = Field(default=None, description="XFF forwarding flag.")
-    surrogate_ip: Optional[bool] = Field(default=None, description="Surrogate IP flag.")
-
-
-class LocationGroupSummary(AgentView):
-    id: str = Field(description="Location group ID.")
-    name: str = Field(description="Display name.")
-    group_type: Optional[str] = Field(default=None, description="DYNAMIC or STATIC.")
-    location_count: int = Field(description="Number of member locations.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
 
 
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
 def _ips(raw: dict[str, Any]) -> list[Any]:
     return coalesce(raw, "ip_addresses", "ipAddresses")
-
-
-def shape_loc_summary(raw: dict[str, Any]) -> LocationSummary:
-    return LocationSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        country=pick(raw, "country"),
-        tz=pick(raw, "tz"),
-        ip_address_count=len(_ips(raw)),
-        auth_required=pick(raw, "auth_required", "authRequired"),
-    )
-
-
-def shape_loc_detail(raw: dict[str, Any]) -> LocationDetail:
-    ips = _ips(raw)
-    return LocationDetail(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        country=pick(raw, "country"),
-        tz=pick(raw, "tz"),
-        ip_address_count=len(ips),
-        auth_required=pick(raw, "auth_required", "authRequired"),
-        ip_addresses=[str(i) for i in ips],
-        profile=pick(raw, "profile"),
-        description=pick(raw, "description"),
-        xff_forward_enabled=pick(raw, "xff_forward_enabled", "xffForwardEnabled"),
-        surrogate_ip=pick(raw, "surrogate_ip", "surrogateIP"),
-    )
-
-
-def shape_group_summary(raw: dict[str, Any]) -> LocationGroupSummary:
-    return LocationGroupSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        group_type=pick(raw, "group_type", "groupType"),
-        location_count=len(coalesce(raw, "locations")),
-    )
 
 
 def _build_location_body(args: _LocationBody) -> dict[str, Any]:
@@ -186,17 +120,16 @@ def _build_location_body(args: _LocationBody) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=ListLocationsInput,
-    output_view=LocationSummary,
     is_list=True,
 )
 def zia_list_locations(args: ListLocationsInput) -> list[dict[str, Any]]:
-    """List ZIA locations as curated summaries."""
+    """List ZIA locations."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     locs, _, err = client.zia.locations.list_locations(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list locations: {err}")
-    return shape_many([loc.as_dict() for loc in (locs or [])], shape_loc_summary)
+    return shape_many([loc.as_dict() for loc in (locs or [])])
 
 
 @tool(
@@ -204,7 +137,6 @@ def zia_list_locations(args: ListLocationsInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_locations",
     input_model=GetLocationInput,
-    output_view=LocationDetail,
     is_list=False,
 )
 def zia_get_location(args: GetLocationInput) -> dict[str, Any]:
@@ -213,7 +145,7 @@ def zia_get_location(args: GetLocationInput) -> dict[str, Any]:
     loc, _, err = client.zia.locations.get_location(args.location_id)
     if err:
         raise RuntimeError(f"Failed to get location {args.location_id}: {err}")
-    return shape_loc_detail(loc.as_dict()).model_dump()
+    return shape_one(loc.as_dict())
 
 
 @tool(
@@ -221,7 +153,6 @@ def zia_get_location(args: GetLocationInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=CreateLocationInput,
-    output_view=LocationDetail,
     is_list=False,
 )
 def zia_create_location(args: CreateLocationInput) -> dict[str, Any]:
@@ -236,7 +167,7 @@ def zia_create_location(args: CreateLocationInput) -> dict[str, Any]:
     created, _, err = client.zia.locations.add_location(**body)
     if err:
         raise RuntimeError(f"Failed to create location: {err}")
-    return shape_loc_detail(created.as_dict()).model_dump()
+    return shape_one(created.as_dict())
 
 
 @tool(
@@ -244,7 +175,6 @@ def zia_create_location(args: CreateLocationInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=UpdateLocationInput,
-    output_view=LocationDetail,
     is_list=False,
 )
 def zia_update_location(args: UpdateLocationInput) -> dict[str, Any]:
@@ -254,7 +184,7 @@ def zia_update_location(args: UpdateLocationInput) -> dict[str, Any]:
     updated, _, err = client.zia.locations.update_location(args.location_id, **body)
     if err:
         raise RuntimeError(f"Failed to update location {args.location_id}: {err}")
-    return shape_loc_detail(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(
@@ -286,11 +216,10 @@ def zia_delete_location(args: DeleteLocationInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=ListLocationGroupsInput,
-    output_view=LocationGroupSummary,
     is_list=True,
 )
 def zia_list_location_groups(args: ListLocationGroupsInput) -> list[dict[str, Any]]:
-    """List ZIA location groups as curated summaries."""
+    """List ZIA location groups."""
     client = get_zscaler_client(service="zia")
     qp: dict[str, Any] = {}
     if args.search:
@@ -300,7 +229,7 @@ def zia_list_location_groups(args: ListLocationGroupsInput) -> list[dict[str, An
     groups, _, err = client.zia.locations.list_location_groups(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list location groups: {err}")
-    return shape_many([g.as_dict() for g in (groups or [])], shape_group_summary)
+    return shape_many([g.as_dict() for g in (groups or [])])
 
 
 @tool(
@@ -308,7 +237,6 @@ def zia_list_location_groups(args: ListLocationGroupsInput) -> list[dict[str, An
     service="zia",
     toolset="zia_locations",
     input_model=GetLocationGroupInput,
-    output_view=LocationGroupSummary,
     is_list=False,
 )
 def zia_get_location_group(args: GetLocationGroupInput) -> dict[str, Any]:
@@ -317,4 +245,4 @@ def zia_get_location_group(args: GetLocationGroupInput) -> dict[str, Any]:
     group, _, err = client.zia.locations.get_location_group(args.group_id)
     if err:
         raise RuntimeError(f"Failed to get location group {args.group_id}: {err}")
-    return shape_group_summary(group.as_dict()).model_dump()
+    return shape_one(group.as_dict())

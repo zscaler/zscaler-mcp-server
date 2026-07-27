@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many
 from zscaler_mcp.tools.zms._common import nodes_of, require_customer_id
 
 # =============================================================================
@@ -50,15 +50,6 @@ class GetNonceInput(BaseModel):
 # =============================================================================
 
 
-class NonceSummary(AgentView):
-    """Lean view — one ZMS enrollment nonce row."""
-
-    eyez_id: str = Field(description="Nonce eyez_id — canonical identifier.")
-    name: Optional[str] = Field(default=None, description="Nonce name/label.")
-    status: Optional[str] = Field(default=None, description="Nonce status (decision-bearing).")
-    expires_at: Optional[str] = Field(default=None, description="Expiry time.")
-
-
 class NonceDetail(AgentView):
     """Full nonce payload — kept nested (may carry sensitive enrollment data)."""
 
@@ -66,22 +57,8 @@ class NonceDetail(AgentView):
     data: dict = Field(default_factory=dict, description="Full nonce payload.")
 
 
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
 def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
-
-
-def _shape_nonce(raw: dict[str, Any]) -> NonceSummary:
-    return NonceSummary(
-        eyez_id=str(pick(raw, "eyez_id", "eyezId", "id", default="")),
-        name=pick(raw, "name"),
-        status=pick(raw, "status"),
-        expires_at=_opt_str(pick(raw, "expires_at", "expiresAt", "expiry")),
-    )
 
 
 # =============================================================================
@@ -94,11 +71,10 @@ def _shape_nonce(raw: dict[str, Any]) -> NonceSummary:
     service="zms",
     toolset="zms",
     input_model=ListNoncesInput,
-    output_view=NonceSummary,
     is_list=True,
 )
 def zms_list_nonces(args: ListNoncesInput) -> list[dict[str, Any]]:
-    """List ZMS enrollment nonces as curated, agent-facing views.
+    """List ZMS enrollment nonces.
 
     Read-only. Returns one row per nonce (eyez_id, name, status, expiry).
     Requires ZSCALER_CUSTOMER_ID.
@@ -119,7 +95,7 @@ def zms_list_nonces(args: ListNoncesInput) -> list[dict[str, Any]]:
     result, _, err = client.zms.nonces.list_nonces(**kwargs)
     if err:
         raise RuntimeError(f"Failed to list ZMS nonces: {err}")
-    return shape_many(nodes_of(result), _shape_nonce)
+    return shape_many(nodes_of(result))
 
 
 @tool(
@@ -132,7 +108,7 @@ def zms_list_nonces(args: ListNoncesInput) -> list[dict[str, Any]]:
     wire_format=WireFormat.JSON,
 )
 def zms_get_nonce(args: GetNonceInput) -> dict[str, Any]:
-    """Get one ZMS nonce as a curated view.
+    """Get one ZMS nonce.
 
     Read-only. Keyed by `eyez_id`. The payload may carry sensitive enrollment
     data — handle accordingly. Requires ZSCALER_CUSTOMER_ID.

@@ -21,7 +21,7 @@ class DiscoverySettingsInput(BaseModel):
 class DiscoverySettings(AgentView):
     """ZTW workload-discovery settings (tenant-wide singleton).
 
-    The SDK object's exact field set varies; the curated view surfaces the
+    The SDK object's exact field set varies; the full record surfaces the
     decision-bearing knobs and keeps the rest in a nested `settings` payload so
     nothing is silently dropped for a config singleton.
     """

@@ -22,14 +22,10 @@ from zscaler_mcp.common.zia_helpers import (
     validate_rank,
 )
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
 from ._rules_common import (
     OperationResult,
-    RuleDetail,
-    RuleSummary,
-    shape_rule_detail,
-    shape_rule_summary,
 )
 
 _ADVANCED_DESC = (
@@ -92,17 +88,16 @@ class DeleteInput(BaseModel):
     service="zia",
     toolset="zia_url_filtering",
     input_model=ListInput,
-    output_view=RuleSummary,
     is_list=True,
 )
 def zia_list_url_filtering_rules(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA URL Filtering rules as curated summaries."""
+    """List ZIA URL Filtering rules."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     rules, _, err = client.zia.url_filtering.list_rules(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list URL Filtering rules: {err}")
-    return shape_many([r.as_dict() for r in (rules or [])], shape_rule_summary)
+    return shape_many([r.as_dict() for r in (rules or [])])
 
 
 @tool(
@@ -110,7 +105,6 @@ def zia_list_url_filtering_rules(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_url_filtering",
     input_model=GetInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_get_url_filtering_rule(args: GetInput) -> dict[str, Any]:
@@ -119,7 +113,7 @@ def zia_get_url_filtering_rule(args: GetInput) -> dict[str, Any]:
     rule, _, err = client.zia.url_filtering.get_rule(args.rule_id)
     if err:
         raise RuntimeError(f"Failed to get URL Filtering rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -127,7 +121,6 @@ def zia_get_url_filtering_rule(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_filtering",
     input_model=CreateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_create_url_filtering_rule(args: CreateInput) -> dict[str, Any]:
@@ -147,7 +140,7 @@ def zia_create_url_filtering_rule(args: CreateInput) -> dict[str, Any]:
     rule, _, err = client.zia.url_filtering.add_rule(**payload)
     if err:
         raise RuntimeError(f"Failed to create URL Filtering rule: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(
@@ -155,7 +148,6 @@ def zia_create_url_filtering_rule(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_url_filtering",
     input_model=UpdateInput,
-    output_view=RuleDetail,
     is_list=False,
 )
 def zia_update_url_filtering_rule(args: UpdateInput) -> dict[str, Any]:
@@ -175,7 +167,7 @@ def zia_update_url_filtering_rule(args: UpdateInput) -> dict[str, Any]:
     rule, _, err = client.zia.url_filtering.update_rule(args.rule_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update URL Filtering rule {args.rule_id}: {err}")
-    return shape_rule_detail(rule.as_dict()).model_dump()
+    return shape_one(rule.as_dict())
 
 
 @tool(

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 _DAYS_DESC = "Days: EVERYDAY, SUN, MON, TUE, WED, THU, FRI, SAT. List or JSON string."
 _TIME_DESC = "Minutes from midnight (0-1439). E.g. 480 = 08:00, 1020 = 17:00."
@@ -52,27 +52,9 @@ class DeleteInput(BaseModel):
     interval_id: Annotated[str, Field(description="Interval ID to delete.")]
 
 
-class TimeIntervalSummary(AgentView):
-    id: str = Field(description="Interval ID. Use in rule time_windows.")
-    name: str = Field(description="Display name.")
-    start_time: Optional[int] = Field(default=None, description="Start (minutes from midnight).")
-    end_time: Optional[int] = Field(default=None, description="End (minutes from midnight).")
-    days_of_week: list[str] = Field(default_factory=list, description="Applicable days.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-def shape_summary(raw: dict[str, Any]) -> TimeIntervalSummary:
-    return TimeIntervalSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", default=""),
-        start_time=pick(raw, "start_time", "startTime"),
-        end_time=pick(raw, "end_time", "endTime"),
-        days_of_week=[str(d) for d in coalesce(raw, "days_of_week", "daysOfWeek")],
-    )
 
 
 @tool(
@@ -80,11 +62,10 @@ def shape_summary(raw: dict[str, Any]) -> TimeIntervalSummary:
     service="zia",
     toolset="zia_time_intervals",
     input_model=ListInput,
-    output_view=TimeIntervalSummary,
     is_list=True,
 )
 def zia_list_time_intervals(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA time intervals as curated summaries."""
+    """List ZIA time intervals."""
     client = get_zscaler_client(service="zia")
     qp: dict[str, Any] = {}
     if args.search:
@@ -96,7 +77,7 @@ def zia_list_time_intervals(args: ListInput) -> list[dict[str, Any]]:
     intervals, _, err = client.zia.time_intervals.list_time_intervals(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list time intervals: {err}")
-    return shape_many([i.as_dict() for i in (intervals or [])], shape_summary)
+    return shape_many([i.as_dict() for i in (intervals or [])])
 
 
 @tool(
@@ -104,7 +85,6 @@ def zia_list_time_intervals(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_time_intervals",
     input_model=GetInput,
-    output_view=TimeIntervalSummary,
     is_list=False,
 )
 def zia_get_time_interval(args: GetInput) -> dict[str, Any]:
@@ -113,7 +93,7 @@ def zia_get_time_interval(args: GetInput) -> dict[str, Any]:
     interval, _, err = client.zia.time_intervals.get_time_intervals(args.interval_id)
     if err:
         raise RuntimeError(f"Failed to get time interval {args.interval_id}: {err}")
-    return shape_summary(interval.as_dict()).model_dump()
+    return shape_one(interval.as_dict())
 
 
 @tool(
@@ -121,7 +101,6 @@ def zia_get_time_interval(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_time_intervals",
     input_model=CreateInput,
-    output_view=TimeIntervalSummary,
     is_list=False,
 )
 def zia_create_time_interval(args: CreateInput) -> dict[str, Any]:
@@ -135,7 +114,7 @@ def zia_create_time_interval(args: CreateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create time interval: {err}")
-    return shape_summary(interval.as_dict()).model_dump()
+    return shape_one(interval.as_dict())
 
 
 @tool(
@@ -143,7 +122,6 @@ def zia_create_time_interval(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_time_intervals",
     input_model=UpdateInput,
-    output_view=TimeIntervalSummary,
     is_list=False,
 )
 def zia_update_time_interval(args: UpdateInput) -> dict[str, Any]:
@@ -175,7 +153,7 @@ def zia_update_time_interval(args: UpdateInput) -> dict[str, Any]:
     updated, _, err = api.update_time_intervals(args.interval_id, **payload)
     if err:
         raise RuntimeError(f"Failed to update time interval {args.interval_id}: {err}")
-    return shape_summary(updated.as_dict()).model_dump()
+    return shape_one(updated.as_dict())
 
 
 @tool(

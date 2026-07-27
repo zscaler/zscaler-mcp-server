@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -62,32 +62,9 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class VpnCredentialSummary(AgentView):
-    id: str = Field(description="VPN credential ID. Use in location vpnCredentials payloads.")
-    type: Optional[str] = Field(default=None, description="IP or UFQDN.")
-    ip_address: Optional[str] = Field(default=None, description="Static IP (type IP).")
-    fqdn: Optional[str] = Field(default=None, description="UFQDN (type UFQDN).")
-    comments: Optional[str] = Field(default=None, description="Admin notes.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def shape_summary(raw: dict[str, Any]) -> VpnCredentialSummary:
-    return VpnCredentialSummary(
-        id=str(pick(raw, "id", default="")),
-        type=pick(raw, "type"),
-        ip_address=pick(raw, "ip_address", "ipAddress"),
-        fqdn=pick(raw, "fqdn"),
-        comments=pick(raw, "comments"),
-    )
 
 
 # =============================================================================
@@ -100,17 +77,16 @@ def shape_summary(raw: dict[str, Any]) -> VpnCredentialSummary:
     service="zia",
     toolset="zia_locations",
     input_model=ListInput,
-    output_view=VpnCredentialSummary,
     is_list=True,
 )
 def zia_list_vpn_credentials(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA VPN credentials as curated summaries (PSK never returned)."""
+    """List ZIA VPN credentials (PSK never returned)."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     creds, _, err = client.zia.traffic_vpn_credentials.list_vpn_credentials(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list VPN credentials: {err}")
-    return shape_many([c.as_dict() for c in (creds or [])], shape_summary)
+    return shape_many([c.as_dict() for c in (creds or [])])
 
 
 @tool(
@@ -118,7 +94,6 @@ def zia_list_vpn_credentials(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_locations",
     input_model=GetInput,
-    output_view=VpnCredentialSummary,
     is_list=False,
 )
 def zia_get_vpn_credential(args: GetInput) -> dict[str, Any]:
@@ -127,7 +102,7 @@ def zia_get_vpn_credential(args: GetInput) -> dict[str, Any]:
     cred, _, err = client.zia.traffic_vpn_credentials.get_vpn_credential(args.credential_id)
     if err:
         raise RuntimeError(f"Failed to get VPN credential {args.credential_id}: {err}")
-    return shape_summary(cred.as_dict()).model_dump()
+    return shape_one(cred.as_dict())
 
 
 @tool(
@@ -135,7 +110,6 @@ def zia_get_vpn_credential(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=CreateInput,
-    output_view=VpnCredentialSummary,
     is_list=False,
 )
 def zia_create_vpn_credential(args: CreateInput) -> dict[str, Any]:
@@ -154,7 +128,7 @@ def zia_create_vpn_credential(args: CreateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create VPN credential: {err}")
-    return shape_summary(cred.as_dict()).model_dump()
+    return shape_one(cred.as_dict())
 
 
 @tool(
@@ -162,7 +136,6 @@ def zia_create_vpn_credential(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=UpdateInput,
-    output_view=VpnCredentialSummary,
     is_list=False,
 )
 def zia_update_vpn_credential(args: UpdateInput) -> dict[str, Any]:
@@ -175,7 +148,7 @@ def zia_update_vpn_credential(args: UpdateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to update VPN credential {args.credential_id}: {err}")
-    return shape_summary(cred.as_dict()).model_dump()
+    return shape_one(cred.as_dict())
 
 
 @tool(

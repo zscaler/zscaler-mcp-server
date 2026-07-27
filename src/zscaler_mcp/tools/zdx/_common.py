@@ -29,16 +29,14 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 
 __all__ = [
     "scope_query_params",
     "unwrap_nested",
     "convert_timestamps",
     "TraceInput",
-    "TraceMetric",
     "ProbeInput",
-    "ProbeSummary",
     "build_metric_tool",
 ]
 
@@ -158,27 +156,6 @@ class TraceInput(BaseModel):
     trace_id: Annotated[str, Field(description="Deep-trace session ID (string, even if numeric).")]
 
 
-class TraceMetric(AgentView):
-    """Nested deep-trace metric/event payload — schema-declared passthrough.
-
-    Web-probe / cloud-path / health metrics, cloud-path hops, and events are
-    nested time-series that don't reduce to a flat row. The identity (if any) is
-    surfaced and the nested body is carried under `data`, timestamps normalized.
-    """
-
-    name: Optional[str] = Field(default=None, description="Metric/series name, if present.")
-    unit: Optional[str] = Field(default=None, description="Value unit, if present.")
-    data: dict = Field(default_factory=dict, description="Nested metric/event payload (ISO times).")
-
-
-def _shape_metric(raw: dict[str, Any]) -> TraceMetric:
-    return TraceMetric(
-        name=pick(raw, "metric", "name"),
-        unit=pick(raw, "unit"),
-        data=convert_timestamps(raw) if isinstance(raw, dict) else {},
-    )
-
-
 def build_metric_tool(sdk_method_name: str, label: str, *, name: str, description: str):
     """Build + register a device+trace metric reader bound to an SDK method.
 
@@ -196,14 +173,13 @@ def build_metric_tool(sdk_method_name: str, label: str, *, name: str, descriptio
         result, _, err = method(args.device_id, args.trace_id)
         if err:
             raise RuntimeError(f"Failed to get ZDX {label}: {err}")
-        return shape_many(_as_dicts(result), _shape_metric)
+        return shape_many(_as_dicts(result))
 
     return tool(
         action=READ,
         service="zdx",
         toolset="zdx_troubleshooting",
         input_model=TraceInput,
-        output_view=TraceMetric,
         is_list=True,
         wire_format=WireFormat.JSON,
         name=name,
@@ -225,23 +201,3 @@ class ProbeInput(BaseModel):
         Optional[int],
         Field(default=None, ge=1, description="Look-back window in HOURS (ZDX default 2h)."),
     ] = None
-
-
-class ProbeSummary(AgentView):
-    """Lean view — one probe row; the id feeds `zdx_start_deeptrace`."""
-
-    id: str = Field(
-        description="Probe ID — pass as web_probe_id / cloudpath_probe_id to zdx_start_deeptrace."
-    )
-    name: Optional[str] = Field(default=None, description="Probe name.")
-    num_probes: Optional[int] = Field(default=None, description="Configured probe count.")
-    avg_score: Optional[float] = Field(default=None, description="Average score (health signal).")
-
-
-def _shape_probe(raw: dict[str, Any]) -> ProbeSummary:
-    return ProbeSummary(
-        id=str(pick(raw, "id", "probe_id", default="")),
-        name=pick(raw, "name"),
-        num_probes=pick(raw, "num_probes", "numProbes"),
-        avg_score=pick(raw, "avg_score", "avgScore", "average_score"),
-    )

@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.common.utils import parse_list
 from zscaler_mcp.registry import READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many
 
 
 class ListAppsInput(BaseModel):
@@ -38,34 +38,9 @@ class BulkUpdateInput(BaseModel):
     ] = None
 
 
-class ShadowItApp(AgentView):
-    id: str = Field(description="Application ID (analytics catalog).")
-    name: Optional[str] = Field(default=None, description="Friendly app name.")
-    sanctioned_state: Optional[str] = Field(default=None, description="Sanction state.")
-    risk_index: Optional[Any] = Field(default=None, description="Risk index/score.")
-
-
-class ShadowItTag(AgentView):
-    id: str = Field(description="Custom tag ID.")
-    name: Optional[str] = Field(default=None, description="Tag name.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-def shape_app(raw: dict[str, Any]) -> ShadowItApp:
-    return ShadowItApp(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name", "application", "app_name"),
-        sanctioned_state=pick(raw, "sanctioned_state", "sanctionedState"),
-        risk_index=pick(raw, "risk_index", "riskIndex"),
-    )
-
-
-def shape_tag(raw: dict[str, Any]) -> ShadowItTag:
-    return ShadowItTag(id=str(pick(raw, "id", default="")), name=pick(raw, "name"))
 
 
 @tool(
@@ -73,11 +48,10 @@ def shape_tag(raw: dict[str, Any]) -> ShadowItTag:
     service="zia",
     toolset="zia_shadow_it",
     input_model=ListAppsInput,
-    output_view=ShadowItApp,
     is_list=True,
 )
 def zia_list_shadow_it_apps(args: ListAppsInput) -> list[dict[str, Any]]:
-    """List ZIA Shadow IT applications (analytics catalog) as curated summaries."""
+    """List ZIA Shadow IT applications (analytics catalog)."""
     client = get_zscaler_client(service="zia")
     qp: dict[str, Any] = {}
     if args.page_number is not None:
@@ -87,7 +61,7 @@ def zia_list_shadow_it_apps(args: ListAppsInput) -> list[dict[str, Any]]:
     apps, _, err = client.zia.shadow_it_report.list_apps(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list shadow IT apps: {err}")
-    return shape_many([a.as_dict() for a in (apps or [])], shape_app)
+    return shape_many([a.as_dict() for a in (apps or [])])
 
 
 @tool(
@@ -95,16 +69,15 @@ def zia_list_shadow_it_apps(args: ListAppsInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_shadow_it",
     input_model=_NoArgs,
-    output_view=ShadowItTag,
     is_list=True,
 )
 def zia_list_shadow_it_custom_tags(args: _NoArgs) -> list[dict[str, Any]]:
-    """List ZIA Shadow IT custom tags as curated summaries."""
+    """List ZIA Shadow IT custom tags."""
     client = get_zscaler_client(service="zia")
     tags, _, err = client.zia.shadow_it_report.list_custom_tags()
     if err:
         raise RuntimeError(f"Failed to list shadow IT custom tags: {err}")
-    return shape_many([t.as_dict() for t in (tags or [])], shape_tag)
+    return shape_many([t.as_dict() for t in (tags or [])])
 
 
 @tool(

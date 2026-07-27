@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa._refs import RefItem, resolve_idp_id, shape_ref
+from zscaler_mcp.tools.zpa._refs import resolve_idp_id
 
 
 class ScimGroupInput(BaseModel):
@@ -39,7 +39,6 @@ class ScimGroupInput(BaseModel):
     toolset="zpa_idp",
     name="get_zpa_scim_group",
     input_model=ScimGroupInput,
-    output_view=RefItem,
     is_list=True,
 )
 def get_zpa_scim_group(args: ScimGroupInput) -> list[dict[str, Any]]:
@@ -53,7 +52,7 @@ def get_zpa_scim_group(args: ScimGroupInput) -> list[dict[str, Any]]:
         group, _, err = client.zpa.scim_groups.get_scim_group(args.scim_group_id, query_params=qp)
         if err:
             raise RuntimeError(f"Failed to fetch SCIM group {args.scim_group_id}: {err}")
-        return shape_many([group.as_dict()], shape_ref)
+        return shape_many([group.as_dict()])
 
     if not args.idp_name:
         raise ValueError("idp_name is required to list SCIM groups")
@@ -61,4 +60,4 @@ def get_zpa_scim_group(args: ScimGroupInput) -> list[dict[str, Any]]:
     groups, _, err = client.zpa.scim_groups.list_scim_groups(idp_id, query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list SCIM groups for IdP '{args.idp_name}': {err}")
-    return shape_many([g.as_dict() for g in (groups or [])], shape_ref)
+    return shape_many([g.as_dict() for g in (groups or [])])

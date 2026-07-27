@@ -19,17 +19,13 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import shape_many
+from zscaler_mcp.shaping import shape_many, shape_one
 
-# Shared, curated views + shapers live with the groups module; reuse them so a
+# Shared, full records + shapers live with the groups module; reuse them so a
 # user looks the same whether listed directly or via a group's membership, and
 # a group looks the same whether listed directly or via a user's memberships.
 from zscaler_mcp.tools.zid.groups import (
-    GroupSummary,
-    UserSummary,
     _records,
-    shape_group,
-    shape_user,
 )
 
 # =============================================================================
@@ -189,11 +185,10 @@ def _search_users(api: Any, name: str, base_params: dict[str, Any]) -> list[Any]
     service="zid",
     toolset="zid_users",
     input_model=ListUsersInput,
-    output_view=UserSummary,
     is_list=True,
 )
 def zid_list_users(args: ListUsersInput) -> list[dict[str, Any]]:
-    """List ZIdentity users as curated, agent-facing views. Read-only.
+    """List ZIdentity users. Read-only.
 
     Returns lean user summaries (id, login name, display name, primary email)
     rather than the full SDK user record. Pass any of the `*_name` / email
@@ -218,7 +213,7 @@ def zid_list_users(args: ListUsersInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list users: {err}")
 
-    return shape_many([u.as_dict() for u in _records(response)], shape_user)
+    return shape_many([u.as_dict() for u in _records(response)])
 
 
 @tool(
@@ -226,11 +221,10 @@ def zid_list_users(args: ListUsersInput) -> list[dict[str, Any]]:
     service="zid",
     toolset="zid_users",
     input_model=GetUserInput,
-    output_view=UserSummary,
     is_list=False,
 )
 def zid_get_user(args: GetUserInput) -> dict[str, Any]:
-    """Get one ZIdentity user by ID as a curated, agent-facing view. Read-only."""
+    """Get one ZIdentity user by ID. Read-only."""
     if not args.user_id:
         raise ValueError("user_id is required")
 
@@ -241,7 +235,7 @@ def zid_get_user(args: GetUserInput) -> dict[str, Any]:
     if err:
         raise RuntimeError(f"Failed to fetch user {args.user_id}: {err}")
 
-    return shape_user(user.as_dict()).model_dump()
+    return shape_one(user.as_dict())
 
 
 @tool(
@@ -249,7 +243,6 @@ def zid_get_user(args: GetUserInput) -> dict[str, Any]:
     service="zid",
     toolset="zid_users",
     input_model=SearchUsersInput,
-    output_view=UserSummary,
     is_list=True,
 )
 def zid_search_users(args: SearchUsersInput) -> list[dict[str, Any]]:
@@ -266,7 +259,7 @@ def zid_search_users(args: SearchUsersInput) -> list[dict[str, Any]]:
     api = client.zid.users
 
     users = _search_users(api, args.name, _pagination(args))
-    return shape_many([u.as_dict() for u in users], shape_user)
+    return shape_many([u.as_dict() for u in users])
 
 
 @tool(
@@ -274,7 +267,6 @@ def zid_search_users(args: SearchUsersInput) -> list[dict[str, Any]]:
     service="zid",
     toolset="zid_users",
     input_model=UserGroupsInput,
-    output_view=GroupSummary,
     is_list=True,
 )
 def zid_get_user_groups(args: UserGroupsInput) -> list[dict[str, Any]]:
@@ -293,7 +285,7 @@ def zid_get_user_groups(args: UserGroupsInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to fetch groups for user {args.user_id}: {err}")
 
-    return shape_many([g.as_dict() for g in _records(response)], shape_group)
+    return shape_many([g.as_dict() for g in _records(response)])
 
 
 @tool(
@@ -301,7 +293,6 @@ def zid_get_user_groups(args: UserGroupsInput) -> list[dict[str, Any]]:
     service="zid",
     toolset="zid_users",
     input_model=UserGroupsByNameInput,
-    output_view=GroupSummary,
     is_list=True,
 )
 def zid_get_user_groups_by_name(args: UserGroupsByNameInput) -> list[dict[str, Any]]:
@@ -327,7 +318,7 @@ def zid_get_user_groups_by_name(args: UserGroupsByNameInput) -> list[dict[str, A
     if err:
         raise RuntimeError(f"Failed to fetch groups for user '{args.name}' (ID: {user_id}): {err}")
 
-    return shape_many([g.as_dict() for g in _records(response)], shape_group)
+    return shape_many([g.as_dict() for g in _records(response)])
 
 
 # NOTE: no manual tool list — each function self-registers via @tool at import

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick
+from zscaler_mcp.shaping import shape_one
 
 
 class GetDeviceOtpInput(BaseModel):
@@ -43,50 +43,11 @@ class GetDeviceOtpInput(BaseModel):
         return self
 
 
-class DeviceOtpBundle(AgentView):
-    """Curated OTP bundle. Every value is a sensitive, short-lived credential."""
-
-    logout_otp: Optional[str] = Field(default=None, description="One-Time Logout Password.")
-    exit_otp: Optional[str] = Field(default=None, description="Exit/quit ZCC OTP.")
-    uninstall_otp: Optional[str] = Field(default=None, description="Uninstall ZCC OTP.")
-    revert_otp: Optional[str] = Field(default=None, description="Revert ZCC version OTP.")
-    zia_disable_otp: Optional[str] = Field(default=None, description="Disable ZIA enforcement OTP.")
-    zpa_disable_otp: Optional[str] = Field(default=None, description="Disable ZPA enforcement OTP.")
-    zdx_disable_otp: Optional[str] = Field(default=None, description="Disable ZDX OTP.")
-    zdp_disable_otp: Optional[str] = Field(default=None, description="Disable ZDP OTP.")
-    anti_tempering_disable_otp: Optional[str] = Field(
-        default=None, description="Disable anti-tampering OTP."
-    )
-    deception_settings_otp: Optional[str] = Field(
-        default=None, description="Modify Deception settings OTP."
-    )
-    otp: Optional[str] = Field(default=None, description="Generic/legacy OTP field.")
-
-
-def _shape_otp(raw: dict[str, Any]) -> DeviceOtpBundle:
-    return DeviceOtpBundle(
-        logout_otp=pick(raw, "logout_otp", "logoutOtp"),
-        exit_otp=pick(raw, "exit_otp", "exitOtp"),
-        uninstall_otp=pick(raw, "uninstall_otp", "uninstallOtp"),
-        revert_otp=pick(raw, "revert_otp", "revertOtp"),
-        zia_disable_otp=pick(raw, "zia_disable_otp", "ziaDisableOtp"),
-        zpa_disable_otp=pick(raw, "zpa_disable_otp", "zpaDisableOtp"),
-        zdx_disable_otp=pick(raw, "zdx_disable_otp", "zdxDisableOtp"),
-        zdp_disable_otp=pick(raw, "zdp_disable_otp", "zdpDisableOtp"),
-        anti_tempering_disable_otp=pick(
-            raw, "anti_tempering_disable_otp", "antiTemperingDisableOtp"
-        ),
-        deception_settings_otp=pick(raw, "deception_settings_otp", "deceptionSettingsOtp"),
-        otp=pick(raw, "otp"),
-    )
-
-
 @tool(
     action=READ,
     service="zcc",
     toolset="zcc_devices",
     input_model=GetDeviceOtpInput,
-    output_view=DeviceOtpBundle,
     is_list=False,
 )
 def zcc_get_device_otp(args: GetDeviceOtpInput) -> dict[str, Any]:
@@ -103,4 +64,4 @@ def zcc_get_device_otp(args: GetDeviceOtpInput) -> dict[str, Any]:
     if err:
         raise RuntimeError(f"Failed to retrieve OTP for device {qp['udid']}: {err}")
 
-    return _shape_otp(otp.as_dict()).model_dump()
+    return shape_one(otp.as_dict())

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import CREATE, DELETE, READ, UPDATE, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import AgentView, shape_many, shape_one
 
 # =============================================================================
 # INPUT MODELS
@@ -69,32 +69,9 @@ class DeleteInput(BaseModel):
 # =============================================================================
 
 
-class StaticIpSummary(AgentView):
-    id: str = Field(description="Static IP ID. Use in location/GRE payloads.")
-    ip_address: Optional[str] = Field(default=None, description="The static IP address.")
-    comment: Optional[str] = Field(default=None, description="Admin notes.")
-    routable_ip: Optional[bool] = Field(default=None, description="Routable IP flag.")
-    geo_override: Optional[bool] = Field(default=None, description="Geo override flag.")
-
-
 class OperationResult(AgentView):
     success: bool = Field(description="Whether the operation succeeded.")
     message: str = Field(description="Human-readable result summary.")
-
-
-# =============================================================================
-# SHAPERS
-# =============================================================================
-
-
-def shape_summary(raw: dict[str, Any]) -> StaticIpSummary:
-    return StaticIpSummary(
-        id=str(pick(raw, "id", default="")),
-        ip_address=pick(raw, "ip_address", "ipAddress"),
-        comment=pick(raw, "comment"),
-        routable_ip=pick(raw, "routable_ip", "routableIP"),
-        geo_override=pick(raw, "geo_override", "geoOverride"),
-    )
 
 
 def _optional_kwargs(args: Any) -> dict[str, Any]:
@@ -116,17 +93,16 @@ def _optional_kwargs(args: Any) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=ListInput,
-    output_view=StaticIpSummary,
     is_list=True,
 )
 def zia_list_static_ips(args: ListInput) -> list[dict[str, Any]]:
-    """List ZIA static IPs as curated summaries."""
+    """List ZIA static IPs."""
     client = get_zscaler_client(service="zia")
     qp = {"search": args.search} if args.search else {}
     ips, _, err = client.zia.traffic_static_ip.list_static_ips(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list static IPs: {err}")
-    return shape_many([i.as_dict() for i in (ips or [])], shape_summary)
+    return shape_many([i.as_dict() for i in (ips or [])])
 
 
 @tool(
@@ -134,7 +110,6 @@ def zia_list_static_ips(args: ListInput) -> list[dict[str, Any]]:
     service="zia",
     toolset="zia_locations",
     input_model=GetInput,
-    output_view=StaticIpSummary,
     is_list=False,
 )
 def zia_get_static_ip(args: GetInput) -> dict[str, Any]:
@@ -143,7 +118,7 @@ def zia_get_static_ip(args: GetInput) -> dict[str, Any]:
     ip, _, err = client.zia.traffic_static_ip.get_static_ip(args.static_ip_id)
     if err:
         raise RuntimeError(f"Failed to get static IP {args.static_ip_id}: {err}")
-    return shape_summary(ip.as_dict()).model_dump()
+    return shape_one(ip.as_dict())
 
 
 @tool(
@@ -151,7 +126,6 @@ def zia_get_static_ip(args: GetInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=CreateInput,
-    output_view=StaticIpSummary,
     is_list=False,
 )
 def zia_create_static_ip(args: CreateInput) -> dict[str, Any]:
@@ -162,7 +136,7 @@ def zia_create_static_ip(args: CreateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to create static IP: {err}")
-    return shape_summary(ip.as_dict()).model_dump()
+    return shape_one(ip.as_dict())
 
 
 @tool(
@@ -170,7 +144,6 @@ def zia_create_static_ip(args: CreateInput) -> dict[str, Any]:
     service="zia",
     toolset="zia_locations",
     input_model=UpdateInput,
-    output_view=StaticIpSummary,
     is_list=False,
 )
 def zia_update_static_ip(args: UpdateInput) -> dict[str, Any]:
@@ -181,7 +154,7 @@ def zia_update_static_ip(args: UpdateInput) -> dict[str, Any]:
     )
     if err:
         raise RuntimeError(f"Failed to update static IP {args.static_ip_id}: {err}")
-    return shape_summary(ip.as_dict()).model_dump()
+    return shape_one(ip.as_dict())
 
 
 @tool(

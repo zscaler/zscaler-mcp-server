@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zdx._common import scope_query_params
 
 # =============================================================================
@@ -45,32 +45,6 @@ class ListApplicationsInput(BaseModel):
 # =============================================================================
 
 
-class ApplicationSummary(AgentView):
-    """Lean view — identify a ZDX application and read its current score."""
-
-    id: str = Field(description="Application ID. Use with `zdx_get_application` etc.")
-    name: Optional[str] = Field(default=None, description="Application name.")
-    score: Optional[float] = Field(
-        default=None, description="Current ZDX score 0-100 (decision-bearing)."
-    )
-    most_impacted_region: Optional[str] = Field(
-        default=None, description="Most-impacted region/location, if reported."
-    )
-    total_users: Optional[int] = Field(
-        default=None, description="Total users observed for this app (relational signal)."
-    )
-
-
-def _shape_app(raw: dict[str, Any]) -> ApplicationSummary:
-    return ApplicationSummary(
-        id=str(pick(raw, "id", default="")),
-        name=pick(raw, "name"),
-        score=pick(raw, "score"),
-        most_impacted_region=pick(raw, "most_impacted_region", "mostImpactedRegion"),
-        total_users=pick(raw, "total_users", "totalUsers"),
-    )
-
-
 # =============================================================================
 # TOOL
 # =============================================================================
@@ -81,11 +55,10 @@ def _shape_app(raw: dict[str, Any]) -> ApplicationSummary:
     service="zdx",
     toolset="zdx_reports",
     input_model=ListApplicationsInput,
-    output_view=ApplicationSummary,
     is_list=True,
 )
 def zdx_list_applications(args: ListApplicationsInput) -> list[dict[str, Any]]:
-    """List active ZDX applications as curated, agent-facing views.
+    """List active ZDX applications.
 
     Read-only. Returns one row per application (id, name, ZDX score, impact
     signals). Filter by location/department/geo and the `since` HOURS window.
@@ -105,4 +78,4 @@ def zdx_list_applications(args: ListApplicationsInput) -> list[dict[str, Any]]:
     if err:
         raise RuntimeError(f"Failed to list ZDX applications: {err}")
 
-    return shape_many([app.as_dict() for app in (results or [])], _shape_app)
+    return shape_many([app.as_dict() for app in (results or [])])

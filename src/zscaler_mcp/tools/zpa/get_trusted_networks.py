@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.registry import READ, tool
 from zscaler_mcp.shaping import shape_many
-from zscaler_mcp.tools.zpa._refs import RefItem, shape_ref
 
 
 class TrustedNetworkInput(BaseModel):
@@ -34,7 +33,6 @@ class TrustedNetworkInput(BaseModel):
     toolset="zpa_misc",
     name="get_zpa_trusted_network",
     input_model=TrustedNetworkInput,
-    output_view=RefItem,
     is_list=True,
 )
 def get_zpa_trusted_network(args: TrustedNetworkInput) -> list[dict[str, Any]]:
@@ -46,7 +44,7 @@ def get_zpa_trusted_network(args: TrustedNetworkInput) -> list[dict[str, Any]]:
         network, _, err = api.get_network(args.network_id)
         if err:
             raise RuntimeError(f"Failed to fetch trusted network {args.network_id}: {err}")
-        return shape_many([network.as_dict()], shape_ref)
+        return shape_many([network.as_dict()])
 
     qp = {"search": args.name} if args.name else {}
     networks, _, err = api.list_trusted_networks(query_params=qp)
@@ -57,4 +55,4 @@ def get_zpa_trusted_network(args: TrustedNetworkInput) -> list[dict[str, Any]]:
         rows = [n for n in rows if n.get("name") == args.name]
         if not rows:
             raise ValueError(f"No trusted network found with name '{args.name}'")
-    return shape_many(rows, shape_ref)
+    return shape_many(rows)

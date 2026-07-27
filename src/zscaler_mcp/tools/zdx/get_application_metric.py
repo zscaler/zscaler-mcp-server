@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from zscaler_mcp.client import get_zscaler_client
 from zscaler_mcp.encoding import WireFormat
 from zscaler_mcp.registry import READ, tool
-from zscaler_mcp.shaping import AgentView, coalesce, pick, shape_many
+from zscaler_mcp.shaping import shape_many
 from zscaler_mcp.tools.zdx._common import scope_query_params
 
 # =============================================================================
@@ -59,26 +59,6 @@ class GetApplicationMetricInput(BaseModel):
 # =============================================================================
 
 
-class ApplicationMetric(AgentView):
-    """One ZDX application metric series — identity plus nested datapoints."""
-
-    metric: Optional[str] = Field(
-        default=None, description="Metric name (e.g. pft / dns / availability)."
-    )
-    unit: Optional[str] = Field(default=None, description="Value unit for the datapoints.")
-    datapoints: list[dict] = Field(
-        default_factory=list, description="Metric-over-time datapoints (nested time-series)."
-    )
-
-
-def _shape_metric(raw: dict[str, Any]) -> ApplicationMetric:
-    return ApplicationMetric(
-        metric=pick(raw, "metric", "metric_name", "metricName"),
-        unit=pick(raw, "unit"),
-        datapoints=coalesce(raw, "datapoints", "data_points"),
-    )
-
-
 # =============================================================================
 # TOOL
 # =============================================================================
@@ -89,7 +69,6 @@ def _shape_metric(raw: dict[str, Any]) -> ApplicationMetric:
     service="zdx",
     toolset="zdx_reports",
     input_model=GetApplicationMetricInput,
-    output_view=ApplicationMetric,
     is_list=True,
     wire_format=WireFormat.JSON,
 )
@@ -117,4 +96,4 @@ def zdx_get_application_metric(args: GetApplicationMetricInput) -> list[dict[str
     if err:
         raise RuntimeError(f"Failed to get ZDX application metrics for {args.app_id}: {err}")
 
-    return shape_many([m.as_dict() for m in (results or [])], _shape_metric)
+    return shape_many([m.as_dict() for m in (results or [])])
