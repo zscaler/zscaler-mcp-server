@@ -6,6 +6,22 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.14.1 (July 28, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+**Confirmation tokens are now genuinely single-use.** The documentation has always described delete confirmation tokens as single-use, but no server-side tracking existed in any released version — a valid token could be redeemed repeatedly for the full five-minute window, so one approval could authorize more than one delete. The server now records a redeemed token until it expires and rejects any reuse with a clear message plus a fresh token to re-approve with. Tokens also carry a per-issue nonce, so re-approving after a failed delete and performing the same delete twice within one window both work correctly.
+
+**Delete confirmation now works across multiple replicas.** The token signing key was generated per process with no way to share it, so any deployment running more than one replica (Cloud Run, AKS, ECS, Container Apps) would reject valid confirmations with *"token does not match the submitted parameters"* whenever the retry landed on a different replica — and the same happened after a restart. Set the new ``ZSCALER_MCP_CONFIRMATION_SECRET`` to the same value on every replica to fix this. The default remains an ephemeral per-process key, which is correct for ``stdio`` and single-instance deployments, and the server now warns at startup when write tools are enabled over HTTP without a shared key.
+
+### Documentation
+
+**Corrected the security claims made for delete confirmation.** Several documents stated or implied that the confirmation token defeats prompt injection. It does not, and describing it that way overstates the protection: the token defends the window between approval and execution (tamper, replay, reuse, forgery), but an agent that has been hijacked into calling a delete also receives the token and can redeem it in the same turn. The controls that actually contain that case are keeping write tools disabled by default and scoping ``--write-tools`` narrowly. The MCP protocol guide carries the full threat model, and the write-operations reference has been corrected to match the implementation.
+
 ## 0.14.0 (July 24, 2026)
 
 ### Notes

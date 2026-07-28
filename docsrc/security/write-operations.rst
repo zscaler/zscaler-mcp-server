@@ -43,31 +43,60 @@ The patterns intersect with the toolset selection: a write tool that's outside t
 HMAC-confirmed destructive actions
 ----------------------------------
 
-For destructive operations — every ``delete`` tool and a few bulk-update tools — the server requires a second, cryptographically signed confirmation step. The flow:
+For destructive operations — every ``delete`` tool — the server requires a second, cryptographically signed confirmation step. The flow:
 
 1. The agent calls the destructive tool (e.g. ``zpa_delete_application_segment(segment_id="123")``).
-2. Instead of executing, the server returns:
+2. Instead of executing, the server returns a plain-text confirmation prompt naming the operation and the target resource, and carrying the token:
 
-   .. code-block:: json
+   .. code-block:: text
 
-      {
-        "confirmation_required": true,
-        "token": "<HMAC-SHA256-of-tool-name-id-action-timestamp>",
-        "expires_at": "2026-05-27T23:14:32Z",
-        "message": "This action will delete application segment '123'. Pass the token back to confirm."
-      }
+      DESTRUCTIVE OPERATION - CONFIRMATION REQUIRED
+
+      Operation: DELETE Application Segment
+      Resource ID/Name: 123 (segment_id)
+
+      WARNING: This action CANNOT be undone!
+
+      To proceed, please confirm that you want to delete this resource.
+      To proceed, retry this tool call with: kwargs='{"confirmation_token": "<token>"}'
 
 3. The agent surfaces the message to the human operator.
-4. The operator approves, the agent calls the same tool again with the token included as a parameter, and only then does the delete execute.
+4. The operator approves, the agent calls the same tool again with the token in ``kwargs``, and only then does the delete execute.
 
 The token is:
 
-- **Bound to four facts**: tool name, target resource ID, action ("delete"), and creation timestamp. Tampering with any of them invalidates the signature.
-- **Single-use**: the server tracks consumed tokens for the TTL window.
+- **Bound to the tool name and every call parameter**, plus its expiry and a per-issue nonce. Changing any parameter between approval and execution invalidates the signature, so an approval for one resource can never be spent on another.
+- **Single-use**: a redeemed signature is recorded until it expires, so one approval authorizes exactly one execution. The ledger is per process (see the caveat below).
 - **Time-bounded**: default TTL is 300 seconds (configurable via ``ZSCALER_MCP_CONFIRMATION_TTL``).
-- **HMAC-signed** with a server-side secret: prompt-injection attacks can't forge or replay tokens because the attacker can't compute the HMAC.
+- **HMAC-SHA256-signed** with a server-side key, so the token cannot be forged without a server round-trip.
 
-Implementation: ``zscaler_mcp/common/elicitation.py`` — ``generate_confirmation_token()`` and ``verify_confirmation_token()``.
+.. warning::
+
+   The confirmation token is **not, by itself, a defense against prompt injection**.
+   It protects the window between approval and execution (tamper, replay, reuse,
+   forgery). An agent that has been hijacked into calling a delete also receives the
+   token and can redeem it in the same turn. The controls that actually contain that
+   case are keeping write tools disabled by default and scoping ``--write-tools``
+   narrowly. See :doc:`the MCP protocol posture guide </guides/mcp-protocol>` for the
+   full threat model.
+
+Multi-replica deployments
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default the signing key is **ephemeral and per-process**. Behind a load balancer
+with more than one replica, a confirmation retry that lands on a different replica is
+rejected as a parameter mismatch. Set ``ZSCALER_MCP_CONFIRMATION_SECRET`` to the same
+value on every replica:
+
+.. code-block:: bash
+
+   ZSCALER_MCP_CONFIRMATION_SECRET="$(openssl rand -hex 32)"
+
+The server logs a warning at startup when write tools are enabled on an HTTP transport
+without it. Note that the single-use ledger remains per process, so with a shared
+secret a token is spendable once per replica rather than once globally.
+
+Implementation: ``src/zscaler_mcp/security/elicitation.py`` — ``check_confirmation()``.
 
 Disabling confirmations
 -----------------------
@@ -144,6 +173,9 @@ Environment summary
    * - ``ZSCALER_MCP_CONFIRMATION_TTL``
      - ``300`` (sec)
      - HMAC token expiry window.
+   * - ``ZSCALER_MCP_CONFIRMATION_SECRET``
+     - *(ephemeral per-process)*
+     - Shared HMAC signing key. Set to the same value on every replica when running more than one, otherwise a confirmation retry landing on a different replica is rejected.
 
 See also
 --------

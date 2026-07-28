@@ -164,10 +164,34 @@ defend the window *between approval and execution*:
 | Approve delete of **X**, params flipped to **Y** before execution (TOCTOU / confused deputy) | ❌ boolean still passes for Y | ✅ **rejected** — HMAC bound to X |
 | Agent self-authorizes with no server round-trip | ❌ agent just sets the bool | ✅ impossible — needs a server-issued token |
 | Replay an old approval later | ❌ boolean never expires | ✅ rejected after TTL (default 300 s) |
-| Horizontal scale-out (any instance validates) | n/a | ✅ stateless — the signing secret is per-process, no shared session store |
+| Redeem the same approval twice | ❌ boolean is reusable | ✅ rejected — single-use ledger (per process) |
+| Horizontal scale-out (any instance validates) | n/a | ⚠️ **only with `ZSCALER_MCP_CONFIRMATION_SECRET`** — see below |
 
-So the guarantees are: **anti-tamper, anti-forgery, anti-replay, stateless.** These
+So the guarantees are: **anti-tamper, anti-forgery, anti-replay, single-use.** These
 are genuine and worth keeping.
+
+### Multi-replica deployments require a shared signing key
+
+By default the HMAC key is **ephemeral and per-process** — generated at startup,
+never stored. That is the correct posture for stdio and single-instance HTTP, but
+it means a token minted by one process cannot be validated by another. Behind a
+load balancer with more than one replica (Cloud Run, AKS, ECS, Container Apps), a
+confirmation retry that lands on a different replica is rejected as a parameter
+mismatch, and the operator sees a confusing "token does not match the submitted
+parameters" for a perfectly valid approval. The same applies across a restart.
+
+Set `ZSCALER_MCP_CONFIRMATION_SECRET` to the same value on every replica to fix
+this. The server logs a warning at startup when write tools are enabled on an HTTP
+transport without it.
+
+Two limits remain, deliberately, and are resolved by the `RequestStateSecurity`
+migration described under [Migration to 2026-07-28](#migration-to-2026-07-28):
+
+- **The single-use ledger is per process.** With a shared secret across replicas,
+  a token is spendable once *per replica* rather than once globally. Closing that
+  needs shared state this server intentionally does not have.
+- **Tokens are not bound to the calling principal.** Any authenticated caller
+  holding a token can redeem it. Relevant only for multi-user HTTP deployments.
 
 ### What it does **NOT** guarantee (the important part)
 

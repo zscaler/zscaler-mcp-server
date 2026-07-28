@@ -386,6 +386,7 @@ Complete List of All Supported Variables
 - ``ZSCALER_MCP_WRITE_TOOLS`` - **MANDATORY** allowlist when write enabled
 - ``ZSCALER_MCP_SKIP_CONFIRMATIONS`` - Skip delete confirmations with HMAC token (advanced)
 - ``ZSCALER_MCP_CONFIRMATION_TTL`` - Confirmation window in seconds (default: ``300``)
+- ``ZSCALER_MCP_CONFIRMATION_SECRET`` - Shared HMAC signing key for confirmation tokens. Required when running more than one replica; the default key is ephemeral per-process, so a confirmation retry that lands on a different replica is otherwise rejected.
 
 **MCP Client Authentication (HTTP transports only):**
 

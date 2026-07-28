@@ -27,7 +27,9 @@ from zscaler_mcp.security.auth import (
 from zscaler_mcp.security.elicitation import (
     check_confirmation,
     extract_confirmed_from_kwargs,
+    log_confirmation_posture,
     should_skip_confirmations,
+    uses_shared_secret,
 )
 from zscaler_mcp.security.entitlements import (
     apply_entitlement_filter,
@@ -77,7 +79,9 @@ __all__ = [
     # elicitation
     "check_confirmation",
     "extract_confirmed_from_kwargs",
+    "log_confirmation_posture",
     "should_skip_confirmations",
+    "uses_shared_secret",
     # sanitize
     "sanitize_value",
     "is_sanitization_enabled",
