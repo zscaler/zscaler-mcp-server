@@ -812,6 +812,13 @@ def main() -> None:
     write_allowlist = _parse_csv(args.write_tools)
     write_enabled = write_allowlist is not None or args.enable_write_tools
 
+    # Surface the destructive-confirmation posture before serving. Only relevant
+    # when a write surface exists — a read-only server has nothing to confirm.
+    if write_enabled:
+        from zscaler_mcp.security import log_confirmation_posture
+
+        log_confirmation_posture(args.transport)
+
     # oidcproxy env-var mode → build a fastmcp auth provider FastMCP wires
     # natively. Every other mode returns None (handled by AuthMiddleware at the
     # ASGI layer). stdio never authenticates.

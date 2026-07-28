@@ -290,21 +290,27 @@ A `zscaler_search_tools` meta-tool existed in earlier versions; it was removed b
 
 1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
 2. **Always confirm before mutating.** Read operations are safe. Create/update/delete operations modify the live Zscaler environment. Ask the user before executing write operations.
-3. **Delete operations require HMAC-SHA256 confirmation.** Destructive actions return a confirmation token that must be passed back to confirm. Controlled by `ZSCALER_MCP_SKIP_CONFIRMATIONS` and `ZSCALER_MCP_CONFIRMATION_TTL`.
+3. **Delete operations require HMAC-SHA256 confirmation.** Destructive actions return a single-use confirmation token that must be passed back to confirm. Controlled by `ZSCALER_MCP_SKIP_CONFIRMATIONS`, `ZSCALER_MCP_CONFIRMATION_TTL`, and `ZSCALER_MCP_CONFIRMATION_SECRET` (required for multi-replica).
 4. **Always list/get first** to understand current state before creating or modifying resources.
 5. **Pagination:** List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.
 6. **ZPA policy rule ordering:** New rules are appended at the end by default. Policy rules are evaluated top-to-bottom — order matters for access control.
 
 ### Confirmation Token Flow (Elicitation)
 
-Destructive write operations (delete, bulk update) use cryptographic confirmation:
+Destructive write operations (`action == delete`) use cryptographic confirmation:
 
-1. Tool returns `{"confirmation_required": true, "token": "<HMAC-SHA256>", "expires_at": "..."}` instead of executing
-2. The token is bound to: tool name, resource ID, action, and timestamp
-3. Agent must present the token back to confirm execution within the TTL (default 5 minutes)
-4. Tokens are single-use and tamper-proof — prompt injection cannot forge or replay them
+1. Tool returns a plain-text `DESTRUCTIVE OPERATION - CONFIRMATION REQUIRED` prompt naming the resource and carrying the token, instead of executing
+2. The token is bound to the tool name, **every call parameter**, the expiry, and a per-issue nonce
+3. Agent must present the token back — via `kwargs='{"confirmation_token": "..."}'` — within the TTL (default 5 minutes)
+4. Tokens are **single-use**: a redeemed signature is recorded until it expires, so one approval authorizes exactly one execution
 
-Implementation: `zscaler_mcp/common/elicitation.py` — `generate_confirmation_token()` and `verify_confirmation_token()`.
+**The nonce is load-bearing.** Without it a token is a pure function of (tool, params, expiry-second), so a re-issued token would be byte-identical to a spent one and therefore born already-used — breaking both re-approval after a failed execution and performing the same operation twice inside one TTL window.
+
+**Do not describe this as an anti-prompt-injection control.** It defends the window between approval and execution (tamper, replay, reuse, forgery). A hijacked agent that calls a delete also receives the token and can redeem it in the same turn. The real containment is write-tools-off-by-default plus a narrow `--write-tools` allowlist. Full threat model: `docs/guides/mcp-protocol.md`.
+
+**Multi-replica deployments must set `ZSCALER_MCP_CONFIRMATION_SECRET`.** The signing key defaults to ephemeral per-process, so without a shared value a confirmation retry that lands on a different replica is rejected as a parameter mismatch. The single-use ledger stays per-process either way.
+
+Implementation: `src/zscaler_mcp/security/elicitation.py` — `check_confirmation()`.
 
 ## MCP Protocol Posture, Tool Annotations & Conformance
 
@@ -416,6 +422,7 @@ Server & security env vars:
 - `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
 - `ZSCALER_MCP_SKIP_CONFIRMATIONS` — Skip HMAC confirmation for destructive ops (`true`/`false`)
 - `ZSCALER_MCP_CONFIRMATION_TTL` — Confirmation token TTL in seconds (default 300)
+- `ZSCALER_MCP_CONFIRMATION_SECRET` — Shared HMAC signing key for confirmation tokens. **Required when running more than one replica** — the default key is ephemeral per-process, so without it a confirmation retry landing on a different replica is rejected. Set the same value on every replica.
 - `ZSCALER_MCP_DISABLE_HOST_VALIDATION` — Disable host header checks (`true`/`false`)
 - `ZSCALER_MCP_LOG_TOOL_CALLS` — Enable tool-call audit logging (`true`/`false`)
 - `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` — Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / code-fence stripping). On by default. Use only for diagnostics — disabling it removes a prompt-injection defense layer. (`true`/`false`)
