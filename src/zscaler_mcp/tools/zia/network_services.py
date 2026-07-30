@@ -78,8 +78,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 def _ports(ports: Optional[list[list[str]]]) -> Optional[list[tuple]]:
     parsed = parse_list(ports) if ports is not None else None
     if parsed is None:

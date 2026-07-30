@@ -82,7 +82,7 @@ async def test_every_collection_tool_exposes_query():
     wrong = []
     for name, tool in tools.items():
         expected = REGISTRY.get(name).supports_query
-        actual = "query" in (tool.parameters.get("properties") or {})
+        actual = "query" in (tool.input_schema.get("properties") or {})
         if expected != actual:
             wrong.append(f"{name}: supports_query={expected} but query-param={actual}")
     assert not wrong, "\n".join(wrong)
@@ -95,14 +95,14 @@ async def test_envelope_returning_list_tools_also_get_query():
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
     for name in ("zia_list_auth_exempt_urls", "zia_list_atp_malicious_urls", "zcell_list_sims"):
-        assert "query" in (tools[name].parameters.get("properties") or {}), name
+        assert "query" in (tools[name].input_schema.get("properties") or {}), name
 
 
 @pytest.mark.asyncio
 async def test_query_parameter_is_documented_for_the_agent():
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
-    q = tools["zcc_list_devices"].parameters["properties"]["query"]
+    q = tools["zcc_list_devices"].input_schema["properties"]["query"]
     assert "JMESPath" in q["description"]
     assert q["default"] is None  # omitting it is the default path
 
@@ -112,7 +112,7 @@ async def test_non_list_tools_have_no_query_parameter():
     # A single-object get has nothing to filter; the parameter would be noise.
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
-    assert "query" not in (tools["zpa_get_segment_group"].parameters.get("properties") or {})
+    assert "query" not in (tools["zpa_get_segment_group"].input_schema.get("properties") or {})
 
 
 class _FakeDevice:

@@ -152,10 +152,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
 def _ports(raw: dict[str, Any], *keys: str) -> list[str]:
     return [str(p) for p in coalesce(raw, *keys)]
 

@@ -56,8 +56,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 @tool(
     action=READ,
     service="zia",

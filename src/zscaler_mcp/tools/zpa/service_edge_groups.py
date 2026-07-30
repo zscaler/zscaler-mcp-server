@@ -175,12 +175,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
-
-
 def _build_body(args: Any) -> dict[str, Any]:
     country_code = normalize_iso_country_code(args.country_code) if args.country_code else None
     body: dict[str, Any] = {

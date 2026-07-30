@@ -24,7 +24,7 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 
 1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
 2. **Always confirm before mutating.** Read operations are safe. Create/update/delete operations modify the live Zscaler environment. Ask the user before executing write operations.
-3. **Delete operations require HMAC-SHA256 confirmation.** Destructive actions return a single-use confirmation token that must be passed back to confirm. Controlled by `ZSCALER_MCP_SKIP_CONFIRMATIONS`, `ZSCALER_MCP_CONFIRMATION_TTL`, and `ZSCALER_MCP_CONFIRMATION_SECRET` (required for multi-replica).
+3. **Delete operations require confirmation.** On clients that support MCP elicitation the server asks a **human** through the client (SEP-2322), so the agent never handles the approval. Otherwise it falls back to a single-use HMAC token the agent must pass back; that fallback is single-process, so run one replica if your clients lack elicitation support. Controlled by `ZSCALER_MCP_SKIP_CONFIRMATIONS` and `ZSCALER_MCP_CONFIRMATION_TTL`.
 4. **Always list/get first** to understand current state before creating or modifying resources.
 5. **Pagination:** List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.
 6. **ZPA policy rule ordering:** New rules are appended at the end by default. Policy rules are evaluated top-to-bottom — order matters for access control.

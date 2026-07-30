@@ -140,12 +140,6 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-
-
-
-
-
-
 def _build_body(args: Any) -> dict[str, Any]:
     body: dict[str, Any] = {}
     for field in (

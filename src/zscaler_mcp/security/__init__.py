@@ -22,14 +22,20 @@ from zscaler_mcp.security.auth import (
     build_oidcproxy_provider,
     fetch_oneapi_token,
     get_registered_zscaler_providers,
+    mcpserver_auth_kwargs,
     resolve_fastmcp_auth,
 )
 from zscaler_mcp.security.elicitation import (
+    TOKEN_FALLBACK,
+    DeleteConfirmation,
+    build_confirmation_request,
     check_confirmation,
+    elicitation_available,
     extract_confirmed_from_kwargs,
-    log_confirmation_posture,
+    gate_destructive_operation,
+    interpret_confirmation,
+    is_token_fallback,
     should_skip_confirmations,
-    uses_shared_secret,
 )
 from zscaler_mcp.security.entitlements import (
     apply_entitlement_filter,
@@ -59,6 +65,7 @@ __all__ = [
     "ZscalerAuthProvider",
     "AuthMiddleware",
     "apply_auth_middleware",
+    "mcpserver_auth_kwargs",
     "resolve_fastmcp_auth",
     "build_oidcproxy_provider",
     "get_registered_zscaler_providers",
@@ -78,10 +85,15 @@ __all__ = [
     "validate_host_binding",
     # elicitation
     "check_confirmation",
+    "DeleteConfirmation",
+    "TOKEN_FALLBACK",
+    "build_confirmation_request",
+    "interpret_confirmation",
+    "is_token_fallback",
+    "elicitation_available",
     "extract_confirmed_from_kwargs",
-    "log_confirmation_posture",
+    "gate_destructive_operation",
     "should_skip_confirmations",
-    "uses_shared_secret",
     # sanitize
     "sanitize_value",
     "is_sanitization_enabled",

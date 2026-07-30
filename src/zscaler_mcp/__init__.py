@@ -9,4 +9,4 @@ dashboard.
 See ``DESIGN.md`` at the repo root for the full rationale.
 """
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"

@@ -40,10 +40,49 @@ The patterns use ``fnmatch`` glob syntax. Concrete examples:
 
 The patterns intersect with the toolset selection: a write tool that's outside the loaded toolsets won't be registered even if it matches a write pattern.
 
-HMAC-confirmed destructive actions
-----------------------------------
+Confirmed destructive actions
+-----------------------------
 
-For destructive operations — every ``delete`` tool — the server requires a second, cryptographically signed confirmation step. The flow:
+For destructive operations — every ``delete`` tool — the server requires a confirmation
+step before it touches the Zscaler API. Two mechanisms exist and the server chooses
+between them **per call**:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 14 30 28 28
+
+   * -
+     - Mechanism
+     - Used when
+     - Who decides
+   * - **Primary**
+     - Native MCP elicitation (SEP-2322)
+     - The client advertises the ``elicitation`` capability
+     - A **human**, in a client-rendered prompt
+   * - Fallback
+     - HMAC confirmation token
+     - Any other caller
+     - The **agent**, echoing a server-issued token
+
+Native elicitation (preferred)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the connected client supports elicitation — Claude Desktop and Cursor both do —
+the server issues an ``elicitation/create`` request mid-call. The client renders a
+prompt naming the resource with two choices, ``delete`` and ``cancel``, and a human
+answers. Choosing ``delete`` executes; anything else returns a "NOT performed" result
+without calling the Zscaler API. A failed round trip fails **closed**.
+
+The agent never sees or handles a token in this path. That is the point: the approval
+arrives as a protocol field the client fills, not as tool-call arguments the model
+authors, so a model that has been talked into calling a delete has no way to also
+produce the approval.
+
+HMAC token fallback
+~~~~~~~~~~~~~~~~~~~
+
+Used only when the caller cannot be prompted — a client that does not advertise the
+capability, or a direct in-process call with no MCP session. The flow:
 
 1. The agent calls the destructive tool (e.g. ``zpa_delete_application_segment(segment_id="123")``).
 2. Instead of executing, the server returns a plain-text confirmation prompt naming the operation and the target resource, and carrying the token:
@@ -72,31 +111,40 @@ The token is:
 
 .. warning::
 
-   The confirmation token is **not, by itself, a defense against prompt injection**.
+   The token fallback is **not, by itself, a defense against prompt injection**.
    It protects the window between approval and execution (tamper, replay, reuse,
    forgery). An agent that has been hijacked into calling a delete also receives the
-   token and can redeem it in the same turn. The controls that actually contain that
-   case are keeping write tools disabled by default and scoping ``--write-tools``
-   narrowly. See :doc:`the MCP protocol posture guide </guides/mcp-protocol>` for the
-   full threat model.
+   token and can redeem it in the same turn — which is exactly the gap native
+   elicitation closes, and why it is preferred. Keeping write tools disabled by
+   default and scoping ``--write-tools`` narrowly remains the strongest control on
+   deployments whose clients lack elicitation support. See
+   :doc:`the MCP protocol posture guide </guides/mcp-protocol>` for the full threat
+   model.
 
 Multi-replica deployments
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default the signing key is **ephemeral and per-process**. Behind a load balancer
-with more than one replica, a confirmation retry that lands on a different replica is
-rejected as a parameter mismatch. Set ``ZSCALER_MCP_CONFIRMATION_SECRET`` to the same
-value on every replica:
+.. important::
 
-.. code-block:: bash
+   The **token fallback** is single-process. Clients that support elicitation are
+   unaffected — run a single replica only if some of your clients lack the capability.
 
-   ZSCALER_MCP_CONFIRMATION_SECRET="$(openssl rand -hex 32)"
+The signing key and the single-use ledger both live in process memory. Behind a load
+balancer with more than one replica, a fallback confirmation retry that lands on a
+different replica is rejected as a parameter mismatch, and the same happens across a
+restart. The native elicitation path keeps no server-side state between the prompt and
+the answer, so it scales out normally.
 
-The server logs a warning at startup when write tools are enabled on an HTTP transport
-without it. Note that the single-use ledger remains per process, so with a shared
-secret a token is spendable once per replica rather than once globally.
+There is deliberately no Zscaler-specific setting to share the key. The MCP protocol
+defines the answer in SEP-2322: the server returns an ``InputRequiredResult`` carrying
+an opaque ``requestState`` that the SDK's ``RequestStateSecurity`` seals with a
+rotating key ring built for multi-instance deployments. Adding a bespoke shared-secret
+variable would duplicate that with a weaker primitive. See
+:doc:`the MCP protocol posture guide </guides/mcp-protocol>` for the adoption plan.
 
-Implementation: ``src/zscaler_mcp/security/elicitation.py`` — ``check_confirmation()``.
+Implementation: ``src/zscaler_mcp/security/elicitation.py`` —
+``gate_destructive_operation()`` selects the path, ``confirm_via_elicitation()`` runs
+the native flow, ``check_confirmation()`` runs the fallback.
 
 Disabling confirmations
 -----------------------
@@ -173,9 +221,6 @@ Environment summary
    * - ``ZSCALER_MCP_CONFIRMATION_TTL``
      - ``300`` (sec)
      - HMAC token expiry window.
-   * - ``ZSCALER_MCP_CONFIRMATION_SECRET``
-     - *(ephemeral per-process)*
-     - Shared HMAC signing key. Set to the same value on every replica when running more than one, otherwise a confirmation retry landing on a different replica is rejected.
 
 See also
 --------
