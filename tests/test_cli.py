@@ -192,6 +192,25 @@ def test_version_flag_exits_zero_and_prints_version(capsys):
     assert __version__ in capsys.readouterr().out
 
 
+@pytest.mark.asyncio
+async def test_server_reports_our_version_to_connecting_clients():
+    """The version a client displays must be ours, not the framework's.
+
+    ``FastMCP`` defaults ``version`` to its own library version, so omitting the
+    argument is silent but wrong: the server starts, answers ``initialize``, and
+    claims to be e.g. ``zscaler-mcp 3.4.5`` — a release that has never existed.
+    Asserted through a real handshake rather than on the instance attribute,
+    because ``serverInfo`` on the wire is what a client actually renders.
+    """
+    from fastmcp import Client
+
+    built = server.build_server(
+        enabled_toolsets=["zpa_segment_groups"], disable_entitlement_filter=True
+    )
+    async with Client(built) as client:
+        assert client.initialize_result.serverInfo.version == __version__
+
+
 @pytest.mark.parametrize("cmd", ["reload", "restart", "status", "stop", "update"])
 def test_lifecycle_subcommands_captured(cmd):
     args = server.build_parser().parse_args([cmd])
