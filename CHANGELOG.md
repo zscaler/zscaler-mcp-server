@@ -6,6 +6,14 @@
 
 - Python Versions: **v3.11, v3.12, v3.13, v3.14**
 
+### Enhancements
+
+- **The `streamable-http` transport no longer requires session IDs.** Each request is now self-contained, so a load balancer can spread requests across replicas with no session affinity, and clients that send no session ID are accepted instead of refused with *"Bad Request: Missing session ID"*. Nothing is given up in exchange: no tool holds state between calls, the Zscaler SDK client is built per call, and delete confirmation is a token exchange carried in ordinary tool results rather than a server-initiated request, so there was never a session worth keeping. Clients that perform the usual handshake are unaffected and need no changes.
+
+  Together with `ZSCALER_MCP_CONFIRMATION_SECRET` above, this completes horizontal scale-out: sessions no longer pin a client to one replica, and a shared signing key lets a confirmation issued by one replica be redeemed on another.
+
+  Pass `--no-stateless-http` (or `ZSCALER_MCP_STATELESS_HTTP=false`) to restore the previous session-based behaviour. `sse` is session-oriented by construction and is unchanged.
+
 ### Bug Fixes
 
 - **Confirmation tokens are now genuinely single-use.** The documentation has always described delete confirmation tokens as single-use, but no server-side tracking existed in any released version — a valid token could be redeemed repeatedly for the full five-minute window, so one approval could authorize more than one delete. The server now records a redeemed token until it expires and rejects any reuse with a clear message plus a fresh token to re-approve with. Tokens also carry a per-issue nonce, so re-approving after a failed delete and performing the same delete twice within one window both work correctly.

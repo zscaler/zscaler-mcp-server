@@ -411,6 +411,7 @@ Server & security env vars:
 - `ZSCALER_MCP_AUTH_MODE` — Auth mode: `api-key`, `jwt`, or `zscaler` (or use `auth=` param for OAuth 2.1 with DCR)
 - `ZSCALER_MCP_TLS_CERTFILE`, `ZSCALER_MCP_TLS_KEYFILE` — TLS certificate and key paths
 - `ZSCALER_MCP_ALLOW_HTTP` — Allow plaintext HTTP on non-localhost (`true`/`false`)
+- `ZSCALER_MCP_STATELESS_HTTP` — Serve `streamable-http` without session ids (`true`/`false`, **default `true`**). Set `false` to require sessions. Ignored by `sse`, which cannot run sessionless. See "Stateless HTTP transport" below.
 - `ZSCALER_MCP_ALLOWED_HOSTS` — Comma-separated allowed Host header values (supports wildcards)
 - `ZSCALER_MCP_ALLOWED_SOURCE_IPS` — Comma-separated allowed client IPs/CIDRs
 - `ZSCALER_MCP_DISABLED_TOOLS` — Comma-separated tool patterns to exclude (wildcards via fnmatch)
@@ -444,6 +445,7 @@ Server & security env vars:
 - `--user-agent-comment` — Custom User-Agent suffix for API calls
 - `--host` — HTTP bind address (default `127.0.0.1`)
 - `--port` — HTTP listen port (default `8000`)
+- `--stateless-http` / `--no-stateless-http` — Serve `streamable-http` without session ids. **On by default**; the negative form restores session-based behaviour (env: `ZSCALER_MCP_STATELESS_HTTP`)
 - `--log-tool-calls` — Enable tool-call audit logging (logs tool name, args, duration, result summary)
 - `--dotenv-path` — Explicit path to the `.env` file to load. Overrides the default search (project root + CWD). Recorded in the PID file so `zscaler-mcp reload` / `restart` re-read the same source. (env: `ZSCALER_MCP_DOTENV_PATH`)
 - `--pid-file` — Override the PID file location used by the lifecycle subcommands. Defaults to `/var/run/zscaler-mcp.pid` (or `/tmp/zscaler-mcp.pid` if `/var/run` is not writable). Set per instance when running multiple servers on the same host. (env: `ZSCALER_MCP_PID_FILE`)
@@ -733,6 +735,24 @@ To keep the codebase organized, helper modules follow strict rules. **Read this 
 - **No runtime tool filtering**: `disabled_tools` and `disabled_services` are applied at registration time. Once the server is running, the tool list is fixed. This prevents race conditions and ensures consistent behavior.
 - **Agent-aware metadata**: The `zscaler_get_available_services` tool exists specifically to help AI agents understand what's available and what's not. Its description is written to surface in tool searches for any service name.
 - **Cross-service data overlap**: Zscaler's APIs have intentional overlap (e.g., ZIA and ZCC both expose device data). The server maps tools to API product boundaries, not conceptual categories. Users need `--disabled-tools` in addition to `--disabled-services` to block cross-service data access.
+- **Stateless HTTP transport**: `streamable-http` runs with `stateless_http=True` (see below). Sessions bought nothing and cost portability.
+
+### Stateless HTTP transport
+
+"Stateless" means two unrelated things in MCP, and conflating them causes real confusion:
+
+1. **The server holds no state between calls.** True since v1 — no tenant state survives a tool call, the SDK client is built per call (lazy initialization above), and the confirmation signing key defaults to per-process. This is the property that matters for security review.
+2. **The transport does not issue an `Mcp-Session-Id`.** A separate, purely transport-level setting — `FastMCP.http_app(stateless_http=...)`.
+
+The server was (1) while sitting on a session-based transport, because `stateless_http` defaults to `False` upstream and we had simply never set it. It is now `True` by default, wired through `_run_http(..., stateless_http=...)` from `--stateless-http` / `ZSCALER_MCP_STATELESS_HTTP`.
+
+**Why this is safe here, and not a general truth about MCP servers.** Dropping the session removes the back-channel for server-initiated requests. A server that pushes elicitations, sampling requests, or progress to the client mid-call would lose that. This one does not: destructive operations are gated by the **HMAC confirmation token**, which is an ordinary two-step tool-result exchange — the prompt is returned as the tool's result and the token comes back as a normal argument on the retry. Nothing is pushed. Verified empirically: with sessions off, a handshake client still connects, a delete is still gated on `CONFIRMATION REQUIRED`, the token is still accepted on the retry, and a bare `POST` with no session id succeeds where it previously returned `HTTP 400 Bad Request: Missing session ID`.
+
+**If native MCP elicitation is ever adopted for confirmations, revisit this.** An interactive prompt does need the back-channel on pre-`2026-07-28` revisions, so it would degrade to the token exchange under stateless. That is safe (it is the same fallback used for clients that declare no elicitation capability) but it is a UX regression, and the trade-off should be re-measured rather than assumed.
+
+**`sse` never opts in** — it is session-oriented by construction. The `_run_http` branch deliberately does not forward the argument, guarded by `tests/test_cli.py::TestStatelessHttp::test_sse_never_opts_in`.
+
+**Pairs with `ZSCALER_MCP_CONFIRMATION_SECRET`.** Multi-replica deployments previously needed both a shared signing key (so a token issued on one replica verifies on another) *and* session affinity (so requests reached the replica holding the session). The shared key covers the first; statelessness removes the second.
 
 ## GCP Cloud Run Deployment
 

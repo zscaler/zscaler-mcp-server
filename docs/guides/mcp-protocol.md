@@ -137,6 +137,45 @@ The runner's exit-code contract keeps the baseline honest:
 So adding a capability (or a fixture) forces a baseline update in the same PR — it
 can't silently rot.
 
+## HTTP session mode
+
+"Stateless" means two unrelated things in MCP, and they are worth separating:
+
+1. **The server holds no state between calls.** No tenant state survives a tool
+   call, and the Zscaler SDK client is built per call. True since v1.
+2. **The transport does not issue an `Mcp-Session-Id`.** A separate, purely
+   transport-level setting.
+
+The server was (1) while still requiring (2). Both are now true: `streamable-http`
+runs sessionless by default.
+
+```bash
+zscaler-mcp --transport streamable-http                       # sessionless (default)
+zscaler-mcp --transport streamable-http --no-stateless-http   # require sessions
+```
+
+What this changes:
+
+| | sessions required (previous) | sessionless (default) |
+|---|---|---|
+| Client that performs the usual handshake | works | works |
+| Client that sends no session id | `HTTP 400 Bad Request: Missing session ID` | works |
+| Load balancing across replicas | requires session affinity | no affinity needed |
+| Delete confirmation | token exchange | token exchange (unchanged) |
+
+Confirmation is unaffected because it never used the session. The prompt is
+returned as the tool's *result* and the token comes back as a normal argument on
+the retry — an ordinary two-step exchange, not a server-initiated request. So
+there is no back-channel to lose. This is what makes statelessness free here
+rather than a trade-off; a server that pushed elicitations or sampling requests to
+the client mid-call would be giving something up.
+
+For multi-replica deployments this is one of two requirements. The other is a
+shared signing key, so a token issued by one replica verifies on another — see
+[Multi-replica deployments require a shared signing key](#multi-replica-deployments-require-a-shared-signing-key).
+
+`sse` is session-oriented by construction and ignores this setting.
+
 ## Destructive-operation confirmation: threat model
 
 Destructive tools (`action == delete`) are gated by a two-step, HMAC-signed
@@ -265,9 +304,10 @@ described next.
 ## Migration to 2026-07-28
 
 The `2026-07-28` spec is a stateless-core revision. This server is already
-well-positioned for it (no sessions, lazy per-call client, HMAC-based
-confirmation), but the Python SDKs that carry it (`mcp` 2.x / `fastmcp` 4.x) must
-reach GA first. The plan:
+well-positioned for it — see [HTTP session mode](#http-session-mode): the
+transport already runs sessionless, the SDK client is per call, and confirmation
+needs no back-channel. But the Python SDKs that carry it (`mcp` 2.x /
+`fastmcp` 4.x) must reach GA first. The plan:
 
 - **Now (published baseline):** the SDK caps, tool annotations, and conformance
   suite above — all shipped against `2025-11-25`, no breaking bump.
@@ -277,9 +317,13 @@ reach GA first. The plan:
   elicitation** (an `InputRequiredResult` carrying an HMAC-signed `requestState`);
   re-run the conformance suite at `2026-07-28`. Version negotiation is handled by
   the SDK per connection (`mode='auto'`), so old clients keep working — no
-  server-side feature flag.
-- **Not planned:** session/Redis infrastructure (already stateless), header-based
-  routing, and the MCP Apps/Tasks extensions.
+  server-side feature flag. **Re-measure the session-mode trade-off at that
+  point:** an interactive elicitation *does* need a back-channel on pre-`2026-07-28`
+  revisions, so on those clients it would fall back to the token exchange while
+  sessionless. Safe, but a UX change that should be a decision rather than a
+  side effect.
+- **Not planned:** session/Redis infrastructure (nothing to persist between
+  calls), header-based routing, and the MCP Apps/Tasks extensions.
 
 ### Note on confirmation and prompt injection
 
