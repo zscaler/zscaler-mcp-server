@@ -147,7 +147,13 @@ def build_server(
         disabled_patterns=disabled_patterns,
     )
 
-    server = FastMCP("zscaler-mcp", auth=fastmcp_auth) if fastmcp_auth else FastMCP("zscaler-mcp")
+    # Without an explicit version, FastMCP reports its own library version as ours,
+    # so a client displays a release number that has never existed.
+    server = (
+        FastMCP("zscaler-mcp", version=__version__, auth=fastmcp_auth)
+        if fastmcp_auth
+        else FastMCP("zscaler-mcp", version=__version__)
+    )
     for spec in selected:
         server.add_tool(build_function_tool(spec))
 
