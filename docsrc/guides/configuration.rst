@@ -112,6 +112,19 @@ Clients authenticate via Basic Auth (``client_id:client_secret``) or custom head
 
 When using ``ZscalerMCPServer`` as a Python library, pass a ``fastmcp.server.auth.AuthProvider`` (e.g. ``OIDCProxy``) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR) and works with any OIDC-compliant IdP (Auth0, Okta, Azure AD, Keycloak, Google, etc.).
 
+.. note::
+
+   ``fastmcp`` is **not installed by default**. It is required only for this auth
+   mode, and the release that runs on the current MCP SDK is still a prerelease,
+   so it is not pulled into the default install:
+
+   .. code-block:: bash
+
+      uv pip install --prerelease=allow "fastmcp>=4.0.0b1,<5"
+
+   Every other auth mode (``jwt``, ``api-key``, ``zscaler``, ``none``) needs
+   nothing extra.
+
 .. code-block:: python
 
    import os
@@ -386,8 +399,6 @@ Complete List of All Supported Variables
 - ``ZSCALER_MCP_WRITE_TOOLS`` - **MANDATORY** allowlist when write enabled
 - ``ZSCALER_MCP_SKIP_CONFIRMATIONS`` - Skip delete confirmations with HMAC token (advanced)
 - ``ZSCALER_MCP_CONFIRMATION_TTL`` - Confirmation window in seconds (default: ``300``)
-- ``ZSCALER_MCP_CONFIRMATION_SECRET`` - Shared HMAC signing key for confirmation tokens. Required when running more than one replica; the default key is ephemeral per-process, so a confirmation retry that lands on a different replica is otherwise rejected.
-
 **MCP Client Authentication (HTTP transports only):**
 
 - ``ZSCALER_MCP_AUTH_ENABLED`` - Enable client authentication (default: ``false``)

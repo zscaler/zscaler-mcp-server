@@ -59,7 +59,7 @@ async def test_toolset_filter():
 async def test_input_schema_is_flat():
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
-    props = tools["zpa_list_segment_groups"].parameters.get("properties", {})
+    props = tools["zpa_list_segment_groups"].input_schema.get("properties", {})
     # Flat fields, NOT a nested {"args": {...}} wrapper.
     assert "args" not in props
     assert "search" in props
@@ -112,7 +112,7 @@ async def test_delete_call_without_token_returns_confirmation_no_mutation(monkey
     monkeypatch.setattr(sg, "get_zscaler_client", explode)
 
     server = build_server(enable_write=True, write_allowlist=["zpa_delete_*"])
-    result = await server._call_tool_mcp("zpa_delete_segment_group", {"group_id": "123"})
+    result = await server.call_tool("zpa_delete_segment_group", {"group_id": "123"})
     # result is a (content, structured) tuple or CallToolResult-like; pull text.
     content = result[0] if isinstance(result, tuple) else getattr(result, "content", result)
     text = content[0].text
@@ -142,7 +142,7 @@ async def test_create_call_executes_without_confirmation(monkeypatch):
     monkeypatch.setattr(sg, "get_zscaler_client", lambda **k: _Client())
 
     server = build_server(enable_write=True, write_allowlist=["zpa_create_*"])
-    result = await server._call_tool_mcp(
+    result = await server.call_tool(
         "zpa_create_segment_group", {"name": "My Group", "enabled": True}
     )
     content = result[0] if isinstance(result, tuple) else getattr(result, "content", result)

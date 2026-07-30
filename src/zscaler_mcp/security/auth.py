@@ -475,13 +475,6 @@ def build_oidcproxy_provider(base_url: Optional[str] = None) -> Any:
     Raises ``ValueError`` with an actionable message if required config is
     missing, so the server refuses to start half-configured.
     """
-    try:
-        from fastmcp.server.auth.oidc_proxy import OIDCProxy
-    except ImportError as exc:  # pragma: no cover - fastmcp always installed
-        raise ImportError(
-            "fastmcp is required for oidcproxy auth mode. Install with: pip install fastmcp"
-        ) from exc
-
     config_url = os.getenv("OIDCPROXY_CONFIG_URL", "").strip()
     client_id = os.getenv("OIDCPROXY_CLIENT_ID", "").strip()
     client_secret = os.getenv("OIDCPROXY_CLIENT_SECRET", "").strip()
@@ -510,6 +503,26 @@ def build_oidcproxy_provider(base_url: Optional[str] = None) -> Any:
             "Set these env vars or pass a fastmcp AuthProvider via auth= instead."
         )
 
+    # Imported only after the config checks out, so a half-configured server is
+    # told what config it is missing rather than what package it is missing.
+    #
+    # `fastmcp` is NOT a declared dependency: `mcp` 2.x ships no OIDC-proxy
+    # provider, and fastmcp's is still a prerelease that would force a blanket
+    # prerelease policy onto the whole lockfile (see the note in pyproject.toml).
+    # So operators who select this one auth mode install it themselves.
+    try:
+        from fastmcp.server.auth.oidc_proxy import OIDCProxy
+    except ImportError as exc:
+        raise ImportError(
+            "oidcproxy auth mode requires the 'fastmcp' package, which is not "
+            "installed. Install it with:\n"
+            '    uv pip install --prerelease=allow "fastmcp>=4.0.0b1,<5"\n'
+            "It is not installed automatically because fastmcp 4.x (which provides "
+            "the OIDC proxy for mcp 2.x) has not reached GA yet, and pulling a "
+            "prerelease into the default install would loosen dependency policy for "
+            "everyone. Every other auth mode (jwt, api-key, zscaler) works without it."
+        ) from exc
+
     kwargs: Dict[str, Any] = {
         "config_url": config_url,
         "client_id": client_id,
@@ -528,6 +541,72 @@ def build_oidcproxy_provider(base_url: Optional[str] = None) -> Any:
         audience or "(default)",
     )
     return OIDCProxy(**kwargs)
+
+
+def mcpserver_auth_kwargs(provider: Any) -> Dict[str, Any]:
+    """Translate a fastmcp auth provider into ``MCPServer`` constructor kwargs.
+
+    ``FastMCP`` took a provider object on a single ``auth=`` parameter and pulled
+    the OAuth metadata off it internally. ``MCPServer`` splits that into
+    declarative ``auth=AuthSettings(...)`` for the advertised metadata plus a
+    behavioural provider.
+
+    A fastmcp ``OIDCProxy`` satisfies ``mcp`` 2.x's
+    ``OAuthAuthorizationServerProvider`` protocol directly — the protocols are
+    structurally the same — so the object is passed through unchanged and only the
+    settings have to be reconstructed from the attributes it already carries. That
+    is why the ``oidcproxy`` mode survives the move off FastMCP without
+    reimplementing an OAuth authorization server.
+
+    Only ``auth_server_provider`` is set, never ``token_verifier``. ``MCPServer``
+    rejects both together, and given a provider it derives the verifier itself
+    (``ProviderTokenVerifier``) — the same relationship FastMCP had internally.
+    An authorization-server proxy mints the tokens it later validates, so a
+    separately-supplied verifier would be a second source of truth.
+
+    Raises:
+        ValueError: if the provider carries no ``base_url``. Without it there is
+            no issuer to advertise, and starting up would produce a server whose
+            OAuth metadata points nowhere — better to refuse than to serve a
+            discovery document clients cannot use.
+    """
+    from mcp.server.auth.settings import AuthSettings
+
+    base_url = getattr(provider, "base_url", None)
+    if not base_url:
+        raise ValueError(
+            "The configured auth provider has no base_url, so no OAuth issuer can "
+            "be advertised. Set OIDCPROXY_BASE_URL (or pass base_url= to the "
+            "provider) to this server's public URL."
+        )
+
+    # An OAuth *proxy* is itself the issuer clients talk to — it fronts /authorize,
+    # /token and /register and forwards upstream — so the issuer defaults to this
+    # server's own base URL rather than the IdP's.
+    issuer_url = getattr(provider, "issuer_url", None) or base_url
+    resource_server_url = getattr(provider, "resource_base_url", None) or base_url
+
+    settings: Dict[str, Any] = {
+        "issuer_url": issuer_url,
+        "resource_server_url": resource_server_url,
+    }
+    required_scopes = getattr(provider, "required_scopes", None)
+    if required_scopes:
+        settings["required_scopes"] = list(required_scopes)
+    for attr in ("client_registration_options", "revocation_options"):
+        value = getattr(provider, attr, None)
+        if value is not None:
+            settings[attr] = value
+
+    logger.info(
+        "Auth provider bridged onto MCPServer (issuer=%s, resource=%s)",
+        issuer_url,
+        resource_server_url,
+    )
+    return {
+        "auth": AuthSettings(**settings),
+        "auth_server_provider": provider,
+    }
 
 
 # ---------------------------------------------------------------------------

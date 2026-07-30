@@ -91,8 +91,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 def _build_location_body(args: _LocationBody) -> dict[str, Any]:
     body: dict[str, Any] = {"name": args.name}
     if args.country is not None:

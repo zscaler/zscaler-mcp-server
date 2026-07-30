@@ -90,6 +90,10 @@ ehthumbs.db
 .env.production
 secrets/
 local_dev/*
+# TEMPORARY (local testing only): re-include the unreleased SDK sdist so the
+# Dockerfile can install it instead of the version pinned in uv.lock.
+# REVERT together with the matching block in the Dockerfile.
+!local_dev/zscaler_sdk_python-1.9.40.tar.gz
 
 # Deployment render artifacts — contain real account IDs and base64-encoded
 # credentials. Gitignored already, but must also stay out of the Docker

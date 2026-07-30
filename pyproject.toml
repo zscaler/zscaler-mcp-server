@@ -1,6 +1,6 @@
 [project]
 name = "zscaler-mcp"
-version = "0.14.0"
+version = "0.15.0"
 description = "Official Zscaler Integrations MCP Server"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
@@ -24,19 +24,17 @@ dependencies = [
     # Intentionally unconstrained so installs always pull the latest SDK
     # (new Zscaler product/API support lands here first).
     "zscaler-sdk-python",
-    # MCP server framework. FastMCP gives us the ASGI app factories
-    # (streamable_http_app / sse_app) that every piece of the auth /
-    # hardening layer wraps as middleware — same foundation as v1.
+    # MCP server framework. `mcp` 2.x ships its own high-level server
+    # (`mcp.server.mcpserver.MCPServer`) with the ASGI app factories
+    # (streamable_http_app / sse_app) that the auth / hardening layer wraps as
+    # middleware. Standalone `fastmcp` is no longer a runtime dependency — see the
+    # note below the extras for the single exception (the `oidcproxy` auth mode).
     #
-    # Upper bounds are DELIBERATE, not lazy pinning. The MCP 2026-07-28 spec
-    # ships in `mcp` 2.x and `fastmcp` 4.x — a stateless-core rewrite
-    # (CallToolResult/InputRequiredResult return types, ServerRunner, native
-    # multi-round-trip elicitation). Those majors are a planned, staged
-    # migration (see docs/guides/mcp-protocol.md), NOT something a routine
-    # `uvx zscaler-mcp` / `uv sync` should pull in silently the day they GA.
-    # Lift the caps only together with that migration.
-    "mcp[cli]>=1.23.0,<2",
-    "fastmcp>=2.13.0,<4",
+    # The floor is 2.0.0 because that is where the `2026-07-28` revision lands:
+    # `InputRequiredResult` (SEP-2322's stateless form), `RequestStateSecurity`
+    # (its state protection), and `cache_hints` (SEP-2549) are all constructor-
+    # level features of `MCPServer`. `mcp` 1.x is maintenance-only upstream.
+    "mcp[cli]>=2.0.0,<3",
     # Pydantic powers BOTH the input models and the output VIEWS. A view's
     # model_json_schema() is the source of truth for the tool's outputSchema,
     # so the curated view and the advertised schema can never drift.
@@ -71,6 +69,30 @@ dev = [
 gcp = [
     "google-cloud-secret-manager>=2.18.0",
 ]
+#
+# NOT declared here: `fastmcp`, which the `oidcproxy` auth mode needs.
+#
+# `mcp` 2.0.0 ships no OIDC-proxy provider anywhere in the package (verified by
+# walking every submodule), and reimplementing one on
+# `OAuthAuthorizationServerProvider` means standing up an OAuth 2.1 authorization
+# server with dynamic client registration — out of scope. `fastmcp` 4.x is where
+# that provider lives on top of `mcp` 2.x, and it is still a prerelease.
+#
+# It is deliberately NOT an `[oidcproxy]` extra. `fastmcp` 4.x depends on a
+# prerelease *transitively* (`fastmcp-slim==4.0.0b1`), which `uv`'s scoped
+# policies (`explicit`, `if-necessary-or-explicit`) do not cover — only a blanket
+# `prerelease = "allow"` resolves it. Because `uv lock` resolves every extra, that
+# blanket policy would end up governing the whole lockfile, including the
+# automated `sdk-auto-upgrade` job, which would then be free to pull prerelease
+# builds of the Zscaler SDK and pydantic. One optional auth mode does not justify
+# loosening dependency policy for every user.
+#
+# Operators who run `ZSCALER_MCP_AUTH_MODE=oidcproxy` install it themselves:
+#
+#     uv pip install --prerelease=allow "fastmcp>=4.0.0b1,<5"
+#
+# `security/auth.py` raises an ImportError with that exact command. Promote this
+# to a plain extra once `fastmcp` 4.x reaches GA.
 
 [project.scripts]
 zscaler-mcp = "zscaler_mcp.server:main"

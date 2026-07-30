@@ -225,6 +225,130 @@ def test_build_oidcproxy_provider_requires_config(monkeypatch):
     assert "OIDCPROXY_CONFIG_URL" in str(exc.value)
 
 
+def test_missing_config_is_reported_before_missing_package(monkeypatch):
+    """A misconfigured server must be told what config it lacks, not what package.
+
+    ``fastmcp`` is an optional extra, so the import inside the builder can fail
+    for a reason that has nothing to do with the operator's mistake. Validating
+    config first keeps the error actionable on installs without the extra.
+    """
+    for var in (
+        "OIDCPROXY_CONFIG_URL",
+        "OIDCPROXY_CLIENT_ID",
+        "OIDCPROXY_CLIENT_SECRET",
+        "OIDCPROXY_BASE_URL",
+    ):
+        monkeypatch.delenv(var, raising=False)
+    with pytest.raises(ValueError):  # NOT ImportError
+        auth.build_oidcproxy_provider()
+
+
+# ---------------------------------------------------------------------------
+# mcpserver_auth_kwargs — the FastMCP-provider -> MCPServer bridge
+#
+# ``MCPServer`` split FastMCP's single ``auth=<provider>`` parameter into
+# declarative ``AuthSettings`` for the advertised OAuth metadata plus a
+# behavioural provider. These tests pin the translation, since getting it wrong
+# yields a server that either advertises a discovery document pointing nowhere or
+# refuses to start.
+# ---------------------------------------------------------------------------
+
+
+class _FakeProvider:
+    """Stands in for a fastmcp ``OIDCProxy``.
+
+    Only the attributes the bridge reads are modelled. A real ``OIDCProxy`` also
+    satisfies ``mcp``'s authorization-server protocol, which is why the bridge can
+    pass it through unchanged — asserting identity below is what pins that.
+    """
+
+    def __init__(self, **attrs):
+        self.base_url = attrs.pop("base_url", "https://mcp.example.com")
+        for key, value in attrs.items():
+            setattr(self, key, value)
+
+
+def test_auth_bridge_sets_settings_and_provider():
+    kwargs = auth.mcpserver_auth_kwargs(_FakeProvider())
+    assert set(kwargs) == {"auth", "auth_server_provider"}
+
+
+def test_auth_bridge_passes_the_provider_through_unchanged():
+    provider = _FakeProvider()
+    assert auth.mcpserver_auth_kwargs(provider)["auth_server_provider"] is provider
+
+
+def test_auth_bridge_does_not_also_set_a_token_verifier():
+    """``MCPServer`` rejects provider and verifier together.
+
+    Given a provider it derives the verifier itself, so setting both would make
+    the server refuse to start — a startup crash reachable only in oidcproxy mode,
+    which is exactly the configuration least likely to be exercised locally.
+    """
+    assert "token_verifier" not in auth.mcpserver_auth_kwargs(_FakeProvider())
+
+
+def test_bridged_kwargs_are_accepted_by_mcpserver():
+    """The real constructor validates this combination — let it do the asserting.
+
+    Hand-checking the kwarg names would still pass if ``MCPServer`` tightened its
+    validation, so the test builds an actual server instead.
+    """
+    from mcp.server.mcpserver import MCPServer
+
+    kwargs = auth.mcpserver_auth_kwargs(_FakeProvider())
+    server = MCPServer("test", **kwargs)
+    assert server.settings.auth is not None
+
+
+def test_auth_bridge_defaults_issuer_to_this_server():
+    """An OAuth *proxy* is the issuer clients talk to, not the upstream IdP.
+
+    The proxy fronts /authorize, /token and /register and forwards upstream, so
+    advertising the IdP as issuer would send clients past the proxy entirely.
+    """
+    kwargs = auth.mcpserver_auth_kwargs(_FakeProvider(base_url="https://mcp.example.com"))
+    settings = kwargs["auth"]
+    assert str(settings.issuer_url).rstrip("/") == "https://mcp.example.com"
+    assert str(settings.resource_server_url).rstrip("/") == "https://mcp.example.com"
+
+
+def test_auth_bridge_honours_explicit_issuer_and_resource_urls():
+    kwargs = auth.mcpserver_auth_kwargs(
+        _FakeProvider(
+            base_url="https://mcp.example.com",
+            issuer_url="https://issuer.example.com",
+            resource_base_url="https://resource.example.com",
+        )
+    )
+    settings = kwargs["auth"]
+    assert str(settings.issuer_url).rstrip("/") == "https://issuer.example.com"
+    assert str(settings.resource_server_url).rstrip("/") == "https://resource.example.com"
+
+
+def test_auth_bridge_forwards_required_scopes():
+    kwargs = auth.mcpserver_auth_kwargs(_FakeProvider(required_scopes=("openid", "zscaler.read")))
+    assert kwargs["auth"].required_scopes == ["openid", "zscaler.read"]
+
+
+def test_auth_bridge_omits_scopes_when_none_required():
+    kwargs = auth.mcpserver_auth_kwargs(_FakeProvider(required_scopes=None))
+    assert not kwargs["auth"].required_scopes
+
+
+def test_auth_bridge_refuses_a_provider_without_a_base_url():
+    """No base_url means no advertisable issuer — refuse rather than mislead.
+
+    Starting up anyway would serve an OAuth discovery document pointing nowhere,
+    which fails later and further from the cause.
+    """
+    provider = _FakeProvider()
+    provider.base_url = None
+    with pytest.raises(ValueError) as exc:
+        auth.mcpserver_auth_kwargs(provider)
+    assert "OIDCPROXY_BASE_URL" in str(exc.value)
+
+
 # ---------------------------------------------------------------------------
 # Provider registry (used by the entitlement filter's cache-first path)
 # ---------------------------------------------------------------------------

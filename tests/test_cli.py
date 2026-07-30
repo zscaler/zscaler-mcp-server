@@ -81,6 +81,71 @@ def test_enable_write_tools_env_default(monkeypatch):
     assert args.enable_write_tools is True
 
 
+class TestStatelessHttpFlag:
+    """``--stateless-http`` drops session IDs from the streamable-http transport.
+
+    Sessionless clients cannot connect at all while sessions are required, so this
+    is the switch that makes them reachable. It is off by default because losing
+    the session also loses the back-channel that carries an interactive delete
+    confirmation to a pre-2026-07-28 client; those deletes fall back to the
+    confirmation-token handshake instead (never to an unconfirmed delete — see
+    ``test_bridge_confirmation``).
+    """
+
+    def test_it_is_off_unless_asked_for(self):
+        assert server.build_parser().parse_args([]).stateless_http is False
+
+    def test_the_flag_turns_it_on(self):
+        assert server.build_parser().parse_args(["--stateless-http"]).stateless_http is True
+
+    @pytest.mark.parametrize("value", ["true", "1", "yes", "TRUE"])
+    def test_the_env_var_turns_it_on(self, monkeypatch, value):
+        monkeypatch.setenv("ZSCALER_MCP_STATELESS_HTTP", value)
+        assert server.build_parser().parse_args([]).stateless_http is True
+
+    @pytest.mark.parametrize("value", ["false", "0", "no", ""])
+    def test_other_env_values_leave_it_off(self, monkeypatch, value):
+        monkeypatch.setenv("ZSCALER_MCP_STATELESS_HTTP", value)
+        assert server.build_parser().parse_args([]).stateless_http is False
+
+    @pytest.mark.parametrize("requested", [True, False])
+    def test_the_choice_reaches_the_transport(self, monkeypatch, requested):
+        """The flag is inert unless it lands on the app factory.
+
+        Parsing it correctly and then dropping it on the floor would leave every
+        session-mode assertion above passing while the served transport ignored
+        the operator entirely.
+        """
+        seen: dict = {}
+
+        class _FakeServer:
+            def streamable_http_app(self, **kwargs):
+                seen.update(kwargs)
+                return object()
+
+        monkeypatch.setattr(server, "apply_auth_middleware", lambda app, _t: app)
+        monkeypatch.setattr(server, "validate_host_binding", lambda _h: None)
+        monkeypatch.setattr(server, "_tls_kwargs_from_env", dict)
+        # Stop at the bind: everything under test has already happened by then.
+        monkeypatch.setattr("uvicorn.run", lambda *a, **k: (_ for _ in ()).throw(_Bound()))
+
+        with pytest.raises(_Bound):
+            server._run_http(
+                _FakeServer(),
+                transport="streamable-http",
+                host="127.0.0.1",
+                port=8000,
+                debug=False,
+                stateless_http=requested,
+            )
+
+        assert seen["stateless_http"] is requested
+
+
+class _Bound(Exception):
+    """Raised in place of blocking on ``uvicorn.run``."""
+
+
 @pytest.mark.parametrize("value,expected", [([], "basic"), (["bearer"], "bearer")])
 def test_parser_generate_auth_token(value, expected):
     args = server.build_parser().parse_args(["--generate-auth-token", *value])
@@ -92,6 +157,26 @@ def test_version_flag_exits_zero_and_prints_version(capsys):
         server.build_parser().parse_args(["--version"])
     assert exc.value.code == 0
     assert __version__ in capsys.readouterr().out
+
+
+@pytest.mark.asyncio
+async def test_server_reports_our_version_to_connecting_clients():
+    """The version a client displays must be ours, not an empty string.
+
+    ``MCPServer`` does not derive ``version`` from the installed package: omitting
+    the argument is silent but wrong, because the server still starts and answers
+    the handshake while reporting ``version: ""``. Asserted on the wire rather than
+    on the instance attribute, since ``serverInfo`` is what a client renders — and
+    it is the same object behind both the legacy ``initialize`` result and the
+    ``2026-07-28`` ``_meta``.
+    """
+    from mcp import Client
+
+    built = server.build_server(
+        enabled_toolsets=["zpa_segment_groups"], disable_entitlement_filter=True
+    )
+    async with Client(built) as client:
+        assert client.server_info.version == __version__
 
 
 @pytest.mark.parametrize("cmd", ["reload", "restart", "status", "stop", "update"])

@@ -121,6 +121,16 @@ curl -s "https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-c
 
 ## Step 7: Run the MCP Server
 
+`OIDCProxy` ships in `fastmcp`, which is **not installed by default** — it is
+required only for this auth mode, and the release that runs on the current MCP SDK
+is still a prerelease:
+
+```bash
+uv pip install --prerelease=allow "fastmcp>=4.0.0b1,<5"
+```
+
+Every other auth mode (`jwt`, `api-key`, `zscaler`, `none`) needs nothing extra.
+
 ### Option A: Test Script (Quick Start)
 
 Create a Python script or use the provided test script:

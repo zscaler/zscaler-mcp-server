@@ -73,8 +73,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
