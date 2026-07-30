@@ -81,6 +81,104 @@ def test_enable_write_tools_env_default(monkeypatch):
     assert args.enable_write_tools is True
 
 
+class TestStatelessHttp:
+    """Streamable-http runs without session ids unless the operator asks otherwise.
+
+    Nothing here holds state between calls, and delete confirmation is a token
+    exchange carried in ordinary tool results rather than a server-initiated
+    request, so there is no back-channel to preserve. Requiring a session id only
+    turns away clients that send none and forces sticky load balancing.
+    """
+
+    def test_it_is_on_by_default(self):
+        assert server.build_parser().parse_args([]).stateless_http is True
+
+    def test_operators_can_require_sessions(self):
+        args = server.build_parser().parse_args(["--no-stateless-http"])
+        assert args.stateless_http is False
+
+    def test_the_positive_form_is_still_accepted(self):
+        assert server.build_parser().parse_args(["--stateless-http"]).stateless_http is True
+
+    @pytest.mark.parametrize("value", ["false", "0", "no", "FALSE"])
+    def test_the_env_var_can_require_sessions(self, monkeypatch, value):
+        monkeypatch.setenv("ZSCALER_MCP_STATELESS_HTTP", value)
+        assert server.build_parser().parse_args([]).stateless_http is False
+
+    @pytest.mark.parametrize("value", ["true", "1", "yes", ""])
+    def test_other_env_values_leave_it_on(self, monkeypatch, value):
+        monkeypatch.setenv("ZSCALER_MCP_STATELESS_HTTP", value)
+        assert server.build_parser().parse_args([]).stateless_http is True
+
+    def test_the_flag_overrides_the_env_var(self, monkeypatch):
+        monkeypatch.setenv("ZSCALER_MCP_STATELESS_HTTP", "false")
+        args = server.build_parser().parse_args(["--stateless-http"])
+        assert args.stateless_http is True
+
+    @pytest.mark.parametrize("requested", [True, False])
+    def test_the_choice_reaches_the_transport(self, monkeypatch, requested):
+        """Parsing the flag and then dropping it would leave every assertion above
+        passing while the served transport ignored the operator entirely."""
+        seen = _capture_http_app(monkeypatch)
+
+        with pytest.raises(_Bound):
+            server._run_http(
+                _FakeServer(seen),
+                transport="streamable-http",
+                host="127.0.0.1",
+                port=8000,
+                debug=False,
+                stateless_http=requested,
+            )
+
+        assert seen["kwargs"]["stateless_http"] is requested
+
+    def test_sse_never_opts_in(self, monkeypatch):
+        """SSE is session-oriented by construction.
+
+        Passing ``stateless_http`` there would either be ignored or break the
+        transport, so the SSE branch must not forward it even when it is on.
+        """
+        seen = _capture_http_app(monkeypatch)
+
+        with pytest.raises(_Bound):
+            server._run_http(
+                _FakeServer(seen),
+                transport="sse",
+                host="127.0.0.1",
+                port=8000,
+                debug=False,
+                stateless_http=True,
+            )
+
+        assert seen["kwargs"]["transport"] == "sse"
+        assert "stateless_http" not in seen["kwargs"]
+
+
+class _Bound(Exception):
+    """Raised in place of blocking on ``uvicorn.run``."""
+
+
+class _FakeServer:
+    def __init__(self, seen):
+        self._seen = seen
+
+    def http_app(self, **kwargs):
+        self._seen["kwargs"] = kwargs
+        return object()
+
+
+def _capture_http_app(monkeypatch):
+    """Neutralise everything between the app factory and the socket bind."""
+    monkeypatch.setattr(server, "apply_auth_middleware", lambda app, _t: app)
+    monkeypatch.setattr(server, "apply_transport_hardening", lambda app, *a, **k: app)
+    monkeypatch.setattr(server, "validate_host_binding", lambda _h: None)
+    monkeypatch.setattr(server, "get_allowed_source_ips", lambda: None)
+    monkeypatch.setattr(server, "_tls_kwargs_from_env", dict)
+    monkeypatch.setattr("uvicorn.run", lambda *a, **k: (_ for _ in ()).throw(_Bound()))
+    return {}
+
+
 @pytest.mark.parametrize("value,expected", [([], "basic"), (["bearer"], "bearer")])
 def test_parser_generate_auth_token(value, expected):
     args = server.build_parser().parse_args(["--generate-auth-token", *value])

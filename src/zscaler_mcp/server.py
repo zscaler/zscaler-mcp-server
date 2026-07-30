@@ -236,11 +236,15 @@ def _run_http(
     host: str,
     port: int,
     debug: bool,
+    stateless_http: bool = True,
 ) -> None:
     """Run an HTTP transport (streamable-http / sse) with the full middleware stack.
 
     Mirrors v1's ``ZscalerMCPServer.run`` wiring order:
     auth (innermost app wrap) → source-IP ACL → transport hardening (outermost).
+
+    ``stateless_http`` applies to streamable-http only; SSE is session-oriented by
+    construction and ignores it.
     """
     import uvicorn
 
@@ -269,8 +273,17 @@ def _run_http(
     # Refuse to bind a public interface without explicit Host validation config.
     validate_host_binding(host)
 
-    fastmcp_transport = "http" if transport == "streamable-http" else "sse"
-    app = server.http_app(path=DEFAULT_MCP_PATH, transport=fastmcp_transport)
+    # Sessions buy nothing here and cost portability: no tool holds state between
+    # calls, and delete confirmation is a token exchange carried in ordinary tool
+    # results rather than a server-initiated request, so it needs no back-channel.
+    # Requiring a session id only turns away clients that don't send one and forces
+    # sticky load balancing. SSE cannot run sessionless, so it never opts in.
+    if transport == "streamable-http":
+        app = server.http_app(
+            path=DEFAULT_MCP_PATH, transport="http", stateless_http=stateless_http
+        )
+    else:
+        app = server.http_app(path=DEFAULT_MCP_PATH, transport="sse")
 
     # 1. Auth middleware (innermost wrap around the MCP app).
     app = apply_auth_middleware(app, transport)
@@ -285,13 +298,14 @@ def _run_http(
     app = apply_transport_hardening(app, transport, mcp_path=DEFAULT_MCP_PATH)
 
     logger.info(
-        "Starting %s transport on %s://%s:%d (path=%s, tls=%s)",
+        "Starting %s transport on %s://%s:%d (path=%s, tls=%s, sessions=%s)",
         transport,
         scheme,
         host,
         port,
         DEFAULT_MCP_PATH,
         "on" if tls_kwargs else "off",
+        "n/a" if transport != "streamable-http" else ("off" if stateless_http else "required"),
     )
     uvicorn.run(
         app,
@@ -549,6 +563,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=int(os.getenv("ZSCALER_MCP_PORT", "8000")),
         help="Listen port for HTTP transports (default: 8000).",
+    )
+    p.add_argument(
+        "--stateless-http",
+        action=argparse.BooleanOptionalAction,
+        default=os.getenv("ZSCALER_MCP_STATELESS_HTTP", "true").lower() not in ("false", "0", "no"),
+        help=(
+            "Serve streamable-http without session ids, so every request stands alone "
+            "(default: enabled). Lets a load balancer spread requests across replicas "
+            "with no session affinity, and accepts clients that send no session id. "
+            "Use --no-stateless-http to require sessions "
+            "(env: ZSCALER_MCP_STATELESS_HTTP)."
+        ),
     )
     p.add_argument(
         "--services",
@@ -890,6 +916,7 @@ def main() -> None:
             host=args.host,
             port=args.port,
             debug=args.debug,
+            stateless_http=args.stateless_http,
         )
 
 
