@@ -1,4 +1,4 @@
-"""v2 MCP server entry point — FastMCP-backed, full v1 security parity.
+"""v2 MCP server entry point — MCPServer-backed, full v1 security parity.
 
 Tools are not listed here. They register themselves via the ``@tool`` decorator
 at their own definition site; the server calls :func:`discover_tools` to import
@@ -12,8 +12,9 @@ shape the server advertises can never drift.
 
 The security layer is carried forward from v1 verbatim in behaviour:
 
-* **MCP client auth** (HTTP only, on by default) — jwt / api-key / zscaler /
-  oauth-proxy stub, via :func:`apply_auth_middleware`.
+* **MCP client auth** (HTTP only, on by default) — jwt / api-key / zscaler via
+  :func:`apply_auth_middleware`, or oidc via :func:`resolve_oidc_auth`, which
+  configures the SDK's own resource-server enforcement instead.
 * **Source-IP ACL** — :class:`SourceIPMiddleware`.
 * **Transport hardening** — trailing-slash / content-type / GET-405 / health.
 * **HMAC confirmation for destructive ops** — wrapped onto delete tools in the
@@ -31,7 +32,8 @@ import sys
 from collections.abc import Iterable
 
 from dotenv import load_dotenv
-from fastmcp import FastMCP
+from mcp.server.caching import CacheHint
+from mcp.server.mcpserver import MCPServer, RequestStateSecurity
 
 from zscaler_mcp import __version__
 from zscaler_mcp.common.logging import configure_logging, log_security_warning
@@ -43,13 +45,70 @@ from zscaler_mcp.security import (
     apply_entitlement_filter,
     apply_transport_hardening,
     get_allowed_source_ips,
-    resolve_fastmcp_auth,
+    resolve_oidc_auth,
     validate_host_binding,
 )
 
 logger = logging.getLogger("zscaler_mcp")
 
 DEFAULT_MCP_PATH = "/mcp"
+
+#: SEP-2549 freshness hints. Only ``tools/list`` is hinted, and only because this
+#: server's inventory is genuinely immutable after startup: every filter
+#: (toolsets, write allowlist, entitlement downscope) is resolved once during
+#: registration and there is no runtime registration path, so the listing a
+#: client receives cannot change while the connection lives. ``scope="public"``
+#: follows from the same fact — the inventory is a property of this server's
+#: configuration, identical for every caller, so sharing a cached copy across
+#: authorization contexts leaks nothing. Re-check both claims before adding a
+#: runtime "enable toolset" tool; that would make this hint a lie.
+_TOOL_LIST_CACHE_HINTS = {"tools/list": CacheHint(ttl_ms=300_000, scope="public")}
+
+
+def _request_state_security() -> RequestStateSecurity:
+    """Sealing for the multi-round-trip ``requestState`` (SEP-2322).
+
+    ``requestState`` is the token the server hands a client when a call needs
+    input, and which the client echoes back on the retry. Left unsealed it is
+    caller-controlled input bearing on whether a destructive operation was
+    approved, so the SDK seals it: AES-256-GCM, plus expiry, request binding and
+    principal binding. A confirmation answered on one call cannot be lifted onto
+    a different call or reused by a different principal, and expires.
+
+    **It is not single-use, unlike the HMAC confirmation token.** The sealed blob
+    pins the *question* the server asked, not the answer — that arrives in
+    ``inputResponses`` on every round — so re-sending an identical approved call
+    inside the TTL executes again. Request and principal binding cap that at
+    repeating the same delete of the same resource as the same caller, which then
+    finds it already gone. A ledger cannot be added here: the only per-mint-unique
+    value is the *sealed* outer string, and the SDK's ``RequestStateBoundary``
+    unseals it before any of our code runs, while the inner plaintext is identical
+    across two independent asks for the same delete — keying on it would reject a
+    legitimate re-approval after a failed delete. Fixing this belongs in SEP-2322.
+
+    **The key is random and per-process, deliberately.** ``ephemeral()`` generates
+    a key at startup and never persists it, which means state minted by one
+    process is unintelligible to another. Two consequences worth stating plainly:
+
+    * A restart invalidates any in-flight confirmation. The client is told the
+      state is invalid and asks again — the correct outcome, since the operator
+      never approved anything in the new process.
+    * Behind a load balancer, a retry that lands on a different replica will not
+      decrypt. Sticky sessions fix it; a shared key would too, but that means an
+      operator-supplied secret, and this deployment shape does not warrant adding
+      one to the configuration surface. This is the same single-process boundary
+      the HMAC confirmation fallback has always had, now enforced with an
+      authenticated cipher instead of a bare MAC.
+
+    The default ``bind_principal`` is kept: with auth enabled it binds state to
+    the authenticated caller, and with auth disabled there is no principal to
+    bind, which is the honest representation of an unauthenticated deployment.
+
+    This is also what ``MCPServer`` installs when the argument is omitted. It is
+    passed explicitly anyway so the posture is stated in our source rather than
+    inherited from an SDK default that could change under us.
+    """
+    return RequestStateSecurity.ephemeral()
 
 
 def _warn_unknown_toolsets(selection: Iterable[str] | None, flag: str) -> None:
@@ -112,22 +171,24 @@ def build_server(
     write_allowlist: Iterable[str] | None = None,
     disabled_patterns: Iterable[str] | None = None,
     disable_entitlement_filter: bool = False,
-    fastmcp_auth: object | None = None,
-) -> FastMCP:
-    """Discover tools, apply the filter selection, and wire up the FastMCP server.
+    oidc_auth: dict | None = None,
+) -> MCPServer:
+    """Discover tools, apply the filter selection, and wire up the MCP server.
 
     The filter arguments mirror v1's knobs (toolsets / entitlement / write
     allowlist / disabled patterns) and are resolved once here via the registry
-    query. Each selected spec is bridged onto a FastMCP ``FunctionTool`` that
+    query. Each selected spec is bridged onto an MCP ``Tool`` that
     carries the flat input schema, the curated output schema, and the security wrap.
 
     Args:
         disable_entitlement_filter: When True, skip the OneAPI product
             entitlement downscope (env opt-out: ``ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER``).
-        fastmcp_auth: An optional ``fastmcp.server.auth.AuthProvider`` (e.g.
-            ``OIDCProxy``). When given, it is passed to ``FastMCP(auth=...)`` and
-            FastMCP wires the OAuth routes + RequireAuthMiddleware natively. The
-            env-var ``AuthMiddleware`` path is bypassed for this server.
+        oidc_auth: Constructor kwargs from
+            :func:`~zscaler_mcp.security.auth.resolve_oidc_auth` — an
+            ``AuthSettings`` naming the external IdP plus a token verifier. Given
+            these, the SDK publishes protected-resource metadata (RFC 9728) and
+            enforces bearer auth itself, so the ASGI ``AuthMiddleware`` path is
+            skipped for this server. ``None`` for every other auth mode.
     """
     discover_tools()
 
@@ -147,15 +208,32 @@ def build_server(
         disabled_patterns=disabled_patterns,
     )
 
-    # Without an explicit version, FastMCP reports its own library version as ours,
-    # so a client displays a release number that has never existed.
-    server = (
-        FastMCP("zscaler-mcp", version=__version__, auth=fastmcp_auth)
-        if fastmcp_auth
-        else FastMCP("zscaler-mcp", version=__version__)
+    # Tools are built first and handed to the constructor: ``MCPServer.add_tool``
+    # takes a *function* and builds the Tool itself, which would discard the
+    # bridge's flattened signature and derived schemas. The ``tools=`` argument is
+    # the path that accepts preconstructed tools.
+    server = MCPServer(
+        "zscaler-mcp",
+        # Not derived from the package: omitting it reports an empty string as our
+        # version, on both the legacy `initialize` result and the `2026-07-28`
+        # `_meta` serverInfo, which is what a client displays.
+        version=__version__,
+        tools=[build_function_tool(spec) for spec in selected],
+        # SEP-2549. The inventory is fixed once registration finishes — filters
+        # are applied here at startup, never at runtime — so a client may cache
+        # `tools/list` for the life of the connection instead of re-fetching a
+        # listing of several hundred tools. `public` scope is honest for the same
+        # reason: the listing depends on this server's configuration, not on the
+        # caller, so a shared cache cannot leak one caller's view to another.
+        cache_hints=_TOOL_LIST_CACHE_HINTS,
+        # SEP-2322 state protection. Seals the multi-round-trip `requestState` with
+        # AES-256-GCM plus expiry, request binding and principal binding, so a
+        # confirmation answered on one round cannot be lifted onto a different
+        # call or a different principal. It is not single-use; see
+        # `_request_state_security`.
+        request_state_security=_request_state_security(),
+        **(oidc_auth or {}),
     )
-    for spec in selected:
-        server.add_tool(build_function_tool(spec))
 
     names = sorted(spec.name for spec in selected)
     logger.info(
@@ -181,7 +259,60 @@ def build_server(
             ", ".join(sorted(p.name for p in prompt_specs)),
         )
 
+    _install_logging_set_level(server)
+
     return server
+
+
+def _install_logging_set_level(server: MCPServer) -> None:
+    """Let a pre-``2026-07-28`` client set this server's log verbosity.
+
+    ``logging/setLevel`` is part of the ``2025-06-18`` and ``2025-11-25`` base
+    spec, and a client that asks for it and gets ``-32601 Method not found`` has no
+    way to turn on diagnostics against a server it did not launch — the situation
+    for every HTTP deployment. ``MCPServer`` registers no handler, so this adds one
+    and is what keeps the ``logging-set-level`` conformance scenario green.
+
+    **It is deliberately a no-op on ``2026-07-28``.** SEP-2577 deprecated the
+    logging capability, and that revision drops the method from its surface
+    entirely: the SDK's runner rejects it during request validation, before handler
+    lookup, so this handler is unreachable there no matter what we register.
+    Nothing to work around — the method is gone by design, and clients on that
+    revision are expected to use OpenTelemetry, which the SDK emits natively.
+    Keeping the handler costs nothing and serves every older client.
+
+    The level applies to the ``zscaler_mcp`` logger tree only. Raising the root
+    logger would drag in ``httpx``, ``uvicorn`` and the Zscaler SDK's own request
+    logging, which at ``debug`` prints credential-bearing headers — a client
+    asking for verbose MCP logs is not asking for that.
+    """
+    import logging as _logging
+
+    from mcp.types import EmptyResult, SetLevelRequestParams
+
+    #: MCP's eight severities collapsed onto Python's five. ``notice`` reads as
+    #: informational, and everything above ``critical`` has no louder Python
+    #: equivalent, so the three top levels all pin to ``CRITICAL``.
+    levels = {
+        "debug": _logging.DEBUG,
+        "info": _logging.INFO,
+        "notice": _logging.INFO,
+        "warning": _logging.WARNING,
+        "error": _logging.ERROR,
+        "critical": _logging.CRITICAL,
+        "alert": _logging.CRITICAL,
+        "emergency": _logging.CRITICAL,
+    }
+
+    async def set_level(ctx, params: SetLevelRequestParams) -> EmptyResult:
+        level = levels.get(params.level, _logging.INFO)
+        _logging.getLogger("zscaler_mcp").setLevel(level)
+        logger.info("Log level set to %s by client request", params.level)
+        return EmptyResult()
+
+    server._lowlevel_server.add_request_handler(
+        "logging/setLevel", SetLevelRequestParams, set_level
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -236,21 +367,17 @@ def _tls_kwargs_from_env() -> dict:
 
 
 def _run_http(
-    server: FastMCP,
+    server: MCPServer,
     *,
     transport: str,
     host: str,
     port: int,
     debug: bool,
-    stateless_http: bool = True,
 ) -> None:
     """Run an HTTP transport (streamable-http / sse) with the full middleware stack.
 
     Mirrors v1's ``ZscalerMCPServer.run`` wiring order:
     auth (innermost app wrap) → source-IP ACL → transport hardening (outermost).
-
-    ``stateless_http`` applies to streamable-http only; SSE is session-oriented by
-    construction and ignores it.
     """
     import uvicorn
 
@@ -279,17 +406,38 @@ def _run_http(
     # Refuse to bind a public interface without explicit Host validation config.
     validate_host_binding(host)
 
-    # Sessions buy nothing here and cost portability: no tool holds state between
-    # calls, and delete confirmation is a token exchange carried in ordinary tool
-    # results rather than a server-initiated request, so it needs no back-channel.
-    # Requiring a session id only turns away clients that don't send one and forces
-    # sticky load balancing. SSE cannot run sessionless, so it never opts in.
+    # ``MCPServer`` exposes one factory per transport instead of FastMCP's single
+    # ``http_app(transport=...)``. Both still return a plain Starlette app, so the
+    # middleware stack below is unchanged. ``host=`` is passed through because the
+    # SDK derives its own transport-security defaults from it; our stricter
+    # host-header allowlist is applied separately in step 3.
     if transport == "streamable-http":
-        app = server.http_app(
-            path=DEFAULT_MCP_PATH, transport="http", stateless_http=stateless_http
+        # Sessions stay ON for the clients that still use a handshake, because that
+        # session is the only way to *push* a delete confirmation to them. A
+        # pre-2026-07-28 client declares `elicitation` once during `initialize` and
+        # the session is what remembers it; run sessionless and the server sees no
+        # capabilities, cannot ask, and falls back to the HMAC token — which the
+        # agent can redeem in the same turn, so no human necessarily approves the
+        # delete. That is a safety regression, and it is what a real Claude session
+        # exhibited.
+        #
+        # This costs 2026-07-28 clients nothing. The SDK routes any request whose
+        # `mcp-protocol-version` is not a handshake revision to its modern entry
+        # point *before* the session branch, so those callers are served sessionless
+        # either way and answer with `InputRequiredResult`. Verified across all four
+        # {legacy, 2026-07-28} x {session, sessionless} combinations; only the
+        # legacy/sessionless cell loses the human, so that is the cell to avoid.
+        #
+        # The trade-off accepted here: handshake clients get an `Mcp-Session-Id`
+        # back, so multi-replica deployments need sticky routing for them. A human
+        # approving their own deletes is worth more than dropping affinity.
+        app = server.streamable_http_app(
+            streamable_http_path=DEFAULT_MCP_PATH,
+            host=host,
+            stateless_http=False,
         )
     else:
-        app = server.http_app(path=DEFAULT_MCP_PATH, transport="sse")
+        app = server.sse_app(sse_path=DEFAULT_MCP_PATH, host=host)
 
     # 1. Auth middleware (innermost wrap around the MCP app).
     app = apply_auth_middleware(app, transport)
@@ -311,7 +459,10 @@ def _run_http(
         port,
         DEFAULT_MCP_PATH,
         "on" if tls_kwargs else "off",
-        "n/a" if transport != "streamable-http" else ("off" if stateless_http else "required"),
+        # Both transports issue a session to handshake clients; only the revision
+        # decides otherwise, per connection. Reporting "off" here was left over from
+        # the sessionless experiment and contradicted the running configuration.
+        "on (handshake clients)",
     )
     uvicorn.run(
         app,
@@ -569,18 +720,6 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=int(os.getenv("ZSCALER_MCP_PORT", "8000")),
         help="Listen port for HTTP transports (default: 8000).",
-    )
-    p.add_argument(
-        "--stateless-http",
-        action=argparse.BooleanOptionalAction,
-        default=os.getenv("ZSCALER_MCP_STATELESS_HTTP", "true").lower() not in ("false", "0", "no"),
-        help=(
-            "Serve streamable-http without session ids, so every request stands alone "
-            "(default: enabled). Lets a load balancer spread requests across replicas "
-            "with no session affinity, and accepts clients that send no session id. "
-            "Use --no-stateless-http to require sessions "
-            "(env: ZSCALER_MCP_STATELESS_HTTP)."
-        ),
     )
     p.add_argument(
         "--services",
@@ -844,19 +983,12 @@ def main() -> None:
     write_allowlist = _parse_csv(args.write_tools)
     write_enabled = write_allowlist is not None or args.enable_write_tools
 
-    # Surface the destructive-confirmation posture before serving. Only relevant
-    # when a write surface exists — a read-only server has nothing to confirm.
-    if write_enabled:
-        from zscaler_mcp.security import log_confirmation_posture
-
-        log_confirmation_posture(args.transport)
-
-    # oidcproxy env-var mode → build a fastmcp auth provider FastMCP wires
-    # natively. Every other mode returns None (handled by AuthMiddleware at the
-    # ASGI layer). stdio never authenticates.
-    fastmcp_auth = None
+    # OIDC mode → protected-resource metadata + a token verifier on the
+    # constructor, which the SDK wires itself. Every other mode returns None
+    # (handled by AuthMiddleware at the ASGI layer). stdio never authenticates.
+    oidc_auth = None
     if args.transport != "stdio":
-        fastmcp_auth = resolve_fastmcp_auth()
+        oidc_auth = resolve_oidc_auth()
 
     server = build_server(
         enabled_services=enabled_services,
@@ -867,7 +999,7 @@ def main() -> None:
         write_allowlist=write_allowlist,
         disabled_patterns=_parse_csv(args.disabled_tools),
         disable_entitlement_filter=args.no_entitlement_filter,
-        fastmcp_auth=fastmcp_auth,
+        oidc_auth=oidc_auth,
     )
 
     # Process lifecycle: write the PID file and install the SIGHUP (reload) /
@@ -922,7 +1054,6 @@ def main() -> None:
             host=args.host,
             port=args.port,
             debug=args.debug,
-            stateless_http=args.stateless_http,
         )
 
 

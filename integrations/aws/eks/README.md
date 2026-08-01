@@ -95,7 +95,7 @@ The script walks you through:
 2. **Cluster** — create new (interactive prompts for name / K8s version / node type) OR attach to an existing cluster (interactive picker from `eks list-clusters`)
 3. **Credentials** — reuse an existing SM secret OR create one
 4. **VPC** (CreateNew cluster only) — create or attach existing
-5. **MCP auth** — `zscaler` (default), `jwt`, `api-key`, `oidcproxy`, or `none`
+5. **MCP auth** — `zscaler` (default), `jwt`, `api-key`, `oidc`, or `none`. `oidc` additionally needs `OIDCPROXY_BASE_URL` in `.env`, because the load balancer hostname doesn't exist until after the Deployment is applied.
 6. **Namespace + replicas**
 7. **Review** of every choice before launching
 8. **Deploy** — CFN stack first, then `aws eks update-kubeconfig`, render manifests, `kubectl apply`, wait for the NLB hostname

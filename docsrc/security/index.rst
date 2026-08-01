@@ -16,7 +16,7 @@ The Zscaler MCP Server enforces five independent layers of defense, each with it
    * - **HMAC elicitation confirmations**
      - Whether destructive actions require a tamper-proof confirmation token (defaults to on for delete operations).
    * - **MCP Client Authentication**
-     - Who can connect to the server over HTTP transports (JWT, API-key, Zscaler OneAPI, or OIDCProxy).
+     - Who can connect to the server over HTTP transports (JWT, API-key, Zscaler OneAPI, or OIDC).
    * - **TLS and hardening**
      - Transport-layer protection, host header validation, source-IP ACL, allowed origins.
    * - **Output sanitization**

@@ -179,7 +179,11 @@ def zia_update_sandbox_rule(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_sandbox_rule(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA Sandbox rule (destructive). Activate after."""
+    """Delete a ZIA Sandbox rule (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.sandbox_rules.delete_rule(args.rule_id)
     if err:

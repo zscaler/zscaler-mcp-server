@@ -148,7 +148,11 @@ def zia_update_rule_label(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_rule_label(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA rule label (destructive). Activate after."""
+    """Delete a ZIA rule label (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.rule_labels.delete_label(label_id=args.label_id)
     if err:

@@ -398,6 +398,9 @@ def zia_delete_url_category(args: DeleteInput) -> dict[str, Any]:
 
     Refuses predefined categories — those are Zscaler-curated and cannot be
     deleted via the API.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     client = get_zscaler_client(service="zia")
     api = client.zia.url_categories

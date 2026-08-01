@@ -127,7 +127,7 @@ def zpa_get_ba_certificate(args: GetBaCertInput) -> dict[str, Any]:
 def zpa_create_ba_certificate(args: CreateBaCertInput) -> dict[str, Any]:
     """Create a ZPA Browser Access certificate from a PEM blob (write).
 
-    Gated by HMAC + `--write-tools`.
+    Requires `--write-tools`.
     """
     if not args.name or not args.cert_blob:
         raise ValueError("name and cert_blob are required")
@@ -150,7 +150,11 @@ def zpa_create_ba_certificate(args: CreateBaCertInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_delete_ba_certificate(args: DeleteBaCertInput) -> dict[str, Any]:
-    """Delete a ZPA Browser Access certificate (destructive write). Gated by HMAC + `--write-tools`."""
+    """Delete a ZPA Browser Access certificate (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.certificate_id:
         raise ValueError("certificate_id is required")
     client = get_zscaler_client(service="zpa")

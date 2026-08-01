@@ -184,12 +184,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -248,7 +242,7 @@ def zpa_get_app_connector_group(args: GetConnectorGroupInput) -> dict[str, Any]:
 def zpa_create_app_connector_group(args: CreateConnectorGroupInput) -> dict[str, Any]:
     """Create a ZPA app connector group (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`. Auto-resolves the
+    Requires `--write-tools`. Auto-resolves the
     tenant's standard 'Connector' enrollment certificate when none is supplied.
     """
     if not args.name:
@@ -300,7 +294,7 @@ def zpa_create_app_connector_group(args: CreateConnectorGroupInput) -> dict[str,
 def zpa_update_app_connector_group(args: UpdateConnectorGroupInput) -> dict[str, Any]:
     """Update a ZPA app connector group (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`. The enrollment
+    Requires `--write-tools`. The enrollment
     certificate is preserved unless enrollment_cert_id/name is explicitly passed.
     """
     if not args.group_id:
@@ -356,7 +350,10 @@ def zpa_update_app_connector_group(args: UpdateConnectorGroupInput) -> dict[str,
 def zpa_delete_app_connector_group(args: DeleteConnectorGroupInput) -> dict[str, Any]:
     """Delete a ZPA app connector group (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.group_id:
         raise ValueError("group_id is required for delete")

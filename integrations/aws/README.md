@@ -36,7 +36,7 @@ These behaviors are shared so the user experience is consistent regardless of co
 
 - **CloudFormation-first.** Every path is built on nested CloudFormation stacks uploaded to a per-deployment S3 asset bucket. Raw `aws cloudformation deploy` works for IaC pipelines too.
 - **Interactive Python orchestrator.** Each path has its own `*_mcp_operations.py` script with `deploy / status / logs / destroy / configure` subcommands. EC2 adds `ssh`; EKS adds `kubectl` and `rotate-secrets`.
-- **Five MCP-client auth modes.** `zscaler` (HTTP Basic with OneAPI creds — recommended default), `jwt`, `api-key`, `oidcproxy`, and `none`. Same env var names across all paths.
+- **Five MCP-client auth modes.** `zscaler` (HTTP Basic with OneAPI creds — recommended default), `jwt`, `api-key`, `oidc`, and `none`. Same env var names across all paths.
 - **Secrets Manager.** Credentials always live in AWS Secrets Manager — the script either creates one from your `.env` or attaches to an existing ARN.
 - **7-client auto-config.** After a successful deploy the script offers to wire up Claude Desktop, Claude Code, Cursor, Gemini CLI, VS Code, Windsurf, and GitHub Copilot CLI with the right URL + auth header.
 - **Bring-your-own VPC.** Every path supports `NetworkMode=UseExisting` so the deployment can land in an existing VPC.

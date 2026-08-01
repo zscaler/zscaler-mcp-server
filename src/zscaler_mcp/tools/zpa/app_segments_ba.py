@@ -140,12 +140,6 @@ def _opt_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-
-
-
-
-
-
 def _build_body(args: Any) -> dict[str, Any]:
     body: dict[str, Any] = {}
     for field in (
@@ -266,7 +260,11 @@ def zpa_update_application_segment_ba(args: UpdateBaSegmentInput) -> dict[str, A
     is_list=False,
 )
 def zpa_delete_application_segment_ba(args: DeleteBaSegmentInput) -> dict[str, Any]:
-    """Delete a ZPA browser-access application segment (destructive write). Cannot be undone."""
+    """Delete a ZPA browser-access application segment (destructive write). Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.segment_id:
         raise ValueError("segment_id is required for delete")
     client = get_zscaler_client(service="zpa")

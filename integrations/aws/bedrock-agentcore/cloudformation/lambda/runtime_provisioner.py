@@ -46,15 +46,17 @@ CONTROL = boto3.client("bedrock-agentcore-control")
 
 
 def send(event, context, status, data, reason=""):
-    body = json.dumps({
-        "Status":             status,
-        "Reason":             reason or f"See CloudWatch log {context.log_stream_name}",
-        "PhysicalResourceId": data.get("RuntimeId", context.log_stream_name),
-        "StackId":            event["StackId"],
-        "RequestId":          event["RequestId"],
-        "LogicalResourceId":  event["LogicalResourceId"],
-        "Data":               data,
-    }).encode("utf-8")
+    body = json.dumps(
+        {
+            "Status": status,
+            "Reason": reason or f"See CloudWatch log {context.log_stream_name}",
+            "PhysicalResourceId": data.get("RuntimeId", context.log_stream_name),
+            "StackId": event["StackId"],
+            "RequestId": event["RequestId"],
+            "LogicalResourceId": event["LogicalResourceId"],
+            "Data": data,
+        }
+    ).encode("utf-8")
     req = urllib.request.Request(
         event["ResponseURL"],
         data=body,
@@ -140,9 +142,7 @@ def build_inbound_auth_kwargs(props) -> dict:
             ],
         }
         allowed_clients = [
-            c.strip()
-            for c in props.get("JwtAllowedClients", "").split(",")
-            if c.strip()
+            c.strip() for c in props.get("JwtAllowedClients", "").split(",") if c.strip()
         ]
         if allowed_clients:
             custom_jwt["allowedClients"] = allowed_clients
@@ -173,28 +173,15 @@ def build_network_configuration(props) -> dict:
     if mode == "PUBLIC":
         return {"networkMode": "PUBLIC"}
     if mode != "VPC":
-        raise ValueError(
-            f"NetworkMode={mode!r} is invalid. Allowed: PUBLIC, VPC."
-        )
+        raise ValueError(f"NetworkMode={mode!r} is invalid. Allowed: PUBLIC, VPC.")
 
-    subnets = [
-        s.strip()
-        for s in (props.get("VpcSubnetIds") or "").split(",")
-        if s.strip()
-    ]
-    sgs = [
-        s.strip()
-        for s in (props.get("VpcSecurityGroupIds") or "").split(",")
-        if s.strip()
-    ]
+    subnets = [s.strip() for s in (props.get("VpcSubnetIds") or "").split(",") if s.strip()]
+    sgs = [s.strip() for s in (props.get("VpcSecurityGroupIds") or "").split(",") if s.strip()]
     if not subnets:
-        raise ValueError(
-            "NetworkMode=VPC requires at least one subnet in VpcSubnetIds."
-        )
+        raise ValueError("NetworkMode=VPC requires at least one subnet in VpcSubnetIds.")
     if not sgs:
         raise ValueError(
-            "NetworkMode=VPC requires at least one security group in "
-            "VpcSecurityGroupIds."
+            "NetworkMode=VPC requires at least one security group in VpcSecurityGroupIds."
         )
     return {
         "networkMode": "VPC",
@@ -251,9 +238,9 @@ def build_runtime_mcp_url(runtime_arn: str, qualifier: str = "DEFAULT") -> str:
 
 def build_env(props):
     env = {
-        "ZSCALER_SECRET_NAME":       props["SecretName"],
+        "ZSCALER_SECRET_NAME": props["SecretName"],
         "ZSCALER_MCP_WRITE_ENABLED": props["WriteToolsEnabled"],
-        "ZSCALER_MCP_AUTH_MODE":     props["McpAuthMode"],
+        "ZSCALER_MCP_AUTH_MODE": props["McpAuthMode"],
     }
     if props["WriteToolsAllowlist"]:
         env["ZSCALER_MCP_WRITE_TOOLS"] = props["WriteToolsAllowlist"]
@@ -265,9 +252,9 @@ def build_env(props):
         env["ZSCALER_MCP_LOG_TOOL_CALLS"] = "true"
 
     if props["McpAuthMode"] == "jwt":
-        env["ZSCALER_MCP_AUTH_ENABLED"]  = "true"
+        env["ZSCALER_MCP_AUTH_ENABLED"] = "true"
         env["ZSCALER_MCP_AUTH_JWKS_URI"] = props["JwtJwksUri"]
-        env["ZSCALER_MCP_AUTH_ISSUER"]   = props["JwtIssuer"]
+        env["ZSCALER_MCP_AUTH_ISSUER"] = props["JwtIssuer"]
         env["ZSCALER_MCP_AUTH_AUDIENCE"] = props["JwtAudience"]
     elif props["McpAuthMode"] == "api-key":
         env["ZSCALER_MCP_AUTH_ENABLED"] = "true"
@@ -343,11 +330,16 @@ def handler(event, context):
                     "Expected shape arn:aws:bedrock-agentcore:<region>:<account>:runtime/<name>."
                 )
             print(f"Runtime MCP URL: {mcp_url}")
-            send(event, context, "SUCCESS", {
-                "RuntimeId":  runtime_id,
-                "RuntimeArn": runtime_arn,
-                "McpUrl":     mcp_url,
-            })
+            send(
+                event,
+                context,
+                "SUCCESS",
+                {
+                    "RuntimeId": runtime_id,
+                    "RuntimeArn": runtime_arn,
+                    "McpUrl": mcp_url,
+                },
+            )
 
         elif request_type == "Delete":
             existing = find_runtime_by_name(runtime_name)

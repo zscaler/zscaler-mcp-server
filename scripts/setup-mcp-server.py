@@ -8,7 +8,7 @@ AI agent to use it.
 
 What it does:
 
-  1. Prompts for authentication mode (jwt | zscaler | api-key | oidcproxy | none)
+  1. Prompts for authentication mode (jwt | zscaler | api-key | oidc | none)
   2. Prompts for transport (streamable-http | stdio); rejects incompatible combos
   3. Prompts for an .env file path OR collects credentials interactively
   4. Pulls zscaler/zscaler-mcp-server:latest from Docker Hub (no local build)
@@ -20,9 +20,8 @@ What it does:
 Supported on macOS, Linux, and Windows.
 
 Image source: docker.io/zscaler/zscaler-mcp-server:latest (Docker Hub).
-The image is consumed as-is. For OIDCProxy mode the script overrides the
-container's entrypoint with an inline Python program that constructs the
-OIDCProxy auth provider — there are no image modifications.
+The image is consumed as-is, with the same entrypoint for every auth mode —
+including oidc, which is configured entirely through environment variables.
 
 Re-run anytime: this script is idempotent. Re-running with a different auth
 mode tears down the previous container and reconfigures all agents.
@@ -62,11 +61,11 @@ SYSTEM = platform.system()
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 
-AUTH_MODES = ("jwt", "zscaler", "api-key", "oidcproxy", "none")
+AUTH_MODES = ("jwt", "zscaler", "api-key", "oidc", "none")
 TRANSPORT_MODES = ("streamable-http", "stdio")
 
 # Auth modes that require an HTTP transport. Stdio with these is rejected.
-HTTP_ONLY_AUTH_MODES = {"jwt", "zscaler", "api-key", "oidcproxy"}
+HTTP_ONLY_AUTH_MODES = {"jwt", "zscaler", "api-key", "oidc"}
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -130,49 +129,6 @@ def section(title: str) -> None:
 
 
 # ════════════════════════════════════════════════════════════════════════
-#  Inline entrypoint for OIDCProxy mode
-# ════════════════════════════════════════════════════════════════════════
-#
-# OIDCProxy is the only auth mode that cannot be wired up via env vars
-# alone — it needs to be passed programmatically as `auth=` to
-# ZscalerMCPServer. So we override the container entrypoint with this
-# inline Python program. Copy of the source-of-truth in
-# local_dev/scripts/setup-oidcproxy-auth.py — keep them in sync if you
-# change the OIDCProxy bootstrap.
-
-_OIDCPROXY_INLINE_ENTRYPOINT = '''
-import os, sys, logging
-if os.environ.get("FASTMCP_DEBUG", "").lower() in ("true", "1", "yes"):
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-config_url    = os.environ["OIDCPROXY_CONFIG_URL"]
-client_id     = os.environ["OIDCPROXY_CLIENT_ID"]
-client_secret = os.environ["OIDCPROXY_CLIENT_SECRET"]
-base_url      = os.environ["OIDCPROXY_BASE_URL"]
-audience      = os.environ.get("OIDCPROXY_AUDIENCE", "zscaler-mcp-server")
-host          = os.environ.get("MCP_HOST", "0.0.0.0")
-port          = int(os.environ.get("MCP_PORT", "8000"))
-os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "false"
-os.environ["ZSCALER_MCP_ALLOW_HTTP"]   = "true"
-os.environ.pop("ZSCALER_MCP_TLS_CERTFILE", None)
-os.environ.pop("ZSCALER_MCP_TLS_KEYFILE", None)
-from fastmcp.server.auth.oidc_proxy import OIDCProxy
-from zscaler_mcp.server import ZscalerMCPServer
-auth = OIDCProxy(config_url=config_url, client_id=client_id, client_secret=client_secret, base_url=base_url, audience=audience, verify_id_token=True)
-if auth.client_registration_options:
-    auth.client_registration_options.valid_scopes = ["openid", "profile", "email"]
-ew = os.environ.get("ZSCALER_MCP_WRITE_ENABLED", "").lower() in ("true", "1", "yes")
-wt_raw = os.environ.get("ZSCALER_MCP_WRITE_TOOLS", "")
-write_tools = set(t.strip() for t in wt_raw.split(",") if t.strip()) if wt_raw else None
-dt = os.environ.get("ZSCALER_MCP_DISABLED_TOOLS", "")
-disabled_tools = set(t.strip() for t in dt.split(",") if t.strip()) if dt else None
-ds = os.environ.get("ZSCALER_MCP_DISABLED_SERVICES", "")
-disabled_services = set(s.strip() for s in ds.split(",") if s.strip()) if ds else None
-server = ZscalerMCPServer(auth=auth, enable_write_tools=ew, write_tools=write_tools, disabled_tools=disabled_tools, disabled_services=disabled_services)
-server.run("streamable-http", host=host, port=port)
-'''
-
-
-# ════════════════════════════════════════════════════════════════════════
 #  Shell + HTTP helpers
 # ════════════════════════════════════════════════════════════════════════
 
@@ -185,7 +141,9 @@ def run(args: list[str], **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(args, capture_output=True, text=True, **kwargs)
 
 
-def http_get(url: str, *, headers: dict[str, str] | None = None, timeout: int = 15) -> tuple[int, str]:
+def http_get(
+    url: str, *, headers: dict[str, str] | None = None, timeout: int = 15
+) -> tuple[int, str]:
     req = urllib.request.Request(url, method="GET")
     for k, v in (headers or {}).items():
         req.add_header(k, v)
@@ -243,7 +201,7 @@ def load_env(env_path: Path) -> dict[str, str]:
         key, _, value = stripped.partition("=")
         key = key.strip()
         if key.startswith("export "):
-            key = key[len("export "):].strip()
+            key = key[len("export ") :].strip()
         value = value.strip().strip('"').strip("'")
         env[key] = value
     return env
@@ -279,7 +237,7 @@ def sanitise_env_for_docker(env_path: Path) -> Path:
         key, _, value = stripped.partition("=")
         key = key.strip()
         if key.startswith("export "):
-            key = key[len("export "):].strip()
+            key = key[len("export ") :].strip()
         if not key or not _VALID_KEY.match(key):
             continue
         sanitised.append(f"{key}={value}")
@@ -287,8 +245,10 @@ def sanitise_env_for_docker(env_path: Path) -> Path:
     text_out = "\n".join(sanitised).rstrip() + "\n"
 
     tmp = tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8",
-        prefix=".env.docker-sanitised-", suffix=".env",
+        mode="w",
+        encoding="utf-8",
+        prefix=".env.docker-sanitised-",
+        suffix=".env",
         delete=False,
     )
     try:
@@ -435,7 +395,13 @@ class AgentWriteContext:
 
 def _claude_desktop_path() -> Path:
     if SYSTEM == "Darwin":
-        return Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"
+        return (
+            Path.home()
+            / "Library"
+            / "Application Support"
+            / "Claude"
+            / "claude_desktop_config.json"
+        )
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
         return Path(appdata) / "Claude" / "claude_desktop_config.json"
@@ -744,7 +710,9 @@ def collect_zscaler_creds(env_vars: dict[str, str]) -> dict[str, str]:
         cloud = prompt("Zscaler Cloud", default=cloud)
 
     if not (cid and csec and vd and cust):
-        die("ZSCALER_CLIENT_ID, ZSCALER_CLIENT_SECRET, ZSCALER_VANITY_DOMAIN, and ZSCALER_CUSTOMER_ID are all required.")
+        die(
+            "ZSCALER_CLIENT_ID, ZSCALER_CLIENT_SECRET, ZSCALER_VANITY_DOMAIN, and ZSCALER_CUSTOMER_ID are all required."
+        )
 
     return {
         "ZSCALER_CLIENT_ID": cid,
@@ -776,28 +744,29 @@ def collect_api_key(env_vars: dict[str, str]) -> dict[str, str]:
     return {"ZSCALER_MCP_AUTH_API_KEY": api_key}
 
 
-def collect_oidcproxy_creds(env_vars: dict[str, str], port: str) -> dict[str, str]:
+def collect_oidc_creds(env_vars: dict[str, str], port: str) -> dict[str, str]:
+    """Collect the OIDC settings.
+
+    No client secret is asked for: the server is a resource server, so it only
+    ever verifies token signatures against the IdP's published public keys.
+    """
     domain = env_vars.get("AUTH0_DOMAIN", "").strip()
     client_id = env_vars.get("AUTH0_CLIENT_ID", "").strip()
-    client_secret = env_vars.get("AUTH0_CLIENT_SECRET", "").strip()
     audience = env_vars.get("AUTH0_AUDIENCE", "").strip() or DEFAULT_AUDIENCE
 
     if not domain:
         domain = prompt("Auth0 Domain (e.g. your-tenant.us.auth0.com)")
     if not client_id:
         client_id = prompt("Auth0 Application Client ID")
-    if not client_secret:
-        client_secret = prompt_secret("Auth0 Application Client Secret")
     if not env_vars.get("AUTH0_AUDIENCE"):
         audience = prompt("Auth0 API Audience", default=audience)
 
-    if not (domain and client_id and client_secret):
-        die("Auth0 domain, client ID, and client secret are all required for oidcproxy mode.")
+    if not (domain and client_id):
+        die("Auth0 domain and client ID are both required for oidc mode.")
 
     return {
         "OIDCPROXY_CONFIG_URL": f"https://{domain}/.well-known/openid-configuration",
         "OIDCPROXY_CLIENT_ID": client_id,
-        "OIDCPROXY_CLIENT_SECRET": client_secret,
         "OIDCPROXY_BASE_URL": f"http://localhost:{port}",
         "OIDCPROXY_AUDIENCE": audience,
     }
@@ -810,7 +779,9 @@ def collect_oidcproxy_creds(env_vars: dict[str, str], port: str) -> dict[str, st
 
 def docker_ready() -> None:
     if not cmd_exists("docker"):
-        die("Docker is not installed or not in PATH.\nInstall Docker Desktop: https://docs.docker.com/get-docker/")
+        die(
+            "Docker is not installed or not in PATH.\nInstall Docker Desktop: https://docs.docker.com/get-docker/"
+        )
     r = run(["docker", "info"])
     if r.returncode != 0:
         die("Docker is installed but the daemon is not running. Start Docker Desktop and re-run.")
@@ -857,11 +828,16 @@ def docker_run_http(
     #   on script exit) or when the operator opted out via
     #   ``--legacy-env-file``.
     args = [
-        "docker", "run", "-d",
+        "docker",
+        "run",
+        "-d",
         "--restart=unless-stopped",
-        "--name", container_name,
-        "-p", f"{port}:{port}",
-        "--env-file", str(env_file),
+        "--name",
+        container_name,
+        "-p",
+        f"{port}:{port}",
+        "--env-file",
+        str(env_file),
     ]
 
     if bind_mount_source is not None:
@@ -872,23 +848,19 @@ def docker_run_http(
         args.extend(["-e", f"{k}={v}"])
 
     if debug:
-        args.extend(["-e", "FASTMCP_DEBUG=true"])
+        args.extend(["-e", "ZSCALER_MCP_DEBUG=true"])
 
-    if auth_mode == "oidcproxy":
-        # Override entrypoint with the inline Python program that wires
-        # OIDCProxy as the auth= parameter to ZscalerMCPServer.
-        args.extend([
-            "--entrypoint", "python",
+    args.extend(
+        [
             DOCKER_IMAGE,
-            "-c", _OIDCPROXY_INLINE_ENTRYPOINT,
-        ])
-    else:
-        args.extend([
-            DOCKER_IMAGE,
-            "--transport", "streamable-http",
-            "--host", "0.0.0.0",
-            "--port", str(port),
-        ])
+            "--transport",
+            "streamable-http",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            str(port),
+        ]
+    )
 
     r = subprocess.run(args)
     if r.returncode != 0:
@@ -897,12 +869,17 @@ def docker_run_http(
     info("Waiting for container to initialize…")
     time.sleep(8)
 
-    r = run([
-        "docker", "ps",
-        "--filter", f"name={container_name}",
-        "--filter", "status=running",
-        "-q",
-    ])
+    r = run(
+        [
+            "docker",
+            "ps",
+            "--filter",
+            f"name={container_name}",
+            "--filter",
+            "status=running",
+            "-q",
+        ]
+    )
     if not r.stdout.strip():
         error("Container failed to stay running. Recent logs:")
         r = run(["docker", "logs", container_name])
@@ -918,14 +895,18 @@ def docker_run_http(
 
 
 def verify_endpoint(url: str, auth_mode: str, headers: dict[str, str]) -> None:
-    payload = json.dumps({
-        "jsonrpc": "2.0", "id": 1, "method": "initialize",
-        "params": {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "setup-mcp-server", "version": "1.0"},
-        },
-    })
+    payload = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "setup-mcp-server", "version": "1.0"},
+            },
+        }
+    )
     h = {
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
@@ -938,7 +919,9 @@ def verify_endpoint(url: str, auth_mode: str, headers: dict[str, str]) -> None:
         ok(f"Endpoint accepted authenticated request (HTTP {code}).")
     elif code == 401:
         if auth_mode == "none":
-            error("Endpoint returned 401 even though auth is disabled — server may be misconfigured.")
+            error(
+                "Endpoint returned 401 even though auth is disabled — server may be misconfigured."
+            )
             print(body[:400])
         else:
             error("Endpoint returned 401 — credentials were rejected.")
@@ -962,34 +945,42 @@ def parse_args() -> argparse.Namespace:
         description="Interactive local deployment for the Zscaler MCP Server.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("--auth-mode", choices=AUTH_MODES,
-                    help="Skip the auth-mode prompt.")
-    p.add_argument("--transport", choices=TRANSPORT_MODES,
-                    help="Skip the transport prompt.")
-    p.add_argument("--env-file",
-                    help="Path to a .env file. If omitted, the script prompts.")
-    p.add_argument("--port", default=DEFAULT_PORT,
-                    help=f"HTTP port for the server (default: {DEFAULT_PORT}).")
-    p.add_argument("--container-name", default=CONTAINER_NAME,
-                    help=f"Docker container name (default: {CONTAINER_NAME}).")
-    p.add_argument("--debug", action="store_true",
-                    help="Enable FASTMCP_DEBUG inside the container.")
-    p.add_argument("--skip-pull", action="store_true",
-                    help="Skip 'docker pull' (use the locally cached image).")
-    p.add_argument("--skip-verify", action="store_true",
-                    help="Skip endpoint verification.")
-    p.add_argument("--skip-agent-config", action="store_true",
-                    help="Don't auto-configure any AI agents.")
-    p.add_argument("--legacy-env-file", action="store_true",
-                    help=(
-                        "Use the legacy --env-file behaviour only "
-                        "(snapshot at container start). The default now "
-                        "ALSO bind-mounts the .env into /app/.env so "
-                        "`docker exec <container> zscaler-mcp restart` "
-                        "picks up live edits. Pass this flag to opt out "
-                        "(e.g. when you want the .env to live elsewhere "
-                        "or when the source is a temp file)."
-                    ))
+    p.add_argument("--auth-mode", choices=AUTH_MODES, help="Skip the auth-mode prompt.")
+    p.add_argument("--transport", choices=TRANSPORT_MODES, help="Skip the transport prompt.")
+    p.add_argument("--env-file", help="Path to a .env file. If omitted, the script prompts.")
+    p.add_argument(
+        "--port", default=DEFAULT_PORT, help=f"HTTP port for the server (default: {DEFAULT_PORT})."
+    )
+    p.add_argument(
+        "--container-name",
+        default=CONTAINER_NAME,
+        help=f"Docker container name (default: {CONTAINER_NAME}).",
+    )
+    p.add_argument(
+        "--debug", action="store_true", help="Enable ZSCALER_MCP_DEBUG inside the container."
+    )
+    p.add_argument(
+        "--skip-pull",
+        action="store_true",
+        help="Skip 'docker pull' (use the locally cached image).",
+    )
+    p.add_argument("--skip-verify", action="store_true", help="Skip endpoint verification.")
+    p.add_argument(
+        "--skip-agent-config", action="store_true", help="Don't auto-configure any AI agents."
+    )
+    p.add_argument(
+        "--legacy-env-file",
+        action="store_true",
+        help=(
+            "Use the legacy --env-file behaviour only "
+            "(snapshot at container start). The default now "
+            "ALSO bind-mounts the .env into /app/.env so "
+            "`docker exec <container> zscaler-mcp restart` "
+            "picks up live edits. Pass this flag to opt out "
+            "(e.g. when you want the .env to live elsewhere "
+            "or when the source is a temp file)."
+        ),
+    )
     return p.parse_args()
 
 
@@ -1051,7 +1042,9 @@ def main() -> None:
         if discovered is not None:
             print()
             ok(f".env auto-detected at {discovered}")
-            info("  (use --env-file to point at a different file, or pick option 2 below to enter creds manually)")
+            info(
+                "  (use --env-file to point at a different file, or pick option 2 below to enter creds manually)"
+            )
             print()
             print("  How do you want to provide credentials?")
             print(f"    1. Use the auto-detected .env above  {DIM}(recommended){NC}")
@@ -1235,8 +1228,8 @@ def collect_mode_credentials(
         return {}
     if auth_mode == "api-key":
         return collect_api_key(env_vars)
-    if auth_mode == "oidcproxy":
-        return collect_oidcproxy_creds(env_vars, port)
+    if auth_mode == "oidc":
+        return collect_oidc_creds(env_vars, port)
     if auth_mode == "none":
         warn("  Auth mode 'none' — server will accept all connections without authentication.")
         warn("  This is intended for single-user local development only. Do NOT expose the port.")
@@ -1279,14 +1272,13 @@ def _http_runtime_env(
             "ZSCALER_MCP_AUTH_MODE": "api-key",
             "ZSCALER_MCP_AUTH_API_KEY": creds["ZSCALER_MCP_AUTH_API_KEY"],
         }
-    if auth_mode == "oidcproxy":
-        # OIDCProxy uses the inline entrypoint and reads OIDCPROXY_* directly;
-        # ZSCALER_MCP_AUTH_ENABLED is forced false there.
+    if auth_mode == "oidc":
         return {
             **common,
+            "ZSCALER_MCP_AUTH_ENABLED": "true",
+            "ZSCALER_MCP_AUTH_MODE": "oidc",
             "OIDCPROXY_CONFIG_URL": creds["OIDCPROXY_CONFIG_URL"],
             "OIDCPROXY_CLIENT_ID": creds["OIDCPROXY_CLIENT_ID"],
-            "OIDCPROXY_CLIENT_SECRET": creds["OIDCPROXY_CLIENT_SECRET"],
             "OIDCPROXY_BASE_URL": creds["OIDCPROXY_BASE_URL"],
             "OIDCPROXY_AUDIENCE": creds.get("OIDCPROXY_AUDIENCE", DEFAULT_AUDIENCE),
         }
@@ -1355,8 +1347,8 @@ def _client_auth_headers(
         return {"Authorization": f"Basic {b64}"}
     if auth_mode == "api-key":
         return {"Authorization": f"Bearer {_pick('ZSCALER_MCP_AUTH_API_KEY')}"}
-    if auth_mode == "oidcproxy":
-        return {}  # mcp-remote handles OAuth flow; no static header
+    if auth_mode == "oidc":
+        return {}  # mcp-remote runs the OAuth flow against the IdP; no static header
     return {}
 
 
@@ -1387,8 +1379,10 @@ def _fetch_auth0_jwt(*, domain: str, client_id: str, client_secret: str, audienc
 
 def _materialize_env_file(env: dict[str, str]) -> Path:
     tmp = tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8",
-        prefix=".env.zscaler-mcp-", suffix=".env",
+        mode="w",
+        encoding="utf-8",
+        prefix=".env.zscaler-mcp-",
+        suffix=".env",
         delete=False,
     )
     try:
@@ -1423,7 +1417,9 @@ def configure_agents(ctx: AgentWriteContext) -> None:
 
     if not detected:
         print()
-        warn("  No AI agents detected. You can still configure manually using the URL/headers above.")
+        warn(
+            "  No AI agents detected. You can still configure manually using the URL/headers above."
+        )
         return
 
     print()
@@ -1492,8 +1488,10 @@ def print_summary(
     print("    1. Restart any AI agent you just configured.")
     if auth_mode == "jwt":
         print("    2. The Bearer token expires in ~1 hour. Re-run this script to refresh it.")
-    elif auth_mode == "oidcproxy":
-        print("    2. On first connect from an agent, mcp-remote will open a browser for the OAuth flow.")
+    elif auth_mode == "oidc":
+        print(
+            "    2. On first connect from an agent, mcp-remote will open a browser for the OAuth flow."
+        )
     elif auth_mode == "api-key":
         api_key = auth_extra_env.get("ZSCALER_MCP_AUTH_API_KEY", "")
         if api_key:

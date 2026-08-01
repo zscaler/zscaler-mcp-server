@@ -175,12 +175,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
-
-
 def _build_body(args: Any) -> dict[str, Any]:
     country_code = normalize_iso_country_code(args.country_code) if args.country_code else None
     body: dict[str, Any] = {
@@ -269,7 +263,7 @@ def zpa_get_service_edge_group(args: GetServiceEdgeGroupInput) -> dict[str, Any]
 def zpa_create_service_edge_group(args: CreateServiceEdgeGroupInput) -> dict[str, Any]:
     """Create a ZPA service edge group (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`. Requires name,
+    Requires `--write-tools`, plus name,
     latitude, longitude, and location.
     """
     if not all([args.name, args.latitude, args.longitude, args.location]):
@@ -292,7 +286,7 @@ def zpa_create_service_edge_group(args: CreateServiceEdgeGroupInput) -> dict[str
 def zpa_update_service_edge_group(args: UpdateServiceEdgeGroupInput) -> dict[str, Any]:
     """Update a ZPA service edge group (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`.
+    Requires `--write-tools`.
     """
     if not args.group_id:
         raise ValueError("group_id is required for update")
@@ -315,7 +309,10 @@ def zpa_update_service_edge_group(args: UpdateServiceEdgeGroupInput) -> dict[str
 def zpa_delete_service_edge_group(args: DeleteServiceEdgeGroupInput) -> dict[str, Any]:
     """Delete a ZPA service edge group (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.group_id:
         raise ValueError("group_id is required for delete")

@@ -155,13 +155,9 @@ def bmc_trim_llm_request(
     final_list = temp_processed_list[::-1]
 
     if user_message_count < max_prev_user_interactions:
-        logging.info(
-            "User message count did not reach the allowed limit. List remains unchanged."
-        )
+        logging.info("User message count did not reach the allowed limit. List remains unchanged.")
     else:
-        logging.info(
-            f"User message count reached {max_prev_user_interactions}. List truncated."
-        )
+        logging.info(f"User message count reached {max_prev_user_interactions}. List truncated.")
         llm_request.contents = final_list
 
     return None
@@ -234,7 +230,6 @@ _OPTIONAL_MCP_VARS = [
     "ZSCALER_MCP_TLS_KEYFILE",
     "ZSCALER_MCP_DISABLE_HOST_VALIDATION",
     # Write-operation safety
-    "ZSCALER_MCP_SKIP_CONFIRMATIONS",
     "ZSCALER_MCP_CONFIRMATION_TTL",
 ]
 

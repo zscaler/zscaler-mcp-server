@@ -149,7 +149,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -170,15 +172,15 @@ if COLOURS and platform.system() == "Windows":
     except Exception:
         COLOURS = False
 
-RED      = "\033[0;31m" if COLOURS else ""
-GREEN    = "\033[0;32m" if COLOURS else ""
-YELLOW   = "\033[1;33m" if COLOURS else ""
-BLUE     = "\033[0;34m" if COLOURS else ""
-CYAN     = "\033[0;36m" if COLOURS else ""
+RED = "\033[0;31m" if COLOURS else ""
+GREEN = "\033[0;32m" if COLOURS else ""
+YELLOW = "\033[1;33m" if COLOURS else ""
+BLUE = "\033[0;34m" if COLOURS else ""
+CYAN = "\033[0;36m" if COLOURS else ""
 SKY_BLUE = "\033[34;01m" if COLOURS else ""
-BOLD     = "\033[1m" if COLOURS else ""
-DIM      = "\033[2m" if COLOURS else ""
-NC       = "\033[0m" if COLOURS else ""
+BOLD = "\033[1m" if COLOURS else ""
+DIM = "\033[2m" if COLOURS else ""
+NC = "\033[0m" if COLOURS else ""
 
 
 def info(msg: str) -> None:
@@ -309,7 +311,7 @@ DEFAULT_ECS_INFRASTRUCTURE_ROLE_NAME = "zscaler-mcp-ecs-infrastructure-role"
 DEFAULT_ECS_LOG_GROUP = "/ecs/zscaler-mcp"
 DEFAULT_ECS_LOG_STREAM_PREFIX = "mcp"
 DEFAULT_CONTAINER_PORT = 8000
-DEFAULT_ECS_CPU = "1024"    # 1 vCPU
+DEFAULT_ECS_CPU = "1024"  # 1 vCPU
 DEFAULT_ECS_MEMORY = "2048"  # 2 GB
 DEFAULT_HEALTH_CHECK_PATH = "/health"
 
@@ -408,22 +410,25 @@ DEFAULT_ECS_SECRET_NAME = "zscaler-mcp-harness/credentials"
 # CloudTrail. `ZSCALER_CLOUD` is included because it's part of the same
 # logical credential bundle (cloud / vanity domain pair the SDK needs
 # to route to the correct ZIdentity tenant).
-_ZSCALER_CRED_ENV_KEYS: frozenset[str] = frozenset({
-    "ZSCALER_CLIENT_ID",
-    "ZSCALER_CLIENT_SECRET",
-    "ZSCALER_VANITY_DOMAIN",
-    "ZSCALER_CUSTOMER_ID",
-    "ZSCALER_CLOUD",
-})
+_ZSCALER_CRED_ENV_KEYS: frozenset[str] = frozenset(
+    {
+        "ZSCALER_CLIENT_ID",
+        "ZSCALER_CLIENT_SECRET",
+        "ZSCALER_VANITY_DOMAIN",
+        "ZSCALER_CUSTOMER_ID",
+        "ZSCALER_CLOUD",
+    }
+)
 # ECS Express provisions an internal ALB and probes the container at this
 # path every ~30s. We point it at /health (served by the MCP server's
 # HealthCheckMiddleware) instead of /mcp because:
 #   - /mcp requires POST + Accept: application/json,text/event-stream;
 #     the ALB cannot synthesise that handshake, so probes against /mcp
-#     get a 405 from RejectNonSSEGetMiddleware (or a 406 from FastMCP on
+#     get a 405 from RejectNonSSEGetMiddleware (or a 406 from the MCP
+#     transport on
 #     older images), marking every target unhealthy and flapping tasks.
 #   - /health is anonymous, unconditional 200, and bypasses auth /
-#     source-IP ACL / FastMCP — exactly what an LB probe needs.
+#     source-IP ACL / the MCP transport — exactly what an LB probe needs.
 # Available since zscaler-mcp-server image with the HealthCheckMiddleware
 # (added alongside RejectNonSSEGetMiddleware for Bedrock Harness compat).
 
@@ -493,6 +498,7 @@ Operating rules:
 # State file
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def save_state(data: dict[str, Any]) -> None:
     STATE_FILE.write_text(json.dumps(data, indent=2))
 
@@ -511,9 +517,7 @@ def remove_state() -> None:
         STATE_FILE.unlink()
 
 
-def persist_partial_state(
-    partial: dict[str, Any], *, phase: str, topology: str
-) -> None:
+def persist_partial_state(partial: dict[str, Any], *, phase: str, topology: str) -> None:
     """Incrementally append-and-overwrite the state file as each major
     resource is created during `deploy`.
 
@@ -570,10 +574,12 @@ def _utc_now_iso() -> str:
 # Prompts
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def prompt(label: str, default: Optional[str] = None, *, secret: bool = False) -> str:
     suffix = f" [{default}]" if default else ""
     if secret:
         import getpass
+
         val = getpass.getpass(f"{label}{suffix}: ").strip()
     else:
         val = input(f"{label}{suffix}: ").strip()
@@ -606,6 +612,7 @@ def prompt_choice(label: str, choices: list[str], default_idx: int = 0) -> int:
 # AWS session helpers
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def get_session(region: str, profile: Optional[str] = None) -> boto3.Session:
     try:
         if profile:
@@ -628,6 +635,7 @@ def get_account_id(sess: boto3.Session) -> str:
 # ──────────────────────────────────────────────────────────────────────────
 # Runtime URL discovery (auto-discover co-deployed AgentCore Runtime)
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def discover_runtime_url(region: str) -> Optional[dict[str, str]]:
     """Look for a sibling AgentCore Runtime deployment and pull its MCP URL.
@@ -674,6 +682,7 @@ def url_looks_sigv4_only(url: str) -> bool:
 # IAM execution role
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def _harness_role_trust_policy() -> dict[str, Any]:
     return {
         "Version": "2012-10-17",
@@ -687,9 +696,7 @@ def _harness_role_trust_policy() -> dict[str, Any]:
     }
 
 
-def _harness_role_inline_policy(
-    account_id: str, region: str, harness_name: str
-) -> dict[str, Any]:
+def _harness_role_inline_policy(account_id: str, region: str, harness_name: str) -> dict[str, Any]:
     """Mirror of the AWS-published Harness execution role policy.
 
     Source:
@@ -998,6 +1005,7 @@ def delete_execution_role(sess: boto3.Session, role_name: str) -> None:
 #                                       manages the ALB / SGs / scaling
 # Both are reused if they already exist by name (idempotent re-deploy).
 
+
 def _extract_ecr_registry_account(image_uri: str) -> Optional[str]:
     """Extract the 12-digit AWS account ID from an ECR image URI.
 
@@ -1088,6 +1096,7 @@ def _assert_runtime_image_region_compatible(image_uri: str, deploy_region: str) 
 # AWS Marketplace registry 709825985650 works for the default image,
 # and a user's own ECR works when ZSCALER_MCP_IMAGE_URI overrides it).
 
+
 def _ecs_task_execution_role_trust_policy() -> dict[str, Any]:
     return {
         "Version": "2012-10-17",
@@ -1135,9 +1144,7 @@ def _ecs_cross_account_ecr_policy(image_uri: str, region: str) -> Optional[dict[
     }
 
 
-def _ecs_read_zscaler_secret_policy(
-    secret_arn: str, region: str
-) -> dict[str, Any]:
+def _ecs_read_zscaler_secret_policy(secret_arn: str, region: str) -> dict[str, Any]:
     """Inline policy granting the ECS execution role read access to the
     Zscaler credentials secret.
 
@@ -1196,10 +1203,7 @@ def ensure_ecs_task_execution_role(
 ) -> str:
     iam = sess.client("iam")
     cross_account_policy = _ecs_cross_account_ecr_policy(image_uri, region)
-    secret_policy = (
-        _ecs_read_zscaler_secret_policy(secret_arn, region)
-        if secret_arn else None
-    )
+    secret_policy = _ecs_read_zscaler_secret_policy(secret_arn, region) if secret_arn else None
 
     try:
         existing = iam.get_role(RoleName=role_name)
@@ -1234,9 +1238,7 @@ def ensure_ecs_task_execution_role(
             # policy from a prior deploy so the role doesn't carry
             # privileges it no longer needs.
             try:
-                iam.delete_role_policy(
-                    RoleName=role_name, PolicyName="ReadZscalerSecrets"
-                )
+                iam.delete_role_policy(RoleName=role_name, PolicyName="ReadZscalerSecrets")
                 info("Removed stale Zscaler-secret read policy.")
             except ClientError as e:
                 if e.response.get("Error", {}).get("Code") != "NoSuchEntity":
@@ -1315,6 +1317,7 @@ def delete_ecs_task_execution_role(sess: boto3.Session, role_name: str) -> None:
 # target group + security group + scaling-policy management. ECS only
 # assumes this role during service create/update/delete operations —
 # not during runtime.
+
 
 def _ecs_infrastructure_role_trust_policy() -> dict[str, Any]:
     return {
@@ -1417,17 +1420,12 @@ def _cluster_is_script_owned(cluster: dict[str, Any]) -> bool:
         # both.
         k = tag.get("key") or tag.get("Key")
         v = tag.get("value") or tag.get("Value")
-        if (
-            k == _HARNESS_CLUSTER_OWNER_TAG_KEY
-            and v == _HARNESS_CLUSTER_OWNER_TAG_VALUE
-        ):
+        if k == _HARNESS_CLUSTER_OWNER_TAG_KEY and v == _HARNESS_CLUSTER_OWNER_TAG_VALUE:
             return True
     return False
 
 
-def _list_cluster_services_summary(
-    sess: boto3.Session, cluster_name: str
-) -> tuple[int, list[str]]:
+def _list_cluster_services_summary(sess: boto3.Session, cluster_name: str) -> tuple[int, list[str]]:
     """Return ``(total_services, sample_names)`` for the cluster.
 
     Used as a pre-prompt hint when the operator is deciding whether to
@@ -1483,9 +1481,7 @@ def resolve_ecs_cluster_name(
     if requested != default_name:
         ecs = sess.client("ecs")
         try:
-            desc = ecs.describe_clusters(
-                clusters=[requested], include=["TAGS"]
-            )
+            desc = ecs.describe_clusters(clusters=[requested], include=["TAGS"])
             for c in desc.get("clusters", []) or []:
                 if c.get("status") == "ACTIVE":
                     owned = _cluster_is_script_owned(c)
@@ -1502,15 +1498,10 @@ def resolve_ecs_cluster_name(
     # Cases 2 + 3: default name, check existence
     ecs = sess.client("ecs")
     try:
-        desc = ecs.describe_clusters(
-            clusters=[requested], include=["TAGS"]
-        )
+        desc = ecs.describe_clusters(clusters=[requested], include=["TAGS"])
     except ClientError:
         return requested  # describe failed → fall through, ensure_ecs_cluster will retry
-    active = [
-        c for c in (desc.get("clusters") or [])
-        if c.get("status") == "ACTIVE"
-    ]
+    active = [c for c in (desc.get("clusters") or []) if c.get("status") == "ACTIVE"]
     if not active:
         # Case 2: nothing in the way, use the default silently
         return requested
@@ -1525,10 +1516,7 @@ def resolve_ecs_cluster_name(
             "(previous deploy of this script — safe to reuse)"
         )
     else:
-        info(
-            "  Owner tag: none (pre-existing or operator-managed — "
-            "destroy will NOT delete it)"
-        )
+        info("  Owner tag: none (pre-existing or operator-managed — destroy will NOT delete it)")
 
     svc_count, svc_sample = _list_cluster_services_summary(sess, requested)
     if svc_count:
@@ -1678,9 +1666,7 @@ def ensure_ecs_cluster(sess: boto3.Session, cluster_name: str) -> tuple[str, boo
     return arn, True
 
 
-def delete_ecs_cluster(
-    sess: boto3.Session, cluster_name: str, max_wait_s: int = 180
-) -> None:
+def delete_ecs_cluster(sess: boto3.Session, cluster_name: str, max_wait_s: int = 180) -> None:
     """Delete an ECS cluster, tolerating slow ECS Express tear-down.
 
     ECS Express's ``delete_express_gateway_service`` returns once the
@@ -1712,10 +1698,7 @@ def delete_ecs_cluster(
                 "ClusterContainsContainerInstancesException",
                 "ResourceInUseException",
             ):
-                info(
-                    f"Cluster {cluster_name} still draining ({code}); "
-                    "retrying in 15s…"
-                )
+                info(f"Cluster {cluster_name} still draining ({code}); retrying in 15s…")
                 time.sleep(15)
                 continue
             warn(f"Could not delete ECS cluster {cluster_name}: {e}")
@@ -1771,10 +1754,7 @@ def deregister_and_delete_task_definitions(
         info(f"No task definitions left for family {family}.")
         return
 
-    info(
-        f"Deregistering {len(arns)} task-definition revision(s) "
-        f"for family {family}…"
-    )
+    info(f"Deregistering {len(arns)} task-definition revision(s) for family {family}…")
     deregistered: list[str] = []
     for arn in arns:
         try:
@@ -1786,10 +1766,7 @@ def deregister_and_delete_task_definitions(
     if not deregistered:
         return
 
-    info(
-        f"Permanently deleting {len(deregistered)} task-definition "
-        "revision(s)…"
-    )
+    info(f"Permanently deleting {len(deregistered)} task-definition revision(s)…")
     for i in range(0, len(deregistered), 10):
         chunk = deregistered[i : i + 10]
         try:
@@ -1800,6 +1777,7 @@ def deregister_and_delete_task_definitions(
 
 
 # ── CloudWatch log group (created up front so the container can stream) ──
+
 
 def ensure_cloudwatch_log_group(sess: boto3.Session, log_group_name: str) -> None:
     logs = sess.client("logs")
@@ -1847,15 +1825,20 @@ def delete_cloudwatch_log_group(sess: boto3.Session, log_group_name: str) -> Non
 # has no business reaching the MCP server.
 _FORWARDED_ENV_PREFIXES: tuple[str, ...] = (
     "ZSCALER_",
+    # Nothing reads FASTMCP_* any more; the server no longer builds on fastmcp.
+    # The prefix stays so an operator whose .env predates that change keeps
+    # deploying successfully — the values are simply ignored.
     "FASTMCP_",
     "MCP_",  # excludes MCP_URL which is a script-only key (we strip it)
 )
 # Keys that match a forwarded prefix but should still be stripped
 # because they're for the deploy script, not the MCP server.
-_DEPLOY_ONLY_KEYS: frozenset[str] = frozenset({
-    "ZSCALER_MCP_IMAGE_URI",   # tells the script which image to deploy
-    "MCP_URL",                  # tells the script to skip ECS Express
-})
+_DEPLOY_ONLY_KEYS: frozenset[str] = frozenset(
+    {
+        "ZSCALER_MCP_IMAGE_URI",  # tells the script which image to deploy
+        "MCP_URL",  # tells the script to skip ECS Express
+    }
+)
 
 # Minimum operational env vars the container needs to *bind correctly*
 # behind the ECS Express ALB. We only inject these when the operator
@@ -1867,9 +1850,7 @@ _ECS_EXPRESS_TOPOLOGY_DEFAULTS: tuple[tuple[str, str], ...] = (
 )
 
 
-def _build_container_secrets(
-    secret_arn: str, secret_keys: list[str]
-) -> list[dict[str, str]]:
+def _build_container_secrets(secret_arn: str, secret_keys: list[str]) -> list[dict[str, str]]:
     """Return the ``primaryContainer.secrets`` block for ECS Express.
 
     The ECS Agent (which has ``executionRoleArn`` credentials) fetches
@@ -1889,10 +1870,7 @@ def _build_container_secrets(
     the task definition. AWS docs:
     https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data-secrets.html#secrets-app-mesh-json
     """
-    return [
-        {"name": k, "valueFrom": f"{secret_arn}:{k}::"}
-        for k in secret_keys
-    ]
+    return [{"name": k, "valueFrom": f"{secret_arn}:{k}::"} for k in secret_keys]
 
 
 def _build_container_env_vars(
@@ -1933,7 +1911,7 @@ def _build_container_env_vars(
     ``ZSCALER_MCP_ALLOWED_HOSTS`` (deduplicating against whatever the
     operator already set, preserving every other entry). This is not
     optional: AWS mints the FQDN at provision time so the operator
-    physically cannot put it in ``.env``, and without it FastMCP's
+    physically cannot put it in ``.env``, and without it the server's
     DNS-rebinding guard rejects every Harness POST with ``421
     Misdirected Request``. Common operator entries like
     ``127.0.0.1:*,localhost:*`` (the boilerplate that ships in
@@ -1989,9 +1967,10 @@ def _build_container_env_vars(
         forwarded.setdefault(key, default_value)
 
     if discovered_host:
-        user_set_disable = (
-            forwarded.get("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").lower()
-            in ("true", "1", "yes")
+        user_set_disable = forwarded.get("ZSCALER_MCP_DISABLE_HOST_VALIDATION", "").lower() in (
+            "true",
+            "1",
+            "yes",
         )
         if not user_set_disable:
             existing = forwarded.get("ZSCALER_MCP_ALLOWED_HOSTS", "").strip()
@@ -2008,6 +1987,7 @@ def _build_container_env_vars(
 
 
 # ── ECS Express Mode service lifecycle ───────────────────────────────────
+
 
 def _ecs_service_public_endpoint(service: dict[str, Any]) -> Optional[str]:
     """Pluck the PUBLIC ingress endpoint out of a DescribeExpressGatewayService
@@ -2050,10 +2030,7 @@ def discover_ecs_express_service(
                 # name — let the caller surface the conflict.
                 code = e.response.get("Error", {}).get("Code", "")
                 if code in ("InvalidParameterException", "ClientException"):
-                    warn(
-                        f"Service {service_name} exists but is not an "
-                        f"Express Mode service: {e}"
-                    )
+                    warn(f"Service {service_name} exists but is not an Express Mode service: {e}")
                     return None
                 raise
     return None
@@ -2119,9 +2096,7 @@ def _verify_image_supports_amd64(sess: boto3.Session, image_uri: str) -> None:
             # pushed from Apple Silicon without --platform comes out
             # arm64, so an absent manifest-list is suspicious enough to
             # warn about — but not to fail.
-            describe = ecr.describe_images(
-                repositoryName=repo_path, imageIds=[{"imageTag": tag}]
-            )
+            describe = ecr.describe_images(repositoryName=repo_path, imageIds=[{"imageTag": tag}])
             details = (describe.get("imageDetails") or [{}])[0]
             archs = details.get("imageArchitectures") or []
         archs_lower = [a.lower() for a in archs]
@@ -2169,12 +2144,8 @@ def provision_ecs_express_service(
     if existing:
         status = (existing.get("status") or {}).get("statusCode")
         active = existing.get("activeConfigurations") or []
-        cur_image = (
-            active[-1].get("primaryContainer", {}).get("image", "") if active else ""
-        )
-        cur_health = (
-            active[-1].get("healthCheckPath", "") if active else ""
-        )
+        cur_image = active[-1].get("primaryContainer", {}).get("image", "") if active else ""
+        cur_health = active[-1].get("healthCheckPath", "") if active else ""
         # If anything material changed (image, healthCheckPath, env vars) the
         # service needs a rolling update — otherwise the ALB will keep probing
         # the old path or the container will keep running the old image. ECS
@@ -2183,26 +2154,18 @@ def provision_ecs_express_service(
         # changes are rare and the update API is idempotent, so we only
         # update when image OR health-check path drifted (the two we KNOW
         # break the deployment in practice).
-        cur_secrets = (
-            active[-1].get("primaryContainer", {}).get("secrets", []) if active else []
-        )
+        cur_secrets = active[-1].get("primaryContainer", {}).get("secrets", []) if active else []
         # Normalise both sides to name→valueFrom dicts so list-order doesn't
         # cause spurious updates.
-        cur_secrets_map = {
-            s.get("name"): s.get("valueFrom") for s in (cur_secrets or [])
-        }
-        desired_secrets_map = {
-            s["name"]: s["valueFrom"] for s in (secrets or [])
-        }
+        cur_secrets_map = {s.get("name"): s.get("valueFrom") for s in (cur_secrets or [])}
+        desired_secrets_map = {s["name"]: s["valueFrom"] for s in (secrets or [])}
         secrets_drift = cur_secrets_map != desired_secrets_map
         if cur_image != image_uri or cur_health != health_check_path or secrets_drift:
             reasons = []
             if cur_image and cur_image != image_uri:
                 reasons.append(f"image: {cur_image} → {image_uri}")
             if cur_health and cur_health != health_check_path:
-                reasons.append(
-                    f"healthCheckPath: {cur_health} → {health_check_path}"
-                )
+                reasons.append(f"healthCheckPath: {cur_health} → {health_check_path}")
             if secrets_drift:
                 reasons.append(
                     f"secrets[]: {len(cur_secrets_map)} → {len(desired_secrets_map)} entries"
@@ -2290,9 +2253,7 @@ def poll_ecs_express_active(
     last: dict[str, Any] = {}
     while time.time() < deadline:
         try:
-            last = ecs.describe_express_gateway_service(serviceArn=service_arn).get(
-                "service", {}
-            )
+            last = ecs.describe_express_gateway_service(serviceArn=service_arn).get("service", {})
         except ClientError as e:
             sp.stop()
             err(f"DescribeExpressGatewayService failed: {e}")
@@ -2338,6 +2299,7 @@ def poll_ecs_express_active(
 # slot on Express), so ``ensure_ecs_task_execution_role`` is also extended
 # with a scoped ``secretsmanager:GetSecretValue`` + ``kms:Decrypt``.
 
+
 def _zscaler_secret_payload(env: dict[str, str]) -> dict[str, str]:
     """Pluck the 5 Zscaler credential keys out of the resolved env.
 
@@ -2348,16 +2310,10 @@ def _zscaler_secret_payload(env: dict[str, str]) -> dict[str, str]:
     skip ``ZSCALER_CLOUD`` (defaults to production) or ``ZSCALER_CUSTOMER_ID``
     (only required for ZPA tools).
     """
-    return {
-        key: env[key]
-        for key in _ZSCALER_CRED_ENV_KEYS
-        if env.get(key)
-    }
+    return {key: env[key] for key in _ZSCALER_CRED_ENV_KEYS if env.get(key)}
 
 
-def _read_secret_json_keys(
-    sess: boto3.Session, secret_id: str
-) -> list[str]:
+def _read_secret_json_keys(sess: boto3.Session, secret_id: str) -> list[str]:
     """Read the secret's JSON, return its top-level key list.
 
     Used to figure out which ``ZSCALER_*`` env vars to project via the
@@ -2586,9 +2542,7 @@ def ensure_zscaler_secret(
                 )
                 resp = sm.describe_secret(SecretId=secret_name)
             except ClientError as e2:
-                err(
-                    f"Could not restore secret after CreateSecret race: {e2}"
-                )
+                err(f"Could not restore secret after CreateSecret race: {e2}")
                 sys.exit(1)
         else:
             raise
@@ -2655,9 +2609,7 @@ def delete_ecs_express_service(sess: boto3.Session, service_arn: str) -> None:
     last_status = "UNKNOWN"
     while time.time() < deadline:
         try:
-            svc = ecs.describe_express_gateway_service(serviceArn=service_arn).get(
-                "service", {}
-            )
+            svc = ecs.describe_express_gateway_service(serviceArn=service_arn).get("service", {})
             last_status = (svc.get("status") or {}).get("statusCode", last_status)
         except ClientError as e:
             code = e.response.get("Error", {}).get("Code", "")
@@ -2697,6 +2649,7 @@ def delete_ecs_express_service(sess: boto3.Session, service_arn: str) -> None:
 # OAuth2 credential provider (Token Vault) — used by both Harness→Gateway
 # and Gateway→Runtime legs in the Gateway topology
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def find_oauth2_credential_provider_by_name(
     sess: boto3.Session, name: str
@@ -2806,6 +2759,7 @@ def delete_oauth2_credential_provider(sess: boto3.Session, name: str) -> None:
 #                        token endpoint lives under the domain URL).
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def _cognito_issuer(region: str, user_pool_id: str) -> str:
     """OIDC issuer URL for a Cognito User Pool."""
     return f"https://cognito-idp.{region}.amazonaws.com/{user_pool_id}"
@@ -2818,9 +2772,7 @@ def _cognito_discovery_url(region: str, user_pool_id: str) -> str:
 
 def _cognito_token_endpoint(region: str, domain_prefix: str) -> str:
     """Cognito's OAuth2 token endpoint (hosted on the App Client domain)."""
-    return (
-        f"https://{domain_prefix}.auth.{region}.amazoncognito.com/oauth2/token"
-    )
+    return f"https://{domain_prefix}.auth.{region}.amazoncognito.com/oauth2/token"
 
 
 def ensure_cognito_user_pool(
@@ -2879,9 +2831,9 @@ def ensure_cognito_resource_server(
     """
     idp = sess.client("cognito-idp")
     try:
-        existing = idp.describe_resource_server(
-            UserPoolId=user_pool_id, Identifier=identifier
-        ).get("ResourceServer")
+        existing = idp.describe_resource_server(UserPoolId=user_pool_id, Identifier=identifier).get(
+            "ResourceServer"
+        )
         if existing:
             info(f"Reusing Cognito Resource Server: {identifier}")
             return identifier
@@ -2923,9 +2875,9 @@ def ensure_cognito_app_client(
         for c in resp.get("UserPoolClients", []):
             if c.get("ClientName") == name:
                 client_id = c["ClientId"]
-                desc = idp.describe_user_pool_client(
-                    UserPoolId=user_pool_id, ClientId=client_id
-                )["UserPoolClient"]
+                desc = idp.describe_user_pool_client(UserPoolId=user_pool_id, ClientId=client_id)[
+                    "UserPoolClient"
+                ]
                 client_secret = desc.get("ClientSecret", "")
                 if not client_secret:
                     err(
@@ -2980,9 +2932,7 @@ def ensure_cognito_user_pool_domain(
 
     # describe_user_pool_domain accepts the prefix only, not the FQDN.
     try:
-        desc = idp.describe_user_pool_domain(Domain=domain_prefix).get(
-            "DomainDescription"
-        )
+        desc = idp.describe_user_pool_domain(Domain=domain_prefix).get("DomainDescription")
         if desc and desc.get("UserPoolId") == user_pool_id:
             status = desc.get("Status", "UNKNOWN")
             info(f"Reusing Cognito User Pool domain: {domain_prefix} (status={status})")
@@ -3036,9 +2986,7 @@ def delete_cognito_user_pool(
 
     if domain_prefix:
         try:
-            idp.delete_user_pool_domain(
-                Domain=domain_prefix, UserPoolId=user_pool_id
-            )
+            idp.delete_user_pool_domain(Domain=domain_prefix, UserPoolId=user_pool_id)
             ok(f"Deleted Cognito domain: {domain_prefix}")
             # Cognito's domain delete is eventually-consistent; the User
             # Pool delete below can race. A few seconds is enough — the
@@ -3065,6 +3013,7 @@ def delete_cognito_user_pool(
 # ──────────────────────────────────────────────────────────────────────────
 # AgentCore Runtime (Gateway topology) — boto3 lift from runtime_provisioner.py
 # ──────────────────────────────────────────────────────────────────────────
+
 
 # Trust policy for the AgentCore Runtime execution role.
 def _runtime_role_trust_policy() -> dict[str, Any]:
@@ -3124,8 +3073,7 @@ def _runtime_role_inline_policy(
                 "logs:DescribeLogStreams",
             ],
             "Resource": (
-                f"arn:aws:logs:{region}:{account_id}:log-group:"
-                f"/aws/bedrock-agentcore/runtimes/*"
+                f"arn:aws:logs:{region}:{account_id}:log-group:/aws/bedrock-agentcore/runtimes/*"
             ),
         },
         {
@@ -3156,9 +3104,7 @@ def _runtime_role_inline_policy(
                 "Action": ["kms:Decrypt"],
                 "Resource": "*",
                 "Condition": {
-                    "StringEquals": {
-                        "kms:ViaService": f"secretsmanager.{region}.amazonaws.com"
-                    }
+                    "StringEquals": {"kms:ViaService": f"secretsmanager.{region}.amazonaws.com"}
                 },
             }
         )
@@ -3182,9 +3128,7 @@ def ensure_runtime_execution_role(
     try:
         existing = iam.get_role(RoleName=role_name)["Role"]
         info(f"Reusing Runtime execution role: {existing['Arn']}")
-        iam.update_assume_role_policy(
-            RoleName=role_name, PolicyDocument=json.dumps(trust)
-        )
+        iam.update_assume_role_policy(RoleName=role_name, PolicyDocument=json.dumps(trust))
         iam.put_role_policy(
             RoleName=role_name,
             PolicyName="ZscalerRuntimeInline",
@@ -3236,9 +3180,7 @@ def delete_runtime_execution_role(sess: boto3.Session, role_name: str) -> None:
             info(f"Role {role_name} already absent.")
 
 
-def find_runtime_by_name(
-    sess: boto3.Session, name: str
-) -> Optional[dict[str, Any]]:
+def find_runtime_by_name(sess: boto3.Session, name: str) -> Optional[dict[str, Any]]:
     """List + filter — Runtime API has no get-by-name."""
     ctrl = sess.client("bedrock-agentcore-control")
     kwargs: dict[str, Any] = {"maxResults": 100}
@@ -3358,9 +3300,7 @@ def _build_runtime_inbound_auth_kwargs(
     if scope:
         custom_jwt["allowedScopes"] = [scope]
     return {
-        "authorizerConfiguration": {
-            "customJWTAuthorizer": custom_jwt
-        },
+        "authorizerConfiguration": {"customJWTAuthorizer": custom_jwt},
         "requestHeaderConfiguration": {
             "requestHeaderAllowlist": ["Authorization"],
         },
@@ -3395,8 +3335,7 @@ def wait_for_runtime_status(
             return last
         time.sleep(8)
     sp.stop(
-        f"{YELLOW}[WARN]{NC}  Timed out waiting for {target}. "
-        f"Last status = {last.get('status')}"
+        f"{YELLOW}[WARN]{NC}  Timed out waiting for {target}. Last status = {last.get('status')}"
     )
     return last
 
@@ -3477,6 +3416,7 @@ def delete_runtime(sess: boto3.Session, runtime_name: str) -> None:
 # AgentCore Gateway + Target — boto3 lift from gateway_provisioner.py
 # ──────────────────────────────────────────────────────────────────────────
 
+
 # IAM role assumed by the Gateway service when invoking the Runtime
 # target. Trust = bedrock-agentcore service; permissions = invoke any
 # AgentCore Runtime in the account (scoped to the runtime ARN at deploy
@@ -3529,9 +3469,7 @@ def _gateway_role_inline_policy(runtime_arn: str) -> dict[str, Any]:
     }
 
 
-def ensure_gateway_role(
-    sess: boto3.Session, *, role_name: str, runtime_arn: str
-) -> str:
+def ensure_gateway_role(sess: boto3.Session, *, role_name: str, runtime_arn: str) -> str:
     """Find-or-create the IAM role Gateway uses to invoke its Runtime target."""
     iam = sess.client("iam")
     trust = _gateway_role_trust_policy()
@@ -3540,9 +3478,7 @@ def ensure_gateway_role(
     try:
         existing = iam.get_role(RoleName=role_name)["Role"]
         info(f"Reusing Gateway service role: {existing['Arn']}")
-        iam.update_assume_role_policy(
-            RoleName=role_name, PolicyDocument=json.dumps(trust)
-        )
+        iam.update_assume_role_policy(RoleName=role_name, PolicyDocument=json.dumps(trust))
         iam.put_role_policy(
             RoleName=role_name,
             PolicyName="ZscalerGatewayInline",
@@ -3592,9 +3528,7 @@ def delete_gateway_role(sess: boto3.Session, role_name: str) -> None:
             info(f"Role {role_name} already absent.")
 
 
-def find_gateway_by_name(
-    sess: boto3.Session, name: str
-) -> Optional[dict[str, Any]]:
+def find_gateway_by_name(sess: boto3.Session, name: str) -> Optional[dict[str, Any]]:
     ctrl = sess.client("bedrock-agentcore-control")
     kwargs: dict[str, Any] = {"maxResults": 100}
     while True:
@@ -3654,9 +3588,7 @@ def wait_for_gateway_status(
             sp.stop(f"{RED}[ERROR]{NC} Gateway status = {status}")
             return last
         time.sleep(8)
-    sp.stop(
-        f"{YELLOW}[WARN]{NC}  Timed out. Last Gateway status = {last.get('status')}"
-    )
+    sp.stop(f"{YELLOW}[WARN]{NC}  Timed out. Last Gateway status = {last.get('status')}")
     return last
 
 
@@ -3674,9 +3606,7 @@ def wait_for_gateway_target_status(
     last_status = ""
     last: dict[str, Any] = {}
     while time.time() < deadline:
-        last = ctrl.get_gateway_target(
-            gatewayIdentifier=gateway_id, targetId=target_id
-        )
+        last = ctrl.get_gateway_target(gatewayIdentifier=gateway_id, targetId=target_id)
         status = last.get("status", "UNKNOWN")
         if status != last_status:
             sp.stop(f"  Target status={status}")
@@ -3736,9 +3666,7 @@ def ensure_gateway(
         except ClientError as e:
             err(f"get_gateway({gw_id}) failed: {e}")
             raise
-        cur_auth = (
-            full.get("authorizerConfiguration", {}).get("customJWTAuthorizer", {})
-        )
+        cur_auth = full.get("authorizerConfiguration", {}).get("customJWTAuthorizer", {})
         # authorizerConfiguration is mutable via UpdateGateway. Detect drift —
         # specifically a stale `allowedAudience` from an older script revision
         # that misunderstood Cognito M2M token claims, or a stale client/scope
@@ -3849,9 +3777,7 @@ def ensure_gateway_target(
     Returns the target descriptor.
     """
     ctrl = sess.client("bedrock-agentcore-control")
-    existing = find_gateway_target_by_name(
-        sess, gateway_id=gateway_id, name=name
-    )
+    existing = find_gateway_target_by_name(sess, gateway_id=gateway_id, name=name)
     if existing:
         # If the existing target is in a healthy/transient state, reuse it.
         # If it's in any terminal-failure state, delete and recreate — there's
@@ -3865,9 +3791,7 @@ def ensure_gateway_target(
                 f"status={existing_status} — deleting so it can be recreated."
             )
             try:
-                ctrl.delete_gateway_target(
-                    gatewayIdentifier=gateway_id, targetId=existing_id
-                )
+                ctrl.delete_gateway_target(gatewayIdentifier=gateway_id, targetId=existing_id)
             except ClientError as e:
                 err(f"Could not delete failed gateway target {existing_id}: {e}")
                 raise
@@ -3927,18 +3851,14 @@ def ensure_gateway_target(
     )
 
 
-def delete_gateway_target(
-    sess: boto3.Session, *, gateway_id: str, name: str
-) -> None:
+def delete_gateway_target(sess: boto3.Session, *, gateway_id: str, name: str) -> None:
     target = find_gateway_target_by_name(sess, gateway_id=gateway_id, name=name)
     if not target:
         info(f"Gateway target {name} already absent.")
         return
     ctrl = sess.client("bedrock-agentcore-control")
     try:
-        ctrl.delete_gateway_target(
-            gatewayIdentifier=gateway_id, targetId=target["targetId"]
-        )
+        ctrl.delete_gateway_target(gatewayIdentifier=gateway_id, targetId=target["targetId"])
         ok(f"Deleted Gateway target: {name} (id={target['targetId']})")
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "")
@@ -3951,6 +3871,7 @@ def delete_gateway_target(
 # ──────────────────────────────────────────────────────────────────────────
 # Token Vault credential provider
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def ensure_credential_provider(
     sess: boto3.Session,
@@ -4012,6 +3933,7 @@ def delete_credential_provider(sess: boto3.Session, name: str) -> None:
 # ──────────────────────────────────────────────────────────────────────────
 # Harness
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def build_remote_mcp_tool(
     mcp_url: str,
@@ -4146,7 +4068,9 @@ def create_harness(
     return resp["harness"]
 
 
-def poll_harness_ready(sess: boto3.Session, harness_id: str, timeout_s: int = 300) -> dict[str, Any]:
+def poll_harness_ready(
+    sess: boto3.Session, harness_id: str, timeout_s: int = 300
+) -> dict[str, Any]:
     ctrl = sess.client("bedrock-agentcore-control")
     sp = Spinner("Waiting for Harness to reach READY").start()
     deadline = time.time() + timeout_s
@@ -4197,6 +4121,7 @@ def delete_harness(sess: boto3.Session, harness_id: str) -> None:
 # ──────────────────────────────────────────────────────────────────────────
 # Commands
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def _load_env_file(path: Path) -> dict[str, str]:
     """Read a KEY=VALUE .env file. Treats whitespace-only / 'NOT_SET' as absent.
@@ -4293,14 +4218,14 @@ def _load_env_config(args: argparse.Namespace) -> dict[str, str]:
     # actually present in .env do. That's enforced in
     # _build_container_env_vars.
     cfg = {
-        "client_id":         _resolve_env_value(args, env, "ZSCALER_CLIENT_ID"),
-        "client_secret":     _resolve_env_value(args, env, "ZSCALER_CLIENT_SECRET"),
-        "customer_id":       _resolve_env_value(args, env, "ZSCALER_CUSTOMER_ID"),
-        "vanity_domain":     _resolve_env_value(args, env, "ZSCALER_VANITY_DOMAIN"),
-        "image_uri":         _resolve_env_value(args, env, "ZSCALER_MCP_IMAGE_URI"),
-        "mcp_url":           _resolve_env_value(args, env, "MCP_URL"),
-        "model_id":          _resolve_env_value(args, env, "MODEL_ID"),
-        "region":            _resolve_env_value(args, env, "AWS_REGION"),
+        "client_id": _resolve_env_value(args, env, "ZSCALER_CLIENT_ID"),
+        "client_secret": _resolve_env_value(args, env, "ZSCALER_CLIENT_SECRET"),
+        "customer_id": _resolve_env_value(args, env, "ZSCALER_CUSTOMER_ID"),
+        "vanity_domain": _resolve_env_value(args, env, "ZSCALER_VANITY_DOMAIN"),
+        "image_uri": _resolve_env_value(args, env, "ZSCALER_MCP_IMAGE_URI"),
+        "mcp_url": _resolve_env_value(args, env, "MCP_URL"),
+        "model_id": _resolve_env_value(args, env, "MODEL_ID"),
+        "region": _resolve_env_value(args, env, "AWS_REGION"),
     }
     cfg["__env_file__"] = str(env_path) if env_path else ""
     cfg["__raw_env__"] = env  # type: ignore[assignment]
@@ -4325,7 +4250,8 @@ def _ensure_zscaler_creds_interactive(cfg: dict[str, str], *, require_all: bool)
     if require_all and not cfg["vanity_domain"]:
         cfg["vanity_domain"] = prompt("ZSCALER_VANITY_DOMAIN")
     missing = [
-        k for k in (
+        k
+        for k in (
             ["client_id", "client_secret"]
             + (["customer_id", "vanity_domain"] if require_all else [])
         )
@@ -4340,7 +4266,7 @@ def _normalise_mcp_url(raw: str) -> str:
     """Ensure the MCP URL ends with /mcp (no trailing slash).
 
     The AgentCore Harness console (and `remote_mcp` tool) stores the
-    endpoint without a trailing slash. FastMCP's streamable-http mount
+    endpoint without a trailing slash. The streamable-http mount
     serves both `/mcp` (returns 307 → `/mcp/`) and `/mcp/`, but the MCP
     client built into Harness issues POST requests and won't follow a
     307 on a non-idempotent method, so the trailing slash variant
@@ -4359,6 +4285,7 @@ def _normalise_mcp_url(raw: str) -> str:
 # ──────────────────────────────────────────────────────────────────────────
 # Gateway topology orchestrators (PR #48)
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def _deploy_gateway_topology(
     args: argparse.Namespace,
@@ -4442,9 +4369,7 @@ def _deploy_gateway_topology(
         info("    by the container via boto3 (uses the Runtime exec role's IAM grants).")
         info("  • Plaintext env: ZSCALER_CLIENT_SECRET written to environmentVariables.")
         info("    Visible via GetAgentRuntime and CloudTrail — only for dev/debugging.")
-        use_secrets_manager = prompt_bool(
-            "Use AWS Secrets Manager for Zscaler credentials?", True
-        )
+        use_secrets_manager = prompt_bool("Use AWS Secrets Manager for Zscaler credentials?", True)
 
     if not use_secrets_manager:
         step("Step 5b: Zscaler credentials (PLAINTEXT)")
@@ -4462,7 +4387,10 @@ def _deploy_gateway_topology(
         )
         secret_managed_externally = True
         secret_name, secret_arn, _ = ensure_zscaler_secret(
-            sess, existing_secret_name, raw_env, reuse_existing=True,
+            sess,
+            existing_secret_name,
+            raw_env,
+            reuse_existing=True,
         )
     else:
         step("Step 5b: Zscaler credentials → Secrets Manager (CreateNew)")
@@ -4476,13 +4404,16 @@ def _deploy_gateway_topology(
             if cfg.get(cli_key):
                 merged_env[env_key] = cfg[cli_key]
         secret_name, secret_arn, _ = ensure_zscaler_secret(
-            sess, args.secret_name, merged_env, reuse_existing=False,
+            sess,
+            args.secret_name,
+            merged_env,
+            reuse_existing=False,
         )
 
     persist_partial_state(
         {
-            "zscaler_secret_name":              secret_name,
-            "zscaler_secret_arn":               secret_arn,
+            "zscaler_secret_name": secret_name,
+            "zscaler_secret_arn": secret_arn,
             "zscaler_secret_managed_externally": secret_managed_externally,
             "zscaler_secret_use_secrets_manager": use_secrets_manager,
         },
@@ -4509,7 +4440,9 @@ def _deploy_gateway_topology(
     # collide on the global Cognito prefix namespace.
     full_domain_prefix = f"{args.cognito_domain_prefix}-{account_id[-12:]}"
     domain_prefix = ensure_cognito_user_pool_domain(
-        sess, user_pool_id=pool_id, domain_prefix=full_domain_prefix,
+        sess,
+        user_pool_id=pool_id,
+        domain_prefix=full_domain_prefix,
     )
     discovery_url = _cognito_discovery_url(region, pool_id)
     ok(f"Cognito ready. Pool={pool_id}  audience={audience}  client={cognito_client_id}")
@@ -4518,15 +4451,15 @@ def _deploy_gateway_topology(
 
     persist_partial_state(
         {
-            "cognito_user_pool_id":             pool_id,
+            "cognito_user_pool_id": pool_id,
             "cognito_resource_server_identifier": audience,
-            "cognito_audience":                 audience,
-            "cognito_scope_name":               args.cognito_scope_name,
-            "cognito_app_client_id":            cognito_client_id,
-            "cognito_app_client_name":          args.cognito_app_client_name,
-            "cognito_domain_prefix":            domain_prefix,
-            "cognito_discovery_url":            discovery_url,
-            "cognito_token_endpoint":           _cognito_token_endpoint(region, domain_prefix),
+            "cognito_audience": audience,
+            "cognito_scope_name": args.cognito_scope_name,
+            "cognito_app_client_id": cognito_client_id,
+            "cognito_app_client_name": args.cognito_app_client_name,
+            "cognito_domain_prefix": domain_prefix,
+            "cognito_discovery_url": discovery_url,
+            "cognito_token_endpoint": _cognito_token_endpoint(region, domain_prefix),
         },
         phase="cognito-ready",
         topology="gateway",
@@ -4550,7 +4483,7 @@ def _deploy_gateway_topology(
     persist_partial_state(
         {
             "oauth_provider_name": args.oauth_provider_name,
-            "oauth_provider_arn":  oauth_provider_arn,
+            "oauth_provider_arn": oauth_provider_arn,
         },
         phase="oauth-provider-ready",
         topology="gateway",
@@ -4613,10 +4546,10 @@ def _deploy_gateway_topology(
 
     persist_partial_state(
         {
-            "runtime_name":         args.runtime_name,
-            "runtime_id":           runtime_id,
-            "runtime_arn":          runtime_arn,
-            "runtime_mcp_url":      runtime_mcp_url,
+            "runtime_name": args.runtime_name,
+            "runtime_id": runtime_id,
+            "runtime_arn": runtime_arn,
+            "runtime_mcp_url": runtime_mcp_url,
         },
         phase="runtime-ready",
         topology="gateway",
@@ -4625,7 +4558,9 @@ def _deploy_gateway_topology(
     # ── Step 9: Gateway service role ─────────────────────────────────────
     step("Step 9: Provision Gateway service role")
     gateway_role_arn = ensure_gateway_role(
-        sess, role_name=args.gateway_role_name, runtime_arn=runtime_arn,
+        sess,
+        role_name=args.gateway_role_name,
+        runtime_arn=runtime_arn,
     )
 
     persist_partial_state(
@@ -4650,11 +4585,11 @@ def _deploy_gateway_topology(
 
     persist_partial_state(
         {
-            "gateway_name":           args.gateway_name,
-            "gateway_id":             gateway_id,
-            "gateway_arn":            gateway_arn,
-            "gateway_url":            gateway_url,
-            "gateway_target_name":    args.gateway_target_name,
+            "gateway_name": args.gateway_name,
+            "gateway_id": gateway_id,
+            "gateway_arn": gateway_arn,
+            "gateway_url": gateway_url,
+            "gateway_target_name": args.gateway_target_name,
         },
         phase="gateway-ready",
         topology="gateway",
@@ -4702,8 +4637,8 @@ def _deploy_gateway_topology(
         # the breadcrumb).
         persist_partial_state(
             {
-                "gateway_target_id":      target_id,
-                "gateway_target_status":  target_status,
+                "gateway_target_id": target_id,
+                "gateway_target_status": target_status,
             },
             phase="gateway-target-failed",
             topology="gateway",
@@ -4720,42 +4655,37 @@ def _deploy_gateway_topology(
     return {
         # Topology marker for cmd_destroy + status to branch correctly.
         "topology": "gateway",
-
         # Cognito
-        "cognito_user_pool_id":             pool_id,
+        "cognito_user_pool_id": pool_id,
         "cognito_resource_server_identifier": audience,
-        "cognito_audience":                 audience,
-        "cognito_scope_name":               args.cognito_scope_name,
-        "cognito_app_client_id":            cognito_client_id,
-        "cognito_app_client_name":          args.cognito_app_client_name,
-        "cognito_domain_prefix":            domain_prefix,
-        "cognito_discovery_url":            discovery_url,
-        "cognito_token_endpoint":           _cognito_token_endpoint(region, domain_prefix),
-
+        "cognito_audience": audience,
+        "cognito_scope_name": args.cognito_scope_name,
+        "cognito_app_client_id": cognito_client_id,
+        "cognito_app_client_name": args.cognito_app_client_name,
+        "cognito_domain_prefix": domain_prefix,
+        "cognito_discovery_url": discovery_url,
+        "cognito_token_endpoint": _cognito_token_endpoint(region, domain_prefix),
         # OAuth2 credential provider
-        "oauth_provider_name":              args.oauth_provider_name,
-        "oauth_provider_arn":               oauth_provider_arn,
-
+        "oauth_provider_name": args.oauth_provider_name,
+        "oauth_provider_arn": oauth_provider_arn,
         # Runtime
-        "runtime_name":                     args.runtime_name,
-        "runtime_id":                       runtime_id,
-        "runtime_arn":                      runtime_arn,
-        "runtime_mcp_url":                  runtime_mcp_url,
-        "runtime_execution_role_name":      args.runtime_execution_role_name,
-
+        "runtime_name": args.runtime_name,
+        "runtime_id": runtime_id,
+        "runtime_arn": runtime_arn,
+        "runtime_mcp_url": runtime_mcp_url,
+        "runtime_execution_role_name": args.runtime_execution_role_name,
         # Gateway
-        "gateway_name":                     args.gateway_name,
-        "gateway_id":                       gateway_id,
-        "gateway_arn":                      gateway_arn,
-        "gateway_url":                      gateway_url,
-        "gateway_role_name":                args.gateway_role_name,
-        "gateway_target_name":              args.gateway_target_name,
-        "gateway_target_id":                target_id,
-
+        "gateway_name": args.gateway_name,
+        "gateway_id": gateway_id,
+        "gateway_arn": gateway_arn,
+        "gateway_url": gateway_url,
+        "gateway_role_name": args.gateway_role_name,
+        "gateway_target_name": args.gateway_target_name,
+        "gateway_target_id": target_id,
         # Image + secrets carry-over (so destroy / status / summary works)
-        "image_uri":                        image_uri,
-        "zscaler_secret_name":              secret_name,
-        "zscaler_secret_arn":               secret_arn,
+        "image_uri": image_uri,
+        "zscaler_secret_name": secret_name,
+        "zscaler_secret_arn": secret_arn,
         "zscaler_secret_managed_externally": secret_managed_externally,
     }
 
@@ -4773,16 +4703,16 @@ def _destroy_gateway_topology(
             → runtime → runtime role → cognito (domain → pool)
             → secret (last; only if WE created it)
     """
-    gateway_id           = state.get("gateway_id", "")
-    gateway_name         = state.get("gateway_name", "")
-    gateway_target_name  = state.get("gateway_target_name", "")
-    gateway_role_name    = state.get("gateway_role_name", "")
-    oauth_provider_name  = state.get("oauth_provider_name", "")
-    runtime_name         = state.get("runtime_name", "")
-    runtime_role_name    = state.get("runtime_execution_role_name", "")
-    pool_id              = state.get("cognito_user_pool_id", "")
-    domain_prefix        = state.get("cognito_domain_prefix", "")
-    secret_name          = state.get("zscaler_secret_name", "")
+    gateway_id = state.get("gateway_id", "")
+    gateway_name = state.get("gateway_name", "")
+    gateway_target_name = state.get("gateway_target_name", "")
+    gateway_role_name = state.get("gateway_role_name", "")
+    oauth_provider_name = state.get("oauth_provider_name", "")
+    runtime_name = state.get("runtime_name", "")
+    runtime_role_name = state.get("runtime_execution_role_name", "")
+    pool_id = state.get("cognito_user_pool_id", "")
+    domain_prefix = state.get("cognito_domain_prefix", "")
+    secret_name = state.get("zscaler_secret_name", "")
     secret_managed_externally = bool(state.get("zscaler_secret_managed_externally"))
 
     if gateway_id and gateway_target_name:
@@ -4816,7 +4746,9 @@ def _destroy_gateway_topology(
     if pool_id and not args.keep_cognito:
         step("Deleting Cognito User Pool (cascading: domain → pool)")
         delete_cognito_user_pool(
-            sess, user_pool_id=pool_id, domain_prefix=domain_prefix,
+            sess,
+            user_pool_id=pool_id,
+            domain_prefix=domain_prefix,
         )
     elif pool_id:
         info(f"Keeping Cognito User Pool {pool_id} (--keep-cognito).")
@@ -4946,7 +4878,11 @@ def cmd_deploy(args: argparse.Namespace) -> None:
 
         # ── Steps 5–10: Cognito / Runtime / Gateway provisioning ───────
         ecs_state = _deploy_gateway_topology(
-            args, sess=sess, region=region, account_id=account_id, cfg=cfg,
+            args,
+            sess=sess,
+            region=region,
+            account_id=account_id,
+            cfg=cfg,
         )
         # MCP URL surfaced in the summary points at the Gateway, since
         # that's where Harness actually talks. The Gateway URL is what
@@ -5152,25 +5088,11 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             # once. Matches the bedrock-agentcore script's "the script
             # asks which one" UX. Default = Yes (the secure choice).
             step("Step 5b: Zscaler credentials delivery")
-            info(
-                "Two ways to ship credentials to the container:"
-            )
-            info(
-                "  • Secrets Manager (default): values stored encrypted, "
-                "injected by the ECS"
-            )
-            info(
-                "    agent at task start. Nothing sensitive in the task "
-                "definition or CloudTrail."
-            )
-            info(
-                "  • Plaintext env: ZSCALER_CLIENT_SECRET written directly "
-                "to the task def."
-            )
-            info(
-                "    Visible via `aws ecs describe-task-definition` — only "
-                "for dev / debugging."
-            )
+            info("Two ways to ship credentials to the container:")
+            info("  • Secrets Manager (default): values stored encrypted, injected by the ECS")
+            info("    agent at task start. Nothing sensitive in the task definition or CloudTrail.")
+            info("  • Plaintext env: ZSCALER_CLIENT_SECRET written directly to the task def.")
+            info("    Visible via `aws ecs describe-task-definition` — only for dev / debugging.")
             use_secrets_manager = prompt_bool(
                 "Use AWS Secrets Manager for Zscaler credentials?", True
             )
@@ -5228,9 +5150,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             region,
             secret_arn=secret_arn,
         )
-        infra_role_arn = ensure_ecs_infrastructure_role(
-            sess, args.ecs_infrastructure_role_name
-        )
+        infra_role_arn = ensure_ecs_infrastructure_role(sess, args.ecs_infrastructure_role_name)
 
         # ── Step 7: ECS cluster + CloudWatch log group ─────────────────
         step("Step 7: Ensure ECS cluster + CloudWatch log group")
@@ -5244,17 +5164,13 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             args.ecs_cluster_name,
             default_name=DEFAULT_ECS_CLUSTER_NAME,
         )
-        cluster_arn, cluster_created = ensure_ecs_cluster(
-            sess, args.ecs_cluster_name
-        )
+        cluster_arn, cluster_created = ensure_ecs_cluster(sess, args.ecs_cluster_name)
         log_group = args.ecs_log_group or DEFAULT_ECS_LOG_GROUP
         ensure_cloudwatch_log_group(sess, log_group)
 
         # ── Step 8: ECS Express service ────────────────────────────────
         step("Step 8: Deploy Zscaler MCP server to ECS Express Mode")
-        env_vars = _build_container_env_vars(
-            cfg["__raw_env__"], secret_keys=secret_keys
-        )
+        env_vars = _build_container_env_vars(cfg["__raw_env__"], secret_keys=secret_keys)
         container_secrets = (
             _build_container_secrets(secret_arn, secret_keys)
             if secret_arn and secret_keys
@@ -5312,7 +5228,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         mcp_url = _normalise_mcp_url(service_url)
 
         # ECS Express has now told us the AWS-generated FQDN (e.g.
-        # ``zs-<hash>.ecs.us-east-1.on.aws``). FastMCP's DNS-rebinding guard
+        # ``zs-<hash>.ecs.us-east-1.on.aws``). The DNS-rebinding guard
         # rejects every POST whose Host header isn't in its allowlist with
         # ``421 Misdirected Request`` — which is exactly what the Harness
         # client sends — so we have to wire the FQDN into the container's
@@ -5328,7 +5244,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         fqdn_for_host_check = (
             public_endpoint
             if not public_endpoint.startswith("https://")
-            else public_endpoint[len("https://"):]
+            else public_endpoint[len("https://") :]
         ).rstrip("/")
         desired_env = _build_container_env_vars(
             cfg["__raw_env__"],
@@ -5342,9 +5258,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             else []
         )
         live_secrets_raw = (
-            live_active[-1].get("primaryContainer", {}).get("secrets", [])
-            if live_active
-            else []
+            live_active[-1].get("primaryContainer", {}).get("secrets", []) if live_active else []
         )
         # ECS Express returns env / secrets as [{"name": ..., "value": ...}].
         # Compare as name→value dicts so list-order doesn't trigger a false
@@ -5352,17 +5266,13 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         live_env = {e["name"]: e["value"] for e in live_env_raw if "name" in e}
         desired_env_map = {e["name"]: e["value"] for e in desired_env}
         live_secrets = {
-            s["name"]: s.get("valueFrom")
-            for s in (live_secrets_raw or [])
-            if "name" in s
+            s["name"]: s.get("valueFrom") for s in (live_secrets_raw or []) if "name" in s
         }
-        desired_secrets_map = {
-            s["name"]: s["valueFrom"] for s in (container_secrets or [])
-        }
+        desired_secrets_map = {s["name"]: s["valueFrom"] for s in (container_secrets or [])}
         if live_env != desired_env_map or live_secrets != desired_secrets_map:
             info(
                 "Wiring discovered FQDN into ZSCALER_MCP_ALLOWED_HOSTS "
-                f"(host={fqdn_for_host_check}) — required for FastMCP's "
+                f"(host={fqdn_for_host_check}) — required for the server's "
                 "DNS-rebinding guard."
             )
             ecs_client = sess.client("ecs")
@@ -5393,18 +5303,18 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         ok(f"MCP server is live: {mcp_url}")
 
         ecs_state = {
-            "ecs_service_arn":            svc["serviceArn"],
-            "ecs_service_name":           args.ecs_service_name,
-            "ecs_cluster_name":           args.ecs_cluster_name,
-            "ecs_cluster_arn":            cluster_arn,
-            "ecs_cluster_created_by_us":  cluster_created,
-            "ecs_execution_role_name":    args.ecs_execution_role_name,
+            "ecs_service_arn": svc["serviceArn"],
+            "ecs_service_name": args.ecs_service_name,
+            "ecs_cluster_name": args.ecs_cluster_name,
+            "ecs_cluster_arn": cluster_arn,
+            "ecs_cluster_created_by_us": cluster_created,
+            "ecs_execution_role_name": args.ecs_execution_role_name,
             "ecs_infrastructure_role_name": args.ecs_infrastructure_role_name,
-            "ecs_log_group":              log_group,
-            "ecs_service_url":            service_url,
-            "image_uri":                  image_uri,
-            "zscaler_secret_name":        secret_name,
-            "zscaler_secret_arn":         secret_arn,
+            "ecs_log_group": log_group,
+            "ecs_service_url": service_url,
+            "image_uri": image_uri,
+            "zscaler_secret_name": secret_name,
+            "zscaler_secret_arn": secret_arn,
             # Marker so destroy knows whether WE created the secret (and
             # may therefore delete it) or it's operator-managed.
             "zscaler_secret_managed_externally": secret_managed_externally,
@@ -5450,7 +5360,9 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         sys.exit(1)
     except EndpointConnectionError as e:
         err(f"Could not reach bedrock-agentcore-control in {region}: {e}")
-        err("Confirm Harness is available in this region — it is currently preview, with limited regional coverage.")
+        err(
+            "Confirm Harness is available in this region — it is currently preview, with limited regional coverage."
+        )
         sys.exit(1)
 
     harness_id = harness["harnessId"]
@@ -5533,14 +5445,10 @@ def _print_deploy_summary(
         host_line = "External (user-provided)"
 
     secret_name = ecs_state.get("zscaler_secret_name", "")
-    secret_managed_externally = bool(
-        ecs_state.get("zscaler_secret_managed_externally")
-    )
+    secret_managed_externally = bool(ecs_state.get("zscaler_secret_managed_externally"))
     if secret_name:
         suffix = " (managed externally)" if secret_managed_externally else ""
-        secret_line = (
-            f"\n  {BOLD}Zscaler Secret{NC}         = {secret_name}{suffix}"
-        )
+        secret_line = f"\n  {BOLD}Zscaler Secret{NC}         = {secret_name}{suffix}"
     elif mcp_host_kind in ("ecs", "gateway"):
         secret_line = (
             f"\n  {BOLD}Zscaler Secret{NC}         = (none — "
@@ -5565,8 +5473,7 @@ def _print_deploy_summary(
         )
 
     cred_label = (
-        "OAuth2 Provider (Cognito)" if mcp_host_kind == "gateway"
-        else "Credential Provider"
+        "OAuth2 Provider (Cognito)" if mcp_host_kind == "gateway" else "Credential Provider"
     )
 
     print(f"""
@@ -5605,14 +5512,14 @@ def cmd_status(args: argparse.Namespace) -> None:
     step("Harness status")
     tools_summary = ", ".join(t["name"] for t in h.get("tools", [])) or "(none)"
     print(f"""
-  {BOLD}HarnessId{NC}        = {h.get('harnessId')}
-  {BOLD}Name{NC}             = {h.get('harnessName')}
-  {BOLD}Status{NC}           = {_color_status(h.get('status'))}
-  {BOLD}Model{NC}            = {(h.get('model', {}).get('bedrockModelConfig', {}) or {}).get('modelId')}
+  {BOLD}HarnessId{NC}        = {h.get("harnessId")}
+  {BOLD}Name{NC}             = {h.get("harnessName")}
+  {BOLD}Status{NC}           = {_color_status(h.get("status"))}
+  {BOLD}Model{NC}            = {(h.get("model", {}).get("bedrockModelConfig", {}) or {}).get("modelId")}
   {BOLD}Tools{NC}            = {tools_summary}
-  {BOLD}Created{NC}          = {h.get('createdAt')}
-  {BOLD}Updated{NC}          = {h.get('updatedAt')}
-  {BOLD}Role{NC}             = {h.get('executionRoleArn')}
+  {BOLD}Created{NC}          = {h.get("createdAt")}
+  {BOLD}Updated{NC}          = {h.get("updatedAt")}
+  {BOLD}Role{NC}             = {h.get("executionRoleArn")}
 """)
 
     host_kind = state.get("mcp_host_kind")
@@ -5621,24 +5528,22 @@ def cmd_status(args: argparse.Namespace) -> None:
         ecs_arn = state.get("ecs_service_arn", "")
         if ecs_arn:
             try:
-                ecs_svc = sess.client("ecs").describe_express_gateway_service(
-                    serviceArn=ecs_arn
-                ).get("service", {})
+                ecs_svc = (
+                    sess.client("ecs")
+                    .describe_express_gateway_service(serviceArn=ecs_arn)
+                    .get("service", {})
+                )
             except ClientError as e:
                 warn(f"DescribeExpressGatewayService failed: {e}")
                 return
             status_code = (ecs_svc.get("status") or {}).get("statusCode")
             active = ecs_svc.get("activeConfigurations") or []
-            cur_image = (
-                active[-1].get("primaryContainer", {}).get("image", "")
-                if active
-                else ""
-            )
+            cur_image = active[-1].get("primaryContainer", {}).get("image", "") if active else ""
             endpoint = _ecs_service_public_endpoint(ecs_svc) or "(not yet ready)"
             print(f"""
-  {BOLD}ServiceName{NC}      = {ecs_svc.get('serviceName')}
-  {BOLD}ServiceArn{NC}       = {ecs_svc.get('serviceArn')}
-  {BOLD}Cluster{NC}          = {ecs_svc.get('cluster')}
+  {BOLD}ServiceName{NC}      = {ecs_svc.get("serviceName")}
+  {BOLD}ServiceArn{NC}       = {ecs_svc.get("serviceArn")}
+  {BOLD}Cluster{NC}          = {ecs_svc.get("cluster")}
   {BOLD}Status{NC}           = {_color_status(status_code)}
   {BOLD}Endpoint{NC}         = https://{endpoint}
   {BOLD}Image{NC}            = {cur_image}
@@ -5658,10 +5563,10 @@ def cmd_status(args: argparse.Namespace) -> None:
             print(f"""
   {BOLD}Name{NC}             = {runtime_name}
   {BOLD}RuntimeId{NC}        = {runtime_id}
-  {BOLD}RuntimeArn{NC}       = {rt.get('agentRuntimeArn', state.get('runtime_arn',''))}
-  {BOLD}Status{NC}           = {_color_status(rt.get('status'))}
-  {BOLD}Image{NC}            = {(rt.get('agentRuntimeArtifact') or {}).get('containerConfiguration', {}).get('containerUri', state.get('image_uri',''))}
-  {BOLD}MCP URL{NC}          = {state.get('runtime_mcp_url','')}
+  {BOLD}RuntimeArn{NC}       = {rt.get("agentRuntimeArn", state.get("runtime_arn", ""))}
+  {BOLD}Status{NC}           = {_color_status(rt.get("status"))}
+  {BOLD}Image{NC}            = {(rt.get("agentRuntimeArtifact") or {}).get("containerConfiguration", {}).get("containerUri", state.get("image_uri", ""))}
+  {BOLD}MCP URL{NC}          = {state.get("runtime_mcp_url", "")}
 """)
 
         step("AgentCore Gateway")
@@ -5676,27 +5581,25 @@ def cmd_status(args: argparse.Namespace) -> None:
             target_status = "UNKNOWN"
             if target_id:
                 try:
-                    t = ctrl.get_gateway_target(
-                        gatewayIdentifier=gateway_id, targetId=target_id
-                    )
+                    t = ctrl.get_gateway_target(gatewayIdentifier=gateway_id, targetId=target_id)
                     target_status = t.get("status", "UNKNOWN")
                 except ClientError as e:
                     warn(f"get_gateway_target failed: {e}")
             print(f"""
-  {BOLD}Name{NC}             = {state.get('gateway_name','')}
+  {BOLD}Name{NC}             = {state.get("gateway_name", "")}
   {BOLD}GatewayId{NC}        = {gateway_id}
-  {BOLD}Status{NC}           = {_color_status(gw.get('status'))}
-  {BOLD}URL{NC}              = {gw.get('gatewayUrl', state.get('gateway_url',''))}
-  {BOLD}Target{NC}           = {state.get('gateway_target_name','')}  status={_color_status(target_status)}
+  {BOLD}Status{NC}           = {_color_status(gw.get("status"))}
+  {BOLD}URL{NC}              = {gw.get("gatewayUrl", state.get("gateway_url", ""))}
+  {BOLD}Target{NC}           = {state.get("gateway_target_name", "")}  status={_color_status(target_status)}
 """)
 
         step("Amazon Cognito (inbound IdP)")
         print(f"""
-  {BOLD}User Pool{NC}        = {state.get('cognito_user_pool_id','')}
-  {BOLD}Audience{NC}         = {state.get('cognito_audience','')}
-  {BOLD}Domain{NC}           = {state.get('cognito_domain_prefix','')}
-  {BOLD}Token URL{NC}        = {state.get('cognito_token_endpoint','')}
-  {BOLD}App Client{NC}       = {state.get('cognito_app_client_id','')}
+  {BOLD}User Pool{NC}        = {state.get("cognito_user_pool_id", "")}
+  {BOLD}Audience{NC}         = {state.get("cognito_audience", "")}
+  {BOLD}Domain{NC}           = {state.get("cognito_domain_prefix", "")}
+  {BOLD}Token URL{NC}        = {state.get("cognito_token_endpoint", "")}
+  {BOLD}App Client{NC}       = {state.get("cognito_app_client_id", "")}
 """)
 
 
@@ -5811,7 +5714,9 @@ def cmd_logs(args: argparse.Namespace) -> None:
                 raise
             events = resp.get("events", [])
             for ev in events:
-                ts = datetime.fromtimestamp(ev["timestamp"] / 1000, tz=timezone.utc).strftime("%H:%M:%S")
+                ts = datetime.fromtimestamp(ev["timestamp"] / 1000, tz=timezone.utc).strftime(
+                    "%H:%M:%S"
+                )
                 print(f"{DIM}{ts}{NC}  {ev['message'].rstrip()}")
                 start = max(start, ev["timestamp"] + 1)
             time.sleep(3)
@@ -5832,7 +5737,7 @@ def cmd_invoke(args: argparse.Namespace) -> None:
         err("State file missing harness_arn.")
         sys.exit(1)
     if not args.message:
-        err("Provide a message: invoke \"list my zpa segment groups\"")
+        err('Provide a message: invoke "list my zpa segment groups"')
         sys.exit(1)
 
     runtime_session_id = "harness-smoke-" + uuid.uuid4().hex  # ≥33 chars
@@ -5845,9 +5750,7 @@ def cmd_invoke(args: argparse.Namespace) -> None:
         resp = data.invoke_harness(
             harnessArn=harness_arn,
             runtimeSessionId=runtime_session_id,
-            messages=[
-                {"role": "user", "content": [{"text": args.message}]}
-            ],
+            messages=[{"role": "user", "content": [{"text": args.message}]}],
         )
     except ClientError as e:
         err(f"InvokeHarness failed: {e}")
@@ -5856,7 +5759,11 @@ def cmd_invoke(args: argparse.Namespace) -> None:
     stream = resp.get("eventStream") or resp.get("stream") or resp.get("body")
     if stream is None:
         warn("No event stream in response — printing raw payload.")
-        print(json.dumps({k: v for k, v in resp.items() if k != "ResponseMetadata"}, default=str, indent=2))
+        print(
+            json.dumps(
+                {k: v for k, v in resp.items() if k != "ResponseMetadata"}, default=str, indent=2
+            )
+        )
         return
 
     print()
@@ -5895,12 +5802,16 @@ def cmd_destroy(args: argparse.Namespace) -> None:
     if not state:
         err("No state file found — nothing to destroy.")
         sys.exit(1)
-    region = args.region or state.get("region") or args.region or state.get("aws_region") or DEFAULT_REGION
+    region = (
+        args.region
+        or state.get("region")
+        or args.region
+        or state.get("aws_region")
+        or DEFAULT_REGION
+    )
     sess = get_session(region, profile=args.profile)
 
-    topology = state.get("topology") or (
-        "gateway" if state.get("gateway_id") else "ecs"
-    )
+    topology = state.get("topology") or ("gateway" if state.get("gateway_id") else "ecs")
 
     # Surface partial-deploy state up front. A partial state file means
     # the user's previous deploy was interrupted before CreateHarness —
@@ -5925,12 +5836,16 @@ def cmd_destroy(args: argparse.Namespace) -> None:
         print(f"\n{BOLD}About to destroy (topology: gateway):{NC}")
         print(f"  Harness              : {harness_id}")
         print(f"  Harness exec role    : {role_name}")
-        print(f"  AgentCore Gateway    : {state.get('gateway_name', '')} ({state.get('gateway_id', '')})")
+        print(
+            f"  AgentCore Gateway    : {state.get('gateway_name', '')} ({state.get('gateway_id', '')})"
+        )
         print(f"    └ Target           : {state.get('gateway_target_name', '')}")
         if state.get("gateway_role_name"):
             print(f"  Gateway service role : {state['gateway_role_name']}")
         print(f"  OAuth2 provider      : {state.get('oauth_provider_name', '')}")
-        print(f"  AgentCore Runtime    : {state.get('runtime_name', '')} ({state.get('runtime_id', '')})")
+        print(
+            f"  AgentCore Runtime    : {state.get('runtime_name', '')} ({state.get('runtime_id', '')})"
+        )
         if state.get("runtime_execution_role_name"):
             print(f"  Runtime exec role    : {state['runtime_execution_role_name']}")
         pool_id = state.get("cognito_user_pool_id", "")
@@ -6103,15 +6018,10 @@ def cmd_destroy(args: argparse.Namespace) -> None:
         # (the ``ZSCALER_SECRET_NAME``-in-.env path) are always preserved.
         if secret_name and not secret_managed_externally:
             if args.keep_secret:
-                info(
-                    f"Keeping Zscaler Secrets Manager secret {secret_name} "
-                    "(--keep-secret)."
-                )
+                info(f"Keeping Zscaler Secrets Manager secret {secret_name} (--keep-secret).")
             else:
                 step("Deleting Zscaler Secrets Manager secret")
-                delete_zscaler_secret(
-                    sess, secret_name, force=args.force_secret_delete
-                )
+                delete_zscaler_secret(sess, secret_name, force=args.force_secret_delete)
         elif secret_name and secret_managed_externally:
             info(
                 f"Keeping Zscaler Secrets Manager secret {secret_name} "
@@ -6130,6 +6040,7 @@ def cmd_destroy(args: argparse.Namespace) -> None:
 # ──────────────────────────────────────────────────────────────────────────
 # Argparse
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
@@ -6179,19 +6090,31 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     pd.add_argument("--harness-name", default=DEFAULT_HARNESS_NAME)
-    pd.add_argument("--role-name", default=DEFAULT_ROLE_NAME,
-                    help="Harness execution role name")
+    pd.add_argument("--role-name", default=DEFAULT_ROLE_NAME, help="Harness execution role name")
     pd.add_argument("--credential-provider-name", default=DEFAULT_CREDENTIAL_PROVIDER_NAME)
-    pd.add_argument("--ecs-cluster-name", default=DEFAULT_ECS_CLUSTER_NAME,
-                    help="ECS cluster (created if missing; deleted on destroy only if we created it)")
-    pd.add_argument("--ecs-service-name", default=DEFAULT_ECS_SERVICE_NAME,
-                    help="ECS Express service name")
-    pd.add_argument("--ecs-execution-role-name", default=DEFAULT_ECS_EXECUTION_ROLE_NAME,
-                    help="Task execution role (pulls image, writes container logs)")
-    pd.add_argument("--ecs-infrastructure-role-name", default=DEFAULT_ECS_INFRASTRUCTURE_ROLE_NAME,
-                    help="Infrastructure role (manages ALB, target groups, security groups, auto-scaling)")
-    pd.add_argument("--ecs-log-group", default=DEFAULT_ECS_LOG_GROUP,
-                    help="CloudWatch log group for container logs")
+    pd.add_argument(
+        "--ecs-cluster-name",
+        default=DEFAULT_ECS_CLUSTER_NAME,
+        help="ECS cluster (created if missing; deleted on destroy only if we created it)",
+    )
+    pd.add_argument(
+        "--ecs-service-name", default=DEFAULT_ECS_SERVICE_NAME, help="ECS Express service name"
+    )
+    pd.add_argument(
+        "--ecs-execution-role-name",
+        default=DEFAULT_ECS_EXECUTION_ROLE_NAME,
+        help="Task execution role (pulls image, writes container logs)",
+    )
+    pd.add_argument(
+        "--ecs-infrastructure-role-name",
+        default=DEFAULT_ECS_INFRASTRUCTURE_ROLE_NAME,
+        help="Infrastructure role (manages ALB, target groups, security groups, auto-scaling)",
+    )
+    pd.add_argument(
+        "--ecs-log-group",
+        default=DEFAULT_ECS_LOG_GROUP,
+        help="CloudWatch log group for container logs",
+    )
     pd.add_argument(
         "--mcp-url",
         help=(
@@ -6317,16 +6240,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     pd.set_defaults(func=cmd_deploy)
 
-    ps = sub.add_parser("status", parents=[common],
-                        help="Show harness status / model / tools")
+    ps = sub.add_parser("status", parents=[common], help="Show harness status / model / tools")
     ps.set_defaults(func=cmd_status)
 
-    pl = sub.add_parser("logs", parents=[common],
-                        help="Tail the harness CloudWatch log group")
+    pl = sub.add_parser("logs", parents=[common], help="Tail the harness CloudWatch log group")
     pl.set_defaults(func=cmd_logs)
 
-    pi = sub.add_parser("invoke", parents=[common],
-                        help="One-shot smoke test invocation")
+    pi = sub.add_parser("invoke", parents=[common], help="One-shot smoke test invocation")
     pi.add_argument("message", help="Prompt to send (e.g. 'list my zpa segment groups')")
     pi.set_defaults(func=cmd_invoke)
 

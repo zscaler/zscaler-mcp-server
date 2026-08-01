@@ -271,9 +271,7 @@ def discover_env_file() -> Path | None:
     return None
 
 
-def resolve_env_file_path(
-    cli_env_file: str | None, non_interactive: bool
-) -> Path | None:
+def resolve_env_file_path(cli_env_file: str | None, non_interactive: bool) -> Path | None:
     """Resolve which .env / env.properties file to load.
 
     Precedence:
@@ -426,9 +424,7 @@ def _dump_recent_pod_logs(
         cmd[1:1] = ["--context", context]
 
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=15, check=False
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15, check=False)
     except (subprocess.TimeoutExpired, OSError) as exc:
         warn(f"Could not fetch Pod logs ({exc}). Run `kubectl logs ...` manually.")
         return
@@ -500,8 +496,7 @@ def prompt_choice(label: str, choices: list[str], default: str) -> str:
         print(f"  {_ansi('36', f'[{i}]')} {c}{marker}")
     default_idx = choices.index(default) + 1 if default in choices else 1
     raw = input(
-        f"Pick {_ansi('36', f'1-{len(choices)}')}"
-        f" {_ansi('2', f'[{default_idx}]')}: "
+        f"Pick {_ansi('36', f'1-{len(choices)}')} {_ansi('2', f'[{default_idx}]')}: "
     ).strip()
     if not raw:
         return default
@@ -635,12 +630,8 @@ def list_vpcs(sess: boto3.Session) -> list[dict]:
 
 def list_subnets_for_vpc(sess: boto3.Session, vpc_id: str) -> list[dict]:
     ec2 = sess.client("ec2")
-    subs = ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])[
-        "Subnets"
-    ]
-    rts = ec2.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])[
-        "RouteTables"
-    ]
+    subs = ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])["Subnets"]
+    rts = ec2.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])["RouteTables"]
     main_rt_id = next(
         (
             rt["RouteTableId"]
@@ -652,15 +643,12 @@ def list_subnets_for_vpc(sess: boto3.Session, vpc_id: str) -> list[dict]:
 
     def is_public(subnet_id: str) -> bool:
         for rt in rts:
-            explicit = any(
-                a.get("SubnetId") == subnet_id for a in rt.get("Associations", [])
-            )
+            explicit = any(a.get("SubnetId") == subnet_id for a in rt.get("Associations", []))
             if explicit or rt["RouteTableId"] == main_rt_id:
                 for r in rt.get("Routes", []):
-                    if (
-                        r.get("DestinationCidrBlock") == "0.0.0.0/0"
-                        and r.get("GatewayId", "").startswith("igw-")
-                    ):
+                    if r.get("DestinationCidrBlock") == "0.0.0.0/0" and r.get(
+                        "GatewayId", ""
+                    ).startswith("igw-"):
                         return True
         return False
 
@@ -696,15 +684,10 @@ def pick_subnets(
     print(f"\n  {kind.upper()} subnets in this VPC:")
     for i, s in enumerate(candidates, 1):
         flag = "🌐" if s["public"] else "🔒"
-        print(
-            f"    {i:>2}. {s['id']:<24} {s['az']:<14} {s['cidr']:<20}"
-            f" {flag} {s['name']}"
-        )
+        print(f"    {i:>2}. {s['id']:<24} {s['az']:<14} {s['cidr']:<20} {flag} {s['name']}")
 
     while True:
-        raw = input(
-            f"  Pick {kind} subnet numbers (comma-separated, >= {min_count}): "
-        ).strip()
+        raw = input(f"  Pick {kind} subnet numbers (comma-separated, >= {min_count}): ").strip()
         if not raw:
             continue
         try:
@@ -984,10 +967,7 @@ def _check_image_compatibility(
 
     if "manifest.list" in media_type or "image.index" in media_type or "manifests" in manifest:
         arches = sorted(
-            {
-                m.get("platform", {}).get("architecture", "")
-                for m in manifest.get("manifests", [])
-            }
+            {m.get("platform", {}).get("architecture", "") for m in manifest.get("manifests", [])}
             - {""}
         )
         if "amd64" in arches:
@@ -1034,9 +1014,9 @@ def _check_image_compatibility(
         "    1. Use the public multi-arch image (recommended):\n"
         "         unset ZSCALER_MCP_IMAGE_URI in .env\n"
         "    2. Rebuild multi-arch from your Mac:\n"
-        f'         docker buildx build --platform linux/amd64,linux/arm64 -t {image_uri} --push .\n'
+        f"         docker buildx build --platform linux/amd64,linux/arm64 -t {image_uri} --push .\n"
         "    3. Rebuild as amd64-only:\n"
-        f'         docker buildx build --platform linux/amd64 -t {image_uri} --push .\n'
+        f"         docker buildx build --platform linux/amd64 -t {image_uri} --push .\n"
     )
     if not non_interactive and not prompt_bool("Continue anyway?", default=False):
         die("Aborted by user — fix the image and re-run.")
@@ -1075,14 +1055,7 @@ def _claude_code_path() -> Path:
 def _cursor_path() -> Path:
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
-        return (
-            Path(appdata)
-            / "Cursor"
-            / "User"
-            / "globalStorage"
-            / "cursor.mcp"
-            / "mcp.json"
-        )
+        return Path(appdata) / "Cursor" / "User" / "globalStorage" / "cursor.mcp" / "mcp.json"
     return Path.home() / ".cursor" / "mcp.json"
 
 
@@ -1092,9 +1065,7 @@ def _gemini_cli_path() -> Path:
 
 def _vscode_path() -> Path:
     if SYSTEM == "Darwin":
-        return (
-            Path.home() / "Library" / "Application Support" / "Code" / "User" / "mcp.json"
-        )
+        return Path.home() / "Library" / "Application Support" / "Code" / "User" / "mcp.json"
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
         return Path(appdata) / "Code" / "User" / "mcp.json"
@@ -1107,13 +1078,7 @@ def _windsurf_path() -> Path:
 
 def _copilot_cli_path() -> Path:
     if SYSTEM == "Darwin":
-        return (
-            Path.home()
-            / "Library"
-            / "Application Support"
-            / "github-copilot"
-            / "mcp.json"
-        )
+        return Path.home() / "Library" / "Application Support" / "github-copilot" / "mcp.json"
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
         return Path(appdata) / "github-copilot" / "mcp.json"
@@ -1240,9 +1205,7 @@ def _write_copilot_cli(server_name: str, url: str, headers: dict[str, str]) -> P
 
 def _claude_desktop_installed() -> bool:
     if SYSTEM == "Darwin":
-        return (
-            Path("/Applications/Claude.app").exists() or _claude_desktop_path().exists()
-        )
+        return Path("/Applications/Claude.app").exists() or _claude_desktop_path().exists()
     if SYSTEM == "Windows":
         local = os.environ.get("LOCALAPPDATA", "")
         if local and (Path(local) / "AnthropicClaude").exists():
@@ -1282,13 +1245,55 @@ def _copilot_cli_installed() -> bool:
 
 
 AGENTS: list[dict] = [
-    {"id": "claude_desktop", "name": "Claude Desktop", "path_fn": _claude_desktop_path, "installed_fn": _claude_desktop_installed, "writer": _write_claude_desktop},
-    {"id": "claude_code",    "name": "Claude Code (CLI)", "path_fn": _claude_code_path, "installed_fn": _claude_code_installed, "writer": _write_claude_code},
-    {"id": "cursor",         "name": "Cursor",          "path_fn": _cursor_path,         "installed_fn": _cursor_installed,         "writer": _write_cursor},
-    {"id": "gemini_cli",     "name": "Gemini CLI",      "path_fn": _gemini_cli_path,     "installed_fn": _gemini_cli_installed,     "writer": _write_gemini_cli},
-    {"id": "vscode",         "name": "VS Code (MCP)",   "path_fn": _vscode_path,         "installed_fn": _vscode_installed,         "writer": _write_vscode},
-    {"id": "windsurf",       "name": "Windsurf",        "path_fn": _windsurf_path,       "installed_fn": _windsurf_installed,       "writer": _write_windsurf},
-    {"id": "copilot_cli",    "name": "GitHub Copilot CLI", "path_fn": _copilot_cli_path, "installed_fn": _copilot_cli_installed,    "writer": _write_copilot_cli},
+    {
+        "id": "claude_desktop",
+        "name": "Claude Desktop",
+        "path_fn": _claude_desktop_path,
+        "installed_fn": _claude_desktop_installed,
+        "writer": _write_claude_desktop,
+    },
+    {
+        "id": "claude_code",
+        "name": "Claude Code (CLI)",
+        "path_fn": _claude_code_path,
+        "installed_fn": _claude_code_installed,
+        "writer": _write_claude_code,
+    },
+    {
+        "id": "cursor",
+        "name": "Cursor",
+        "path_fn": _cursor_path,
+        "installed_fn": _cursor_installed,
+        "writer": _write_cursor,
+    },
+    {
+        "id": "gemini_cli",
+        "name": "Gemini CLI",
+        "path_fn": _gemini_cli_path,
+        "installed_fn": _gemini_cli_installed,
+        "writer": _write_gemini_cli,
+    },
+    {
+        "id": "vscode",
+        "name": "VS Code (MCP)",
+        "path_fn": _vscode_path,
+        "installed_fn": _vscode_installed,
+        "writer": _write_vscode,
+    },
+    {
+        "id": "windsurf",
+        "name": "Windsurf",
+        "path_fn": _windsurf_path,
+        "installed_fn": _windsurf_installed,
+        "writer": _write_windsurf,
+    },
+    {
+        "id": "copilot_cli",
+        "name": "GitHub Copilot CLI",
+        "path_fn": _copilot_cli_path,
+        "installed_fn": _copilot_cli_installed,
+        "writer": _write_copilot_cli,
+    },
 ]
 
 
@@ -1301,9 +1306,7 @@ def _build_auth_headers(
 ) -> dict[str, str]:
     """Compute the HTTP header(s) an MCP client must send to authenticate."""
     if auth_mode == "zscaler" and zscaler_client_id and zscaler_client_secret:
-        token = base64.b64encode(
-            f"{zscaler_client_id}:{zscaler_client_secret}".encode()
-        ).decode()
+        token = base64.b64encode(f"{zscaler_client_id}:{zscaler_client_secret}".encode()).decode()
         return {"Authorization": f"Basic {token}"}
     if auth_mode == "api-key" and api_key:
         return {"X-Api-Key": api_key}
@@ -1476,9 +1479,7 @@ def resolve_network(
         print("\n  Available VPCs:")
         for i, v in enumerate(vpcs, 1):
             flag = "(default)" if v["default"] else ""
-            print(
-                f"    {i:>2}. {v['id']:<24} {v['cidr']:<18} {flag:<10} {v['name']}"
-            )
+            print(f"    {i:>2}. {v['id']:<24} {v['cidr']:<18} {flag:<10} {v['name']}")
         while True:
             raw = input(f"  Pick a VPC [1-{len(vpcs)}]: ").strip()
             if raw.isdigit() and 1 <= int(raw) <= len(vpcs):
@@ -1546,10 +1547,7 @@ def resolve_cluster(
         info("Discovering EKS clusters in this region...")
         clusters = eks.list_clusters().get("clusters", [])
         if not clusters:
-            die(
-                f"No EKS clusters found in {sess.region_name}. "
-                "Pick ClusterMode=CreateNew instead."
-            )
+            die(f"No EKS clusters found in {sess.region_name}. Pick ClusterMode=CreateNew instead.")
         print("\n  Available clusters:")
         for i, c in enumerate(clusters, 1):
             print(f"    {i:>2}. {c}")
@@ -1599,9 +1597,7 @@ def resolve_cluster(
 
 
 # Kept for arity-compat with the older signature; EKS v1 doesn't expose TLS yet.
-def resolve_tls(
-    sess: boto3.Session, env: dict[str, str], non_interactive: bool
-) -> dict[str, str]:
+def resolve_tls(sess: boto3.Session, env: dict[str, str], non_interactive: bool) -> dict[str, str]:
     """Decide TLS path — managed ACM via Route53, existing cert ARN, or none."""
     mode = env.get("AWS_TLS_MODE", "").strip()
     if not mode and not non_interactive:
@@ -1689,7 +1685,8 @@ def resolve_auth(env: dict[str, str], non_interactive: bool) -> dict[str, str]:
             "  1) zscaler    — HTTP Basic with Zscaler OneAPI creds (simplest)\n"
             "  2) jwt        — IdP-issued bearer (Auth0, Cognito, Entra...)\n"
             "  3) api-key    — shared secret (X-Api-Key header)\n"
-            "  4) oidcproxy  — full OAuth 2.1 with Dynamic Client Registration\n"
+            "  4) oidc       — OAuth 2.1; clients log in at your IdP and this\n"
+            "                  server verifies the tokens they present\n"
             "  5) none       — no client auth (cluster-internal use only)"
         )
         mode = prompt_choice(
@@ -1719,22 +1716,35 @@ def resolve_auth(env: dict[str, str], non_interactive: bool) -> dict[str, str]:
             )
             info(f"  Auto-generated API key: {out['ApiKey']}")
     elif mode == "oidcproxy":
+        # The server is an OAuth protected resource: it verifies tokens clients
+        # already hold and never runs a flow itself, so there is no client secret
+        # to collect. The issuer and JWKS URI are read from the IdP's discovery
+        # document when the server starts, which is why only its URL is needed.
+        out["OidcProxyConfigUrl"] = env.get("OIDCPROXY_CONFIG_URL", "")
+        out["OidcProxyBaseUrl"] = env.get("OIDCPROXY_BASE_URL", "")
         out["OidcProxyClientId"] = env.get("OIDCPROXY_CLIENT_ID", "")
-        out["OidcProxyClientSecret"] = env.get("OIDCPROXY_CLIENT_SECRET", "")
-        out["OidcProxyIssuer"] = env.get("OIDCPROXY_ISSUER", "")
         out["OidcProxyAudience"] = env.get("OIDCPROXY_AUDIENCE", "")
+        out["OidcProxyRequiredScopes"] = env.get("OIDCPROXY_REQUIRED_SCOPES", "")
         if not non_interactive:
-            if not out["OidcProxyClientId"]:
-                out["OidcProxyClientId"] = prompt("OIDCProxy Client ID")
-            if not out["OidcProxyClientSecret"]:
-                out["OidcProxyClientSecret"] = prompt(
-                    "OIDCProxy Client Secret", secret=True
+            if not out["OidcProxyConfigUrl"]:
+                out["OidcProxyConfigUrl"] = prompt(
+                    "IdP OpenID configuration URL "
+                    "(e.g. https://idp.example.com/.well-known/openid-configuration)"
                 )
-            if not out["OidcProxyIssuer"]:
-                out["OidcProxyIssuer"] = prompt("OIDCProxy Issuer")
+            if not out["OidcProxyClientId"]:
+                out["OidcProxyClientId"] = prompt("OIDC client ID")
+            # Most IdPs put the client id in `aud`, and the server defaults to it
+            # for that reason. An audience is mandatory: without one, a token the
+            # same IdP minted for a different application would be accepted here.
             out["OidcProxyAudience"] = prompt(
-                "OIDCProxy Audience", default=out["OidcProxyAudience"] or "zscaler-mcp"
+                "Expected token audience",
+                default=out["OidcProxyAudience"] or out["OidcProxyClientId"],
             )
+            if not out["OidcProxyBaseUrl"]:
+                out["OidcProxyBaseUrl"] = prompt(
+                    "Public base URL of this server (blank to use the load balancer address)",
+                    allow_empty=True,
+                )
     return out
 
 
@@ -1818,9 +1828,11 @@ def render_manifests(substitutions: dict[str, str]) -> Path:
         if not src.exists():
             die(f"Missing manifest: {src}")
         text = src.read_text()
+
         # Substitute ${VAR} occurrences. Unmatched placeholders become "".
         def _sub(match: re.Match[str]) -> str:
             return substitutions.get(match.group(1), "")
+
         rendered = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", _sub, text)
         (target / name).write_text(rendered)
     return target
@@ -1835,9 +1847,7 @@ def apply_manifests(rendered_dir: Path, context: str) -> None:
     ok("  All manifests applied.")
 
 
-def wait_for_loadbalancer(
-    context: str, namespace: str, service: str, timeout_s: int = 600
-) -> str:
+def wait_for_loadbalancer(context: str, namespace: str, service: str, timeout_s: int = 600) -> str:
     """Poll until the LoadBalancer Service has an externally-reachable hostname.
     Returns the hostname (or IP)."""
     info(f"Waiting for LoadBalancer hostname (timeout {timeout_s}s)...")
@@ -1866,16 +1876,14 @@ def wait_for_loadbalancer(
                 status = "not-yet-created"
             else:
                 svc = json.loads(r.stdout)
-                ingress = (
-                    svc.get("status", {})
-                    .get("loadBalancer", {})
-                    .get("ingress", [])
-                )
+                ingress = svc.get("status", {}).get("loadBalancer", {}).get("ingress", [])
                 if ingress:
                     host = ingress[0].get("hostname") or ingress[0].get("ip", "")
                     if host:
                         sys.stdout.write("\r" + " " * 80 + "\r")
-                        ok(f"LoadBalancer ready: {host}  ({_fmt_elapsed(time.monotonic() - start)})")
+                        ok(
+                            f"LoadBalancer ready: {host}  ({_fmt_elapsed(time.monotonic() - start)})"
+                        )
                         return host
                     status = "pending"
                 else:
@@ -1957,10 +1965,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     sess = get_session(region, profile=os.environ.get("AWS_PROFILE"))
     account = sess.client("sts").get_caller_identity()["Account"]
 
-    bucket = (
-        env.get("AWS_ASSET_BUCKET", "").strip()
-        or f"{prefix}-cfn-{account}-{region}"
-    )
+    bucket = env.get("AWS_ASSET_BUCKET", "").strip() or f"{prefix}-cfn-{account}-{region}"
 
     # ── 2. Resolve cluster, credentials, network, auth ────────────────
     step("2/7  Cluster & credentials")
@@ -1979,6 +1984,17 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             "ExistingPrivateSubnetIds": "",
         }
     auth = resolve_auth(env, args.non_interactive)
+
+    # The load balancer's hostname only exists after the Deployment is applied, so
+    # unlike the EC2 and ECS paths there is nothing to fall back to here. Catch it
+    # now: the alternative is a pod that crash-loops on a missing-config error.
+    if auth["McpAuthMode"] == "oidcproxy" and not auth.get("OidcProxyBaseUrl"):
+        die(
+            "oidc auth mode needs OIDCPROXY_BASE_URL — the public URL clients dial, "
+            "which becomes the OAuth resource identifier. On EKS the load balancer "
+            "hostname isn't known until after the Deployment exists, so set it in "
+            ".env (a CNAME you control is the usual answer) and re-run deploy."
+        )
 
     namespace = env.get("AWS_K8S_NAMESPACE", "").strip() or DEFAULT_NAMESPACE
     sa_name = env.get("AWS_K8S_SA_NAME", "").strip() or DEFAULT_SA_NAME
@@ -2016,19 +2032,29 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     if cluster["ClusterMode"] == "CreateNew":
         print(f"  K8s version:    {cluster['KubernetesVersion']}")
         print(f"  Node type:      {cluster['NodeInstanceType']}")
-    print(f"  Credentials:    {creds['CredentialSource']}"
-          + (f" ({creds.get('ExistingSecretName')})" if creds["CredentialSource"] == "UseExisting" else ""))
+    print(
+        f"  Credentials:    {creds['CredentialSource']}"
+        + (
+            f" ({creds.get('ExistingSecretName')})"
+            if creds["CredentialSource"] == "UseExisting"
+            else ""
+        )
+    )
     if cluster["ClusterMode"] == "CreateNew":
-        print(f"  Network:        {network['NetworkMode']}"
-              + (f" (VPC {network['ExistingVpcId']})" if network["NetworkMode"] == "UseExisting" else f" ({network['NewVpcCidr']})"))
+        print(
+            f"  Network:        {network['NetworkMode']}"
+            + (
+                f" (VPC {network['ExistingVpcId']})"
+                if network["NetworkMode"] == "UseExisting"
+                else f" ({network['NewVpcCidr']})"
+            )
+        )
     print(f"  MCP auth:       {auth['McpAuthMode']}")
     print(f"  Namespace:      {namespace}")
     print(f"  Image:          {image_uri}")
     print(f"  Replicas:       {replicas}")
 
-    if not args.non_interactive and not prompt_bool(
-        "\nProceed with deployment?", default=True
-    ):
+    if not args.non_interactive and not prompt_bool("\nProceed with deployment?", default=True):
         info("Aborted by user.")
         return
 
@@ -2052,25 +2078,40 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     #  ExistingSecretName, DisabledServices, DisabledTools,
     #  WriteToolsEnabled, EnableToolCallLogging].
     # Keep this list in lockstep with the template's Parameters block.
-    _CFN_PARAM_ALLOWLIST: frozenset[str] = frozenset({
-        # Cluster
-        "ClusterMode", "ClusterName", "KubernetesVersion",
-        "NodeInstanceType", "NodeDesiredCount", "NodeMinCount",
-        "NodeMaxCount", "NodeDiskSize",
-        # Credentials
-        "CredentialSource", "ZscalerClientId", "ZscalerClientSecret",
-        "ZscalerVanityDomain", "ZscalerCustomerId", "ZscalerCloud",
-        "ExistingSecretArn",
-        # Network
-        "NetworkMode", "NewVpcCidr", "ExistingVpcId",
-        "ExistingPublicSubnetIds", "ExistingPrivateSubnetIds",
-        # K8s identity (consumed by IAM stack to scope the IRSA trust policy)
-        "K8sNamespace", "K8sServiceAccountName",
-        "ExistingClusterOidcProviderArn",
-    })
+    _CFN_PARAM_ALLOWLIST: frozenset[str] = frozenset(
+        {
+            # Cluster
+            "ClusterMode",
+            "ClusterName",
+            "KubernetesVersion",
+            "NodeInstanceType",
+            "NodeDesiredCount",
+            "NodeMinCount",
+            "NodeMaxCount",
+            "NodeDiskSize",
+            # Credentials
+            "CredentialSource",
+            "ZscalerClientId",
+            "ZscalerClientSecret",
+            "ZscalerVanityDomain",
+            "ZscalerCustomerId",
+            "ZscalerCloud",
+            "ExistingSecretArn",
+            # Network
+            "NetworkMode",
+            "NewVpcCidr",
+            "ExistingVpcId",
+            "ExistingPublicSubnetIds",
+            "ExistingPrivateSubnetIds",
+            # K8s identity (consumed by IAM stack to scope the IRSA trust policy)
+            "K8sNamespace",
+            "K8sServiceAccountName",
+            "ExistingClusterOidcProviderArn",
+        }
+    )
     params: list[dict] = [
-        {"ParameterKey": "AssetBucket",      "ParameterValue": bucket},
-        {"ParameterKey": "AssetPrefix",      "ParameterValue": prefix_key},
+        {"ParameterKey": "AssetBucket", "ParameterValue": bucket},
+        {"ParameterKey": "AssetPrefix", "ParameterValue": prefix_key},
         {"ParameterKey": "ResourceNamePrefix", "ParameterValue": prefix},
     ]
     dropped: list[str] = []
@@ -2172,10 +2213,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
                 f"?region={region}#/stacks?filteringText={stack_name}"
             )
             info(f"Inspect the failed stack in the CFN console: {console_url}")
-            info(
-                f"Run `python {Path(__file__).name} destroy` to clean it up "
-                f"before re-deploying."
-            )
+            info(f"Run `python {Path(__file__).name} destroy` to clean it up before re-deploying.")
             die(f"Stack deploy failed: {final}")
 
     # ── 6. K8s manifests ───────────────────────────────────────────────
@@ -2223,16 +2261,19 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         "TOOLSETS": flags["Toolsets"],
         "DISABLED_TOOLSETS": flags["DisabledToolsets"],
         "LOG_TOOL_CALLS": flags["EnableToolCallLogging"],
+        "OIDC_CONFIG_URL": auth.get("OidcProxyConfigUrl", ""),
+        "OIDC_BASE_URL": auth.get("OidcProxyBaseUrl", ""),
         "OIDC_CLIENT_ID": auth.get("OidcProxyClientId", ""),
-        "OIDC_CLIENT_SECRET": auth.get("OidcProxyClientSecret", ""),
-        "OIDC_ISSUER": auth.get("OidcProxyIssuer", ""),
         "OIDC_AUDIENCE": auth.get("OidcProxyAudience", ""),
+        "OIDC_REQUIRED_SCOPES": auth.get("OidcProxyRequiredScopes", ""),
         # Base64 of each cred for the K8s Secret manifest
         "B64_CLIENT_ID": base64.b64encode(sm_values["ZSCALER_CLIENT_ID"].encode()).decode(),
         "B64_CLIENT_SECRET": base64.b64encode(sm_values["ZSCALER_CLIENT_SECRET"].encode()).decode(),
         "B64_VANITY_DOMAIN": base64.b64encode(sm_values["ZSCALER_VANITY_DOMAIN"].encode()).decode(),
         "B64_CUSTOMER_ID": base64.b64encode(sm_values["ZSCALER_CUSTOMER_ID"].encode()).decode(),
-        "B64_CLOUD": base64.b64encode(sm_values.get("ZSCALER_CLOUD", "production").encode()).decode(),
+        "B64_CLOUD": base64.b64encode(
+            sm_values.get("ZSCALER_CLOUD", "production").encode()
+        ).decode(),
     }
     rendered_dir = render_manifests(substitutions)
     apply_manifests(rendered_dir, context)
@@ -2257,7 +2298,9 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     headers = _build_auth_headers(
         auth["McpAuthMode"],
         zscaler_client_id=creds.get("ZscalerClientId", env.get("ZSCALER_CLIENT_ID", "")),
-        zscaler_client_secret=creds.get("ZscalerClientSecret", env.get("ZSCALER_CLIENT_SECRET", "")),
+        zscaler_client_secret=creds.get(
+            "ZscalerClientSecret", env.get("ZSCALER_CLIENT_SECRET", "")
+        ),
         api_key=auth.get("ApiKey", ""),
     )
     server_name = env.get("MCP_SERVER_NAME", "").strip() or DEFAULT_SERVER_NAME
@@ -2275,15 +2318,19 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             print("\n  Detected MCP clients:")
             for i, a in enumerate(installed, 1):
                 print(f"    {i:>2}. {a['name']}")
-            raw = input(
-                "  Configure which? (comma-separated numbers, 'all', or empty to skip): "
-            ).strip().lower()
+            raw = (
+                input("  Configure which? (comma-separated numbers, 'all', or empty to skip): ")
+                .strip()
+                .lower()
+            )
             if raw == "all":
                 selected_ids = [a["id"] for a in installed]
             elif raw:
                 try:
                     picks = [int(p) for p in raw.replace(" ", "").split(",")]
-                    selected_ids = [installed[p - 1]["id"] for p in picks if 1 <= p <= len(installed)]
+                    selected_ids = [
+                        installed[p - 1]["id"] for p in picks if 1 <= p <= len(installed)
+                    ]
                 except (ValueError, IndexError):
                     warn("  Invalid selection — skipping client config.")
 
@@ -2461,11 +2508,15 @@ def cmd_rotate_secrets(args: argparse.Namespace) -> None:
         "B64_CLIENT_SECRET": base64.b64encode(sm_values["ZSCALER_CLIENT_SECRET"].encode()).decode(),
         "B64_VANITY_DOMAIN": base64.b64encode(sm_values["ZSCALER_VANITY_DOMAIN"].encode()).decode(),
         "B64_CUSTOMER_ID": base64.b64encode(sm_values["ZSCALER_CUSTOMER_ID"].encode()).decode(),
-        "B64_CLOUD": base64.b64encode(sm_values.get("ZSCALER_CLOUD", "production").encode()).decode(),
+        "B64_CLOUD": base64.b64encode(
+            sm_values.get("ZSCALER_CLOUD", "production").encode()
+        ).decode(),
     }
     rendered_text = (K8S_DIR / "02-secret.yaml").read_text()
+
     def _sub(match: re.Match[str]) -> str:
         return substitutions.get(match.group(1), "")
+
     rendered = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", _sub, rendered_text)
     tmp = SCRIPT_DIR / ".rendered-manifests" / "02-secret.yaml"
     tmp.parent.mkdir(exist_ok=True)
@@ -2519,11 +2570,7 @@ def cmd_destroy(args: argparse.Namespace) -> None:
         or os.environ.get("AWS_REGION", "").strip()
         or DEFAULT_REGION
     )
-    stack_name = (
-        getattr(args, "stack_name", None)
-        or state.get("stack_name")
-        or DEFAULT_STACK
-    )
+    stack_name = getattr(args, "stack_name", None) or state.get("stack_name") or DEFAULT_STACK
 
     if not state:
         warn(
@@ -2575,9 +2622,7 @@ def cmd_destroy(args: argparse.Namespace) -> None:
     cfn = sess.client("cloudformation")
     info(f"Deleting stack {stack_name}...")
     cfn.delete_stack(StackName=stack_name)
-    final = wait_for_stack(
-        sess, stack_name, operation="delete", timeout_min=60
-    )
+    final = wait_for_stack(sess, stack_name, operation="delete", timeout_min=60)
     if final == "DELETE_COMPLETE":
         STATE_FILE.unlink(missing_ok=True)
         rendered = SCRIPT_DIR / ".rendered-manifests"
@@ -2619,9 +2664,11 @@ def cmd_configure(args: argparse.Namespace) -> None:
     print("Detected MCP clients:")
     for i, a in enumerate(installed, 1):
         print(f"  {i:>2}. {a['name']}")
-    raw = input(
-        "Configure which? (comma-separated numbers, 'all', or empty to skip): "
-    ).strip().lower()
+    raw = (
+        input("Configure which? (comma-separated numbers, 'all', or empty to skip): ")
+        .strip()
+        .lower()
+    )
     if raw == "all":
         selected = [a["id"] for a in installed]
     elif raw:
@@ -2655,39 +2702,43 @@ def main() -> None:
     p_deploy = sub.add_parser(
         "deploy",
         help="Deploy a new stack OR push an in-place update (auto-detected "
-             "via state file). Both the CFN stack and the K8s manifests are "
-             "updated.",
+        "via state file). Both the CFN stack and the K8s manifests are "
+        "updated.",
     )
     p_deploy.add_argument("--env-file", help="Path to a .env / env.properties file.")
-    p_deploy.add_argument("--non-interactive", action="store_true",
-                          help="Never prompt; rely on env vars (CI mode).")
     p_deploy.add_argument(
-        "--fresh", action="store_true",
-        help="Ignore any existing state file and prompt as if it were a "
-             "first-time deploy. Use this only when the prior stack was "
-             "destroyed out-of-band (e.g. via the CFN console) and the "
-             "state file is stale.",
+        "--non-interactive", action="store_true", help="Never prompt; rely on env vars (CI mode)."
     )
-    p_deploy.add_argument("--skip-client-config", action="store_true",
-                          help="Skip auto-configuring local MCP clients.")
+    p_deploy.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Ignore any existing state file and prompt as if it were a "
+        "first-time deploy. Use this only when the prior stack was "
+        "destroyed out-of-band (e.g. via the CFN console) and the "
+        "state file is stale.",
+    )
+    p_deploy.add_argument(
+        "--skip-client-config", action="store_true", help="Skip auto-configuring local MCP clients."
+    )
     p_deploy.set_defaults(func=cmd_deploy)
 
     p_status = sub.add_parser("status", help="Show stack + Pod + Service state.")
     p_status.set_defaults(func=cmd_status)
 
     p_logs = sub.add_parser("logs", help="Stream Pod logs (kubectl logs).")
-    p_logs.add_argument("-f", "--follow", action="store_true",
-                        help="Pass -f to kubectl logs.")
-    p_logs.add_argument("--tail", type=int, default=None,
-                        help="Only show the last N log lines.")
+    p_logs.add_argument("-f", "--follow", action="store_true", help="Pass -f to kubectl logs.")
+    p_logs.add_argument("--tail", type=int, default=None, help="Only show the last N log lines.")
     p_logs.set_defaults(func=cmd_logs)
 
     p_kubectl = sub.add_parser(
         "kubectl",
         help="Pass-through to kubectl with the cluster context preset.",
     )
-    p_kubectl.add_argument("kubectl_args", nargs=argparse.REMAINDER,
-                            help="Args forwarded to kubectl (use `--` to separate).")
+    p_kubectl.add_argument(
+        "kubectl_args",
+        nargs=argparse.REMAINDER,
+        help="Args forwarded to kubectl (use `--` to separate).",
+    )
     p_kubectl.set_defaults(func=cmd_kubectl)
 
     p_rotate = sub.add_parser(
@@ -2697,23 +2748,23 @@ def main() -> None:
     p_rotate.set_defaults(func=cmd_rotate_secrets)
 
     p_destroy = sub.add_parser("destroy", help="Tear down K8s manifests + the CFN stack.")
-    p_destroy.add_argument("-y", "--yes", action="store_true",
-                           help="Skip the confirmation prompt.")
+    p_destroy.add_argument("-y", "--yes", action="store_true", help="Skip the confirmation prompt.")
     p_destroy.add_argument(
-        "--stack-name", default=None,
+        "--stack-name",
+        default=None,
         help="Override the CFN stack name. Defaults to the state-file "
-             "value or DEFAULT_STACK. Useful when the state file is "
-             "missing because a previous deploy crashed early.",
+        "value or DEFAULT_STACK. Useful when the state file is "
+        "missing because a previous deploy crashed early.",
     )
     p_destroy.add_argument(
-        "--region", default=None,
+        "--region",
+        default=None,
         help="Override the AWS region. Defaults to the state-file value, "
-             "AWS_REGION env var, or DEFAULT_REGION.",
+        "AWS_REGION env var, or DEFAULT_REGION.",
     )
     p_destroy.set_defaults(func=cmd_destroy)
 
-    p_config = sub.add_parser("configure",
-                              help="Re-write MCP client configs without redeploying.")
+    p_config = sub.add_parser("configure", help="Re-write MCP client configs without redeploying.")
     p_config.add_argument("--env-file", help="Path to a .env / env.properties file.")
     p_config.set_defaults(func=cmd_configure)
 

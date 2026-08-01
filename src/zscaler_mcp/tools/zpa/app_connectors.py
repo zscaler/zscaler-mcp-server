@@ -137,7 +137,7 @@ def zpa_get_app_connector(args: GetConnectorInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_update_app_connector(args: UpdateConnectorInput) -> dict[str, Any]:
-    """Update a ZPA app connector (enable/disable, rename). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA app connector (enable/disable, rename). Requires `--write-tools`."""
     if not args.connector_id:
         raise ValueError("connector_id is required")
     client = get_zscaler_client(service="zpa")
@@ -165,7 +165,11 @@ def zpa_update_app_connector(args: UpdateConnectorInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_delete_app_connector(args: DeleteConnectorInput) -> dict[str, Any]:
-    """Delete a ZPA app connector (destructive write). Must be re-provisioned to reconnect."""
+    """Delete a ZPA app connector (destructive write). Must be re-provisioned to reconnect.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.connector_id:
         raise ValueError("connector_id is required")
     client = get_zscaler_client(service="zpa")
@@ -188,7 +192,11 @@ def zpa_delete_app_connector(args: DeleteConnectorInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_bulk_delete_app_connectors(args: BulkDeleteConnectorsInput) -> dict[str, Any]:
-    """Bulk-delete ZPA app connectors (destructive write). Each must be re-provisioned to reconnect."""
+    """Bulk-delete ZPA app connectors (destructive write). Each must be re-provisioned to reconnect.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.connector_ids:
         raise ValueError("connector_ids is required and must not be empty")
     client = get_zscaler_client(service="zpa")

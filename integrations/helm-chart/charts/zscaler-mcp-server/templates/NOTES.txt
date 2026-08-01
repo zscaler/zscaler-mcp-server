@@ -113,7 +113,7 @@ Secret:      {{ include "zscaler-mcp-server.secretName" . }}   (pre-existing)
   helm test {{ .Release.Name }} --namespace {{ .Release.Namespace }}
 
 For the full configuration reference (every values.yaml key, every
-override, the OIDCProxy walk-through, the digest-pinning recipe), see:
+override, the auth-mode walk-through, the digest-pinning recipe), see:
 
   https://github.com/zscaler/zscaler-mcp-server/tree/master/integrations/helm-chart
 

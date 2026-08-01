@@ -160,7 +160,11 @@ def zia_update_vpn_credential(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_vpn_credential(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA VPN credential (destructive). Activate after."""
+    """Delete a ZIA VPN credential (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.traffic_vpn_credentials.delete_vpn_credential(args.credential_id)
     if err:

@@ -108,38 +108,33 @@ Supports Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, and Google Cloud
 
 Clients authenticate via Basic Auth (``client_id:client_secret``) or custom headers (``X-Zscaler-Client-ID`` / ``X-Zscaler-Client-Secret``). The server validates against Zscaler's ``/oauth2/v1/token`` endpoint.
 
-**4. Library-Level OAuth 2.1 — OIDCProxy (auth= Parameter)**
+**4. OAuth 2.1 — OIDC**
 
-When using ``ZscalerMCPServer`` as a Python library, pass a ``fastmcp.server.auth.AuthProvider`` (e.g. ``OIDCProxy``) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR) and works with any OIDC-compliant IdP (Auth0, Okta, Azure AD, Keycloak, Google, etc.).
+``oidc`` mode makes the server an **OAuth 2.0 protected resource** (RFC 9728). The server publishes ``/.well-known/oauth-protected-resource`` naming your Identity Provider; the client runs the OAuth flow **against the IdP directly** and presents the resulting token, which the server verifies against the IdP's published public keys. Works with any OIDC-compliant IdP (Auth0, Okta, Microsoft Entra ID, Keycloak, Google, AWS Cognito, PingOne).
 
-.. code-block:: python
+.. code-block:: bash
 
-   import os
-   from fastmcp.server.auth.oidc_proxy import OIDCProxy
-   from zscaler_mcp.server import ZscalerMCPServer
+   export ZSCALER_MCP_AUTH_ENABLED="true"
+   export ZSCALER_MCP_AUTH_MODE="oidc"
 
-   auth = OIDCProxy(
-       config_url="https://your-tenant.auth0.com/.well-known/openid-configuration",
-       client_id=os.getenv("OIDCPROXY_CLIENT_ID"),
-       client_secret=os.getenv("OIDCPROXY_CLIENT_SECRET"),
-       base_url="http://localhost:8000",
-       audience="zscaler-mcp-server",
-   )
+   export OIDCPROXY_CONFIG_URL="https://your-tenant.auth0.com/.well-known/openid-configuration"
+   export OIDCPROXY_CLIENT_ID="<your app registration's client id>"
+   export OIDCPROXY_BASE_URL="http://localhost:8000"
+   export OIDCPROXY_AUDIENCE="zscaler-mcp-server"
+   # Optional: comma-separated scopes a token must carry
+   # export OIDCPROXY_REQUIRED_SCOPES="zscaler.read"
 
-   # Allow standard OIDC scopes for Dynamic Client Registration
-   if auth.client_registration_options:
-       auth.client_registration_options.valid_scopes = [
-           "openid", "profile", "email",
-       ]
+Notes:
 
-   server = ZscalerMCPServer(auth=auth)
-   server.run("streamable-http", host="0.0.0.0", port=8000)
+- **No client secret is needed.** Verifying a signature requires the IdP's public keys, not a credential of ours. ``OIDCPROXY_CLIENT_SECRET`` is ignored if set.
+- ``OIDCPROXY_BASE_URL`` is **this server's** public URL (the resource identifier clients use), not the IdP's.
+- ``OIDCPROXY_AUDIENCE`` defaults to ``OIDCPROXY_CLIENT_ID``. Entra ID puts the client ID in ``aud``; Auth0 uses the API identifier.
+- The issuer and JWKS URI come from the IdP's discovery document at startup, so they always match what it actually signs with.
+- The server serves no ``/authorize``, ``/token`` or ``/register``. Clients need a client ID issued by the IdP and cannot self-register.
 
-When ``auth=`` is provided, the env-var-based auth middleware (``ZSCALER_MCP_AUTH_*``) is automatically skipped. The server exposes standard OAuth endpoints (``/.well-known/*``, ``/register``, ``/authorize``, ``/token``) and MCP clients handle the authorization flow automatically — no static tokens or shared secrets required.
+**IdP requirements:** a public-client application (authorization code + PKCE) with the callback URL **your client** uses registered. The callback belongs to the client, not to this server, so it stays a loopback URI even for a remote deployment. With ``mcp-remote``, pass the port as the first argument after the URL (``mcp-remote <url> 3334``) and register ``http://localhost:3334/oauth/callback``; left unpinned it derives a port from a hash of the server URL, which no IdP can be told about in advance. On IdPs that use a separate API identifier (Auth0), that identifier must match ``OIDCPROXY_AUDIENCE`` and be authorized for the application.
 
-**IdP requirements:** Your Identity Provider must have a **Regular Web Application** (not M2M) with the callback URL ``http://localhost:8000/auth/callback`` registered, and an API/resource server with an identifier matching the ``audience`` value.
-
-See the `Authentication & Deployment Guide <../docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr>`_ for detailed IdP-specific setup instructions, Docker deployment, and troubleshooting.
+See the `Authentication & Deployment Guide <../docs/deployment/authentication-and-deployment.md>`_ for detailed IdP-specific setup instructions, Docker deployment, and troubleshooting.
 
 **Token Generation:**
 
@@ -384,14 +379,12 @@ Complete List of All Supported Variables
 
 - ``ZSCALER_MCP_WRITE_ENABLED`` - Enable write mode (default: ``false``)
 - ``ZSCALER_MCP_WRITE_TOOLS`` - **MANDATORY** allowlist when write enabled
-- ``ZSCALER_MCP_SKIP_CONFIRMATIONS`` - Skip delete confirmations with HMAC token (advanced)
-- ``ZSCALER_MCP_CONFIRMATION_TTL`` - Confirmation window in seconds (default: ``300``)
-- ``ZSCALER_MCP_CONFIRMATION_SECRET`` - Shared HMAC signing key for confirmation tokens. Required when running more than one replica; the default key is ephemeral per-process, so a confirmation retry that lands on a different replica is otherwise rejected.
+- ``ZSCALER_MCP_CONFIRMATION_TTL`` - Confirmation window in seconds (default: ``300``). No variable skips the delete confirmation itself.
 
 **MCP Client Authentication (HTTP transports only):**
 
 - ``ZSCALER_MCP_AUTH_ENABLED`` - Enable client authentication (default: ``false``)
-- ``ZSCALER_MCP_AUTH_MODE`` - Authentication mode: ``api-key``, ``jwt``, or ``zscaler``
+- ``ZSCALER_MCP_AUTH_MODE`` - Authentication mode: ``api-key``, ``jwt``, ``zscaler``, or ``oidc``
 - ``ZSCALER_MCP_AUTH_API_KEY`` - Shared secret for ``api-key`` mode
 - ``ZSCALER_MCP_AUTH_JWKS_URI`` - JWKS endpoint URL for ``jwt`` mode
 - ``ZSCALER_MCP_AUTH_ISSUER`` - Expected JWT issuer for ``jwt`` mode

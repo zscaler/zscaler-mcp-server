@@ -179,7 +179,11 @@ def zia_update_cloud_firewall_dns_rule(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_cloud_firewall_dns_rule(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA Cloud Firewall DNS rule (destructive). Activate after."""
+    """Delete a ZIA Cloud Firewall DNS rule (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.cloud_firewall_dns.delete_rule(args.rule_id)
     if err:

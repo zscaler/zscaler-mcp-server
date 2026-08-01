@@ -159,7 +159,7 @@ def zpa_get_provisioning_key(args: GetKeyInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_provisioning_key(args: CreateKeyInput) -> dict[str, Any]:
-    """Create a ZPA provisioning key (write). Gated by HMAC + `--write-tools`.
+    """Create a ZPA provisioning key (write). Requires `--write-tools`.
 
     `enrollment_cert_id` is required when `key_type` is 'connector'.
     """
@@ -193,7 +193,7 @@ def zpa_create_provisioning_key(args: CreateKeyInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_update_provisioning_key(args: UpdateKeyInput) -> dict[str, Any]:
-    """Update a ZPA provisioning key (write). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA provisioning key (write). Requires `--write-tools`."""
     if not args.key_id:
         raise ValueError("key_id is required")
     client = get_zscaler_client(service="zpa")
@@ -223,10 +223,13 @@ def zpa_update_provisioning_key(args: UpdateKeyInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_delete_provisioning_key(args: DeleteKeyInput) -> dict[str, Any]:
-    """Delete a ZPA provisioning key (destructive write). Gated by HMAC + `--write-tools`.
+    """Delete a ZPA provisioning key (destructive write).
 
     If the key was already removed (e.g. its component was deleted) this reports
     success with an explanatory message rather than erroring.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.key_id:
         raise ValueError("key_id is required")

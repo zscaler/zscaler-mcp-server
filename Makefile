@@ -172,6 +172,32 @@ conformance:  ## Run the official MCP conformance suite against a local server
 	  --expected-failures .github/conformance-baseline.yml; \
 	  status=$$?; kill $$(cat /tmp/mcp-conformance.pid) 2>/dev/null || true; exit $$status
 
+# Same suite against the 2026-07-28 revision — the one this server actually
+# negotiates. Deliberately NOT wired into CI: the runner that knows those
+# scenarios is alpha-only, and gating on a prerelease turns upstream scenario
+# churn into red builds here. `make conformance` (published revision, pinned
+# stable runner) stays the gate; this is the maintainer's check on the newer
+# revision. Fold it into the gate once the 0.2.x runner reaches GA.
+CONFORMANCE_NEXT_PORT ?= 8124
+CONFORMANCE_NEXT_RUNNER ?= @modelcontextprotocol/conformance@0.2.0-alpha.10
+CONFORMANCE_NEXT_SPEC_VERSION ?= 2026-07-28
+.PHONY: conformance-next
+conformance-next:  ## Run the MCP conformance suite against the 2026-07-28 revision (alpha runner)
+	@echo "$(COLOR_WARNING)Starting server on 127.0.0.1:$(CONFORMANCE_NEXT_PORT)...$(COLOR_NONE)"
+	@ZSCALER_MCP_AUTH_ENABLED=false \
+	  ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true \
+	  ZSCALER_MCP_PID_FILE=/tmp/zscaler-mcp-conformance-next.pid \
+	  uv run zscaler-mcp --transport streamable-http --host 127.0.0.1 --port $(CONFORMANCE_NEXT_PORT) \
+	  > /tmp/mcp-conformance-next-server.log 2>&1 & echo $$! > /tmp/mcp-conformance-next.pid
+	@for _ in $$(seq 1 30); do \
+	  curl -sf http://127.0.0.1:$(CONFORMANCE_NEXT_PORT)/health >/dev/null && break; sleep 1; done
+	@echo "$(COLOR_WARNING)Running conformance suite ($(CONFORMANCE_NEXT_SPEC_VERSION), alpha runner)...$(COLOR_NONE)"
+	@npx --yes $(CONFORMANCE_NEXT_RUNNER) server \
+	  --url http://127.0.0.1:$(CONFORMANCE_NEXT_PORT)/mcp \
+	  --suite active --spec-version $(CONFORMANCE_NEXT_SPEC_VERSION) \
+	  --expected-failures .github/conformance-baseline-next.yml; \
+	  status=$$?; kill $$(cat /tmp/mcp-conformance-next.pid) 2>/dev/null || true; exit $$status
+
 docker-clean:
 	-$(DOCKER) ps -a --filter "ancestor=$(BINARY_NAME):$(VERSION)" -q | xargs -r $(DOCKER) rm -f
 	-$(DOCKER) rmi -f $(BINARY_NAME):$(VERSION) 2>/dev/null || true

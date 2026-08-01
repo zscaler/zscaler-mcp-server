@@ -1,0 +1,39 @@
+# MCP conformance baseline for the 2026-07-28 revision (NOT gating CI).
+#
+# Companion to `conformance-baseline.yml`, which gates CI against the published
+# 2025-11-25 scenarios using the pinned stable runner. This file is for
+# `make conformance-next`, which runs the 2026-07-28 scenarios using a
+# **prerelease** runner (0.2.x is alpha-only at the time of writing).
+#
+# Why it does not gate CI: an alpha runner can add, rename or reinterpret
+# scenarios between builds, so gating on it would turn unrelated upstream churn
+# into red builds on this repo. The published revision stays the gate; this target
+# is how a maintainer checks standing on the newer revision deliberately.
+#
+# Promote this to the CI gate — and delete the stable-runner target — once the
+# 0.2.x runner reaches GA.
+#
+# Standing at the time of writing: identical in kind to the 2025-11-25 result.
+# Every failure needs one of the reference "everything" server's synthetic
+# fixtures; none is a protocol violation. Notably `server-sse-multiple-streams`
+# passes, which is the multi-stream behaviour the revision's stateless core relies
+# on.
+server:
+  # --- Capabilities we intentionally do not advertise ----------------------
+  - completion-complete
+  - resources-read-text            # resources-list is empty and passes
+  - resources-read-binary
+  - resources-templates-read
+
+  # --- Require the reference server's synthetic test-fixture TOOLS ----------
+  - tools-call-image               # "No image content found"
+  - tools-call-audio
+  - tools-call-embedded-resource
+  - tools-call-mixed-content
+  - tools-call-with-progress
+
+  # --- Require the reference server's synthetic test-fixture PROMPTS --------
+  - prompts-get-simple             # "Unknown prompt: 'test_simple_prompt'"
+  - prompts-get-with-args
+  - prompts-get-embedded-resource
+  - prompts-get-with-image

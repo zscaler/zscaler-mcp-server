@@ -141,7 +141,7 @@ def zpa_get_service_edge(args: GetEdgeInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_update_service_edge(args: UpdateEdgeInput) -> dict[str, Any]:
-    """Update a ZPA Service Edge (enable/disable, rename). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA Service Edge (enable/disable, rename). Requires `--write-tools`."""
     if not args.service_edge_id:
         raise ValueError("service_edge_id is required")
     client = get_zscaler_client(service="zpa")
@@ -169,7 +169,11 @@ def zpa_update_service_edge(args: UpdateEdgeInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_delete_service_edge(args: DeleteEdgeInput) -> dict[str, Any]:
-    """Delete a single ZPA Service Edge (destructive write). Must be re-provisioned to reconnect."""
+    """Delete a single ZPA Service Edge (destructive write). Must be re-provisioned to reconnect.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.service_edge_id:
         raise ValueError("service_edge_id is required")
     client = get_zscaler_client(service="zpa")
@@ -192,7 +196,11 @@ def zpa_delete_service_edge(args: DeleteEdgeInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_bulk_delete_service_edges(args: BulkDeleteEdgesInput) -> dict[str, Any]:
-    """Bulk-delete ZPA Service Edges (destructive write). Each must be re-provisioned to reconnect."""
+    """Bulk-delete ZPA Service Edges (destructive write). Each must be re-provisioned to reconnect.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.service_edge_ids:
         raise ValueError("service_edge_ids is required and must not be empty")
     client = get_zscaler_client(service="zpa")

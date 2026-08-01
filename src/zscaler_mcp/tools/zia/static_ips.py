@@ -166,7 +166,11 @@ def zia_update_static_ip(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_static_ip(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA static IP (destructive). Activate after."""
+    """Delete a ZIA static IP (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.traffic_static_ip.delete_static_ip(args.static_ip_id)
     if err:

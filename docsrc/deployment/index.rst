@@ -30,7 +30,7 @@ At a glance
    * - :doc:`AWS <../guides/deployment-aws>`
      - Bedrock AgentCore · Strands Agent client · AWS Harness (preview) · Secrets Manager + Bedrock
    * - :doc:`Azure <../guides/deployment-azure>`
-     - Container Apps / Virtual Machine / AKS (preview) · AI Foundry Agent · Entra ID OIDCProxy
+     - Container Apps / Virtual Machine / AKS (preview) · AI Foundry Agent · Entra ID OIDC
    * - :doc:`Google Cloud <../guides/deployment-gcp>`
      - Cloud Run · GKE · Compute Engine VM · Google ADK Agent
    * - :doc:`Kubernetes <../guides/deployment-kubernetes>`

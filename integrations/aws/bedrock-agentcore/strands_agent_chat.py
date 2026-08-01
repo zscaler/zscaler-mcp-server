@@ -163,7 +163,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -270,7 +272,7 @@ DEFAULT_TIMEOUT_S = 120.0
 DEFAULT_QUALIFIER = "DEFAULT"
 
 # Latest MCP protocol version known to the bundled `mcp` SDK as of this
-# writing. FastMCP servers downgrade automatically if the client speaks a
+# writing. The server downgrades automatically if the client speaks a
 # newer version than they understand, so always advertising the latest is
 # safe. Bump this when the SDK pins a newer version.
 MCP_PROTOCOL_VERSION = "2025-11-25"
@@ -459,15 +461,11 @@ def mcp_initialize(
     }
     req = AWSRequest(method="POST", url=endpoint, data=init_body, headers=headers)
     SigV4Auth(creds, "bedrock-agentcore", region).add_auth(req)
-    resp = httpx.post(
-        endpoint, content=init_body, headers=dict(req.headers), timeout=timeout
-    )
+    resp = httpx.post(endpoint, content=init_body, headers=dict(req.headers), timeout=timeout)
     resp.raise_for_status()
 
     # Header casing varies across proxies; check both.
-    mcp_session_id = resp.headers.get("mcp-session-id") or resp.headers.get(
-        "Mcp-Session-Id"
-    )
+    mcp_session_id = resp.headers.get("mcp-session-id") or resp.headers.get("Mcp-Session-Id")
     if not mcp_session_id:
         # Legacy Genesis-wrapped image — no handshake required.
         return None
@@ -481,17 +479,12 @@ def mcp_initialize(
             "params": {},
         }
     )
-    nreq = AWSRequest(
-        method="POST", url=endpoint, data=notif_body, headers=notif_headers
-    )
+    nreq = AWSRequest(method="POST", url=endpoint, data=notif_body, headers=notif_headers)
     SigV4Auth(creds, "bedrock-agentcore", region).add_auth(nreq)
-    nresp = httpx.post(
-        endpoint, content=notif_body, headers=dict(nreq.headers), timeout=timeout
-    )
+    nresp = httpx.post(endpoint, content=notif_body, headers=dict(nreq.headers), timeout=timeout)
     if nresp.status_code >= 400:
         raise RuntimeError(
-            f"notifications/initialized returned HTTP {nresp.status_code}: "
-            f"{nresp.text[:300]}"
+            f"notifications/initialized returned HTTP {nresp.status_code}: {nresp.text[:300]}"
         )
     return mcp_session_id
 
@@ -542,10 +535,7 @@ def make_strands_tool(
         # Normalize both to a plain joined string so the LLM sees consistent
         # tool output regardless of which framing the runtime emits.
         if isinstance(result, list):
-            return "\n".join(
-                item if isinstance(item, str) else json.dumps(item)
-                for item in result
-            )
+            return "\n".join(item if isinstance(item, str) else json.dumps(item) for item in result)
         if isinstance(result, dict):
             content = result.get("content", [])
             if isinstance(content, list) and content:
@@ -771,9 +761,7 @@ def prompt_for_deployment() -> tuple[str, str]:
         except Exception as exc:
             warn(f"Couldn't resolve RuntimeArn from CFN: {exc}")
 
-    if discovered_arn and _input_yes_no(
-        "\nUse the deployment from the state file?", default=True
-    ):
+    if discovered_arn and _input_yes_no("\nUse the deployment from the state file?", default=True):
         return discovered_arn, discovered_region  # type: ignore[return-value]
 
     info("Manual entry — paste the AgentCore Runtime ARN.")
@@ -784,8 +772,10 @@ def prompt_for_deployment() -> tuple[str, str]:
         arn = _input("Runtime ARN", default=discovered_arn).strip()
         if arn.startswith("arn:aws:bedrock-agentcore:") and ":runtime/" in arn:
             break
-        warn("That doesn't look like a runtime ARN. Expected:\n"
-             "  arn:aws:bedrock-agentcore:<region>:<account>:runtime/<name>-<hash>")
+        warn(
+            "That doesn't look like a runtime ARN. Expected:\n"
+            "  arn:aws:bedrock-agentcore:<region>:<account>:runtime/<name>-<hash>"
+        )
 
     inferred_region = arn.split(":")[3]
     region = _input("AWS region", default=inferred_region or discovered_region or "us-east-1")
@@ -796,8 +786,7 @@ def prompt_for_model() -> str:
     step("Step 2 of 3 — Pick the reasoning model")
 
     labels = [
-        f"{BOLD}{m['name']}{NC} {DIM}({m['vendor']}){NC}  — {m['notes']}\n"
-        f"      {DIM}{m['id']}{NC}"
+        f"{BOLD}{m['name']}{NC} {DIM}({m['vendor']}){NC}  — {m['notes']}\n      {DIM}{m['id']}{NC}"
         for m in MODEL_CATALOGUE
     ]
     labels.append(f"{BOLD}Custom{NC}  — paste your own Bedrock model id")
@@ -1156,9 +1145,7 @@ def main() -> int:
     print()
     sp = Spinner("Initializing MCP session").start()
     try:
-        mcp_session_id = mcp_initialize(
-            endpoint, region, runtime_session_id=session_id
-        )
+        mcp_session_id = mcp_initialize(endpoint, region, runtime_session_id=session_id)
     except httpx.HTTPStatusError as exc:
         sp.stop()
         err(
@@ -1187,10 +1174,7 @@ def main() -> int:
         )
     except httpx.HTTPStatusError as exc:
         sp.stop()
-        err(
-            f"HTTP {exc.response.status_code} from AgentCore Runtime: "
-            f"{exc.response.text[:300]}"
-        )
+        err(f"HTTP {exc.response.status_code} from AgentCore Runtime: {exc.response.text[:300]}")
         return 2
     except Exception as exc:
         sp.stop()
@@ -1214,7 +1198,8 @@ def main() -> int:
 
     model_id = args.model or prompt_for_model()
     tool_filter, tool_filter_label = (
-        (args.tool_filter, "Custom (CLI)") if args.tool_filter
+        (args.tool_filter, "Custom (CLI)")
+        if args.tool_filter
         else prompt_for_tool_filter(len(tools_meta))
     )
 

@@ -23,7 +23,7 @@ End-to-end walkthrough of every deployment target in this guide — Container Ap
 | **Azure Virtual Machine** | Ubuntu 22.04, self-managed | PyPI: `zscaler-mcp-server` | GA |
 | **Azure Kubernetes Service (AKS)** | Kubernetes Deployment + LoadBalancer Service | Docker Hub: `zscaler/zscaler-mcp-server:latest` | **Preview** |
 
-Container Apps and VM use Azure Key Vault for secure credential storage and support all five authentication modes. AKS is in **Preview**: it now supports **Azure Key Vault via Workload Identity Federation + the Key Vault CSI driver as the default credential storage path** (with a plain env-var fallback for PoCs), and supports the `jwt`, `api-key`, `zscaler`, and `none` auth modes today. OIDCProxy auth, TLS Ingress, and HPA are still planned for AKS GA.
+Container Apps and VM use Azure Key Vault for secure credential storage and support all five authentication modes. AKS is in **Preview**: it now supports **Azure Key Vault via Workload Identity Federation + the Key Vault CSI driver as the default credential storage path** (with a plain env-var fallback for PoCs), and supports the `jwt`, `api-key`, `zscaler`, and `none` auth modes today. OIDC auth, TLS Ingress, and HPA are still planned for AKS GA.
 
 ## What It Does
 
@@ -42,7 +42,7 @@ The `azure_mcp_operations.py` script provides a **fully interactive** deployment
 
 | Mode | Description | Client Auth Header |
 |------|-------------|-------------------|
-| **OIDCProxy** | OAuth 2.1 + DCR via OIDC provider (browser login) | Handled automatically by `mcp-remote` |
+| **OIDC** | OAuth 2.1 browser login. The server is a protected resource (RFC 9728); the client authenticates against your OIDC provider. | Obtained and attached by `mcp-remote` |
 | **JWT** | Validate JWTs against a JWKS endpoint | `Authorization: Bearer <JWT>` |
 | **API Key** | Shared secret (auto-generated if not provided) | `Authorization: Bearer <api-key>` |
 | **Zscaler** | Validate via OneAPI client credentials | `Authorization: Basic base64(id:secret)` |
@@ -53,7 +53,7 @@ The `azure_mcp_operations.py` script provides a **fully interactive** deployment
 - [Azure CLI](https://aka.ms/installazurecli) (`az`) — logged in (`az login`)
 - [Node.js](https://nodejs.org/) — for `npx mcp-remote` (Claude Desktop bridge)
 - Zscaler OneAPI credentials (from ZIdentity console)
-- For OIDCProxy: an OIDC provider app registration (Entra ID, Okta, Auth0, etc.)
+- For OIDC: an OIDC provider app registration (Entra ID, Okta, Auth0, etc.)
 - For VM: SSH key pair (script can generate one)
 
 ## Quick Start
@@ -65,7 +65,7 @@ python azure_mcp_operations.py deploy
 # The script will prompt you for:
 #   1. Deployment target (Container Apps or VM)
 #   2. Credential source (.env file or manual entry)
-#   3. Auth mode (OIDCProxy, JWT, API Key, Zscaler, None)
+#   3. Auth mode (OIDC, JWT, API Key, Zscaler, None)
 #   4. Azure options (resource group, region, Key Vault)
 ```
 
@@ -181,7 +181,7 @@ Pulls the pre-built Docker image from Docker Hub (`zscaler/zscaler-mcp-server:la
          ▼                                                 ▼
 ┌──────────────────┐    ┌────────────────┐       ┌──────────────────────┐
 │  OIDC Provider   │    │  Azure Key     │       │  Zscaler Zero Trust  │
-│  (if OIDCProxy)  │    │  Vault         │       │  Exchange (OneAPI)   │
+│  (if OIDC auth)  │    │  Vault         │       │  Exchange (OneAPI)   │
 └──────────────────┘    └────────────────┘       └──────────────────────┘
 ```
 
@@ -209,7 +209,7 @@ Provisions an Ubuntu 22.04 VM and installs the MCP server from PyPI:
          ▼                                      │  │ zscaler-mcp    │  │
 ┌──────────────────┐    ┌────────────────┐      │  └────────────────┘  │
 │  OIDC Provider   │    │  Azure Key     │      └──────────┬───────────┘
-│  (if OIDCProxy)  │    │  Vault         │                 │
+│  (if OIDC auth)  │    │  Vault         │                 │
 └──────────────────┘    └────────────────┘                 │  Zscaler API
                                                            ▼
                                               ┌──────────────────────┐
@@ -244,7 +244,7 @@ sudo systemctl restart zscaler-mcp  # restart service
 
 ▶ **Walkthrough:** [Zscaler MCP Server and Azure Kubernetes Service (Wistia)](https://zscaler.wistia.com/medias/yxd5k8hzh3)
 
-> **Status: Preview.** AKS support is fully functional for the four supported auth modes (`jwt`, `api-key`, `zscaler`, `none`) and has been validated end-to-end with cluster creation, LoadBalancer Service, and the Docker Hub image. **Credentials can now be stored in Azure Key Vault and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver** — this is the recommended default. A simpler env-var injection path is also available for short-lived demos. **OIDCProxy auth, TLS Ingress, and HPA are still planned** — see Known Limitations below.
+> **Status: Preview.** AKS support is fully functional for the four supported auth modes (`jwt`, `api-key`, `zscaler`, `none`) and has been validated end-to-end with cluster creation, LoadBalancer Service, and the Docker Hub image. **Credentials can now be stored in Azure Key Vault and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver** — this is the recommended default. A simpler env-var injection path is also available for short-lived demos. **OIDC auth, TLS Ingress, and HPA are still planned** — see Known Limitations below.
 
 Deploys the MCP server to an Azure Kubernetes Service cluster as a `Deployment` exposed via a `Service` of type `LoadBalancer`:
 
@@ -358,7 +358,7 @@ kubectl describe deployment zscaler-mcp-server -n default
 
 ### Known Limitations (Preview)
 
-- **OIDCProxy auth mode is not supported** on AKS today — use `jwt`, `api-key`, `zscaler`, or `none`
+- **OIDC auth mode is not supported** on AKS today — use `jwt`, `api-key`, `zscaler`, or `none`
 - **No Ingress controller** — the script provisions a `LoadBalancer` Service that exposes plain HTTP on port 80. For production, place this behind Application Gateway / NGINX Ingress with `cert-manager` for TLS (requires a DNS A record pointing at the cluster's ingress LoadBalancer).
 - **Single replica by default** — for HA, edit `.aks-manifest.yaml` and re-apply, or scale via `kubectl scale deployment zscaler-mcp-server --replicas=3`.
 
@@ -547,14 +547,15 @@ Stored secrets include Zscaler API credentials and auth-mode-specific credential
 | `ZSCALER_CUSTOMER_ID` | Zscaler customer ID |
 | `ZSCALER_CLOUD` | Zscaler cloud (e.g. `production`, `beta`) |
 
-### OIDCProxy Mode
+### OIDC Mode
 
 | Variable | Description |
 |----------|-------------|
-| `OIDCPROXY_DOMAIN` | OIDC provider domain (e.g. `login.microsoftonline.com/<tenant>/v2.0` or `tenant.auth0.com`) |
-| `OIDCPROXY_CLIENT_ID` | Application / client ID from your identity provider |
-| `OIDCPROXY_CLIENT_SECRET` | Client secret from your identity provider |
-| `OIDCPROXY_AUDIENCE` | Token audience / API identifier (default: `zscaler-mcp-server`) |
+| `OIDCPROXY_DOMAIN` | OIDC provider domain (e.g. `login.microsoftonline.com/<tenant>/v2.0` or `tenant.auth0.com`). The script builds the discovery URL as `https://{domain}/.well-known/openid-configuration`. |
+| `OIDCPROXY_CLIENT_ID` | Application / client ID from your identity provider. Also supplies the default audience. |
+| `OIDCPROXY_AUDIENCE` | Required `aud` claim. Defaults to `OIDCPROXY_CLIENT_ID`, which is correct for Entra ID; set explicitly for Auth0's API identifier. |
+
+No client secret: the server is an OAuth 2.0 protected resource ([RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html)) and verifies tokens against the IdP's public keys. `OIDCPROXY_CLIENT_SECRET` is ignored if still set and can be deleted.
 
 ### JWT Mode
 
@@ -613,7 +614,7 @@ After deployment, the script automatically updates your Claude Desktop and Curso
 
 For Zscaler auth mode, use `Authorization:Basic <base64(client_id:client_secret)>`.
 
-**OIDCProxy Mode (browser login):**
+**OIDC Mode (browser login):**
 
 ```json
 {
@@ -694,7 +695,7 @@ No `--header` needed — `mcp-remote` handles the OAuth flow automatically.
 }
 ```
 
-**OIDCProxy / JWT / No Auth:**
+**OIDC / JWT / No Auth:**
 
 ```json
 {
@@ -763,15 +764,29 @@ sudo systemctl status zscaler-mcp
 sudo journalctl -u zscaler-mcp -n 50
 ```
 
-### OIDCProxy callback URL issues
+### OIDC callback URL issues
 
-For OIDCProxy mode, ensure the callback URL is registered in your identity provider (Entra ID, Okta, Auth0, etc.):
+The callback belongs to the **MCP client**, not to the deployed server, so it is a loopback URI that does not change when the server's address does. Register the one your client uses:
 
 ```
-http://<PUBLIC_IP>:8000/auth/callback
+http://localhost:3334/oauth/callback
 ```
 
-Some providers may require explicitly allowing HTTP callback URLs in their settings for non-HTTPS deployments.
+With `mcp-remote` that URI is only correct if you pin the port — pass it as the first argument after the URL (`mcp-remote https://<fqdn>/mcp 3334`). Unpinned, it derives the port from a hash of the server URL and the registered URI will not match.
+
+Earlier releases used `http://<PUBLIC_IP>:8000/auth/callback`, which was correct only while the server itself was the OAuth client. Per-deployment redirect URIs are no longer needed.
+
+Register the client as a **public client** (authorization code + PKCE) — no client secret is involved.
+
+### OIDC `401 invalid_token` after signing in
+
+Almost always an audience or issuer mismatch. The server logs what it accepts at startup:
+
+```
+OIDC auth configured as a protected resource (issuer=..., resource=..., audience=...)
+```
+
+Compare that with the token's `iss` and `aud`. Also confirm `OIDCPROXY_BASE_URL` matches the URL clients actually connect to — it is the OAuth resource identifier.
 
 ## Security
 
