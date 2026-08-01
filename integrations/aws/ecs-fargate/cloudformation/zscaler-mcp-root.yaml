@@ -147,17 +147,21 @@ Parameters:
     Type: String
     Default: ''
     NoEcho: true
+  # OIDC mode. No client secret: the server verifies tokens rather than
+  # obtaining them, so it holds no credential of its own.
+  OidcProxyConfigUrl:
+    Type: String
+    Default: ''
+  OidcProxyBaseUrl:
+    Type: String
+    Default: ''
   OidcProxyClientId:
     Type: String
     Default: ''
-  OidcProxyClientSecret:
-    Type: String
-    Default: ''
-    NoEcho: true
-  OidcProxyIssuer:
-    Type: String
-    Default: ''
   OidcProxyAudience:
+    Type: String
+    Default: ''
+  OidcProxyRequiredScopes:
     Type: String
     Default: ''
 
@@ -289,10 +293,11 @@ Resources:
         JwtIssuer: !Ref JwtIssuer
         JwtAudience: !Ref JwtAudience
         ApiKey: !Ref ApiKey
+        OidcProxyConfigUrl: !Ref OidcProxyConfigUrl
+        OidcProxyBaseUrl: !Ref OidcProxyBaseUrl
         OidcProxyClientId: !Ref OidcProxyClientId
-        OidcProxyClientSecret: !Ref OidcProxyClientSecret
-        OidcProxyIssuer: !Ref OidcProxyIssuer
         OidcProxyAudience: !Ref OidcProxyAudience
+        OidcProxyRequiredScopes: !Ref OidcProxyRequiredScopes
         WriteToolsEnabled: !Ref WriteToolsEnabled
         WriteToolsAllowlist: !Ref WriteToolsAllowlist
         DisabledTools: !Ref DisabledTools

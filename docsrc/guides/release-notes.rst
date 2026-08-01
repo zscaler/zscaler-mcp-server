@@ -6,27 +6,51 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
-## 0.14.1 (July 28, 2026)
+## 0.15.0 (July 30, 2026)
 
 ### Notes
 
 - Python Versions: **v3.11, v3.12, v3.13, v3.14**
 
+**Requires ``mcp`` 2.x.** A normal ``uvx zscaler-mcp`` or ``pip install --upgrade`` handles this; note the new floor if you pin dependencies yourself. Nothing else needs installing — ``fastmcp`` is no longer used at all.
+
+### Breaking Changes
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **``ZSCALER_MCP_SKIP_CONFIRMATIONS`` is removed.** Delete confirmation can no longer be switched off. Setting the variable now has no effect, so remove it from any environment where it lingers. To deny deletes outright, leave them out of ``--write-tools`` / ``ZSCALER_MCP_WRITE_TOOLS``; to drive them unattended, pass the confirmation token back like any other client does.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **The ``oidcproxy`` auth mode no longer takes a client secret.** It is now a standard OAuth 2.0 protected resource (RFC 9728): the server publishes ``/.well-known/oauth-protected-resource`` naming your IdP, and clients authenticate against the IdP directly instead of through the server. ``OIDCPROXY_CLIENT_SECRET`` is ignored — remove it. The mode is now called ``oidc``; ``oidcproxy`` and ``oauth-proxy`` still resolve. Clients can no longer self-register, so they need a client ID issued by the IdP.
+
 ### Enhancements
 
-**The ``streamable-http`` transport no longer requires session IDs.** Each request is now self-contained, so a load balancer can spread requests across replicas with no session affinity, and clients that send no session ID are accepted instead of refused with *"Bad Request: Missing session ID"*. Nothing is given up in exchange: no tool holds state between calls, the Zscaler SDK client is built per call, and delete confirmation is a token exchange carried in ordinary tool results rather than a server-initiated request, so there was never a session worth keeping. Clients that perform the usual handshake are unaffected and need no changes. Together with ``ZSCALER_MCP_CONFIRMATION_SECRET`` below, this completes horizontal scale-out: sessions no longer pin a client to one replica, and a shared signing key lets a confirmation issued by one replica be redeemed on another. Pass ``--no-stateless-http`` (or ``ZSCALER_MCP_STATELESS_HTTP=false``) to restore the previous session-based behaviour. ``sse`` is session-oriented by construction and is unchanged.
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Adopted the ``2026-07-28`` MCP revision.** Clients on older revisions continue to work unchanged — the revision is negotiated per connection, with nothing to configure on either side.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Delete confirmation now asks a person instead of the agent.** Clients that support MCP elicitation get a ``delete`` / ``cancel`` prompt answered by a human, and anything other than ``delete`` aborts without calling the Zscaler API. Clients without elicitation keep using the confirmation token. No configuration changes are required.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Pending confirmations are now encrypted** and bound to the specific call, the authenticated caller, and a short expiry, so an approval cannot be moved onto a different delete, spent by another user, or used once it has expired. The state is per process, so after a restart — or on a multi-replica deployment where the retry lands elsewhere — the confirmation is simply asked again.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **The tool list is now cacheable.** The server advertises its tool inventory as cacheable for five minutes, so clients and proxies skip re-fetching several hundred tool definitions on every connection.
 
 ### Bug Fixes
 
-**Confirmation tokens are now genuinely single-use.** The documentation has always described delete confirmation tokens as single-use, but no server-side tracking existed in any released version — a valid token could be redeemed repeatedly for the full five-minute window, so one approval could authorize more than one delete. The server now records a redeemed token until it expires and rejects any reuse with a clear message plus a fresh token to re-approve with. Tokens also carry a per-issue nonce, so re-approving after a failed delete and performing the same delete twice within one window both work correctly.
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Delete confirmation tokens are now genuinely single-use.** A valid token could previously be redeemed repeatedly for its full five-minute window, so one approval could authorize more than one delete. Redeemed tokens are now tracked until they expire, and reuse is rejected along with a fresh token to re-approve with.
 
-**Delete confirmation now works across multiple replicas.** The token signing key was generated per process with no way to share it, so any deployment running more than one replica (Cloud Run, AKS, ECS, Container Apps) would reject valid confirmations with *"token does not match the submitted parameters"* whenever the retry landed on a different replica — and the same happened after a restart. Set the new ``ZSCALER_MCP_CONFIRMATION_SECRET`` to the same value on every replica to fix this. The default remains an ephemeral per-process key, which is correct for ``stdio`` and single-instance deployments, and the server now warns at startup when write tools are enabled over HTTP without a shared key.
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Fixed the server version reported to clients.** ``serverInfo`` returned an empty value instead of the release number, so MCP Inspector and any other client that displays it showed no version.
 
-**The version reported to clients was the wrong software's.** Anything that displays the connected server's version — MCP Inspector, and any client that surfaces ``serverInfo`` — showed the version of the underlying ``fastmcp`` library (``3.4.5``) instead of the Zscaler MCP Server release, a number that has never existed as a release of this server. It now reports its own version.
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **The delete confirmation now tells the agent to ask you first.** On clients without elicitation support — including Claude Desktop via ``mcp-remote`` — the previous wording read as a retry instruction, and agents would re-issue the delete in the same turn without checking with anyone. The prompt now requires an explicit yes from the user before the token is used.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Corrected 34 create/update tool descriptions that claimed a confirmation gate they never had.** Confirmation applies to deletes only, but these tools told the agent they were "gated by HMAC" — so an agent could report that the server had vetted a create it had actually executed on the first call. The descriptions now state only the ``--write-tools`` requirement that does apply. No behaviour change.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Every delete tool now states that it requires confirmation.** Only 13 of the 50 said so, in three different wordings, leaving an agent comparing two delete tools free to conclude they behaved differently — they never did. All 50 now carry the same sentence, and it no longer names HMAC, which was only ever one of the two confirmation paths. No behaviour change.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Fixed OAuth 2.1 auth on the EC2, ECS Fargate and EKS deployments.** Those paths sent an ``OIDCPROXY_ISSUER`` no version of the server has ever read, and omitted the two variables it requires, so choosing that auth mode produced a server that exited at startup. They now pass the IdP's discovery URL and this server's public URL, and no longer ask for a client secret.
 
 ### Documentation
 
-**Corrected the security claims made for delete confirmation.** Several documents stated or implied that the confirmation token defeats prompt injection. It does not, and describing it that way overstates the protection: the token defends the window between approval and execution (tamper, replay, reuse, forgery), but an agent that has been hijacked into calling a delete also receives the token and can redeem it in the same turn. The controls that actually contain that case are keeping write tools disabled by default and scoping ``--write-tools`` narrowly. The MCP protocol guide carries the full threat model, and the write-operations reference has been corrected to match the implementation.
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Documented that the confirmation-token fallback is single-process.** Its signing key is generated per process, so on a multi-replica deployment (Cloud Run, AKS, ECS, Container Apps) a retry that lands on a different replica is asked to confirm again. Run a single replica with write tools enabled if any of your clients lack elicitation support.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Rewrote the `MCP protocol guide <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/mcp-protocol.md>`_** for the new revision: which features are adopted, how delete confirmation is carried on each revision, what the encrypted confirmation state guarantees, and how conformance is verified.
+
+`PR #93 <https://github.com/zscaler/zscaler-mcp-server/pull/93>`_ - **Corrected the security claims made for delete confirmation.** Earlier documents implied the confirmation token defeats prompt injection; it does not. It protects the window between approval and execution, while keeping write tools disabled by default and scoping ``--write-tools`` narrowly are the controls that contain a hijacked agent. See the `threat model <https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/mcp-protocol.md#destructive-operation-confirmation-threat-model>`_.
 
 ## 0.14.0 (July 24, 2026)
 

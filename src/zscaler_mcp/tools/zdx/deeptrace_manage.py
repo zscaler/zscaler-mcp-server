@@ -5,10 +5,10 @@ Mirrors v1's ``zscaler_mcp/tools/zdx/deeptrace_manage.py``:
     zdx_start_deeptrace   (CREATE)
     zdx_delete_deeptrace  (DELETE — HMAC-confirmed)
 
-These are the write half of the read-heavy ZDX troubleshooting surface. HMAC
-write confirmation is enforced by the server bridge BEFORE the tool body runs;
-the body just performs the SDK mutation and shapes the result. Write tools are
-disabled unless the operator passes ``--write-tools``.
+These are the write half of the read-heavy ZDX troubleshooting surface. The
+delete is confirmed by the server bridge BEFORE the tool body runs; the body
+just performs the SDK mutation and shapes the result. Write tools are disabled
+unless the operator passes ``--write-tools``.
 """
 
 from __future__ import annotations
@@ -104,7 +104,7 @@ def zdx_start_deeptrace(args: StartDeepTraceInput) -> dict[str, Any]:
     """Start a ZDX deep-trace session (write).
 
     Captures network path, web-probe, health, and event data for
-    troubleshooting. Gated by HMAC write-confirmation and `--write-tools`.
+    troubleshooting. Requires `--write-tools`.
     Resolve `app_id` / `web_probe_id` / `cloudpath_probe_id` via
     `zdx_list_applications`, `zdx_get_web_probes`, `zdx_list_cloudpath_probes`
     first (all INTEGERS).
@@ -141,7 +141,10 @@ def zdx_start_deeptrace(args: StartDeepTraceInput) -> dict[str, Any]:
 def zdx_delete_deeptrace(args: DeleteDeepTraceInput) -> dict[str, Any]:
     """Delete a ZDX deep-trace session (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.device_id or not args.trace_id:
         raise ValueError("device_id and trace_id are required for delete")

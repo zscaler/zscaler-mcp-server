@@ -136,7 +136,7 @@ def zdx_start_analysis(args: StartAnalysisInput) -> dict[str, Any]:
     """Start a ZDX score analysis on a device/app (write).
 
     Evaluates connectivity and performance metrics over the optional
-    `t0`/`t1` epoch range. Gated by HMAC write-confirmation and `--write-tools`.
+    `t0`/`t1` epoch range. Requires `--write-tools`.
     """
     client = get_zscaler_client(service="zdx")
     sdk_kwargs: dict[str, Any] = {"device_id": args.device_id, "app_id": int(args.app_id)}
@@ -166,7 +166,10 @@ def zdx_start_analysis(args: StartAnalysisInput) -> dict[str, Any]:
 def zdx_delete_analysis(args: DeleteAnalysisInput) -> dict[str, Any]:
     """Stop/delete a running ZDX score analysis (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.analysis_id:
         raise ValueError("analysis_id is required for delete")

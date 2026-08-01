@@ -209,7 +209,6 @@ MAX_PREV_USER_INTERACTIONS=-1     # -1 = unlimited, 5 = recommended
 | `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | Disable Host header checks | `false` |
 | `ZSCALER_MCP_TLS_CERTFILE` | TLS certificate path | — |
 | `ZSCALER_MCP_TLS_KEYFILE` | TLS key path | — |
-| `ZSCALER_MCP_SKIP_CONFIRMATIONS` | Skip HMAC confirmation for destructive ops | `false` |
 | `ZSCALER_MCP_CONFIRMATION_TTL` | Confirmation token TTL in seconds | `300` |
 | `MAX_PREV_USER_INTERACTIONS` | Max conversation history turns (`-1` = unlimited) | `-1` |
 
@@ -286,7 +285,7 @@ The Zscaler MCP server enforces several security features **by default**. These 
 | **Host validation** | Enabled | Not applicable | Set `ZSCALER_MCP_ALLOWED_HOSTS` to your service URL, or `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` |
 | **Source IP ACL** | Disabled | Not applicable | Optionally set `ZSCALER_MCP_ALLOWED_SOURCE_IPS` |
 | **Write operations** | Disabled | Must enable explicitly | Must enable explicitly |
-| **HMAC confirmations** | Enabled for destructive ops | Active | Active unless `ZSCALER_MCP_SKIP_CONFIRMATIONS=true` |
+| **Destructive-op confirmation** | Always on | Active | Active — cannot be disabled |
 
 ### Local Development (stdio)
 
@@ -324,13 +323,11 @@ This is transport-agnostic — it works the same in stdio, SSE, and streamable-h
 
 ADK has a built-in `require_confirmation` mechanism, but the `adk web` developer UI does **not** implement the `adk_request_confirmation` protocol handler. Setting `require_confirmation=True` causes the agent to stall indefinitely in the developer UI. For production ADK deployments with a custom client that handles the confirmation protocol, this can be re-enabled by passing `require_confirmation=True` to the `CachedMCPToolset`.
 
-### Disabling Confirmations
+### Can This Be Disabled?
 
-| Setting | Effect |
-|---------|--------|
-| `ZSCALER_MCP_SKIP_CONFIRMATIONS=true` | Disables HMAC confirmation for automation/CI/CD |
+No. There is no setting that skips the confirmation, in any environment — a delete against a live tenant is irreversible. If an unattended pipeline must not be able to delete, don't allowlist the delete tools: `ZSCALER_MCP_WRITE_TOOLS` takes explicit patterns, so `zpa_create_*,zia_update_*` grants writes without any delete.
 
-For production deployments, keep HMAC confirmations enabled (the default).
+`ZSCALER_MCP_CONFIRMATION_TTL` (default 300s) tunes how long a token stays valid, which is the only knob here.
 
 ## Security Considerations
 

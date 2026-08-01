@@ -432,61 +432,163 @@ class ZscalerAuthProvider(AuthProvider):
 
 
 # ---------------------------------------------------------------------------
-# OIDCProxy (library-level OAuth 2.1 + DCR) — env-var driven builder
+# OIDC (OAuth 2.1 against an external IdP) — env-var driven builder
 # ---------------------------------------------------------------------------
 #
-# Unlike v1 (which left the env-var ``oauth-proxy`` mode as a NotImplementedError
-# stub and required the operator to construct ``OIDCProxy`` in Python and pass it
-# via ``auth=``), v2 supports BOTH:
+# The server is a **resource server**, not an authorization server. It publishes
+# OAuth 2.0 Protected Resource Metadata (RFC 9728) at
+# ``/.well-known/oauth-protected-resource`` naming the IdP as its authorization
+# server, and verifies the bearer tokens the IdP issues. The client discovers the
+# IdP from that document and runs the OAuth flow directly against it; no OAuth
+# endpoint is served from this process.
 #
-#   1. Programmatic: pass a ``fastmcp.server.auth.AuthProvider`` to
-#      ``build_server(auth=...)`` / the server constructor. Highest precedence.
-#   2. Env-var: ``ZSCALER_MCP_AUTH_MODE=oidcproxy`` (alias ``oauth-proxy``) builds
-#      a ``fastmcp.server.auth.oidc_proxy.OIDCProxy`` from ``OIDCPROXY_*`` env vars.
+# This replaces the earlier approach of borrowing ``fastmcp``'s ``OIDCProxy``. A
+# proxy existed to make the MCP server impersonate an authorization server so a
+# client could run Dynamic Client Registration against *it* and have that mapped
+# onto one pre-registered upstream app — a workaround for IdPs (Entra ID among
+# them) that do not offer open DCR. RFC 9728 removes the need: the client is
+# pointed at the real IdP. `mcp` 2.x implements the resource-server side
+# (``create_protected_resource_routes``, mounted whenever ``resource_server_url``
+# is set), so nothing has to be proxied, reimplemented, or installed separately.
 #
-# Both converge on the same thing: a fastmcp ``AuthProvider`` handed to
-# ``FastMCP(auth=...)``, which wires the OAuth metadata routes, the DCR
-# ``/register`` endpoint, and ``RequireAuthMiddleware`` natively. The env-var
-# auth middleware (``AuthMiddleware``) is bypassed entirely in this mode.
+# Consequences worth knowing, both good:
+#   * ``fastmcp`` is not a dependency of any auth mode, so nothing asks the
+#     operator to install a prerelease.
+#   * No client secret is needed here. Verifying a signature requires the IdP's
+#     public keys, not a credential of ours — one less secret in the deployment.
 
 
-# Sentinel returned by the env-var factory to mean "auth is handled by a
-# fastmcp library provider, not by AuthMiddleware". The actual provider is
-# built lazily by :func:`build_oidcproxy_provider` so importing this module
-# never requires the OIDC config to be present.
-OIDCPROXY_SENTINEL = "__oidcproxy__"
+# Sentinel returned by the env-var factory to mean "auth is handled by the SDK's
+# resource-server plumbing, not by AuthMiddleware". The settings are built lazily
+# by :func:`build_oidc_auth_kwargs` so importing this module never requires the
+# OIDC config to be present.
+OIDC_SENTINEL = "__oidc__"
+
+#: Retained spelling of the sentinel. The mode was called ``oidcproxy`` before it
+#: stopped being a proxy, and the old name still resolves (see ``_OIDC_MODES``).
+OIDCPROXY_SENTINEL = OIDC_SENTINEL
+
+#: Accepted spellings of ``ZSCALER_MCP_AUTH_MODE`` for this mode. ``oidc`` is the
+#: name now that nothing is proxied; the two older spellings keep working because
+#: they are sitting in deployed ``.env`` files and a silent "unknown auth mode"
+#: exit would be a hostile way to rename a setting.
+_OIDC_MODES = ("oidc", "oidcproxy", "oauth-proxy")
 
 
-def build_oidcproxy_provider(base_url: Optional[str] = None) -> Any:
-    """Construct a fastmcp ``OIDCProxy`` from ``OIDCPROXY_*`` environment vars.
+class _JWKSTokenVerifier:
+    """Adapts :class:`JWTAuthProvider` to the SDK's ``TokenVerifier`` protocol.
+
+    Composition rather than a second implementation: the signature, issuer,
+    audience and expiry checks are the ones the ``jwt`` auth mode has always used,
+    so the two modes cannot drift apart in what they consider a valid token. Only
+    the shape of the answer differs — the SDK wants an ``AccessToken`` describing
+    the principal, where the middleware wanted a bool.
+    """
+
+    def __init__(self, provider: "JWTAuthProvider", *, required_scopes: Optional[list] = None):
+        self._provider = provider
+        self._required_scopes = required_scopes or []
+
+    async def verify_token(self, token: str) -> Any:
+        from mcp.server.auth.provider import AccessToken
+
+        ok, error = await self._provider.authenticate(f"Bearer {token}")
+        if not ok:
+            # Debug, not warning: an expired token on a long-lived client session is
+            # routine, and the SDK turns the None into the 401 the client acts on.
+            logger.debug("OIDC token rejected: %s", error)
+            return None
+
+        # Decoded a second time, without verification, purely to read the claims —
+        # `authenticate` verified them and returns only a bool. Safe because the
+        # signature has already been checked above; a failure to parse here would
+        # have failed there first.
+        claims = self._provider._jwt.decode(token, options={"verify_signature": False})
+        scopes = claims.get("scp") or claims.get("scope") or ""
+        if isinstance(scopes, str):
+            scopes = scopes.split()
+
+        return AccessToken(
+            token=token,
+            client_id=str(claims.get("azp") or claims.get("appid") or claims.get("aud") or ""),
+            scopes=list(scopes),
+            expires_at=claims.get("exp"),
+            subject=claims.get("sub"),
+            claims=claims,
+        )
+
+
+def _discover_oidc_endpoints(config_url: str) -> Dict[str, str]:
+    """Read ``issuer`` and ``jwks_uri`` from the IdP's OpenID configuration.
+
+    Fetched rather than derived from the config URL by string surgery: the issuer
+    in the document is the value tokens are validated against, and for several
+    IdPs it is not a prefix of the discovery URL (Entra ID serves
+    ``.../v2.0/.well-known/openid-configuration`` but issues ``iss:
+    https://login.microsoftonline.com/<tenant>/v2.0``). Guessing would produce a
+    server that rejects every token with a confusing issuer mismatch.
+
+    A startup fetch is consistent with the ``jwt`` mode, which already builds its
+    JWKS client at construction; both fail fast on a misconfigured IdP rather than
+    on the first request.
+    """
+    import httpx2 as httpx
+
+    try:
+        response = httpx.get(config_url, timeout=10.0, follow_redirects=True)
+        response.raise_for_status()
+        document = response.json()
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not read the IdP's OpenID configuration from {config_url}: {exc}. "
+            "Check OIDCPROXY_CONFIG_URL and that this host can reach the IdP."
+        ) from exc
+
+    missing = [key for key in ("issuer", "jwks_uri") if not document.get(key)]
+    if missing:
+        raise RuntimeError(
+            f"The OpenID configuration at {config_url} is missing {', '.join(missing)}, "
+            "so tokens could not be validated against it."
+        )
+    return {"issuer": document["issuer"], "jwks_uri": document["jwks_uri"]}
+
+
+def build_oidc_auth_kwargs(base_url: Optional[str] = None) -> Dict[str, Any]:
+    """Build ``MCPServer`` kwargs that make this server an OAuth protected resource.
 
     Required env vars::
 
         OIDCPROXY_CONFIG_URL      # IdP OpenID configuration URL
-        OIDCPROXY_CLIENT_ID       # OAuth client id registered at the IdP
-        OIDCPROXY_CLIENT_SECRET   # OAuth client secret
         OIDCPROXY_BASE_URL        # public base URL of THIS server (or pass base_url)
 
     Optional::
 
-        OIDCPROXY_AUDIENCE        # token audience (Entra ID: set to client_id)
-        OIDCPROXY_REQUIRED_SCOPES # comma-separated required scopes
+        OIDCPROXY_AUDIENCE        # expected token audience; defaults to
+                                  # OIDCPROXY_CLIENT_ID (Entra ID puts the client
+                                  # id in `aud`)
+        OIDCPROXY_CLIENT_ID       # the app registration's client id
+        OIDCPROXY_REQUIRED_SCOPES # comma-separated scopes a token must carry
 
-    Raises ``ValueError`` with an actionable message if required config is
-    missing, so the server refuses to start half-configured.
+    ``OIDCPROXY_CLIENT_SECRET`` is no longer read. Nothing here initiates an OAuth
+    exchange, so there is no client credential to present; if it is still set, it
+    is ignored and can be removed from the deployment.
+
+    Returns the ``auth`` / ``token_verifier`` pair for the constructor. Never sets
+    ``auth_server_provider`` — this process serves no OAuth endpoints, and the SDK
+    would then mount ``/authorize``, ``/token`` and ``/register`` routes it cannot
+    honour.
+
+    Raises:
+        ValueError: required configuration is missing, so the server refuses to
+            start half-configured rather than serving metadata clients cannot use.
+        RuntimeError: the IdP's discovery document could not be read.
     """
-    try:
-        from fastmcp.server.auth.oidc_proxy import OIDCProxy
-    except ImportError as exc:  # pragma: no cover - fastmcp always installed
-        raise ImportError(
-            "fastmcp is required for oidcproxy auth mode. Install with: pip install fastmcp"
-        ) from exc
+    from mcp.server.auth.settings import AuthSettings
 
     config_url = os.getenv("OIDCPROXY_CONFIG_URL", "").strip()
     client_id = os.getenv("OIDCPROXY_CLIENT_ID", "").strip()
-    client_secret = os.getenv("OIDCPROXY_CLIENT_SECRET", "").strip()
     base = (base_url or os.getenv("OIDCPROXY_BASE_URL", "")).strip()
-    audience = os.getenv("OIDCPROXY_AUDIENCE", "").strip() or None
+    audience = os.getenv("OIDCPROXY_AUDIENCE", "").strip() or client_id or None
     required_scopes_raw = os.getenv("OIDCPROXY_REQUIRED_SCOPES", "").strip()
     required_scopes = (
         [s.strip() for s in required_scopes_raw.split(",") if s.strip()]
@@ -498,36 +600,55 @@ def build_oidcproxy_provider(base_url: Optional[str] = None) -> Any:
         name
         for name, val in (
             ("OIDCPROXY_CONFIG_URL", config_url),
-            ("OIDCPROXY_CLIENT_ID", client_id),
-            ("OIDCPROXY_CLIENT_SECRET", client_secret),
             ("OIDCPROXY_BASE_URL", base),
         )
         if not val
     ]
     if missing:
         raise ValueError(
-            "oidcproxy auth mode requires: " + ", ".join(missing) + ". "
-            "Set these env vars or pass a fastmcp AuthProvider via auth= instead."
+            "oidc auth mode requires: "
+            + ", ".join(missing)
+            + ". OIDCPROXY_BASE_URL is this server's public URL, which clients use "
+            "as the OAuth resource identifier."
+        )
+    if not audience:
+        raise ValueError(
+            "oidc auth mode requires OIDCPROXY_AUDIENCE (or OIDCPROXY_CLIENT_ID to "
+            "default it). Without an expected audience, a token issued by the same "
+            "IdP for any other application would be accepted here."
         )
 
-    kwargs: Dict[str, Any] = {
-        "config_url": config_url,
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "base_url": base,
+    endpoints = _discover_oidc_endpoints(config_url)
+    verifier = _JWKSTokenVerifier(
+        JWTAuthProvider(
+            jwks_uri=endpoints["jwks_uri"],
+            issuer=endpoints["issuer"],
+            audience=audience,
+        ),
+        required_scopes=required_scopes,
+    )
+
+    settings: Dict[str, Any] = {
+        # The IdP is the authorization server; we only advertise it.
+        "issuer_url": endpoints["issuer"],
+        "resource_server_url": base,
     }
-    if audience:
-        kwargs["audience"] = audience
     if required_scopes:
-        kwargs["required_scopes"] = required_scopes
+        settings["required_scopes"] = required_scopes
 
     logger.info(
-        "OIDCProxy auth provider initialized (config_url=%s, base_url=%s, audience=%s)",
-        config_url,
+        "OIDC auth configured as a protected resource (issuer=%s, resource=%s, audience=%s)",
+        endpoints["issuer"],
         base,
-        audience or "(default)",
+        audience,
     )
-    return OIDCProxy(**kwargs)
+    if os.getenv("OIDCPROXY_CLIENT_SECRET", "").strip():
+        logger.info(
+            "OIDCPROXY_CLIENT_SECRET is set but no longer used — token verification "
+            "needs the IdP's public keys, not a client credential. It can be removed."
+        )
+
+    return {"auth": AuthSettings(**settings), "token_verifier": verifier}
 
 
 # ---------------------------------------------------------------------------
@@ -643,7 +764,7 @@ def _read_auth_config() -> Optional[Dict[str, str]]:
             [
                 "The server will accept ALL requests without authentication.",
                 "This is NOT recommended for production or network-accessible deployments.",
-                "Set ZSCALER_MCP_AUTH_MODE to jwt / api-key / zscaler / oidcproxy to enable.",
+                "Set ZSCALER_MCP_AUTH_MODE to jwt / api-key / zscaler / oidc to enable.",
             ],
         )
         return None
@@ -696,32 +817,30 @@ def _create_provider(config: Dict[str, str]) -> AuthProvider:
             cloud=config["cloud"],
         )
 
-    raise ValueError(
-        f"Unknown auth mode: '{mode}'. Supported: none, jwt, zscaler, api-key, oidcproxy"
-    )
+    raise ValueError(f"Unknown auth mode: '{mode}'. Supported: none, jwt, zscaler, api-key, oidc")
 
 
-def resolve_fastmcp_auth() -> Any:
-    """If env-var auth mode is ``oidcproxy``, build + return a fastmcp provider.
+def resolve_oidc_auth() -> Optional[Dict[str, Any]]:
+    """``MCPServer`` auth kwargs for the OIDC mode, or ``None`` for every other mode.
 
-    Returns the fastmcp ``AuthProvider`` instance for the ``oidcproxy`` /
-    ``oauth-proxy`` env-var mode (to be passed to ``FastMCP(auth=...)``), or
-    ``None`` for every other mode (where ``apply_auth_middleware`` handles auth
-    at the ASGI layer instead). ``None`` is also returned when auth is disabled.
+    ``None`` means "auth belongs to :func:`apply_auth_middleware` at the ASGI
+    layer" — the case for ``jwt`` / ``api-key`` / ``zscaler`` and for auth being
+    disabled. Only the OIDC mode needs configuration on the constructor, because
+    only it publishes protected-resource metadata the SDK has to mount.
 
-    Raises ``SystemExit`` if oidcproxy mode is selected but misconfigured.
+    Raises ``SystemExit`` if the mode is selected but misconfigured, so a server
+    that cannot authenticate anyone never reaches the listening socket.
     """
     config = _read_auth_config()
     if config is None:  # auth explicitly disabled
         return None
-    mode = config["mode"]
-    if mode not in ("oidcproxy", "oauth-proxy"):
+    if config["mode"] not in _OIDC_MODES:
         return None
     try:
-        return build_oidcproxy_provider()
-    except (ValueError, ImportError) as exc:
+        return build_oidc_auth_kwargs()
+    except (ValueError, RuntimeError) as exc:
         raise SystemExit(
-            f"ERROR: oidcproxy auth mode is selected but misconfigured.\n  Error: {exc}\n"
+            f"ERROR: oidc auth mode is selected but misconfigured.\n  Error: {exc}\n"
         ) from exc
 
 
@@ -741,10 +860,10 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
 
     mode = config["mode"]
 
-    # oidcproxy is handled natively by FastMCP(auth=...) — the OAuth routes and
-    # RequireAuthMiddleware are wired into the app there, not here.
-    if mode in ("oidcproxy", "oauth-proxy"):
-        logger.info("Auth mode 'oidcproxy' — handled by the fastmcp auth provider (auth=).")
+    # OIDC is wired on the MCPServer constructor instead (protected-resource
+    # metadata plus the SDK's own bearer middleware), so there is nothing to wrap.
+    if mode in _OIDC_MODES:
+        logger.info("Auth mode '%s' — handled by the SDK's resource-server plumbing.", mode)
         return app
 
     try:

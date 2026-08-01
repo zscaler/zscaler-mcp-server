@@ -84,36 +84,36 @@ def test_spec_annotation_properties(action, read_only, destructive, idempotent):
 def test_read_annotations_are_read_only_and_omit_write_hints():
     ann = _tool_annotations(_spec(READ))
     assert isinstance(ann, ToolAnnotations)
-    assert ann.readOnlyHint is True
-    assert ann.openWorldHint is False
+    assert ann.read_only_hint is True
+    assert ann.open_world_hint is False
     # Write-only hints are meaningless for a read-only tool; leave them unset
     # rather than sending a misleading False.
-    assert ann.destructiveHint is None
-    assert ann.idempotentHint is None
+    assert ann.destructive_hint is None
+    assert ann.idempotent_hint is None
 
 
 def test_create_annotations():
     ann = _tool_annotations(_spec(CREATE))
-    assert ann.readOnlyHint is False
-    assert ann.destructiveHint is False  # additive, never removes/overwrites
-    assert ann.idempotentHint is False  # each call appends a new resource
-    assert ann.openWorldHint is False
+    assert ann.read_only_hint is False
+    assert ann.destructive_hint is False  # additive, never removes/overwrites
+    assert ann.idempotent_hint is False  # each call appends a new resource
+    assert ann.open_world_hint is False
 
 
 def test_update_annotations():
     ann = _tool_annotations(_spec(UPDATE))
-    assert ann.readOnlyHint is False
-    assert ann.destructiveHint is True  # PUT-replace can overwrite/drop fields
-    assert ann.idempotentHint is True  # same payload -> same end state
-    assert ann.openWorldHint is False
+    assert ann.read_only_hint is False
+    assert ann.destructive_hint is True  # PUT-replace can overwrite/drop fields
+    assert ann.idempotent_hint is True  # same payload -> same end state
+    assert ann.open_world_hint is False
 
 
 def test_delete_annotations():
     ann = _tool_annotations(_spec(DELETE))
-    assert ann.readOnlyHint is False
-    assert ann.destructiveHint is True
-    assert ann.idempotentHint is True  # deleting twice converges to "absent"
-    assert ann.openWorldHint is False
+    assert ann.read_only_hint is False
+    assert ann.destructive_hint is True
+    assert ann.idempotent_hint is True  # deleting twice converges to "absent"
+    assert ann.open_world_hint is False
 
 
 # ---------------------------------------------------------------------------
@@ -124,14 +124,14 @@ def test_delete_annotations():
 def test_bridge_attaches_read_only_annotations():
     ft = build_function_tool(_spec(READ, name="zpa_list_things", is_list=True))
     assert ft.annotations is not None
-    assert ft.annotations.readOnlyHint is True
+    assert ft.annotations.read_only_hint is True
 
 
 def test_bridge_attaches_destructive_annotations_for_delete():
     ft = build_function_tool(_spec(DELETE, name="zpa_delete_thing"))
     assert ft.annotations is not None
-    assert ft.annotations.readOnlyHint is False
-    assert ft.annotations.destructiveHint is True
+    assert ft.annotations.read_only_hint is False
+    assert ft.annotations.destructive_hint is True
 
 
 # ---------------------------------------------------------------------------
@@ -151,24 +151,24 @@ def test_every_tool_has_consistent_annotations():
         ann = _tool_annotations(spec)
         # Nothing in this server touches an open-ended external world; every
         # tool talks to the single configured Zscaler tenant.
-        assert ann.openWorldHint is False, spec.name
+        assert ann.open_world_hint is False, spec.name
 
         if spec.read_only:
-            assert ann.readOnlyHint is True, spec.name
-            assert ann.destructiveHint is None, spec.name
-            assert ann.idempotentHint is None, spec.name
+            assert ann.read_only_hint is True, spec.name
+            assert ann.destructive_hint is None, spec.name
+            assert ann.idempotent_hint is None, spec.name
             continue
 
-        assert ann.readOnlyHint is False, spec.name
+        assert ann.read_only_hint is False, spec.name
         if spec.action == DELETE:
-            assert ann.destructiveHint is True, spec.name
-            assert ann.idempotentHint is True, spec.name
+            assert ann.destructive_hint is True, spec.name
+            assert ann.idempotent_hint is True, spec.name
         elif spec.action == UPDATE:
-            assert ann.destructiveHint is True, spec.name
-            assert ann.idempotentHint is True, spec.name
+            assert ann.destructive_hint is True, spec.name
+            assert ann.idempotent_hint is True, spec.name
         elif spec.action == CREATE:
-            assert ann.destructiveHint is False, spec.name
-            assert ann.idempotentHint is False, spec.name
+            assert ann.destructive_hint is False, spec.name
+            assert ann.idempotent_hint is False, spec.name
 
 
 def test_every_tool_gets_annotations_when_bridged():
@@ -176,4 +176,4 @@ def test_every_tool_gets_annotations_when_bridged():
     for spec in _all_specs():
         ft = build_function_tool(spec)
         assert ft.annotations is not None, spec.name
-        assert ft.annotations.readOnlyHint is (True if spec.read_only else False), spec.name
+        assert ft.annotations.read_only_hint is (True if spec.read_only else False), spec.name

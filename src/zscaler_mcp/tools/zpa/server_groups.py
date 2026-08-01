@@ -142,12 +142,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -206,7 +200,7 @@ def zpa_get_server_group(args: GetServerGroupInput) -> dict[str, Any]:
 def zpa_create_server_group(args: CreateServerGroupInput) -> dict[str, Any]:
     """Create a ZPA server group (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`. Requires at least one
+    Requires `--write-tools`, plus at least one
     App Connector Group; dynamic_discovery=False requires server_ids.
     """
     if not args.name:
@@ -251,7 +245,7 @@ def zpa_create_server_group(args: CreateServerGroupInput) -> dict[str, Any]:
 def zpa_update_server_group(args: UpdateServerGroupInput) -> dict[str, Any]:
     """Update a ZPA server group (write).
 
-    Partial update. Gated by HMAC write-confirmation and `--write-tools`.
+    Partial update. Requires `--write-tools`.
     `app_connector_group_ids=[]` is rejected; dynamic_discovery=False requires
     server_ids be supplied here or already present on the group.
     """
@@ -318,7 +312,10 @@ def zpa_update_server_group(args: UpdateServerGroupInput) -> dict[str, Any]:
 def zpa_delete_server_group(args: DeleteServerGroupInput) -> dict[str, Any]:
     """Delete a ZPA server group (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.group_id:
         raise ValueError("group_id is required for delete")

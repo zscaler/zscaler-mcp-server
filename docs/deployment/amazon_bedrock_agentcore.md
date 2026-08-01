@@ -1382,14 +1382,15 @@ These are documented for transparency only. The deploy script and the container 
 
 | Variable | Set to | Why it's internal |
 |---|---|---|
-| `FASTMCP_STATELESS_HTTP` | `true` (Dockerfile) | AgentCore Runtime replicas are ephemeral and may be replaced between requests; stateful sessions would pin to dead replicas. |
 | `ZSCALER_MCP_ALLOW_HTTP` | `true` (provisioner) | AgentCore terminates TLS upstream of the container, so the inner HTTP server runs plain HTTP. |
 | `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | `true` (provisioner) | AgentCore is the sole ingress and has already authenticated the request before forwarding. The internal Host header is not predictable for an inner allowlist. |
 | `ZSCALER_MCP_AUTH_ENABLED` | `true`/`false` (provisioner) | Derived from `McpAuthMode`. |
 | `ZSCALER_MCP_TRANSPORT` / `ZSCALER_MCP_HOST` / `ZSCALER_MCP_PORT` | `streamable-http` / `0.0.0.0` / `8000` (Dockerfile CMD) | Required for AgentCore Runtime to forward MCP traffic correctly. |
 | `AWS_REGION` | injected by AgentCore | Used by the container's Secrets Manager loader. |
 
-**Defense-in-depth toggles** (not surfaced in `env.properties` and not exposed by the deploy script): `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION`, `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`, `ZSCALER_MCP_SKIP_CONFIRMATIONS`, `ZSCALER_MCP_CONFIRMATION_TTL`. These remove security layers and should only be set for short-lived debugging.
+`streamable-http` is served without session ids unconditionally, which is what AgentCore's ephemeral replicas need — there is no variable to set. (An earlier revision documented `FASTMCP_STATELESS_HTTP=true` here; it is inert, and safe to delete from any deployment still setting it.)
+
+**Defense-in-depth toggles** (not surfaced in `env.properties` and not exposed by the deploy script): `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` and `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` remove security layers and should only be set for short-lived debugging. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the destructive-op confirmation window; nothing switches that confirmation off.
 
 ---
 

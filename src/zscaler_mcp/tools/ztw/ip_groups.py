@@ -64,8 +64,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -125,7 +123,7 @@ def ztw_list_ip_groups_lite(args: ListIPGroupsInput) -> list[dict[str, Any]]:
     is_list=False,
 )
 def ztw_create_ip_group(args: CreateIPGroupInput) -> dict[str, Any]:
-    """Create a ZTW IP group (write). Gated by HMAC confirmation + `--write-tools`."""
+    """Create a ZTW IP group (write). Requires `--write-tools`."""
     if not args.name or not args.ip_addresses:
         raise ValueError("name and ip_addresses are required")
 
@@ -151,7 +149,11 @@ def ztw_create_ip_group(args: CreateIPGroupInput) -> dict[str, Any]:
     is_list=False,
 )
 def ztw_delete_ip_group(args: DeleteIPGroupInput) -> dict[str, Any]:
-    """Delete a ZTW IP group (destructive write). Cannot be undone."""
+    """Delete a ZTW IP group (destructive write). Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.group_id:
         raise ValueError("group_id is required for delete")
 

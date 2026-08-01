@@ -241,7 +241,7 @@ The Foundry agent authenticates to the MCP server using custom HTTP headers pass
 |---------------|------------------------|
 | **Zscaler** | `X-Zscaler-Client-ID` + `X-Zscaler-Client-Secret` |
 | **API Key** | `X-MCP-API-Key` |
-| **JWT / OIDCProxy** | Not directly supported — use API Key or Zscaler mode for Foundry |
+| **JWT / OIDC** | Not directly supported — use API Key or Zscaler mode for Foundry |
 | **None** | No headers |
 
 > **Note:** Foundry blocks the standard `Authorization` header for security. The MCP server's custom header authentication (`X-Zscaler-Client-ID`, `X-MCP-API-Key`) works as a workaround. See `foundry_agent.py` docstring for details.
@@ -357,9 +357,9 @@ curl -s https://<your-mcp-url>/mcp | head -1
 
 This happens when tool approval responses aren't properly chained. The CLI handles this automatically via `previous_response_id` tracking. If using the portal, ensure you approve tool calls in sequence.
 
-### JWT/OIDCProxy auth modes with Foundry
+### JWT/OIDC auth modes with Foundry
 
-Azure AI Foundry blocks the standard `Authorization` header in `MCPTool.headers`. If your MCP server uses JWT or OIDCProxy auth, consider:
+Azure AI Foundry blocks the standard `Authorization` header in `MCPTool.headers`. If your MCP server uses JWT or OIDC auth, consider:
 
 1. Redeploying with `api-key` or `zscaler` auth mode
 2. Or adding a reverse proxy that injects the auth token

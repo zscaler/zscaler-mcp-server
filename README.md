@@ -238,7 +238,7 @@ The server implements multiple layers of security (defense-in-depth). The first 
 6. **Verb-Based Tool Naming**: Each tool clearly indicates its purpose (`list`, `get`, `create`, `update`, `delete`).
 7. **Tool Metadata Annotations**: All tools are annotated with `readOnlyHint` or `destructiveHint` for AI agent frameworks.
 8. **AI Agent Confirmation**: All write tools marked with `destructiveHint=True` trigger permission dialogs in AI assistants.
-9. **Double Confirmation for DELETE**: Delete operations require both the agent's permission dialog AND a server-side cryptographic confirmation token (HMAC-SHA256, single-use, 5-minute TTL, bound to the exact tool and parameters). This prevents an approval for one resource being spent on another, replayed, or reused — but note it is **not** by itself a defense against prompt injection, because an agent that has been hijacked into calling a delete also receives and can redeem the token. Layers 2 and 3 (write tools off by default, narrow allowlist) are the controls that actually contain that case. See [MCP protocol posture — confirmation threat model](docs/guides/mcp-protocol.md#destructive-operation-confirmation-threat-model) for the full analysis, including the `ZSCALER_MCP_CONFIRMATION_SECRET` requirement for multi-replica deployments.
+9. **Human Confirmation for DELETE**: Delete operations are gated by a server-initiated confirmation. On clients that support MCP elicitation (Claude Desktop, Cursor), the server asks the **client** to prompt a human and the answer arrives as a protocol field — so a hijacked agent cannot author the approval, and a failed round trip fails closed. Clients without that capability fall back to a cryptographic confirmation token (HMAC-SHA256, single-use, 5-minute TTL, bound to the exact tool and parameters), which stops an approval being spent on another resource, replayed or reused — but is **not** by itself an anti-prompt-injection control, since a hijacked agent receives and can redeem it. The fallback is also **single-process**; elicitation-capable clients are unaffected. See [MCP protocol posture — confirmation threat model](docs/guides/mcp-protocol.md#destructive-operation-confirmation-threat-model) for the full analysis.
 10. **Environment Variable Control**: `ZSCALER_MCP_WRITE_ENABLED`, `ZSCALER_MCP_WRITE_TOOLS`, `ZSCALER_MCP_TOOLSETS`, `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`, and the disable lists can all be managed centrally without code changes.
 11. **Output Sanitization**: Every string in every tool result is run through a three-stage sanitizer before reaching the agent — invisible/control characters (BiDi overrides, zero-width chars, BOM, soft hyphen) are stripped, raw HTML and HTML comments are removed (via `bleach`), Markdown link/image syntax is neutralised so embedded URLs cannot be smuggled to the agent, and Markdown code-fence info-strings containing role-impersonation tokens (`system`, `assistant`, `tool`, `ignore`, …) are collapsed to a neutral `text` tag. This defends against prompt-injection payloads that an attacker — or a careless admin — might embed in editable Zscaler resources (rule descriptions, location names, label descriptions, etc.). On by default. Opt-out with `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION=true` (use only for diagnostics).
 12. **Audit Logging**: When `--log-tool-calls` / `ZSCALER_MCP_LOG_TOOL_CALLS=true` is set, every tool invocation is logged with its arguments (sensitive values redacted), duration, and a result summary.
@@ -295,15 +295,12 @@ Only **product entitlement** is honoured — not role names. The server defers p
 
 ### Cryptographic Confirmation for Destructive Actions
 
-Delete operations use a **cryptographic confirmation token** (HMAC-SHA256) instead of a simple `confirmed=true` boolean. This prevents prompt injection attacks where a malicious prompt could trick the AI agent into confirming a destructive action. The token is bound to the specific operation parameters and expires after 5 minutes.
+Delete operations are never executed on the first call. What happens instead depends on the client:
 
-This mechanism is transparent to end users — the AI agent handles the confirmation flow automatically through its standard permission dialog.
+- **Clients that support MCP elicitation** get an interactive prompt naming the resource, answered by a **human**. The AI agent never handles the approval.
+- **Every other client** gets a **cryptographic confirmation token** (HMAC-SHA256) it must pass back to proceed. The token is bound to the specific operation and its parameters, is single-use, and expires after 5 minutes — so it can't be forged, replayed, or reused for a different resource.
 
-To bypass confirmations in automated testing or CI/CD environments:
-
-```bash
-export ZSCALER_MCP_SKIP_CONFIRMATIONS=true
-```
+**There is no way to turn this off.** Deletes are irreversible against a live tenant, so the server ships no flag or environment variable that skips the gate. If you don't want an agent deleting anything, don't allowlist the delete tools: write tools are off by default and `--write-tools` takes explicit patterns (see [Write Mode](#write-mode-explicit-opt-in---allowlist-required)).
 
 ### Network-Level Controls (HTTP only)
 
@@ -391,7 +388,7 @@ The server supports four authentication modes, configured via environment variab
 | **`api-key`** | Simple shared secret — client sends `Authorization: Bearer <key>` | Quick setup, internal environments, development |
 | **`jwt`** | External Identity Provider via JWKS — tokens validated locally using public keys | Enterprise SSO, multi-tenant deployments (Auth0, Okta, Azure AD, Keycloak, AWS Cognito, PingOne, Google) |
 | **`zscaler`** | Zscaler OneAPI credential validation — client sends Basic Auth with `client_id:client_secret` | Environments already using Zscaler API credentials |
-| **`auth=` param** | Full MCP-spec OAuth 2.1 with DCR via fastmcp `AuthProvider` (e.g. `OIDCProxy`) | Library consumers, programmatic OAuth 2.1, any OIDC provider |
+| **`oidc`** | OAuth 2.1 against your own IdP — the server is an OAuth 2.0 protected resource (RFC 9728) and clients authenticate with the IdP directly | Browser-based login for human operators, any OIDC provider |
 
 ### Quick Start
 
@@ -427,7 +424,7 @@ MCP Client Request
       │
       ▼
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Auth         │────▶│  FastMCP      │────▶│  Zscaler     │
+│  Auth         │────▶│  MCP          │────▶│  Zscaler     │
 │  Middleware   │     │  Server       │     │  APIs        │
 └──────────────┘     └──────────────┘     └──────────────┘
  Layer 1: WHO          MCP Protocol        Layer 2: HOW
@@ -483,44 +480,37 @@ ZSCALER_MCP_AUTH_ENABLED=false
 
 Authentication does not apply to `stdio` transport (process isolation provides security).
 
-### Library-Level OAuth 2.1 (auth= Parameter)
+### OAuth 2.1 (`oidc` mode)
 
-When using `ZscalerMCPServer` as a Python library, you can pass a `fastmcp.server.auth.AuthProvider` instance (such as `OIDCProxy` or `OAuthProxy`) directly to the constructor. This provides full MCP-spec-compliant OAuth 2.1 with Dynamic Client Registration (DCR), and is the recommended approach for programmatic OAuth integration.
+`oidc` mode makes the server an **OAuth 2.0 protected resource** ([RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html)). The server publishes `/.well-known/oauth-protected-resource` naming your Identity Provider; the client reads that, runs the OAuth flow **against the IdP directly**, and presents the resulting token. The server's only job is verifying the token signature against the IdP's published public keys.
 
-```python
-import os
-from fastmcp.server.auth.oidc_proxy import OIDCProxy
-from zscaler_mcp.server import ZscalerMCPServer
+It is configured entirely through environment variables — no code, no extra packages:
 
-auth = OIDCProxy(
-    config_url="https://your-tenant.auth0.com/.well-known/openid-configuration",
-    client_id=os.getenv("OIDCPROXY_CLIENT_ID"),
-    client_secret=os.getenv("OIDCPROXY_CLIENT_SECRET"),
-    base_url="http://localhost:8000",
-    audience="zscaler-mcp-server",
-)
+```env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=oidc
 
-# Allow standard OIDC scopes for Dynamic Client Registration
-if auth.client_registration_options:
-    auth.client_registration_options.valid_scopes = [
-        "openid", "profile", "email",
-    ]
-
-server = ZscalerMCPServer(auth=auth)
-server.run("streamable-http", host="0.0.0.0", port=8000)
+OIDCPROXY_CONFIG_URL=https://your-tenant.auth0.com/.well-known/openid-configuration
+OIDCPROXY_CLIENT_ID=<your app registration's client id>
+OIDCPROXY_BASE_URL=http://localhost:8000
+OIDCPROXY_AUDIENCE=zscaler-mcp-server
+# Optional: scopes a token must carry, comma-separated
+# OIDCPROXY_REQUIRED_SCOPES=zscaler.read
 ```
 
-When `auth=` is provided:
+Notes:
 
-- The server delegates authentication entirely to the `AuthProvider`
-- The env-var-based auth middleware (`ZSCALER_MCP_AUTH_*`) is automatically skipped
-- OAuth routes (`.well-known/oauth-protected-resource`, `/register`, `/authorize`, `/token`) are handled by the provider
-- All other security features (TLS, Source IP ACL, host validation) remain active
-- Works with any OIDC-compliant Identity Provider (Auth0, Okta, Azure AD, Keycloak, Google, AWS Cognito, PingOne, etc.)
+- **No client secret.** Verifying a signature needs the IdP's public keys, not a credential of ours. `OIDCPROXY_CLIENT_SECRET` is ignored if set.
+- `OIDCPROXY_BASE_URL` is **this server's** public URL, which clients use as the resource identifier — not the IdP's.
+- `OIDCPROXY_AUDIENCE` defaults to `OIDCPROXY_CLIENT_ID`. Entra ID puts the client ID in `aud`; Auth0 uses the API identifier.
+- The issuer and JWKS URI are read from the IdP's discovery document at startup, so they always match what the IdP actually signs with.
+- The server serves no `/authorize`, `/token` or `/register` — clients need a client ID issued by the IdP and cannot self-register.
+- Works with any OIDC-compliant provider (Auth0, Okta, Microsoft Entra ID, Keycloak, Google, AWS Cognito, PingOne).
+- All other security layers (TLS, source-IP ACL, host validation) remain active.
 
-**IdP requirements:** Your Identity Provider must have a **Regular Web Application** (not M2M) with the callback URL `http://localhost:8000/auth/callback` registered, and an API/resource server with identifier matching the `audience` value.
+**IdP requirements:** an application with the callback URL your client uses (`http://localhost:3334/oauth/callback` for `mcp-remote`, with the port pinned) registered, and an API/resource identifier matching `OIDCPROXY_AUDIENCE`.
 
-> **📖 For detailed setup instructions — including [OIDCProxy setup with Auth0/Okta/Azure AD](docs/deployment/authentication-and-deployment.md#oidcproxy-setup-oauth-21--dcr), [Microsoft Entra ID step-by-step guide](docs/deployment/entra-id-oidcproxy.md), IdP-specific JWKS configuration, Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting — see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
+> **📖 For detailed setup instructions — including [Microsoft Entra ID step-by-step guide](docs/deployment/entra-id-oidcproxy.md), IdP-specific JWKS configuration, Docker deployment examples, client configuration for Claude/Cursor/VS Code, and troubleshooting — see the [Authentication & Deployment Guide](docs/deployment/authentication-and-deployment.md).**
 
 ## Supported Tools
 
@@ -871,9 +861,7 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_TLS_CA_CERTS` | `""` | Path to CA certificate bundle for mutual TLS or custom CA chains. |
 | `ZSCALER_MCP_ALLOW_HTTP` | `false` | Allow plaintext HTTP on non-localhost interfaces. HTTPS is required by default for remote deployments. Set to `true` only when TLS is terminated upstream (reverse proxy, ZPA, VPN). |
 | `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | `""` | Comma-separated list of allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). When unset, source IP filtering is disabled (defer to firewall/security groups). Set to `0.0.0.0/0` to allow all. |
-| `ZSCALER_MCP_SKIP_CONFIRMATIONS` | `false` | Skip cryptographic confirmation for destructive actions (testing/CI only). |
-| `ZSCALER_MCP_CONFIRMATION_TTL` | `300` | HMAC confirmation token lifetime in seconds (default: 5 minutes). |
-| `ZSCALER_MCP_CONFIRMATION_SECRET` | _(ephemeral)_ | Shared signing key for confirmation tokens. **Set this to the same value on every replica when running more than one** — the default key is generated per process, so a confirmation retry that lands on a different replica would otherwise be rejected. |
+| `ZSCALER_MCP_CONFIRMATION_TTL` | `300` | HMAC confirmation token lifetime in seconds (default: 5 minutes). There is no variable that skips the confirmation itself. |
 | `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` | `false` | Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / Markdown / code-fence stripping). Sanitization is on by default; only set this for diagnostics — disabling it removes a prompt-injection defense layer. |
 | `ZSCALER_MCP_USER_AGENT_COMMENT` | `""` | Additional information to include in User-Agent comment section |
 
@@ -1180,7 +1168,7 @@ The script will prompt you for:
 
 - **Deployment target**: Container Apps, Virtual Machine, or Azure Kubernetes Service (Preview)
 - **Credential source**: `.env` file path or manual entry
-- **Auth mode**: OIDCProxy (OAuth 2.1), JWT, API Key, Zscaler, or None (OIDCProxy not yet supported on AKS)
+- **Auth mode**: OIDC (OAuth 2.1), JWT, API Key, Zscaler, or None (OIDC not yet supported on AKS)
 - **Azure options**: resource group, region, Key Vault (new or existing); for AKS: cluster lifecycle (create new or use existing), node count/size, namespace
 
 Container Apps and VM store all secrets in Azure Key Vault (mandatory) and auto-configure Claude Desktop / Cursor. **AKS Preview** injects credentials as Kubernetes environment variables on the Deployment — Workload Identity Federation + Key Vault CSI driver integration is planned.

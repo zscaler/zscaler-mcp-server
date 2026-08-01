@@ -95,7 +95,7 @@ def zpa_get_access_policy_rule(args: GetRuleInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_access_policy_rule(args: CreateAccessRuleInput) -> dict[str, Any]:
-    """Create a ZPA access policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Create a ZPA access policy rule (write). Requires `--write-tools`."""
     if not args.name or not args.action_type:
         raise ValueError("name and action_type are required")
     client = get_zscaler_client(service="zpa")
@@ -123,7 +123,7 @@ def zpa_create_access_policy_rule(args: CreateAccessRuleInput) -> dict[str, Any]
     is_list=False,
 )
 def zpa_update_access_policy_rule(args: UpdateAccessRuleInput) -> dict[str, Any]:
-    """Update a ZPA access policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA access policy rule (write). Requires `--write-tools`."""
     if not args.rule_id:
         raise ValueError("rule_id is required")
     client = get_zscaler_client(service="zpa")
@@ -152,5 +152,9 @@ def zpa_update_access_policy_rule(args: UpdateAccessRuleInput) -> dict[str, Any]
     is_list=False,
 )
 def zpa_delete_access_policy_rule(args: DeleteRuleInput) -> dict[str, Any]:
-    """Delete a ZPA access policy rule (destructive write). Gated by HMAC + `--write-tools`."""
+    """Delete a ZPA access policy rule (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     return delete_rule("access", args, "access")

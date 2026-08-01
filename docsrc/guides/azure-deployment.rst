@@ -61,13 +61,13 @@ Prerequisites
 - `Node.js <https://nodejs.org/>`__ — required by ``npx mcp-remote`` (Claude Desktop bridge)
 - Zscaler OneAPI credentials (``ZSCALER_CLIENT_ID``, ``ZSCALER_CLIENT_SECRET``, ``ZSCALER_VANITY_DOMAIN``, ``ZSCALER_CUSTOMER_ID``)
 - For AKS: ``kubectl`` installed (``brew install kubernetes-cli`` on macOS)
-- For OIDCProxy auth: an OIDC provider app registration (Entra ID, Okta, Auth0, etc.)
+- For OIDC auth: an OIDC provider app registration (Entra ID, Okta, Auth0, etc.)
 - For VM: SSH key pair (the script can generate one on demand)
 
 Authentication Modes
 --------------------
 
-The script supports five MCP client authentication modes. Container Apps and VM support all five; AKS Preview supports four (OIDCProxy is on the roadmap).
+The script supports five MCP client authentication modes. Container Apps and VM support all five; AKS Preview supports four (OIDC is on the roadmap).
 
 .. list-table::
    :header-rows: 1
@@ -76,9 +76,9 @@ The script supports five MCP client authentication modes. Container Apps and VM 
    * - Mode
      - Description
      - Client Auth Header
-   * - **OIDCProxy**
-     - OAuth 2.1 + Dynamic Client Registration via your OIDC provider (browser login)
-     - Handled automatically by ``mcp-remote``
+   * - **OIDC**
+     - OAuth 2.1 browser login. The server is a protected resource (RFC 9728); the client authenticates against your OIDC provider.
+     - Obtained and attached by ``mcp-remote``
    * - **JWT**
      - Validate JWTs against a JWKS endpoint
      - ``Authorization: Bearer <JWT>``
@@ -104,7 +104,7 @@ The script prompts for:
 
 1. **Deployment target** — Container Apps, VM, or AKS Preview
 2. **Credential source** — load from a ``.env`` file or enter manually
-3. **Auth mode** — OIDCProxy, JWT, API Key, Zscaler, or None
+3. **Auth mode** — OIDC, JWT, API Key, Zscaler, or None
 4. **Azure options** — resource group, region, Key Vault, deployment-specific options
 
 When the deployment finishes, the script automatically updates your Claude Desktop and Cursor configurations with the new MCP server URL and the appropriate auth header.
@@ -201,7 +201,7 @@ AKS Deployment (Preview)
 
 .. note::
 
-   **Status: Preview.** AKS support is fully functional for ``jwt``, ``api-key``, ``zscaler``, and ``none`` auth modes and has been validated end-to-end with cluster creation, ``LoadBalancer`` Service, and the Docker Hub image. Credentials are stored in Azure Key Vault by default and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver. **OIDCProxy auth, TLS Ingress, and HPA are still planned for AKS GA.**
+   **Status: Preview.** AKS support is fully functional for ``jwt``, ``api-key``, ``zscaler``, and ``none`` auth modes and has been validated end-to-end with cluster creation, ``LoadBalancer`` Service, and the Docker Hub image. Credentials are stored in Azure Key Vault by default and pulled at runtime via Workload Identity Federation + the Key Vault CSI driver. **OIDC auth, TLS Ingress, and HPA are still planned for AKS GA.**
 
 Deploys the MCP server to an Azure Kubernetes Service cluster as a ``Deployment`` exposed via a ``Service`` of type ``LoadBalancer``.
 
@@ -235,7 +235,7 @@ Direct ``kubectl`` access works after deployment — the script sets your kubect
 
 Known limitations (Preview):
 
-- **OIDCProxy auth is not supported on AKS today** — use ``jwt``, ``api-key``, ``zscaler``, or ``none``.
+- **OIDC auth is not supported on AKS today** — use ``jwt``, ``api-key``, ``zscaler``, or ``none``.
 - **No Ingress controller** — the script provisions a ``LoadBalancer`` Service that exposes plain HTTP on port 80. For production, place this behind Application Gateway or NGINX Ingress with ``cert-manager`` for TLS (requires a DNS A record pointing at the cluster's ingress LoadBalancer).
 - **Single replica by default** — for HA, scale via ``kubectl scale deployment zscaler-mcp-server --replicas=3`` or edit the generated ``.aks-manifest.yaml``.
 
@@ -419,24 +419,30 @@ Troubleshooting
 
    Same fix — the connection name in your ``.env`` (``AZURE_FOUNDRY_CONNECTION_NAME``) must match a Custom keys connection that exists in the project's **Connected resources**.
 
-**OIDCProxy callback URL issues:**
+**OIDC callback URL issues:**
 
-   For OIDCProxy mode, register the callback URL in your identity provider:
+   The callback belongs to the **MCP client**, not to the deployed server, so it is a loopback URI and does not change when the server's address does. Register the one your client uses:
 
    .. code-block:: text
 
-      http://<PUBLIC_IP>:8000/auth/callback
+      http://localhost:3334/oauth/callback
 
-   Some providers also require explicitly allowing HTTP callback URLs for non-HTTPS deployments.
+   With ``mcp-remote`` that URI is only correct if you pin the port — pass it as the first argument after the URL (``mcp-remote https://<fqdn>/mcp 3334``). Unpinned, it derives the port from a hash of the server URL and the registered URI will not match.
+
+   Earlier releases used ``http://<PUBLIC_IP>:8000/auth/callback``, which was correct only while the server itself was the OAuth client. If you still have per-deployment redirect URIs registered in your IdP, they are no longer needed.
+
+**OIDC ``401 invalid_token`` after signing in:**
+
+   Almost always an audience or issuer mismatch. The server logs what it will accept at startup (``OIDC auth configured as a protected resource (issuer=…, resource=…, audience=…)``); compare that with the token's ``iss`` and ``aud``. Also confirm ``OIDCPROXY_BASE_URL`` matches the URL clients actually connect to, since it is the OAuth resource identifier.
 
 Security
 --------
 
 - **Secrets in Key Vault.** All credentials are stored in Azure Key Vault by default for Container Apps, mandatory for VM, and the recommended path on AKS via Workload Identity Federation.
-- **Five auth modes.** Choose the level appropriate for the environment — production deployments should use OIDCProxy, JWT, or Zscaler.
+- **Five auth modes.** Choose the level appropriate for the environment — production deployments should use OIDC, JWT, or Zscaler.
 - **TLS.** Container Apps provides automatic HTTPS. VM deployments default to HTTP (front with a load balancer + TLS for production). AKS Preview exposes plain HTTP today; place behind Application Gateway / NGINX + ``cert-manager`` for production.
 - **NSG.** VM deployments configure Network Security Group rules for SSH and the MCP port.
-- **HMAC confirmations.** Destructive Zscaler operations require cryptographic confirmation tokens (controlled by ``ZSCALER_MCP_SKIP_CONFIRMATIONS`` and ``ZSCALER_MCP_CONFIRMATION_TTL``).
+- **Destructive-operation confirmation.** Deletes never execute on the first call, and there is no way to switch that off. ``ZSCALER_MCP_CONFIRMATION_TTL`` tunes the confirmation window only.
 - **Read-only by default.** Write tools are disabled unless explicitly enabled via ``ZSCALER_MCP_WRITE_ENABLED=true`` and ``ZSCALER_MCP_WRITE_TOOLS``.
 
 References

@@ -121,8 +121,8 @@ def test_zdx_prompt_is_discovered():
 async def test_zdx_prompt_renders_with_inputs():
     discover_prompts()
     fp = build_function_prompt(PROMPT_REGISTRY.get("zdx_troubleshoot_user_experience"))
-    result = await fp.render({"user_or_device": "jdoe@acme.com", "since_hours": "48"})
-    text = " ".join(m.content.text for m in result.messages)
+    result = await fp.render({"user_or_device": "jdoe@acme.com", "since_hours": "48"}, None)
+    text = " ".join(m.content.text for m in result)
     # The user and lookback window are interpolated into the playbook body.
     assert "jdoe@acme.com" in text
     assert "48 hours" in text
@@ -136,7 +136,7 @@ async def test_zdx_prompt_requires_user_or_device():
     discover_prompts()
     fp = build_function_prompt(PROMPT_REGISTRY.get("zdx_troubleshoot_user_experience"))
     with pytest.raises(ValueError, match="Missing required arguments"):
-        await fp.render({"since_hours": "24"})
+        await fp.render({"since_hours": "24"}, None)
 
 
 # ---------------------------------------------------------------------------
@@ -193,8 +193,8 @@ def test_zcell_investigate_sim_argument_schema():
 async def test_zcell_investigate_sim_renders_with_inputs():
     discover_prompts()
     fp = build_function_prompt(PROMPT_REGISTRY.get("zcell_investigate_sim"))
-    result = await fp.render({"iccid": "8944500912345678", "since_days": "14"})
-    text = " ".join(m.content.text for m in result.messages)
+    result = await fp.render({"iccid": "8944500912345678", "since_days": "14"}, None)
+    text = " ".join(m.content.text for m in result)
     # Inputs are interpolated into the playbook body.
     assert "8944500912345678" in text
     assert "14 days" in text
@@ -209,19 +209,19 @@ async def test_zcell_investigate_sim_requires_iccid():
     discover_prompts()
     fp = build_function_prompt(PROMPT_REGISTRY.get("zcell_investigate_sim"))
     with pytest.raises(ValueError, match="Missing required arguments"):
-        await fp.render({"since_days": "7"})
+        await fp.render({"since_days": "7"}, None)
 
 
 @pytest.mark.asyncio
 async def test_zcell_usage_and_anomaly_prompts_render_default_window():
     discover_prompts()
     usage = build_function_prompt(PROMPT_REGISTRY.get("zcell_audit_data_usage"))
-    usage_text = " ".join(m.content.text for m in (await usage.render({})).messages)
+    usage_text = " ".join(m.content.text for m in (await usage.render({}, None)))
     assert "zcell_list_sim_usage_by_country" in usage_text
     assert "30 days" in usage_text  # default since_days
 
     anomaly = build_function_prompt(PROMPT_REGISTRY.get("zcell_review_anomaly_policies"))
-    anomaly_text = " ".join(m.content.text for m in (await anomaly.render({})).messages)
+    anomaly_text = " ".join(m.content.text for m in (await anomaly.render({}, None)))
     assert "zcell_list_anomaly_policies" in anomaly_text
     assert "zcell_get_sim_location_group" in anomaly_text
 

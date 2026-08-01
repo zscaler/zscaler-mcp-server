@@ -165,7 +165,11 @@ def zia_add_atp_malicious_urls(args: MaliciousUrlsInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_atp_malicious_urls(args: MaliciousUrlsInput) -> dict[str, Any]:
-    """Remove URLs from the ZIA ATP malicious-URL denylist (destructive). Activate after."""
+    """Remove URLs from the ZIA ATP malicious-URL denylist (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.atp_policy.delete_atp_malicious_urls(
         malicious_urls=parse_list(args.malicious_urls)

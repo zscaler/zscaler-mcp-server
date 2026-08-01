@@ -237,11 +237,16 @@ mcp:
   # to Zscaler's APIs — see `secret.values.*` below for those.
   auth:
     enabled: true
-    # One of: jwt | api-key | zscaler | none
+    # One of: jwt | api-key | zscaler | none | oidc
     # When mode is "none", set auth.enabled: false (or leave true to log
-    # a warning every boot). For OAuth 2.1 + DCR (OIDCProxy), wire up
-    # OIDCProxy via the programmatic `auth=` parameter — not yet exposed
-    # via env vars and out of scope for this chart's v1.
+    # a warning every boot).
+    #
+    # OAuth 2.1 ("oidc") is configured entirely through env vars, so it needs
+    # no dedicated block here: set mode to `oidc` and put OIDCPROXY_CONFIG_URL,
+    # OIDCPROXY_CLIENT_ID and OIDCPROXY_BASE_URL in the Secret (they arrive via
+    # `envFrom`, like every other variable). OIDCPROXY_BASE_URL must be the
+    # externally-reachable URL of the Service/Ingress, since it is the OAuth
+    # resource identifier clients use.
     mode: zscaler
     # jwt mode
     jwt:

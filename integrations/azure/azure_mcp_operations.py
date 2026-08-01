@@ -19,7 +19,7 @@ integration is planned for a future release. For now, AKS injects secrets
 as Kubernetes environment variables on the Deployment.
 
 Supported MCP client authentication modes:
-  - OIDCProxy:  OAuth 2.1 + DCR via any OIDC provider (browser-based login)
+  - OIDC:       OAuth 2.1 against any OIDC provider (browser-based login)
   - JWT:        Validate JWTs against a JWKS endpoint
   - API Key:    Shared secret (auto-generated if not provided)
   - Zscaler:    Validate via Zscaler OneAPI client credentials
@@ -167,7 +167,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -432,42 +434,6 @@ def _prompt_yes_no(question: str, *, default: bool = True) -> bool:
     return raw in ("y", "yes")
 
 
-# ── OIDCProxy inline entrypoint (for Container Apps) ─────────────────────
-
-_INLINE_ENTRYPOINT = """
-import os, sys, logging
-if os.environ.get("FASTMCP_DEBUG", "").lower() in ("true", "1", "yes"):
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-config_url    = os.environ["OIDCPROXY_CONFIG_URL"]
-client_id     = os.environ["OIDCPROXY_CLIENT_ID"]
-client_secret = os.environ["OIDCPROXY_CLIENT_SECRET"]
-base_url      = os.environ["OIDCPROXY_BASE_URL"]
-audience      = os.environ.get("OIDCPROXY_AUDIENCE", "zscaler-mcp-server")
-host          = os.environ.get("MCP_HOST", "0.0.0.0")
-port          = int(os.environ.get("MCP_PORT", "8000"))
-os.environ["ZSCALER_MCP_AUTH_ENABLED"] = "false"
-os.environ["ZSCALER_MCP_ALLOW_HTTP"]   = "true"
-os.environ.pop("ZSCALER_MCP_TLS_CERTFILE", None)
-os.environ.pop("ZSCALER_MCP_TLS_KEYFILE", None)
-from fastmcp.server.auth.oidc_proxy import OIDCProxy
-from zscaler_mcp.server import ZscalerMCPServer
-auth = OIDCProxy(config_url=config_url, client_id=client_id, client_secret=client_secret, base_url=base_url, audience=audience, verify_id_token=True)
-if auth.client_registration_options:
-    auth.client_registration_options.valid_scopes = ["openid", "profile", "email"]
-ew = os.environ.get("ZSCALER_MCP_WRITE_ENABLED", "").lower() in ("true", "1", "yes")
-wt_raw = os.environ.get("ZSCALER_MCP_WRITE_TOOLS", "")
-write_tools = set(t.strip() for t in wt_raw.split(",") if t.strip()) if wt_raw else None
-dt = os.environ.get("ZSCALER_MCP_DISABLED_TOOLS", "")
-disabled_tools = set(t.strip() for t in dt.split(",") if t.strip()) if dt else None
-ds = os.environ.get("ZSCALER_MCP_DISABLED_SERVICES", "")
-disabled_services = set(s.strip() for s in ds.split(",") if s.strip()) if ds else None
-server = ZscalerMCPServer(auth=auth, enable_write_tools=ew, write_tools=write_tools, disabled_tools=disabled_tools, disabled_services=disabled_services)
-server.run("streamable-http", host=host, port=port)
-"""
-
-_ENTRYPOINT_B64 = base64.b64encode(_INLINE_ENTRYPOINT.encode()).decode()
-
-
 # ── VM setup script generator ─────────────────────────────────────────────
 
 
@@ -482,7 +448,6 @@ def _generate_vm_setup_script(
     auth_mode: str,
     oidc_domain: str = "",
     oidc_client_id: str = "",
-    oidc_client_secret: str = "",
     oidc_audience: str = "",
     jwks_uri: str = "",
     jwt_issuer: str = "",
@@ -522,10 +487,10 @@ def _generate_vm_setup_script(
             f"http://{vm_public_ip}:{mcp_port}" if vm_public_ip else f"http://localhost:{mcp_port}"
         )
         env_lines += [
-            'ZSCALER_MCP_AUTH_ENABLED="false"',
+            'ZSCALER_MCP_AUTH_ENABLED="true"',
+            'ZSCALER_MCP_AUTH_MODE="oidc"',
             f'OIDCPROXY_CONFIG_URL="{config_url}"',
             f'OIDCPROXY_CLIENT_ID="{oidc_client_id}"',
-            f'OIDCPROXY_CLIENT_SECRET="{oidc_client_secret}"',
             f'OIDCPROXY_BASE_URL="{base_url}"',
             f'OIDCPROXY_AUDIENCE="{oidc_audience}"',
         ]
@@ -553,12 +518,7 @@ def _generate_vm_setup_script(
 
     env_content = "\n".join(env_lines)
 
-    if auth_mode == "oidcproxy":
-        exec_start = '/opt/zscaler-mcp/venv/bin/python -c \'exec(__import__("base64").b64decode(__import__("os").environ["ENTRYPOINT_B64"]).decode())\''
-        env_lines.append(f'ENTRYPOINT_B64="{_ENTRYPOINT_B64}"')
-        env_content = "\n".join(env_lines)
-    else:
-        exec_start = f"/opt/zscaler-mcp/venv/bin/zscaler-mcp --transport streamable-http --host 0.0.0.0 --port {mcp_port}"
+    exec_start = f"/opt/zscaler-mcp/venv/bin/zscaler-mcp --transport streamable-http --host 0.0.0.0 --port {mcp_port}"
 
     return f"""#!/bin/bash
 set -e
@@ -692,7 +652,7 @@ def _collect_credentials(account: dict) -> dict:
     auth_mode = _prompt_choice(
         "Select MCP client authentication mode:",
         [
-            ("oidcproxy", "OIDCProxy  — OAuth 2.1 + DCR via OIDC provider (browser login)"),
+            ("oidcproxy", "OIDC       — OAuth 2.1 against your OIDC provider (browser login)"),
             ("jwt", "JWT        — Validate tokens against a JWKS endpoint"),
             ("api-key", "API Key    — Shared secret (auto-generated if not provided)"),
             ("zscaler", "Zscaler    — Validate via OneAPI client credentials"),
@@ -703,15 +663,15 @@ def _collect_credentials(account: dict) -> dict:
     print()
 
     # ── Auth-mode-specific credentials ────────────────────────────────
-    oidc_domain = oidc_client_id = oidc_client_secret = oidc_audience = ""
+    oidc_domain = oidc_client_id = oidc_audience = ""
     jwks_uri = jwt_issuer = jwt_audience = ""
     api_key = ""
 
     if auth_mode == "oidcproxy":
-        info("OIDCProxy credentials (supports Entra ID, Okta, Auth0, etc.)")
+        info("OIDC settings (supports Entra ID, Okta, Auth0, etc.)")
+        info("  No client secret needed — the server only verifies token signatures.")
         oidc_domain = resolve(env, "OIDCPROXY_DOMAIN", "AUTH0_DOMAIN", "OIDCPROXY_AUTH0_DOMAIN")
         oidc_client_id = resolve(env, "OIDCPROXY_CLIENT_ID", "AUTH0_CLIENT_ID")
-        oidc_client_secret = resolve(env, "OIDCPROXY_CLIENT_SECRET", "AUTH0_CLIENT_SECRET")
         oidc_audience = resolve(env, "OIDCPROXY_AUDIENCE", "AUTH0_AUDIENCE") or "zscaler-mcp-server"
 
         if not oidc_domain:
@@ -724,10 +684,6 @@ def _collect_credentials(account: dict) -> dict:
             oidc_client_id = _prompt("OIDC Client ID")
         else:
             ok(f"OIDC Client ID: {oidc_client_id[:12]}...")
-        if not oidc_client_secret:
-            oidc_client_secret = _prompt("OIDC Client Secret", secret=True)
-        else:
-            ok("OIDC Client Secret: ********")
         oidc_audience = _prompt("OIDC Audience / API Identifier", default=oidc_audience)
 
     elif auth_mode == "jwt":
@@ -796,7 +752,6 @@ def _collect_credentials(account: dict) -> dict:
         "auth_mode": auth_mode,
         "oidc_domain": oidc_domain,
         "oidc_client_id": oidc_client_id,
-        "oidc_client_secret": oidc_client_secret,
         "oidc_audience": oidc_audience,
         "jwks_uri": jwks_uri,
         "jwt_issuer": jwt_issuer,
@@ -912,7 +867,6 @@ def _setup_keyvault(
     }
     if creds["auth_mode"] == "oidcproxy":
         kv_secrets["oidcproxy-client-id"] = creds["oidc_client_id"]
-        kv_secrets["oidcproxy-client-secret"] = creds["oidc_client_secret"]
     elif creds["auth_mode"] == "api-key":
         kv_secrets["mcp-api-key"] = creds["api_key"]
 
@@ -1011,7 +965,6 @@ def _build_kv_secret_map(auth_mode: str) -> list[tuple[str, str]]:
     if auth_mode == "oidcproxy":
         secret_map += [
             ("OIDCPROXY_CLIENT_ID", "oidcproxy-client-id"),
-            ("OIDCPROXY_CLIENT_SECRET", "oidcproxy-client-secret"),
         ]
     elif auth_mode == "api-key":
         secret_map.append(("ZSCALER_MCP_AUTH_API_KEY", "mcp-api-key"))
@@ -1220,7 +1173,7 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     # Confirmation
     auth_mode = creds["auth_mode"]
     _auth_labels = {
-        "oidcproxy": f"OIDCProxy ({creds['oidc_domain']})",
+        "oidcproxy": f"OIDC ({creds['oidc_domain']})",
         "jwt": f"JWT (JWKS: {creds['jwks_uri']})",
         "api-key": "API Key (shared secret)",
         "zscaler": "Zscaler (OneAPI credentials)",
@@ -1346,7 +1299,6 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
         *optional_env,
     ]
 
-    use_inline_entrypoint = auth_mode == "oidcproxy"
     config_url = (
         f"https://{creds['oidc_domain']}/.well-known/openid-configuration"
         if auth_mode == "oidcproxy"
@@ -1356,13 +1308,12 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     if auth_mode == "oidcproxy":
         placeholder_base_url = "https://placeholder.azurecontainerapps.io"
         env_vars_list += [
-            "ZSCALER_MCP_AUTH_ENABLED=false",
+            "ZSCALER_MCP_AUTH_ENABLED=true",
+            "ZSCALER_MCP_AUTH_MODE=oidc",
             f"OIDCPROXY_CONFIG_URL={config_url}",
             f"OIDCPROXY_CLIENT_ID={creds['oidc_client_id']}",
-            f"OIDCPROXY_CLIENT_SECRET={creds['oidc_client_secret']}",
             f"OIDCPROXY_BASE_URL={placeholder_base_url}",
             f"OIDCPROXY_AUDIENCE={creds['oidc_audience']}",
-            f"ENTRYPOINT_B64={_ENTRYPOINT_B64}",
         ]
     elif auth_mode == "jwt":
         env_vars_list += [
@@ -1457,22 +1408,15 @@ def _deploy_container_app(account: dict, creds: dict) -> None:
     if not containers:
         die("Could not find container spec")
 
-    if use_inline_entrypoint:
-        containers[0]["command"] = ["python"]
-        containers[0]["args"] = [
-            "-c",
-            "import base64,os;exec(base64.b64decode(os.environ['ENTRYPOINT_B64']).decode())",
-        ]
-    else:
-        containers[0]["command"] = ["/app/.venv/bin/zscaler-mcp"]
-        containers[0]["args"] = [
-            "--transport",
-            "streamable-http",
-            "--host",
-            "0.0.0.0",
-            "--port",
-            mcp_port,
-        ]
+    containers[0]["command"] = ["/app/.venv/bin/zscaler-mcp"]
+    containers[0]["args"] = [
+        "--transport",
+        "streamable-http",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        mcp_port,
+    ]
 
     yaml_path = os.path.join(tempfile.gettempdir(), f"containerapp-{container_app_name}.json")
     try:
@@ -1731,7 +1675,7 @@ def _deploy_vm(account: dict, creds: dict) -> None:
     # Confirmation
     auth_mode = creds["auth_mode"]
     _auth_labels = {
-        "oidcproxy": f"OIDCProxy ({creds['oidc_domain']})",
+        "oidcproxy": f"OIDC ({creds['oidc_domain']})",
         "jwt": f"JWT (JWKS: {creds['jwks_uri']})",
         "api-key": "API Key (shared secret)",
         "zscaler": "Zscaler (OneAPI credentials)",
@@ -1951,7 +1895,6 @@ def _deploy_vm(account: dict, creds: dict) -> None:
         auth_mode=auth_mode,
         oidc_domain=creds["oidc_domain"],
         oidc_client_id=creds["oidc_client_id"],
-        oidc_client_secret=creds["oidc_client_secret"],
         oidc_audience=creds["oidc_audience"],
         jwks_uri=creds["jwks_uri"],
         jwt_issuer=creds["jwt_issuer"],
@@ -2430,9 +2373,7 @@ def _build_aks_kv_manifest(
     secret_map = _build_kv_secret_map(auth_mode)
 
     spc_objects_yaml = "\n".join(
-        f"          - |\n"
-        f"            objectName: {kv_name}\n"
-        f"            objectType: secret"
+        f"          - |\n            objectName: {kv_name}\n            objectType: secret"
         for _, kv_name in secret_map
     )
     secret_data_yaml = "\n".join(
@@ -2558,7 +2499,7 @@ def _deploy_aks(account: dict, creds: dict) -> None:
     # Auth-mode guard for Preview
     if creds["auth_mode"] == "oidcproxy":
         die(
-            "OIDCProxy auth mode is not yet supported on AKS (Preview).\n"
+            "OIDC auth mode is not yet supported on AKS (Preview).\n"
             "  Use 'jwt', 'api-key', 'zscaler', or 'none' for AKS deployments."
         )
 
@@ -2567,7 +2508,7 @@ def _deploy_aks(account: dict, creds: dict) -> None:
         f"{BOLD}AKS deployment is in PREVIEW.{NC}{YELLOW} "
         "Cluster + LoadBalancer + K8s manifests are validated;"
     )
-    warn("  TLS Ingress, OIDCProxy auth, and HPA are planned for a future release.")
+    warn("  TLS Ingress, OIDC auth, and HPA are planned for a future release.")
     print()
 
     if not shutil.which("kubectl"):
@@ -2833,9 +2774,7 @@ def _deploy_aks(account: dict, creds: dict) -> None:
         # 3. Capture the tenant ID — needed by the SecretProviderClass.
         tenant_id = account.get("tenantId", "")
         if not tenant_id:
-            r = run_az(
-                ["account", "show", "--query", "tenantId", "--output", "tsv"], capture=True
-            )
+            r = run_az(["account", "show", "--query", "tenantId", "--output", "tsv"], capture=True)
             tenant_id = r.stdout.strip()
         if not tenant_id:
             die("Could not determine Azure tenant ID for the SecretProviderClass.")
@@ -3147,9 +3086,7 @@ def op_destroy(args: argparse.Namespace) -> None:
     print()
 
     if not args.yes:
-        prompt_target = (
-            cluster_name if aks_keep_cluster and cluster_name else resource_group
-        )
+        prompt_target = cluster_name if aks_keep_cluster and cluster_name else resource_group
         try:
             confirm = input(f"  Type '{prompt_target}' to confirm (or 'exit' to cancel): ").strip()
         except (EOFError, KeyboardInterrupt):
@@ -3247,9 +3184,14 @@ def op_destroy(args: argparse.Namespace) -> None:
                 ],
                 check=False,
             )
-            ok("K8s resources removed (Deployment + Service" + (
-                " + SA + SPC + Secret)" if state.get("credential_storage") == "keyvault" else ")"
-            ))
+            ok(
+                "K8s resources removed (Deployment + Service"
+                + (
+                    " + SA + SPC + Secret)"
+                    if state.get("credential_storage") == "keyvault"
+                    else ")"
+                )
+            )
         else:
             warn("Could not connect to AKS cluster to clean up K8s resources.")
 
@@ -3303,9 +3245,7 @@ def op_destroy(args: argparse.Namespace) -> None:
                     servers = config.get("mcpServers", {})
                     if SERVER_NAME in servers:
                         del servers[SERVER_NAME]
-                        path.write_text(
-                            json.dumps(config, indent=2) + "\n", encoding="utf-8"
-                        )
+                        path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
                         ok(f"Removed '{SERVER_NAME}' from {path_label} config")
                 except (json.JSONDecodeError, OSError):
                     warn(f"Could not update {path_label} config")

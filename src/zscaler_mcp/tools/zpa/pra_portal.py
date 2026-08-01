@@ -174,7 +174,7 @@ def zpa_get_pra_portal(args: GetPortalInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_pra_portal(args: CreatePortalInput) -> dict[str, Any]:
-    """Create a ZPA PRA portal (write). Gated by HMAC + `--write-tools`.
+    """Create a ZPA PRA portal (write). Requires `--write-tools`.
 
     If `certificate_id` is omitted, the BA certificate is resolved by searching
     issued certificates for one whose name matches the portal `name`.
@@ -219,7 +219,7 @@ def zpa_create_pra_portal(args: CreatePortalInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_update_pra_portal(args: UpdatePortalInput) -> dict[str, Any]:
-    """Update a ZPA PRA portal (write). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA PRA portal (write). Requires `--write-tools`."""
     if not args.portal_id:
         raise ValueError("portal_id is required")
     client = get_zscaler_client(service="zpa")
@@ -249,7 +249,11 @@ def zpa_update_pra_portal(args: UpdatePortalInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_delete_pra_portal(args: DeletePortalInput) -> dict[str, Any]:
-    """Delete a ZPA PRA portal (destructive write). Gated by HMAC + `--write-tools`."""
+    """Delete a ZPA PRA portal (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.portal_id:
         raise ValueError("portal_id is required")
     client = get_zscaler_client(service="zpa")

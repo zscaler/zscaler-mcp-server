@@ -104,7 +104,7 @@ def zpa_get_timeout_policy_rule(args: GetRuleInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_timeout_policy_rule(args: CreateTimeoutRuleInput) -> dict[str, Any]:
-    """Create a ZPA timeout policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Create a ZPA timeout policy rule (write). Requires `--write-tools`."""
     if not args.name:
         raise ValueError("name is required")
     client = get_zscaler_client(service="zpa")
@@ -133,7 +133,7 @@ def zpa_create_timeout_policy_rule(args: CreateTimeoutRuleInput) -> dict[str, An
     is_list=False,
 )
 def zpa_update_timeout_policy_rule(args: UpdateTimeoutRuleInput) -> dict[str, Any]:
-    """Update a ZPA timeout policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA timeout policy rule (write). Requires `--write-tools`."""
     if not args.rule_id:
         raise ValueError("rule_id is required")
     client = get_zscaler_client(service="zpa")
@@ -163,5 +163,9 @@ def zpa_update_timeout_policy_rule(args: UpdateTimeoutRuleInput) -> dict[str, An
     is_list=False,
 )
 def zpa_delete_timeout_policy_rule(args: DeleteRuleInput) -> dict[str, Any]:
-    """Delete a ZPA timeout policy rule (destructive write)."""
+    """Delete a ZPA timeout policy rule (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     return delete_rule("timeout", args, "timeout")
