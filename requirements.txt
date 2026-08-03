@@ -26,6 +26,8 @@ attrs==26.1.0
     #   referencing
 authlib==1.7.2
     # via fastmcp-slim
+backports-tarfile==1.2.0
+    # via jaraco-context
 beartype==0.22.9
     # via py-key-value-aio
 bleach==6.4.0
@@ -51,6 +53,7 @@ cryptography==49.0.0
     #   joserfc
     #   jwcrypto
     #   pyjwt
+    #   secretstorage
     #   zscaler-sdk-python
 cyclopts==4.22.1
     # via fastmcp-slim
@@ -86,12 +89,18 @@ idna==3.18
     #   email-validator
     #   httpx
     #   requests
+importlib-metadata==9.0.0
+    # via keyring
 jaraco-classes==3.4.0
     # via keyring
 jaraco-context==6.1.2
     # via keyring
 jaraco-functools==4.6.0
     # via keyring
+jeepney==0.9.0
+    # via
+    #   keyring
+    #   secretstorage
 jmespath==1.1.0
     # via zscaler-sdk-python
 joserfc==1.7.4
@@ -211,6 +220,8 @@ rpds-py==2026.6.3
     # via
     #   jsonschema
     #   referencing
+secretstorage==3.5.0
+    # via keyring
 shellingham==1.5.4
     # via typer
 six==1.17.0
@@ -229,6 +240,8 @@ typer==0.27.0
     # via mcp
 typing-extensions==4.16.0
     # via
+    #   anyio
+    #   exceptiongroup
     #   fastmcp-slim
     #   jwcrypto
     #   mcp
@@ -237,6 +250,8 @@ typing-extensions==4.16.0
     #   pydantic
     #   pydantic-core
     #   pydash
+    #   referencing
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
@@ -262,5 +277,7 @@ webencodings==0.5.1
     # via bleach
 websockets==16.1.1
     # via fastmcp-slim
+zipp==4.1.0
+    # via importlib-metadata
 zscaler-sdk-python==1.9.39
     # via zscaler-mcp (pyproject.toml)
