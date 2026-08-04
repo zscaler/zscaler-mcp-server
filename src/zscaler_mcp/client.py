@@ -21,17 +21,32 @@ from dotenv import load_dotenv
 logger = logging.getLogger(__name__)
 
 
+def _absent(values: dict[str, str | None]) -> list[str]:
+    """Return the names whose value is missing or blank, in declaration order."""
+    return [name for name, value in values.items() if not (value and value.strip())]
+
+
 def get_zscaler_client(*, service: str | None = None):
     """Return an authenticated OneAPI ``ZscalerClient``.
 
-    Credentials are resolved from the environment (or a ``.env`` file):
+    Configuration is resolved from the environment (or a ``.env`` file).
+
+    OneAPI **credentials** — authenticate the client, required for every product:
 
     - ``ZSCALER_CLIENT_ID``
     - ``ZSCALER_CLIENT_SECRET`` (or ``ZSCALER_PRIVATE_KEY`` for JWT auth)
     - ``ZSCALER_VANITY_DOMAIN``
+
+    **Tenant scope** — not credentials; each selects the tenant for exactly one
+    product, and a missing value says nothing about the health of the OneAPI
+    credentials above:
+
     - ``ZSCALER_CUSTOMER_ID`` (required only when ``service="zpa"``)
     - ``ZCELL_CUSTOMER_ID`` (required only when ``service="zcell"``)
-    - ``ZSCALER_CLOUD`` (optional)
+
+    Optional:
+
+    - ``ZSCALER_CLOUD``
 
     Args:
         service: Optional product hint (``"zpa"``, ``"zia"``, ...). Only used to
@@ -59,17 +74,34 @@ def get_zscaler_client(*, service: str | None = None):
     cloud = os.getenv("ZSCALER_CLOUD")
     user_agent_comment = os.getenv("ZSCALER_MCP_USER_AGENT_COMMENT")
 
-    required = {"ZSCALER_CLIENT_ID": client_id, "ZSCALER_VANITY_DOMAIN": vanity_domain}
+    # OneAPI credentials proper: these authenticate the API client itself and are
+    # required for every product.
+    credentials = {"ZSCALER_CLIENT_ID": client_id, "ZSCALER_VANITY_DOMAIN": vanity_domain}
+    # Tenant scope, which is NOT a credential: these select which tenant a given
+    # product's API is addressed against, and each is required by exactly one
+    # product. Reported separately so a missing one never reads as an auth
+    # failure — OneAPI auth can be perfectly healthy while one of these is unset.
+    tenant_scope: dict[str, str | None] = {}
     if service == "zpa":
-        required["ZSCALER_CUSTOMER_ID"] = customer_id
+        tenant_scope["ZSCALER_CUSTOMER_ID"] = customer_id
     if service == "zcell":
-        required["ZCELL_CUSTOMER_ID"] = zcell_customer_id
+        tenant_scope["ZCELL_CUSTOMER_ID"] = zcell_customer_id
 
-    missing = [name for name, value in required.items() if not (value and value.strip())]
-    if missing:
+    missing_credentials = _absent(credentials)
+    if missing_credentials:
         raise RuntimeError(
             "Zscaler SDK failed to initialize due to missing OneAPI credentials: "
-            f"{missing}. Set them in the environment or .env file."
+            f"{missing_credentials}. Set them in the environment or .env file."
+        )
+
+    missing_scope = _absent(tenant_scope)
+    if missing_scope:
+        raise RuntimeError(
+            f"{', '.join(missing_scope)} is required for {service} tools. It is the "
+            "tenant/customer ID, not a OneAPI credential. Set it in the environment "
+            "or .env file. OneAPI authentication itself is unaffected — if other "
+            f"products answer successfully, your credentials are fine. If this tenant "
+            f"is not entitled to {service}, the value may not exist at all."
         )
     if not client_secret and not private_key:
         raise ValueError(
