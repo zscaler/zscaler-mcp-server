@@ -61,13 +61,20 @@ PRD_TO_SERVICE: dict[str, str] = {
     "ZDX": "zdx",
     "ZCC": "zcc",
     "ZTW": "ztw",
+    # ``CLOUD_CONNECTOR`` is the value observed in a live ZIdentity token for
+    # Cloud & Branch Connector; ``ZTW`` above was never emitted by that tenant.
+    "CLOUD_CONNECTOR": "ztw",
     "ZIDENTITY": "zid",
     "ZID": "zid",
     "IDENTITY": "zid",
+    # ``ZIAM`` is the value observed in a live ZIdentity token for ZIdentity itself.
+    "ZIAM": "zid",
     "ZEASM": "zeasm",
     "EASM": "zeasm",
     "ZINS": "zins",
     "INSIGHTS": "zins",
+    # ``ZINSIGHTS`` is the value observed in a live ZIdentity token for Z-Insights.
+    "ZINSIGHTS": "zins",
     "ZMS": "zms",
     # ZCell (Zscaler Cellular). The exact `prd` claim value ZIdentity emits for
     # Cellular is not yet confirmed against a live token; map the likely variants
@@ -104,18 +111,20 @@ def decode_oneapi_token(token: str) -> Optional[dict]:
         return None
 
 
-def extract_entitled_services(payload: dict) -> Set[str]:
-    """Return the set of internal service codes the token is entitled to.
+def _partition_prd_values(payload: dict) -> Tuple[Set[str], list[str]]:
+    """Split the token's ``prd`` claims into mapped services and unmapped values.
 
-    Reads ``service-info`` from the payload, lifts each ``prd`` value, and maps
-    known product codes to internal service identifiers (``zia`` / ``zpa`` /
-    ...). Unknown product codes are silently skipped.
+    Returns ``(services, unmapped)``. ``unmapped`` holds the original ``prd``
+    strings that :data:`PRD_TO_SERVICE` has no entry for — de-duplicated and
+    sorted — so a caller can tell an operator *which* products got dropped and
+    whether the cause was a mapping gap rather than a real entitlement gap.
     """
     services: Set[str] = set()
+    unmapped: Set[str] = set()
 
     service_info = payload.get("service-info") or payload.get("serviceInfo")
     if not isinstance(service_info, list):
-        return services
+        return services, []
 
     for entry in service_info:
         if not isinstance(entry, dict):
@@ -123,10 +132,43 @@ def extract_entitled_services(payload: dict) -> Set[str]:
         prd = entry.get("prd")
         if not isinstance(prd, str):
             continue
-        mapped = PRD_TO_SERVICE.get(prd.strip().upper())
+        normalized = prd.strip()
+        if not normalized:
+            continue
+        mapped = PRD_TO_SERVICE.get(normalized.upper())
         if mapped:
             services.add(mapped)
+        else:
+            unmapped.add(normalized)
 
+    return services, sorted(unmapped)
+
+
+def _warn_unmapped_prd(unmapped: list[str]) -> None:
+    """Log a single WARN naming the ``prd`` values that no mapping recognised."""
+    if not unmapped:
+        return
+    logger.warning(
+        "Entitlement filter: %d prd value(s) in the OneAPI token have no "
+        "PRD_TO_SERVICE mapping and were ignored: %s. Tools for these products "
+        "are removed even if the tenant is genuinely entitled to them. If those "
+        "products work for you, this is a mapping gap — re-run with "
+        "--no-entitlement-filter to confirm and please report the values upstream.",
+        len(unmapped),
+        unmapped,
+    )
+
+
+def extract_entitled_services(payload: dict) -> Set[str]:
+    """Return the set of internal service codes the token is entitled to.
+
+    Reads ``service-info`` from the payload, lifts each ``prd`` value, and maps
+    known product codes to internal service identifiers (``zia`` / ``zpa`` /
+    ...). Product codes with no mapping are skipped, but a WARN naming them is
+    emitted first so a mapping gap is never silent.
+    """
+    services, unmapped = _partition_prd_values(payload)
+    _warn_unmapped_prd(unmapped)
     return services
 
 
@@ -228,8 +270,15 @@ def apply_entitlement_filter(
     if payload is None:
         return None, "entitlement filter skipped (token did not decode)"
 
-    entitled_services = extract_entitled_services(payload)
+    entitled_services, unmapped_prd = _partition_prd_values(payload)
+    _warn_unmapped_prd(unmapped_prd)
+
     if not entitled_services:
+        if unmapped_prd:
+            return None, (
+                "entitlement filter skipped (no prd value in the token maps to a known "
+                f"service; unmapped: {unmapped_prd})"
+            )
         return None, "entitlement filter skipped (token had no recognizable service-info entries)"
 
     allowed = (set(available_services) & (entitled_services | _ALWAYS_KEEP_SERVICES)) | (
@@ -242,5 +291,6 @@ def apply_entitlement_filter(
         f"entitlement filter applied: entitled services={sorted(entitled_services)}, "
         f"kept {len(kept)} service(s)"
         + (f", removed {len(removed)} service(s): {removed}" if removed else "")
+        + (f", unmapped prd values ignored: {unmapped_prd}" if unmapped_prd else "")
     )
     return allowed, status
