@@ -61,6 +61,29 @@ def refresh_tool_call_logging() -> None:
         disable_tool_call_logging()
 
 
+def _call_args(args: tuple, kwargs: dict) -> dict:
+    """Collect the arguments a tool was actually invoked with.
+
+    The registry bridge calls tools as ``fn(model)`` — one positional Pydantic
+    input model, no keywords — so reading ``kwargs`` alone logged ``args: {}``
+    for every call in the server. That is precisely the field the audit line
+    exists to record, and its absence made a real incident (an agent filtering
+    on the wrong field name and getting an empty list) undiagnosable from the
+    log. Unpack the model; fall back to positional indices for anything else.
+
+    Only fields the caller actually set are reported, so a tool with thirty
+    optional parameters still logs the two that were passed.
+    """
+    collected: dict = {}
+    for index, value in enumerate(args):
+        if hasattr(value, "model_dump"):
+            collected.update(value.model_dump(exclude_unset=True, exclude_none=True))
+        else:
+            collected[f"arg{index}"] = value
+    collected.update(kwargs)
+    return collected
+
+
 def _sanitize_args(kwargs: dict) -> dict:
     """Redact sensitive parameter values for safe logging."""
     sanitized = {}
@@ -111,7 +134,7 @@ def wrap_tool(func: Callable[..., Any], tool_name: str) -> Callable[..., Any]:
         if not _log_tool_calls_enabled:
             return _maybe_sanitize(func(*args, **kwargs))
 
-        safe_args = _sanitize_args(kwargs)
+        safe_args = _sanitize_args(_call_args(args, kwargs))
         audit_logger.info("[TOOL CALL] %s | args: %s", tool_name, safe_args)
 
         t0 = time.monotonic()

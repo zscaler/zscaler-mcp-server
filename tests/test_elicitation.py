@@ -350,7 +350,12 @@ class _FakeContext:
     @property
     def client_capabilities(self):
         if self._session_raises:
-            raise RuntimeError("no active request context")
+            # Must mirror the REAL SDK: mcp 2.0's Context.request_context raises
+            # ValueError("Context is not available outside of a request"). Faking a
+            # different exception type here is precisely how the historical
+            # `ctx.connection` AttributeError bug passed its tests while silently
+            # downgrading every legacy client in production.
+            raise ValueError("Context is not available outside of a request")
         if self._supports is None:
             return None
         return ClientCapabilities(elicitation=ElicitationCapability() if self._supports else None)
@@ -648,3 +653,60 @@ class TestResourceNameInPrompt:
         # single-resource read; they keep the id-only prompt by design
         for name in ("zpa_bulk_delete_app_connectors", "zia_delete_auth_exempt_urls"):
             assert _resolve_resource_name(REGISTRY.get(name), {}) is None
+
+
+class TestCapabilityCheckFailsClosed:
+    """An internal defect must not be mistaken for "this client cannot elicit".
+
+    Returning False on an unexpected exception gives the same answer as a genuine
+    client limitation, and routes a destructive call to the token path the agent
+    can redeem unaided. That is how the `ctx.connection` AttributeError shipped:
+    swallowed into the fallback, every legacy client silently lost its human
+    prompt. The discriminator is the exception TYPE — ValueError is the SDK's
+    documented "no request context"; anything else is ours.
+    """
+
+    def test_missing_request_context_still_degrades(self):
+        """ValueError is the SDK's expected signal — a real un-promptable caller."""
+        assert el.elicitation_available(_FakeContext(session_raises=True)) is False
+
+    def test_unexpected_exception_raises_instead_of_degrading(self):
+        class Defective:
+            @property
+            def client_capabilities(self):
+                # the exact historical bug
+                raise AttributeError("'Context' object has no attribute 'connection'")
+
+        with pytest.raises(el.CapabilityCheckFailed):
+            el.elicitation_available(Defective())
+
+    def test_gate_refuses_and_mints_no_token_on_a_defect(self):
+        message = el.gate_destructive_operation(
+            el.CAPABILITY_CHECK_FAILED, "zpa_delete_segment_group", {"group_id": "7205"}
+        )
+        assert message is not None, "a broken capability check must not let the delete run"
+        assert "REFUSED" in message
+        # the critical property: no redeemable token is handed to the agent
+        assert "confirmation_token" not in message
+
+    def test_the_defect_sentinel_is_distinct_from_the_fallback_sentinel(self):
+        assert el.CAPABILITY_CHECK_FAILED != el.TOKEN_FALLBACK
+        assert el.is_capability_check_failure(el.CAPABILITY_CHECK_FAILED)
+        assert not el.is_capability_check_failure(el.TOKEN_FALLBACK)
+        assert not el.is_token_fallback(el.CAPABILITY_CHECK_FAILED)
+
+    def test_resolver_converts_the_defect_into_the_sentinel(self):
+        """End-to-end through the real bridge resolver, not the helper alone."""
+        from zscaler_mcp.registry.fastmcp_bridge import _build_confirmation_resolver
+        from zscaler_mcp.registry.registry import REGISTRY
+        from zscaler_mcp.server import build_server
+
+        build_server(enable_write=True, write_allowlist=["*"])
+        resolve = _build_confirmation_resolver(REGISTRY.get("zpa_delete_segment_group"))
+
+        class Defective:
+            @property
+            def client_capabilities(self):
+                raise AttributeError("boom")
+
+        assert resolve(group_id="7205", ctx=Defective()) == el.CAPABILITY_CHECK_FAILED

@@ -339,7 +339,7 @@ defend the window *between approval and execution*:
 | Agent self-authorizes with no server round-trip | ❌ agent just sets the bool | ✅ impossible — needs a server-issued token |
 | Replay an old approval later | ❌ boolean never expires | ✅ rejected after TTL (default 300 s) |
 | Redeem the same approval twice | ❌ boolean is reusable | ✅ rejected — single-use ledger |
-| Horizontal scale-out (any instance validates) | n/a | ❌ **single-process only** — see below |
+| Horizontal scale-out (any instance validates) | n/a | ❌ **single-process only** — see below (the primary path scales with a shared key ring) |
 
 So the guarantees are: **anti-tamper, anti-forgery, anti-replay, single-use** —
 within one process.
@@ -360,6 +360,26 @@ weaker, sign-only primitive we would then carry forever — what the protocol al
 defines in `RequestStateSecurity`. Multi-replica operators should confirm their
 clients advertise the capability; if any do not, run a single replica while write
 tools are enabled.
+
+### The primary path has its own key-regime requirement
+
+The elicitation path does **not** inherit the fallback's process-memory ledger, but
+its sealed `requestState` still has to be decryptable by whichever replica receives
+the retry. With `ZSCALER_MCP_REQUEST_STATE_KEYS` unset the SDK's `ephemeral()` key
+is per-process, so the same cross-replica failure applies — it just fails closed at
+the AEAD boundary instead of as a parameter mismatch.
+
+**Sticky sessions are not a workaround on `2026-07-28`.** The server does still
+issue an `Mcp-Session-Id`, but only to *handshake-era* clients. The SDK routes a
+modern request to `handle_modern_request` **before** any session handling, and that
+handler never sets a session id: a `2026-07-28` request is a self-contained POST.
+There is therefore no MCP session for a load balancer to pin on, and any affinity
+would have to come from infrastructure-level cookie or source-IP stickiness, which
+is not a protocol guarantee.
+
+Set `ZSCALER_MCP_REQUEST_STATE_KEYS` to a shared ring (first key seals, all keys
+unseal) for any multi-replica HTTP deployment with write tools enabled. The server
+logs a warning at startup if that combination is detected without one.
 
 A second fallback-only limitation: tokens are **not bound to the calling
 principal**, so any authenticated caller holding one can redeem it. The protocol's

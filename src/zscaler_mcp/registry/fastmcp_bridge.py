@@ -34,12 +34,15 @@ from zscaler_mcp.encoding import encode
 from zscaler_mcp.registry.registry import REGISTRY
 from zscaler_mcp.registry.spec import DELETE, ToolSpec
 from zscaler_mcp.security import (
+    CAPABILITY_CHECK_FAILED,
     TOKEN_FALLBACK,
+    CapabilityCheckFailed,
     DeleteConfirmation,
     build_confirmation_request,
     elicitation_available,
     extract_confirmed_from_kwargs,
     gate_destructive_operation,
+    is_tool_call_logging_enabled,
     wrap_tool,
 )
 
@@ -254,10 +257,14 @@ def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str,
                 default=None,
                 description=(
                     "Optional JMESPath expression applied to the results after the API "
-                    "call, for client-side filtering and projection. Field names are "
-                    "exactly what the Zscaler API returns. Examples: "
+                    "call, for client-side filtering and projection. Examples: "
                     '"[?enabled==`true`]", "[*].{name: name, id: id}", "length(@)". '
-                    "Omit to get the full records."
+                    "Omit to get the full records. IMPORTANT: field names are the keys "
+                    "of the returned records, which are usually snake_case (`custom_category`) "
+                    "even where the Zscaler API documents camelCase (`customCategory`) — "
+                    "guessing the spelling yields an empty list that looks like a real "
+                    "answer. If you have not already seen a record from this tool, call it "
+                    "once without `query` and read the keys off the response."
                 ),
             ),
         ]
@@ -372,7 +379,13 @@ def _build_confirmation_resolver(spec: ToolSpec) -> Any:
 
     def resolve_confirmation(**call_kwargs: Any) -> Any:
         ctx = call_kwargs.pop(_CONTEXT_PARAM, None)
-        if not elicitation_available(ctx):
+        try:
+            can_elicit = elicitation_available(ctx)
+        except CapabilityCheckFailed:
+            # An internal defect, not a client limitation. Surfaced as its own
+            # sentinel so the gate refuses instead of quietly minting a token.
+            return CAPABILITY_CHECK_FAILED
+        if not can_elicit:
             return TOKEN_FALLBACK
         params = {k: v for k, v in call_kwargs.items() if v is not None}
         return build_confirmation_request(
@@ -410,7 +423,19 @@ def build_function_tool(spec: ToolSpec) -> Tool:
         # encoder and the token accounting below both measure what the agent
         # actually receives.
         if spec.supports_query:
+            before = len(result) if isinstance(result, list) else None
             result = apply_jmespath(result, query)
+            if query and is_tool_call_logging_enabled():
+                # `query` is a bridge-owned channel: it is popped before the
+                # input model is built and never reaches the tool function, so
+                # the wrapper's [TOOL CALL] line cannot see it. Log it here, with
+                # the row count on both sides — an expression that silently
+                # matches nothing is indistinguishable from an empty tenant, and
+                # that ambiguity has already cost a debugging session.
+                after = len(result) if isinstance(result, list) else None
+                _audit_logger.info(
+                    "[QUERY]     %s | %r | %s -> %s rows", spec.name, query, before, after
+                )
         return _to_tool_result(spec, result)
 
     if spec.action == DELETE:

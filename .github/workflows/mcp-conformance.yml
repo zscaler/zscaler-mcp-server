@@ -118,3 +118,98 @@ jobs:
       - name: Stop the server
         if: always()
         run: kill "${MCP_SERVER_PID}" 2>/dev/null || true
+
+  # ---------------------------------------------------------------------------
+  # The revision we actually negotiate (2026-07-28), against the alpha runner.
+  #
+  # NON-BLOCKING BY DESIGN (`continue-on-error: true`). An alpha runner can add,
+  # rename or reinterpret scenarios between builds, so gating on it would turn
+  # upstream churn into red builds here. But leaving it to a manual `make
+  # conformance-next` meant the revision this server speaks had no continuous
+  # evidence at all — this job closes that gap without taking the risk.
+  #
+  # The result is visible in the run summary and the log artifact is retained, so
+  # a regression is discoverable even though it does not fail the build.
+  #
+  # WHEN THE RUNNER GOES GA: drop `continue-on-error`, promote to required, fold
+  # into the gating job above, and update tests/test_conformance_config.py.
+  # ---------------------------------------------------------------------------
+  conformance-next:
+    name: MCP conformance — 2026-07-28 (alpha runner, non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      MCP_NEXT_SPEC_VERSION: "2026-07-28"
+      MCP_NEXT_RUNNER: "@modelcontextprotocol/conformance@0.2.0-alpha.10"
+      MCP_NEXT_PORT: "8124"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # >=22: the conformance runner imports `globSync` from `node:fs`.
+          node-version: 22
+
+      - name: Install the server
+        run: uv sync --frozen
+
+      - name: Start the MCP server
+        env:
+          ZSCALER_MCP_AUTH_ENABLED: "false"
+          ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER: "true"
+          ZSCALER_MCP_PID_FILE: "/tmp/zscaler-mcp-conformance-next.pid"
+          # Host validation is opt-in; the dns-rebinding scenario forges a Host
+          # header and requires rejection, so the server runs hardened here.
+          ZSCALER_MCP_ALLOWED_HOSTS: "127.0.0.1:*,localhost:*"
+        run: |
+          uv run zscaler-mcp \
+            --transport streamable-http --host 127.0.0.1 --port "${MCP_NEXT_PORT}" \
+            > /tmp/mcp-conformance-next-server.log 2>&1 &
+          echo "MCP_NEXT_SERVER_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for the server to become healthy
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:${MCP_NEXT_PORT}/health" >/dev/null; then
+              echo "server healthy"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::server did not become healthy in time"
+          cat /tmp/mcp-conformance-next-server.log
+          exit 1
+
+      - name: Run the 2026-07-28 conformance suite
+        run: |
+          npx --yes "${MCP_NEXT_RUNNER}" server \
+            --url "http://127.0.0.1:${MCP_NEXT_PORT}/mcp" \
+            --suite active \
+            --spec-version "${MCP_NEXT_SPEC_VERSION}" \
+            --expected-failures .github/conformance-baseline-next.yml \
+            2>&1 | tee /tmp/mcp-conformance-next-result.log
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-2026-07-28
+          path: |
+            /tmp/mcp-conformance-next-result.log
+            /tmp/mcp-conformance-next-server.log
+          retention-days: 14
+
+      - name: Stop the server
+        if: always()
+        run: kill "${MCP_NEXT_SERVER_PID}" 2>/dev/null || true

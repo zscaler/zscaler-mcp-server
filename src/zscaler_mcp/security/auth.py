@@ -24,6 +24,14 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
 
+# `mcp` is a hard dependency, so these are imported at module level rather than
+# lazily like the auth-settings helpers below: `AccessToken` is now built by three
+# providers and the middleware publishes the identity on every authenticated
+# request, so deferring the import would only add noise.
+from mcp.server.auth.middleware.auth_context import auth_context_var
+from mcp.server.auth.middleware.bearer_auth import AuthenticatedUser
+from mcp.server.auth.provider import AccessToken
+
 from zscaler_mcp.common.logging import log_security_warning
 
 logger = logging.getLogger(__name__)
@@ -146,6 +154,26 @@ class AuthProvider(ABC):
         """
         ...
 
+    def principal(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Optional["AccessToken"]:
+        """The authenticated caller's identity, for SEP-2322 principal binding.
+
+        Called only AFTER :meth:`authenticate` succeeded, so implementations may
+        trust the credential and simply describe it. Returning ``None`` means
+        "this mode cannot identify a caller", which leaves sealed ``requestState``
+        request-bound and audience-bound but not caller-bound.
+
+        The SDK reads this identity through ``get_access_token()``; see
+        :class:`AuthMiddleware` for how it reaches the contextvar.
+
+        **Never put a raw secret in ``client_id``.** It ends up inside the sealed
+        state and in principal comparisons. Use verified claims where they exist,
+        an identifier that is not a secret (the OneAPI client id), or a
+        domain-separated fingerprint — never the credential itself.
+        """
+        return None
+
     @property
     def scheme(self) -> str:
         """The HTTP auth scheme advertised in ``WWW-Authenticate`` on 401."""
@@ -155,6 +183,12 @@ class AuthProvider(ABC):
 # ---------------------------------------------------------------------------
 # API Key Provider
 # ---------------------------------------------------------------------------
+
+
+#: Domain separator for the API-key principal fingerprint. Fixed (not random) so
+#: every replica derives the same principal for the same key — see
+#: :meth:`APIKeyAuthProvider.principal`.
+_API_KEY_PRINCIPAL_CONTEXT = b"zscaler-mcp/api-key-principal/v1:"
 
 
 class APIKeyAuthProvider(AuthProvider):
@@ -182,6 +216,31 @@ class APIKeyAuthProvider(AuthProvider):
             return True, None
 
         return False, "Invalid API key"
+
+    def principal(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Optional["AccessToken"]:
+        """Identify the caller by a domain-separated fingerprint of the key.
+
+        A shared API key carries no identity claims, so every caller presenting it
+        is by definition the same principal — the fingerprint says exactly that
+        and nothing more.
+
+        The digest is over a fixed context string plus the key. It is
+        **deterministic across processes and replicas**, which matters once a
+        shared request-state key ring is configured: a random per-process salt
+        would make replica B compute a different principal from replica A and
+        reject A's state. It is also preimage-resistant, so the key itself never
+        enters the sealed state.
+        """
+        digest = hashlib.sha256(_API_KEY_PRINCIPAL_CONTEXT + self._api_key.encode()).hexdigest()
+        return AccessToken(
+            token="",  # never echo the credential
+            client_id=f"api-key:{digest[:32]}",
+            scopes=[],
+            expires_at=None,
+            subject=None,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -277,6 +336,40 @@ class JWTAuthProvider(AuthProvider):
         except Exception as e:
             logger.error("JWT validation error: %s", e)
             return False, f"Authentication failed: {e}"
+
+    def principal(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Optional["AccessToken"]:
+        """Identify the caller from the token's own verified claims.
+
+        Signature, issuer, audience and expiry were all checked in
+        :meth:`authenticate`; this re-reads the payload only to name the caller,
+        so ``verify_signature=False`` here is not a second, weaker validation —
+        it is a decode of an already-validated token.
+
+        ``subject`` is what makes two users of one OAuth client distinct
+        principals, which is the property that matters for cross-caller
+        isolation.
+        """
+        parts = (authorization or "").split(" ", 1)
+        if len(parts) != 2:
+            return None
+        token = parts[1].strip()
+        try:
+            claims = self._jwt.decode(token, options={"verify_signature": False})
+        except Exception:  # pragma: no cover - authenticate() already decoded it
+            return None
+        scopes = claims.get("scp") or claims.get("scope") or ""
+        if isinstance(scopes, str):
+            scopes = scopes.split()
+        return AccessToken(
+            token=token,
+            client_id=str(claims.get("azp") or claims.get("appid") or claims.get("aud") or ""),
+            scopes=list(scopes),
+            expires_at=claims.get("exp"),
+            subject=claims.get("sub"),
+            claims=claims,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -430,6 +523,45 @@ class ZscalerAuthProvider(AuthProvider):
 
         return self._validate_against_zscaler(client_id, client_secret)
 
+    def principal(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Optional["AccessToken"]:
+        """Identify the caller by their OneAPI **client id**.
+
+        The client id is an identifier, not a credential — it is safe to carry in
+        the sealed state, unlike the client secret, which is never touched here.
+        Two tenants using different OneAPI clients are therefore distinct
+        principals.
+        """
+        client_id = self._client_id_from_request(authorization, headers_list)
+        if not client_id:
+            return None
+        return AccessToken(
+            token="",  # never echo the credential pair
+            client_id=f"zscaler:{client_id}",
+            scopes=[],
+            expires_at=None,
+            subject=None,
+        )
+
+    def _client_id_from_request(
+        self, authorization: str, headers_list: Optional[list]
+    ) -> Optional[str]:
+        """Extract just the client id from either accepted credential shape."""
+        if headers_list:
+            creds = self._extract_credentials_from_headers(headers_list)
+            if creds:
+                return creds[0]
+        parts = (authorization or "").split(" ", 1)
+        if len(parts) == 2 and parts[0].lower() == "basic":
+            try:
+                decoded = base64.b64decode(parts[1].strip()).decode("utf-8")
+            except Exception:
+                return None
+            if ":" in decoded:
+                return decoded.split(":", 1)[0]
+        return None
+
 
 # ---------------------------------------------------------------------------
 # OIDC (OAuth 2.1 against an external IdP) — env-var driven builder
@@ -473,6 +605,11 @@ OIDCPROXY_SENTINEL = OIDC_SENTINEL
 #: they are sitting in deployed ``.env`` files and a silent "unknown auth mode"
 #: exit would be a hostile way to rename a setting.
 _OIDC_MODES = ("oidc", "oidcproxy", "oauth-proxy")
+
+#: Facts resolved by :func:`build_oidc_auth_kwargs`, kept so the startup banner can
+#: report them without re-reading the IdP's discovery document. ``None`` until that
+#: function runs (or when another mode is selected).
+_OIDC_POSTURE: Optional[Dict[str, Any]] = None
 
 
 class _JWKSTokenVerifier:
@@ -636,6 +773,16 @@ def build_oidc_auth_kwargs(base_url: Optional[str] = None) -> Dict[str, Any]:
     if required_scopes:
         settings["required_scopes"] = required_scopes
 
+    # Recorded for the startup banner, which is emitted later from
+    # apply_auth_middleware() so every mode reports its posture from one place.
+    global _OIDC_POSTURE
+    _OIDC_POSTURE = {
+        "issuer": endpoints["issuer"],
+        "resource": base,
+        "audience": audience,
+        "required_scopes": required_scopes,
+    }
+
     logger.info(
         "OIDC auth configured as a protected resource (issuer=%s, resource=%s, audience=%s)",
         endpoints["issuer"],
@@ -721,7 +868,31 @@ class AuthMiddleware:
             await response(scope, receive, send)
             return
 
-        await self.app(scope, receive, send)
+        # Publish the authenticated identity so SEP-2322 principal binding works.
+        #
+        # `RequestStateSecurity`'s default `bind_principal` calls the SDK's
+        # `get_access_token()`, which reads `auth_context_var`. That var is
+        # normally set by the SDK's own `AuthContextMiddleware` from `scope["user"]`
+        # — but that middleware is only mounted on the OIDC path, where `MCPServer`
+        # builds the auth stack itself. For `jwt` / `api-key` / `zscaler` this
+        # middleware IS the auth stack, so without the two lines below the callback
+        # returns None and sealed state is request-bound but NOT caller-bound.
+        #
+        # Both are set deliberately: `scope["user"]` for anything downstream that
+        # reads the ASGI scope (including the SDK's own middleware, should it be
+        # mounted), and the contextvar directly because nothing else will set it
+        # here. The reset in `finally` keeps the binding scoped to this request.
+        principal = self.provider.principal(auth_value, headers_list)
+        if principal is None:
+            await self.app(scope, receive, send)
+            return
+
+        scope["user"] = AuthenticatedUser(principal)
+        token = auth_context_var.set(scope["user"])
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            auth_context_var.reset(token)
 
 
 # ---------------------------------------------------------------------------
@@ -844,6 +1015,72 @@ def resolve_oidc_auth() -> Optional[Dict[str, Any]]:
         ) from exc
 
 
+def _log_auth_banner(mode: str, transport: str, details: list[Tuple[str, str]]) -> None:
+    """Log the startup authentication banner.
+
+    Every mode routes through here so none can quietly stop announcing itself —
+    the ``oidc`` mode did exactly that while it returned early from
+    :func:`apply_auth_middleware`.
+    """
+    logger.info("=" * 70)
+    logger.info("MCP CLIENT AUTHENTICATION ENABLED")
+    logger.info("   Mode: %s", mode)
+    logger.info("   Transport: %s", transport)
+    for label, value in details:
+        logger.info("   %s: %s", label, value)
+    logger.info("=" * 70)
+
+
+def _oidc_banner_details() -> list[Tuple[str, str]]:
+    """Banner rows for the OIDC mode, from what was resolved at construction time.
+
+    Falls back to the raw environment when :func:`build_oidc_auth_kwargs` has not
+    run, so the banner degrades to "what was configured" rather than performing
+    network I/O from a logging path.
+    """
+    posture = _OIDC_POSTURE
+    if posture is None:
+        resource = os.getenv("OIDCPROXY_BASE_URL", "").strip() or "(unresolved)"
+        return [
+            (
+                "Authorization server",
+                os.getenv("OIDCPROXY_CONFIG_URL", "").strip() or "(unresolved)",
+            ),
+            ("Resource (this server)", resource),
+            (
+                "Audience",
+                os.getenv("OIDCPROXY_AUDIENCE", "").strip()
+                or os.getenv("OIDCPROXY_CLIENT_ID", "").strip()
+                or "(unresolved)",
+            ),
+            ("Enforced by", "MCP SDK bearer middleware (RFC 9728 protected resource)"),
+        ]
+
+    scopes = posture["required_scopes"]
+    return [
+        ("Authorization server", posture["issuer"]),
+        ("Resource (this server)", posture["resource"]),
+        ("Audience", posture["audience"]),
+        ("Required scopes", ", ".join(scopes) if scopes else "(none — any valid token)"),
+        ("Metadata", _protected_resource_metadata_path(posture["resource"])),
+        ("Enforced by", "MCP SDK bearer middleware (RFC 9728 protected resource)"),
+    ]
+
+
+def _protected_resource_metadata_path(resource: str) -> str:
+    """Where the SDK publishes this server's protected-resource metadata.
+
+    The document is served under the resource identifier's path, so a resource with
+    a path (which Entra ID requires) moves it — worth stating, because an operator
+    checking the wrong URL sees a 404 and concludes the mode is off.
+    """
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(resource)
+    suffix = parts.path.rstrip("/")
+    return f"{parts.scheme}://{parts.netloc}/.well-known/oauth-protected-resource{suffix}"
+
+
 def apply_auth_middleware(app: Any, transport: str) -> Any:
     """Wrap an ASGI app with authentication middleware.
 
@@ -863,7 +1100,7 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
     # OIDC is wired on the MCPServer constructor instead (protected-resource
     # metadata plus the SDK's own bearer middleware), so there is nothing to wrap.
     if mode in _OIDC_MODES:
-        logger.info("Auth mode '%s' — handled by the SDK's resource-server plumbing.", mode)
+        _log_auth_banner(mode, transport, _oidc_banner_details())
         return app
 
     try:
@@ -885,19 +1122,20 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
             f"  2. Set ZSCALER_MCP_AUTH_ENABLED=false to disable (not recommended)\n"
         ) from exc
 
-    logger.info("=" * 70)
-    logger.info("MCP CLIENT AUTHENTICATION ENABLED")
-    logger.info("   Mode: %s", mode)
-    logger.info("   Transport: %s", transport)
+    details: list[Tuple[str, str]] = []
     if mode == "jwt":
-        logger.info("   JWKS URI: %s", config["jwks_uri"])
-        logger.info("   Issuer: %s", config["issuer"])
-        logger.info("   Audience: %s", config["audience"])
+        details = [
+            ("JWKS URI", config["jwks_uri"]),
+            ("Issuer", config["issuer"]),
+            ("Audience", config["audience"]),
+        ]
     elif mode == "zscaler":
-        logger.info("   Vanity Domain: %s", config["vanity_domain"])
-        logger.info("   Cloud: %s", config["cloud"])
+        details = [
+            ("Vanity Domain", config["vanity_domain"]),
+            ("Cloud", config["cloud"]),
+        ]
     elif mode == "api-key":
-        logger.info("   Key configured: yes")
-    logger.info("=" * 70)
+        details = [("Key configured", "yes")]
+    _log_auth_banner(mode, transport, details)
 
     return AuthMiddleware(app, provider)

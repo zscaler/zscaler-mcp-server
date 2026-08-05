@@ -11,7 +11,7 @@ description: |-
 
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
-## 0.15.0 (July 30, 2026)
+## 0.15.0 (August 4, 2026)
 
 ### Notes
 
@@ -31,11 +31,23 @@ Track all Zscaler Integrations MCP Server's releases. New tools, features, and b
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Delete confirmation now asks a person instead of the agent.** Clients that support MCP elicitation get a `delete` / `cancel` prompt answered by a human, and anything other than `delete` aborts without calling the Zscaler API. Clients without elicitation keep using the confirmation token. No configuration changes are required.
 
-- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Pending confirmations are now encrypted** and bound to the specific call, the authenticated caller, and a short expiry, so an approval cannot be moved onto a different delete, spent by another user, or used once it has expired. The state is per process, so after a restart — or on a multi-replica deployment where the retry lands elsewhere — the confirmation is simply asked again.
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Pending confirmations are now encrypted** and bound to the specific call, the authenticated caller, and a short expiry, so an approval cannot be moved onto a different delete, spent by another user, or used once it has expired.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Confirmations are now tied to the authenticated caller in every authentication mode.** Previously this held only for `oidc`; with `jwt`, `api-key`, or `zscaler` there was no caller identity attached, so an approval was bound to the call but not to who made it. Identity now comes from the token's verified claims (`jwt`, `oidc`), the OneAPI client ID (`zscaler`), or a one-way fingerprint of the key (`api-key`). Credentials themselves are never used as the identity.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **New `ZSCALER_MCP_REQUEST_STATE_KEYS` for deployments that run more than one replica.** By default each instance protects pending confirmations with its own key, so a confirmation answered on one replica cannot be completed on another and the user is asked again. Set this to a shared key (a JSON array or comma-separated list; at least 32 bytes each — `python -c "import secrets; print(secrets.token_hex(32))"`) and any replica can complete any confirmation. **Required if you run multiple HTTP replicas with write tools enabled**; session affinity is not an alternative, because requests on the current protocol revision carry no session ID. Keys rotate without downtime: the first entry is used for new confirmations and every entry can still complete an outstanding one. The server warns at startup if it detects the risky combination.
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The tool list is now cacheable.** The server advertises its tool inventory as cacheable for five minutes, so clients and proxies skip re-fetching several hundred tool definitions on every connection.
 
 ### Bug Fixes
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **`zia_list_url_categories` can filter server-side again, and warns before it returns a large response.** `custom_only` and `type` are now sent to the API, so "list the custom URL categories" fetches only those — one call, no client-side filtering. What the API does *not* offer is any way to cap or trim the result: it does not paginate, and every category comes back with its URL, keyword and IP lists in full (`includeOnlyUrlKeywordCounts` was tested and does not replace them with counts, so it is not offered). A tenant with 5000 custom categories therefore returns 5000 complete records. Because of that the tool now asks you which categories you want before running unfiltered, and its description points the agent at a `query` projection when the answer only needs part of each record. `page` and `page_size` are gone — the endpoint does not paginate, so they were silently ignored while suggesting a large result could be paged through. For one category use `zia_get_url_category`; to find which category a URL belongs to use `zia_url_lookup`, which was the reported problem — an agent answered that by listing every category.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Audit logging now records the arguments a tool was called with.** `[TOOL CALL]` printed `args: {}` for every call regardless of what was passed, because it only inspected keyword arguments and the server passes tool inputs as a single object. Non-empty JMESPath `query` expressions are also logged now, on their own `[QUERY]` line with the row count before and after filtering, so a filter that silently matched nothing is visible in the log instead of looking like an empty result from Zscaler.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Responses containing empty lists are now up to 4x smaller.** Results were sent as compact CSV only when every field was a simple value; a single empty list (such as the empty `urls` field on many records) switched the whole response to JSON, which repeats every field name on every row. Empty fields no longer trigger that switch. Records containing real nested data are unaffected and still sent as JSON.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **A server-side fault can no longer quietly weaken a delete confirmation.** When the server could not determine whether a client supports interactive prompts, it fell back to the confirmation-token flow — the same outcome as a client that genuinely cannot be prompted, which hid the fault. An unexpected failure now refuses the delete outright and logs the fault, instead of handing back a token. A client that simply does not support prompting is unaffected and still uses the token.
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Delete confirmation tokens are now genuinely single-use.** A valid token could previously be redeemed repeatedly for its full five-minute window, so one approval could authorize more than one delete. Redeemed tokens are now tracked until they expire, and reuse is rejected along with a fresh token to re-approve with.
 

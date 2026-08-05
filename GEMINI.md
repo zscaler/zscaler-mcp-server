@@ -1,6 +1,6 @@
 # Zscaler MCP Server
 
-280+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation).
+254 read tools (plus write tools, off by default) for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, ZCell, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
 
 ## Tool Naming & Discovery
 
@@ -24,7 +24,7 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 
 1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
 2. **Always confirm before mutating.** Read operations are safe. Create/update/delete operations modify the live Zscaler environment. Ask the user before executing write operations.
-3. **Delete operations require confirmation, and there is no bypass.** On clients that support MCP elicitation the server asks a **human** through the client (SEP-2322), so the agent never handles the approval. Otherwise it falls back to a single-use HMAC token the agent must pass back; that fallback is single-process, so run one replica if your clients lack elicitation support. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the window; nothing switches the gate off.
+3. **Delete operations require confirmation, and there is no bypass.** On clients that support MCP elicitation the server asks a **human** through the client (SEP-2322), so the agent never handles the approval. Otherwise it falls back to a single-use HMAC token the agent must pass back; that fallback is single-process, so run one replica if your clients lack elicitation support. For elicitation-capable clients the encrypted confirmation state is also per-process unless `ZSCALER_MCP_REQUEST_STATE_KEYS` is set to a shared key ring — required for multi-replica HTTP writes, since `2026-07-28` requests carry no session ID for affinity to pin on. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the window; nothing switches the gate off.
 4. **Always list/get first** to understand current state before creating or modifying resources.
 5. **Pagination:** List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.
 6. **ZPA policy rule ordering:** New rules are appended at the end by default. Policy rules are evaluated top-to-bottom — order matters for access control.

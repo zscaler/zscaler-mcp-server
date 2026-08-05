@@ -28,6 +28,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import secrets
+import sys
 
 import pytest
 from mcp import Client
@@ -291,9 +293,61 @@ class TestRequestStateProtection:
         """An approval must not stay spendable indefinitely."""
         assert _request_state_security().ttl > 0
 
-    def test_state_is_bound_to_the_authenticated_principal(self):
-        """One caller's approval must not authorize another caller's delete."""
+    def test_a_principal_binding_callback_is_configured(self):
+        """Named for what it checks. The behaviour is asserted below.
+
+        This previously claimed "one caller's approval must not authorize
+        another caller's delete" while only asserting the callback exists — which
+        it does even when it returns None for every caller, as it did in three of
+        four auth modes. Evidence has to match the claim.
+        """
         assert _request_state_security().bind_principal is not None
+
+    def test_every_http_auth_mode_produces_a_distinct_principal(self):
+        """The real property: two callers must not share a principal.
+
+        `bind_principal` reads the SDK's `get_access_token()`, which is populated
+        from `auth_context_var`. Our own `AuthMiddleware` is the auth stack for
+        jwt/api-key/zscaler (the SDK's `AuthContextMiddleware` is only mounted on
+        the OIDC path), so this asserts the middleware publishes an identity at
+        all — and that two different credentials are two different principals.
+        """
+        import asyncio as _asyncio
+        import base64 as _base64
+
+        from mcp.server.auth.middleware.auth_context import get_access_token
+
+        from zscaler_mcp.security.auth import APIKeyAuthProvider, AuthMiddleware
+
+        seen: dict[str, object] = {}
+
+        async def app(scope, receive, send):
+            token = get_access_token()
+            seen["client_id"] = None if token is None else token.client_id
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+
+        async def call(provider, header_value):
+            middleware = AuthMiddleware(app, provider)
+            scope = {"type": "http", "path": "/mcp", "headers": [(b"authorization", header_value)]}
+
+            async def receive():
+                return {"type": "http.request"}
+
+            async def send(_message):
+                return None
+
+            await middleware(scope, receive, send)
+            return seen["client_id"]
+
+        first = _asyncio.run(call(APIKeyAuthProvider("key-alpha"), b"Bearer key-alpha"))
+        second = _asyncio.run(call(APIKeyAuthProvider("key-bravo"), b"Bearer key-bravo"))
+
+        assert first is not None, "api-key mode must publish a principal"
+        assert first != second, "two credentials must not collapse to one principal"
+        # the credential itself must never become the principal
+        assert "key-alpha" not in str(first)
+        assert _base64.b64encode(b"key-alpha").decode() not in str(first)
 
     def test_the_boundary_is_installed_on_the_server(self):
         """The policy has to be wired in, not merely constructed.
@@ -568,3 +622,195 @@ class TestLegacyClientConfirmation:
         assert outcome["pushed_method"] is None
         assert "CONFIRMATION REQUIRED" in outcome["text"]
         assert not outcome["ran"]
+
+
+class TestRequestStateKeyRing:
+    """Shared-key configuration for multi-replica HTTP write deployments.
+
+    Sticky sessions cannot solve this on 2026-07-28: the SDK routes a modern
+    request to `handle_modern_request` before any session handling, and that
+    handler never sets an `Mcp-Session-Id`. A shared key ring is the only
+    mechanism that lets replica B validate a confirmation replica A issued.
+    """
+
+    @staticmethod
+    def _policy(monkeypatch, keys):
+        from zscaler_mcp.server import _request_state_security
+
+        if keys:
+            monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", ",".join(keys))
+        else:
+            monkeypatch.delenv("ZSCALER_MCP_REQUEST_STATE_KEYS", raising=False)
+        return _request_state_security()
+
+    def test_keys_parse_from_json_or_csv(self, monkeypatch):
+        from zscaler_mcp.server import _request_state_keys
+
+        monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", '["a","b"]')
+        assert _request_state_keys() == ["a", "b"]
+        monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", " a , b ")
+        assert _request_state_keys() == ["a", "b"]
+        monkeypatch.delenv("ZSCALER_MCP_REQUEST_STATE_KEYS")
+        assert _request_state_keys() == []
+
+    def test_malformed_json_names_our_env_var(self, monkeypatch):
+        from zscaler_mcp.server import _request_state_keys
+
+        monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", "[not json")
+        with pytest.raises(ValueError, match="ZSCALER_MCP_REQUEST_STATE_KEYS"):
+            _request_state_keys()
+
+    def test_json_that_is_not_an_array_of_strings_is_rejected(self, monkeypatch):
+        """`["a", 2]` and `{"k": "v"}` parse as JSON but are not a key ring.
+
+        Accepting them would hand the SDK a non-string key and surface as an
+        obscure type error at seal time rather than at startup.
+        """
+        from zscaler_mcp.server import _request_state_keys
+
+        for bad in ('{"k": "v"}', '["ok", 2]', "[]"):
+            monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", bad)
+            with pytest.raises(ValueError, match="ZSCALER_MCP_REQUEST_STATE_KEYS"):
+                _request_state_keys()
+
+    def test_a_value_of_only_separators_is_rejected_not_silently_ignored(self, monkeypatch):
+        """`","` must fail loudly.
+
+        Treating it as "unset" would silently fall back to the per-process key,
+        which is the exact misconfiguration this variable exists to prevent — an
+        operator who set it would believe replicas shared a ring when they did not.
+        """
+        from zscaler_mcp.server import _request_state_keys
+
+        monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", " , , ")
+        with pytest.raises(ValueError, match="no usable key"):
+            _request_state_keys()
+
+    def test_a_short_key_is_rejected_with_actionable_guidance(self, monkeypatch):
+        """The SDK's own message says "request-state keys"; ours must name the var."""
+        from zscaler_mcp.server import _request_state_security
+
+        monkeypatch.setenv("ZSCALER_MCP_REQUEST_STATE_KEYS", "too-short")
+        with pytest.raises(ValueError, match="ZSCALER_MCP_REQUEST_STATE_KEYS"):
+            _request_state_security()
+
+    def test_replica_b_validates_state_minted_by_replica_a(self, monkeypatch):
+        """The whole point: two processes, one key ring, one confirmation."""
+        key = secrets.token_hex(32)
+        a = self._policy(monkeypatch, [key])
+        b = self._policy(monkeypatch, [key])
+        sealed = a.codec.seal(b'{"v":3,"asked":{}}')
+        assert b.codec.unseal(sealed) == b'{"v":3,"asked":{}}'
+
+    def test_a_different_key_ring_rejects_the_state(self, monkeypatch):
+        a = self._policy(monkeypatch, [secrets.token_hex(32)])
+        c = self._policy(monkeypatch, [secrets.token_hex(32)])
+        sealed = a.codec.seal(b'{"v":3,"asked":{}}')
+        with pytest.raises(Exception):
+            c.codec.unseal(sealed)
+
+    def test_rotation_ring_still_accepts_previous_key_state(self, monkeypatch):
+        """Roll [old,new] -> [new,old] -> [new]: no confirmation is lost mid-roll."""
+        old, new = secrets.token_hex(32), secrets.token_hex(32)
+        sealed = self._policy(monkeypatch, [old]).codec.seal(b'{"v":3,"asked":{}}')
+        rotated = self._policy(monkeypatch, [new, old])
+        assert rotated.codec.unseal(sealed) == b'{"v":3,"asked":{}}'
+
+    def test_ephemeral_remains_process_local(self, monkeypatch):
+        """The documented single-process limitation, asserted rather than assumed."""
+        one = self._policy(monkeypatch, [])
+        two = self._policy(monkeypatch, [])
+        with pytest.raises(Exception):
+            two.codec.unseal(one.codec.seal(b'{"v":3,"asked":{}}'))
+
+    def test_warning_fires_only_for_scaled_write_risk(self, monkeypatch, caplog):
+        import logging
+
+        from zscaler_mcp.server import _warn_if_scaled_writes_on_ephemeral_key
+
+        def warned(**kw):
+            caplog.clear()
+            with caplog.at_level(logging.WARNING, logger="zscaler_mcp"):
+                _warn_if_scaled_writes_on_ephemeral_key(**kw)
+            return any("REQUEST_STATE_KEYS" in r.getMessage() for r in caplog.records)
+
+        assert warned(transport="streamable-http", enable_write=True, keys=[])
+        assert not warned(transport="stdio", enable_write=True, keys=[])
+        assert not warned(transport="streamable-http", enable_write=False, keys=[])
+        assert not warned(transport="streamable-http", enable_write=True, keys=["k"])
+
+
+class TestStartupWiring:
+    """The ephemeral-key warning is only useful if `main()` actually calls it.
+
+    Its behaviour is covered by `TestRequestStateKeyRing`, but the call site in
+    `main()` is the part that can silently rot — a renamed keyword or a dropped
+    line makes the warning vanish with every unit test still green. `main()` is
+    otherwise not driven by any test, so this drives it once with the server run
+    stubbed out.
+    """
+
+    def _run_main(self, monkeypatch, caplog, argv, env):
+        import logging
+
+        from zscaler_mcp import server as server_module
+
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.setattr(sys, "argv", ["zscaler-mcp", *argv])
+        # Stop before anything binds a socket or blocks.
+        monkeypatch.setattr(server_module, "_run_http", lambda *a, **k: None)
+        monkeypatch.setattr(
+            server_module.MCPServer, "run", lambda self, transport: None, raising=False
+        )
+        # Keep the PID file and signal handlers out of the test environment.
+        # `server.main()` imports the module locally, so patch the module itself.
+        from zscaler_mcp import lifecycle
+
+        monkeypatch.setattr(lifecycle, "write_pid_file", lambda *a, **k: None)
+        monkeypatch.setattr(lifecycle, "install_serve_handlers", lambda *a, **k: None)
+        with caplog.at_level(logging.WARNING, logger="zscaler_mcp"):
+            server_module.main()
+        return "\n".join(r.message for r in caplog.records)
+
+    def test_http_writes_on_a_per_process_key_warn_at_startup(self, monkeypatch, caplog):
+        text = self._run_main(
+            monkeypatch,
+            caplog,
+            ["--transport", "streamable-http", "--enable-write-tools", "--write-tools", "zia_*"],
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+                "ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER": "true",
+                "ZSCALER_MCP_REQUEST_STATE_KEYS": "",
+            },
+        )
+        assert "ZSCALER_MCP_REQUEST_STATE_KEYS" in text
+
+    def test_a_shared_key_ring_produces_no_warning(self, monkeypatch, caplog):
+        text = self._run_main(
+            monkeypatch,
+            caplog,
+            ["--transport", "streamable-http", "--enable-write-tools", "--write-tools", "zia_*"],
+            {
+                "ZSCALER_MCP_AUTH_ENABLED": "false",
+                "ZSCALER_MCP_ALLOW_HTTP": "true",
+                "ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER": "true",
+                "ZSCALER_MCP_REQUEST_STATE_KEYS": secrets.token_hex(32),
+            },
+        )
+        assert "ZSCALER_MCP_REQUEST_STATE_KEYS" not in text
+
+    def test_stdio_never_warns_because_there_is_one_process_by_definition(
+        self, monkeypatch, caplog
+    ):
+        text = self._run_main(
+            monkeypatch,
+            caplog,
+            ["--transport", "stdio", "--enable-write-tools", "--write-tools", "zia_*"],
+            {
+                "ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER": "true",
+                "ZSCALER_MCP_REQUEST_STATE_KEYS": "",
+            },
+        )
+        assert "ZSCALER_MCP_REQUEST_STATE_KEYS" not in text

@@ -25,7 +25,9 @@ from zscaler_mcp.security.auth import (
     resolve_oidc_auth,
 )
 from zscaler_mcp.security.elicitation import (
+    CAPABILITY_CHECK_FAILED,
     TOKEN_FALLBACK,
+    CapabilityCheckFailed,
     DeleteConfirmation,
     build_confirmation_request,
     check_confirmation,
@@ -33,6 +35,7 @@ from zscaler_mcp.security.elicitation import (
     extract_confirmed_from_kwargs,
     gate_destructive_operation,
     interpret_confirmation,
+    is_capability_check_failure,
     is_token_fallback,
 )
 from zscaler_mcp.security.entitlements import (
@@ -83,11 +86,14 @@ __all__ = [
     # elicitation
     "check_confirmation",
     "DeleteConfirmation",
+    "CAPABILITY_CHECK_FAILED",
     "TOKEN_FALLBACK",
+    "CapabilityCheckFailed",
     "build_confirmation_request",
     "interpret_confirmation",
     "is_token_fallback",
     "elicitation_available",
+    "is_capability_check_failure",
     "extract_confirmed_from_kwargs",
     "gate_destructive_operation",
     # sanitize

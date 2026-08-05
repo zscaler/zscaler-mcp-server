@@ -175,6 +175,100 @@ def test_oidc_mode_bypasses_the_asgi_middleware(monkeypatch, mode):
     assert auth.apply_auth_middleware(sentinel, "streamable-http") is sentinel
 
 
+# ---------------------------------------------------------------------------
+# Startup banner
+# ---------------------------------------------------------------------------
+
+
+class TestAuthBanner:
+    """Every enabled auth mode must announce its posture at startup.
+
+    The ``oidc`` mode silently stopped doing so once it began returning early
+    from ``apply_auth_middleware`` — it logged a single line instead of the
+    banner, so an operator reading the log could not tell the mode was active.
+    Bypassing the ASGI middleware is correct; skipping the banner is not.
+    """
+
+    BANNER = "MCP CLIENT AUTHENTICATION ENABLED"
+
+    @staticmethod
+    def _configure(monkeypatch, mode):
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_ENABLED", "true")
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_MODE", mode)
+        if mode == "jwt":
+            monkeypatch.setenv("ZSCALER_MCP_AUTH_JWKS_URI", "https://idp.example.com/jwks")
+            monkeypatch.setenv("ZSCALER_MCP_AUTH_ISSUER", "https://idp.example.com/")
+            monkeypatch.setenv("ZSCALER_MCP_AUTH_AUDIENCE", "mcp")
+        elif mode == "api-key":
+            monkeypatch.setenv("ZSCALER_MCP_AUTH_API_KEY", "k" * 32)
+        elif mode == "zscaler":
+            monkeypatch.setenv("ZSCALER_VANITY_DOMAIN", "acme")
+        else:
+            monkeypatch.setattr(
+                auth,
+                "_OIDC_POSTURE",
+                {
+                    "issuer": "https://idp.example.com/v2.0",
+                    "resource": "https://mcp.example.com/mcp",
+                    "audience": "client-id-guid",
+                    "required_scopes": None,
+                },
+            )
+
+    @pytest.mark.parametrize("mode", ["jwt", "api-key", "zscaler", "oidc"])
+    def test_every_mode_logs_the_banner(self, monkeypatch, caplog, mode):
+        self._configure(monkeypatch, mode)
+        with caplog.at_level("INFO", logger="zscaler_mcp.security.auth"):
+            auth.apply_auth_middleware(object(), "streamable-http")
+        assert self.BANNER in caplog.text
+        assert f"Mode: {mode}" in caplog.text
+        assert "Transport: streamable-http" in caplog.text
+
+    def test_oidc_banner_names_what_it_will_accept(self, monkeypatch, caplog):
+        """The banner is the fastest way to diagnose a rejected token, so it has
+        to carry the three values the verifier actually compares against."""
+        self._configure(monkeypatch, "oidc")
+        with caplog.at_level("INFO", logger="zscaler_mcp.security.auth"):
+            auth.apply_auth_middleware(object(), "streamable-http")
+        assert "https://idp.example.com/v2.0" in caplog.text
+        assert "https://mcp.example.com/mcp" in caplog.text
+        assert "client-id-guid" in caplog.text
+
+    def test_oidc_banner_locates_the_metadata_document(self, monkeypatch, caplog):
+        """A resource identifier with a path (which Entra ID requires) moves the
+        metadata document, and an operator checking the bare path gets a 404."""
+        self._configure(monkeypatch, "oidc")
+        with caplog.at_level("INFO", logger="zscaler_mcp.security.auth"):
+            auth.apply_auth_middleware(object(), "streamable-http")
+        assert "https://mcp.example.com/.well-known/oauth-protected-resource/mcp" in caplog.text
+
+    def test_metadata_path_tracks_the_resource_path(self):
+        assert (
+            auth._protected_resource_metadata_path("https://h/mcp")
+            == "https://h/.well-known/oauth-protected-resource/mcp"
+        )
+        assert (
+            auth._protected_resource_metadata_path("https://h")
+            == "https://h/.well-known/oauth-protected-resource"
+        )
+        assert (
+            auth._protected_resource_metadata_path("https://h/")
+            == "https://h/.well-known/oauth-protected-resource"
+        )
+
+    def test_oidc_banner_degrades_without_network_io(self, monkeypatch, caplog):
+        """If the resolved values are absent the banner still prints, from env."""
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_ENABLED", "true")
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_MODE", "oidc")
+        monkeypatch.setattr(auth, "_OIDC_POSTURE", None)
+        monkeypatch.setenv("OIDCPROXY_BASE_URL", "https://mcp.example.com")
+        monkeypatch.setenv("OIDCPROXY_CLIENT_ID", "abc")
+        with caplog.at_level("INFO", logger="zscaler_mcp.security.auth"):
+            auth.apply_auth_middleware(object(), "streamable-http")
+        assert self.BANNER in caplog.text
+        assert "https://mcp.example.com" in caplog.text
+
+
 def test_unknown_mode_lists_all_supported(monkeypatch):
     monkeypatch.setenv("ZSCALER_MCP_AUTH_ENABLED", "true")
     monkeypatch.setenv("ZSCALER_MCP_AUTH_MODE", "bogus")
@@ -422,3 +516,205 @@ async def test_get_cached_token_returns_validated_token(monkeypatch):
 def test_get_cached_token_none_when_uncached():
     p = auth.ZscalerAuthProvider("acme")
     assert p.get_cached_token("nope", "nope") is None
+
+
+# =============================================================================
+# Principal derivation, per auth mode
+#
+# `AuthProvider.principal()` is what makes a sealed SEP-2322 `requestState`
+# caller-bound rather than merely call-bound. The cross-mode assertion in
+# `test_protocol_2026_07_28.py` drives the middleware end-to-end, but only
+# through `APIKeyAuthProvider` — diff coverage showed the jwt and zscaler
+# implementations were never executed by any test, while the docs claimed all
+# four modes. These cover the two that were missing, plus the base default.
+# =============================================================================
+
+
+class TestPrincipalDerivation:
+    def test_base_provider_yields_no_principal(self):
+        """The default is None, so a new provider fails closed rather than open.
+
+        A provider that forgets to override `principal()` must not accidentally
+        bind state to a wrong or shared identity — it binds to nothing, and the
+        middleware then leaves the request unauthenticated for state purposes.
+        """
+        from zscaler_mcp.security.auth import AuthProvider
+
+        class _Bare(AuthProvider):
+            async def authenticate(self, authorization, headers_list=None):
+                return True, None
+
+        assert _Bare().principal("Bearer whatever") is None
+
+    # -- jwt ---------------------------------------------------------------
+
+    def _jwt_provider(self):
+        from zscaler_mcp.security.auth import JWTAuthProvider
+
+        provider = JWTAuthProvider.__new__(JWTAuthProvider)
+        import jwt as _jwt
+
+        provider._jwt = _jwt
+        return provider
+
+    def _signed(self, **claims):
+        import jwt as _jwt
+
+        # 32+ bytes: the signature is never verified here, but a short key
+        # emits an InsecureKeyLengthWarning that clutters the run.
+        return _jwt.encode(claims, "k" * 32, algorithm="HS256")
+
+    def test_jwt_principal_comes_from_the_tokens_own_claims(self):
+        token = self._signed(sub="user-42", azp="client-abc", exp=9999999999, scp="read write")
+        principal = self._jwt_provider().principal(f"Bearer {token}")
+        assert principal is not None
+        assert principal.client_id == "client-abc"
+        assert principal.subject == "user-42"
+        assert principal.scopes == ["read", "write"]
+        assert principal.expires_at == 9999999999
+
+    def test_jwt_subject_distinguishes_two_users_of_one_oauth_client(self):
+        """This is the property that matters: same client, different humans.
+
+        Without `subject`, every user of a shared OAuth client would collapse to
+        one principal and could spend each other's confirmations.
+        """
+        provider = self._jwt_provider()
+        a = provider.principal(f"Bearer {self._signed(sub='alice', azp='shared')}")
+        b = provider.principal(f"Bearer {self._signed(sub='bob', azp='shared')}")
+        assert a.client_id == b.client_id == "shared"
+        assert a.subject != b.subject
+
+    def test_jwt_claim_precedence_falls_back_to_appid_then_aud(self):
+        """Entra ID issues `appid`; some IdPs only set `aud`. Both must resolve."""
+        provider = self._jwt_provider()
+        assert provider.principal(f"Bearer {self._signed(appid='entra-app')}").client_id == (
+            "entra-app"
+        )
+        assert provider.principal(f"Bearer {self._signed(aud='api://x')}").client_id == "api://x"
+
+    def test_jwt_scope_claim_accepts_a_list_as_well_as_a_string(self):
+        provider = self._jwt_provider()
+        assert provider.principal(f"Bearer {self._signed(scope=['a', 'b'])}").scopes == ["a", "b"]
+
+    def test_jwt_principal_is_none_without_a_two_part_authorization_header(self):
+        provider = self._jwt_provider()
+        assert provider.principal("") is None
+        assert provider.principal("Bearer") is None
+
+    # -- zscaler -----------------------------------------------------------
+
+    def _zscaler_provider(self):
+        from zscaler_mcp.security.auth import ZscalerAuthProvider
+
+        return ZscalerAuthProvider.__new__(ZscalerAuthProvider)
+
+    def test_zscaler_principal_is_the_client_id_from_basic_auth(self):
+        import base64
+
+        creds = base64.b64encode(b"oneapi-client-1:super-secret").decode()
+        principal = self._zscaler_provider().principal(f"Basic {creds}")
+        assert principal is not None
+        assert principal.client_id == "zscaler:oneapi-client-1"
+
+    def test_zscaler_principal_never_carries_the_secret(self):
+        """The client id is an identifier; the secret must not reach sealed state."""
+        import base64
+
+        creds = base64.b64encode(b"oneapi-client-1:super-secret").decode()
+        principal = self._zscaler_provider().principal(f"Basic {creds}")
+        assert "super-secret" not in str(principal.client_id)
+        assert principal.token == ""
+
+    def test_zscaler_principal_reads_the_x_header_pair_too(self):
+        """`AuthMiddleware` accepts both formats, so both must yield a principal."""
+        headers = [
+            (b"x-zscaler-client-id", b"header-client"),
+            (b"x-zscaler-client-secret", b"header-secret"),
+        ]
+        principal = self._zscaler_provider().principal("", headers)
+        assert principal is not None
+        assert principal.client_id == "zscaler:header-client"
+
+    def test_zscaler_two_client_ids_are_two_principals(self):
+        import base64
+
+        provider = self._zscaler_provider()
+
+        def p(cid):
+            creds = base64.b64encode(f"{cid}:secret".encode()).decode()
+            return provider.principal(f"Basic {creds}").client_id
+
+        assert p("tenant-a") != p("tenant-b")
+
+    def test_zscaler_principal_is_none_when_no_credential_is_present(self):
+        provider = self._zscaler_provider()
+        assert provider.principal("") is None
+        assert provider.principal("Basic ") is None
+        assert provider.principal("Basic !!!not-base64!!!") is None
+        # Basic auth with no colon carries no client id to bind to.
+        import base64
+
+        assert provider.principal(f"Basic {base64.b64encode(b'nocolon').decode()}") is None
+
+
+class TestMiddlewarePrincipalPublication:
+    """`AuthMiddleware` is the auth stack for jwt / api-key / zscaler.
+
+    The SDK's `AuthContextMiddleware` is mounted only on the OIDC path, so these
+    three modes get their identity published here or nowhere.
+    """
+
+    def _run(self, provider, headers):
+        import asyncio
+
+        from mcp.server.auth.middleware.auth_context import get_access_token
+
+        from zscaler_mcp.security.auth import AuthMiddleware
+
+        seen: dict = {}
+
+        async def app(scope, receive, send):
+            token = get_access_token()
+            seen["client_id"] = None if token is None else token.client_id
+            seen["scope_user"] = scope.get("user")
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+
+        async def receive():
+            return {"type": "http.request"}
+
+        async def send(_m):
+            return None
+
+        scope = {"type": "http", "path": "/mcp", "headers": headers}
+        asyncio.run(AuthMiddleware(app, provider)(scope, receive, send))
+        return seen
+
+    def test_a_provider_without_a_principal_still_serves_the_request(self):
+        """Authentication and identity are separate outcomes.
+
+        A provider that authenticates but cannot name the caller must not fail the
+        request — it means confirmations are call-bound but not caller-bound, which
+        is a weaker binding, not a rejection. Verified via a provider that
+        authenticates and returns no principal.
+        """
+        from zscaler_mcp.security.auth import AuthProvider
+
+        class _AnonymousButValid(AuthProvider):
+            async def authenticate(self, authorization, headers_list=None):
+                return True, None
+
+        seen = self._run(_AnonymousButValid(), [(b"authorization", b"Bearer anything")])
+        assert seen["client_id"] is None
+        assert seen["scope_user"] is None
+
+    def test_the_context_is_reset_after_the_request(self):
+        """A leaked contextvar would bind one caller's identity to the next request."""
+        from mcp.server.auth.middleware.auth_context import get_access_token
+
+        from zscaler_mcp.security.auth import APIKeyAuthProvider
+
+        seen = self._run(APIKeyAuthProvider("key-x"), [(b"authorization", b"Bearer key-x")])
+        assert seen["client_id"] is not None, "identity must be visible during the request"
+        assert get_access_token() is None, "and gone once it completes"

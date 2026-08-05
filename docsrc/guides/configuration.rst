@@ -127,8 +127,9 @@ Clients authenticate via Basic Auth (``client_id:client_secret``) or custom head
 Notes:
 
 - **No client secret is needed.** Verifying a signature requires the IdP's public keys, not a credential of ours. ``OIDCPROXY_CLIENT_SECRET`` is ignored if set.
-- ``OIDCPROXY_BASE_URL`` is **this server's** public URL (the resource identifier clients use), not the IdP's.
+- ``OIDCPROXY_BASE_URL`` is **this server's** public URL (the resource identifier clients use), not the IdP's. On most IdPs the origin is fine; on **Entra ID it must include the MCP path** (``https://host/mcp``) and be registered as the app's Application ID URI — see :doc:`entra-id-oidcproxy`.
 - ``OIDCPROXY_AUDIENCE`` defaults to ``OIDCPROXY_CLIENT_ID``. Entra ID puts the client ID in ``aud``; Auth0 uses the API identifier.
+- ``OIDCPROXY_REQUIRED_SCOPES`` is both published as ``scopes_supported`` and enforced against the token by exact match. Leave it unset on IdPs that issue short scope names while advertising fully-qualified ones (Entra ID does), or every call fails with ``403 insufficient_scope``.
 - The issuer and JWKS URI come from the IdP's discovery document at startup, so they always match what it actually signs with.
 - The server serves no ``/authorize``, ``/token`` or ``/register``. Clients need a client ID issued by the IdP and cannot self-register.
 
@@ -379,7 +380,8 @@ Complete List of All Supported Variables
 
 - ``ZSCALER_MCP_WRITE_ENABLED`` - Enable write mode (default: ``false``)
 - ``ZSCALER_MCP_WRITE_TOOLS`` - **MANDATORY** allowlist when write enabled
-- ``ZSCALER_MCP_CONFIRMATION_TTL`` - Confirmation window in seconds (default: ``300``). No variable skips the delete confirmation itself.
+- ``ZSCALER_MCP_CONFIRMATION_TTL`` - Lifetime in seconds of the HMAC **fallback** token (default: ``300``). Does not govern the sealed ``requestState`` used by elicitation-capable clients, which expires on the SDK's own envelope TTL (default 600s). No variable skips the delete confirmation itself.
+- ``ZSCALER_MCP_REQUEST_STATE_KEYS`` - Shared key ring protecting the SEP-2322 ``requestState``. JSON array or comma-separated; each key needs at least 32 bytes of randomness (``python -c "import secrets; print(secrets.token_hex(32))"``). **Required when running more than one HTTP replica with write tools enabled** - the first key seals, all keys unseal, so rotate ``[old,new]`` then ``[new,old]`` then ``[new]``. Unset means a per-process ephemeral key, which is correct for stdio and single-instance deployments but cannot validate a confirmation issued by another replica. Sticky sessions are not a substitute: ``2026-07-28`` requests carry no session id.
 
 **MCP Client Authentication (HTTP transports only):**
 
