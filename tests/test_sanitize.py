@@ -77,3 +77,32 @@ def test_non_string_scalars_unchanged():
     assert s.sanitize_value(42) == 42
     assert s.sanitize_value(True) is True
     assert s.sanitize_value(None) is None
+
+
+class TestStartupPosture:
+    """The startup log has to state which way this control is set.
+
+    It is on by default, so the disabled case is the one an operator will forget
+    they chose — and it is the case that removes a prompt-injection defense.
+    """
+
+    def test_enabled_is_stated(self, caplog):
+        from zscaler_mcp import server
+
+        with caplog.at_level("INFO", logger="zscaler_mcp"):
+            server._log_sanitization_posture()
+        assert "Output sanitization active" in caplog.text
+
+    def test_disabled_warns_on_one_line(self, caplog):
+        from zscaler_mcp import server
+
+        s.disable_sanitization()
+        try:
+            with caplog.at_level("WARNING", logger="zscaler_mcp"):
+                server._log_sanitization_posture()
+        finally:
+            s.enable_sanitization()
+        assert "Output sanitization is DISABLED" in caplog.text
+        assert "ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION" in caplog.text
+        # A wall of text on every restart trains operators to skim past it.
+        assert len(caplog.records) == 1

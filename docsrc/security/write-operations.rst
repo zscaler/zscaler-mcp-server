@@ -126,8 +126,15 @@ Multi-replica deployments
 
 .. important::
 
-   The **token fallback** is single-process. Clients that support elicitation are
-   unaffected — run a single replica only if some of your clients lack the capability.
+   Two separate things are per-process by default, and both matter here.
+
+   The **token fallback** is single-process and cannot be shared: run a single
+   replica if any of your clients lack elicitation support.
+
+   For clients that *do* support elicitation, the encrypted confirmation state is
+   also per-process **unless** you set ``ZSCALER_MCP_REQUEST_STATE_KEYS`` to a
+   shared key ring. Session affinity is not an alternative — requests on the
+   ``2026-07-28`` revision carry no session ID for a load balancer to pin on.
 
 The signing key and the single-use ledger both live in process memory. Behind a load
 balancer with more than one replica, a fallback confirmation retry that lands on a

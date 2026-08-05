@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/zscaler-mcp.svg)](https://badge.fury.io/py/zscaler-mcp)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zscaler-mcp)](https://pypi.org/project/zscaler-mcp/)
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://zscaler.github.io/zscaler-mcp-server/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](hhttps://zscaler-mcp-server.readthedocs.io/en/latest/integrations/index.html)
 [![codecov](https://codecov.io/gh/zscaler/zscaler-mcp-server/graph/badge.svg?token=9HwNcw4Q4h)](https://codecov.io/gh/zscaler/zscaler-mcp-server)
 [![GitHub commit activity](https://img.shields.io/badge/commit-activity-blue)](https://github.com/zscaler/zscaler-mcp-server/graphs/commit-activity)
 [![License](https://img.shields.io/github/license/zscaler/zscaler-mcp-server.svg)](https://github.com/zscaler/zscaler-mcp-server)
@@ -861,7 +861,8 @@ The following environment variables control MCP server behavior (not authenticat
 | `ZSCALER_MCP_TLS_CA_CERTS` | `""` | Path to CA certificate bundle for mutual TLS or custom CA chains. |
 | `ZSCALER_MCP_ALLOW_HTTP` | `false` | Allow plaintext HTTP on non-localhost interfaces. HTTPS is required by default for remote deployments. Set to `true` only when TLS is terminated upstream (reverse proxy, ZPA, VPN). |
 | `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | `""` | Comma-separated list of allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). When unset, source IP filtering is disabled (defer to firewall/security groups). Set to `0.0.0.0/0` to allow all. |
-| `ZSCALER_MCP_CONFIRMATION_TTL` | `300` | HMAC confirmation token lifetime in seconds (default: 5 minutes). There is no variable that skips the confirmation itself. |
+| `ZSCALER_MCP_CONFIRMATION_TTL` | `300` | HMAC **fallback** token lifetime in seconds. Does not apply to the sealed `requestState` used by elicitation-capable clients (SDK envelope TTL, default 600s). There is no variable that skips the confirmation itself. |
+| `ZSCALER_MCP_REQUEST_STATE_KEYS` | *(unset)* | Shared key ring for the SEP-2322 `requestState`. JSON array or comma-separated; each key ≥32 bytes (`python -c "import secrets; print(secrets.token_hex(32))"`). **Required for multi-replica HTTP deployments with write tools enabled** — unset uses a per-process key, so a confirmation issued by one replica cannot be validated by another. First key seals, all unseal (rotate `[old,new]` → `[new,old]` → `[new]`). |
 | `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` | `false` | Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / Markdown / code-fence stripping). Sanitization is on by default; only set this for diagnostics — disabling it removes a prompt-injection defense layer. |
 | `ZSCALER_MCP_USER_AGENT_COMMENT` | `""` | Additional information to include in User-Agent comment section |
 

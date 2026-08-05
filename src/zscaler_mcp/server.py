@@ -26,6 +26,7 @@ The security layer is carried forward from v1 verbatim in behaviour:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -34,6 +35,7 @@ from collections.abc import Iterable
 from dotenv import load_dotenv
 from mcp.server.caching import CacheHint
 from mcp.server.mcpserver import MCPServer, RequestStateSecurity
+from mcp.types import Icon
 
 from zscaler_mcp import __version__
 from zscaler_mcp.common.logging import configure_logging, log_security_warning
@@ -52,6 +54,25 @@ from zscaler_mcp.security import (
 logger = logging.getLogger("zscaler_mcp")
 
 DEFAULT_MCP_PATH = "/mcp"
+
+#: Presentation metadata for `server/discover`. Kept in step with the values the
+#: MCP registry manifest (`server.json`) and the MCPB bundle
+#: (`integrations/anthropic/manifest.json`) already publish, so the server does
+#: not present one identity in a directory listing and a different one once a
+#: client connects. `tests/test_server_metadata.py` asserts they stay aligned.
+SERVER_TITLE = "Zscaler MCP Server"
+SERVER_DESCRIPTION = (
+    "Manage the Zscaler Zero Trust Exchange — ZPA, ZIA, ZDX, ZCC, ZCell, ZTW, "
+    "ZIdentity, EASM, Z-Insights and ZMS — through the Model Context Protocol. "
+    "Read-only by default; write tools require an explicit allowlist and every "
+    "delete is confirmed by a human."
+)
+SERVER_WEBSITE_URL = "https://github.com/zscaler/zscaler-mcp-server"
+#: Raw-content URL rather than a repo path: clients fetch this over HTTP and
+#: cannot resolve a path relative to the source tree.
+SERVER_ICON_URL = (
+    "https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/icon.png"
+)
 
 #: SEP-2549 freshness hints. Only ``tools/list`` is hinted, and only because this
 #: server's inventory is genuinely immutable after startup: every filter
@@ -86,29 +107,147 @@ def _request_state_security() -> RequestStateSecurity:
     across two independent asks for the same delete — keying on it would reject a
     legitimate re-approval after a failed delete. Fixing this belongs in SEP-2322.
 
-    **The key is random and per-process, deliberately.** ``ephemeral()`` generates
-    a key at startup and never persists it, which means state minted by one
-    process is unintelligible to another. Two consequences worth stating plainly:
+    **Two key regimes, chosen by whether the operator supplied one.**
 
-    * A restart invalidates any in-flight confirmation. The client is told the
-      state is invalid and asks again — the correct outcome, since the operator
-      never approved anything in the new process.
-    * Behind a load balancer, a retry that lands on a different replica will not
-      decrypt. Sticky sessions fix it; a shared key would too, but that means an
-      operator-supplied secret, and this deployment shape does not warrant adding
-      one to the configuration surface. This is the same single-process boundary
-      the HMAC confirmation fallback has always had, now enforced with an
-      authenticated cipher instead of a bare MAC.
+    ``ZSCALER_MCP_REQUEST_STATE_KEYS`` set → ``RequestStateSecurity(keys=[...])``.
+    The first key seals; every key unseals, which is what makes zero-downtime
+    rotation possible: roll ``[old, new]``, then ``[new, old]``, then ``[new]``
+    after at least one TTL. **This is required for multi-replica HTTP write
+    deployments** — see below for why nothing else works.
 
-    The default ``bind_principal`` is kept: with auth enabled it binds state to
-    the authenticated caller, and with auth disabled there is no principal to
-    bind, which is the honest representation of an unauthenticated deployment.
+    Unset → ``ephemeral()``: a key generated at startup, never persisted, so state
+    minted by one process is unintelligible to another. Correct for stdio and
+    single-instance HTTP. Two consequences:
 
-    This is also what ``MCPServer`` installs when the argument is omitted. It is
-    passed explicitly anyway so the posture is stated in our source rather than
-    inherited from an SDK default that could change under us.
+    * A restart invalidates in-flight confirmations. The client is told the state
+      is invalid and asks again — the right outcome, since nobody approved
+      anything in the new process.
+    * Behind a load balancer, a retry landing on another replica will not decrypt.
+
+    **Sticky sessions do NOT rescue the second case on ``2026-07-28``.** It is
+    tempting to assume they do, because the server does still issue an
+    ``Mcp-Session-Id`` — but only to *handshake-era* clients. The SDK routes a
+    modern request to ``handle_modern_request`` **before** any session handling
+    (``streamable_http_manager._handle_request``), and that handler never sets a
+    session id at all: a ``2026-07-28`` request is a self-contained POST. There is
+    therefore no MCP session for a load balancer to pin on, and any affinity would
+    have to come from infrastructure-level cookie or source-IP stickiness, which
+    is not a protocol guarantee. A shared key ring is the only mechanism that
+    actually works, which is why the env var exists despite the general rule
+    against adding configuration for native protocol features: whether a
+    deployment runs one replica or many is a fact only the operator knows, and it
+    genuinely changes which configuration is correct.
+
+    The default ``bind_principal`` is kept. It binds state to the authenticated
+    caller in **every** HTTP auth mode: ``jwt`` and ``oidc`` from verified token
+    claims, ``zscaler`` from the OneAPI client id, and ``api-key`` from a
+    domain-separated fingerprint of the key (see
+    :meth:`zscaler_mcp.security.auth.AuthProvider.principal`). With auth disabled
+    there is no principal to bind, which is the honest representation of an
+    unauthenticated deployment.
     """
-    return RequestStateSecurity.ephemeral()
+    keys = _request_state_keys()
+    if not keys:
+        return RequestStateSecurity.ephemeral()
+    try:
+        policy = RequestStateSecurity(keys=keys)
+    except ValueError as exc:
+        # The SDK enforces >=32 bytes of randomness per key. Re-raise naming OUR
+        # env var and the generation command, because the SDK's message says
+        # "request-state keys" and the operator set ZSCALER_MCP_REQUEST_STATE_KEYS.
+        raise ValueError(
+            f"ZSCALER_MCP_REQUEST_STATE_KEYS is invalid: {exc} "
+            "Generate one per key with: "
+            'python -c "import secrets; print(secrets.token_hex(32))"'
+        ) from exc
+    logger.info(
+        "Request-state protection: shared key ring (%d key(s); the first seals, "
+        "all unseal). Confirmations survive a restart and any replica can "
+        "validate a retry.",
+        len(keys),
+    )
+    return policy
+
+
+def _request_state_keys() -> list[str]:
+    """Parse ``ZSCALER_MCP_REQUEST_STATE_KEYS`` into an ordered key ring.
+
+    Accepts a JSON array (``'["k1","k2"]'``) or a comma-separated list. Order is
+    significant and preserved: the SDK seals with the first and unseals with any.
+    """
+    raw = os.getenv("ZSCALER_MCP_REQUEST_STATE_KEYS", "").strip()
+    if not raw:
+        return []
+    keys: list[str] = []
+    if raw.startswith("{"):
+        # A JSON object does not start with "[", so without this it would fall to
+        # the comma-split branch and become one literal "key" — the silent
+        # misconfiguration this variable exists to prevent.
+        raise ValueError(
+            "ZSCALER_MCP_REQUEST_STATE_KEYS must be a JSON array of strings or a "
+            "comma-separated list, not a JSON object."
+        )
+    if raw.startswith("["):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                "ZSCALER_MCP_REQUEST_STATE_KEYS looks like JSON but does not parse "
+                f"({exc}). Use a JSON array of strings, or a comma-separated list."
+            ) from exc
+        if not isinstance(parsed, list) or not all(isinstance(k, str) for k in parsed):
+            raise ValueError("ZSCALER_MCP_REQUEST_STATE_KEYS must be a JSON array of strings.")
+        keys = [k.strip() for k in parsed]
+    else:
+        keys = [k.strip() for k in raw.split(",")]
+    keys = [k for k in keys if k]
+    if not keys:
+        raise ValueError("ZSCALER_MCP_REQUEST_STATE_KEYS was set but contained no usable key.")
+    return keys
+
+
+def _log_sanitization_posture() -> None:
+    """State whether output sanitization is active.
+
+    On by default and therefore easy to leave unstated — but it is the layer that
+    strips prompt-injection payloads out of admin-editable Zscaler fields, so an
+    operator who turned it off for diagnostics should see that in the startup log
+    rather than having to remember. Announced on every transport, because it wraps
+    tool results rather than the HTTP stack.
+    """
+    from zscaler_mcp.security.sanitize import is_sanitization_enabled
+
+    if is_sanitization_enabled():
+        logger.info("Output sanitization active (BiDi / zero-width / HTML / code-fence)")
+        return
+
+    # One line, not the full multi-line banner: this is a setting the operator
+    # chose, and a wall of text on every restart trains people to skim the log.
+    logger.warning(
+        "Output sanitization is DISABLED "
+        "(ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION) — tool results reach the agent "
+        "with invisible Unicode, HTML and forged code-fence markers intact."
+    )
+
+
+def _warn_if_scaled_writes_on_ephemeral_key(
+    *, transport: str, enable_write: bool, keys: list[str]
+) -> None:
+    """Warn when write confirmations cannot survive a second replica.
+
+    Deliberately loud: this is the configuration where a delete confirmation
+    silently becomes unreliable, and the failure looks like a flaky client rather
+    than a misconfiguration.
+    """
+    if keys or enable_write is False or transport == "stdio":
+        return
+    logger.warning(
+        "Write tools are enabled on an HTTP transport with a per-process "
+        "request-state key. Confirmations are valid ONLY on the replica that "
+        "issued them and do not survive a restart. This is safe on a single "
+        "instance; if you run more than one, set ZSCALER_MCP_REQUEST_STATE_KEYS "
+        "to a shared key ring or confirmations will intermittently fail."
+    )
 
 
 def _warn_unknown_toolsets(selection: Iterable[str] | None, flag: str) -> None:
@@ -218,6 +357,19 @@ def build_server(
         # version, on both the legacy `initialize` result and the `2026-07-28`
         # `_meta` serverInfo, which is what a client displays.
         version=__version__,
+        # Presentation metadata, surfaced on `server/discover` and the legacy
+        # `initialize` result. Without it a connected client shows the bare
+        # program name and nothing else — while the SAME product already
+        # publishes a title, description and icon to the MCP registry
+        # (`server.json`) and the Claude Desktop directory
+        # (`integrations/anthropic/manifest.json`). These constants deliberately
+        # mirror those files so the server presents identically whether a user
+        # is browsing a directory or already connected. Purely display data: no
+        # behaviour, no capability, nothing a client may act on.
+        title=SERVER_TITLE,
+        description=SERVER_DESCRIPTION,
+        website_url=SERVER_WEBSITE_URL,
+        icons=[Icon(src=SERVER_ICON_URL, mimeType="image/png", sizes=["512x512"])],
         tools=[build_function_tool(spec) for spec in selected],
         # SEP-2549. The inventory is fixed once registration finishes — filters
         # are applied here at startup, never at runtime — so a client may cache
@@ -1043,6 +1195,12 @@ def main() -> None:
     logger.info(
         "zscaler-mcp starting (transport=%s) — agent-first response shaping enabled",
         args.transport,
+    )
+    _log_sanitization_posture()
+    _warn_if_scaled_writes_on_ephemeral_key(
+        transport=args.transport,
+        enable_write=write_enabled,
+        keys=_request_state_keys(),
     )
 
     if args.transport == "stdio":

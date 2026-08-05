@@ -1720,7 +1720,8 @@ These are always required, regardless of Layer 1 auth settings.
 | `ZSCALER_MCP_TLS_CA_CERTS` | No | — | Path to CA certificate bundle for mTLS or custom CA chains. |
 | `ZSCALER_MCP_ALLOW_HTTP` | No | `false` | Allow plaintext HTTP on non-localhost. HTTPS is required by default for remote deployments. |
 | `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | No | — | Comma-separated allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). Unset = no filtering. |
-| `ZSCALER_MCP_CONFIRMATION_TTL` | No | `300` | Lifetime in seconds of a destructive-op confirmation token. No variable skips the confirmation itself. |
+| `ZSCALER_MCP_CONFIRMATION_TTL` | No | `300` | Lifetime in seconds of the HMAC **fallback** confirmation token. Does not govern the sealed `requestState` (SDK envelope TTL, default 600s). No variable skips the confirmation itself. |
+| `ZSCALER_MCP_REQUEST_STATE_KEYS` | Only for multi-replica HTTP + writes | *(unset)* | Shared key ring for the SEP-2322 `requestState`. JSON array or comma-separated; each key ≥32 bytes of randomness. Without it each replica uses its own key, so a confirmation retry that lands on a different replica fails. Sticky sessions do **not** help: `2026-07-28` requests carry no session id. First key seals, all unseal. |
 
 ---
 
@@ -2188,7 +2189,7 @@ Clients authenticate against your IdP, so they need an application registration 
 > **The redirect URI belongs to the client, not to this server.** In the old proxy design the server was itself the OAuth client, so the callback was `<server>/auth/callback`. It no longer is. The callback is now a loopback address the MCP client listens on. Register the URI **your client** actually uses.
 >
 > **With `mcp-remote`, pin the port or the URI you register will not match.** It has no fixed default port — its README claims 3334, but the code derives one from a hash of the server URL (`3335 + hash % 45816`). Pass `3334` as the **first argument after the URL**; that exact position is the only one it reads, and elsewhere the value is parsed as a port, silently becomes `NaN`, and the derived port is used with no warning. IdPs match `redirect_uri` byte-for-byte, so the mismatch fails every login. An explicitly-passed port is used verbatim, so it stays stable across runs.
-
+>
 > **Important:** Do not use a Machine-to-Machine (M2M) application. M2M apps only support the `client_credentials` grant, which has no user-facing login. (M2M is the right choice for [JWT mode](#jwt-mode-external-idp-via-jwks) instead.) Register the client as a **public client** using authorization code + PKCE — no client secret is involved anywhere in this mode.
 
 **Auth0 example:**
@@ -2218,9 +2219,13 @@ Clients authenticate against your IdP, so they need an application registration 
 2. Set the **Redirect URI** to `http://localhost:3334/oauth/callback`, platform **Mobile and desktop applications** (public client)
 3. Under **Authentication > Advanced settings**, set **Allow public client flows** to **Yes**
 4. Under **API permissions**, add `openid`, `profile`, `email` and grant admin consent
-5. Note the **Application (client) ID**
+5. Under **Expose an API**, set the **Application ID URI** to your server's full MCP endpoint URL (e.g. `https://mcp.example.com/mcp`) and add a delegated scope named `mcp.access`
+6. In the **Manifest**, set `api.requestedAccessTokenVersion` to `2`
+7. Note the **Application (client) ID**
 
 > **Important:** For Entra ID, set `OIDCPROXY_AUDIENCE` to the **Application (client) ID** (not an API identifier). Entra ID uses the client ID as the `aud` claim. Since `OIDCPROXY_AUDIENCE` defaults to `OIDCPROXY_CLIENT_ID`, you can simply omit it.
+>
+> **Entra ID needs three things the other IdPs don't**, and each one fails the login differently. Steps 5 and 6 above are two of them; the third is that `OIDCPROXY_BASE_URL` must be the **full MCP endpoint URL including the path** — a bare origin cannot work, because the client normalizes it to a trailing slash and Entra ID refuses to register an Application ID URI ending in `/`. The client must also be told the scope explicitly (`--static-oauth-client-metadata`), since Entra ID cannot discover it.
 >
 > **📖 Full step-by-step guide with screenshots:** [OIDC Setup with Microsoft Entra ID](entra-id-oidcproxy.md)
 

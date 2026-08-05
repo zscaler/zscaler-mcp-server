@@ -156,7 +156,7 @@ Configuration is environment variables only:
 
 The trade-off is that this server no longer proxies Dynamic Client Registration; a client that cannot self-register **at the IdP** needs a client ID from it (``mcp-remote --static-oauth-client-info``). Entra ID never supports DCR, and Auth0 supports it but ships with it disabled, so in practice a static client ID is the common case. When one is used, also pin the client's callback port so its redirect URI can be registered in advance — see :doc:`../guides/entra-id-oidcproxy`.
 
-For Entra ID specifically (which sets ``aud`` to the client_id, unlike Auth0 which uses an API identifier), see :doc:`../guides/entra-id-oidcproxy` for the full walkthrough.
+Entra ID needs more than a different audience value, and none of it is discoverable from an error message. Beyond setting ``aud`` to the client_id (unlike Auth0's API identifier), it issues **v1 access tokens by default** — whose issuer does not match its own v2.0 discovery document — and it matches the OAuth ``resource`` parameter against a registered Application ID URI while refusing to register any URI that ends in a slash, so ``OIDCPROXY_BASE_URL`` has to carry a path rather than being a bare origin. See :doc:`../guides/entra-id-oidcproxy` for the full walkthrough.
 
 The cache
 ---------

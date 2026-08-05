@@ -82,3 +82,43 @@ def test_none_values_render_as_empty_csv_cell():
 def test_invalid_format_string_raises():
     with pytest.raises(ValueError):
         encode(FLAT_ROWS, fmt="yaml")
+
+
+# ---------------------------------------------------------------------------
+# Empty collections must not cost a JSON fallback
+# ---------------------------------------------------------------------------
+
+
+def test_empty_collections_stay_csv_eligible():
+    """A field that contains nothing should not cost the whole response.
+
+    Zscaler records routinely carry always-empty collections — a URL-category listing
+    returns `urls: []` and `dbCategorizedUrls: []` on every row. Treating those as
+    "nested" forced JSON for the entire response, where every field name repeats
+    per row: measured at 120 tokens/row versus 29 as CSV.
+    """
+    rows = [
+        {"id": "A", "urls": [], "meta": {}, "name": "one"},
+        {"id": "B", "urls": [], "meta": {}, "name": "two"},
+    ]
+    out = encode(rows)
+    assert out.splitlines()[0] == "id,urls,meta,name"
+    assert out.splitlines()[1] == "A,[],{},one"
+
+
+def test_a_non_empty_collection_still_forces_json():
+    """The rule that matters: real structure is never flattened away."""
+    assert encode([{"id": "A", "urls": ["x.com"]}]).lstrip().startswith("[")
+    assert encode([{"id": "A", "meta": {"k": "v"}}]).lstrip().startswith("[")
+
+
+def test_one_populated_row_forces_json_for_the_whole_response():
+    """Eligibility is per response, not per row — a mixed list must not split."""
+    rows = [{"id": "A", "urls": []}, {"id": "B", "urls": ["x.com"]}]
+    assert encode(rows).lstrip().startswith("[")
+
+
+def test_empty_is_distinguishable_from_null():
+    """An empty cell already means None; `[]` and `{}` are a different claim."""
+    row = encode([{"absent": None, "empty_list": [], "empty_obj": {}}]).splitlines()[1]
+    assert row == ",[],{}"

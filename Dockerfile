@@ -28,27 +28,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     uv sync --frozen --no-dev --no-editable --extra gcp
 
-# ============================ TEMPORARY ==================================
-# Local testing only: override the zscaler-sdk-python version resolved from
-# uv.lock (1.9.39) with an unreleased local sdist so the server can be
-# exercised against it.
-#
-# `--no-deps` is deliberate and safe here: 1.9.40 declares the exact same
-# dependency set as 1.9.39, and every version floor it requires is already
-# satisfied by the lockfile — so no resolution is needed and nothing else in
-# the venv is disturbed.
-#
-# TO REVERT: delete this block AND the matching `!local_dev/...` re-include
-# in .dockerignore. Nothing else in the build depends on it.
-COPY local_dev/zscaler_sdk_python-1.9.40.tar.gz /tmp/
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python \
-        --no-deps --reinstall-package zscaler-sdk-python \
-        /tmp/zscaler_sdk_python-1.9.40.tar.gz && \
-    rm -f /tmp/zscaler_sdk_python-1.9.40.tar.gz && \
-    /app/.venv/bin/python -c "import zscaler; print('SDK in image:', zscaler.__version__)"
-# ========================== END TEMPORARY ================================
-
 # Remove unnecessary files from the virtual environment before copying
 RUN find /app/.venv -name '__pycache__' -type d -exec rm -rf {} + && \
     find /app/.venv -name '*.pyc' -delete && \

@@ -453,6 +453,26 @@ class DeleteConfirmation(BaseModel):
     )
 
 
+class CapabilityCheckFailed(RuntimeError):
+    """The elicitation capability check failed for an unexpected reason.
+
+    Raised instead of returning ``False`` so a defect in our own code cannot be
+    mistaken for "this client cannot be prompted". The gate turns it into a
+    refusal: on an internal error we decline the destructive operation rather
+    than silently accepting the weaker token path.
+    """
+
+
+#: Resolved value meaning "the capability check itself broke" — distinct from
+#: :data:`TOKEN_FALLBACK`, which means "this caller legitimately cannot be asked".
+CAPABILITY_CHECK_FAILED = "__zscaler_mcp_capability_check_failed__"
+
+
+def is_capability_check_failure(outcome: Any) -> bool:
+    """Whether a resolved value is the "capability check broke" sentinel."""
+    return getattr(outcome, "data", outcome) == CAPABILITY_CHECK_FAILED
+
+
 def elicitation_available(ctx: Any) -> bool:
     """Whether this caller can be asked for confirmation over the protocol.
 
@@ -510,17 +530,33 @@ def elicitation_available(ctx: Any) -> bool:
         # here must be exercised against a real `Context`; see
         # `tests/test_protocol_2026_07_28.py::TestLegacyClientConfirmation`.
         return True
-    except Exception as exc:
-        # Reading `client_capabilities` raises when no request context is bound —
-        # expected. Any OTHER failure is a defect on our side and must not
-        # masquerade as a client limitation.
-        logger.warning(
-            "Could not determine elicitation capability (%s: %s) — falling back to the "
+    except ValueError as exc:
+        # The SDK raises exactly this ("Context is not available outside of a
+        # request") when no request context is bound: direct in-process calls and
+        # unit tests. A genuine "cannot be prompted" case, so degrade to the token.
+        logger.debug(
+            "Elicitation unavailable: no bound request context (%s) — using the "
             "HMAC confirmation token",
-            type(exc).__name__,
             exc,
         )
         return False
+    except Exception as exc:
+        # Anything else is a DEFECT on our side, and the comment above is only
+        # honest if this branch acts on it. Returning False here would give the
+        # same answer as "this client legitimately cannot elicit" — which is how a
+        # previous version of this function shipped a silent downgrade: it read
+        # `ctx.connection`, which does not exist in mcp 2.0.0, and the resulting
+        # AttributeError was swallowed into the token path for every legacy client.
+        # Note the discriminator is the exception TYPE: the expected case above is
+        # a ValueError, that historical bug was an AttributeError.
+        logger.error(
+            "Elicitation capability check FAILED for an unexpected reason (%s: %s). "
+            "Refusing the destructive operation rather than downgrading to the token "
+            "path — this is a server defect, not a client limitation.",
+            type(exc).__name__,
+            exc,
+        )
+        raise CapabilityCheckFailed(str(exc)) from exc
 
 
 def build_confirmation_request(
@@ -610,6 +646,21 @@ def gate_destructive_operation(
     :data:`TOKEN_FALLBACK` when the caller could not be prompted at all. The
     asking already happened before this runs, which is why nothing here is async.
     """
+    if is_capability_check_failure(outcome):
+        # A defect broke the capability check. We do not know whether this caller
+        # could have been asked, so we refuse rather than mint a token the agent
+        # could redeem unaided. No mutation happens.
+        logger.error("Refusing %s: the confirmation capability check failed", tool_name)
+        return (
+            "DESTRUCTIVE OPERATION REFUSED\n\n"
+            f"Operation: {describe_destructive_operation(tool_name, params)}\n\n"
+            "The server could not determine whether this client is able to ask a human "
+            "for confirmation, so the operation was NOT performed. This is a server-side "
+            "fault, not a permissions problem — check the server logs for a "
+            "'capability check FAILED' entry and report it.\n\n"
+            "Retrying will not help until the fault is fixed."
+        )
+
     if is_token_fallback(outcome):
         return check_confirmation(tool_name, confirmation_token, params, name_lookup)
 
