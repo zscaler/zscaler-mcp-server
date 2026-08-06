@@ -334,6 +334,26 @@ def build_server(
     _warn_unknown_toolsets(enabled_toolsets, "--toolsets")
     _warn_unknown_toolsets(disabled_toolsets, "--disabled-toolsets")
 
+    # Writes need BOTH knobs: the switch grants nothing on its own, and an
+    # absent allowlist means zero write tools rather than all of them. Enforced
+    # here, at the registration boundary, so the CLI, tests and embedders all
+    # fail closed instead of trusting each caller to combine the flags safely.
+    write_allowlist = list(write_allowlist) if write_allowlist is not None else None
+    if enable_write and not write_allowlist:
+        logger.warning(
+            "Write tools are enabled but no allowlist was given — registering 0 write "
+            "tools. Name what you want to permit: --write-tools 'zpa_create_*,zia_update_*' "
+            "(env: ZSCALER_MCP_WRITE_TOOLS)."
+        )
+        enable_write = False
+    elif write_allowlist and not enable_write:
+        logger.warning(
+            "A write-tool allowlist was given (%d pattern(s)) but write tools are "
+            "disabled — registering 0 write tools. Add --enable-write-tools "
+            "(env: ZSCALER_MCP_WRITE_ENABLED=true) to turn them on.",
+            len(write_allowlist),
+        )
+
     entitled_services = _resolve_entitled_services(disable_entitlement_filter)
 
     selected = REGISTRY.select(
@@ -913,17 +933,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=os.getenv("ZSCALER_MCP_WRITE_ENABLED", "").lower() in ("true", "1", "yes"),
         help=(
-            "Enable write operations (create/update/delete). Off by default for safety. "
-            "Combine with --write-tools to narrow the allowlist "
-            "(env: ZSCALER_MCP_WRITE_ENABLED)."
+            "Master switch for write operations (create/update/delete). Off by default "
+            "for safety. Has no effect on its own — --write-tools must also name the "
+            "permitted patterns (env: ZSCALER_MCP_WRITE_ENABLED)."
         ),
     )
     p.add_argument(
         "--write-tools",
         default=os.getenv("ZSCALER_MCP_WRITE_TOOLS", ""),
         help=(
-            "Enable + allowlist write tools (fnmatch patterns, e.g. 'zpa_create_*'). "
-            "Write tools are disabled unless this or --enable-write-tools is set."
+            "Allowlist of write tools to permit (fnmatch patterns, e.g. 'zpa_create_*'). "
+            "Required alongside --enable-write-tools; neither flag enables writes alone "
+            "(env: ZSCALER_MCP_WRITE_TOOLS)."
         ),
     )
     p.add_argument(
@@ -1043,9 +1064,10 @@ def main() -> None:
     _resolve_dotenv_path()
     _check_env_file_security()
 
-    # Optionally hydrate credentials from GCP Secret Manager BEFORE anything
-    # reads them (opt-in via ZSCALER_MCP_GCP_SECRET_MANAGER=true). No-op
-    # otherwise; the google-cloud dep is only imported when enabled.
+    # Optionally hydrate credentials from a cloud secret store BEFORE anything
+    # reads them: AWS Secrets Manager (ZSCALER_SECRET_NAME) or GCP Secret
+    # Manager (ZSCALER_MCP_GCP_SECRET_MANAGER=true). No-op otherwise; each
+    # provider's SDK is imported only when its loader is enabled.
     from zscaler_mcp.cloud import load_secrets
 
     load_secrets()
@@ -1129,11 +1151,10 @@ def main() -> None:
     # stdio must log to stderr so stdout stays a clean JSON-RPC stream.
     configure_logging(debug=args.debug, name="zscaler_mcp", use_stderr=(args.transport == "stdio"))
 
-    # Write tools are enabled when an allowlist is given, --enable-write-tools is
-    # passed, OR ZSCALER_MCP_WRITE_ENABLED=true (parity with v1's two-knob model:
-    # --enable-write-tools flips the master switch; --write-tools narrows scope).
+    # --enable-write-tools is the master switch and --write-tools names the
+    # permitted patterns; both are required. build_server enforces the pairing.
     write_allowlist = _parse_csv(args.write_tools)
-    write_enabled = write_allowlist is not None or args.enable_write_tools
+    write_enabled = args.enable_write_tools
 
     # OIDC mode → protected-resource metadata + a token verifier on the
     # constructor, which the SDK wires itself. Every other mode returns None

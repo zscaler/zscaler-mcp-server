@@ -78,6 +78,14 @@ dev = [
 gcp = [
     "google-cloud-secret-manager>=2.18.0",
 ]
+# AWS Secrets Manager support, used by `cloud/aws_secrets.py` on the Bedrock
+# AgentCore / ECS / EKS deployment paths. An extra rather than a base
+# dependency, matching [gcp]: a stdio user on a laptop should not install an
+# AWS SDK to talk to Zscaler. `boto3` is pure Python, so the arm64 image
+# AgentCore requires needs no compiled wheel for it.
+aws = [
+    "boto3>=1.34.0",
+]
 #
 # There is deliberately no extra for OIDC, and `fastmcp` is not declared anywhere.
 #

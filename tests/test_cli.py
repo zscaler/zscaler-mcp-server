@@ -67,10 +67,12 @@ def test_disabled_toolsets_env_default(monkeypatch):
     assert args.disabled_toolsets == "zia_admin"
 
 
-def test_parser_enable_write_tools_flag():
+def test_parser_enable_write_tools_flag(monkeypatch):
     args = server.build_parser().parse_args(["--enable-write-tools"])
     assert args.enable_write_tools is True
-    # Default is off for safety (assuming the env var is not set in CI).
+    # Default is off for safety. Cleared explicitly: importing the package runs
+    # load_dotenv(), so a developer's .env would otherwise decide this result.
+    monkeypatch.delenv("ZSCALER_MCP_WRITE_ENABLED", raising=False)
     default = server.build_parser().parse_args([])
     assert default.enable_write_tools is False
 

@@ -263,8 +263,9 @@ A single `deploy --topology gateway` run provisions:
    `GetSecretValue` + scoped `kms:Decrypt` on the Zscaler secret.
 7. **AgentCore Runtime** — `zscaler_mcp_runtime`. Configured with
    `auth: jwt` + `customJwtAuthorizer` pointing at Cognito, env vars
-   include `ZSCALER_SECRET_NAME` so the container's `zscaler_mcp.config`
-   module loads credentials via boto3 at boot.
+   include `ZSCALER_SECRET_NAME` so the container's
+   `zscaler_mcp.cloud.aws_secrets` loader fetches credentials via boto3 at
+   startup.
 8. **Gateway service role** — `zscaler-mcp-harness-gateway-role`.
    Trusts `bedrock-agentcore.amazonaws.com`. Inline policy grants
    `bedrock-agentcore:InvokeAgentRuntime` on the Runtime ARN.
@@ -481,8 +482,8 @@ credential rotation without touching the task definition.
 
 ### How it works (zero container-code changes)
 
-The container image already ships with `zscaler_mcp/config.py`, a
-side-effect module that runs at process boot via `aws_entrypoint.py`:
+The container image already ships with `zscaler_mcp/cloud/aws_secrets.py`,
+which `main()` calls at startup before anything reads a credential:
 
 1. The deploy script writes the credential JSON to
    `zscaler-mcp-harness/credentials` in Secrets Manager.

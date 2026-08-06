@@ -355,154 +355,68 @@ aws iam put-role-policy \
   --policy-document file://agentcore-secrets-policy.json
 ```
 
-#### Step 3: Modify web_server.py
+#### Step 3: Nothing to modify — the loader ships in the image
 
-Add secret retrieval logic at the top of `web_server.py` (before initializing the MCP server):
+Earlier revisions of this guide asked you to hand-write a boto3 loader into
+`web_server.py`. That is no longer necessary, and `web_server.py` no longer
+exists: the loader is `zscaler_mcp/cloud/aws_secrets.py`, and `main()` calls it
+at startup before anything reads a credential.
 
-```python
-import boto3
-import json
-import os
-from botocore.exceptions import ClientError
+What it does:
 
-def load_secrets_from_aws_secrets_manager():
-    """
-    Load Zscaler credentials from AWS Secrets Manager at container startup.
-    
-    This function is called before initializing the MCP server to retrieve
-    credentials from Secrets Manager and set them as environment variables.
-    """
-    # Check if Secrets Manager should be used
-    use_secrets_manager = os.getenv('USE_SECRETS_MANAGER', 'false').lower() == 'true'
-    
-    if not use_secrets_manager:
-        logger.info("USE_SECRETS_MANAGER not enabled, using direct environment variables")
-        return
-    
-    logger.info("=" * 80)
-    logger.info("🔐 Loading credentials from AWS Secrets Manager")
-    logger.info("=" * 80)
-    
-    # Configuration
-    secret_name = os.getenv('SECRET_NAME', 'zscaler/mcp/credentials')
-    region_name = os.getenv('AWS_REGION', 'us-east-1')
-    
-    logger.info(f"Secret Name: {secret_name}")
-    logger.info(f"Region: {region_name}")
-    
-    # Create Secrets Manager client
-    try:
-        session = boto3.session.Session()
-        client = session.client(
-            service_name='secretsmanager',
-            region_name=region_name
-        )
-    except Exception as e:
-        logger.error(f"Failed to create Secrets Manager client: {e}")
-        raise
-    
-    # Retrieve secret
-    try:
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-        secret_string = get_secret_value_response['SecretString']
-        secrets = json.loads(secret_string)
-        
-        logger.info("✓ Secret retrieved successfully from Secrets Manager")
-        
-    except ClientError as e:
-        error_code = e.response['Error']['Code']
-        
-        if error_code == 'ResourceNotFoundException':
-            logger.error(f"Secret '{secret_name}' not found in region '{region_name}'")
-        elif error_code == 'InvalidRequestException':
-            logger.error(f"Invalid request to Secrets Manager: {e}")
-        elif error_code == 'InvalidParameterException':
-            logger.error(f"Invalid parameter: {e}")
-        elif error_code == 'AccessDeniedException':
-            logger.error(f"Access denied to secret '{secret_name}'")
-            logger.error("Verify the IAM role has secretsmanager:GetSecretValue permission")
-        else:
-            logger.error(f"Error retrieving secret: {e}")
-        
-        raise e
-    
-    except json.JSONDecodeError as e:
-        logger.error(f"Secret value is not valid JSON: {e}")
-        raise
-    
-    # Validate and set environment variables
-    required_fields = ['ZSCALER_CLIENT_ID', 'ZSCALER_CLIENT_SECRET']
-    missing_fields = [field for field in required_fields if not secrets.get(field)]
-    
-    if missing_fields:
-        logger.error(f"Required credentials missing from secret: {', '.join(missing_fields)}")
-        raise ValueError(f"Missing required fields in secret: {', '.join(missing_fields)}")
-    
-    # Set environment variables from secrets
-    os.environ['ZSCALER_CLIENT_ID'] = secrets.get('ZSCALER_CLIENT_ID', '')
-    os.environ['ZSCALER_CLIENT_SECRET'] = secrets.get('ZSCALER_CLIENT_SECRET', '')
-    os.environ['ZSCALER_VANITY_DOMAIN'] = secrets.get('ZSCALER_VANITY_DOMAIN', '')
-    os.environ['ZSCALER_CUSTOMER_ID'] = secrets.get('ZSCALER_CUSTOMER_ID', '')
-    os.environ['ZSCALER_CLOUD'] = secrets.get('ZSCALER_CLOUD', 'production')
-    
-    # Optional: Load write mode configuration from secret
-    if 'ZSCALER_MCP_WRITE_ENABLED' in secrets:
-        os.environ['ZSCALER_MCP_WRITE_ENABLED'] = str(secrets['ZSCALER_MCP_WRITE_ENABLED'])
-    if 'ZSCALER_MCP_WRITE_TOOLS' in secrets:
-        os.environ['ZSCALER_MCP_WRITE_TOOLS'] = str(secrets['ZSCALER_MCP_WRITE_TOOLS'])
-    
-    logger.info("✓ Credentials loaded and set as environment variables")
-    logger.info(f"  - Client ID: {os.environ['ZSCALER_CLIENT_ID'][:10]}...")
-    logger.info(f"  - Vanity Domain: {os.environ['ZSCALER_VANITY_DOMAIN']}")
-    logger.info(f"  - Cloud: {os.environ['ZSCALER_CLOUD']}")
-    logger.info("=" * 80)
+- **Gate.** Runs only when `ZSCALER_SECRET_NAME` is set. There is no separate
+  boolean — pointing the deployment at a secret *is* the request to load it.
+- **Region.** `AWS_REGION`, then `AWS_DEFAULT_REGION`, then boto3's own
+  resolution chain (which AgentCore and ECS populate for you).
+- **Allowlist.** Only the recognised `ZSCALER_*` variables are published to the
+  environment; anything else in the secret is named in a warning and ignored, so
+  a typo is diagnosable and a hostile edit cannot set an arbitrary variable in
+  the server process.
+- **Fails closed.** A missing secret, a denied `GetSecretValue`, a KMS failure,
+  malformed JSON, or absent required credentials all stop the server with a
+  message naming the cause — rather than deferring the error to the first tool
+  call, where it surfaces as an opaque Zscaler API error.
 
+Values from the secret **override** the container environment, so rotating the
+secret beats a stale value baked into a task definition.
 
-# Load secrets BEFORE initializing the MCP server
-try:
-    load_secrets_from_aws_secrets_manager()
-except Exception as e:
-    logger.error(f"Failed to load secrets: {e}")
-    logger.error("Server will not start without valid credentials")
-    sys.exit(1)
+#### Step 4: Install the `aws` extra
 
-# Create instance of Zscaler MCP server (now has credentials in env vars)
-logger.info("Initializing Zscaler MCP Server instance")
-mcp_server = ZscalerMCPServer()
-```
-
-Add the import at the top of the file:
-
-```python
-import sys  # Add if not already present
-```
-
-#### Step 4: Update requirements.txt
-
-Ensure boto3 is included (should already be there):
-
-```txt
-boto3>=1.34.0
-botocore>=1.34.0
-```
-
-#### Step 5: Rebuild and Push Docker Image
+`boto3` is an optional dependency, so a stdio user on a laptop does not install
+an AWS SDK to talk to Zscaler. The published container image already includes it.
+For a PyPI install:
 
 ```bash
-# Build
-docker build -t zscaler/zscaler-mcp-server .
+pip install 'zscaler-mcp[aws]'
+```
 
-# Tag
+If `ZSCALER_SECRET_NAME` is set without it, the server exits at startup naming
+the extra.
+
+#### Step 5: Push the image to ECR
+
+AgentCore's `containerConfiguration.containerUri` accepts only an ECR URI —
+Docker Hub is not a legal value — so the published image needs an ECR-hosted
+copy:
+
+```bash
+docker pull zscaler/zscaler-mcp-server:latest
+
 docker tag zscaler/zscaler-mcp-server:latest \
   123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest
 
-# Push
 docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/zscaler/zscaler-mcp-server:latest
 ```
 
-#### Step 6: Deploy Agent Runtime
+The image must be `linux/arm64` — AgentCore validates the ELF headers and
+rejects the deployment on a mismatch. The published image is multi-arch, so pull
+it on an arm64 host or use `docker buildx imagetools` to copy the arm64 manifest.
 
-Deploy with minimal environment variables (secrets retrieved at runtime):
+#### Step 6: Deploy the Agent Runtime
+
+`ContainerConfiguration` has exactly one field (`containerUri`) — there is no
+command or args override — so the entrypoint is steered entirely by
+`environmentVariables`:
 
 ```bash
 aws bedrock-agentcore-control create-agent-runtime \
@@ -522,15 +436,26 @@ aws bedrock-agentcore-control create-agent-runtime \
     "serverProtocol": "MCP"
   }' \
   --environment-variables '{
-    "USE_SECRETS_MANAGER": "true",
-    "SECRET_NAME": "zscaler/mcp/credentials",
+    "ZSCALER_SECRET_NAME": "zscaler/mcp/credentials",
     "AWS_REGION": "us-east-1",
+    "ZSCALER_MCP_TRANSPORT": "streamable-http",
+    "ZSCALER_MCP_HOST": "0.0.0.0",
+    "ZSCALER_MCP_PORT": "8000",
+    "ZSCALER_MCP_ALLOW_HTTP": "true",
+    "ZSCALER_MCP_DISABLE_HOST_VALIDATION": "true",
     "ZSCALER_MCP_WRITE_ENABLED": "false"
   }'
 ```
 
 > [!NOTE]
-> Notice that `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc. are **NOT** in environment variables. They're retrieved from Secrets Manager when the container starts.
+> `ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET` and friends are deliberately
+> **not** environment variables here. They are fetched from Secrets Manager when
+> the container starts.
+>
+> `ZSCALER_MCP_ALLOW_HTTP` and `ZSCALER_MCP_DISABLE_HOST_VALIDATION` are correct
+> on this path specifically: AgentCore terminates TLS upstream, and it forwards
+> an internal `Host` header that no allowlist can predict. Do not carry them to a
+> deployment where the container is reachable directly.
 
 #### Step 7: Verify Deployment
 
@@ -819,8 +744,7 @@ aws bedrock-agentcore-control create-agent-runtime \
   --region us-east-1 \
   --agent-runtime-name "zscalermcp" \
   --environment-variables '{
-    "USE_SECRETS_MANAGER": "true",
-    "SECRET_NAME": "zscaler/mcp/credentials",
+    "ZSCALER_SECRET_NAME": "zscaler/mcp/credentials",
     "AWS_REGION": "us-east-1"
   }' \
   # ... rest of config
@@ -832,7 +756,7 @@ aws bedrock-agentcore-control create-agent-runtime \
 
 | Aspect | Approach 1: Pre-Deployment | Approach 2: Runtime Retrieval | Approach 3: Lambda Proxy |
 |--------|---------------------------|------------------------------|--------------------------|
-| **Container Changes** | ❌ None | ✅ Required | ❌ None |
+| **Container Changes** | ❌ None | ❌ None (loader ships in the image) | ❌ None |
 | **Secrets Visible in Console** | ✅ Yes (env vars) | ❌ No | ✅ Yes (env vars) |
 | **AgentCore Role Needs SM Access** | ❌ No | ✅ Yes | ❌ No |
 | **Deployment Complexity** | Low | Medium | Medium |
@@ -910,16 +834,14 @@ aws iam put-role-policy \
   --policy-name SecretsManagerAccess \
   --policy-document file://agentcore-secrets-policy.json
 
-# 3. Modify web_server.py (add code from Step 3 above)
-
-# 4. Rebuild and push Docker image
-docker build -t zscaler/zscaler-mcp-server .
+# 3. Copy the published image into ECR (AgentCore accepts no other registry)
+docker pull zscaler/zscaler-mcp-server:latest
 docker tag zscaler/zscaler-mcp-server:latest <ECR_URI>
 docker push <ECR_URI>
 
-# 5. Deploy with USE_SECRETS_MANAGER=true
+# 4. Deploy — ZSCALER_SECRET_NAME is the whole opt-in
 aws bedrock-agentcore-control create-agent-runtime \
-  --environment-variables '{"USE_SECRETS_MANAGER":"true",...}' \
+  --environment-variables '{"ZSCALER_SECRET_NAME":"zscaler/mcp/credentials",...}' \
   # ... rest of config
 
 # Done! ✅ Credentials retrieved at runtime
@@ -1097,19 +1019,25 @@ Agent runtime status shows `FAILED`
    ```
 
 2. Look for errors like:
-   - "Failed to create Secrets Manager client"
-   - "Access denied to secret"
-   - "Missing required fields in secret"
+   - "Access denied reading '<secret>'" — the execution role is missing
+     `secretsmanager:GetSecretValue`
+   - "Secrets Manager could not decrypt" — the role is missing `kms:Decrypt`
+   - "Required credentials missing after loading" — the secret parsed but has no
+     `ZSCALER_CLIENT_ID` / `ZSCALER_CLIENT_SECRET`
+   - "Ignoring N unrecognised key(s)" — a key in the secret is misspelled; the
+     warning names it
 
 3. Test the container locally:
 
    ```bash
    docker run -it --rm \
-     -e USE_SECRETS_MANAGER=true \
-     -e SECRET_NAME=zscaler/mcp/credentials \
+     -e ZSCALER_SECRET_NAME=zscaler/mcp/credentials \
      -e AWS_REGION=us-east-1 \
      -e AWS_ACCESS_KEY_ID=<YOUR_KEY> \
      -e AWS_SECRET_ACCESS_KEY=<YOUR_SECRET> \
+     -e ZSCALER_MCP_TRANSPORT=streamable-http \
+     -e ZSCALER_MCP_HOST=0.0.0.0 \
+     -e ZSCALER_MCP_ALLOW_HTTP=true \
      -p 8000:8000 \
      zscaler/zscaler-mcp-server:latest
    ```

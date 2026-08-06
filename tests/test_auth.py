@@ -718,3 +718,222 @@ class TestMiddlewarePrincipalPublication:
         seen = self._run(APIKeyAuthProvider("key-x"), [(b"authorization", b"Bearer key-x")])
         assert seen["client_id"] is not None, "identity must be visible during the request"
         assert get_access_token() is None, "and gone once it completes"
+
+
+# =============================================================================
+# AWS Bedrock AgentCore credential paths
+#
+# Two relaxations the AgentCore fork carried, consolidated here. They exist
+# because of one platform fact: `InvokeAgentRuntime` forwards only headers named
+# in `requestHeaderAllowlist`, and the Console Sandbox playground offers no UI to
+# set any header at all — so the caller frequently cannot present a credential
+# even though the platform has already authenticated them.
+#
+# `X-Api-Key` is a second envelope for the same secret and is always on. The
+# container-credential fallback genuinely admits an uncredentialed request, so it
+# is gated on an explicit opt-in and must stay off everywhere else.
+# =============================================================================
+
+
+class TestPlatformAuthGate:
+    def test_off_by_default(self, monkeypatch):
+        monkeypatch.delenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", raising=False)
+        assert auth.platform_auth_trusted() is False
+
+    @pytest.mark.parametrize("truthy", ["true", "1", "yes", "TRUE", " Yes "])
+    def test_accepted_spellings(self, monkeypatch, truthy):
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", truthy)
+        assert auth.platform_auth_trusted() is True
+
+    @pytest.mark.parametrize("falsy", ["false", "0", "no", "", "  ", "maybe"])
+    def test_anything_else_is_off(self, monkeypatch, falsy):
+        """Fails closed on a typo.
+
+        An operator who writes `TRUE_` or `on` gets the safe behaviour, not the
+        one that admits anonymous callers.
+        """
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", falsy)
+        assert auth.platform_auth_trusted() is False
+
+
+class TestApiKeyHeaderAlternatives:
+    """`X-Api-Key` carries the same secret as `Authorization: Bearer`."""
+
+    @pytest.mark.asyncio
+    async def test_x_api_key_is_accepted(self):
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, err = await p.authenticate("", [(b"x-api-key", b"sk-secret")])
+        assert ok is True
+        assert err is None
+
+    @pytest.mark.asyncio
+    async def test_x_api_key_is_matched_case_insensitively(self):
+        """HTTP header names are case-insensitive and ASGI servers vary."""
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, _ = await p.authenticate("", [(b"X-Api-Key", b"sk-secret")])
+        assert ok is True
+
+    @pytest.mark.asyncio
+    async def test_a_wrong_x_api_key_is_rejected(self):
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, err = await p.authenticate("", [(b"x-api-key", b"sk-wrong")])
+        assert ok is False
+        assert err == "Invalid API key"
+
+    @pytest.mark.asyncio
+    async def test_authorization_wins_and_a_bad_one_is_not_rescued(self):
+        """A present `Authorization` is the caller's claim; honour it.
+
+        Falling through to `X-Api-Key` after a failed Bearer check would let a
+        caller retry two credentials in one request.
+        """
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, _ = await p.authenticate("Bearer sk-wrong", [(b"x-api-key", b"sk-secret")])
+        assert ok is False
+
+    @pytest.mark.asyncio
+    async def test_the_error_names_both_accepted_headers(self):
+        p = auth.APIKeyAuthProvider("sk-secret")
+        _, err = await p.authenticate("", [])
+        assert "Authorization: Bearer" in err
+        assert "X-Api-Key" in err
+
+
+class TestContainerCredentialFallbackIsGated:
+    """The fallback admits a request carrying no credential at all.
+
+    On AgentCore that is defensible: IAM or a customJwtAuthorizer ran before the
+    sidecar forwarded the request. On the ECS / EC2 / EKS paths the container is
+    reachable directly, and there the absence of a credential is the only thing
+    between an anonymous caller and the tenant.
+    """
+
+    @pytest.mark.asyncio
+    async def test_api_key_does_not_fall_back_by_default(self, monkeypatch):
+        monkeypatch.delenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", raising=False)
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_API_KEY", "sk-secret")
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, _ = await p.authenticate("", [])
+        assert ok is False, "the container's own key must not authenticate a stranger"
+
+    @pytest.mark.asyncio
+    async def test_api_key_falls_back_when_the_platform_is_trusted(self, monkeypatch):
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "true")
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_API_KEY", "sk-secret")
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, err = await p.authenticate("", [])
+        assert ok is True
+        assert err is None
+
+    @pytest.mark.asyncio
+    async def test_a_trusted_platform_still_rejects_a_wrong_key(self, monkeypatch):
+        """Trust removes the requirement to present a credential, not the check.
+
+        A caller that DOES present one is still validated against it.
+        """
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "true")
+        monkeypatch.setenv("ZSCALER_MCP_AUTH_API_KEY", "sk-secret")
+        p = auth.APIKeyAuthProvider("sk-secret")
+        ok, _ = await p.authenticate("Bearer sk-wrong", [])
+        assert ok is False
+
+    @pytest.mark.asyncio
+    async def test_zscaler_does_not_fall_back_by_default(self, monkeypatch):
+        monkeypatch.delenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", raising=False)
+        monkeypatch.setenv("ZSCALER_CLIENT_ID", "client")
+        monkeypatch.setenv("ZSCALER_CLIENT_SECRET", "secret")
+        p = auth.ZscalerAuthProvider("acme")
+        ok, err = await p.authenticate("", [])
+        assert ok is False
+        assert "requires credentials" in err
+
+    @pytest.mark.asyncio
+    async def test_zscaler_falls_back_when_the_platform_is_trusted(self, monkeypatch):
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "true")
+        monkeypatch.setenv("ZSCALER_CLIENT_ID", "client")
+        monkeypatch.setenv("ZSCALER_CLIENT_SECRET", "secret")
+        monkeypatch.setattr(auth, "fetch_oneapi_token", lambda **kw: ("tok", None))
+        p = auth.ZscalerAuthProvider("acme")
+        ok, err = await p.authenticate("", [])
+        assert ok is True
+        assert err is None
+
+    @pytest.mark.asyncio
+    async def test_the_fallback_still_validates_the_container_credentials(self, monkeypatch):
+        """A misconfigured container fails at the door, not on the first tool call."""
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "true")
+        monkeypatch.setenv("ZSCALER_CLIENT_ID", "client")
+        monkeypatch.setenv("ZSCALER_CLIENT_SECRET", "rotated-away")
+        monkeypatch.setattr(
+            auth, "fetch_oneapi_token", lambda **kw: (None, "Invalid OneAPI credentials")
+        )
+        p = auth.ZscalerAuthProvider("acme")
+        ok, err = await p.authenticate("", [])
+        assert ok is False
+        assert "Invalid OneAPI credentials" in err
+
+    @pytest.mark.asyncio
+    async def test_trust_without_container_credentials_still_refuses(self, monkeypatch):
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "true")
+        monkeypatch.delenv("ZSCALER_CLIENT_ID", raising=False)
+        monkeypatch.delenv("ZSCALER_CLIENT_SECRET", raising=False)
+        p = auth.ZscalerAuthProvider("acme")
+        ok, _ = await p.authenticate("", [])
+        assert ok is False
+
+    def test_the_fallback_still_produces_a_principal(self, monkeypatch):
+        """Otherwise sealed requestState is call-bound but not caller-bound.
+
+        This is the deployment where confirmations matter most, so losing the
+        principal exactly here would be the worst place for it.
+        """
+        monkeypatch.setenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "true")
+        monkeypatch.setenv("ZSCALER_CLIENT_ID", "container-client")
+        monkeypatch.setenv("ZSCALER_CLIENT_SECRET", "secret")
+        principal = auth.ZscalerAuthProvider("acme").principal("", [])
+        assert principal is not None
+        assert principal.client_id == "zscaler:container-client"
+        assert principal.token == "", "the credential itself must never enter sealed state"
+
+    def test_no_principal_without_trust(self, monkeypatch):
+        monkeypatch.delenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", raising=False)
+        monkeypatch.setenv("ZSCALER_CLIENT_ID", "container-client")
+        monkeypatch.setenv("ZSCALER_CLIENT_SECRET", "secret")
+        assert auth.ZscalerAuthProvider("acme").principal("", []) is None
+
+
+class TestMiddlewareForwardsHeadersToEveryProvider:
+    """Previously an isinstance check handed them only to ZscalerAuthProvider.
+
+    That is why `X-Api-Key` could not work: the provider that needed to read it
+    was never given the header list.
+    """
+
+    def _status(self, provider, headers):
+        import asyncio
+
+        from zscaler_mcp.security.auth import AuthMiddleware
+
+        captured: dict = {}
+
+        async def app(scope, receive, send):
+            captured["status"] = 200
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+
+        async def receive():
+            return {"type": "http.request"}
+
+        async def send(message):
+            if message["type"] == "http.response.start":
+                captured.setdefault("status", message["status"])
+
+        scope = {"type": "http", "path": "/mcp", "headers": headers}
+        asyncio.run(AuthMiddleware(app, provider)(scope, receive, send))
+        return captured["status"]
+
+    def test_x_api_key_authenticates_end_to_end(self):
+        assert self._status(auth.APIKeyAuthProvider("sk-x"), [(b"x-api-key", b"sk-x")]) == 200
+
+    def test_a_wrong_x_api_key_is_401_end_to_end(self):
+        assert self._status(auth.APIKeyAuthProvider("sk-x"), [(b"x-api-key", b"sk-nope")]) == 401

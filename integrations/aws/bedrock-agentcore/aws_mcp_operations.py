@@ -1026,6 +1026,12 @@ def cleanup_orphaned_resources(sess: boto3.Session, prefix: str, *, non_interact
     but the rollback couldn't clean it up before CFN gave up. The next deploy
     then fails at "Function already exists". Same can happen with the secret
     (Secrets Manager has a 7-day soft-delete window by default).
+
+    Only safe to call when the stack does NOT exist. Membership here is decided
+    by name alone, so against a live stack every match is a false positive —
+    these are CloudFormation's own resources, and deleting the provisioner
+    Lambda breaks the next update rather than unblocking it. The caller is
+    responsible for that check.
     """
     lam = sess.client("lambda")
     sm = sess.client("secretsmanager")
@@ -1968,11 +1974,16 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     lambda_keys = upload_lambda_packages(sess, asset_bucket, asset_prefix)
 
     # ── Step 10b: Sweep up orphaned resources from prior failed deploys ─
-    cleanup_orphaned_resources(
-        sess,
-        resource_prefix,
-        non_interactive=args.non_interactive,
-    )
+    # Only when the stack is GONE. If it still exists these are not orphans,
+    # they are its live resources: the provisioner Lambda backs the
+    # AgentCoreRuntime custom resource, so deleting it makes the very next
+    # update fail with "Function not found" and roll back.
+    if stack_status(sess, stack_name) is None:
+        cleanup_orphaned_resources(
+            sess,
+            resource_prefix,
+            non_interactive=args.non_interactive,
+        )
 
     # ── Step 11: Launch root stack ──────────────────────────────────────
     step("Step 11: Launch CloudFormation stack")
