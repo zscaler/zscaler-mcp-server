@@ -69,6 +69,54 @@ def get_registered_zscaler_providers() -> list:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Platform-enforced authentication (AWS Bedrock AgentCore and friends)
+# ---------------------------------------------------------------------------
+
+
+def platform_auth_trusted() -> bool:
+    """True when a platform in front of this server already authenticated the caller.
+
+    Set ``ZSCALER_MCP_TRUST_PLATFORM_AUTH=true`` **only** where an ingress the
+    operator controls is the sole route to the container and performs its own
+    per-caller authentication. The case this exists for is AWS Bedrock AgentCore
+    Runtime, where every request has already passed IAM
+    (``bedrock-agentcore:InvokeAgentRuntime`` on the runtime ARN) or the
+    configured ``customJwtAuthorizer`` before the sidecar forwards it, and where
+    the caller frequently **cannot** attach credentials of its own:
+    ``InvokeAgentRuntime`` forwards only headers named in
+    ``requestHeaderAllowlist``, and the Console Sandbox playground offers no UI
+    to set any header at all.
+
+    When trusted, the ``api-key`` and ``zscaler`` providers fall back to the
+    container's own credentials for a request that carries none. That is a real
+    relaxation — it turns "prove who you are" into "you got here, so someone
+    already checked" — which is why it is an explicit opt-in rather than
+    inferred from the environment, and why enabling it logs a security warning.
+
+    **Never set this on an internet-reachable deployment.** The ECS Fargate, EC2
+    and EKS paths expose the container directly; there, the absence of a
+    credential is the only thing standing between an anonymous caller and the
+    tenant.
+    """
+    return os.getenv("ZSCALER_MCP_TRUST_PLATFORM_AUTH", "").strip().lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+
+
+def _header_value(headers_list: Optional[list], name: bytes) -> Optional[str]:
+    """Return a header's value from an ASGI ``scope['headers']`` list."""
+    for key, value in headers_list or []:
+        lowered = key.lower() if isinstance(key, (bytes, str)) else key
+        if lowered == name:
+            # errors="replace": a malformed header is a rejected request, not an
+            # unhandled UnicodeDecodeError escaping the middleware as a 500.
+            return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value
+    return None
+
+
 def _build_token_url(vanity_domain: str, cloud: str = "production") -> str:
     """Return the ZIdentity ``/oauth2/v1/token`` URL for a vanity/cloud."""
     cloud = (cloud or "production").lower().strip()
@@ -146,8 +194,15 @@ class AuthProvider(ABC):
     """
 
     @abstractmethod
-    async def authenticate(self, authorization: str) -> Tuple[bool, Optional[str]]:
-        """Validate an ``Authorization`` header value.
+    async def authenticate(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate a request's credentials.
+
+        ``authorization`` is the ``Authorization`` header value; ``headers_list``
+        is the raw ASGI header list, for modes that accept a credential in some
+        other header. It is always supplied by :class:`AuthMiddleware` and is
+        optional only so a provider can be exercised directly in a test.
 
         Returns ``(is_valid, error_message)``; ``error_message`` is ``None``
         on success.
@@ -192,7 +247,22 @@ _API_KEY_PRINCIPAL_CONTEXT = b"zscaler-mcp/api-key-principal/v1:"
 
 
 class APIKeyAuthProvider(AuthProvider):
-    """Validate requests against a pre-shared API key (constant-time compare)."""
+    """Validate requests against a pre-shared API key (constant-time compare).
+
+    The key may arrive two ways:
+
+    1. ``Authorization: Bearer <api-key>`` — the default everywhere.
+    2. ``X-Api-Key: <api-key>`` — for deployments where ``Authorization`` is
+       already spoken for. On AWS Bedrock AgentCore with a ``customJwtAuthorizer``
+       the platform consumes ``Authorization`` for its own token, leaving no way
+       to also carry ours; add ``X-Api-Key`` to the runtime's
+       ``requestHeaderAllowlist`` so it reaches the container. Both carry the
+       same secret, so this is a second envelope rather than a weaker check.
+
+    A third source — the container's own ``ZSCALER_MCP_AUTH_API_KEY`` — is used
+    for a request that carries neither, and **only** when
+    :func:`platform_auth_trusted` is on.
+    """
 
     def __init__(self, api_key: str):
         if not api_key or not api_key.strip():
@@ -203,19 +273,54 @@ class APIKeyAuthProvider(AuthProvider):
         key_preview = hashlib.sha256(self._api_key.encode()).hexdigest()[:8]
         logger.info("API key auth provider initialized (key fingerprint: %s)", key_preview)
 
-    async def authenticate(self, authorization: str) -> Tuple[bool, Optional[str]]:
-        if not authorization:
-            return False, "Missing Authorization header"
+    async def authenticate(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Tuple[bool, Optional[str]]:
+        candidate: Optional[str] = None
 
-        parts = authorization.split(" ", 1)
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            return False, "Expected: Authorization: Bearer <api-key>"
+        if authorization:
+            parts = authorization.split(" ", 1)
+            if len(parts) != 2 or parts[0].lower() != "bearer":
+                return False, "Expected: Authorization: Bearer <api-key>"
+            candidate = parts[1].strip()
 
-        token = parts[1].strip()
-        if hmac.compare_digest(token, self._api_key):
+        if candidate is None:
+            header_key = _header_value(headers_list, b"x-api-key")
+            if header_key:
+                candidate = header_key.strip()
+
+        if candidate is None and platform_auth_trusted():
+            # The caller could not attach a credential (see platform_auth_trusted).
+            # The ingress already authenticated them, so accept the container's
+            # own key on their behalf. Logged at INFO, not DEBUG: this is the
+            # request being admitted on the platform's word rather than its own,
+            # and an operator reading the log should be able to see that happen.
+            env_key = os.getenv("ZSCALER_MCP_AUTH_API_KEY", "").strip()
+            if env_key:
+                candidate = env_key
+                logger.info(
+                    "api-key auth: request carried no credential; accepted on the "
+                    "platform's authentication (ZSCALER_MCP_TRUST_PLATFORM_AUTH=true)."
+                )
+
+        if not candidate:
+            return False, self._credential_help()
+
+        if hmac.compare_digest(candidate, self._api_key):
             return True, None
 
         return False, "Invalid API key"
+
+    @staticmethod
+    def _credential_help() -> str:
+        options = [
+            "API-key auth requires a credential. Use one of:",
+            "  1. Authorization: Bearer <api-key>",
+            "  2. Header: X-Api-Key: <api-key>",
+        ]
+        if platform_auth_trusted():
+            options.append("  3. Container env var: ZSCALER_MCP_AUTH_API_KEY (currently empty)")
+        return "\n".join(options)
 
     def principal(
         self, authorization: str, headers_list: Optional[list] = None
@@ -301,7 +406,9 @@ class JWTAuthProvider(AuthProvider):
             jwks_uri,
         )
 
-    async def authenticate(self, authorization: str) -> Tuple[bool, Optional[str]]:
+    async def authenticate(
+        self, authorization: str, headers_list: Optional[list] = None
+    ) -> Tuple[bool, Optional[str]]:
         if not authorization:
             return False, "Missing Authorization header"
 
@@ -477,16 +584,28 @@ class ZscalerAuthProvider(AuthProvider):
         return True, None
 
     def _extract_credentials_from_headers(self, headers_list: list) -> Optional[Tuple[str, str]]:
-        client_id = ""
-        client_secret = ""
-        for key, value in headers_list:
-            lower_key = key.lower() if isinstance(key, (bytes, str)) else key
-            if lower_key == b"x-zscaler-client-id":
-                client_id = value.decode("utf-8") if isinstance(value, bytes) else value
-            elif lower_key == b"x-zscaler-client-secret":
-                client_secret = value.decode("utf-8") if isinstance(value, bytes) else value
+        client_id = _header_value(headers_list, b"x-zscaler-client-id") or ""
+        client_secret = _header_value(headers_list, b"x-zscaler-client-secret") or ""
         if client_id and client_secret:
             return client_id.strip(), client_secret.strip()
+        return None
+
+    @staticmethod
+    def _container_credentials() -> Optional[Tuple[str, str]]:
+        """The container's own OneAPI credentials, when platform auth is trusted.
+
+        Typically loaded from AWS Secrets Manager at startup
+        (:mod:`zscaler_mcp.cloud.aws_secrets`). Returns ``None`` unless
+        :func:`platform_auth_trusted` is on, so the ordinary deployment cannot
+        drift into accepting anonymous callers because a credential happened to
+        be in the environment.
+        """
+        if not platform_auth_trusted():
+            return None
+        client_id = os.getenv("ZSCALER_CLIENT_ID", "").strip()
+        client_secret = os.getenv("ZSCALER_CLIENT_SECRET", "").strip()
+        if client_id and client_secret:
+            return client_id, client_secret
         return None
 
     async def authenticate(
@@ -511,11 +630,31 @@ class ZscalerAuthProvider(AuthProvider):
                     return False, "Invalid Base64 encoding in Basic auth header"
 
         if not client_id or not client_secret:
-            return False, (
-                "Zscaler auth mode requires credentials. Use either:\n"
-                "  1. Headers: X-Zscaler-Client-ID + X-Zscaler-Client-Secret\n"
-                "  2. Header: Authorization: Basic base64(client_id:client_secret)"
-            )
+            # The caller could not attach credentials (see platform_auth_trusted).
+            # The ingress already authenticated them, so validate the container's
+            # own OneAPI credentials instead — the request is still refused if
+            # those are bad, so a misconfigured container fails here rather than
+            # on the first tool call.
+            container = self._container_credentials()
+            if container:
+                client_id, client_secret = container
+                logger.info(
+                    "zscaler auth: request carried no credentials; accepted on the "
+                    "platform's authentication (ZSCALER_MCP_TRUST_PLATFORM_AUTH=true)."
+                )
+
+        if not client_id or not client_secret:
+            options = [
+                "Zscaler auth mode requires credentials. Use either:",
+                "  1. Headers: X-Zscaler-Client-ID + X-Zscaler-Client-Secret",
+                "  2. Header: Authorization: Basic base64(client_id:client_secret)",
+            ]
+            if platform_auth_trusted():
+                options.append(
+                    "  3. Container env vars: ZSCALER_CLIENT_ID + ZSCALER_CLIENT_SECRET "
+                    "(currently unset)"
+                )
+            return False, "\n".join(options)
 
         cred_hash = self._credential_hash(client_id, client_secret)
         if self._check_cache(cred_hash) is True:
@@ -547,7 +686,7 @@ class ZscalerAuthProvider(AuthProvider):
     def _client_id_from_request(
         self, authorization: str, headers_list: Optional[list]
     ) -> Optional[str]:
-        """Extract just the client id from either accepted credential shape."""
+        """Extract just the client id from any accepted credential shape."""
         if headers_list:
             creds = self._extract_credentials_from_headers(headers_list)
             if creds:
@@ -560,7 +699,12 @@ class ZscalerAuthProvider(AuthProvider):
                 return None
             if ":" in decoded:
                 return decoded.split(":", 1)[0]
-        return None
+        # Mirror authenticate()'s fallback, so a request admitted on the
+        # platform's authentication still gets a principal. Without this the
+        # sealed requestState would be request-bound but not caller-bound on
+        # exactly the deployment where confirmations matter most.
+        container = self._container_credentials()
+        return container[0] if container else None
 
 
 # ---------------------------------------------------------------------------
@@ -839,16 +983,13 @@ class AuthMiddleware:
             return
 
         headers_list = scope.get("headers", [])
-        auth_value = ""
-        for key, value in headers_list:
-            if key == b"authorization":
-                auth_value = value.decode("utf-8", errors="replace")
-                break
+        auth_value = _header_value(headers_list, b"authorization") or ""
 
-        if isinstance(self.provider, ZscalerAuthProvider):
-            is_valid, error = await self.provider.authenticate(auth_value, headers_list)
-        else:
-            is_valid, error = await self.provider.authenticate(auth_value)
+        # Every provider receives the full header list. This was previously an
+        # isinstance check that handed them only to ZscalerAuthProvider, which
+        # meant a provider accepting a credential in any other header (api-key's
+        # X-Api-Key) could not see it.
+        is_valid, error = await self.provider.authenticate(auth_value, headers_list)
 
         if not is_valid:
             from starlette.responses import JSONResponse
@@ -1133,9 +1274,59 @@ def apply_auth_middleware(app: Any, transport: str) -> Any:
         details = [
             ("Vanity Domain", config["vanity_domain"]),
             ("Cloud", config["cloud"]),
+            ("Accepted credentials", _zscaler_credential_sources()),
         ]
     elif mode == "api-key":
-        details = [("Key configured", "yes")]
+        details = [
+            ("Key configured", "yes"),
+            ("Accepted credentials", _api_key_credential_sources()),
+        ]
     _log_auth_banner(mode, transport, details)
 
+    if mode in ("api-key", "zscaler") and platform_auth_trusted():
+        _warn_platform_auth_trusted(mode)
+
     return AuthMiddleware(app, provider)
+
+
+def _api_key_credential_sources() -> str:
+    sources = ["Authorization: Bearer", "X-Api-Key"]
+    if platform_auth_trusted():
+        sources.append("container ZSCALER_MCP_AUTH_API_KEY")
+    return ", ".join(sources)
+
+
+def _zscaler_credential_sources() -> str:
+    sources = ["Authorization: Basic", "X-Zscaler-Client-ID/-Secret"]
+    if platform_auth_trusted():
+        sources.append("container ZSCALER_CLIENT_ID/_SECRET")
+    return ", ".join(sources)
+
+
+def _warn_platform_auth_trusted(mode: str) -> None:
+    """Announce that requests without a credential will be admitted.
+
+    Loud on purpose. This is the one setting that lets an unauthenticated
+    request through, and the deployment it is correct for (an ingress that
+    authenticates every caller before the container sees it) is
+    indistinguishable at runtime from the one it is catastrophic for.
+    """
+    log_security_warning(
+        f"Platform-enforced authentication is TRUSTED ({mode} mode)",
+        [
+            "ZSCALER_MCP_TRUST_PLATFORM_AUTH=true.",
+            "",
+            "A request that carries NO credential is accepted, using the",
+            "container's own credentials on the caller's behalf. This is correct",
+            "ONLY where an ingress you control is the sole route to this",
+            "container AND authenticates every caller — the case it exists for",
+            "is AWS Bedrock AgentCore Runtime, where IAM or a customJwtAuthorizer",
+            "runs before the request is forwarded and the caller often cannot",
+            "attach a header of its own.",
+            "",
+            "If this server is reachable directly (ECS/EC2/EKS with a public",
+            "load balancer, or any bind you did not put an authenticating proxy",
+            "in front of), REMOVE this variable now — it is the only thing",
+            "standing between an anonymous caller and the tenant.",
+        ],
+    )

@@ -1275,17 +1275,17 @@ For the full chart reference (`values.yaml` keys, Ingress / HTTPRoute / cert-man
 ### Amazon Bedrock AgentCore
 
 > [!IMPORTANT]
-> **AWS Marketplace Image Available**: For Amazon Bedrock AgentCore deployments, we provide a dedicated container image optimized for Bedrock's stateless HTTP environment. This image includes a custom web server wrapper that handles session management and is specifically designed for AWS Bedrock AgentCore Runtime.
+> **One image, no AWS fork.** Bedrock AgentCore used to be served by a separate build. It no longer is — the standard image runs on AgentCore as-is, configured entirely through environment variables. AgentCore's `containerConfiguration` accepts only an **ECR** URI (Docker Hub is not a legal value) and requires **`linux/arm64`**, so the published multi-arch image still needs to be copied into ECR — or pulled from the [AWS Marketplace listing](https://aws.amazon.com/marketplace/pp/prodview-dtjfklwemb54y?sr=0-1&ref_=beagle&applicationId=AWSMPContessa), which is the same image already in ECR for you.
 
 **🚀 Quick Start with AWS Marketplace:**
 
-The easiest way to deploy the Zscaler Integrations MCP Server to Amazon Bedrock AgentCore is through the [AWS Marketplace listing](https://aws.amazon.com/marketplace/pp/prodview-dtjfklwemb54y?sr=0-1&ref_=beagle&applicationId=AWSMPContessa). The Marketplace image includes:
+The easiest way to deploy the Zscaler Integrations MCP Server to Amazon Bedrock AgentCore is through the [AWS Marketplace listing](https://aws.amazon.com/marketplace/pp/prodview-dtjfklwemb54y?sr=0-1&ref_=beagle&applicationId=AWSMPContessa). What you get on this path:
 
-- ✅ Pre-configured for Bedrock AgentCore Runtime
-- ✅ Custom web server wrapper for stateless HTTP environments
-- ✅ Session management handled automatically
-- ✅ Health check endpoints for ECS compatibility
-- ✅ Optimized for AWS Bedrock AgentCore's requirements
+- ✅ ECR-hosted `linux/arm64` image — the two things AgentCore validates
+- ✅ Built-in AWS Secrets Manager loader: set `ZSCALER_SECRET_NAME` and credentials never appear as environment variables
+- ✅ Transport steered by `ZSCALER_MCP_TRANSPORT` / `_HOST` / `_PORT`, because `ContainerConfiguration` has no command override
+- ✅ Read-only by default; write tools stay off until you allowlist them
+- ✅ Identical tool inventory, toolsets, and auth modes to every other deployment
 
 **📚 Full Deployment Guide:**
 
@@ -1300,8 +1300,22 @@ The deployment guide covers:
 - Write mode configuration (for CREATE/UPDATE/DELETE operations)
 - Troubleshooting and verification steps
 
+**🔐 AWS Secrets Manager (built in):**
+
+The image includes an AWS Secrets Manager loader, so credentials never have to appear as environment variables on the runtime. Store them as one JSON secret and point the deployment at it:
+
+```bash
+aws secretsmanager create-secret \
+  --name zscaler/mcp/credentials \
+  --secret-string '{"ZSCALER_CLIENT_ID":"...","ZSCALER_CLIENT_SECRET":"...","ZSCALER_VANITY_DOMAIN":"acme","ZSCALER_CUSTOMER_ID":"123456"}'
+```
+
+Then set `ZSCALER_SECRET_NAME=zscaler/mcp/credentials` on the runtime — its presence is the entire opt-in, there is no second flag. Grant the execution role `secretsmanager:GetSecretValue` (and `kms:Decrypt` if the secret uses a customer-managed key). Values from the secret override the container environment, so rotating the secret beats a stale value in a task definition, and a failure to read it stops the server at startup rather than surfacing later as an opaque Zscaler API error. Works the same on ECS Fargate, EKS and EC2. For a PyPI (non-container) install, `boto3` rides the optional extra: `pip install 'zscaler-mcp[aws]'`.
+
+`ZSCALER_MCP_TRUST_PLATFORM_AUTH=true` is an AgentCore-specific escape hatch: it lets `api-key` / `zscaler` auth modes accept a request carrying no credential, falling back to the container's own. It is safe **only** behind an authenticating ingress (AgentCore's `customJwtAuthorizer` consumes the `Authorization` header for its own token, leaving no envelope for ours). Never set it where the container is directly reachable.
+
 > [!NOTE]
-> The AWS Marketplace image uses a different architecture than the standard `streamable-http` transport. It includes a FastAPI-based web server wrapper (`web_server.py`) that bypasses the MCP protocol's session initialization requirements, making it compatible with Bedrock's stateless HTTP environment. This is why the Marketplace image is recommended for Bedrock deployments.
+> Earlier releases shipped a separate Bedrock image with a FastAPI wrapper (`web_server.py`) that bypassed MCP session initialization. That wrapper is gone: the server speaks vanilla `streamable-http`, and clients on the `2026-07-28` revision are self-contained POSTs with no session handshake at all. The Marketplace image is recommended purely because it satisfies AgentCore's ECR + arm64 requirements out of the box — not because it runs different code.
 
 ## Using the MCP Server with Agents
 

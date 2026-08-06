@@ -22,6 +22,7 @@ from zscaler_mcp.security.auth import (
     build_oidc_auth_kwargs,
     fetch_oneapi_token,
     get_registered_zscaler_providers,
+    platform_auth_trusted,
     resolve_oidc_auth,
 )
 from zscaler_mcp.security.elicitation import (
@@ -70,6 +71,7 @@ __all__ = [
     "build_oidc_auth_kwargs",
     "get_registered_zscaler_providers",
     "fetch_oneapi_token",
+    "platform_auth_trusted",
     # entitlement
     "apply_entitlement_filter",
     "decode_oneapi_token",

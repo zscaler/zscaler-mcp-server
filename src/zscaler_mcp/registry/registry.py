@@ -107,7 +107,9 @@ class Registry:
                 are excluded entirely — read-only-by-default (Zero Trust).
             write_allowlist: When ``enable_write`` is True, only write tools whose
                 name matches one of these fnmatch patterns are kept. ``None`` with
-                ``enable_write=True`` keeps all write tools.
+                ``enable_write=True`` keeps all write tools — this is the filter
+                primitive, not the server's policy: :func:`~zscaler_mcp.server.build_server`
+                requires an allowlist and registers zero write tools without one.
             disabled_patterns: fnmatch patterns; any tool whose name matches is
                 excluded regardless of everything else (highest precedence).
         """

@@ -295,7 +295,7 @@ A `zscaler_search_tools` meta-tool existed in earlier versions; it was removed b
 
 ## Write Operations — Safety Rules
 
-1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
+1. **Write tools are disabled by default, and enabling them takes BOTH knobs.** `--enable-write-tools` (env `ZSCALER_MCP_WRITE_ENABLED=true`) is the master switch and `--write-tools` (env `ZSCALER_MCP_WRITE_TOOLS`) names the permitted patterns; neither grants anything alone. Example: `--enable-write-tools --write-tools "zpa_create_*,zia_update_*"`. The switch with an empty allowlist registers **zero** write tools and logs why — it never means "all".
 2. **Always confirm before mutating.** Read operations are safe. Create/update/delete operations modify the live Zscaler environment. Ask the user before executing write operations.
 3. **Delete operations require confirmation, and there is no bypass.** On clients that support elicitation, the server asks a **human** through the client (SEP-2322) and the agent never sees a token. Otherwise it falls back to a single-use HMAC token the agent must pass back. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the window; nothing switches the gate off. A `ZSCALER_MCP_SKIP_CONFIRMATIONS` escape hatch existed until 0.15.0 and was removed — a security product should not ship a documented way around its own guardrail on destructive actions. `tests/test_elicitation.py` and `tests/test_bridge_confirmation.py` assert the old variable is inert, since it is still set in deployed environments.
 4. **Always list/get first** to understand current state before creating or modifying resources.
@@ -490,7 +490,7 @@ Server & security env vars:
 - `--toolsets` — Comma-separated toolset ids to enable. Use `default` for the curated default-on subset, `all` for everything (e.g. `"zia_url_filtering,zpa_app_segments"` or `"default"`). See `docs/guides/toolsets.md`.
 - `--disabled-toolsets` — Comma-separated toolset ids to exclude (blocklist complement to `--toolsets`). Exact ids only (no wildcards). Load everything except these; wins over `--toolsets`. (e.g. `--toolsets all --disabled-toolsets "zia_ssl_inspection,zia_admin"`)
 - `--no-entitlement-filter` — Skip the OneAPI entitlement filter that trims `selected_toolsets` to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only; the filter is non-fatal by default and skips itself on any failure.
-- `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
+- `--write-tools` — Allowlist of write tools to permit (wildcards: `"zpa_create_*,zia_update_*"`). Required alongside `--enable-write-tools`; on its own it enables nothing.
 - `--generate-auth-token` — Generate an API key for MCP client authentication
 - `--list-tools` — List all available tools and exit
 - `--generate-docs` — Refresh the auto-generated regions of `docs/guides/supported-tools.md`, `README.md`, and `docs/guides/toolsets.md` from the live tool inventory, then exit. Run after adding/renaming/removing a tool. See "Auto-generated docs" under Development.
@@ -615,7 +615,7 @@ The reload/restart messaging — and the `status` output — is gated by `_class
 | `None` | n/a | Yes | `fresh-discovery` | Same as above — fresh process discovers the `.env` placed since startup. |
 | `None` | n/a | No | `none` | Skips the re-read entirely. Common case: AgentCore deployments using Secrets Manager, or any deploy that uses container env-vars without a `.env` file. |
 
-The "missing" and "none" branches are explicitly NOT a bug — they reflect the underlying constraint that env vars in a running container's PID 1 are immutable from outside the container unless you bind-mount a file PID 1 can re-read (or you inject one with `docker cp`). The CLI surfaces this fact instead of silently claiming success. AgentCore deploys (`none` branch) still benefit from `restart`: re-importing `zscaler_mcp.config` triggers a fresh Secrets Manager fetch on the new process boot, picking up rotated secrets there.
+The "missing" and "none" branches are explicitly NOT a bug — they reflect the underlying constraint that env vars in a running container's PID 1 are immutable from outside the container unless you bind-mount a file PID 1 can re-read (or you inject one with `docker cp`). The CLI surfaces this fact instead of silently claiming success. AgentCore deploys (`none` branch) still benefit from `restart`: the fresh process re-runs `cloud.load_secrets()`, so a rotated Secrets Manager value is picked up on the new boot.
 
 ### Why Docker `--env-file` snapshots survive container `stop`/`start`
 
@@ -1103,14 +1103,46 @@ On any terminal state, the script automatically dumps the last 20 pod events so 
 - **Docs-site mirror:** `docs-site/docs/deployment/helm-chart.md` — auto-synced from the source README via `make sync-integration-docs` (registered in `_CROSS_REF_REDIRECTS` so sibling-repo links rewrite to GitHub master URLs).
 - **Top-level README:** `Additional Deployment Options` → `Kubernetes (Helm Chart)` subsection plus a row in the `Platform Integrations` table.
 
-## AWS Version
+## AWS (Bedrock AgentCore) — consolidated, no fork
 
-A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS/zscaler-mcp-server` for Amazon Bedrock AgentCore. Key differences:
+A separate `zscaler/AWS/zscaler-mcp-server` repository used to carry the Bedrock AgentCore build. It has been **folded into this one** — there is no AWS fork to keep in sync, and no AWS-specific Dockerfile or entrypoint. The same image and the same `src/` serve Docker Hub, Cloud Run, Container Apps and AgentCore; the platform is selected entirely by environment variables.
 
-- **No TLS handling** — AWS infrastructure (ALB, API Gateway) handles TLS termination
-- **`web_server.py`** — FastAPI wrapper that bypasses MCP session initialization for Bedrock's stateless HTTP
-- **`_log_security_posture_aws()`** — AWS-specific security banner (no TLS fields)
-- **Same tool/service/auth architecture** — disabled_tools, disabled_services, OIDCProxy, HMAC confirmations all work identically
+Only three things ever actually differed, and each is now a first-class feature here rather than a fork:
+
+- **Secrets Manager loading** → `src/zscaler_mcp/cloud/aws_secrets.py`, dispatched from `cloud.load_secrets()` in `main()`. Gated on `ZSCALER_SECRET_NAME`; `boto3` rides the optional `[aws]` extra (in the image already). Details below.
+- **Entrypoint / transport** → the fork's `CMD ["python","-m","zscaler_mcp.aws_entrypoint","--transport","streamable-http",...]` is replaced by `ZSCALER_MCP_TRANSPORT` / `_HOST` / `_PORT`, set by `runtime_provisioner.py`. `ContainerConfiguration` has exactly one field (`containerUri`) — no command override — so **everything the runtime needs must be an env var**.
+- **Auth deltas** → `X-Api-Key` acceptance and the container-side credential fallback, both in `security/auth.py` and gated by `ZSCALER_MCP_TRUST_PLATFORM_AUTH`. Details below.
+
+Three constraints remain genuinely AWS-shaped and are not going away:
+
+- **ECR-only.** `containerConfiguration.containerUri` validates against an ECR URI regex; Docker Hub is not a legal value. Publishing to Docker Hub does not make the image deployable on AgentCore — an ECR copy is still required, and it must be `linux/arm64` (AgentCore reads the ELF headers). The image is multi-arch, so this is a copy, not a rebuild.
+- **TLS terminates upstream.** AgentCore fronts the container, so `ZSCALER_MCP_ALLOW_HTTP=true` and `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` are correct *there* (the forwarded `Host` is internal and unpredictable) and wrong anywhere the container is directly reachable.
+- **AgentCore is a `2026-07-28`-only target.** The handshake revisions cannot complete a session through it. AgentCore manages MCP sessions itself — it routes to a microVM by `Mcp-Session-Id`, exposes that header as the `mcpSessionId` API parameter, and **replaces the id the container issued with one of its own**. `initialize` succeeds, but the client is handed an id the container has never seen, so the next call 404s (verified: container logged `5c8e958dfea4…`, client received `f7ebe538-ba3c-…`). No header allowlist entry can undo a substitution. AWS's answer is `stateless_http=True`; ours is not to give up session-backed human confirmation on every other platform for one platform's sake — see [HTTP session mode](#http-session-mode). **This is AgentCore-specific**: ECS Fargate / EC2 (ALB) and EKS (`type: LoadBalancer`) front the container with protocol-agnostic proxies that forward headers verbatim, and serve both revisions unchanged.
+
+**`McpAuthMode` decides whether ordinary MCP clients can connect at all** — not just how callers authenticate. AgentCore takes exactly two inbound methods, selected by whether `authorizerConfiguration` is set: `none` / `api-key` / `zscaler` leave it unset ⇒ **SigV4 only** ⇒ AWS SDK callers only (`invoke_mcp.py`, boto3, Strands, Bedrock agents, Gateway, Quick Suite); `jwt` sets `customJWTAuthorizer` ⇒ **OAuth bearer** ⇒ any MCP client, Claude Desktop / Cursor included, pointed at the `RuntimeMcpUrl` output via `mcp-remote`. SigV4 is request signing rather than a header a client can be configured to send, so no MCP client implements it and AgentCore rejects the attempt with `403 Authorization method mismatch … (OAuth or SigV4)` before the container is reached. **AgentCore Harness is not a workaround** — it hosts an *agent* and itself requires a non-SigV4 MCP endpoint, so it targets an ALB-fronted deployment, not a runtime. The genuinely IdP-free way to get a client-reachable endpoint is ECS / EC2 / EKS, which also serve both revisions.
+
+**Header allowlist.** `InvokeAgentRuntime` forwards only headers named in the runtime's `requestHeaderAllowlist`, so `runtime_provisioner.py` allowlists `MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name` and `Mcp-Session-Id` in **every** auth mode — omitting them does not make `2026-07-28` slower, it makes the revision unreachable and silently degrades every request to the handshake path. Note that `Accept`, `Content-Type`, `Mcp-Protocol-Version` and `Mcp-Session-Id` are *also* first-class `InvokeAgentRuntime` parameters (`accept`, `contentType`, `mcpProtocolVersion`, `mcpSessionId`) and should be passed that way by clients; only `Mcp-Method` / `Mcp-Name` genuinely require the raw-header path. `accept` must be `application/json, text/event-stream` or the endpoint returns `406` before reading the body. `integrations/aws/bedrock-agentcore/invoke_mcp.py` is the reference client; guarded by `tests/test_agentcore_provisioner.py`.
+
+### AWS Secrets Manager loader (`cloud/aws_secrets.py`)
+
+MCP has no native secret-store integration, so this is ours. Same shape as `gcp_secrets.py`:
+
+- **`ZSCALER_SECRET_NAME` is the gate** — its presence *is* the opt-in, with no second boolean. The CloudFormation in `integrations/aws/` has always set exactly this one variable to mean "fetch my credentials from Secrets Manager"; adding a flag would break every existing deployment silently.
+- **Region:** `AWS_REGION` → `AWS_DEFAULT_REGION` → boto3's own chain. Deliberately **no `us-east-1` default** — the fork had one, and it queried the wrong region for every deployment outside it.
+- **Allowlist, not passthrough.** Only `CREDENTIAL_KEYS` reach `os.environ`; everything else is named in a warning and dropped. The fork injected every key it found, turning a typo — or a hostile edit of the secret — into an arbitrary env var in the server process. The allowlist is a superset of GCP's: on AgentCore the container env *is* the deployment manifest, so `ZSCALER_MCP_AUTH_API_KEY` and `ZSCALER_MCP_REQUEST_STATE_KEYS` have nowhere else to live.
+- **The secret overrides the environment.** Rotation has to beat a stale value baked into a task definition.
+- **Fails closed.** Missing `boto3`, denied `GetSecretValue`, KMS failure, malformed JSON, `SecretBinary`, or absent required credentials all `SystemExit` with the cause named. Starting without credentials would defer the error to the first tool call, where it reaches the agent as an opaque Zscaler API error rather than the deployment problem it is. `ZSCALER_PRIVATE_KEY` satisfies the `ZSCALER_CLIENT_SECRET` requirement (JWT-based OneAPI tenants have no client secret).
+- **Guarded by** `tests/test_aws_secrets.py` — none of it needs `boto3` installed; the one test that exercises the import asserts the *absence* path, which is what a default install actually hits.
+
+### `ZSCALER_MCP_TRUST_PLATFORM_AUTH`
+
+Off by default. When on, `api-key` and `zscaler` auth modes accept a request that carries **no credential at all**, falling back to the container's own `ZSCALER_MCP_AUTH_API_KEY` / `ZSCALER_CLIENT_ID`+`_SECRET`. That is only safe when something in front has already authenticated the caller — AgentCore with an inbound authorizer, or an ALB/API Gateway that does. It exists because AgentCore's `customJwtAuthorizer` consumes the `Authorization` header for its own token, leaving no envelope for ours; `X-Api-Key` covers the case where the client *can* still send one (add it to `requestHeaderAllowlist`), and this covers the case where it cannot.
+
+**Never set it on a directly-reachable deployment** — it makes the server accept unauthenticated requests by design. Each admission logs at INFO, not DEBUG, so an operator reading the log can see requests being admitted on the platform's word rather than their own.
+
+### Other AWS integration surfaces
+
+`integrations/aws/` holds CloudFormation + orchestrators for `bedrock-agentcore`, `harness`, `ecs-fargate`, `ec2`, and `eks`. Note the EC2 template installs `boto3` explicitly (PyPI installs don't get the `[aws]` extra by default), so `ZSCALER_SECRET_NAME` works there too.
 
 ## Skills
 

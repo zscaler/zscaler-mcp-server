@@ -395,7 +395,8 @@ _RUNTIME_TOPOLOGY_FALLBACKS: dict[str, str] = {
 }
 
 # Secrets Manager: where we stash the Zscaler OneAPI credentials so the
-# container can fetch them at boot via `zscaler_mcp.config` instead of
+# container can fetch them at boot via `zscaler_mcp.cloud.aws_secrets`
+# instead of
 # receiving them as plaintext env vars in the ECS task definition.
 # Namespaced under `zscaler-mcp-harness/` so this doesn't collide with
 # the agentcore deploy's `zscaler-mcp/credentials` secret if both paths
@@ -403,7 +404,7 @@ _RUNTIME_TOPOLOGY_FALLBACKS: dict[str, str] = {
 DEFAULT_ECS_SECRET_NAME = "zscaler-mcp-harness/credentials"
 
 # The exact keys that move OUT of the ECS task env and INTO the
-# Secrets Manager JSON blob. `zscaler_mcp/config.py` reads the secret,
+# Secrets Manager JSON blob. `zscaler_mcp/cloud/aws_secrets.py` reads it,
 # parses the JSON, and re-injects each key into ``os.environ`` before
 # the SDK initialises — so from the SDK's perspective these are still
 # regular env vars, they just never appear in the task definition or
@@ -487,10 +488,11 @@ Operating rules:
   • After any ZIA create/update/delete you MUST call
     zia_activate_configuration(); changes are staged until activation.
   • IDs are strings even when numeric. Never invent IDs.
-  • If a service appears to be missing, call
-    zscaler_get_available_services first — it lists disabled services
-    explicitly so you do not waste turns searching for tools that
-    won't be there.
+  • The tools you can see are the whole inventory — it is fixed when the
+    server starts and there is no tool that enables more. If nothing
+    matches a service the user asked about, that service is not loaded
+    (disabled, or not entitled on this tenant). Say so plainly instead
+    of substituting a similar-looking tool from another service.
 """
 
 
@@ -1930,7 +1932,8 @@ def _build_container_env_vars(
     never appear in the task definition, CloudTrail
     ``RegisterTaskDefinition`` events, or ``aws ecs
     describe-task-definition`` output. ``ZSCALER_SECRET_NAME`` is NOT
-    set in the container env (we don't want ``zscaler_mcp.config``'s
+    set in the container env (we don't want the container's Secrets
+    Manager loader's
     runtime boto3 fetch to fire — ECS Express tasks have no IAM
     credentials inside the container by default; the secrets:[]
     pattern works because the ECS *agent* does the fetch using
@@ -1959,7 +1962,7 @@ def _build_container_env_vars(
         # Defensive: also strip any leftover ZSCALER_SECRET_NAME that
         # might've been in .env (e.g. from a config that previously
         # used the runtime-boto3 pattern). Avoids triggering
-        # zscaler_mcp.config's boto3 fetch which would fail with
+        # the container's boto3 fetch, which would fail with
         # NoCredentialsError inside ECS Express.
         forwarded.pop("ZSCALER_SECRET_NAME", None)
 
@@ -2293,7 +2296,7 @@ def poll_ecs_express_active(
 # The fix is to mirror what ``integrations/aws/bedrock-agentcore``'s
 # CloudFormation already does: stash the 5-key JSON blob in Secrets Manager,
 # put **only** the secret's name in the task env, and let the container's
-# pre-existing ``zscaler_mcp.config`` module (already in the image) fetch +
+# pre-existing ``zscaler_mcp.cloud.aws_secrets`` loader (in the image) fetch +
 # inject the values via boto3 at process boot. ECS Express's container picks
 # up its IAM credentials from the *execution* role (no separate task-role
 # slot on Express), so ``ensure_ecs_task_execution_role`` is also extended
@@ -2304,8 +2307,8 @@ def _zscaler_secret_payload(env: dict[str, str]) -> dict[str, str]:
     """Pluck the 5 Zscaler credential keys out of the resolved env.
 
     Returned dict has the **exact** ZSCALER_* env-var names — that's the
-    contract ``zscaler_mcp/config.py`` expects: it iterates the parsed
-    JSON and calls ``os.environ[key] = value`` for every entry. Keys
+    contract ``zscaler_mcp/cloud/aws_secrets.py`` expects: it iterates the
+    parsed JSON and sets ``os.environ[key]`` for every allowlisted entry. Keys
     missing from ``env`` are simply omitted; the operator may legitimately
     skip ``ZSCALER_CLOUD`` (defaults to production) or ``ZSCALER_CUSTOMER_ID``
     (only required for ZPA tools).
@@ -3240,7 +3243,7 @@ def _build_runtime_env_vars(
       wiring the container needs to bind to the port AgentCore
       expects. Applied **only when the operator didn't set them**.
     * ``ZSCALER_SECRET_NAME`` — when Secrets Manager is in play,
-      tells ``zscaler_mcp.config`` to fetch credentials at boot via
+      tells ``zscaler_mcp.cloud.aws_secrets`` to fetch credentials at boot via
       the Runtime execution role's secretsmanager grant.
 
     Deploy-time-only keys (``ZSCALER_MCP_IMAGE_URI``) are stripped
@@ -4351,7 +4354,7 @@ def _deploy_gateway_topology(
     # ── Step 5b: Zscaler credentials → Secrets Manager ──────────────────
     # Same two-mode pattern as the ECS path (UseExisting / CreateNew /
     # plaintext) — the Runtime container reads the secret via boto3 at
-    # boot using its executionRoleArn (zscaler_mcp/config.py picks it up
+    # boot using its executionRoleArn (cloud/aws_secrets.py picks it up
     # from ZSCALER_SECRET_NAME).
     secret_name: Optional[str] = None
     secret_arn: Optional[str] = None

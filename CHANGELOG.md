@@ -14,6 +14,8 @@
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The `oidcproxy` auth mode no longer takes a client secret.** It is now a standard OAuth 2.0 protected resource (RFC 9728): the server publishes `/.well-known/oauth-protected-resource` naming your IdP, and clients authenticate against the IdP directly instead of through the server. `OIDCPROXY_CLIENT_SECRET` is ignored — remove it. The mode is now called `oidc`; `oidcproxy` and `oauth-proxy` still resolve. Clients can no longer self-register, so they need a client ID issued by the IdP.
 
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Enabling write tools now takes both settings again, and an empty allowlist grants nothing.** `ZSCALER_MCP_WRITE_ENABLED=true` (or `--enable-write-tools`) is the master switch, and `ZSCALER_MCP_WRITE_TOOLS` (or `--write-tools`) names the patterns you permit. Since 0.13.0 either one on its own quietly turned writes on, and the switch with a blank allowlist registered **every** write tool — all 148, deletes included — rather than none, which is the opposite of what the setting has always documented. **Check your configuration before upgrading.** If you set only `ZSCALER_MCP_WRITE_TOOLS`, or turned the switch on without an allowlist, your write tools will now be absent; set both to keep them. Either half on its own is logged at startup with the reason no write tools were registered.
+
 ### Enhancements
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Adopted the `2026-07-28` MCP revision.** Clients on older revisions continue to work unchanged — the revision is negotiated per connection, with nothing to configure on either side.
@@ -27,6 +29,14 @@
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **New `ZSCALER_MCP_REQUEST_STATE_KEYS` for deployments that run more than one replica.** By default each instance protects pending confirmations with its own key, so a confirmation answered on one replica cannot be completed on another and the user is asked again. Set this to a shared key (a JSON array or comma-separated list; at least 32 bytes each — `python -c "import secrets; print(secrets.token_hex(32))"`) and any replica can complete any confirmation. **Required if you run multiple HTTP replicas with write tools enabled**; session affinity is not an alternative, because requests on the current protocol revision carry no session ID. Keys rotate without downtime: the first entry is used for new confirmations and every entry can still complete an outstanding one. The server warns at startup if it detects the risky combination.
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The tool list is now cacheable.** The server advertises its tool inventory as cacheable for five minutes, so clients and proxies skip re-fetching several hundred tool definitions on every connection.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Amazon Bedrock AgentCore now runs the same server and the same image as every other deployment.** AgentCore previously required a separate build of this server, which tracked its own dependencies and drifted behind on features. That fork is gone: the published image runs on AgentCore as-is, configured through environment variables, so AgentCore gets the `2026-07-28` revision, the current tool inventory and every fix at the same time as everyone else. AgentCore still needs the image in your own ECR and built for ARM64.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **AWS Secrets Manager is now built in.** Install `zscaler-mcp[aws]` and set `ZSCALER_SECRET_NAME` (plus `AWS_REGION` if it isn't already in the environment); the server reads your Zscaler credentials from the secret at startup, so they never appear in a task definition, a Kubernetes manifest or a `.env` file. Only the recognized credential keys are read, values are never logged, and a secret that cannot be fetched stops startup rather than silently falling through to whatever is in the environment. Credentials in environment variables keep working unchanged — this is opt-in.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **New `ZSCALER_MCP_TRUST_PLATFORM_AUTH` for runtimes that authenticate callers themselves.** On a platform like AgentCore, requests arrive already authorized by the platform and cannot carry credentials of their own. Setting this to `true` accepts those requests on the platform's authentication in `api-key` and `zscaler` modes. **Only enable it where the platform authenticates every caller** — on a directly reachable server it accepts unauthenticated requests. Off by default, and the server logs each request it admits this way.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **API keys can now be sent as `X-Api-Key`** in addition to `Authorization: Bearer`, for platforms that reserve the `Authorization` header for their own use. Either header is accepted; existing clients need no change.
 
 ### Bug Fixes
 
@@ -49,6 +59,10 @@
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Every delete tool now states that it requires confirmation.** Only 13 of the 50 said so, in three different wordings, leaving an agent comparing two delete tools free to conclude they behaved differently — they never did. All 50 now carry the same sentence, and it no longer names HMAC, which was only ever one of the two confirmation paths. No behaviour change.
 
 - [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Fixed OAuth 2.1 auth on the EC2, ECS Fargate and EKS deployments.** Those paths sent an `OIDCPROXY_ISSUER` no version of the server has ever read, and omitted the two variables it requires, so choosing that auth mode produced a server that exited at startup. They now pass the IdP's discovery URL and this server's public URL, and no longer ask for a client secret.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Fixed the current MCP revision being unreachable on Amazon Bedrock AgentCore.** AgentCore forwards only the request headers a runtime lists, and the MCP routing headers were not among them, so they were stripped in transit and every call on the `2026-07-28` revision was rejected. The deployment now allowlists them. Existing runtimes need to be redeployed for the change to take effect.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The AgentCore deployment no longer breaks when you update an existing stack.** Its cleanup step removed leftover resources by name without checking whether the stack was still using them, deleting the live provisioning function mid-update; the update then failed with "Function not found" and rolled back. Cleanup now runs only when no stack exists.
 
 ### Documentation
 
