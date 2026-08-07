@@ -1008,7 +1008,7 @@ doing so it **replaces the session id the container issued with one of its
 own**. `initialize` succeeds, but the id handed back to the client is not the
 one the container knows, so the next call is rejected:
 
-```
+```text
 container issued (visible in CloudWatch):  5c8e958dfea44b989a0de7fba7072e6e
 returned to the client by AgentCore:       f7ebe538-ba3c-4df8-b955-ca1a3d7c09b6
    -> tools/list  ...  404  Session not found
