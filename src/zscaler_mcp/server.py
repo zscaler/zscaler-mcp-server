@@ -1,4 +1,4 @@
-"""v2 MCP server entry point — FastMCP-backed, full v1 security parity.
+"""v2 MCP server entry point — MCPServer-backed, full v1 security parity.
 
 Tools are not listed here. They register themselves via the ``@tool`` decorator
 at their own definition site; the server calls :func:`discover_tools` to import
@@ -12,8 +12,9 @@ shape the server advertises can never drift.
 
 The security layer is carried forward from v1 verbatim in behaviour:
 
-* **MCP client auth** (HTTP only, on by default) — jwt / api-key / zscaler /
-  oauth-proxy stub, via :func:`apply_auth_middleware`.
+* **MCP client auth** (HTTP only, on by default) — jwt / api-key / zscaler via
+  :func:`apply_auth_middleware`, or oidc via :func:`resolve_oidc_auth`, which
+  configures the SDK's own resource-server enforcement instead.
 * **Source-IP ACL** — :class:`SourceIPMiddleware`.
 * **Transport hardening** — trailing-slash / content-type / GET-405 / health.
 * **HMAC confirmation for destructive ops** — wrapped onto delete tools in the
@@ -25,13 +26,16 @@ The security layer is carried forward from v1 verbatim in behaviour:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
 from collections.abc import Iterable
 
 from dotenv import load_dotenv
-from fastmcp import FastMCP
+from mcp.server.caching import CacheHint
+from mcp.server.mcpserver import MCPServer, RequestStateSecurity
+from mcp.types import Icon
 
 from zscaler_mcp import __version__
 from zscaler_mcp.common.logging import configure_logging, log_security_warning
@@ -43,13 +47,207 @@ from zscaler_mcp.security import (
     apply_entitlement_filter,
     apply_transport_hardening,
     get_allowed_source_ips,
-    resolve_fastmcp_auth,
+    resolve_oidc_auth,
     validate_host_binding,
 )
 
 logger = logging.getLogger("zscaler_mcp")
 
 DEFAULT_MCP_PATH = "/mcp"
+
+#: Presentation metadata for `server/discover`. Kept in step with the values the
+#: MCP registry manifest (`server.json`) and the MCPB bundle
+#: (`integrations/anthropic/manifest.json`) already publish, so the server does
+#: not present one identity in a directory listing and a different one once a
+#: client connects. `tests/test_server_metadata.py` asserts they stay aligned.
+SERVER_TITLE = "Zscaler MCP Server"
+SERVER_DESCRIPTION = (
+    "Manage the Zscaler Zero Trust Exchange — ZPA, ZIA, ZDX, ZCC, ZCell, ZTW, "
+    "ZIdentity, EASM, Z-Insights and ZMS — through the Model Context Protocol. "
+    "Read-only by default; write tools require an explicit allowlist and every "
+    "delete is confirmed by a human."
+)
+SERVER_WEBSITE_URL = "https://github.com/zscaler/zscaler-mcp-server"
+#: Raw-content URL rather than a repo path: clients fetch this over HTTP and
+#: cannot resolve a path relative to the source tree.
+SERVER_ICON_URL = (
+    "https://raw.githubusercontent.com/zscaler/zscaler-mcp-server/master/assets/icon.png"
+)
+
+#: SEP-2549 freshness hints. Only ``tools/list`` is hinted, and only because this
+#: server's inventory is genuinely immutable after startup: every filter
+#: (toolsets, write allowlist, entitlement downscope) is resolved once during
+#: registration and there is no runtime registration path, so the listing a
+#: client receives cannot change while the connection lives. ``scope="public"``
+#: follows from the same fact — the inventory is a property of this server's
+#: configuration, identical for every caller, so sharing a cached copy across
+#: authorization contexts leaks nothing. Re-check both claims before adding a
+#: runtime "enable toolset" tool; that would make this hint a lie.
+_TOOL_LIST_CACHE_HINTS = {"tools/list": CacheHint(ttl_ms=300_000, scope="public")}
+
+
+def _request_state_security() -> RequestStateSecurity:
+    """Sealing for the multi-round-trip ``requestState`` (SEP-2322).
+
+    ``requestState`` is the token the server hands a client when a call needs
+    input, and which the client echoes back on the retry. Left unsealed it is
+    caller-controlled input bearing on whether a destructive operation was
+    approved, so the SDK seals it: AES-256-GCM, plus expiry, request binding and
+    principal binding. A confirmation answered on one call cannot be lifted onto
+    a different call or reused by a different principal, and expires.
+
+    **It is not single-use, unlike the HMAC confirmation token.** The sealed blob
+    pins the *question* the server asked, not the answer — that arrives in
+    ``inputResponses`` on every round — so re-sending an identical approved call
+    inside the TTL executes again. Request and principal binding cap that at
+    repeating the same delete of the same resource as the same caller, which then
+    finds it already gone. A ledger cannot be added here: the only per-mint-unique
+    value is the *sealed* outer string, and the SDK's ``RequestStateBoundary``
+    unseals it before any of our code runs, while the inner plaintext is identical
+    across two independent asks for the same delete — keying on it would reject a
+    legitimate re-approval after a failed delete. Fixing this belongs in SEP-2322.
+
+    **Two key regimes, chosen by whether the operator supplied one.**
+
+    ``ZSCALER_MCP_REQUEST_STATE_KEYS`` set → ``RequestStateSecurity(keys=[...])``.
+    The first key seals; every key unseals, which is what makes zero-downtime
+    rotation possible: roll ``[old, new]``, then ``[new, old]``, then ``[new]``
+    after at least one TTL. **This is required for multi-replica HTTP write
+    deployments** — see below for why nothing else works.
+
+    Unset → ``ephemeral()``: a key generated at startup, never persisted, so state
+    minted by one process is unintelligible to another. Correct for stdio and
+    single-instance HTTP. Two consequences:
+
+    * A restart invalidates in-flight confirmations. The client is told the state
+      is invalid and asks again — the right outcome, since nobody approved
+      anything in the new process.
+    * Behind a load balancer, a retry landing on another replica will not decrypt.
+
+    **Sticky sessions do NOT rescue the second case on ``2026-07-28``.** It is
+    tempting to assume they do, because the server does still issue an
+    ``Mcp-Session-Id`` — but only to *handshake-era* clients. The SDK routes a
+    modern request to ``handle_modern_request`` **before** any session handling
+    (``streamable_http_manager._handle_request``), and that handler never sets a
+    session id at all: a ``2026-07-28`` request is a self-contained POST. There is
+    therefore no MCP session for a load balancer to pin on, and any affinity would
+    have to come from infrastructure-level cookie or source-IP stickiness, which
+    is not a protocol guarantee. A shared key ring is the only mechanism that
+    actually works, which is why the env var exists despite the general rule
+    against adding configuration for native protocol features: whether a
+    deployment runs one replica or many is a fact only the operator knows, and it
+    genuinely changes which configuration is correct.
+
+    The default ``bind_principal`` is kept. It binds state to the authenticated
+    caller in **every** HTTP auth mode: ``jwt`` and ``oidc`` from verified token
+    claims, ``zscaler`` from the OneAPI client id, and ``api-key`` from a
+    domain-separated fingerprint of the key (see
+    :meth:`zscaler_mcp.security.auth.AuthProvider.principal`). With auth disabled
+    there is no principal to bind, which is the honest representation of an
+    unauthenticated deployment.
+    """
+    keys = _request_state_keys()
+    if not keys:
+        return RequestStateSecurity.ephemeral()
+    try:
+        policy = RequestStateSecurity(keys=keys)
+    except ValueError as exc:
+        # The SDK enforces >=32 bytes of randomness per key. Re-raise naming OUR
+        # env var and the generation command, because the SDK's message says
+        # "request-state keys" and the operator set ZSCALER_MCP_REQUEST_STATE_KEYS.
+        raise ValueError(
+            f"ZSCALER_MCP_REQUEST_STATE_KEYS is invalid: {exc} "
+            "Generate one per key with: "
+            'python -c "import secrets; print(secrets.token_hex(32))"'
+        ) from exc
+    logger.info(
+        "Request-state protection: shared key ring (%d key(s); the first seals, "
+        "all unseal). Confirmations survive a restart and any replica can "
+        "validate a retry.",
+        len(keys),
+    )
+    return policy
+
+
+def _request_state_keys() -> list[str]:
+    """Parse ``ZSCALER_MCP_REQUEST_STATE_KEYS`` into an ordered key ring.
+
+    Accepts a JSON array (``'["k1","k2"]'``) or a comma-separated list. Order is
+    significant and preserved: the SDK seals with the first and unseals with any.
+    """
+    raw = os.getenv("ZSCALER_MCP_REQUEST_STATE_KEYS", "").strip()
+    if not raw:
+        return []
+    keys: list[str] = []
+    if raw.startswith("{"):
+        # A JSON object does not start with "[", so without this it would fall to
+        # the comma-split branch and become one literal "key" — the silent
+        # misconfiguration this variable exists to prevent.
+        raise ValueError(
+            "ZSCALER_MCP_REQUEST_STATE_KEYS must be a JSON array of strings or a "
+            "comma-separated list, not a JSON object."
+        )
+    if raw.startswith("["):
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                "ZSCALER_MCP_REQUEST_STATE_KEYS looks like JSON but does not parse "
+                f"({exc}). Use a JSON array of strings, or a comma-separated list."
+            ) from exc
+        if not isinstance(parsed, list) or not all(isinstance(k, str) for k in parsed):
+            raise ValueError("ZSCALER_MCP_REQUEST_STATE_KEYS must be a JSON array of strings.")
+        keys = [k.strip() for k in parsed]
+    else:
+        keys = [k.strip() for k in raw.split(",")]
+    keys = [k for k in keys if k]
+    if not keys:
+        raise ValueError("ZSCALER_MCP_REQUEST_STATE_KEYS was set but contained no usable key.")
+    return keys
+
+
+def _log_sanitization_posture() -> None:
+    """State whether output sanitization is active.
+
+    On by default and therefore easy to leave unstated — but it is the layer that
+    strips prompt-injection payloads out of admin-editable Zscaler fields, so an
+    operator who turned it off for diagnostics should see that in the startup log
+    rather than having to remember. Announced on every transport, because it wraps
+    tool results rather than the HTTP stack.
+    """
+    from zscaler_mcp.security.sanitize import is_sanitization_enabled
+
+    if is_sanitization_enabled():
+        logger.info("Output sanitization active (BiDi / zero-width / HTML / code-fence)")
+        return
+
+    # One line, not the full multi-line banner: this is a setting the operator
+    # chose, and a wall of text on every restart trains people to skim the log.
+    logger.warning(
+        "Output sanitization is DISABLED "
+        "(ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION) — tool results reach the agent "
+        "with invisible Unicode, HTML and forged code-fence markers intact."
+    )
+
+
+def _warn_if_scaled_writes_on_ephemeral_key(
+    *, transport: str, enable_write: bool, keys: list[str]
+) -> None:
+    """Warn when write confirmations cannot survive a second replica.
+
+    Deliberately loud: this is the configuration where a delete confirmation
+    silently becomes unreliable, and the failure looks like a flaky client rather
+    than a misconfiguration.
+    """
+    if keys or enable_write is False or transport == "stdio":
+        return
+    logger.warning(
+        "Write tools are enabled on an HTTP transport with a per-process "
+        "request-state key. Confirmations are valid ONLY on the replica that "
+        "issued them and do not survive a restart. This is safe on a single "
+        "instance; if you run more than one, set ZSCALER_MCP_REQUEST_STATE_KEYS "
+        "to a shared key ring or confirmations will intermittently fail."
+    )
 
 
 def _warn_unknown_toolsets(selection: Iterable[str] | None, flag: str) -> None:
@@ -112,27 +310,49 @@ def build_server(
     write_allowlist: Iterable[str] | None = None,
     disabled_patterns: Iterable[str] | None = None,
     disable_entitlement_filter: bool = False,
-    fastmcp_auth: object | None = None,
-) -> FastMCP:
-    """Discover tools, apply the filter selection, and wire up the FastMCP server.
+    oidc_auth: dict | None = None,
+) -> MCPServer:
+    """Discover tools, apply the filter selection, and wire up the MCP server.
 
     The filter arguments mirror v1's knobs (toolsets / entitlement / write
     allowlist / disabled patterns) and are resolved once here via the registry
-    query. Each selected spec is bridged onto a FastMCP ``FunctionTool`` that
+    query. Each selected spec is bridged onto an MCP ``Tool`` that
     carries the flat input schema, the curated output schema, and the security wrap.
 
     Args:
         disable_entitlement_filter: When True, skip the OneAPI product
             entitlement downscope (env opt-out: ``ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER``).
-        fastmcp_auth: An optional ``fastmcp.server.auth.AuthProvider`` (e.g.
-            ``OIDCProxy``). When given, it is passed to ``FastMCP(auth=...)`` and
-            FastMCP wires the OAuth routes + RequireAuthMiddleware natively. The
-            env-var ``AuthMiddleware`` path is bypassed for this server.
+        oidc_auth: Constructor kwargs from
+            :func:`~zscaler_mcp.security.auth.resolve_oidc_auth` — an
+            ``AuthSettings`` naming the external IdP plus a token verifier. Given
+            these, the SDK publishes protected-resource metadata (RFC 9728) and
+            enforces bearer auth itself, so the ASGI ``AuthMiddleware`` path is
+            skipped for this server. ``None`` for every other auth mode.
     """
     discover_tools()
 
     _warn_unknown_toolsets(enabled_toolsets, "--toolsets")
     _warn_unknown_toolsets(disabled_toolsets, "--disabled-toolsets")
+
+    # Writes need BOTH knobs: the switch grants nothing on its own, and an
+    # absent allowlist means zero write tools rather than all of them. Enforced
+    # here, at the registration boundary, so the CLI, tests and embedders all
+    # fail closed instead of trusting each caller to combine the flags safely.
+    write_allowlist = list(write_allowlist) if write_allowlist is not None else None
+    if enable_write and not write_allowlist:
+        logger.warning(
+            "Write tools are enabled but no allowlist was given — registering 0 write "
+            "tools. Name what you want to permit: --write-tools 'zpa_create_*,zia_update_*' "
+            "(env: ZSCALER_MCP_WRITE_TOOLS)."
+        )
+        enable_write = False
+    elif write_allowlist and not enable_write:
+        logger.warning(
+            "A write-tool allowlist was given (%d pattern(s)) but write tools are "
+            "disabled — registering 0 write tools. Add --enable-write-tools "
+            "(env: ZSCALER_MCP_WRITE_ENABLED=true) to turn them on.",
+            len(write_allowlist),
+        )
 
     entitled_services = _resolve_entitled_services(disable_entitlement_filter)
 
@@ -147,9 +367,45 @@ def build_server(
         disabled_patterns=disabled_patterns,
     )
 
-    server = FastMCP("zscaler-mcp", auth=fastmcp_auth) if fastmcp_auth else FastMCP("zscaler-mcp")
-    for spec in selected:
-        server.add_tool(build_function_tool(spec))
+    # Tools are built first and handed to the constructor: ``MCPServer.add_tool``
+    # takes a *function* and builds the Tool itself, which would discard the
+    # bridge's flattened signature and derived schemas. The ``tools=`` argument is
+    # the path that accepts preconstructed tools.
+    server = MCPServer(
+        "zscaler-mcp",
+        # Not derived from the package: omitting it reports an empty string as our
+        # version, on both the legacy `initialize` result and the `2026-07-28`
+        # `_meta` serverInfo, which is what a client displays.
+        version=__version__,
+        # Presentation metadata, surfaced on `server/discover` and the legacy
+        # `initialize` result. Without it a connected client shows the bare
+        # program name and nothing else — while the SAME product already
+        # publishes a title, description and icon to the MCP registry
+        # (`server.json`) and the Claude Desktop directory
+        # (`integrations/anthropic/manifest.json`). These constants deliberately
+        # mirror those files so the server presents identically whether a user
+        # is browsing a directory or already connected. Purely display data: no
+        # behaviour, no capability, nothing a client may act on.
+        title=SERVER_TITLE,
+        description=SERVER_DESCRIPTION,
+        website_url=SERVER_WEBSITE_URL,
+        icons=[Icon(src=SERVER_ICON_URL, mimeType="image/png", sizes=["512x512"])],
+        tools=[build_function_tool(spec) for spec in selected],
+        # SEP-2549. The inventory is fixed once registration finishes — filters
+        # are applied here at startup, never at runtime — so a client may cache
+        # `tools/list` for the life of the connection instead of re-fetching a
+        # listing of several hundred tools. `public` scope is honest for the same
+        # reason: the listing depends on this server's configuration, not on the
+        # caller, so a shared cache cannot leak one caller's view to another.
+        cache_hints=_TOOL_LIST_CACHE_HINTS,
+        # SEP-2322 state protection. Seals the multi-round-trip `requestState` with
+        # AES-256-GCM plus expiry, request binding and principal binding, so a
+        # confirmation answered on one round cannot be lifted onto a different
+        # call or a different principal. It is not single-use; see
+        # `_request_state_security`.
+        request_state_security=_request_state_security(),
+        **(oidc_auth or {}),
+    )
 
     names = sorted(spec.name for spec in selected)
     logger.info(
@@ -175,7 +431,60 @@ def build_server(
             ", ".join(sorted(p.name for p in prompt_specs)),
         )
 
+    _install_logging_set_level(server)
+
     return server
+
+
+def _install_logging_set_level(server: MCPServer) -> None:
+    """Let a pre-``2026-07-28`` client set this server's log verbosity.
+
+    ``logging/setLevel`` is part of the ``2025-06-18`` and ``2025-11-25`` base
+    spec, and a client that asks for it and gets ``-32601 Method not found`` has no
+    way to turn on diagnostics against a server it did not launch — the situation
+    for every HTTP deployment. ``MCPServer`` registers no handler, so this adds one
+    and is what keeps the ``logging-set-level`` conformance scenario green.
+
+    **It is deliberately a no-op on ``2026-07-28``.** SEP-2577 deprecated the
+    logging capability, and that revision drops the method from its surface
+    entirely: the SDK's runner rejects it during request validation, before handler
+    lookup, so this handler is unreachable there no matter what we register.
+    Nothing to work around — the method is gone by design, and clients on that
+    revision are expected to use OpenTelemetry, which the SDK emits natively.
+    Keeping the handler costs nothing and serves every older client.
+
+    The level applies to the ``zscaler_mcp`` logger tree only. Raising the root
+    logger would drag in ``httpx``, ``uvicorn`` and the Zscaler SDK's own request
+    logging, which at ``debug`` prints credential-bearing headers — a client
+    asking for verbose MCP logs is not asking for that.
+    """
+    import logging as _logging
+
+    from mcp.types import EmptyResult, SetLevelRequestParams
+
+    #: MCP's eight severities collapsed onto Python's five. ``notice`` reads as
+    #: informational, and everything above ``critical`` has no louder Python
+    #: equivalent, so the three top levels all pin to ``CRITICAL``.
+    levels = {
+        "debug": _logging.DEBUG,
+        "info": _logging.INFO,
+        "notice": _logging.INFO,
+        "warning": _logging.WARNING,
+        "error": _logging.ERROR,
+        "critical": _logging.CRITICAL,
+        "alert": _logging.CRITICAL,
+        "emergency": _logging.CRITICAL,
+    }
+
+    async def set_level(ctx, params: SetLevelRequestParams) -> EmptyResult:
+        level = levels.get(params.level, _logging.INFO)
+        _logging.getLogger("zscaler_mcp").setLevel(level)
+        logger.info("Log level set to %s by client request", params.level)
+        return EmptyResult()
+
+    server._lowlevel_server.add_request_handler(
+        "logging/setLevel", SetLevelRequestParams, set_level
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -230,7 +539,7 @@ def _tls_kwargs_from_env() -> dict:
 
 
 def _run_http(
-    server: FastMCP,
+    server: MCPServer,
     *,
     transport: str,
     host: str,
@@ -269,8 +578,38 @@ def _run_http(
     # Refuse to bind a public interface without explicit Host validation config.
     validate_host_binding(host)
 
-    fastmcp_transport = "http" if transport == "streamable-http" else "sse"
-    app = server.http_app(path=DEFAULT_MCP_PATH, transport=fastmcp_transport)
+    # ``MCPServer`` exposes one factory per transport instead of FastMCP's single
+    # ``http_app(transport=...)``. Both still return a plain Starlette app, so the
+    # middleware stack below is unchanged. ``host=`` is passed through because the
+    # SDK derives its own transport-security defaults from it; our stricter
+    # host-header allowlist is applied separately in step 3.
+    if transport == "streamable-http":
+        # Sessions stay ON for the clients that still use a handshake, because that
+        # session is the only way to *push* a delete confirmation to them. A
+        # pre-2026-07-28 client declares `elicitation` once during `initialize` and
+        # the session is what remembers it; run sessionless and the server sees no
+        # capabilities, cannot ask, and falls back to the HMAC token — which the
+        # agent can redeem in the same turn, so no human necessarily approves the
+        # delete. That is a safety regression, and it is what a real Claude session
+        # exhibited.
+        #
+        # This costs 2026-07-28 clients nothing. The SDK routes any request whose
+        # `mcp-protocol-version` is not a handshake revision to its modern entry
+        # point *before* the session branch, so those callers are served sessionless
+        # either way and answer with `InputRequiredResult`. Verified across all four
+        # {legacy, 2026-07-28} x {session, sessionless} combinations; only the
+        # legacy/sessionless cell loses the human, so that is the cell to avoid.
+        #
+        # The trade-off accepted here: handshake clients get an `Mcp-Session-Id`
+        # back, so multi-replica deployments need sticky routing for them. A human
+        # approving their own deletes is worth more than dropping affinity.
+        app = server.streamable_http_app(
+            streamable_http_path=DEFAULT_MCP_PATH,
+            host=host,
+            stateless_http=False,
+        )
+    else:
+        app = server.sse_app(sse_path=DEFAULT_MCP_PATH, host=host)
 
     # 1. Auth middleware (innermost wrap around the MCP app).
     app = apply_auth_middleware(app, transport)
@@ -285,13 +624,17 @@ def _run_http(
     app = apply_transport_hardening(app, transport, mcp_path=DEFAULT_MCP_PATH)
 
     logger.info(
-        "Starting %s transport on %s://%s:%d (path=%s, tls=%s)",
+        "Starting %s transport on %s://%s:%d (path=%s, tls=%s, sessions=%s)",
         transport,
         scheme,
         host,
         port,
         DEFAULT_MCP_PATH,
         "on" if tls_kwargs else "off",
+        # Both transports issue a session to handshake clients; only the revision
+        # decides otherwise, per connection. Reporting "off" here was left over from
+        # the sessionless experiment and contradicted the running configuration.
+        "on (handshake clients)",
     )
     uvicorn.run(
         app,
@@ -590,17 +933,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=os.getenv("ZSCALER_MCP_WRITE_ENABLED", "").lower() in ("true", "1", "yes"),
         help=(
-            "Enable write operations (create/update/delete). Off by default for safety. "
-            "Combine with --write-tools to narrow the allowlist "
-            "(env: ZSCALER_MCP_WRITE_ENABLED)."
+            "Master switch for write operations (create/update/delete). Off by default "
+            "for safety. Has no effect on its own — --write-tools must also name the "
+            "permitted patterns (env: ZSCALER_MCP_WRITE_ENABLED)."
         ),
     )
     p.add_argument(
         "--write-tools",
         default=os.getenv("ZSCALER_MCP_WRITE_TOOLS", ""),
         help=(
-            "Enable + allowlist write tools (fnmatch patterns, e.g. 'zpa_create_*'). "
-            "Write tools are disabled unless this or --enable-write-tools is set."
+            "Allowlist of write tools to permit (fnmatch patterns, e.g. 'zpa_create_*'). "
+            "Required alongside --enable-write-tools; neither flag enables writes alone "
+            "(env: ZSCALER_MCP_WRITE_TOOLS)."
         ),
     )
     p.add_argument(
@@ -720,9 +1064,10 @@ def main() -> None:
     _resolve_dotenv_path()
     _check_env_file_security()
 
-    # Optionally hydrate credentials from GCP Secret Manager BEFORE anything
-    # reads them (opt-in via ZSCALER_MCP_GCP_SECRET_MANAGER=true). No-op
-    # otherwise; the google-cloud dep is only imported when enabled.
+    # Optionally hydrate credentials from a cloud secret store BEFORE anything
+    # reads them: AWS Secrets Manager (ZSCALER_SECRET_NAME) or GCP Secret
+    # Manager (ZSCALER_MCP_GCP_SECRET_MANAGER=true). No-op otherwise; each
+    # provider's SDK is imported only when its loader is enabled.
     from zscaler_mcp.cloud import load_secrets
 
     load_secrets()
@@ -806,18 +1151,17 @@ def main() -> None:
     # stdio must log to stderr so stdout stays a clean JSON-RPC stream.
     configure_logging(debug=args.debug, name="zscaler_mcp", use_stderr=(args.transport == "stdio"))
 
-    # Write tools are enabled when an allowlist is given, --enable-write-tools is
-    # passed, OR ZSCALER_MCP_WRITE_ENABLED=true (parity with v1's two-knob model:
-    # --enable-write-tools flips the master switch; --write-tools narrows scope).
+    # --enable-write-tools is the master switch and --write-tools names the
+    # permitted patterns; both are required. build_server enforces the pairing.
     write_allowlist = _parse_csv(args.write_tools)
-    write_enabled = write_allowlist is not None or args.enable_write_tools
+    write_enabled = args.enable_write_tools
 
-    # oidcproxy env-var mode → build a fastmcp auth provider FastMCP wires
-    # natively. Every other mode returns None (handled by AuthMiddleware at the
-    # ASGI layer). stdio never authenticates.
-    fastmcp_auth = None
+    # OIDC mode → protected-resource metadata + a token verifier on the
+    # constructor, which the SDK wires itself. Every other mode returns None
+    # (handled by AuthMiddleware at the ASGI layer). stdio never authenticates.
+    oidc_auth = None
     if args.transport != "stdio":
-        fastmcp_auth = resolve_fastmcp_auth()
+        oidc_auth = resolve_oidc_auth()
 
     server = build_server(
         enabled_services=enabled_services,
@@ -828,7 +1172,7 @@ def main() -> None:
         write_allowlist=write_allowlist,
         disabled_patterns=_parse_csv(args.disabled_tools),
         disable_entitlement_filter=args.no_entitlement_filter,
-        fastmcp_auth=fastmcp_auth,
+        oidc_auth=oidc_auth,
     )
 
     # Process lifecycle: write the PID file and install the SIGHUP (reload) /
@@ -872,6 +1216,12 @@ def main() -> None:
     logger.info(
         "zscaler-mcp starting (transport=%s) — agent-first response shaping enabled",
         args.transport,
+    )
+    _log_sanitization_posture()
+    _warn_if_scaled_writes_on_ephemeral_key(
+        transport=args.transport,
+        enable_write=write_enabled,
+        keys=_request_state_keys(),
     )
 
     if args.transport == "stdio":

@@ -10,11 +10,11 @@ If you've never deployed an MCP server before, **start here**. Compared to runni
 What it does
 ------------
 
-1. Prompts for an **authentication mode** — ``jwt``, ``zscaler``, ``api-key``, ``oidcproxy``, or ``none``.
+1. Prompts for an **authentication mode** — ``jwt``, ``zscaler``, ``api-key``, ``oidc``, or ``none``.
 2. Prompts for a **transport** — ``streamable-http`` or ``stdio``. Incompatible combinations (anything other than ``none`` with ``stdio``) are rejected at the prompt with an explanation.
 3. Prompts for a **``.env`` file** path, or collects credentials interactively if you don't have one.
 4. **Pulls** ``zscaler/zscaler-mcp-server:latest`` from Docker Hub. No local build, no image modifications.
-5. **Starts** the container with the right entrypoint and env wiring for the chosen auth mode. (For ``oidcproxy``, the entrypoint is replaced with an inline Python program that constructs the OIDCProxy auth provider — still using the same upstream image.)
+5. **Starts** the container with the env wiring for the chosen auth mode. Every mode uses the image's default entrypoint — no overrides.
 6. **Verifies** the endpoint responds correctly for the chosen auth mode (HTTP transports only).
 7. **Auto-detects installed AI agents** and offers to configure each one for you. Existing entries with the name ``zscaler-mcp-server`` are overwritten; nothing else in the config is touched.
 
@@ -56,10 +56,10 @@ Authentication modes
      - Static shared secret. Simplest to set up, weakest model.
      - ``Authorization: Bearer <api-key>``
      - None
-   * - ``oidcproxy``
-     - Full OAuth 2.1 + Dynamic Client Registration via FastMCP's ``OIDCProxy``. The MCP client (e.g. ``mcp-remote``) discovers ``/.well-known/...`` and runs the browser flow.
-     - (none — handled by the client)
-     - **Yes** — entrypoint replaced with an inline Python program
+   * - ``oidc``
+     - OAuth 2.1. The server is a protected resource (RFC 9728); the MCP client (e.g. ``mcp-remote``) reads ``/.well-known/oauth-protected-resource`` and runs the browser flow against your IdP.
+     - (none — the client obtains and attaches the Bearer token)
+     - None
    * - ``none``
      - No authentication. Single-user local development only.
      - (nothing)
@@ -128,7 +128,7 @@ CLI flags
    * - Flag
      - Default
      - Purpose
-   * - ``--auth-mode {jwt,zscaler,api-key,oidcproxy,none}``
+   * - ``--auth-mode {jwt,zscaler,api-key,oidc,none}``
      - (prompt)
      - Skip the auth-mode prompt.
    * - ``--transport {streamable-http,stdio}``
@@ -145,7 +145,7 @@ CLI flags
      - Docker container name. Change this if you want to run multiple instances on the same host.
    * - ``--debug``
      - off
-     - Enable ``FASTMCP_DEBUG`` inside the container.
+     - Enable ``ZSCALER_MCP_DEBUG`` inside the container.
    * - ``--skip-pull``
      - off
      - Skip ``docker pull`` and reuse the locally cached image.

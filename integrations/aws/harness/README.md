@@ -263,8 +263,9 @@ A single `deploy --topology gateway` run provisions:
    `GetSecretValue` + scoped `kms:Decrypt` on the Zscaler secret.
 7. **AgentCore Runtime** — `zscaler_mcp_runtime`. Configured with
    `auth: jwt` + `customJwtAuthorizer` pointing at Cognito, env vars
-   include `ZSCALER_SECRET_NAME` so the container's `zscaler_mcp.config`
-   module loads credentials via boto3 at boot.
+   include `ZSCALER_SECRET_NAME` so the container's
+   `zscaler_mcp.cloud.aws_secrets` loader fetches credentials via boto3 at
+   startup.
 8. **Gateway service role** — `zscaler-mcp-harness-gateway-role`.
    Trusts `bedrock-agentcore.amazonaws.com`. Inline policy grants
    `bedrock-agentcore:InvokeAgentRuntime` on the Runtime ARN.
@@ -287,7 +288,7 @@ marker plus all the IDs above.
 |---|---|---|
 | Compute | Fargate task in ECS Express service | AgentCore Runtime (managed) |
 | Networking | ALB + target group + security groups + auto-scaling | None (Runtime is internal to AgentCore) |
-| Health checks | ALB `/health` probe (FastMCP `HealthCheckMiddleware`) | None (Runtime polls READY status itself) |
+| Health checks | ALB `/health` probe (the server's health-check middleware) | None (Runtime polls READY status itself) |
 | Inbound auth on MCP | Basic (Zscaler-mode middleware on the container) | JWT (validated by AgentCore Runtime *before* the container is hit) |
 | IdP | None (Token Vault holds static Basic header) | Amazon Cognito (1 User Pool, 1 App Client, 1 Resource Server, 1 domain) |
 | Reachable by non-Harness MCP clients | Yes — `https://…ecs….on.aws/mcp` is a plain URL | Yes — Gateway exposes a Cognito-fronted MCP URL too |
@@ -448,7 +449,7 @@ python harness_mcp_operations.py destroy  --region us-east-1 [--yes] [--keep-rol
 
 ## Authentication design
 
-The Zscaler MCP Server has five auth modes (`OIDCProxy`, `JWT`,
+The Zscaler MCP Server has five auth modes (`OIDC`, `JWT`,
 `API Key`, `Zscaler`, `None`). Harness's `remote_mcp` tool pairs with
 them as follows:
 
@@ -457,7 +458,7 @@ them as follows:
 | **Zscaler** | `Authorization: ${arn:…/zscaler-mcp-creds}` — Token Vault resolves to `Basic base64(client_id:client_secret)` | **Yes — this script's default.** Rotation handled by Token Vault. |
 | **API Key** | `Authorization: ${arn:…/zscaler-api-key}` — plain bearer | Yes, if you'd rather use a static bearer instead of OneAPI. |
 | **JWT** | `Authorization: Bearer <long-lived JWT>` plaintext, or Token-Vault resolved if rotation is needed | Less common. JWT is usually short-lived. |
-| **OIDCProxy** | Use `agentcore_gateway` tool type instead, with `outboundAuth.oauth` configured on the Gateway | Topology C. The OIDC flow can't run from inside `remote_mcp`. |
+| **OIDC** | Use `agentcore_gateway` tool type instead, with `outboundAuth.oauth` configured on the Gateway | Topology C. The OIDC flow can't run from inside `remote_mcp`. |
 | **None** | No `Authorization` header | Dev / testing only. Do not deploy without auth. |
 
 ---
@@ -481,8 +482,8 @@ credential rotation without touching the task definition.
 
 ### How it works (zero container-code changes)
 
-The container image already ships with `zscaler_mcp/config.py`, a
-side-effect module that runs at process boot via `aws_entrypoint.py`:
+The container image already ships with `zscaler_mcp/cloud/aws_secrets.py`,
+which `main()` calls at startup before anything reads a credential:
 
 1. The deploy script writes the credential JSON to
    `zscaler-mcp-harness/credentials` in Secrets Manager.
@@ -568,7 +569,7 @@ integrations/aws/harness/
 | **Harness playground** returns `Failed to start MCP client: ... unhandled errors in a TaskGroup (1 sub-exception)` on every invocation | Harness execution role is missing one of the AWS-mandated grants — most commonly `ecr-public:GetAuthorizationToken` + `sts:GetServiceBearerToken` (without these, the auto-managed AgentCore Runtime can't pull its own container from ECR Public and the MCP tool loader never starts). | `destroy --keep-ecs` and `deploy` again — the script now mirrors the full [AWS-published harness execution role policy](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness-security.html#harness-execution-role-policy). To verify by hand: `aws iam get-role-policy --role-name zscaler-mcp-harness-execution-role --policy-name HarnessInline`. |
 | **Harness playground** returns `AccessDeniedException ... not authorized to perform: secretsmanager:GetSecretValue` | Harness exec role can't read the Token Vault's backing secret in Secrets Manager. | Same fix as above — `destroy --keep-ecs && deploy`. The policy includes a scoped `secretsmanager:GetSecretValue` on `bedrock-agentcore-identity*` plus a `kms:Decrypt` (scoped via `kms:ViaService`). |
 | **Harness playground** returns `runtimeClientError: Failed to load tool 'zscaler' (type=remote_mcp): … not authorized to perform: bedrock-agentcore:GetResourceApiKey on resource: <arn>` — where `<arn>` rotates between five distinct shapes across retries (`workload-identity-directory/default`, `…/workload-identity/harness_<name>-…`, `token-vault/default`, `token-vault/default/apikeycredentialprovider/<provider>`, or the OAuth2 equivalent) | AgentCore Identity does **multiple** distinct IAM authz checks per `GetResourceApiKey` / `GetResourceOauth2Token` call — and every one of them must independently pass. The canonical [service-authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrockagentcore.html) declares `GetResourceApiKey` requires permission on **three** distinct resource types (`apikeycredentialprovider`, `token-vault`, `workload-identity`), plus AgentCore additionally checks the `workload-identity-directory` root. The simpler [scope-credential-provider-access](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/scope-credential-provider-access.html) page is **incomplete** — it omits the `apikeycredentialprovider` sub-ARN. **Critical IAM-matching gotcha**: IAM ARN matching is exact (no prefix matching), so listing `token-vault/default` does NOT cover `token-vault/default/apikeycredentialprovider/<name>`. Both ARN forms have to be in the Resource list. | `destroy --keep-ecs && deploy`. The current `ResolveTokenVaultCredentials` statement enumerates all five resource ARNs (workload-identity-directory root, workload-identity, token-vault, apikeycredentialprovider/*, oauth2credentialprovider/*), so every authz check the runtime makes lands on a statement that allows it. |
-| Add-tool dialog in Bedrock console shows the MCP URL **without** a trailing slash (e.g. `…/mcp`) but a previous deploy stored `…/mcp/` | Older script revisions ended the URL with `/mcp/`. The harness's built-in MCP client issues POSTs and won't follow the 307 redirect FastMCP emits on `/mcp` → `/mcp/`, so the tool fails to initialise with the TaskGroup error. | `destroy && deploy` to regenerate the harness with the trimmed URL the AWS console expects. |
+| Add-tool dialog in Bedrock console shows the MCP URL **without** a trailing slash (e.g. `…/mcp`) but a previous deploy stored `…/mcp/` | Older script revisions ended the URL with `/mcp/`. The harness's built-in MCP client issues POSTs and won't follow the 307 redirect the server emits on `/mcp` → `/mcp/`, so the tool fails to initialise with the TaskGroup error. | `destroy && deploy` to regenerate the harness with the trimmed URL the AWS console expects. |
 | `botocore.exceptions.NoCredentialsError` | No AWS creds resolved. | `aws configure`, set `AWS_PROFILE`, or export `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. |
 | `EndpointConnectionError: bedrock-agentcore-control.<region>.amazonaws.com` | Harness preview not available in that region. | Pick a region from the AWS preview list. As of writing, `us-east-1` is the safest bet. |
 | `AccessDeniedException: User … is not authorized to perform: bedrock-agentcore-control:CreateHarness` | IAM user / role missing preview permissions. | Add `bedrock-agentcore-control:*` and `bedrock-agentcore:*` to the calling principal. |
@@ -582,7 +583,7 @@ integrations/aws/harness/
 | `ECSExpressGatewayService` stays `CREATING` for >5 minutes | Default VPC subnets are misconfigured / no Internet egress; or the container is restart-looping. | `aws logs tail /ecs/zscaler-mcp --follow` to inspect container output. `aws ecs describe-express-gateway-service --service-arn <arn>` shows `status.statusReason`. |
 | `iam:PassRole` denied on `ecsTaskExecutionRole` / `ecsInfrastructureRoleForExpressServices` | Deploying principal doesn't have `iam:PassRole` for those role ARNs. | Grant `iam:PassRole` on the two role ARNs with the condition `iam:PassedToService = ecs.amazonaws.com`. The exact policy is in the [ECS Express getting-started guide](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/express-service-getting-started.html). |
 | Re-deploy detects drift (`Updating ECS Express service … image: … → …`) and does a rolling deployment | The script now diffs the live service's image + `healthCheckPath` against the current `ZSCALER_MCP_IMAGE_URI` / desired health path and calls `UpdateExpressGatewayService` when they differ — zero-downtime rolling replace, no `destroy` needed. | Expected. Wait for the second "ECS Express status = ACTIVE" line, then test. If you actually want a from-scratch rebuild (different cluster, different IAM topology, fresh ALB), run `destroy` first. |
-| First `POST /mcp` in CloudWatch returns `421 Misdirected Request` with `WARNING:mcp.server.transport_security:Invalid Host header: zs-<hash>.ecs.us-east-1.on.aws` | FastMCP's DNS-rebinding guard rejects every request whose `Host` header isn't in `ZSCALER_MCP_ALLOWED_HOSTS`. The ECS Express FQDN is AWS-generated and can't be known at `.env` time. | The script **merges** the discovered FQDN into the container's `ZSCALER_MCP_ALLOWED_HOSTS` on every deploy (deduplicating, preserving every other entry already in your `.env`). If you're upgrading from a build that pre-dates this fix, re-run `deploy` and an `UpdateExpressGatewayService` rolls in the FQDN. Full opt-out: `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` in `.env` — the script then touches nothing. |
+| First `POST /mcp` in CloudWatch returns `421 Misdirected Request` with `WARNING:mcp.server.transport_security:Invalid Host header: zs-<hash>.ecs.us-east-1.on.aws` | The server's DNS-rebinding guard rejects every request whose `Host` header isn't in `ZSCALER_MCP_ALLOWED_HOSTS`. The ECS Express FQDN is AWS-generated and can't be known at `.env` time. | The script **merges** the discovered FQDN into the container's `ZSCALER_MCP_ALLOWED_HOSTS` on every deploy (deduplicating, preserving every other entry already in your `.env`). If you're upgrading from a build that pre-dates this fix, re-run `deploy` and an `UpdateExpressGatewayService` rolls in the FQDN. Full opt-out: `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` in `.env` — the script then touches nothing. |
 | Same 421 but Host header is some other domain (CloudFront, custom DNS, API Gateway in front of ECS Express) | You're fronting the MCP server with infrastructure that rewrites or adds a Host the script doesn't know about. | Add the externally-visible hostname to your `.env`: `ZSCALER_MCP_ALLOWED_HOSTS=mcp.acme.com`. The script merges the ECS Express FQDN AND `127.0.0.1:*,localhost:*` into whatever you provide, so all three hostnames end up in the container's allowlist. |
 | After `destroy`, the ECS console still lists ACTIVE task definitions like `zscaler-mcp-zscaler-mcp-server:17` / `…:18` | `delete_express_gateway_service` only tears down the service + ALB + target groups; it deliberately leaves task-definition revisions intact as immutable history. They're account-scoped (not cluster-scoped), so they don't block cluster deletion — but they accumulate across deploy cycles and pollute the console. | `destroy` now runs a two-step cleanup per family (`{cluster}-{service}`): `deregister_task_definition` on every ACTIVE revision, then `delete_task_definitions` (batched 10 at a time per AWS API limit). To clean up leftovers from older script revisions manually: `aws ecs list-task-definitions --family-prefix zscaler-mcp-zscaler-mcp-server --status ACTIVE` then `aws ecs deregister-task-definition --task-definition <arn>` and finally `aws ecs delete-task-definitions --task-definitions <arn1> <arn2> …`. |
 | `destroy` finishes but `delete_cluster` raises `ClusterContainsServicesException` even though the express service is gone | ECS Express's `delete_express_gateway_service` returns the instant the service flips to `INACTIVE`, but the underlying ALB + target groups + occasional draining task instances keep tearing down asynchronously. A cluster delete that races into that tail still sees the residue and refuses. | `delete_ecs_cluster` now polls every 15s for up to 3 min, treating `ClusterContains{Services,Tasks,ContainerInstances}Exception` + `ResourceInUseException` as "wait a bit longer" instead of hard failures. If you still hit the timeout, the script prints the exact `aws ecs list-services` command to inspect and you can finish the cluster delete manually. |

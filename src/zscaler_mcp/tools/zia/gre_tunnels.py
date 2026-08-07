@@ -136,7 +136,11 @@ def zia_create_gre_tunnel(args: CreateTunnelInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_gre_tunnel(args: DeleteTunnelInput) -> dict[str, Any]:
-    """Delete a ZIA GRE tunnel and its backing static IP (destructive). Activate after."""
+    """Delete a ZIA GRE tunnel and its backing static IP (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.gre_tunnel.delete_gre_tunnel(args.tunnel_id)
     if err:

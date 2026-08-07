@@ -214,7 +214,7 @@ def zpa_get_pra_credential(args: GetCredentialInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_pra_credential(args: CreateCredentialInput) -> dict[str, Any]:
-    """Create a ZPA PRA credential (write). Gated by HMAC + `--write-tools`.
+    """Create a ZPA PRA credential (write). Requires `--write-tools`.
 
     Secrets (password / private_key) are write-only — they are sent to the API
     but never echoed back in the response.
@@ -248,7 +248,7 @@ def zpa_create_pra_credential(args: CreateCredentialInput) -> dict[str, Any]:
 def zpa_update_pra_credential(args: UpdateCredentialInput) -> dict[str, Any]:
     """Update a ZPA PRA credential (write). credential_type cannot change.
 
-    Gated by HMAC + `--write-tools`. Secrets are write-only.
+    Requires `--write-tools`. Secrets are write-only.
     """
     if not args.credential_id:
         raise ValueError("credential_id is required")
@@ -288,7 +288,11 @@ def zpa_update_pra_credential(args: UpdateCredentialInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_delete_pra_credential(args: DeleteCredentialInput) -> dict[str, Any]:
-    """Delete a ZPA PRA credential (destructive write). Gated by HMAC + `--write-tools`."""
+    """Delete a ZPA PRA credential (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.credential_id:
         raise ValueError("credential_id is required")
     client = get_zscaler_client(service="zpa")

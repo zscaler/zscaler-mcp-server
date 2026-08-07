@@ -1,14 +1,12 @@
 {
   "mcpServers": {
-    "zscaler": {
-      "command": "zscaler-mcp-server",
-      "args": [],
-      "env": {
-        "ZSCALER_CLIENT_ID": "",
-        "ZSCALER_CLIENT_SECRET": "",
-        "ZSCALER_CUSTOMER_ID": "",
-        "ZSCALER_VANITY_DOMAIN": ""
-      }
+    "zscaler-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "--env-file",
+        "/absolute/path/to/.env",
+        "zscaler-mcp"
+      ]
     }
   }
 }

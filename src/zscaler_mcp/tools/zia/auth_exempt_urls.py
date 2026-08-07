@@ -73,7 +73,11 @@ def zia_add_auth_exempt_urls(args: ExemptUrlsInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_auth_exempt_urls(args: ExemptUrlsInput) -> dict[str, Any]:
-    """Remove URLs from the ZIA cookie-auth exempt list (destructive). Activate after."""
+    """Remove URLs from the ZIA cookie-auth exempt list (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.authentication_settings.delete_urls_from_exempt_list(
         parse_list(args.exempt_urls)

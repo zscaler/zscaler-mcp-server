@@ -178,7 +178,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -391,11 +393,7 @@ def _build_foundry_agent_deep_link(
         return None
 
     try:
-        sub_b64 = (
-            base64.urlsafe_b64encode(uuid.UUID(match.group("sub")).bytes)
-            .decode()
-            .rstrip("=")
-        )
+        sub_b64 = base64.urlsafe_b64encode(uuid.UUID(match.group("sub")).bytes).decode().rstrip("=")
     except ValueError:
         return None
 
@@ -462,7 +460,9 @@ def _print_connection_setup_instructions(
     print("    5. Mark each key as a SECRET and add the rows below:")
     print()
     for key, value in expected_headers.items():
-        masked = value[:4] + "..." + value[-4:] if value and len(value) > 12 else "<set in your env>"
+        masked = (
+            value[:4] + "..." + value[-4:] if value and len(value) > 12 else "<set in your env>"
+        )
         print(f"       {key:<32} = {masked}")
     print()
     print("    6. Save, then re-run agent_create.")
@@ -710,9 +710,7 @@ def _handle_api_error(exc: Exception) -> None:
         print(f"  {DIM}--- traceback ---{NC}")
         _tb.print_exc()
     else:
-        print(
-            f"  {DIM}For full traceback, re-run with ZSCALER_FOUNDRY_DEBUG=1{NC}"
-        )
+        print(f"  {DIM}For full traceback, re-run with ZSCALER_FOUNDRY_DEBUG=1{NC}")
 
     print()
 

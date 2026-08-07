@@ -143,7 +143,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -272,6 +274,7 @@ def _prompt(label: str, *, default: str = "", secret: bool = False) -> str:
         try:
             if secret:
                 import getpass
+
                 val = getpass.getpass(display)
             else:
                 val = input(display)
@@ -558,33 +561,50 @@ def _deploy_cloudrun(env: dict[str, str], current_project: str) -> None:
     try:
         info("Deploying ADK Agent to Cloud Run...")
         print()
-        run_cmd([
-            "adk", "deploy", "cloud_run",
-            f"--project={project}",
-            f"--region={region}",
-            f"--service_name={service_name}",
-            "--with_ui",
-            str(AGENT_DIR),
-        ])
+        run_cmd(
+            [
+                "adk",
+                "deploy",
+                "cloud_run",
+                f"--project={project}",
+                f"--region={region}",
+                f"--service_name={service_name}",
+                "--with_ui",
+                str(AGENT_DIR),
+            ]
+        )
     finally:
         restore_env()
 
     elapsed = time.time() - t0
 
     # Save state
-    _save_state({
-        "deployment_type": "cloudrun",
-        "project": project,
-        "region": region,
-        "service_name": service_name,
-    })
+    _save_state(
+        {
+            "deployment_type": "cloudrun",
+            "project": project,
+            "region": region,
+            "service_name": service_name,
+        }
+    )
 
     # Retrieve service URL
-    r = run_gcloud([
-        "run", "services", "describe", service_name,
-        "--region", region, "--project", project,
-        "--format", "value(status.url)",
-    ], capture=True, check=False)
+    r = run_gcloud(
+        [
+            "run",
+            "services",
+            "describe",
+            service_name,
+            "--region",
+            region,
+            "--project",
+            project,
+            "--format",
+            "value(status.url)",
+        ],
+        capture=True,
+        check=False,
+    )
     service_url = r.stdout.strip() if r.returncode == 0 else "(could not retrieve)"
 
     print()
@@ -641,25 +661,31 @@ def _deploy_agent_engine(env: dict[str, str], current_project: str) -> None:
     try:
         info("Deploying ADK Agent to Vertex AI Agent Engine...")
         print()
-        run_cmd([
-            "adk", "deploy", "agent_engine",
-            f"--project={project}",
-            f"--region={region}",
-            f"--staging_bucket={staging_bucket}",
-            "--display_name=zscaler_agent",
-            str(AGENT_DIR),
-        ])
+        run_cmd(
+            [
+                "adk",
+                "deploy",
+                "agent_engine",
+                f"--project={project}",
+                f"--region={region}",
+                f"--staging_bucket={staging_bucket}",
+                "--display_name=zscaler_agent",
+                str(AGENT_DIR),
+            ]
+        )
     finally:
         restore_env()
 
     elapsed = time.time() - t0
 
-    _save_state({
-        "deployment_type": "agent_engine",
-        "project": project,
-        "region": region,
-        "staging_bucket": staging_bucket,
-    })
+    _save_state(
+        {
+            "deployment_type": "agent_engine",
+            "project": project,
+            "region": region,
+            "staging_bucket": staging_bucket,
+        }
+    )
 
     print()
     print("=" * 72)
@@ -683,8 +709,12 @@ def _deploy_agentspace(env: dict[str, str]) -> None:
     project_id = _prompt("GCP Project", default=resolve(env, "PROJECT_ID"))
     project_number = _prompt("GCP Project Number", default=resolve(env, "PROJECT_NUMBER"))
     region = _prompt("Agent Engine Region", default=resolve(env, "REGION") or "us-central1")
-    agent_location = _prompt("Agentspace Location", default=resolve(env, "AGENT_LOCATION") or "global")
-    reasoning_engine_number = _prompt("Reasoning Engine ID", default=resolve(env, "REASONING_ENGINE_NUMBER"))
+    agent_location = _prompt(
+        "Agentspace Location", default=resolve(env, "AGENT_LOCATION") or "global"
+    )
+    reasoning_engine_number = _prompt(
+        "Reasoning Engine ID", default=resolve(env, "REASONING_ENGINE_NUMBER")
+    )
     app_name = _prompt("Agentspace App Name", default=resolve(env, "AGENT_SPACE_APP_NAME"))
     print()
 
@@ -731,14 +761,22 @@ def _deploy_agentspace(env: dict[str, str]) -> None:
     r = run_gcloud(["auth", "print-access-token"], capture=True)
     access_token = r.stdout.strip()
 
-    run_cmd([
-        "curl", "-X", "POST",
-        "-H", "Content-Type: application/json",
-        "-H", f"Authorization: Bearer {access_token}",
-        "-H", f"X-Goog-User-Project: {project_id}",
-        "-d", json.dumps(payload),
-        url,
-    ])
+    run_cmd(
+        [
+            "curl",
+            "-X",
+            "POST",
+            "-H",
+            "Content-Type: application/json",
+            "-H",
+            f"Authorization: Bearer {access_token}",
+            "-H",
+            f"X-Goog-User-Project: {project_id}",
+            "-d",
+            json.dumps(payload),
+            url,
+        ]
+    )
 
     elapsed = time.time() - t0
 
@@ -776,18 +814,34 @@ def op_status(args: argparse.Namespace) -> None:
     if deployment_type == "cloudrun":
         service_name = state.get("service_name", SERVICE_NAME)
         info(f"Cloud Run service: {service_name}")
-        run_gcloud([
-            "run", "services", "describe", service_name,
-            "--region", region, "--project", project, "--format",
-            "table(status.url,status.conditions[0].status,metadata.creationTimestamp)",
-        ])
+        run_gcloud(
+            [
+                "run",
+                "services",
+                "describe",
+                service_name,
+                "--region",
+                region,
+                "--project",
+                project,
+                "--format",
+                "table(status.url,status.conditions[0].status,metadata.creationTimestamp)",
+            ]
+        )
 
     elif deployment_type == "agent_engine":
         info(f"Agent Engine deployment in project '{project}'")
-        run_gcloud([
-            "ai", "reasoning-engines", "list",
-            "--project", project, "--region", region,
-        ])
+        run_gcloud(
+            [
+                "ai",
+                "reasoning-engines",
+                "list",
+                "--project",
+                project,
+                "--region",
+                region,
+            ]
+        )
 
     print()
 
@@ -811,19 +865,37 @@ def op_logs(args: argparse.Namespace) -> None:
     if deployment_type == "cloudrun":
         service_name = state.get("service_name", SERVICE_NAME)
         info(f"Streaming logs for Cloud Run service '{service_name}'...")
-        run_gcloud([
-            "run", "services", "logs", "read", service_name,
-            "--region", region, "--project", project, "--limit", "100",
-        ])
+        run_gcloud(
+            [
+                "run",
+                "services",
+                "logs",
+                "read",
+                service_name,
+                "--region",
+                region,
+                "--project",
+                project,
+                "--limit",
+                "100",
+            ]
+        )
 
     elif deployment_type == "agent_engine":
         info("Fetching Agent Engine logs...")
-        run_gcloud([
-            "logging", "read",
-            'resource.type="aiplatform.googleapis.com/ReasoningEngine"',
-            "--project", project, "--limit", "50",
-            "--format", "value(textPayload)",
-        ])
+        run_gcloud(
+            [
+                "logging",
+                "read",
+                'resource.type="aiplatform.googleapis.com/ReasoningEngine"',
+                "--project",
+                project,
+                "--limit",
+                "50",
+                "--format",
+                "value(textPayload)",
+            ]
+        )
 
     print()
 
@@ -864,10 +936,19 @@ def op_destroy(args: argparse.Namespace) -> None:
         print()
         t0 = time.time()
         info(f"Deleting Cloud Run service '{service_name}'...")
-        run_gcloud([
-            "run", "services", "delete", service_name,
-            "--region", region, "--project", project, "--quiet",
-        ])
+        run_gcloud(
+            [
+                "run",
+                "services",
+                "delete",
+                service_name,
+                "--region",
+                region,
+                "--project",
+                project,
+                "--quiet",
+            ]
+        )
         elapsed = time.time() - t0
         ok(f"Cloud Run service deleted ({elapsed_str(elapsed)})")
 
@@ -876,10 +957,17 @@ def op_destroy(args: argparse.Namespace) -> None:
         warn("or using 'gcloud ai reasoning-engines delete <ENGINE_ID>'.")
         print()
         info("Listing current deployments:")
-        run_gcloud([
-            "ai", "reasoning-engines", "list",
-            "--project", project, "--region", region,
-        ])
+        run_gcloud(
+            [
+                "ai",
+                "reasoning-engines",
+                "list",
+                "--project",
+                project,
+                "--region",
+                region,
+            ]
+        )
         print()
         info("Delete the engine manually using the ID above.")
 

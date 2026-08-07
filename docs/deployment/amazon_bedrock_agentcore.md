@@ -11,6 +11,7 @@ This guide provides complete instructions for deploying the Zscaler MCP Server t
 - [Prerequisites](#prerequisites)
 - [Method 1: CloudFormation Deployment (Recommended)](#method-1-cloudformation-deployment-recommended)
 - [Method 2: Manual AWS CLI Deployment](#method-2-manual-aws-cli-deployment)
+- [Authentication, custom headers, and AgentCore](#authentication-custom-headers-and-agentcore)
 - [Gateway integration (experimental)](#gateway-integration-experimental)
 - [Testing Your Deployment](#testing-your-deployment)
 - [Configuring OAuth (Auth0) for AgentCore Identity](#configuring-oauth-auth0-for-agentcore-identity)
@@ -218,9 +219,9 @@ aws logs tail /aws/bedrock-agentcore/runtimes/${RUNTIME_ID}-DEFAULT \
 **Look for these log entries:**
 
 ```text
-INFO:zscaler_mcp.config:Successfully retrieved and parsed secret from Secrets Manager
-INFO:zscaler_mcp.config:Set environment variable: ZSCALER_CLIENT_ID
-INFO:zscaler_mcp.config:Zscaler credentials injected into environment variables
+INFO:zscaler_mcp.cloud.aws_secrets:Loading credentials from AWS Secrets Manager (secret: zscaler/mcp/credentials, region: us-east-1)
+INFO:zscaler_mcp.cloud.aws_secrets:  ZSCALER_CLIENT_ID = abc123...
+INFO:zscaler_mcp.cloud.aws_secrets:Loaded 5 credential(s) from AWS Secrets Manager
 INFO:zscaler_mcp.server:Initializing Zscaler MCP Server
 ```
 
@@ -428,11 +429,10 @@ aws logs tail /aws/bedrock-agentcore/runtimes/${RUNTIME_ID}-DEFAULT \
 **Expected log entries:**
 
 ```text
-INFO:zscaler_mcp.config:Attempting to fetch secret: zscaler/mcp/credentials from region: us-east-1
-INFO:zscaler_mcp.config:Successfully retrieved and parsed secret from Secrets Manager
-INFO:zscaler_mcp.config:Set environment variable: ZSCALER_CLIENT_ID
-INFO:zscaler_mcp.config:Set environment variable: ZSCALER_CLIENT_SECRET
-INFO:zscaler_mcp.config:Zscaler credentials injected into environment variables
+INFO:zscaler_mcp.cloud.aws_secrets:Loading credentials from AWS Secrets Manager (secret: zscaler/mcp/credentials, region: us-east-1)
+INFO:zscaler_mcp.cloud.aws_secrets:  ZSCALER_CLIENT_ID = abc123...
+INFO:zscaler_mcp.cloud.aws_secrets:  ZSCALER_CLIENT_SECRET = ********
+INFO:zscaler_mcp.cloud.aws_secrets:Loaded 5 credential(s) from AWS Secrets Manager
 ```
 
 ✅ **Success!** Container-based Secrets Manager integration is working.
@@ -525,14 +525,14 @@ aws bedrock-agentcore-control create-agent-runtime \
 # Check container logs
 aws logs tail /aws/bedrock-agentcore/runtimes/${RUNTIME_ID}-DEFAULT \
   --region us-east-1 \
-  --since 5m | grep "ZSCALER_SECRET_NAME"
+  --since 5m | grep "aws_secrets"
 ```
 
-**Expected log entry:**
-
-```text
-INFO:zscaler_mcp.config:ZSCALER_SECRET_NAME not set - using credentials from environment variables directly
-```
+**Expected result: no output.** The Secrets Manager loader is gated on
+`ZSCALER_SECRET_NAME` and returns silently when it is unset, so an empty grep is
+the confirmation that credentials came straight from the environment. Any
+`zscaler_mcp.cloud.aws_secrets` line here means the variable is set and the
+runtime is on the Secrets Manager path instead.
 
 ✅ **Success!** Container is using direct environment variables.
 
@@ -597,6 +597,67 @@ The deployment configures the runtime automatically based on `McpAuthMode`:
 | `api-key` | `X-Api-Key` | no | yes — see container-side fallback below |
 | `zscaler` | `X-Zscaler-Client-ID`, `X-Zscaler-Client-Secret` | no | yes — see container-side fallback below |
 | `jwt` | `Authorization` | **yes** — provisioned with discovery URL + audience from `JwtIssuer` / `JwtAudience` (override with `JwtDiscoveryUrl` / `JwtAllowedClients`) | yes — via AgentCore Identity **Sign-In** button (see "Configuring OAuth" below) |
+
+### Which clients can reach the runtime — SigV4 vs OAuth
+
+> [!IMPORTANT]
+> `McpAuthMode` decides more than *how* callers authenticate. It decides
+> **whether an ordinary MCP client can connect at all.** Choose it with that in
+> mind, because changing it later means updating the runtime.
+
+AgentCore accepts exactly two inbound authentication methods, and the choice is
+made by whether `authorizerConfiguration` is set on the runtime:
+
+| `McpAuthMode` | Runtime authorizer | Inbound method | Who can connect |
+|---|---|---|---|
+| `none`, `api-key`, `zscaler` | none | **SigV4** (AWS request signing) | AWS SDK callers only — `invoke_mcp.py`, boto3, Strands, Bedrock agents, AgentCore Gateway, Quick Suite |
+| `jwt` | `customJWTAuthorizer` | **OAuth bearer token** | **any MCP client** — Claude Desktop and Cursor via `mcp-remote`, plus everything above |
+
+**SigV4 is why a normal MCP client cannot connect to the first three.** It is
+AWS request signing, not a header a client can be configured to send, and no MCP
+client implements it. AgentCore rejects the attempt unambiguously:
+
+```console
+$ curl -X POST "$RuntimeMcpUrl" -H 'Authorization: Bearer <token>' ...
+403  Authorization method mismatch. The agent is configured for a different
+     authorization method than what was used in your request. ... ensure your
+     request uses the matching method (OAuth or SigV4)
+```
+
+This is not a limitation of the MCP server — the container is never reached. It
+is also **not** a reason to route through AgentCore Harness: the Harness hosts an
+*agent* and itself requires a non-SigV4 MCP endpoint, so it points at an
+ECS/ALB-fronted deployment rather than at an AgentCore runtime.
+
+**To connect Claude Desktop or Cursor directly**, deploy with `McpAuthMode=jwt`.
+The runtime then validates bearer tokens itself and clients POST straight to the
+`RuntimeMcpUrl` stack output over ordinary HTTPS:
+
+```json
+{
+  "mcpServers": {
+    "zscaler": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/<url-encoded-arn>/invocations?qualifier=DEFAULT",
+        "--header", "Authorization: Bearer ${MCP_TOKEN}"
+      ],
+      "env": { "MCP_TOKEN": "<token from your IdP>" }
+    }
+  }
+}
+```
+
+The cost is an IdP — Entra ID, Auth0, Cognito or similar — to mint the tokens,
+the same requirement as the server's own `oidc` mode. If you have no IdP and
+only ever call the runtime from AWS-side callers, `zscaler` mode with SigV4 is
+the simpler posture and IAM is your authorization boundary.
+
+If you want a client-reachable endpoint *without* standing up an IdP, deploy to
+ECS Fargate, EC2 or EKS instead: those front the container with an ALB, so any
+MCP client connects over plain HTTPS with whatever auth mode you configure — and
+they serve both MCP revisions rather than `2026-07-28` only.
 
 ### Container-side credential fallback (api-key and zscaler modes)
 
@@ -923,67 +984,195 @@ If your only consumer is a Lambda / Step Function / Bedrock Agent inside the sam
 
 ## Testing Your Deployment
 
-### Test via AWS Bedrock Sandbox
+### AgentCore serves `2026-07-28` only
 
-1. Navigate to **AWS Bedrock AgentCore Console**
-2. Select your runtime
-3. Open the **Test** or **Sandbox** tab
-4. Send a test request:
+> [!IMPORTANT]
+> **On AgentCore, use MCP revision `2026-07-28`.** The older handshake
+> revisions (`2025-11-25` and earlier) cannot complete a session through
+> AgentCore. This is an AgentCore constraint, not a limitation of the server —
+> the ECS Fargate, EC2 and EKS deployments serve **both** revisions normally.
 
-#### Test 1: List Available Tools
+The server itself always speaks both, and there is no setting that selects one;
+the client chooses per request. What differs is the ingress in front of it.
+
+| Deployment | Ingress | `2026-07-28` | Handshake revisions |
+|---|---|---|---|
+| Bedrock AgentCore | MCP-aware managed runtime | yes | **no** — see below |
+| ECS Fargate / EC2 | ALB (protocol-agnostic) | yes | yes |
+| EKS | `type: LoadBalancer` Service | yes | yes |
+
+**Why the handshake path cannot work here.** AgentCore manages MCP sessions
+itself — it routes requests to a microVM by `Mcp-Session-Id` and exposes that
+header as a first-class `mcpSessionId` parameter on `InvokeAgentRuntime`. In
+doing so it **replaces the session id the container issued with one of its
+own**. `initialize` succeeds, but the id handed back to the client is not the
+one the container knows, so the next call is rejected:
+
+```text
+container issued (visible in CloudWatch):  5c8e958dfea44b989a0de7fba7072e6e
+returned to the client by AgentCore:       f7ebe538-ba3c-4df8-b955-ca1a3d7c09b6
+   -> tools/list  ...  404  Session not found
+```
+
+The container's real session id never reaches the client, so there is nothing
+correct for the client to echo. An ALB does not do this — it forwards headers
+verbatim, which is why the other three targets are unaffected.
+
+AWS's own guidance for this is to run MCP servers on AgentCore with
+`stateless_http=True`. This server deliberately keeps sessions on, because a
+session is what lets it prompt a **human** to confirm a delete on clients that
+predate `2026-07-28` (see [Write Operations](#write-operations)). Rather than
+give that up everywhere for one platform, AgentCore is scoped to the revision
+that needs no session at all.
+
+None of this costs `2026-07-28` clients anything: those requests are
+self-contained, carry no session, and are unaffected by the substitution.
+
+### Test via the AgentCore playground (limited — read this first)
+
+**You cannot drive a tool call from the console playground.** The playground
+submits a bare JSON-RPC body and gives you no way to set request headers, and
+this server speaks vanilla MCP streamable-http, which is session-oriented for
+clients that do not negotiate `2026-07-28`. Pasting a `tools/call` as the first
+message returns:
+
+```json
+{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"Bad Request: Missing session ID"}}
+```
+
+surfaced by the playground as the much less helpful `Received error (400) from
+runtime`. The correct sequence for a handshake-era client is:
+
+1. `initialize` → the server replies **and returns an `Mcp-Session-Id` response header**
+2. `notifications/initialized`
+3. `tools/call`, echoing `Mcp-Session-Id` on this and every later request
+
+Steps 2 and 3 need that header, so the flow dies at step 1 in the playground.
+AgentCore's own `runtimeSessionId` does **not** substitute — it is a separate
+affinity header (`X-Amzn-Bedrock-AgentCore-Runtime-Session-Id`) that pins you to
+a container instance and is never mapped onto `Mcp-Session-Id`.
+
+Nor is this only a playground problem: as covered above, the handshake sequence
+cannot be completed through AgentCore by *any* client, because the platform
+replaces the container's session id. Use `2026-07-28` and
+`invoke_mcp.py` instead of trying to make the handshake work here.
+
+> [!NOTE]
+> This worked on the `v0.10.x-bedrock` image because that image shipped
+> `web_server.py`, a FastAPI wrapper that bypassed MCP session initialization and
+> accepted a bare `tools/call`. The wrapper was removed when the AWS fork was
+> consolidated into the main server, so the playground lost the ability to
+> complete a tool call. That is a deliberate consequence of running the same
+> unmodified MCP server everywhere, not a regression in the deployment.
+
+What the playground **is** still good for is a liveness check. Send:
 
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "tools/list",
-  "params": {}
-}
-```
-
-**Expected response:**
-
-```json
-{
-  "status": "success",
-  "tool": "tools/list",
-  "result": {
-    "tools": [
-      {"name": "zia_list_ssl_inspection_rules", "description": "..."},
-      {"name": "zpa_list_app_segments", "description": "..."},
-      ...
-    ]
-  }
-}
-```
-
-#### Test 2: Call a Zscaler Tool
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
+  "method": "initialize",
   "params": {
-    "name": "zia_list_ssl_inspection_rules",
-    "arguments": {}
+    "protocolVersion": "2025-11-25",
+    "capabilities": {},
+    "clientInfo": {"name": "playground", "version": "1"}
   }
 }
 ```
 
-**Expected response:**
+A `200` carrying `serverInfo` and a `tools` capability proves the image booted,
+credentials loaded from Secrets Manager, and auth admitted the caller.
 
-```json
-{
-  "status": "success",
-  "tool": "zia_list_ssl_inspection_rules",
-  "result": [
-    "{\n  \"id\": 184200,\n  \"name\": \"Zscaler Recommended Exemptions\",\n  ..."
-  ]
-}
+Note the `"protocolVersion": "2025-11-25"` in that payload. It is a *handshake*
+revision, which is why the reply echoes it. The playground cannot reach
+`2026-07-28` at all — see below.
+
+### Test the 2026-07-28 revision (headers required)
+
+`2026-07-28` removes the handshake: there is no `initialize`, no
+`Mcp-Session-Id`, and every request is self-contained. That is what makes it the
+right fit for AgentCore, where each call may land on a fresh microVM.
+
+**The revision is selected by an HTTP header, never by the request body.** The
+SDK reads `MCP-Protocol-Version` off the request and routes to the stateless
+handler before looking at anything else, so no payload you can paste into the
+playground will get you there. Three headers are involved:
+
+| Header | Value | Required on |
+|---|---|---|
+| `MCP-Protocol-Version` | `2026-07-28` | every request; must equal the version in `params._meta` |
+| `Mcp-Method` | the body's `method` | every request |
+| `Mcp-Name` | the body's `name` / `uri` param | `tools/call`, `prompts/get`, `resources/read` |
+
+Because `InvokeAgentRuntime` forwards only headers named in the runtime's
+[`requestHeaderAllowlist`](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-header-allowlist.html),
+the deployment allowlists these in **every** auth mode. Without them the headers
+are stripped in transit and the request silently falls back to the handshake
+path, failing with `Bad Request: Missing session ID`.
+
+The body carries an envelope under `params._meta` in place of the handshake.
+`invoke_mcp.py` in this integration does all of it for you and reads the runtime
+ARN out of `.aws-deploy-state.json`. It signs with SigV4, so it works against
+every `McpAuthMode` — including the three that no ordinary MCP client can reach
+(see [Which clients can reach the
+runtime](#which-clients-can-reach-the-runtime--sigv4-vs-oauth)):
+
+```bash
+cd integrations/aws/bedrock-agentcore
+python3 invoke_mcp.py --list-tools
+python3 invoke_mcp.py --call zia_list_ssl_inspection_rules
+python3 invoke_mcp.py --call zia_list_locations --args '{"page_size": 5}'
 ```
 
-✅ **Success!** Real data from Zscaler API.
+**Most of these are API parameters, not custom headers.** `InvokeAgentRuntime`
+models `Accept`, `Content-Type`, `Mcp-Protocol-Version` and `Mcp-Session-Id` as
+first-class request parameters (`accept`, `contentType`, `mcpProtocolVersion`,
+`mcpSessionId`), so pass them directly rather than through a botocore
+`before-sign` hook. Only `Mcp-Method` and `Mcp-Name` have no parameter and must
+be attached as raw headers — which is the reason the allowlist matters.
+
+`accept` is easy to miss and fails early: the MCP endpoint needs
+`application/json, text/event-stream`, and offering only `application/json`
+returns `406` before the body is read at all.
+
+`tools/list` returns `"cacheScope": "public"` alongside the inventory — the
+SEP-2549 cache hint, which is safe here because the tool list is fixed once
+registration finishes at startup.
+
+Mismatched or missing headers are reported precisely rather than as a generic
+400, which makes them easy to tell apart from a genuine failure:
+
+| Symptom | Cause |
+|---|---|
+| `-32600 Bad Request: Missing session ID` | `MCP-Protocol-Version` never arrived; request took the handshake path |
+| `-32020 mcp-method header does not match...` | `Mcp-Method` absent or disagrees with the body |
+| `-32020 mcp-name header does not match...` | `Mcp-Name` absent on a `tools/call` |
+| `-32602 params._meta is missing the required envelope key(s)` | `_meta` absent or misspelled |
+
+> [!IMPORTANT]
+> Runtimes created before this allowlist change forward none of these headers.
+> Re-run the deploy to update the existing runtime in place — the provisioner
+> pushes the new `requestHeaderConfiguration` on stack update.
+
+### Test tool calls with the Strands client
+
+`strands_agent_chat.py` drives the runtime through an LLM, so it exercises the
+tools the way an agent actually would:
+
+```bash
+cd integrations/aws/bedrock-agentcore
+python3 strands_agent_chat.py
+```
+
+> [!NOTE]
+> This client speaks the MCP **handshake**, so on AgentCore it hits the session
+> substitution described above and cannot get past `initialize`. Use
+> `invoke_mcp.py` for tool calls here. The Strands client works unchanged
+> against the ECS Fargate, EC2 and EKS deployments, which are ALB-fronted.
+
+Both reach the runtime via `bedrock-agentcore:InvokeAgentRuntime` with SigV4,
+exactly as the playground does; the difference is which MCP revision they
+speak.
 
 ---
 
@@ -1382,14 +1571,15 @@ These are documented for transparency only. The deploy script and the container 
 
 | Variable | Set to | Why it's internal |
 |---|---|---|
-| `FASTMCP_STATELESS_HTTP` | `true` (Dockerfile) | AgentCore Runtime replicas are ephemeral and may be replaced between requests; stateful sessions would pin to dead replicas. |
 | `ZSCALER_MCP_ALLOW_HTTP` | `true` (provisioner) | AgentCore terminates TLS upstream of the container, so the inner HTTP server runs plain HTTP. |
 | `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | `true` (provisioner) | AgentCore is the sole ingress and has already authenticated the request before forwarding. The internal Host header is not predictable for an inner allowlist. |
 | `ZSCALER_MCP_AUTH_ENABLED` | `true`/`false` (provisioner) | Derived from `McpAuthMode`. |
 | `ZSCALER_MCP_TRANSPORT` / `ZSCALER_MCP_HOST` / `ZSCALER_MCP_PORT` | `streamable-http` / `0.0.0.0` / `8000` (Dockerfile CMD) | Required for AgentCore Runtime to forward MCP traffic correctly. |
 | `AWS_REGION` | injected by AgentCore | Used by the container's Secrets Manager loader. |
 
-**Defense-in-depth toggles** (not surfaced in `env.properties` and not exposed by the deploy script): `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION`, `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`, `ZSCALER_MCP_SKIP_CONFIRMATIONS`, `ZSCALER_MCP_CONFIRMATION_TTL`. These remove security layers and should only be set for short-lived debugging.
+`streamable-http` is served without session ids unconditionally, which is what AgentCore's ephemeral replicas need — there is no variable to set. (An earlier revision documented `FASTMCP_STATELESS_HTTP=true` here; it is inert, and safe to delete from any deployment still setting it.)
+
+**Defense-in-depth toggles** (not surfaced in `env.properties` and not exposed by the deploy script): `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` and `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` remove security layers and should only be set for short-lived debugging. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the destructive-op confirmation window; nothing switches that confirmation off.
 
 ---
 

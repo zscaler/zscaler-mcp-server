@@ -106,13 +106,13 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_list_ssl_inspection_rules` | `zia_ssl_inspection` | Read-only | List ZIA SSL Inspection rules. |
 | `zia_list_static_ips` | `zia_locations` | Read-only | List ZIA static IPs. |
 | `zia_list_time_intervals` | `zia_time_intervals` | Read-only | List ZIA time intervals. |
-| `zia_list_url_categories` | `zia_url_categories` | Read-only | List ZIA URL categories. |
+| `zia_list_url_categories` | `zia_url_categories` | Read-only | List ZIA URL categories. Narrow the request — this response can be large.  ASK THE USER FOR SCOPE BEFORE CALLING THIS UNFILTERED. This endpoint does not paginate: everything matching the request comes back in a single response, and a large tenant holds thousands of categories. If the request was broad ("show me the URL categories"), ask which ones they mean — custom or predefined (`custom_only`), URL or TLD (`type`), or a name to match (`search`) — and call once with that answer. Do not call unfiltered first and narrow afterwards; the cost is already paid by then.  Use this to see what categories exist, or to resolve a category id before calling another tool. For predefined categories the id IS the name (`OTHER_ADULT_MATERIAL`); custom categories carry a generated id and are identified by `configured_name`.  For "list the custom URL categories", pass `custom_only=True` — that is a real API filter, so only those categories are fetched.  Every category comes back with its URL, keyword and IP lists in full. The API has no parameter to return counts instead, so on a tenant whose categories hold large URL lists this response is big and nothing about the call itself makes it smaller. Two things do: filter before calling, and pass a `query` projection when the answer needs only part of each record — for example `[*].{id: id, name: configured_name, urls: custom_urls_count}` for an inventory rather than the URLs themselves. The projection is applied before the response is encoded, so it is a real saving, not cosmetic.  Filtering narrows WHICH categories are returned; it cannot cap HOW MANY. A tenant with 5000 custom categories returns 5000 rows for `custom_only=True`.  Use `zia_get_url_category` for one category's full definition once you know its id. To find which category a specific URL belongs to, use `zia_url_lookup` — a different question, and this tool does not answer it. |
 | `zia_list_url_filtering_rules` | `zia_url_filtering` | Read-only | List ZIA URL Filtering rules. |
 | `zia_list_vpn_credentials` | `zia_locations` | Read-only | List ZIA VPN credentials (PSK never returned). |
 | `zia_list_web_dlp_rules` | `zia_dlp` | Read-only | List ZIA Web DLP rules. |
 | `zia_list_web_dlp_rules_lite` | `zia_dlp` | Read-only | List ZIA Web DLP rules via the lighter SDK endpoint. |
 | `zia_list_workload_groups` | `zia_workload_groups` | Read-only | List ZIA workload groups. |
-| `zia_url_lookup` | `zia_url_categories` | Read-only | Look up the URL category classifications for a list of URLs/domains. |
+| `zia_url_lookup` | `zia_url_categories` | Read-only | Which category does a URL belong to? Use THIS for that question.  Answers "what category is twilio.com?" directly: pass the URLs and get back Zscaler's classification for each, e.g. `{"url": "notpurple.com", "urlClassifications": ["SPECIALIZED_SHOPPING"]}`. The response is small and scales with the number of URLs you ask about, not with the size of the tenant's category inventory.  Do NOT try to answer it by listing categories. `zia_list_url_categories` returns the category inventory without any URLs in it, so it cannot tell you where a URL landed no matter how much of it you read.  Two limits worth knowing. Only Zscaler's PREDEFINED classification is returned, so a URL matched by a custom category still reports its predefined category here. And up to 100 URLs may be looked up per request; a URL in no predefined category comes back as `MISCELLANEOUS_OR_UNKNOWN`. |
 | `zia_activate_configuration` | `zia_admin` | Write | Activate staged ZIA configuration changes (write). Run after any ZIA write. |
 | `zia_add_atp_malicious_urls` | `zia_atp_policy` | Write | Add URLs to the ZIA ATP malicious-URL denylist (additive write). Activate after. |
 | `zia_add_auth_exempt_urls` | `zia_authentication_settings` | Write | Add URLs to the ZIA cookie-auth exempt list (additive write). Activate after. |
@@ -140,30 +140,30 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zia_create_url_filtering_rule` | `zia_url_filtering` | Write | Create a ZIA URL Filtering rule (write). Activate after. |
 | `zia_create_vpn_credential` | `zia_locations` | Write | Create a ZIA VPN credential (write). Activate after. |
 | `zia_create_web_dlp_rule` | `zia_dlp` | Write | Create a ZIA Web DLP rule (write). Activate after. |
-| `zia_delete_atp_malicious_urls` | `zia_atp_policy` | Write | Remove URLs from the ZIA ATP malicious-URL denylist (destructive). Activate after. |
-| `zia_delete_auth_exempt_urls` | `zia_authentication_settings` | Write | Remove URLs from the ZIA cookie-auth exempt list (destructive). Activate after. |
-| `zia_delete_cloud_app_control_rule` | `zia_cloud_app_control` | Write | Delete a ZIA Cloud App Control rule (destructive). Activate after. |
-| `zia_delete_cloud_firewall_dns_rule` | `zia_cloud_firewall` | Write | Delete a ZIA Cloud Firewall DNS rule (destructive). Activate after. |
-| `zia_delete_cloud_firewall_ips_rule` | `zia_cloud_firewall` | Write | Delete a ZIA Cloud Firewall IPS rule (destructive). Activate after. |
-| `zia_delete_cloud_firewall_rule` | `zia_cloud_firewall` | Write | Delete a ZIA Cloud Firewall rule (destructive). Activate after. |
-| `zia_delete_file_type_control_rule` | `zia_file_type_control` | Write | Delete a ZIA File Type Control rule (destructive). Activate after. |
-| `zia_delete_gre_tunnel` | `zia_locations` | Write | Delete a ZIA GRE tunnel and its backing static IP (destructive). Activate after. |
-| `zia_delete_ip_destination_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP destination group (destructive). Activate after. |
-| `zia_delete_ip_source_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP source group (destructive). Activate after. |
-| `zia_delete_ips_signature_rule` | `zia_cloud_firewall` | Write | Delete a ZIA custom IPS signature rule (destructive). Activate after. |
-| `zia_delete_location` | `zia_locations` | Write | Delete a ZIA location (destructive). Activate after. |
-| `zia_delete_network_app_group` | `zia_cloud_firewall` | Write | Delete a ZIA network application group (destructive). Activate after. |
-| `zia_delete_network_service` | `zia_cloud_firewall` | Write | Delete a ZIA network service (destructive). Activate after. |
-| `zia_delete_network_svc_group` | `zia_cloud_firewall` | Write | Delete a ZIA network service group (destructive). Activate after. |
-| `zia_delete_rule_label` | `zia_rule_labels` | Write | Delete a ZIA rule label (destructive). Activate after. |
-| `zia_delete_sandbox_rule` | `zia_sandbox` | Write | Delete a ZIA Sandbox rule (destructive). Activate after. |
-| `zia_delete_ssl_inspection_rule` | `zia_ssl_inspection` | Write | Delete a ZIA SSL Inspection rule (destructive). Activate after. |
-| `zia_delete_static_ip` | `zia_locations` | Write | Delete a ZIA static IP (destructive). Activate after. |
-| `zia_delete_time_interval` | `zia_time_intervals` | Write | Delete a ZIA time interval (destructive). Activate after. |
-| `zia_delete_url_category` | `zia_url_categories` | Write | Delete a **custom** ZIA URL category (destructive). Activate after.  Refuses predefined categories — those are Zscaler-curated and cannot be deleted via the API. |
-| `zia_delete_url_filtering_rule` | `zia_url_filtering` | Write | Delete a ZIA URL Filtering rule (destructive). Activate after. |
-| `zia_delete_vpn_credential` | `zia_locations` | Write | Delete a ZIA VPN credential (destructive). Activate after. |
-| `zia_delete_web_dlp_rule` | `zia_dlp` | Write | Delete a ZIA Web DLP rule (destructive). Activate after. |
+| `zia_delete_atp_malicious_urls` | `zia_atp_policy` | Write | Remove URLs from the ZIA ATP malicious-URL denylist (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_auth_exempt_urls` | `zia_authentication_settings` | Write | Remove URLs from the ZIA cookie-auth exempt list (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_cloud_app_control_rule` | `zia_cloud_app_control` | Write | Delete a ZIA Cloud App Control rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_cloud_firewall_dns_rule` | `zia_cloud_firewall` | Write | Delete a ZIA Cloud Firewall DNS rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_cloud_firewall_ips_rule` | `zia_cloud_firewall` | Write | Delete a ZIA Cloud Firewall IPS rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_cloud_firewall_rule` | `zia_cloud_firewall` | Write | Delete a ZIA Cloud Firewall rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_file_type_control_rule` | `zia_file_type_control` | Write | Delete a ZIA File Type Control rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_gre_tunnel` | `zia_locations` | Write | Delete a ZIA GRE tunnel and its backing static IP (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_ip_destination_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP destination group (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_ip_source_group` | `zia_cloud_firewall` | Write | Delete a ZIA IP source group (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_ips_signature_rule` | `zia_cloud_firewall` | Write | Delete a ZIA custom IPS signature rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_location` | `zia_locations` | Write | Delete a ZIA location (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_network_app_group` | `zia_cloud_firewall` | Write | Delete a ZIA network application group (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_network_service` | `zia_cloud_firewall` | Write | Delete a ZIA network service (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_network_svc_group` | `zia_cloud_firewall` | Write | Delete a ZIA network service group (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_rule_label` | `zia_rule_labels` | Write | Delete a ZIA rule label (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_sandbox_rule` | `zia_sandbox` | Write | Delete a ZIA Sandbox rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_ssl_inspection_rule` | `zia_ssl_inspection` | Write | Delete a ZIA SSL Inspection rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_static_ip` | `zia_locations` | Write | Delete a ZIA static IP (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_time_interval` | `zia_time_intervals` | Write | Delete a ZIA time interval (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_url_category` | `zia_url_categories` | Write | Delete a **custom** ZIA URL category (destructive). Activate after.  Refuses predefined categories — those are Zscaler-curated and cannot be deleted via the API.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_url_filtering_rule` | `zia_url_filtering` | Write | Delete a ZIA URL Filtering rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_vpn_credential` | `zia_locations` | Write | Delete a ZIA VPN credential (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zia_delete_web_dlp_rule` | `zia_dlp` | Write | Delete a ZIA Web DLP rule (destructive). Activate after.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
 | `zia_remove_urls_from_category` | `zia_url_categories` | Write | Incrementally remove URLs from an existing ZIA URL category. Activate after. |
 | `zia_update_advanced_settings` | `zia_advanced_settings` | Write | Update ZIA Advanced Settings (strict PUT-replace write). Activate after. |
 | `zia_update_atp_malware_inspection` | `zia_atp_malware` | Write | Update the ZIA malware inspection (PUT-replace write). Activate after. |
@@ -257,62 +257,62 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zpa_list_service_edge_groups` | `zpa_service_edge_groups` | Read-only | List ZPA service edge groups (read-only). |
 | `zpa_list_service_edges` | `zpa_service_edge_groups` | Read-only | List individual ZPA Service Edges with health/status (read-only).  Distinct from `zpa_list_service_edge_groups` (the parent group resource). |
 | `zpa_list_timeout_policy_rules` | `zpa_access_policies` | Read-only | List ZPA timeout policy rules (read-only). |
-| `zpa_bulk_delete_app_connectors` | `zpa_connectors` | Write | Bulk-delete ZPA app connectors (destructive write). Each must be re-provisioned to reconnect. |
-| `zpa_bulk_delete_service_edges` | `zpa_service_edge_groups` | Write | Bulk-delete ZPA Service Edges (destructive write). Each must be re-provisioned to reconnect. |
-| `zpa_create_access_policy_rule` | `zpa_access_policies` | Write | Create a ZPA access policy rule (write). Gated by HMAC + `--write-tools`. |
-| `zpa_create_app_connector_group` | `zpa_app_connector_groups` | Write | Create a ZPA app connector group (write).  Gated by HMAC write-confirmation and `--write-tools`. Auto-resolves the tenant's standard 'Connector' enrollment certificate when none is supplied. |
-| `zpa_create_app_protection_rule` | `zpa_access_policies` | Write | Create a ZPA app-protection (inspection) policy rule (write).  Gated by HMAC + `--write-tools`. `zpn_inspection_profile_id` is required when action_type is 'inspect'. |
-| `zpa_create_application_segment` | `zpa_app_segments` | Write | Create a ZPA application segment (write).  Requires `name` + `segment_group_id` and at least one port range (TCP or UDP, via `tcp_port_ranges`/`udp_port_ranges` or `advanced`). Gated by HMAC confirmation + `--write-tools`. |
+| `zpa_bulk_delete_app_connectors` | `zpa_connectors` | Write | Bulk-delete ZPA app connectors (destructive write). Each must be re-provisioned to reconnect.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_bulk_delete_service_edges` | `zpa_service_edge_groups` | Write | Bulk-delete ZPA Service Edges (destructive write). Each must be re-provisioned to reconnect.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_create_access_policy_rule` | `zpa_access_policies` | Write | Create a ZPA access policy rule (write). Requires `--write-tools`. |
+| `zpa_create_app_connector_group` | `zpa_app_connector_groups` | Write | Create a ZPA app connector group (write).  Requires `--write-tools`. Auto-resolves the tenant's standard 'Connector' enrollment certificate when none is supplied. |
+| `zpa_create_app_protection_rule` | `zpa_access_policies` | Write | Create a ZPA app-protection (inspection) policy rule (write).  Requires `--write-tools`. `zpn_inspection_profile_id` is required when action_type is 'inspect'. |
+| `zpa_create_application_segment` | `zpa_app_segments` | Write | Create a ZPA application segment (write).  Requires `name` + `segment_group_id` and at least one port range (TCP or UDP, via `tcp_port_ranges`/`udp_port_ranges` or `advanced`). Requires `--write-tools`. |
 | `zpa_create_application_segment_ba` | `zpa_app_segments` | Write | Create a ZPA browser-access application segment (write). |
 | `zpa_create_application_segment_pra` | `zpa_app_segments` | Write | Create a ZPA privileged-remote-access application segment (write). |
-| `zpa_create_application_server` | `zpa_application_servers` | Write | Create a ZPA application server (write).  Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_create_ba_certificate` | `zpa_ba_certificates` | Write | Create a ZPA Browser Access certificate from a PEM blob (write).  Gated by HMAC + `--write-tools`. |
-| `zpa_create_forwarding_policy_rule` | `zpa_access_policies` | Write | Create a ZPA client forwarding policy rule (write). Gated by HMAC + `--write-tools`. |
-| `zpa_create_isolation_policy_rule` | `zpa_access_policies` | Write | Create a ZPA isolation policy rule (write). Gated by HMAC + `--write-tools`.  `zpn_isolation_profile_id` is required when action_type is 'isolate'. |
-| `zpa_create_pra_credential` | `zpa_pra` | Write | Create a ZPA PRA credential (write). Gated by HMAC + `--write-tools`.  Secrets (password / private_key) are write-only — they are sent to the API but never echoed back in the response. |
-| `zpa_create_pra_portal` | `zpa_pra` | Write | Create a ZPA PRA portal (write). Gated by HMAC + `--write-tools`.  If `certificate_id` is omitted, the BA certificate is resolved by searching issued certificates for one whose name matches the portal `name`. |
-| `zpa_create_provisioning_key` | `zpa_provisioning_keys` | Write | Create a ZPA provisioning key (write). Gated by HMAC + `--write-tools`.  `enrollment_cert_id` is required when `key_type` is 'connector'. |
-| `zpa_create_segment_group` | `zpa_segment_groups` | Write | Create a ZPA segment group and return the full record.  Write tool: gated by the server's HMAC write-confirmation. The first call returns a confirmation prompt + token; the agent re-issues with the token (in `kwargs`) once the user approves. Write tools are also disabled unless the operator enables them via --write-tools. |
-| `zpa_create_server_group` | `zpa_server_groups` | Write | Create a ZPA server group (write).  Gated by HMAC write-confirmation and `--write-tools`. Requires at least one App Connector Group; dynamic_discovery=False requires server_ids. |
-| `zpa_create_service_edge_group` | `zpa_service_edge_groups` | Write | Create a ZPA service edge group (write).  Gated by HMAC write-confirmation and `--write-tools`. Requires name, latitude, longitude, and location. |
-| `zpa_create_timeout_policy_rule` | `zpa_access_policies` | Write | Create a ZPA timeout policy rule (write). Gated by HMAC + `--write-tools`. |
-| `zpa_delete_access_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA access policy rule (destructive write). Gated by HMAC + `--write-tools`. |
-| `zpa_delete_app_connector` | `zpa_connectors` | Write | Delete a ZPA app connector (destructive write). Must be re-provisioned to reconnect. |
-| `zpa_delete_app_connector_group` | `zpa_app_connector_groups` | Write | Delete a ZPA app connector group (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_delete_app_protection_rule` | `zpa_access_policies` | Write | Delete a ZPA app-protection (inspection) policy rule (destructive write). |
-| `zpa_delete_application_segment` | `zpa_app_segments` | Write | Delete a ZPA application segment (destructive write). Cannot be undone. |
-| `zpa_delete_application_segment_ba` | `zpa_app_segments` | Write | Delete a ZPA browser-access application segment (destructive write). Cannot be undone. |
-| `zpa_delete_application_segment_pra` | `zpa_app_segments` | Write | Delete a ZPA privileged-remote-access application segment (destructive write). |
-| `zpa_delete_application_server` | `zpa_application_servers` | Write | Delete a ZPA application server (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_delete_ba_certificate` | `zpa_ba_certificates` | Write | Delete a ZPA Browser Access certificate (destructive write). Gated by HMAC + `--write-tools`. |
-| `zpa_delete_forwarding_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA client forwarding policy rule (destructive write). |
-| `zpa_delete_isolation_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA isolation policy rule (destructive write). |
-| `zpa_delete_pra_credential` | `zpa_pra` | Write | Delete a ZPA PRA credential (destructive write). Gated by HMAC + `--write-tools`. |
-| `zpa_delete_pra_portal` | `zpa_pra` | Write | Delete a ZPA PRA portal (destructive write). Gated by HMAC + `--write-tools`. |
-| `zpa_delete_provisioning_key` | `zpa_provisioning_keys` | Write | Delete a ZPA provisioning key (destructive write). Gated by HMAC + `--write-tools`.  If the key was already removed (e.g. its component was deleted) this reports success with an explanatory message rather than erroring. |
-| `zpa_delete_segment_group` | `zpa_segment_groups` | Write | Delete a ZPA segment group (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_delete_server_group` | `zpa_server_groups` | Write | Delete a ZPA server group (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_delete_service_edge` | `zpa_service_edge_groups` | Write | Delete a single ZPA Service Edge (destructive write). Must be re-provisioned to reconnect. |
-| `zpa_delete_service_edge_group` | `zpa_service_edge_groups` | Write | Delete a ZPA service edge group (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_delete_timeout_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA timeout policy rule (destructive write). |
-| `zpa_update_access_policy_rule` | `zpa_access_policies` | Write | Update a ZPA access policy rule (write). Gated by HMAC + `--write-tools`. |
-| `zpa_update_app_connector` | `zpa_connectors` | Write | Update a ZPA app connector (enable/disable, rename). Gated by HMAC + `--write-tools`. |
-| `zpa_update_app_connector_group` | `zpa_app_connector_groups` | Write | Update a ZPA app connector group (write).  Gated by HMAC write-confirmation and `--write-tools`. The enrollment certificate is preserved unless enrollment_cert_id/name is explicitly passed. |
+| `zpa_create_application_server` | `zpa_application_servers` | Write | Create a ZPA application server (write).  Requires `--write-tools`. |
+| `zpa_create_ba_certificate` | `zpa_ba_certificates` | Write | Create a ZPA Browser Access certificate from a PEM blob (write).  Requires `--write-tools`. |
+| `zpa_create_forwarding_policy_rule` | `zpa_access_policies` | Write | Create a ZPA client forwarding policy rule (write). Requires `--write-tools`. |
+| `zpa_create_isolation_policy_rule` | `zpa_access_policies` | Write | Create a ZPA isolation policy rule (write). Requires `--write-tools`.  `zpn_isolation_profile_id` is required when action_type is 'isolate'. |
+| `zpa_create_pra_credential` | `zpa_pra` | Write | Create a ZPA PRA credential (write). Requires `--write-tools`.  Secrets (password / private_key) are write-only — they are sent to the API but never echoed back in the response. |
+| `zpa_create_pra_portal` | `zpa_pra` | Write | Create a ZPA PRA portal (write). Requires `--write-tools`.  If `certificate_id` is omitted, the BA certificate is resolved by searching issued certificates for one whose name matches the portal `name`. |
+| `zpa_create_provisioning_key` | `zpa_provisioning_keys` | Write | Create a ZPA provisioning key (write). Requires `--write-tools`.  `enrollment_cert_id` is required when `key_type` is 'connector'. |
+| `zpa_create_segment_group` | `zpa_segment_groups` | Write | Create a ZPA segment group and return the full record.  Write tool: disabled unless the operator enables it via --write-tools. |
+| `zpa_create_server_group` | `zpa_server_groups` | Write | Create a ZPA server group (write).  Requires `--write-tools`, plus at least one App Connector Group; dynamic_discovery=False requires server_ids. |
+| `zpa_create_service_edge_group` | `zpa_service_edge_groups` | Write | Create a ZPA service edge group (write).  Requires `--write-tools`, plus name, latitude, longitude, and location. |
+| `zpa_create_timeout_policy_rule` | `zpa_access_policies` | Write | Create a ZPA timeout policy rule (write). Requires `--write-tools`. |
+| `zpa_delete_access_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA access policy rule (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_app_connector` | `zpa_connectors` | Write | Delete a ZPA app connector (destructive write). Must be re-provisioned to reconnect.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_app_connector_group` | `zpa_app_connector_groups` | Write | Delete a ZPA app connector group (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_app_protection_rule` | `zpa_access_policies` | Write | Delete a ZPA app-protection (inspection) policy rule (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_application_segment` | `zpa_app_segments` | Write | Delete a ZPA application segment (destructive write). Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_application_segment_ba` | `zpa_app_segments` | Write | Delete a ZPA browser-access application segment (destructive write). Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_application_segment_pra` | `zpa_app_segments` | Write | Delete a ZPA privileged-remote-access application segment (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_application_server` | `zpa_application_servers` | Write | Delete a ZPA application server (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_ba_certificate` | `zpa_ba_certificates` | Write | Delete a ZPA Browser Access certificate (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_forwarding_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA client forwarding policy rule (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_isolation_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA isolation policy rule (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_pra_credential` | `zpa_pra` | Write | Delete a ZPA PRA credential (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_pra_portal` | `zpa_pra` | Write | Delete a ZPA PRA portal (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_provisioning_key` | `zpa_provisioning_keys` | Write | Delete a ZPA provisioning key (destructive write).  If the key was already removed (e.g. its component was deleted) this reports success with an explanatory message rather than erroring.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_segment_group` | `zpa_segment_groups` | Write | Delete a ZPA segment group (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_server_group` | `zpa_server_groups` | Write | Delete a ZPA server group (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_service_edge` | `zpa_service_edge_groups` | Write | Delete a single ZPA Service Edge (destructive write). Must be re-provisioned to reconnect.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_service_edge_group` | `zpa_service_edge_groups` | Write | Delete a ZPA service edge group (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_delete_timeout_policy_rule` | `zpa_access_policies` | Write | Delete a ZPA timeout policy rule (destructive write).  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zpa_update_access_policy_rule` | `zpa_access_policies` | Write | Update a ZPA access policy rule (write). Requires `--write-tools`. |
+| `zpa_update_app_connector` | `zpa_connectors` | Write | Update a ZPA app connector (enable/disable, rename). Requires `--write-tools`. |
+| `zpa_update_app_connector_group` | `zpa_app_connector_groups` | Write | Update a ZPA app connector group (write).  Requires `--write-tools`. The enrollment certificate is preserved unless enrollment_cert_id/name is explicitly passed. |
 | `zpa_update_app_protection_rule` | `zpa_access_policies` | Write | Update a ZPA app-protection (inspection) policy rule (write). |
 | `zpa_update_application_segment` | `zpa_app_segments` | Write | Update a ZPA application segment (write). Only provided fields are sent. |
 | `zpa_update_application_segment_ba` | `zpa_app_segments` | Write | Update a ZPA browser-access application segment (write). Only provided fields are sent. |
 | `zpa_update_application_segment_pra` | `zpa_app_segments` | Write | Update a ZPA privileged-remote-access application segment (write). Only provided fields are sent. |
-| `zpa_update_application_server` | `zpa_application_servers` | Write | Update a ZPA application server (write).  Gated by HMAC write-confirmation and `--write-tools`. Only the provided fields are sent. |
-| `zpa_update_forwarding_policy_rule` | `zpa_access_policies` | Write | Update a ZPA client forwarding policy rule (write). Gated by HMAC + `--write-tools`. |
-| `zpa_update_isolation_policy_rule` | `zpa_access_policies` | Write | Update a ZPA isolation policy rule (write). Gated by HMAC + `--write-tools`. |
-| `zpa_update_pra_credential` | `zpa_pra` | Write | Update a ZPA PRA credential (write). credential_type cannot change.  Gated by HMAC + `--write-tools`. Secrets are write-only. |
-| `zpa_update_pra_portal` | `zpa_pra` | Write | Update a ZPA PRA portal (write). Gated by HMAC + `--write-tools`. |
-| `zpa_update_provisioning_key` | `zpa_provisioning_keys` | Write | Update a ZPA provisioning key (write). Gated by HMAC + `--write-tools`. |
-| `zpa_update_segment_group` | `zpa_segment_groups` | Write | Update a ZPA segment group and return the full record (write).  Gated by HMAC write-confirmation and `--write-tools`. Only the provided fields are sent (uses the SDK's v2 update path). |
-| `zpa_update_server_group` | `zpa_server_groups` | Write | Update a ZPA server group (write).  Partial update. Gated by HMAC write-confirmation and `--write-tools`. `app_connector_group_ids=[]` is rejected; dynamic_discovery=False requires server_ids be supplied here or already present on the group. |
-| `zpa_update_service_edge` | `zpa_service_edge_groups` | Write | Update a ZPA Service Edge (enable/disable, rename). Gated by HMAC + `--write-tools`. |
-| `zpa_update_service_edge_group` | `zpa_service_edge_groups` | Write | Update a ZPA service edge group (write).  Gated by HMAC write-confirmation and `--write-tools`. |
-| `zpa_update_timeout_policy_rule` | `zpa_access_policies` | Write | Update a ZPA timeout policy rule (write). Gated by HMAC + `--write-tools`. |
+| `zpa_update_application_server` | `zpa_application_servers` | Write | Update a ZPA application server (write).  Requires `--write-tools`. Only the provided fields are sent. |
+| `zpa_update_forwarding_policy_rule` | `zpa_access_policies` | Write | Update a ZPA client forwarding policy rule (write). Requires `--write-tools`. |
+| `zpa_update_isolation_policy_rule` | `zpa_access_policies` | Write | Update a ZPA isolation policy rule (write). Requires `--write-tools`. |
+| `zpa_update_pra_credential` | `zpa_pra` | Write | Update a ZPA PRA credential (write). credential_type cannot change.  Requires `--write-tools`. Secrets are write-only. |
+| `zpa_update_pra_portal` | `zpa_pra` | Write | Update a ZPA PRA portal (write). Requires `--write-tools`. |
+| `zpa_update_provisioning_key` | `zpa_provisioning_keys` | Write | Update a ZPA provisioning key (write). Requires `--write-tools`. |
+| `zpa_update_segment_group` | `zpa_segment_groups` | Write | Update a ZPA segment group and return the full record (write).  Requires `--write-tools`. Only the provided fields are sent (uses the SDK's v2 update path). |
+| `zpa_update_server_group` | `zpa_server_groups` | Write | Update a ZPA server group (write).  Partial update. Requires `--write-tools`. `app_connector_group_ids=[]` is rejected; dynamic_discovery=False requires server_ids be supplied here or already present on the group. |
+| `zpa_update_service_edge` | `zpa_service_edge_groups` | Write | Update a ZPA Service Edge (enable/disable, rename). Requires `--write-tools`. |
+| `zpa_update_service_edge_group` | `zpa_service_edge_groups` | Write | Update a ZPA service edge group (write).  Requires `--write-tools`. |
+| `zpa_update_timeout_policy_rule` | `zpa_access_policies` | Write | Update a ZPA timeout policy rule (write). Requires `--write-tools`. |
 
 ---
 
@@ -349,10 +349,10 @@ The Zscaler Integrations MCP Server provides tools for all major Zscaler service
 | `zdx_list_historical_alerts` | `zdx_alerts` | Read-only | List historical (ended) ZDX alerts.  Read-only. Like `zdx_list_alerts` but for alert rules that have an Ended On date. `since` is in HOURS (default 2h, max 14 days = 336h). |
 | `zdx_list_locations` | `zdx_reports` | Read-only | List ZDX locations as curated id/name rows.  Read-only. Use a returned `id` as the `location_id` scope filter on other ZDX tools. `since` is in HOURS (default 2h). |
 | `zdx_list_software` | `zdx_software_inventory` | Read-only | List the ZDX software inventory.  Read-only. Returns one row per software title (key, name, vendor, version, install/user counts). Filter by location/department/geo/user/device. Use a returned `software_key` with `zdx_get_software_details` to see who has it. |
-| `zdx_delete_analysis` | `zdx_troubleshooting` | Write | Stop/delete a running ZDX score analysis (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zdx_delete_deeptrace` | `zdx_troubleshooting` | Write | Delete a ZDX deep-trace session (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zdx_start_analysis` | `zdx_troubleshooting` | Write | Start a ZDX score analysis on a device/app (write).  Evaluates connectivity and performance metrics over the optional `t0`/`t1` epoch range. Gated by HMAC write-confirmation and `--write-tools`. |
-| `zdx_start_deeptrace` | `zdx_troubleshooting` | Write | Start a ZDX deep-trace session (write).  Captures network path, web-probe, health, and event data for troubleshooting. Gated by HMAC write-confirmation and `--write-tools`. Resolve `app_id` / `web_probe_id` / `cloudpath_probe_id` via `zdx_list_applications`, `zdx_get_web_probes`, `zdx_list_cloudpath_probes` first (all INTEGERS). |
+| `zdx_delete_analysis` | `zdx_troubleshooting` | Write | Stop/delete a running ZDX score analysis (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zdx_delete_deeptrace` | `zdx_troubleshooting` | Write | Delete a ZDX deep-trace session (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `zdx_start_analysis` | `zdx_troubleshooting` | Write | Start a ZDX score analysis on a device/app (write).  Evaluates connectivity and performance metrics over the optional `t0`/`t1` epoch range. Requires `--write-tools`. |
+| `zdx_start_deeptrace` | `zdx_troubleshooting` | Write | Start a ZDX deep-trace session (write).  Captures network path, web-probe, health, and event data for troubleshooting. Requires `--write-tools`. Resolve `app_id` / `web_probe_id` / `cloudpath_probe_id` via `zdx_list_applications`, `zdx_get_web_probes`, `zdx_list_cloudpath_probes` first (all INTEGERS). |
 
 ---
 
@@ -388,12 +388,12 @@ All 4 tools are read-only.
 | `ztw_list_public_account_details` | `ztw` | Read-only | List ZTW public-cloud account details (read-only). |
 | `ztw_list_public_cloud_info` | `ztw` | Read-only | List ZTW public-cloud account info (read-only). |
 | `ztw_list_roles` | `ztw` | Read-only | List ZTW admin roles (read-only). |
-| `ztw_create_ip_destination_group` | `ztw` | Write | Create a ZTW IP destination group (write).  Country names/codes are converted to COUNTRY_XX and are only valid for DSTN_OTHER groups. Gated by HMAC write-confirmation and `--write-tools`. |
-| `ztw_create_ip_group` | `ztw` | Write | Create a ZTW IP group (write). Gated by HMAC confirmation + `--write-tools`. |
-| `ztw_create_ip_source_group` | `ztw` | Write | Create a ZTW IP source group (write). Gated by HMAC confirmation + `--write-tools`. |
-| `ztw_delete_ip_destination_group` | `ztw` | Write | Delete a ZTW IP destination group (destructive write).  Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`. |
-| `ztw_delete_ip_group` | `ztw` | Write | Delete a ZTW IP group (destructive write). Cannot be undone. |
-| `ztw_delete_ip_source_group` | `ztw` | Write | Delete a ZTW IP source group (destructive write). Cannot be undone. |
+| `ztw_create_ip_destination_group` | `ztw` | Write | Create a ZTW IP destination group (write).  Country names/codes are converted to COUNTRY_XX and are only valid for DSTN_OTHER groups. Requires `--write-tools`. |
+| `ztw_create_ip_group` | `ztw` | Write | Create a ZTW IP group (write). Requires `--write-tools`. |
+| `ztw_create_ip_source_group` | `ztw` | Write | Create a ZTW IP source group (write). Requires `--write-tools`. |
+| `ztw_delete_ip_destination_group` | `ztw` | Write | Delete a ZTW IP destination group (destructive write).  Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `ztw_delete_ip_group` | `ztw` | Write | Delete a ZTW IP group (destructive write). Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
+| `ztw_delete_ip_source_group` | `ztw` | Write | Delete a ZTW IP source group (destructive write). Cannot be undone.  Confirmation required — the first call returns a prompt, not a deletion. Gated by `--write-tools`. |
 
 ---
 

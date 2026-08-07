@@ -1,15 +1,16 @@
-"""Bridge a :class:`ToolSpec` onto a FastMCP ``FunctionTool``.
+"""Bridge a :class:`ToolSpec` onto an MCP ``Tool``.
 
 This is the single adapter between v2's self-declared tool records and the MCP
-framework. It is the one place that knows how to:
+framework (``mcp.server.mcpserver``). It is the one place that knows how to:
 
 * flatten the tool's Pydantic ``input_model`` into a callable signature so the
   advertised ``inputSchema`` is flat (``search``, ``detail``, …) — the shape an
   agent expects — instead of a nested ``{"args": {...}}`` wrapper;
-* attach the curated view's ``outputSchema`` (so the advertised output shape and
-  the shaped result can never drift — DESIGN.md §5 Pillar B);
+* declare the curated view as the callable's RETURN annotation, from which the
+  framework derives the ``outputSchema`` (so the advertised output shape and the
+  shaped result can never drift — DESIGN.md §5 Pillar B);
 * wrap the tool body with the security layer in the right order:
-  HMAC write-confirmation (writes only) → sanitize + audit (every tool).
+  write-confirmation (deletes only) → sanitize + audit (every tool).
 
 Every tool — read or write — flows through here, so the security guarantees are
 uniform and declared once, not re-implemented per tool (DESIGN.md §6).
@@ -22,20 +23,33 @@ import logging
 from typing import Annotated, Any, Optional
 
 import pydantic_core
-from fastmcp.tools import FunctionTool
-from fastmcp.tools.tool import ToolResult
-from mcp.types import TextContent, ToolAnnotations
+from mcp.server.mcpserver import Context, ElicitationResult, Resolve
+from mcp.server.mcpserver.tools.base import Tool
+from mcp.types import CallToolResult, TextContent, ToolAnnotations
 from pydantic import Field
 
 from zscaler_mcp.common.jmespath_utils import apply_jmespath
 from zscaler_mcp.common.token_metrics import is_token_reporting_enabled, token_usage_block
 from zscaler_mcp.encoding import encode
+from zscaler_mcp.registry.registry import REGISTRY
 from zscaler_mcp.registry.spec import DELETE, ToolSpec
-from zscaler_mcp.security import check_confirmation, extract_confirmed_from_kwargs, wrap_tool
+from zscaler_mcp.security import (
+    CAPABILITY_CHECK_FAILED,
+    TOKEN_FALLBACK,
+    CapabilityCheckFailed,
+    DeleteConfirmation,
+    build_confirmation_request,
+    elicitation_available,
+    extract_confirmed_from_kwargs,
+    gate_destructive_operation,
+    is_tool_call_logging_enabled,
+    wrap_tool,
+)
 
 # Reuse the dedicated audit logger so token usage shows up on the same channel as
 # the [TOOL CALL] / [TOOL OK] lines (filterable independently of app logging).
 _audit_logger = logging.getLogger("zscaler_mcp.audit")
+logger = logging.getLogger(__name__)
 
 # Sentinel for write tools' confirmation channel. Mirrors v1: the agent passes
 # kwargs='{"confirmation_token": "..."}' to confirm a destructive op.
@@ -44,39 +58,50 @@ _KWARGS_PARAM = "kwargs"
 # Caller-supplied JMESPath expression on list tools (v1 parity).
 _QUERY_PARAM = "query"
 
+# The resolver's Context parameter. A resolver may take the Context by declaring
+# it, and resolver parameters are never part of the tool's advertised inputSchema.
+_CONTEXT_PARAM = "ctx"
 
-def _output_schema(spec: ToolSpec) -> dict[str, Any] | None:
-    """The advertised outputSchema for the tool, or ``None``.
+# The DELETE tool's resolved confirmation parameter. Filled by the framework from
+# the resolver below, never from agent-supplied arguments — which is the whole
+# point: there is no slot in the tool call for a model to approve its own delete.
+_APPROVAL_PARAM = "approval"
 
-    ``None`` is the normal case: a tool that returns a Zscaler API record does
-    NOT advertise a schema, because the attribute set of a resource belongs to
-    the API, not to this server. Declaring it here would be a snapshot that
-    silently goes stale the moment engineering adds a field — the failure mode
-    behind issue #88 — and the SDK itself documents reads the same way (query
-    params are enumerated; the response is just ``record.as_dict()``).
+
+def _return_annotation(spec: ToolSpec) -> Any:
+    """The callable's return annotation, from which MCP derives the outputSchema.
+
+    ``Any`` is the normal case, and it means *no schema is advertised*: a tool
+    that returns a Zscaler API record does NOT advertise a schema, because the
+    attribute set of a resource belongs to the API, not to this server. Declaring
+    it here would be a snapshot that silently goes stale the moment engineering
+    adds a field — the failure mode behind issue #88 — and the SDK itself
+    documents reads the same way (query params are enumerated; the response is
+    just ``record.as_dict()``).
 
     A schema IS advertised for the few tools whose result the server constructs
     itself (``OperationResult`` and friends), since that shape really is ours.
-    The MCP spec requires an object-typed outputSchema, so a list tool's array
-    is marked with ``x-fastmcp-wrap-result`` and FastMCP wraps it under a
-    ``result`` key — matching what :func:`_to_tool_result` builds either way.
-    The human-readable text block is independently produced by the encoder.
+    The MCP spec requires an object-typed outputSchema, and the framework handles
+    that for collections natively: a ``list[View]`` annotation is wrapped under a
+    ``result`` key, which is exactly the envelope :func:`_to_tool_result` builds.
+    Deriving it from the annotation replaces the hand-rolled wrapper schema this
+    bridge used to pass to FastMCP, so there is one less place for the advertised
+    shape and the emitted shape to disagree.
+
+    DELETE tools always return ``Any``. They are POLYMORPHIC: an unconfirmed call
+    returns the confirmation prompt (a plain-text envelope with no structured
+    content) and only the confirmed call returns a result. No single schema
+    describes both, and a declared schema with no structured content is an error.
     """
-    if spec.output_view is None:
-        return None
-    schema = spec.output_view.output_schema()
+    if spec.output_view is None or spec.action == DELETE:
+        return Any
     if spec.is_list:
-        return {
-            "type": "object",
-            "properties": {"result": {"type": "array", "items": schema}},
-            "required": ["result"],
-            "x-fastmcp-wrap-result": True,
-        }
-    return schema
+        return list[spec.output_view]  # type: ignore[name-defined]
+    return spec.output_view
 
 
-def _to_tool_result(spec: ToolSpec, value: Any) -> ToolResult:
-    """Package a shaped tool return into a FastMCP ``ToolResult``.
+def _to_tool_result(spec: ToolSpec, value: Any) -> CallToolResult:
+    """Package a shaped tool return into an MCP ``CallToolResult``.
 
     This is the SINGLE wire-format decision point (DESIGN.md §5 Pillar D):
 
@@ -139,9 +164,9 @@ def _to_tool_result(spec: ToolSpec, value: Any) -> ToolResult:
         # tools it's the object's dict — both can carry the metadata key.
         structured = {**structured, "token_usage": usage}
 
-    return ToolResult(
+    return CallToolResult(
         content=[TextContent(type="text", text=text)],
-        structured_content=structured,
+        structuredContent=structured,
     )
 
 
@@ -171,12 +196,12 @@ def _tool_annotations(spec: ToolSpec) -> ToolAnnotations:
     tools rather than sent as ``False``.
     """
     if spec.read_only:
-        return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+        return ToolAnnotations(read_only_hint=True, open_world_hint=False)
     return ToolAnnotations(
-        readOnlyHint=False,
-        destructiveHint=spec.destructive,
-        idempotentHint=spec.idempotent,
-        openWorldHint=False,
+        read_only_hint=False,
+        destructive_hint=spec.destructive,
+        idempotent_hint=spec.idempotent,
+        open_world_hint=False,
     )
 
 
@@ -187,10 +212,13 @@ def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str,
     keyword parameter with the same name, annotation, and default, so FastMCP's
     schema generation produces a flat inputSchema.
 
-    Two channels are added here rather than in the tool modules, so no tool can
+    Three channels are added here rather than in the tool modules, so no tool can
     forget them and new tools inherit them for free: list tools get the optional
-    JMESPath ``query`` parameter, and DELETE tools get the ``kwargs`` parameter
-    carrying the HMAC confirmation token.
+    JMESPath ``query`` parameter, DELETE tools get the ``kwargs`` parameter
+    carrying the HMAC confirmation token, and DELETE tools also get the MCP
+    ``Context`` needed to prompt a human. The ``Context`` parameter is declared to
+    the framework via ``context_kwarg``, which excludes it from the advertised
+    inputSchema — so the agent never sees it and cannot supply it.
     """
     params: list[inspect.Parameter] = []
     annotations: dict[str, Any] = {}
@@ -229,10 +257,14 @@ def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str,
                 default=None,
                 description=(
                     "Optional JMESPath expression applied to the results after the API "
-                    "call, for client-side filtering and projection. Field names are "
-                    "exactly what the Zscaler API returns. Examples: "
+                    "call, for client-side filtering and projection. Examples: "
                     '"[?enabled==`true`]", "[*].{name: name, id: id}", "length(@)". '
-                    "Omit to get the full records."
+                    "Omit to get the full records. IMPORTANT: field names are the keys "
+                    "of the returned records, which are usually snake_case (`custom_category`) "
+                    "even where the Zscaler API documents camelCase (`customCategory`) — "
+                    "guessing the spelling yields an empty list that looks like a real "
+                    "answer. If you have not already seen a record from this tool, call it "
+                    "once without `query` and read the keys off the response."
                 ),
             ),
         ]
@@ -260,65 +292,205 @@ def _build_signature(spec: ToolSpec) -> tuple[list[inspect.Parameter], dict[str,
                 default=None,
             )
         )
+        approval_annotation = Annotated[
+            ElicitationResult[DeleteConfirmation],
+            Resolve(_build_confirmation_resolver(spec)),
+        ]
+        annotations[_APPROVAL_PARAM] = approval_annotation
+        params.append(
+            inspect.Parameter(
+                _APPROVAL_PARAM,
+                inspect.Parameter.KEYWORD_ONLY,
+                annotation=approval_annotation,
+                default=None,
+            )
+        )
 
     return params, annotations
 
 
-def build_function_tool(spec: ToolSpec) -> FunctionTool:
-    """Construct the FastMCP ``FunctionTool`` for a spec, with the full security wrap."""
+def _resolve_resource_name(spec: ToolSpec, params: dict[str, Any]) -> Optional[str]:
+    """Fetch the display name of the resource a DELETE is about to remove.
+
+    A human asked to approve ``DELETE Segment Group — 999999991`` cannot verify
+    that is the right group, and two ids differing by one digit look identical at
+    a glance — the failure this exists to prevent. The name has to come from the
+    API: Zscaler deletes answer ``204 No Content``, so it is unavailable after the
+    fact, and taking it from the agent's own narration is exactly the unreliable
+    path that motivated this.
+
+    Resolution is by naming convention — ``*_delete_*`` -> ``*_get_*`` — which
+    covers 42 of the 50 delete tools. The rest (bulk deletes, the URL-list
+    deletes, ZTW's list-only resources) have no single-resource read and simply
+    keep the id-only prompt.
+
+    STRICTLY BEST-EFFORT. Every failure — no counterpart tool, a 404, missing
+    permissions, a timeout, an unexpected shape — returns ``None`` so the prompt
+    degrades to the id. It must never block or auto-approve a delete: the name is
+    cosmetic, the gate is not. ``BaseException`` is deliberately not caught, so a
+    cancellation still aborts the call rather than being swallowed here.
+    """
+    get_name = spec.name.replace("_delete_", "_get_", 1)
+    if get_name == spec.name:
+        return None
+    get_spec = REGISTRY.get(get_name)
+    if get_spec is None:
+        return None
+    try:
+        fields = get_spec.input_model.model_fields
+        args = {k: v for k, v in params.items() if k in fields and v is not None}
+        record = get_spec.fn(get_spec.input_model.model_validate(args))
+        if not isinstance(record, dict):
+            return None
+        for key in ("name", "displayName", "display_name"):
+            value = record.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
+    except Exception as exc:  # noqa: BLE001 - cosmetic lookup, never fatal
+        logger.debug(
+            "Could not resolve a display name for %s via %s (%s: %s) — "
+            "the confirmation prompt will show the id only",
+            spec.name,
+            get_name,
+            type(exc).__name__,
+            exc,
+        )
+        return None
+
+
+def _build_confirmation_resolver(spec: ToolSpec) -> Any:
+    """The resolver that obtains a human decision for one DELETE tool.
+
+    Returns either an ``Elicit`` marker (ask the human) or
+    :data:`~zscaler_mcp.security.elicitation.TOKEN_FALLBACK` (this caller cannot be
+    asked, so fall back to the token exchange). It never decides the operation
+    itself — :func:`gate_destructive_operation` interprets the result.
+
+    The signature is SYNTHESIZED from the spec's input model because a resolver
+    receives tool arguments *by name*, and the names differ per tool
+    (``group_id``, ``rule_id``, …). Those arguments are what let the prompt name
+    the resource being deleted instead of asking the human to approve an
+    anonymous "delete". Every field is optional here: the resolver runs before the
+    input model is validated, so it must tolerate a partial call rather than raise
+    a second, confusing error.
+    """
+    field_names = list(spec.input_model.model_fields)
+
+    def resolve_confirmation(**call_kwargs: Any) -> Any:
+        ctx = call_kwargs.pop(_CONTEXT_PARAM, None)
+        try:
+            can_elicit = elicitation_available(ctx)
+        except CapabilityCheckFailed:
+            # An internal defect, not a client limitation. Surfaced as its own
+            # sentinel so the gate refuses instead of quietly minting a token.
+            return CAPABILITY_CHECK_FAILED
+        if not can_elicit:
+            return TOKEN_FALLBACK
+        params = {k: v for k, v in call_kwargs.items() if v is not None}
+        return build_confirmation_request(
+            spec.name, params, resource_name=_resolve_resource_name(spec, params)
+        )
+
+    resolver_params = [
+        inspect.Parameter(
+            name, inspect.Parameter.KEYWORD_ONLY, annotation=Optional[Any], default=None
+        )
+        for name in field_names
+    ]
+    resolver_params.append(
+        inspect.Parameter(
+            _CONTEXT_PARAM, inspect.Parameter.KEYWORD_ONLY, annotation=Context, default=None
+        )
+    )
+    resolve_confirmation.__name__ = f"confirm_{spec.name}"
+    resolve_confirmation.__signature__ = inspect.Signature(resolver_params)
+    resolve_confirmation.__annotations__ = {
+        **{name: Optional[Any] for name in field_names},
+        _CONTEXT_PARAM: Context,
+    }
+    return resolve_confirmation
+
+
+def build_function_tool(spec: ToolSpec) -> Tool:
+    """Construct the MCP ``Tool`` for a spec, with the full security wrap."""
     secured_fn = wrap_tool(spec.fn, spec.name)
     params, annotations = _build_signature(spec)
 
-    def impl(**call_kwargs: Any) -> ToolResult:
-        # Separate the two bridge-owned channels from the real tool inputs, so
-        # neither reaches the input model (which doesn't declare them).
-        confirmation = call_kwargs.pop(_KWARGS_PARAM, None)
-        query = call_kwargs.pop(_QUERY_PARAM, None)
-
-        # Build + validate the typed input model from the flat kwargs.
-        model = spec.input_model.model_validate(call_kwargs)
-
-        # Destructive tools (DELETE) enforce HMAC confirmation BEFORE any SDK
-        # mutation. This mirrors v1 exactly: only destructive operations require
-        # the double-confirm; create/update are gated solely by the --write-tools
-        # allowlist (read-only by default) and execute directly once enabled.
-        if spec.action == DELETE:
-            confirmed = extract_confirmed_from_kwargs(confirmation)
-            params_for_token = model.model_dump(exclude_none=True)
-            message = check_confirmation(spec.name, confirmed, params_for_token)
-            if message is not None:
-                # Stop and ask the user; no mutation happens. The confirmation
-                # prompt is returned as a plain text block (it intentionally does
-                # not match the resource outputSchema — same pattern as v1).
-                return ToolResult(content=[TextContent(type="text", text=message)])
-
+    def run_body(model: Any, query: Any) -> CallToolResult:
         result = secured_fn(model)
         # Caller-side filtering/projection runs AFTER the tool returns, so the
         # encoder and the token accounting below both measure what the agent
         # actually receives.
         if spec.supports_query:
+            before = len(result) if isinstance(result, list) else None
             result = apply_jmespath(result, query)
+            if query and is_tool_call_logging_enabled():
+                # `query` is a bridge-owned channel: it is popped before the
+                # input model is built and never reaches the tool function, so
+                # the wrapper's [TOOL CALL] line cannot see it. Log it here, with
+                # the row count on both sides — an expression that silently
+                # matches nothing is indistinguishable from an empty tenant, and
+                # that ambiguity has already cost a debugging session.
+                after = len(result) if isinstance(result, list) else None
+                _audit_logger.info(
+                    "[QUERY]     %s | %r | %s -> %s rows", spec.name, query, before, after
+                )
         return _to_tool_result(spec, result)
 
+    if spec.action == DELETE:
+
+        def impl(**call_kwargs: Any) -> Any:
+            # Separate the three bridge-owned channels from the real tool inputs,
+            # so none of them reaches the input model (which doesn't declare them).
+            confirmation = call_kwargs.pop(_KWARGS_PARAM, None)
+            query = call_kwargs.pop(_QUERY_PARAM, None)
+            approval = call_kwargs.pop(_APPROVAL_PARAM, None)
+            model = spec.input_model.model_validate(call_kwargs)
+
+            # Confirmation happens BEFORE any SDK mutation. Only destructive
+            # operations are gated this way (v1 parity): create/update are gated
+            # solely by the --write-tools allowlist and execute directly once
+            # enabled. By the time this runs the human has already been asked (the
+            # resolver did it, via whichever transport the negotiated revision
+            # allows); `approval` is either their answer or the sentinel meaning
+            # this caller could not be asked and must use the token exchange.
+            gate_params = model.model_dump(exclude_none=True)
+            message = gate_destructive_operation(
+                approval,
+                spec.name,
+                gate_params,
+                extract_confirmed_from_kwargs(confirmation),
+                name_lookup=lambda: _resolve_resource_name(spec, gate_params),
+            )
+            if message is not None:
+                # Stop; no mutation happens. Returned as a plain text block — it
+                # intentionally does not match the resource outputSchema, same
+                # pattern as v1.
+                return CallToolResult(content=[TextContent(type="text", text=message)])
+
+            return run_body(model, query)
+
+    else:
+
+        def impl(**call_kwargs: Any) -> Any:  # type: ignore[misc]
+            query = call_kwargs.pop(_QUERY_PARAM, None)
+            model = spec.input_model.model_validate(call_kwargs)
+            return run_body(model, query)
+
+    return_annotation = _return_annotation(spec)
     impl.__name__ = spec.name
     impl.__doc__ = spec.description
-    impl.__signature__ = inspect.Signature(params)
-    impl.__annotations__ = {**annotations, "return": Any}
+    # The return annotation must live on __signature__, not only __annotations__:
+    # the framework's schema derivation reads the signature, so a bare
+    # __annotations__["return"] is silently ignored and no outputSchema appears.
+    impl.__signature__ = inspect.Signature(params, return_annotation=return_annotation)
+    impl.__annotations__ = {**annotations, "return": return_annotation}
 
-    # DELETE tools are additionally POLYMORPHIC: the first call returns the HMAC
-    # confirmation prompt (a plain-text envelope, no structured content), and only
-    # the confirmed second call returns a result. A strict outputSchema can never
-    # describe both, and the MCP server rejects any result that lacks structured
-    # content when an outputSchema is declared ("outputSchema defined but no
-    # structured output returned"). So deletes never advertise one, even though
-    # their OperationResult is a synthetic shape we do own.
-    output_schema = None if spec.action == DELETE else _output_schema(spec)
-
-    return FunctionTool.from_function(
+    return Tool.from_function(
         impl,
         name=spec.name,
         description=spec.description,
-        output_schema=output_schema,
         annotations=_tool_annotations(spec),
     )
 

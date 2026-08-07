@@ -87,7 +87,7 @@ def zpa_get_forwarding_policy_rule(args: GetRuleInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_forwarding_policy_rule(args: CreateForwardingRuleInput) -> dict[str, Any]:
-    """Create a ZPA client forwarding policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Create a ZPA client forwarding policy rule (write). Requires `--write-tools`."""
     if not args.name or not args.action_type:
         raise ValueError("name and action_type are required")
     client = get_zscaler_client(service="zpa")
@@ -113,7 +113,7 @@ def zpa_create_forwarding_policy_rule(args: CreateForwardingRuleInput) -> dict[s
     is_list=False,
 )
 def zpa_update_forwarding_policy_rule(args: UpdateForwardingRuleInput) -> dict[str, Any]:
-    """Update a ZPA client forwarding policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA client forwarding policy rule (write). Requires `--write-tools`."""
     if not args.rule_id:
         raise ValueError("rule_id is required")
     client = get_zscaler_client(service="zpa")
@@ -142,5 +142,9 @@ def zpa_update_forwarding_policy_rule(args: UpdateForwardingRuleInput) -> dict[s
     is_list=False,
 )
 def zpa_delete_forwarding_policy_rule(args: DeleteRuleInput) -> dict[str, Any]:
-    """Delete a ZPA client forwarding policy rule (destructive write)."""
+    """Delete a ZPA client forwarding policy rule (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     return delete_rule("client_forwarding", args, "forwarding")

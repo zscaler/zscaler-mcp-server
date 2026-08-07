@@ -12,6 +12,7 @@ but the agent can project exactly what it wants.
 from __future__ import annotations
 
 import json
+import logging
 from unittest.mock import patch
 
 import pytest
@@ -82,7 +83,7 @@ async def test_every_collection_tool_exposes_query():
     wrong = []
     for name, tool in tools.items():
         expected = REGISTRY.get(name).supports_query
-        actual = "query" in (tool.parameters.get("properties") or {})
+        actual = "query" in (tool.input_schema.get("properties") or {})
         if expected != actual:
             wrong.append(f"{name}: supports_query={expected} but query-param={actual}")
     assert not wrong, "\n".join(wrong)
@@ -95,16 +96,57 @@ async def test_envelope_returning_list_tools_also_get_query():
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
     for name in ("zia_list_auth_exempt_urls", "zia_list_atp_malicious_urls", "zcell_list_sims"):
-        assert "query" in (tools[name].parameters.get("properties") or {}), name
+        assert "query" in (tools[name].input_schema.get("properties") or {}), name
 
 
 @pytest.mark.asyncio
 async def test_query_parameter_is_documented_for_the_agent():
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
-    q = tools["zcc_list_devices"].parameters["properties"]["query"]
+    q = tools["zcc_list_devices"].input_schema["properties"]["query"]
     assert "JMESPath" in q["description"]
     assert q["default"] is None  # omitting it is the default path
+
+
+@pytest.mark.asyncio
+async def test_query_description_warns_that_field_names_are_snake_case():
+    """The description used to claim the keys are "exactly what the API returns".
+
+    They are not: the SDK's ``as_dict()`` snake_cases them, so a record the API
+    documents as ``customCategory`` arrives as ``custom_category``. An agent
+    trusting the old wording filtered on the camelCase spelling, got ``[]``, and
+    had no way to tell that from a genuinely empty result.
+    """
+    server = build_server()
+    tools = {t.name: t for t in await server.list_tools()}
+    desc = tools["zia_list_url_categories"].input_schema["properties"]["query"]["description"]
+    assert "snake_case" in desc
+    assert "exactly what the Zscaler API returns" not in desc
+
+
+@pytest.mark.asyncio
+async def test_a_query_that_matches_nothing_is_logged_with_both_row_counts(caplog):
+    """`query` never reaches the tool, so [TOOL CALL] cannot record it.
+
+    Without this line an empty response is indistinguishable in the log from an
+    empty tenant — which is exactly the ambiguity that made the regression above
+    expensive to diagnose.
+    """
+    from zscaler_mcp.security import audit
+
+    server = build_server()
+    target = "zscaler_mcp.tools.zcc.list_devices.get_zscaler_client"
+    audit.enable_tool_call_logging()
+    try:
+        with caplog.at_level(logging.INFO, logger="zscaler_mcp.audit"):
+            with patch(target, return_value=_fake_client(RECORDS)):
+                await server.call_tool("zcc_list_devices", {"query": "[?noSuchField]"})
+    finally:
+        audit.disable_tool_call_logging()
+    text = "\n".join(r.message for r in caplog.records)
+    assert "[QUERY]" in text
+    assert "noSuchField" in text
+    assert "2 -> 0 rows" in text
 
 
 @pytest.mark.asyncio
@@ -112,7 +154,7 @@ async def test_non_list_tools_have_no_query_parameter():
     # A single-object get has nothing to filter; the parameter would be noise.
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
-    assert "query" not in (tools["zpa_get_segment_group"].parameters.get("properties") or {})
+    assert "query" not in (tools["zpa_get_segment_group"].input_schema.get("properties") or {})
 
 
 class _FakeDevice:

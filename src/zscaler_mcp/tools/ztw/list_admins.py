@@ -38,8 +38,6 @@ class ListAdminsInput(BaseModel):
     ] = None
 
 
-
-
 @tool(
     action=READ,
     service="ztw",

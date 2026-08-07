@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.4",
   "name": "Zscaler MCP Server",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Zscaler MCP Server — AI-powered management of the Zscaler Zero Trust Exchange across ZIA, ZPA, ZDX, ZCC, ZTW, ZIdentity, EASM, Z-Insights, ZMS, and ZCell via the Model Context Protocol.",
   "long_description": "Zscaler MCP Server is a Model Context Protocol (MCP) server for managing Zscaler products with LLMs (Claude, ChatGPT, Gemini, etc.). It exposes hundreds of tools across the Zscaler services. Read-only operations are available by default; create / update / delete tools require explicit allowlisting via the 'Enable Write Tools' and 'Write Tools Allowlist' settings below, and destructive operations additionally require an in-session HMAC confirmation token.",
   "author": {
@@ -707,7 +707,7 @@
     },
     {
       "name": "zia_url_lookup",
-      "description": "Look up the URL category classifications for a list of URLs/domains."
+      "description": "Which category does a URL belong to? Use THIS for that question.\n\nAnswers \"what category is twilio.com?\" directly: pass the URLs and get back\nZscaler's classification for each, e.g.\n`{\"url\": \"notpurple.com\", \"urlClassifications\": [\"SPECIALIZED_SHOPPING\"]}`.\nThe response is sma..."
     },
     {
       "name": "get_zpa_app_protection_profile",
@@ -759,11 +759,11 @@
     },
     {
       "name": "zpa_create_app_connector_group",
-      "description": "Create a ZPA app connector group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA app connector group (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_create_app_protection_rule",
-      "description": "Create a ZPA app-protection (inspection) policy rule (write).\n\nGated by HMAC + `--write-tools`."
+      "description": "Create a ZPA app-protection (inspection) policy rule (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_create_application_segment",
@@ -779,11 +779,11 @@
     },
     {
       "name": "zpa_create_application_server",
-      "description": "Create a ZPA application server (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA application server (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_create_ba_certificate",
-      "description": "Create a ZPA Browser Access certificate from a PEM blob (write).\n\nGated by HMAC + `--write-tools`."
+      "description": "Create a ZPA Browser Access certificate from a PEM blob (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_create_forwarding_policy_rule",
@@ -807,15 +807,15 @@
     },
     {
       "name": "zpa_create_segment_group",
-      "description": "Create a ZPA segment group and return the full record.\n\nWrite tool: gated by the server's HMAC write-confirmation."
+      "description": "Create a ZPA segment group and return the full record.\n\nWrite tool: disabled unless the operator enables it via --write-tools."
     },
     {
       "name": "zpa_create_server_group",
-      "description": "Create a ZPA server group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA server group (write).\n\nRequires `--write-tools`, plus at least one\nApp Connector Group; dynamic_discovery=False requires server_ids."
     },
     {
       "name": "zpa_create_service_edge_group",
-      "description": "Create a ZPA service edge group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Create a ZPA service edge group (write).\n\nRequires `--write-tools`, plus name,\nlatitude, longitude, and location."
     },
     {
       "name": "zpa_create_timeout_policy_rule",
@@ -823,7 +823,7 @@
     },
     {
       "name": "zpa_delete_access_policy_rule",
-      "description": "Delete a ZPA access policy rule (destructive write)."
+      "description": "Delete a ZPA access policy rule (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_app_connector",
@@ -831,11 +831,11 @@
     },
     {
       "name": "zpa_delete_app_connector_group",
-      "description": "Delete a ZPA app connector group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA app connector group (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_app_protection_rule",
-      "description": "Delete a ZPA app-protection (inspection) policy rule (destructive write)."
+      "description": "Delete a ZPA app-protection (inspection) policy rule (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_application_segment",
@@ -847,43 +847,43 @@
     },
     {
       "name": "zpa_delete_application_segment_pra",
-      "description": "Delete a ZPA privileged-remote-access application segment (destructive write)."
+      "description": "Delete a ZPA privileged-remote-access application segment (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_application_server",
-      "description": "Delete a ZPA application server (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA application server (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_ba_certificate",
-      "description": "Delete a ZPA Browser Access certificate (destructive write)."
+      "description": "Delete a ZPA Browser Access certificate (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_forwarding_policy_rule",
-      "description": "Delete a ZPA client forwarding policy rule (destructive write)."
+      "description": "Delete a ZPA client forwarding policy rule (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_isolation_policy_rule",
-      "description": "Delete a ZPA isolation policy rule (destructive write)."
+      "description": "Delete a ZPA isolation policy rule (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_pra_credential",
-      "description": "Delete a ZPA PRA credential (destructive write)."
+      "description": "Delete a ZPA PRA credential (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_pra_portal",
-      "description": "Delete a ZPA PRA portal (destructive write)."
+      "description": "Delete a ZPA PRA portal (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_provisioning_key",
-      "description": "Delete a ZPA provisioning key (destructive write)."
+      "description": "Delete a ZPA provisioning key (destructive write).\n\nIf the key was already removed (e.g."
     },
     {
       "name": "zpa_delete_segment_group",
-      "description": "Delete a ZPA segment group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA segment group (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_server_group",
-      "description": "Delete a ZPA server group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA server group (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_service_edge",
@@ -891,11 +891,11 @@
     },
     {
       "name": "zpa_delete_service_edge_group",
-      "description": "Delete a ZPA service edge group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZPA service edge group (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_delete_timeout_policy_rule",
-      "description": "Delete a ZPA timeout policy rule (destructive write)."
+      "description": "Delete a ZPA timeout policy rule (destructive write).\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zpa_get_access_policy_rule",
@@ -1083,7 +1083,7 @@
     },
     {
       "name": "zpa_update_app_connector_group",
-      "description": "Update a ZPA app connector group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA app connector group (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_update_app_protection_rule",
@@ -1103,7 +1103,7 @@
     },
     {
       "name": "zpa_update_application_server",
-      "description": "Update a ZPA application server (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA application server (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_update_forwarding_policy_rule",
@@ -1127,7 +1127,7 @@
     },
     {
       "name": "zpa_update_segment_group",
-      "description": "Update a ZPA segment group and return the full record (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA segment group and return the full record (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_update_server_group",
@@ -1139,7 +1139,7 @@
     },
     {
       "name": "zpa_update_service_edge_group",
-      "description": "Update a ZPA service edge group (write).\n\nGated by HMAC write-confirmation and `--write-tools`."
+      "description": "Update a ZPA service edge group (write).\n\nRequires `--write-tools`."
     },
     {
       "name": "zpa_update_timeout_policy_rule",
@@ -1147,11 +1147,11 @@
     },
     {
       "name": "zdx_delete_analysis",
-      "description": "Stop/delete a running ZDX score analysis (destructive write).\n\nCannot be undone."
+      "description": "Stop/delete a running ZDX score analysis (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zdx_delete_deeptrace",
-      "description": "Delete a ZDX deep-trace session (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZDX deep-trace session (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "zdx_get_alert",
@@ -1299,7 +1299,7 @@
     },
     {
       "name": "ztw_delete_ip_destination_group",
-      "description": "Delete a ZTW IP destination group (destructive write).\n\nCannot be undone."
+      "description": "Delete a ZTW IP destination group (destructive write).\n\nCannot be undone.\n\nConfirmation required — the first call returns a prompt, not a deletion.\nGated by `--write-tools`."
     },
     {
       "name": "ztw_delete_ip_group",

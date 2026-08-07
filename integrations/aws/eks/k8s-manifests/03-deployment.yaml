@@ -42,7 +42,6 @@ spec:
             - { name: ZSCALER_MCP_PORT, value: "8000" }
             - { name: ZSCALER_MCP_ALLOW_HTTP, value: "true" }
             - { name: ZSCALER_MCP_DISABLE_HOST_VALIDATION, value: "true" }
-            - { name: FASTMCP_STATELESS_HTTP, value: "true" }
             - { name: ZSCALER_MCP_AUTH_MODE, value: "${AUTH_MODE}" }
             - { name: ZSCALER_MCP_AUTH_ENABLED, value: "${AUTH_ENABLED}" }
             - { name: ZSCALER_MCP_AUTH_JWKS_URI, value: "${JWT_JWKS_URI}" }
@@ -56,10 +55,14 @@ spec:
             - { name: ZSCALER_MCP_TOOLSETS, value: "${TOOLSETS}" }
             - { name: ZSCALER_MCP_DISABLED_TOOLSETS, value: "${DISABLED_TOOLSETS}" }
             - { name: ZSCALER_MCP_LOG_TOOL_CALLS, value: "${LOG_TOOL_CALLS}" }
+            # OIDC mode reads the issuer and JWKS URI from the IdP's discovery
+            # document, and verifies tokens with the IdP's public keys, so no
+            # client secret belongs here.
+            - { name: OIDCPROXY_CONFIG_URL, value: "${OIDC_CONFIG_URL}" }
+            - { name: OIDCPROXY_BASE_URL, value: "${OIDC_BASE_URL}" }
             - { name: OIDCPROXY_CLIENT_ID, value: "${OIDC_CLIENT_ID}" }
-            - { name: OIDCPROXY_CLIENT_SECRET, value: "${OIDC_CLIENT_SECRET}" }
-            - { name: OIDCPROXY_ISSUER, value: "${OIDC_ISSUER}" }
             - { name: OIDCPROXY_AUDIENCE, value: "${OIDC_AUDIENCE}" }
+            - { name: OIDCPROXY_REQUIRED_SCOPES, value: "${OIDC_REQUIRED_SCOPES}" }
           resources:
             requests:
               cpu: "200m"

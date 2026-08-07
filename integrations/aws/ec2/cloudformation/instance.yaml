@@ -82,19 +82,33 @@ Parameters:
     Type: String
     Default: ''
     NoEcho: true
+  # OIDC mode. The server is an OAuth protected resource: it verifies tokens the
+  # client already holds and never runs a flow itself, so there is no client
+  # secret here. The issuer and JWKS URI are read from the IdP's discovery
+  # document at startup, which is why only its URL is a parameter.
+  OidcProxyConfigUrl:
+    Type: String
+    Default: ''
+    Description: IdP OpenID configuration URL, e.g. https://idp.example.com/.well-known/openid-configuration
+  OidcProxyBaseUrl:
+    Type: String
+    Default: ''
+    Description: >-
+      Public base URL of this server, which clients use as the OAuth resource
+      identifier. Must be the hostname clients actually dial, so a CNAME in
+      front of the load balancer belongs here rather than the ALB DNS name.
+      When blank the ALB address is used.
   OidcProxyClientId:
-    Type: String
-    Default: ''
-  OidcProxyClientSecret:
-    Type: String
-    Default: ''
-    NoEcho: true
-  OidcProxyIssuer:
     Type: String
     Default: ''
   OidcProxyAudience:
     Type: String
     Default: ''
+    Description: Expected token audience. Defaults to the client id when blank.
+  OidcProxyRequiredScopes:
+    Type: String
+    Default: ''
+    Description: Comma-separated scopes a token must carry. Optional.
 
   # ── Feature flags ───────────────────────────────────────────────────────
   WriteToolsEnabled:
@@ -357,7 +371,6 @@ Resources:
           ZSCALER_MCP_PORT=${ContainerPort}
           ZSCALER_MCP_ALLOW_HTTP=true
           ZSCALER_MCP_DISABLE_HOST_VALIDATION=true
-          FASTMCP_STATELESS_HTTP=true
           ZSCALER_MCP_AUTH_MODE=${McpAuthMode}
           ZSCALER_MCP_WRITE_ENABLED=${WriteToolsEnabled}
           ZSCALER_MCP_LOG_TOOL_CALLS=${EnableToolCallLogging}
@@ -370,11 +383,24 @@ Resources:
           ZSCALER_MCP_DISABLED_SERVICES=${DisabledServices}
           ZSCALER_MCP_TOOLSETS=${Toolsets}
           ZSCALER_MCP_DISABLED_TOOLSETS=${DisabledToolsets}
+          OIDCPROXY_CONFIG_URL=${OidcProxyConfigUrl}
           OIDCPROXY_CLIENT_ID=${OidcProxyClientId}
-          OIDCPROXY_CLIENT_SECRET=${OidcProxyClientSecret}
-          OIDCPROXY_ISSUER=${OidcProxyIssuer}
           OIDCPROXY_AUDIENCE=${OidcProxyAudience}
+          OIDCPROXY_REQUIRED_SCOPES=${OidcProxyRequiredScopes}
           EOF
+
+          # The OAuth resource identifier has to match the URL clients dial, so an
+          # operator-supplied value wins; the ALB address is only a fallback for
+          # deployments reached at it directly. The dollar-curlies below are
+          # resolved by CloudFormation before the shell ever sees them.
+          if [ -n "${OidcProxyBaseUrl}" ]; then
+            echo "OIDCPROXY_BASE_URL=${OidcProxyBaseUrl}" >> /etc/zscaler-mcp/static.env
+          elif [ "${TlsMode}" = "None" ]; then
+            echo "OIDCPROXY_BASE_URL=http://${Alb.DNSName}" >> /etc/zscaler-mcp/static.env
+          else
+            echo "OIDCPROXY_BASE_URL=https://${Alb.DNSName}" >> /etc/zscaler-mcp/static.env
+          fi
+
           chmod 640 /etc/zscaler-mcp/static.env
           chown root:zscaler-mcp /etc/zscaler-mcp/static.env
 

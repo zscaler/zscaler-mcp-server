@@ -95,7 +95,7 @@ def zpa_get_app_protection_rule(args: GetRuleInput) -> dict[str, Any]:
 def zpa_create_app_protection_rule(args: CreateAppProtectionRuleInput) -> dict[str, Any]:
     """Create a ZPA app-protection (inspection) policy rule (write).
 
-    Gated by HMAC + `--write-tools`. `zpn_inspection_profile_id` is required
+    Requires `--write-tools`. `zpn_inspection_profile_id` is required
     when action_type is 'inspect'.
     """
     if not args.name or not args.action_type:
@@ -156,5 +156,9 @@ def zpa_update_app_protection_rule(args: UpdateAppProtectionRuleInput) -> dict[s
     is_list=False,
 )
 def zpa_delete_app_protection_rule(args: DeleteRuleInput) -> dict[str, Any]:
-    """Delete a ZPA app-protection (inspection) policy rule (destructive write)."""
+    """Delete a ZPA app-protection (inspection) policy rule (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     return delete_rule("inspection", args, "app protection")

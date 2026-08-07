@@ -30,6 +30,7 @@ Usage:
 
 Requires ``npx`` (Node) or a globally-installed ``mcpb`` for the pack step.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,7 +72,9 @@ def regenerate_and_verify_manifest() -> dict:
     we warn so the contributor knows to commit it.
     """
     print(c("[1/4] Regenerating MCPB manifest from live tool inventory...", GREEN))
-    before = CANONICAL_MANIFEST.read_text(encoding="utf-8") if CANONICAL_MANIFEST.is_file() else None
+    before = (
+        CANONICAL_MANIFEST.read_text(encoding="utf-8") if CANONICAL_MANIFEST.is_file() else None
+    )
     run(
         [sys.executable, "-m", "zscaler_mcp.server", "--generate-docs"],
         cwd=REPO_ROOT,

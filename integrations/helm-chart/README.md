@@ -628,7 +628,7 @@ The chart is **alpha** until it gets cut as `0.1.0`. Until then, breaking change
 - **GitHub Pages Helm repo** so `helm repo add zscaler-mcp https://zscaler.github.io/zscaler-mcp-server/` works without cloning. A GitHub Actions workflow will run `helm package` + `helm repo index` on every release tag and publish to the `gh-pages` branch.
 - **Chart-testing CI** (`ct lint`, `kubeconform`, `kind`-based install smoke).
 - **values.schema.json** for early validation of `--set` typos.
-- **OIDCProxy** mode (OAuth 2.1 + DCR) once it's reachable via env vars rather than the programmatic `auth=` parameter.
+- **A dedicated `values.yaml` block for OAuth 2.1 (`oidc`)**. The mode already works today — it is configured entirely through env vars, so setting `server.auth.mode: oidc` and putting `OIDCPROXY_CONFIG_URL` / `OIDCPROXY_CLIENT_ID` / `OIDCPROXY_BASE_URL` in the Secret is sufficient (they reach the container via `envFrom`). A first-class block would just make it discoverable and validate the combination.
 - **Built-in ExternalSecret template** (gated by `externalSecrets.enabled: true`) so customers with ESO installed don't need to maintain a separate manifest. Deliberately deferred from v1 to avoid coupling the chart to a specific CRD version.
 
 ## Contributing

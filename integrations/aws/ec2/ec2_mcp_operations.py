@@ -246,9 +246,7 @@ def discover_env_file() -> Path | None:
     return None
 
 
-def resolve_env_file_path(
-    cli_env_file: str | None, non_interactive: bool
-) -> Path | None:
+def resolve_env_file_path(cli_env_file: str | None, non_interactive: bool) -> Path | None:
     """Resolve which .env / env.properties file to load.
 
     Precedence:
@@ -468,8 +466,7 @@ def prompt_choice(label: str, choices: list[str], default: str) -> str:
         print(f"  {_ansi('36', f'[{i}]')} {c}{marker}")
     default_idx = choices.index(default) + 1 if default in choices else 1
     raw = input(
-        f"Pick {_ansi('36', f'1-{len(choices)}')}"
-        f" {_ansi('2', f'[{default_idx}]')}: "
+        f"Pick {_ansi('36', f'1-{len(choices)}')} {_ansi('2', f'[{default_idx}]')}: "
     ).strip()
     if not raw:
         return default
@@ -603,12 +600,8 @@ def list_vpcs(sess: boto3.Session) -> list[dict]:
 
 def list_subnets_for_vpc(sess: boto3.Session, vpc_id: str) -> list[dict]:
     ec2 = sess.client("ec2")
-    subs = ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])[
-        "Subnets"
-    ]
-    rts = ec2.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])[
-        "RouteTables"
-    ]
+    subs = ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])["Subnets"]
+    rts = ec2.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])["RouteTables"]
     main_rt_id = next(
         (
             rt["RouteTableId"]
@@ -620,15 +613,12 @@ def list_subnets_for_vpc(sess: boto3.Session, vpc_id: str) -> list[dict]:
 
     def is_public(subnet_id: str) -> bool:
         for rt in rts:
-            explicit = any(
-                a.get("SubnetId") == subnet_id for a in rt.get("Associations", [])
-            )
+            explicit = any(a.get("SubnetId") == subnet_id for a in rt.get("Associations", []))
             if explicit or rt["RouteTableId"] == main_rt_id:
                 for r in rt.get("Routes", []):
-                    if (
-                        r.get("DestinationCidrBlock") == "0.0.0.0/0"
-                        and r.get("GatewayId", "").startswith("igw-")
-                    ):
+                    if r.get("DestinationCidrBlock") == "0.0.0.0/0" and r.get(
+                        "GatewayId", ""
+                    ).startswith("igw-"):
                         return True
         return False
 
@@ -664,15 +654,10 @@ def pick_subnets(
     print(f"\n  {kind.upper()} subnets in this VPC:")
     for i, s in enumerate(candidates, 1):
         flag = "🌐" if s["public"] else "🔒"
-        print(
-            f"    {i:>2}. {s['id']:<24} {s['az']:<14} {s['cidr']:<20}"
-            f" {flag} {s['name']}"
-        )
+        print(f"    {i:>2}. {s['id']:<24} {s['az']:<14} {s['cidr']:<20} {flag} {s['name']}")
 
     while True:
-        raw = input(
-            f"  Pick {kind} subnet numbers (comma-separated, >= {min_count}): "
-        ).strip()
+        raw = input(f"  Pick {kind} subnet numbers (comma-separated, >= {min_count}): ").strip()
         if not raw:
             continue
         try:
@@ -912,14 +897,7 @@ def _claude_code_path() -> Path:
 def _cursor_path() -> Path:
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
-        return (
-            Path(appdata)
-            / "Cursor"
-            / "User"
-            / "globalStorage"
-            / "cursor.mcp"
-            / "mcp.json"
-        )
+        return Path(appdata) / "Cursor" / "User" / "globalStorage" / "cursor.mcp" / "mcp.json"
     return Path.home() / ".cursor" / "mcp.json"
 
 
@@ -929,9 +907,7 @@ def _gemini_cli_path() -> Path:
 
 def _vscode_path() -> Path:
     if SYSTEM == "Darwin":
-        return (
-            Path.home() / "Library" / "Application Support" / "Code" / "User" / "mcp.json"
-        )
+        return Path.home() / "Library" / "Application Support" / "Code" / "User" / "mcp.json"
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
         return Path(appdata) / "Code" / "User" / "mcp.json"
@@ -944,13 +920,7 @@ def _windsurf_path() -> Path:
 
 def _copilot_cli_path() -> Path:
     if SYSTEM == "Darwin":
-        return (
-            Path.home()
-            / "Library"
-            / "Application Support"
-            / "github-copilot"
-            / "mcp.json"
-        )
+        return Path.home() / "Library" / "Application Support" / "github-copilot" / "mcp.json"
     if SYSTEM == "Windows":
         appdata = os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming"))
         return Path(appdata) / "github-copilot" / "mcp.json"
@@ -1075,9 +1045,7 @@ def _write_copilot_cli(server_name: str, url: str, headers: dict[str, str]) -> P
 
 def _claude_desktop_installed() -> bool:
     if SYSTEM == "Darwin":
-        return (
-            Path("/Applications/Claude.app").exists() or _claude_desktop_path().exists()
-        )
+        return Path("/Applications/Claude.app").exists() or _claude_desktop_path().exists()
     if SYSTEM == "Windows":
         local = os.environ.get("LOCALAPPDATA", "")
         if local and (Path(local) / "AnthropicClaude").exists():
@@ -1117,13 +1085,55 @@ def _copilot_cli_installed() -> bool:
 
 
 AGENTS: list[dict] = [
-    {"id": "claude_desktop", "name": "Claude Desktop", "path_fn": _claude_desktop_path, "installed_fn": _claude_desktop_installed, "writer": _write_claude_desktop},
-    {"id": "claude_code",    "name": "Claude Code (CLI)", "path_fn": _claude_code_path, "installed_fn": _claude_code_installed, "writer": _write_claude_code},
-    {"id": "cursor",         "name": "Cursor",          "path_fn": _cursor_path,         "installed_fn": _cursor_installed,         "writer": _write_cursor},
-    {"id": "gemini_cli",     "name": "Gemini CLI",      "path_fn": _gemini_cli_path,     "installed_fn": _gemini_cli_installed,     "writer": _write_gemini_cli},
-    {"id": "vscode",         "name": "VS Code (MCP)",   "path_fn": _vscode_path,         "installed_fn": _vscode_installed,         "writer": _write_vscode},
-    {"id": "windsurf",       "name": "Windsurf",        "path_fn": _windsurf_path,       "installed_fn": _windsurf_installed,       "writer": _write_windsurf},
-    {"id": "copilot_cli",    "name": "GitHub Copilot CLI", "path_fn": _copilot_cli_path, "installed_fn": _copilot_cli_installed,    "writer": _write_copilot_cli},
+    {
+        "id": "claude_desktop",
+        "name": "Claude Desktop",
+        "path_fn": _claude_desktop_path,
+        "installed_fn": _claude_desktop_installed,
+        "writer": _write_claude_desktop,
+    },
+    {
+        "id": "claude_code",
+        "name": "Claude Code (CLI)",
+        "path_fn": _claude_code_path,
+        "installed_fn": _claude_code_installed,
+        "writer": _write_claude_code,
+    },
+    {
+        "id": "cursor",
+        "name": "Cursor",
+        "path_fn": _cursor_path,
+        "installed_fn": _cursor_installed,
+        "writer": _write_cursor,
+    },
+    {
+        "id": "gemini_cli",
+        "name": "Gemini CLI",
+        "path_fn": _gemini_cli_path,
+        "installed_fn": _gemini_cli_installed,
+        "writer": _write_gemini_cli,
+    },
+    {
+        "id": "vscode",
+        "name": "VS Code (MCP)",
+        "path_fn": _vscode_path,
+        "installed_fn": _vscode_installed,
+        "writer": _write_vscode,
+    },
+    {
+        "id": "windsurf",
+        "name": "Windsurf",
+        "path_fn": _windsurf_path,
+        "installed_fn": _windsurf_installed,
+        "writer": _write_windsurf,
+    },
+    {
+        "id": "copilot_cli",
+        "name": "GitHub Copilot CLI",
+        "path_fn": _copilot_cli_path,
+        "installed_fn": _copilot_cli_installed,
+        "writer": _write_copilot_cli,
+    },
 ]
 
 
@@ -1136,9 +1146,7 @@ def _build_auth_headers(
 ) -> dict[str, str]:
     """Compute the HTTP header(s) an MCP client must send to authenticate."""
     if auth_mode == "zscaler" and zscaler_client_id and zscaler_client_secret:
-        token = base64.b64encode(
-            f"{zscaler_client_id}:{zscaler_client_secret}".encode()
-        ).decode()
+        token = base64.b64encode(f"{zscaler_client_id}:{zscaler_client_secret}".encode()).decode()
         return {"Authorization": f"Basic {token}"}
     if auth_mode == "api-key" and api_key:
         return {"X-Api-Key": api_key}
@@ -1311,9 +1319,7 @@ def resolve_network(
         print("\n  Available VPCs:")
         for i, v in enumerate(vpcs, 1):
             flag = "(default)" if v["default"] else ""
-            print(
-                f"    {i:>2}. {v['id']:<24} {v['cidr']:<18} {flag:<10} {v['name']}"
-            )
+            print(f"    {i:>2}. {v['id']:<24} {v['cidr']:<18} {flag:<10} {v['name']}")
         while True:
             raw = input(f"  Pick a VPC [1-{len(vpcs)}]: ").strip()
             if raw.isdigit() and 1 <= int(raw) <= len(vpcs):
@@ -1341,9 +1347,7 @@ def resolve_network(
     }
 
 
-def resolve_tls(
-    sess: boto3.Session, env: dict[str, str], non_interactive: bool
-) -> dict[str, str]:
+def resolve_tls(sess: boto3.Session, env: dict[str, str], non_interactive: bool) -> dict[str, str]:
     """Decide TLS path — managed ACM via Route53, existing cert ARN, or none."""
     mode = env.get("AWS_TLS_MODE", "").strip()
     if not mode and not non_interactive:
@@ -1431,7 +1435,8 @@ def resolve_auth(env: dict[str, str], non_interactive: bool) -> dict[str, str]:
             "  1) zscaler    — HTTP Basic with Zscaler OneAPI creds (simplest)\n"
             "  2) jwt        — IdP-issued bearer (Auth0, Cognito, Entra...)\n"
             "  3) api-key    — shared secret (X-Api-Key header)\n"
-            "  4) oidcproxy  — full OAuth 2.1 with Dynamic Client Registration\n"
+            "  4) oidc       — OAuth 2.1; clients log in at your IdP and this\n"
+            "                  server verifies the tokens they present\n"
             "  5) none       — no client auth (cluster-internal use only)"
         )
         mode = prompt_choice(
@@ -1461,22 +1466,35 @@ def resolve_auth(env: dict[str, str], non_interactive: bool) -> dict[str, str]:
             )
             info(f"  Auto-generated API key: {out['ApiKey']}")
     elif mode == "oidcproxy":
+        # The server is an OAuth protected resource: it verifies tokens clients
+        # already hold and never runs a flow itself, so there is no client secret
+        # to collect. The issuer and JWKS URI are read from the IdP's discovery
+        # document when the server starts, which is why only its URL is needed.
+        out["OidcProxyConfigUrl"] = env.get("OIDCPROXY_CONFIG_URL", "")
+        out["OidcProxyBaseUrl"] = env.get("OIDCPROXY_BASE_URL", "")
         out["OidcProxyClientId"] = env.get("OIDCPROXY_CLIENT_ID", "")
-        out["OidcProxyClientSecret"] = env.get("OIDCPROXY_CLIENT_SECRET", "")
-        out["OidcProxyIssuer"] = env.get("OIDCPROXY_ISSUER", "")
         out["OidcProxyAudience"] = env.get("OIDCPROXY_AUDIENCE", "")
+        out["OidcProxyRequiredScopes"] = env.get("OIDCPROXY_REQUIRED_SCOPES", "")
         if not non_interactive:
-            if not out["OidcProxyClientId"]:
-                out["OidcProxyClientId"] = prompt("OIDCProxy Client ID")
-            if not out["OidcProxyClientSecret"]:
-                out["OidcProxyClientSecret"] = prompt(
-                    "OIDCProxy Client Secret", secret=True
+            if not out["OidcProxyConfigUrl"]:
+                out["OidcProxyConfigUrl"] = prompt(
+                    "IdP OpenID configuration URL "
+                    "(e.g. https://idp.example.com/.well-known/openid-configuration)"
                 )
-            if not out["OidcProxyIssuer"]:
-                out["OidcProxyIssuer"] = prompt("OIDCProxy Issuer")
+            if not out["OidcProxyClientId"]:
+                out["OidcProxyClientId"] = prompt("OIDC client ID")
+            # Most IdPs put the client id in `aud`, and the server defaults to it
+            # for that reason. An audience is mandatory: without one, a token the
+            # same IdP minted for a different application would be accepted here.
             out["OidcProxyAudience"] = prompt(
-                "OIDCProxy Audience", default=out["OidcProxyAudience"] or "zscaler-mcp"
+                "Expected token audience",
+                default=out["OidcProxyAudience"] or out["OidcProxyClientId"],
             )
+            if not out["OidcProxyBaseUrl"]:
+                out["OidcProxyBaseUrl"] = prompt(
+                    "Public base URL of this server (blank to use the load balancer address)",
+                    allow_empty=True,
+                )
     return out
 
 
@@ -1534,10 +1552,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     sess = get_session(region, profile=os.environ.get("AWS_PROFILE"))
     account = sess.client("sts").get_caller_identity()["Account"]
 
-    bucket = (
-        env.get("AWS_ASSET_BUCKET", "").strip()
-        or f"{prefix}-cfn-{account}-{region}"
-    )
+    bucket = env.get("AWS_ASSET_BUCKET", "").strip() or f"{prefix}-cfn-{account}-{region}"
 
     # ── 2. Resolve credentials, network, TLS, auth, capacity ──────────
     step("2/6  Credentials & networking")
@@ -1639,12 +1654,26 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     print(f"  Region:         {region}")
     print(f"  Account:        {account}")
     print(f"  Asset bucket:   {bucket}")
-    print(f"  Credentials:    {creds['CredentialSource']}"
-          + (f" ({creds.get('ExistingSecretName')})" if creds["CredentialSource"] == "UseExisting" else ""))
-    print(f"  Network:        {network['NetworkMode']}"
-          + (f" (VPC {network['ExistingVpcId']})" if network["NetworkMode"] == "UseExisting" else f" ({network['NewVpcCidr']})"))
-    print(f"  TLS:            {tls['TlsMode']}"
-          + (f" ({tls['DomainName']})" if tls["TlsMode"] == "AcmManaged" else ""))
+    print(
+        f"  Credentials:    {creds['CredentialSource']}"
+        + (
+            f" ({creds.get('ExistingSecretName')})"
+            if creds["CredentialSource"] == "UseExisting"
+            else ""
+        )
+    )
+    print(
+        f"  Network:        {network['NetworkMode']}"
+        + (
+            f" (VPC {network['ExistingVpcId']})"
+            if network["NetworkMode"] == "UseExisting"
+            else f" ({network['NewVpcCidr']})"
+        )
+    )
+    print(
+        f"  TLS:            {tls['TlsMode']}"
+        + (f" ({tls['DomainName']})" if tls["TlsMode"] == "AcmManaged" else "")
+    )
     print(f"  MCP auth:       {auth['McpAuthMode']}")
     print(f"  Instance type:  {flags['InstanceType']}")
     print(
@@ -1656,9 +1685,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         )
     )
 
-    if not args.non_interactive and not prompt_bool(
-        "\nProceed with deployment?", default=True
-    ):
+    if not args.non_interactive and not prompt_bool("\nProceed with deployment?", default=True):
         info("Aborted by user.")
         return
 
@@ -1671,8 +1698,8 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     step("5/6  CloudFormation deploy")
     cfn = sess.client("cloudformation")
     params: list[dict] = [
-        {"ParameterKey": "AssetBucket",      "ParameterValue": bucket},
-        {"ParameterKey": "AssetPrefix",      "ParameterValue": prefix_key},
+        {"ParameterKey": "AssetBucket", "ParameterValue": bucket},
+        {"ParameterKey": "AssetPrefix", "ParameterValue": prefix_key},
         {"ParameterKey": "ResourceNamePrefix", "ParameterValue": prefix},
     ]
     for d in (creds, network, tls, auth, flags):
@@ -1768,13 +1795,8 @@ def cmd_deploy(args: argparse.Namespace) -> None:
                 f"?region={region}#/stacks?filteringText={stack_name}"
             )
             info(f"Inspect the failed stack in the CFN console: {console_url}")
-            info(
-                f"Tail more logs:  python {Path(__file__).name} logs --since 60"
-            )
-            info(
-                f"Run `python {Path(__file__).name} destroy` to clean it up "
-                f"before re-deploying."
-            )
+            info(f"Tail more logs:  python {Path(__file__).name} logs --since 60")
+            info(f"Run `python {Path(__file__).name} destroy` to clean it up before re-deploying.")
             die(f"Stack deploy failed: {final}")
 
     # ── 6. Configure clients + summary ─────────────────────────────────
@@ -1788,7 +1810,9 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     headers = _build_auth_headers(
         auth["McpAuthMode"],
         zscaler_client_id=creds.get("ZscalerClientId", env.get("ZSCALER_CLIENT_ID", "")),
-        zscaler_client_secret=creds.get("ZscalerClientSecret", env.get("ZSCALER_CLIENT_SECRET", "")),
+        zscaler_client_secret=creds.get(
+            "ZscalerClientSecret", env.get("ZSCALER_CLIENT_SECRET", "")
+        ),
         api_key=auth.get("ApiKey", ""),
     )
     server_name = env.get("MCP_SERVER_NAME", "").strip() or DEFAULT_SERVER_NAME
@@ -1806,15 +1830,19 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             print("\n  Detected MCP clients:")
             for i, a in enumerate(installed, 1):
                 print(f"    {i:>2}. {a['name']}")
-            raw = input(
-                "  Configure which? (comma-separated numbers, 'all', or empty to skip): "
-            ).strip().lower()
+            raw = (
+                input("  Configure which? (comma-separated numbers, 'all', or empty to skip): ")
+                .strip()
+                .lower()
+            )
             if raw == "all":
                 selected_ids = [a["id"] for a in installed]
             elif raw:
                 try:
                     picks = [int(p) for p in raw.replace(" ", "").split(",")]
-                    selected_ids = [installed[p - 1]["id"] for p in picks if 1 <= p <= len(installed)]
+                    selected_ids = [
+                        installed[p - 1]["id"] for p in picks if 1 <= p <= len(installed)
+                    ]
                 except (ValueError, IndexError):
                     warn("  Invalid selection — skipping client config.")
 
@@ -1947,20 +1975,22 @@ def cmd_status(args: argparse.Namespace) -> None:
                 Names=[f"{state.get('prefix', 'zscaler-mcp')}-alb"]
             )["LoadBalancers"]
             if albs:
-                tgs = elbv2.describe_target_groups(
-                    LoadBalancerArn=albs[0]["LoadBalancerArn"]
-                )["TargetGroups"]
+                tgs = elbv2.describe_target_groups(LoadBalancerArn=albs[0]["LoadBalancerArn"])[
+                    "TargetGroups"
+                ]
                 for tg in tgs:
-                    health = elbv2.describe_target_health(
-                        TargetGroupArn=tg["TargetGroupArn"]
-                    )["TargetHealthDescriptions"]
+                    health = elbv2.describe_target_health(TargetGroupArn=tg["TargetGroupArn"])[
+                        "TargetHealthDescriptions"
+                    ]
                     if health:
                         print()
                         print(f"  ALB target health ({tg['TargetGroupName']}):")
                         for h in health:
                             state_name = h["TargetHealth"]["State"]
-                            color2 = "32" if state_name == "healthy" else (
-                                "33" if state_name == "initial" else "31"
+                            color2 = (
+                                "32"
+                                if state_name == "healthy"
+                                else ("33" if state_name == "initial" else "31")
                             )
                             reason = h["TargetHealth"].get("Reason", "")
                             print(
@@ -1982,10 +2012,7 @@ def _ssm_plugin_install_hint() -> str:
     """
     plat = sys.platform
     if plat == "darwin":
-        return (
-            "Install on macOS:\n"
-            "    brew install --cask session-manager-plugin"
-        )
+        return "Install on macOS:\n    brew install --cask session-manager-plugin"
     if plat.startswith("linux"):
         return (
             "Install on Ubuntu/Debian:\n"
@@ -2105,11 +2132,7 @@ def cmd_logs(args: argparse.Namespace) -> None:
     since_min = max(int(getattr(args, "since", 30) or 30), 1)
     start_ms = int((time.time() - since_min * 60) * 1000)
 
-    scope = (
-        f"stream={stream_choice} (prefix={stream_prefix})"
-        if stream_prefix
-        else "all streams"
-    )
+    scope = f"stream={stream_choice} (prefix={stream_prefix})" if stream_prefix else "all streams"
     info(
         f"Reading {log_group} (region={region}, {scope}, since={since_min}m)"
         + (" — follow mode, Ctrl-C to exit" if args.follow else "")
@@ -2119,9 +2142,7 @@ def cmd_logs(args: argparse.Namespace) -> None:
         latest_ts = 0
         for ev in events:
             ts_ms = ev.get("timestamp", 0)
-            ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%S"
-            )
+            ts = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
             stream = ev.get("logStreamName", "")
             msg = ev.get("message", "").rstrip()
             print(f"{ts}Z  {stream}  {msg}")
@@ -2207,11 +2228,7 @@ def cmd_destroy(args: argparse.Namespace) -> None:
         or os.environ.get("AWS_REGION", "").strip()
         or DEFAULT_REGION
     )
-    stack_name = (
-        getattr(args, "stack_name", None)
-        or state.get("stack_name")
-        or DEFAULT_STACK
-    )
+    stack_name = getattr(args, "stack_name", None) or state.get("stack_name") or DEFAULT_STACK
 
     if not state:
         warn(
@@ -2281,9 +2298,11 @@ def cmd_configure(args: argparse.Namespace) -> None:
     print("Detected MCP clients:")
     for i, a in enumerate(installed, 1):
         print(f"  {i:>2}. {a['name']}")
-    raw = input(
-        "Configure which? (comma-separated numbers, 'all', or empty to skip): "
-    ).strip().lower()
+    raw = (
+        input("Configure which? (comma-separated numbers, 'all', or empty to skip): ")
+        .strip()
+        .lower()
+    )
     if raw == "all":
         selected = [a["id"] for a in installed]
     elif raw:
@@ -2317,20 +2336,23 @@ def main() -> None:
     p_deploy = sub.add_parser(
         "deploy",
         help="Deploy a new stack OR push an in-place update to an existing one "
-             "(auto-detected via state file).",
+        "(auto-detected via state file).",
     )
     p_deploy.add_argument("--env-file", help="Path to a .env / env.properties file.")
-    p_deploy.add_argument("--non-interactive", action="store_true",
-                          help="Never prompt; rely on env vars (CI mode).")
     p_deploy.add_argument(
-        "--fresh", action="store_true",
-        help="Ignore any existing state file and prompt as if it were a "
-             "first-time deploy. Use this only when the prior stack was "
-             "destroyed out-of-band (e.g. via the CFN console) and the "
-             "state file is stale.",
+        "--non-interactive", action="store_true", help="Never prompt; rely on env vars (CI mode)."
     )
-    p_deploy.add_argument("--skip-client-config", action="store_true",
-                          help="Skip auto-configuring local MCP clients.")
+    p_deploy.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Ignore any existing state file and prompt as if it were a "
+        "first-time deploy. Use this only when the prior stack was "
+        "destroyed out-of-band (e.g. via the CFN console) and the "
+        "state file is stale.",
+    )
+    p_deploy.add_argument(
+        "--skip-client-config", action="store_true", help="Skip auto-configuring local MCP clients."
+    )
     p_deploy.set_defaults(func=cmd_deploy)
 
     p_status = sub.add_parser("status", help="Show stack + EC2 + ALB target health.")
@@ -2341,11 +2363,16 @@ def main() -> None:
         help="Tail the CloudWatch log group (boto3, AWS CLI not required).",
     )
     p_logs.add_argument(
-        "-f", "--follow", action="store_true",
+        "-f",
+        "--follow",
+        action="store_true",
         help="Keep polling and print new events as they arrive (Ctrl-C to stop).",
     )
     p_logs.add_argument(
-        "--since", type=int, default=30, metavar="MINUTES",
+        "--since",
+        type=int,
+        default=30,
+        metavar="MINUTES",
         help="How many minutes of history to dump on first poll (default: 30).",
     )
     p_logs.add_argument(
@@ -2365,23 +2392,23 @@ def main() -> None:
     p_ssh.set_defaults(func=cmd_ssh)
 
     p_destroy = sub.add_parser("destroy", help="Tear down the MCP stack.")
-    p_destroy.add_argument("-y", "--yes", action="store_true",
-                           help="Skip the confirmation prompt.")
+    p_destroy.add_argument("-y", "--yes", action="store_true", help="Skip the confirmation prompt.")
     p_destroy.add_argument(
-        "--stack-name", default=None,
+        "--stack-name",
+        default=None,
         help="Override the CFN stack name. Defaults to the state-file "
-             "value or DEFAULT_STACK. Useful when the state file is "
-             "missing because a previous deploy crashed early.",
+        "value or DEFAULT_STACK. Useful when the state file is "
+        "missing because a previous deploy crashed early.",
     )
     p_destroy.add_argument(
-        "--region", default=None,
+        "--region",
+        default=None,
         help="Override the AWS region. Defaults to the state-file value, "
-             "AWS_REGION env var, or DEFAULT_REGION.",
+        "AWS_REGION env var, or DEFAULT_REGION.",
     )
     p_destroy.set_defaults(func=cmd_destroy)
 
-    p_config = sub.add_parser("configure",
-                              help="Re-write MCP client configs without redeploying.")
+    p_config = sub.add_parser("configure", help="Re-write MCP client configs without redeploying.")
     p_config.add_argument("--env-file", help="Path to a .env / env.properties file.")
     p_config.set_defaults(func=cmd_configure)
 

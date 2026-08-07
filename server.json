@@ -2,19 +2,19 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.zscaler/zscaler-mcp-server",
   "title": "Zscaler Zero Trust Exchange",
-  "description": "Manage Zscaler Zero Trust Exchange via 280+ tools — ZPA, ZIA, ZDX, ZCC, EASM, and more.",
+  "description": "Manage Zscaler Zero Trust Exchange via 400+ tools — ZPA, ZIA, ZDX, ZCC, ZTW, ZMS, EASM, and more.",
   "websiteUrl": "https://github.com/zscaler/zscaler-mcp-server",
   "repository": {
     "url": "https://github.com/zscaler/zscaler-mcp-server",
     "source": "github",
     "id": "992692668"
   },
-  "version": "0.14.0",
+  "version": "0.15.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "zscaler-mcp",
-      "version": "0.14.0",
+      "version": "0.15.0",
       "transport": {
         "type": "stdio"
       },

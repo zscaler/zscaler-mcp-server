@@ -121,7 +121,7 @@ All 33 delete operations require double confirmation:
 1. AI agent permission dialog (``destructiveHint``)
 2. Server-side confirmation via hidden ``kwargs`` parameter
 
-To skip confirmations (advanced/CI use only): Set ``ZSCALER_MCP_SKIP_CONFIRMATIONS`` with an HMAC-SHA256 token. The confirmation window is controlled by ``ZSCALER_MCP_CONFIRMATION_TTL`` (default: 300 seconds).
+There is no way to skip this. To deny deletes outright, leave them out of the ``ZSCALER_MCP_WRITE_TOOLS`` allowlist. The confirmation window is controlled by ``ZSCALER_MCP_CONFIRMATION_TTL`` (default: 300 seconds).
 
 Tool Filtering
 --------------

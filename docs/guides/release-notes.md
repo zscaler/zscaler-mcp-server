@@ -11,6 +11,64 @@ description: |-
 
 Track all Zscaler Integrations MCP Server's releases. New tools, features, and bug fixes will be tracked here.
 
+## 0.15.0 (August 4, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+- **Requires `mcp` 2.x.** A normal `uvx zscaler-mcp` or `pip install --upgrade` handles this; note the new floor if you pin dependencies yourself. Nothing else needs installing — `fastmcp` is no longer used at all.
+
+### Breaking Changes
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **`ZSCALER_MCP_SKIP_CONFIRMATIONS` is removed.** Delete confirmation can no longer be switched off. Setting the variable now has no effect, so remove it from any environment where it lingers. To deny deletes outright, leave them out of `--write-tools` / `ZSCALER_MCP_WRITE_TOOLS`; to drive them unattended, pass the confirmation token back like any other client does.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The `oidcproxy` auth mode no longer takes a client secret.** It is now a standard OAuth 2.0 protected resource (RFC 9728): the server publishes `/.well-known/oauth-protected-resource` naming your IdP, and clients authenticate against the IdP directly instead of through the server. `OIDCPROXY_CLIENT_SECRET` is ignored — remove it. The mode is now called `oidc`; `oidcproxy` and `oauth-proxy` still resolve. Clients can no longer self-register, so they need a client ID issued by the IdP.
+
+### Enhancements
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Adopted the `2026-07-28` MCP revision.** Clients on older revisions continue to work unchanged — the revision is negotiated per connection, with nothing to configure on either side.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Delete confirmation now asks a person instead of the agent.** Clients that support MCP elicitation get a `delete` / `cancel` prompt answered by a human, and anything other than `delete` aborts without calling the Zscaler API. Clients without elicitation keep using the confirmation token. No configuration changes are required.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Pending confirmations are now encrypted** and bound to the specific call, the authenticated caller, and a short expiry, so an approval cannot be moved onto a different delete, spent by another user, or used once it has expired.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Confirmations are now tied to the authenticated caller in every authentication mode.** Previously this held only for `oidc`; with `jwt`, `api-key`, or `zscaler` there was no caller identity attached, so an approval was bound to the call but not to who made it. Identity now comes from the token's verified claims (`jwt`, `oidc`), the OneAPI client ID (`zscaler`), or a one-way fingerprint of the key (`api-key`). Credentials themselves are never used as the identity.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **New `ZSCALER_MCP_REQUEST_STATE_KEYS` for deployments that run more than one replica.** By default each instance protects pending confirmations with its own key, so a confirmation answered on one replica cannot be completed on another and the user is asked again. Set this to a shared key (a JSON array or comma-separated list; at least 32 bytes each — `python -c "import secrets; print(secrets.token_hex(32))"`) and any replica can complete any confirmation. **Required if you run multiple HTTP replicas with write tools enabled**; session affinity is not an alternative, because requests on the current protocol revision carry no session ID. Keys rotate without downtime: the first entry is used for new confirmations and every entry can still complete an outstanding one. The server warns at startup if it detects the risky combination.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The tool list is now cacheable.** The server advertises its tool inventory as cacheable for five minutes, so clients and proxies skip re-fetching several hundred tool definitions on every connection.
+
+### Bug Fixes
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **`zia_list_url_categories` can filter server-side again, and warns before it returns a large response.** `custom_only` and `type` are now sent to the API, so "list the custom URL categories" fetches only those — one call, no client-side filtering. What the API does *not* offer is any way to cap or trim the result: it does not paginate, and every category comes back with its URL, keyword and IP lists in full (`includeOnlyUrlKeywordCounts` was tested and does not replace them with counts, so it is not offered). A tenant with 5000 custom categories therefore returns 5000 complete records. Because of that the tool now asks you which categories you want before running unfiltered, and its description points the agent at a `query` projection when the answer only needs part of each record. `page` and `page_size` are gone — the endpoint does not paginate, so they were silently ignored while suggesting a large result could be paged through. For one category use `zia_get_url_category`; to find which category a URL belongs to use `zia_url_lookup`, which was the reported problem — an agent answered that by listing every category.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Audit logging now records the arguments a tool was called with.** `[TOOL CALL]` printed `args: {}` for every call regardless of what was passed, because it only inspected keyword arguments and the server passes tool inputs as a single object. Non-empty JMESPath `query` expressions are also logged now, on their own `[QUERY]` line with the row count before and after filtering, so a filter that silently matched nothing is visible in the log instead of looking like an empty result from Zscaler.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Responses containing empty lists are now up to 4x smaller.** Results were sent as compact CSV only when every field was a simple value; a single empty list (such as the empty `urls` field on many records) switched the whole response to JSON, which repeats every field name on every row. Empty fields no longer trigger that switch. Records containing real nested data are unaffected and still sent as JSON.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **A server-side fault can no longer quietly weaken a delete confirmation.** When the server could not determine whether a client supports interactive prompts, it fell back to the confirmation-token flow — the same outcome as a client that genuinely cannot be prompted, which hid the fault. An unexpected failure now refuses the delete outright and logs the fault, instead of handing back a token. A client that simply does not support prompting is unaffected and still uses the token.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Delete confirmation tokens are now genuinely single-use.** A valid token could previously be redeemed repeatedly for its full five-minute window, so one approval could authorize more than one delete. Redeemed tokens are now tracked until they expire, and reuse is rejected along with a fresh token to re-approve with.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Fixed the server version reported to clients.** `serverInfo` returned an empty value instead of the release number, so MCP Inspector and any other client that displays it showed no version.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **The delete confirmation now tells the agent to ask you first.** On clients without elicitation support — including Claude Desktop via `mcp-remote` — the previous wording read as a retry instruction, and agents would re-issue the delete in the same turn without checking with anyone. The prompt now requires an explicit yes from the user before the token is used.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Corrected 34 create/update tool descriptions that claimed a confirmation gate they never had.** Confirmation applies to deletes only, but these tools told the agent they were "gated by HMAC" — so an agent could report that the server had vetted a create it had actually executed on the first call. The descriptions now state only the `--write-tools` requirement that does apply. No behaviour change.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Every delete tool now states that it requires confirmation.** Only 13 of the 50 said so, in three different wordings, leaving an agent comparing two delete tools free to conclude they behaved differently — they never did. All 50 now carry the same sentence, and it no longer names HMAC, which was only ever one of the two confirmation paths. No behaviour change.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Fixed OAuth 2.1 auth on the EC2, ECS Fargate and EKS deployments.** Those paths sent an `OIDCPROXY_ISSUER` no version of the server has ever read, and omitted the two variables it requires, so choosing that auth mode produced a server that exited at startup. They now pass the IdP's discovery URL and this server's public URL, and no longer ask for a client secret.
+
+### Documentation
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Documented that the confirmation-token fallback is single-process.** Its signing key is generated per process, so on a multi-replica deployment (Cloud Run, AKS, ECS, Container Apps) a retry that lands on a different replica is asked to confirm again. Run a single replica with write tools enabled if any of your clients lack elicitation support.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Rewrote the [MCP protocol guide](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/mcp-protocol.md)** for the new revision: which features are adopted, how delete confirmation is carried on each revision, what the encrypted confirmation state guarantees, and how conformance is verified.
+
+- [PR #93](https://github.com/zscaler/zscaler-mcp-server/pull/93) - **Corrected the security claims made for delete confirmation.** Earlier documents implied the confirmation token defeats prompt injection; it does not. It protects the window between approval and execution, while keeping write tools disabled by default and scoping `--write-tools` narrowly are the controls that contain a hijacked agent. See the [threat model](https://github.com/zscaler/zscaler-mcp-server/blob/master/docs/guides/mcp-protocol.md#destructive-operation-confirmation-threat-model).
+
 ## 0.14.0 (July 24, 2026)
 
 ### Notes

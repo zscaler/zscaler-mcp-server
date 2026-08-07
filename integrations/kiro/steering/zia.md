@@ -99,7 +99,7 @@ To onboard a ZIA location, resources must be created in order:
 ### URL Category Investigation
 ```
 1. zia_url_lookup               → Classify a specific URL
-2. zia_list_url_categories      → List all categories (predefined + custom)
+2. zia_list_url_categories      → Find the category id (`custom_only` / `search`; counts, not URLs)
 3. zia_list_url_filtering_rules → Find rules using this category
 4. zia_list_ssl_inspection_rules → Check if category is inspected
 5. zia_list_web_dlp_rules       → Check if DLP applies to this category
@@ -249,7 +249,7 @@ A signature without a matching policy rule is dormant. A policy rule without ena
 | `zia_get_sandbox_rule` | Get specific Sandbox rule |
 | `zia_list_time_intervals` | List Time Intervals (recurring schedules referenced by rules via `time_windows`) |
 | `zia_get_time_interval` | Get specific Time Interval |
-| `zia_list_url_categories` | List URL categories |
+| `zia_list_url_categories` | List URL categories (URL counts by default, not the URL lists) |
 | `zia_get_url_category` | Get specific URL category |
 | `zia_get_url_category_predefined` | Get a predefined URL category by configured name (e.g. `OTHER_BUSINESS_ECONOMY`) |
 | `zia_url_lookup` | Classify a URL into categories |

@@ -134,8 +134,6 @@ class OperationResult(AgentView):
 # =============================================================================
 
 
-
-
 # =============================================================================
 # 2. TOOL FUNCTIONS  (input -> SDK call -> shaper -> curated output)
 # =============================================================================
@@ -208,10 +206,7 @@ def zpa_get_segment_group(args: GetSegmentGroupInput) -> dict[str, Any]:
 def zpa_create_segment_group(args: CreateSegmentGroupInput) -> dict[str, Any]:
     """Create a ZPA segment group and return the full record.
 
-    Write tool: gated by the server's HMAC write-confirmation. The first call
-    returns a confirmation prompt + token; the agent re-issues with the token
-    (in `kwargs`) once the user approves. Write tools are also disabled unless
-    the operator enables them via --write-tools.
+    Write tool: disabled unless the operator enables it via --write-tools.
     """
     if not args.name:
         raise ValueError("name is required")
@@ -242,7 +237,7 @@ def zpa_create_segment_group(args: CreateSegmentGroupInput) -> dict[str, Any]:
 def zpa_update_segment_group(args: UpdateSegmentGroupInput) -> dict[str, Any]:
     """Update a ZPA segment group and return the full record (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`. Only the provided
+    Requires `--write-tools`. Only the provided
     fields are sent (uses the SDK's v2 update path).
     """
     if not args.group_id:
@@ -276,7 +271,10 @@ def zpa_update_segment_group(args: UpdateSegmentGroupInput) -> dict[str, Any]:
 def zpa_delete_segment_group(args: DeleteSegmentGroupInput) -> dict[str, Any]:
     """Delete a ZPA segment group (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.group_id:
         raise ValueError("group_id is required for delete")

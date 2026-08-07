@@ -165,7 +165,11 @@ def zia_update_time_interval(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_time_interval(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA time interval (destructive). Activate after."""
+    """Delete a ZIA time interval (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.time_intervals.delete_time_intervals(args.interval_id)
     if err:

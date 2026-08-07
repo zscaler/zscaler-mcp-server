@@ -57,6 +57,7 @@ CONTROL = boto3.client("bedrock-agentcore-control")
 # CloudFormation custom-resource response sender
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def send(event, context, status, data, reason=""):
     """PUT a CloudFormation custom-resource response. Tolerant to large data dicts."""
     physical_id = (
@@ -65,15 +66,17 @@ def send(event, context, status, data, reason=""):
         or event.get("PhysicalResourceId")
         or context.log_stream_name
     )
-    body = json.dumps({
-        "Status":             status,
-        "Reason":             reason or f"See CloudWatch log {context.log_stream_name}",
-        "PhysicalResourceId": physical_id,
-        "StackId":            event["StackId"],
-        "RequestId":          event["RequestId"],
-        "LogicalResourceId":  event["LogicalResourceId"],
-        "Data":               data,
-    }).encode("utf-8")
+    body = json.dumps(
+        {
+            "Status": status,
+            "Reason": reason or f"See CloudWatch log {context.log_stream_name}",
+            "PhysicalResourceId": physical_id,
+            "StackId": event["StackId"],
+            "RequestId": event["RequestId"],
+            "LogicalResourceId": event["LogicalResourceId"],
+            "Data": data,
+        }
+    ).encode("utf-8")
     req = urllib.request.Request(
         event["ResponseURL"],
         data=body,
@@ -87,6 +90,7 @@ def send(event, context, status, data, reason=""):
 # ─────────────────────────────────────────────────────────────────────────────
 # Resource lookup helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def find_gateway_by_name(name: str) -> dict | None:
     """Walk list_gateways and return the first whose name matches."""
@@ -160,7 +164,9 @@ def wait_for_gateway_status(gateway_id: str, target_status: str, timeout: int = 
     )
 
 
-def wait_for_target_status(gateway_id: str, target_id: str, target_status: str, timeout: int = 600) -> dict:
+def wait_for_target_status(
+    gateway_id: str, target_id: str, target_status: str, timeout: int = 600
+) -> dict:
     """Poll get_gateway_target until status matches or the timeout expires."""
     deadline = time.time() + timeout
     last = None
@@ -201,6 +207,7 @@ def wait_for_target_status(gateway_id: str, target_id: str, target_status: str, 
 # ─────────────────────────────────────────────────────────────────────────────
 # Config builders
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _derive_discovery_url(issuer: str) -> str:
     """OIDC discovery URL = <issuer>/.well-known/openid-configuration."""
@@ -243,14 +250,12 @@ def _build_oauth_discovery_block(props: dict) -> dict:
        Users supply whatever query string fits their IdP. Empty by
        default — we don't auto-detect any specific vendor.
     """
-    discovery_url = (
-        (props.get("InboundDiscoveryUrl") or "").strip()
-        or _derive_discovery_url(props.get("InboundIssuer", ""))
+    discovery_url = (props.get("InboundDiscoveryUrl") or "").strip() or _derive_discovery_url(
+        props.get("InboundIssuer", "")
     )
     if not discovery_url:
         raise ValueError(
-            "Cannot build OAuth discovery block without InboundDiscoveryUrl "
-            "or InboundIssuer."
+            "Cannot build OAuth discovery block without InboundDiscoveryUrl or InboundIssuer."
         )
 
     token_query = (props.get("TokenEndpointQuery") or "").strip().lstrip("?&")
@@ -282,10 +287,10 @@ def _build_oauth_discovery_block(props: dict) -> dict:
 
     return {
         "authorizationServerMetadata": {
-            "issuer":                 issuer,
-            "tokenEndpoint":          token_endpoint_with_query,
-            "authorizationEndpoint":  authz_endpoint,
-            "responseTypes":          ["code"],
+            "issuer": issuer,
+            "tokenEndpoint": token_endpoint_with_query,
+            "authorizationEndpoint": authz_endpoint,
+            "responseTypes": ["code"],
         }
     }
 
@@ -322,9 +327,8 @@ def build_authorizer_configuration(props: dict) -> dict:
     AgentCore also requires at least one of `allowedAudience`,
     `allowedClients`, `allowedScopes`, or `customClaims` to be set.
     """
-    discovery_url = (
-        props.get("InboundDiscoveryUrl", "").strip()
-        or _derive_discovery_url(props.get("InboundIssuer", ""))
+    discovery_url = props.get("InboundDiscoveryUrl", "").strip() or _derive_discovery_url(
+        props.get("InboundIssuer", "")
     )
     if not discovery_url:
         raise ValueError(
@@ -338,9 +342,7 @@ def build_authorizer_configuration(props: dict) -> dict:
     allowed_clients = _split_csv(props.get("OAuthClientId", ""))
     # Default to client_id only because that's the historical CFN default;
     # the deploy script auto-detects and overrides to "azp" for Auth0 et al.
-    client_claim_name = (
-        props.get("InboundClientClaimName", "").strip() or "client_id"
-    )
+    client_claim_name = props.get("InboundClientClaimName", "").strip() or "client_id"
     if allowed_clients:
         if client_claim_name == "client_id":
             custom_jwt["allowedClients"] = allowed_clients
@@ -365,9 +367,7 @@ def build_authorizer_configuration(props: dict) -> dict:
     if allowed_scopes:
         custom_jwt["allowedScopes"] = allowed_scopes
 
-    has_client_constraint = (
-        "allowedClients" in custom_jwt or "customClaims" in custom_jwt
-    )
+    has_client_constraint = "allowedClients" in custom_jwt or "customClaims" in custom_jwt
     if not has_client_constraint and "allowedAudience" not in custom_jwt:
         raise ValueError(
             "Gateway CUSTOM_JWT authorizer requires at least one of "
@@ -445,15 +445,18 @@ def build_credential_provider_configurations(props: dict, provider_arn: str) -> 
     # auth. AUTHORIZATION_CODE (3LO) requires interactive user consent at
     # target-creation time, which breaks CFN-driven deploys.
     oauth_cfg["grantType"] = props.get("OAuthProviderGrantType", "CLIENT_CREDENTIALS")
-    return [{
-        "credentialProviderType": "OAUTH",
-        "credentialProvider": {"oauthCredentialProvider": oauth_cfg},
-    }]
+    return [
+        {
+            "credentialProviderType": "OAUTH",
+            "credentialProvider": {"oauthCredentialProvider": oauth_cfg},
+        }
+    ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # AgentCore Identity OAuth2 credential provider lifecycle
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def find_oauth2_credential_provider_by_name(name: str) -> dict | None:
     """Walk list_oauth2_credential_providers and return the first whose name matches.
@@ -575,6 +578,7 @@ def build_metadata_configuration() -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 # Lifecycle ops
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def ensure_gateway(props: dict) -> dict:
     """Find-or-create the Gateway. Returns the gateway summary dict."""
@@ -713,7 +717,8 @@ def delete_gateway_best_effort(name: str) -> None:
                 tname = t.get("name", tid)
                 try:
                     CONTROL.delete_gateway_target(
-                        gatewayIdentifier=gateway_id, targetId=tid,
+                        gatewayIdentifier=gateway_id,
+                        targetId=tid,
                     )
                     deleted_any_targets = True
                     print(f"Deleted orphan target on gateway: name={tname} id={tid}")
@@ -736,7 +741,8 @@ def delete_gateway_best_effort(name: str) -> None:
         for attempt in range(12):  # up to ~60s
             try:
                 resp = CONTROL.list_gateway_targets(
-                    gatewayIdentifier=gateway_id, maxResults=100,
+                    gatewayIdentifier=gateway_id,
+                    maxResults=100,
                 )
                 if not resp.get("items"):
                     break
@@ -757,6 +763,7 @@ def delete_gateway_best_effort(name: str) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 # Custom-resource entry point
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def handler(event, context):
     print(f"Event: {json.dumps(event)[:1500]}")
@@ -801,14 +808,19 @@ def _handle_create_or_update(event, context, mode: str, props: dict) -> None:
     target = ensure_target(gateway_id, props, oauth_provider_arn)
     target_id = target["targetId"]
 
-    send(event, context, "SUCCESS", {
-        "GatewayId":         gateway_id,
-        "GatewayArn":        gateway_arn,
-        "McpUrl":            mcp_url,
-        "TargetId":          target_id,
-        "OAuthProviderArn":  oauth_provider_arn,
-        "Mode":              mode,
-    })
+    send(
+        event,
+        context,
+        "SUCCESS",
+        {
+            "GatewayId": gateway_id,
+            "GatewayArn": gateway_arn,
+            "McpUrl": mcp_url,
+            "TargetId": target_id,
+            "OAuthProviderArn": oauth_provider_arn,
+            "Mode": mode,
+        },
+    )
 
 
 def _handle_delete(event, context, mode: str, props: dict) -> None:

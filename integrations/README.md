@@ -139,7 +139,7 @@ Interactive deployment to Azure with two deployment targets:
 **Features:**
 - Fully interactive — prompts for deployment target, credentials, auth mode, and Azure options
 - Azure Key Vault integration (mandatory) — create new or use existing
-- Five authentication modes (OIDCProxy, JWT, API Key, Zscaler, None)
+- Five authentication modes (OIDC, JWT, API Key, Zscaler, None)
 - VM includes systemd service, SSH access, and NSG configuration
 - Management commands: `status`, `logs`, `ssh` (VM only), `destroy`
 

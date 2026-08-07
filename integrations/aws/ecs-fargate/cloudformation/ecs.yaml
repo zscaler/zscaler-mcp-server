@@ -107,19 +107,31 @@ Parameters:
     Type: String
     Default: ''
     NoEcho: true
+  # OIDC mode. The server verifies tokens against the IdP's public keys, so it
+  # needs the IdP's discovery URL rather than a client secret. The issuer and
+  # JWKS URI are read from that document at startup.
+  OidcProxyConfigUrl:
+    Type: String
+    Default: ''
+    Description: IdP OpenID configuration URL, e.g. https://idp.example.com/.well-known/openid-configuration
+  OidcProxyBaseUrl:
+    Type: String
+    Default: ''
+    Description: >-
+      Public base URL of this server, used as the OAuth resource identifier.
+      Must be the hostname clients actually dial. When blank the ALB address
+      is used.
   OidcProxyClientId:
-    Type: String
-    Default: ''
-  OidcProxyClientSecret:
-    Type: String
-    Default: ''
-    NoEcho: true
-  OidcProxyIssuer:
     Type: String
     Default: ''
   OidcProxyAudience:
     Type: String
     Default: ''
+    Description: Expected token audience. Defaults to the client id when blank.
+  OidcProxyRequiredScopes:
+    Type: String
+    Default: ''
+    Description: Comma-separated scopes a token must carry. Optional.
 
   # ── MCP feature flags ──────────────────────────────────────────────────
   WriteToolsEnabled:
@@ -158,6 +170,7 @@ Conditions:
   IsOidcProxy: !Equals [!Ref McpAuthMode, oidcproxy]
   IsNoAuth: !Equals [!Ref McpAuthMode, none]
   AuthEnabled: !Not [!Condition IsNoAuth]
+  HasOidcBaseUrl: !Not [!Equals [!Ref OidcProxyBaseUrl, '']]
   HasWriteAllowlist: !Not [!Equals [!Ref WriteToolsAllowlist, '']]
   HasDisabledTools: !Not [!Equals [!Ref DisabledTools, '']]
   HasDisabledServices: !Not [!Equals [!Ref DisabledServices, '']]
@@ -258,7 +271,7 @@ Resources:
       TargetType: ip
       HealthCheckPath: /mcp
       # The MCP /mcp endpoint returns 406 when hit without proper headers
-      # (FastMCP rejects non-MCP GETs). Accept that as healthy — the ALB
+      # (the transport rejects non-MCP GETs). Accept that as healthy — the ALB
       # health check just needs proof the listener is up.
       Matcher:
         HttpCode: 200-499
@@ -367,8 +380,12 @@ Resources:
             - { Name: ZSCALER_MCP_ALLOW_HTTP, Value: 'true' }
             # ── ALB is the sole ingress; its Host header is unpredictable ──
             - { Name: ZSCALER_MCP_DISABLE_HOST_VALIDATION, Value: 'true' }
-            # ── FastMCP stateless mode (tasks are ephemeral) ───────────────
-            - { Name: FASTMCP_STATELESS_HTTP, Value: 'true' }
+            # ── streamable-http issues a session id to handshake clients, so ─
+            #    that a delete confirmation can be pushed to a human. Nothing
+            #    to set here, but if you raise DesiredCount above 1, enable
+            #    stickiness on the target group or those clients' retries may
+            #    land on a task that does not hold their session. 2026-07-28
+            #    clients are unaffected — they carry no session id. ──────────
             # ── MCP client auth ────────────────────────────────────────────
             - { Name: ZSCALER_MCP_AUTH_ENABLED, Value: !If [AuthEnabled, 'true', 'false'] }
             - { Name: ZSCALER_MCP_AUTH_MODE, Value: !Ref McpAuthMode }
@@ -376,10 +393,23 @@ Resources:
             - !If [IsJwt, { Name: ZSCALER_MCP_AUTH_ISSUER, Value: !Ref JwtIssuer }, !Ref AWS::NoValue]
             - !If [IsJwt, { Name: ZSCALER_MCP_AUTH_AUDIENCE, Value: !Ref JwtAudience }, !Ref AWS::NoValue]
             - !If [IsApiKey, { Name: ZSCALER_MCP_AUTH_API_KEY, Value: !Ref ApiKey }, !Ref AWS::NoValue]
+            - !If [IsOidcProxy, { Name: OIDCPROXY_CONFIG_URL, Value: !Ref OidcProxyConfigUrl }, !Ref AWS::NoValue]
             - !If [IsOidcProxy, { Name: OIDCPROXY_CLIENT_ID, Value: !Ref OidcProxyClientId }, !Ref AWS::NoValue]
-            - !If [IsOidcProxy, { Name: OIDCPROXY_CLIENT_SECRET, Value: !Ref OidcProxyClientSecret }, !Ref AWS::NoValue]
-            - !If [IsOidcProxy, { Name: OIDCPROXY_ISSUER, Value: !Ref OidcProxyIssuer }, !Ref AWS::NoValue]
             - !If [IsOidcProxy, { Name: OIDCPROXY_AUDIENCE, Value: !Ref OidcProxyAudience }, !Ref AWS::NoValue]
+            - !If [IsOidcProxy, { Name: OIDCPROXY_REQUIRED_SCOPES, Value: !Ref OidcProxyRequiredScopes }, !Ref AWS::NoValue]
+            # The resource identifier must match the URL clients dial, so an
+            # operator-supplied value wins over the ALB address.
+            - !If
+              - IsOidcProxy
+              - Name: OIDCPROXY_BASE_URL
+                Value: !If
+                  - HasOidcBaseUrl
+                  - !Ref OidcProxyBaseUrl
+                  - !Sub
+                    - '${Scheme}://${Host}'
+                    - Scheme: !If [TlsEnabled, https, http]
+                      Host: !If [TlsAcmManaged, !Ref DomainName, !GetAtt Alb.DNSName]
+              - !Ref AWS::NoValue
             # ── Feature flags ──────────────────────────────────────────────
             - { Name: ZSCALER_MCP_WRITE_ENABLED, Value: !Ref WriteToolsEnabled }
             - !If [HasWriteAllowlist, { Name: ZSCALER_MCP_WRITE_TOOLS, Value: !Ref WriteToolsAllowlist }, !Ref AWS::NoValue]

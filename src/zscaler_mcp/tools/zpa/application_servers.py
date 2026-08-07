@@ -107,8 +107,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -167,7 +165,7 @@ def zpa_get_application_server(args: GetServerInput) -> dict[str, Any]:
 def zpa_create_application_server(args: CreateServerInput) -> dict[str, Any]:
     """Create a ZPA application server (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`.
+    Requires `--write-tools`.
     """
     if not args.name or not args.address:
         raise ValueError("name and address are required")
@@ -197,7 +195,7 @@ def zpa_create_application_server(args: CreateServerInput) -> dict[str, Any]:
 def zpa_update_application_server(args: UpdateServerInput) -> dict[str, Any]:
     """Update a ZPA application server (write).
 
-    Gated by HMAC write-confirmation and `--write-tools`. Only the provided
+    Requires `--write-tools`. Only the provided
     fields are sent.
     """
     if not args.server_id:
@@ -229,7 +227,10 @@ def zpa_update_application_server(args: UpdateServerInput) -> dict[str, Any]:
 def zpa_delete_application_server(args: DeleteServerInput) -> dict[str, Any]:
     """Delete a ZPA application server (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.server_id:
         raise ValueError("server_id is required for deletion")
