@@ -3,17 +3,17 @@
 # The official conformance runner (@modelcontextprotocol/conformance) exercises
 # every scenario in the "active" suite for the published 2025-11-25 protocol
 # baseline. A production server like this one implements the protocol surface it
-# actually needs (tools + prompts) and deliberately does NOT implement others
-# (resources, completions, server-initiated elicitation), nor does it ship the
-# reference "everything" server's synthetic test FIXTURES (a tool that returns an
-# image, a prompt named `test_simple_prompt`, etc.).
+# actually needs (tools + prompts + elicitation) and deliberately does NOT
+# implement others (resources, completions), nor does it ship the reference
+# "everything" server's synthetic test FIXTURES (a tool that returns an image, a
+# prompt named `test_simple_prompt`, a tool that elicits on demand, etc.).
 #
 # Every entry below therefore fails for one of two reasons, both expected:
 #   (a) the scenario needs a synthetic test fixture only the reference server
 #       provides (verified messages: "No image content found",
 #       "Unknown prompt: 'test_simple_prompt'"); or
 #   (b) the scenario exercises a capability we intentionally don't advertise
-#       (resources, completions, elicitation).
+#       (resources, completions).
 #
 # Everything that DOES apply to this server passes (server-initialize, ping,
 # logging-set-level, tools-list, tools-call-simple-text, tools-call-error,
@@ -33,8 +33,6 @@ server:
   - resources-templates-read
   - resources-subscribe
   - resources-unsubscribe
-  - elicitation-sep1034-defaults   # no server-initiated elicitation (2025-11-25)
-  - elicitation-sep1330-enums
 
   # --- Require the reference server's synthetic test-fixture TOOLS ----------
   - tools-call-image               # "No image content found" — no image-returning tool
@@ -44,7 +42,16 @@ server:
   - tools-call-with-logging
   - tools-call-with-progress
   - tools-call-sampling
+  # The three below need a fixture tool that elicits unconditionally. This server
+  # DOES implement server-initiated elicitation (SEP-2322) — every delete tool
+  # asks a human for approval — but only on delete tools, which are off unless
+  # --enable-write-tools is passed, and the runner has no way to know that. Verified
+  # message: "Server did not request elicitation from client". Coverage for the real
+  # behaviour lives in tests/test_protocol_2026_07_28.py, which asserts the
+  # confirmation travels over the stateless input-request loop.
   - tools-call-elicitation
+  - elicitation-sep1034-defaults
+  - elicitation-sep1330-enums
 
   # --- Require the reference server's synthetic test-fixture PROMPTS --------
   - prompts-get-simple             # "Unknown prompt: 'test_simple_prompt'"

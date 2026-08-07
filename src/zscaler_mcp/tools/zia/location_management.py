@@ -91,8 +91,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 def _build_location_body(args: _LocationBody) -> dict[str, Any]:
     body: dict[str, Any] = {"name": args.name}
     if args.country is not None:
@@ -194,7 +192,11 @@ def zia_update_location(args: UpdateLocationInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_location(args: DeleteLocationInput) -> dict[str, Any]:
-    """Delete a ZIA location (destructive). Activate after."""
+    """Delete a ZIA location (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.locations.delete_location(args.location_id)
     if err:

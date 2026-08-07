@@ -152,10 +152,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
 def _ports(raw: dict[str, Any], *keys: str) -> list[str]:
     return [str(p) for p in coalesce(raw, *keys)]
 
@@ -257,8 +253,8 @@ def zpa_create_application_segment(args: CreateAppSegmentInput) -> dict[str, Any
     """Create a ZPA application segment (write).
 
     Requires `name` + `segment_group_id` and at least one port range (TCP or UDP,
-    via `tcp_port_ranges`/`udp_port_ranges` or `advanced`). Gated by HMAC
-    confirmation + `--write-tools`.
+    via `tcp_port_ranges`/`udp_port_ranges` or `advanced`). Requires
+    `--write-tools`.
     """
     if not args.name or not args.segment_group_id:
         raise ValueError("name and segment_group_id are required")
@@ -308,7 +304,11 @@ def zpa_update_application_segment(args: UpdateAppSegmentInput) -> dict[str, Any
     is_list=False,
 )
 def zpa_delete_application_segment(args: DeleteAppSegmentInput) -> dict[str, Any]:
-    """Delete a ZPA application segment (destructive write). Cannot be undone."""
+    """Delete a ZPA application segment (destructive write). Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     if not args.segment_id:
         raise ValueError("segment_id is required for delete")
     client = get_zscaler_client(service="zpa")

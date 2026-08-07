@@ -21,12 +21,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     uv sync --frozen --no-install-project --no-dev --no-editable
 
-# Then, add the rest of the project source code and install it
-# Include [gcp] extras for GCP Secret Manager support
+# Then, add the rest of the project source code and install it.
+# Both cloud extras ship in the one image: the deployment target is selected at
+# runtime by environment variable (ZSCALER_SECRET_NAME / GCP_PROJECT_ID), not by
+# choosing a build, so the same image serves Docker Hub, Cloud Run and Bedrock
+# AgentCore. Neither loader imports its SDK unless enabled.
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
-    uv sync --frozen --no-dev --no-editable --extra gcp
+    uv sync --frozen --no-dev --no-editable --extra gcp --extra aws
 
 # Remove unnecessary files from the virtual environment before copying
 RUN find /app/.venv -name '__pycache__' -type d -exec rm -rf {} + && \
@@ -70,6 +73,13 @@ COPY --from=uv --chown=app:app /app/.venv /app/.venv
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Declares the HTTP transports' default port. Bedrock AgentCore requires the
+# container to listen on 8000; stdio ignores it.
+EXPOSE 8000
+
 LABEL io.modelcontextprotocol.server.name="io.github.zscaler/zscaler-mcp-server"
 
+# No HEALTHCHECK on purpose: AgentCore manages container health at the runtime
+# layer, and a Docker-level probe against the streamable-http transport would
+# fail (there is no unauthenticated GET on /mcp).
 ENTRYPOINT ["zscaler-mcp"]

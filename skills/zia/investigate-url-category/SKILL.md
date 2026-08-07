@@ -33,20 +33,23 @@ zia_url_lookup(urls=["example.com"])
 
 This returns the URL's category classification (e.g., "SOCIAL_NETWORKING", "STREAMING_MEDIA").
 
-**If given a category name**, list categories to find the exact ID:
+**If given a category name**, list categories to find the exact ID. Narrow the
+request — unfiltered, this returns every category in the tenant:
 
 ```text
-zia_list_url_categories()
+zia_list_url_categories(custom_only=True, search="partner")
 ```text
 
-Search the results for the category name and note:
+`custom_only=True` is a real API filter and the right first move whenever the
+admin is asking about a category they created. `search` matches the configured
+name; if it comes back empty, drop it and match on the `id` instead.
 
-- `id` (e.g., "CUSTOM_01", "SOCIAL_NETWORKING")
-- `configuredName` (display name)
-- `urls` (any URLs explicitly added to the category)
-- `superCategory` (parent category)
+Find the category in the results and note its `id` (e.g., "CUSTOM_01",
+"SOCIAL_NETWORKING"). By default the listing reports how many URLs each category
+holds, not the URLs themselves.
 
-**If the category is custom**, get full details:
+To see the URLs, `superCategory` and the rest of the definition, fetch the
+category itself:
 
 ```text
 zia_get_url_category(category_id="<category_id>")
@@ -274,7 +277,7 @@ These rules have no effect until re-enabled.
 **Tools used:**
 
 - `zia_url_lookup(urls)` -- classify a URL into categories
-- `zia_list_url_categories()` -- list all categories
+- `zia_list_url_categories(custom_only, type, search)` -- find a category id (URL counts, not URLs)
 - `zia_get_url_category(category_id)` -- get category details
 - `zia_list_url_filtering_rules()` -- search URL filtering rules
 - `zia_list_ssl_inspection_rules()` -- search SSL inspection rules

@@ -123,11 +123,14 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
     print()
+
 
 # ──────────────────────────────────────────────────────────────────────────
 # Constants
@@ -183,22 +186,22 @@ DEFAULT_RESOURCE_PREFIX = "zscaler-mcp"
 # the comment with the doc revision date. A missing region in this map
 # means VPC mode is unsupported in that region.
 SUPPORTED_AGENTCORE_AZ_IDS: dict[str, set[str]] = {
-    "us-east-1":      {"use1-az1", "use1-az2", "use1-az4"},
-    "us-east-2":      {"use2-az1", "use2-az2", "use2-az3"},
-    "us-west-2":      {"usw2-az1", "usw2-az2", "usw2-az3"},
+    "us-east-1": {"use1-az1", "use1-az2", "use1-az4"},
+    "us-east-2": {"use2-az1", "use2-az2", "use2-az3"},
+    "us-west-2": {"usw2-az1", "usw2-az2", "usw2-az3"},
     "ap-southeast-2": {"apse2-az1", "apse2-az2", "apse2-az3"},
-    "ap-south-1":     {"aps1-az1", "aps1-az2", "aps1-az3"},
+    "ap-south-1": {"aps1-az1", "aps1-az2", "aps1-az3"},
     "ap-southeast-1": {"apse1-az1", "apse1-az2", "apse1-az3"},
     "ap-northeast-1": {"apne1-az1", "apne1-az2", "apne1-az4"},
-    "eu-west-1":      {"euw1-az1", "euw1-az2", "euw1-az3"},
-    "eu-central-1":   {"euc1-az1", "euc1-az2", "euc1-az3"},
-    "eu-north-1":     {"eun1-az1", "eun1-az2", "eun1-az3"},
-    "eu-west-3":      {"euw3-az1", "euw3-az2", "euw3-az3"},
+    "eu-west-1": {"euw1-az1", "euw1-az2", "euw1-az3"},
+    "eu-central-1": {"euc1-az1", "euc1-az2", "euc1-az3"},
+    "eu-north-1": {"eun1-az1", "eun1-az2", "eun1-az3"},
+    "eu-west-3": {"euw3-az1", "euw3-az2", "euw3-az3"},
     "ap-northeast-2": {"apne2-az1", "apne2-az2", "apne2-az3"},
-    "eu-west-2":      {"euw2-az1", "euw2-az2", "euw2-az3"},
-    "ca-central-1":   {"cac1-az1", "cac1-az2", "cac1-az4"},
-    "sa-east-1":      {"sae1-az1", "sae1-az2", "sae1-az3"},
-    "us-gov-west-1":  {"usgw1-az1", "usgw1-az2", "usgw1-az3"},
+    "eu-west-2": {"euw2-az1", "euw2-az2", "euw2-az3"},
+    "ca-central-1": {"cac1-az1", "cac1-az2", "cac1-az4"},
+    "sa-east-1": {"sae1-az1", "sae1-az2", "sae1-az3"},
+    "us-gov-west-1": {"usgw1-az1", "usgw1-az2", "usgw1-az3"},
 }
 
 
@@ -223,20 +226,21 @@ if COLOURS and platform.system() == "Windows":
     except Exception:
         COLOURS = False
 
-RED      = "\033[0;31m" if COLOURS else ""
-GREEN    = "\033[0;32m" if COLOURS else ""
-YELLOW   = "\033[1;33m" if COLOURS else ""
-BLUE     = "\033[0;34m" if COLOURS else ""
-CYAN     = "\033[0;36m" if COLOURS else ""
+RED = "\033[0;31m" if COLOURS else ""
+GREEN = "\033[0;32m" if COLOURS else ""
+YELLOW = "\033[1;33m" if COLOURS else ""
+BLUE = "\033[0;34m" if COLOURS else ""
+CYAN = "\033[0;36m" if COLOURS else ""
 SKY_BLUE = "\033[34;01m" if COLOURS else ""
-BOLD     = "\033[1m" if COLOURS else ""
-DIM      = "\033[2m" if COLOURS else ""
-NC       = "\033[0m" if COLOURS else ""
+BOLD = "\033[1m" if COLOURS else ""
+DIM = "\033[2m" if COLOURS else ""
+NC = "\033[0m" if COLOURS else ""
 
 
 # ──────────────────────────────────────────────────────────────────────────
 # Pretty-print helpers
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def info(msg: str) -> None:
     print(f"{BLUE}[INFO]{NC}  {msg}")
@@ -313,6 +317,7 @@ def _clear_spinner_line() -> None:
 # .env loader
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def _derive_jwks_uri(issuer: str) -> str:
     """Resolve the IdP's JWKS URI from its OIDC discovery document.
 
@@ -328,6 +333,7 @@ def _derive_jwks_uri(issuer: str) -> str:
         return ""
     import urllib.error
     import urllib.request
+
     discovery_url = issuer.rstrip("/") + "/.well-known/openid-configuration"
     try:
         with urllib.request.urlopen(discovery_url, timeout=5) as resp:
@@ -359,11 +365,7 @@ def _infer_client_claim_name(discovery_or_issuer: str) -> str:
         return "azp"
     if ".okta.com" in s or ".oktapreview.com" in s:
         return "cid"
-    if (
-        "login.microsoftonline.com" in s
-        or "sts.windows.net" in s
-        or ".ciamlogin.com" in s
-    ):
+    if "login.microsoftonline.com" in s or "sts.windows.net" in s or ".ciamlogin.com" in s:
         return "azp"
     if "accounts.google.com" in s:
         return "azp"
@@ -422,6 +424,7 @@ def discover_env_file() -> Path | None:
 # State (so status / destroy / logs know what to look at)
 # ──────────────────────────────────────────────────────────────────────────
 
+
 def save_state(data: dict[str, Any]) -> None:
     STATE_FILE.write_text(json.dumps(data, indent=2))
 
@@ -435,6 +438,7 @@ def load_state() -> dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────
 # Interactive prompts
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def prompt(label: str, default: str | None = None, *, secret: bool = False) -> str:
     suffix = f" {DIM}[{default}]{NC}" if default else ""
@@ -457,9 +461,7 @@ def prompt_choice(label: str, choices: list[str], default: str) -> str:
         marker = f"{DIM} (default){NC}" if c == default else ""
         print(f"  {CYAN}[{i}]{NC} {c}{marker}")
     default_idx = choices.index(default) + 1
-    raw = input(
-        f"Pick {CYAN}1-{len(choices)}{NC} {DIM}[{default_idx}]{NC}: "
-    ).strip()
+    raw = input(f"Pick {CYAN}1-{len(choices)}{NC} {DIM}[{default_idx}]{NC}: ").strip()
     if not raw:
         return default
     try:
@@ -496,8 +498,7 @@ def prompt_multi_choice(
     while True:
         try:
             raw = input(
-                f"Pick {CYAN}1-{len(items)}{NC} "
-                f"(comma-separated, min {min_count}): "
+                f"Pick {CYAN}1-{len(items)}{NC} (comma-separated, min {min_count}): "
             ).strip()
         except (EOFError, KeyboardInterrupt):
             err("\nAborted.")
@@ -522,6 +523,7 @@ def prompt_multi_choice(
 # ──────────────────────────────────────────────────────────────────────────
 # AgentCore VPC discovery + validation
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def list_vpcs(sess: boto3.Session) -> list[dict]:
     """Return all VPCs in the region, ordered with the default VPC first."""
@@ -578,10 +580,7 @@ def validate_subnet_az_ids(
     try:
         resp = ec2.describe_subnets(SubnetIds=list(subnet_ids))
     except ClientError as e:
-        warn(
-            f"Could not describe subnets for AZ-ID validation: "
-            f"{_short_aws_error(e)}"
-        )
+        warn(f"Could not describe subnets for AZ-ID validation: {_short_aws_error(e)}")
         return list(subnet_ids), []
     ok_, bad = [], []
     for s in resp.get("Subnets", []):
@@ -625,10 +624,7 @@ def validate_resources_share_vpc(
     try:
         resp = ec2.describe_subnets(SubnetIds=list(subnet_ids))
     except ClientError as e:
-        err(
-            "Could not describe subnets for VPC cross-validation: "
-            f"{_short_aws_error(e)}"
-        )
+        err(f"Could not describe subnets for VPC cross-validation: {_short_aws_error(e)}")
         sys.exit(1)
     for s in resp.get("Subnets", []):
         subnet_vpcs[s["SubnetId"]] = s.get("VpcId", "")
@@ -652,10 +648,7 @@ def validate_resources_share_vpc(
     try:
         resp = ec2.describe_security_groups(GroupIds=list(sg_ids))
     except ClientError as e:
-        err(
-            "Could not describe security groups for VPC cross-validation: "
-            f"{_short_aws_error(e)}"
-        )
+        err(f"Could not describe security groups for VPC cross-validation: {_short_aws_error(e)}")
         sys.exit(1)
     for g in resp.get("SecurityGroups", []):
         sg_vpcs[g["GroupId"]] = g.get("VpcId", "")
@@ -666,10 +659,7 @@ def validate_resources_share_vpc(
 
     mismatched_sgs = {gid: vid for gid, vid in sg_vpcs.items() if vid != subnet_vpc}
     if mismatched_sgs:
-        err(
-            f"Subnets are in VPC {subnet_vpc!r}, but these security groups "
-            "are in a different VPC:"
-        )
+        err(f"Subnets are in VPC {subnet_vpc!r}, but these security groups are in a different VPC:")
         for gid, vid in mismatched_sgs.items():
             print(f"    {gid}  →  {vid}")
         info(
@@ -695,36 +685,21 @@ def validate_resources_share_vpc(
 def _format_subnet_row(s: dict, supported_azs: set[str]) -> str:
     """Single-line summary used by the interactive subnet picker."""
     name = next(
-        (
-            t["Value"]
-            for t in s.get("Tags", []) or []
-            if t.get("Key") == "Name"
-        ),
+        (t["Value"] for t in s.get("Tags", []) or [] if t.get("Key") == "Name"),
         "",
     )
     az_id = s.get("AvailabilityZoneId", "")
     badge = ""
     if supported_azs:
-        badge = (
-            f" {GREEN}[ok]{NC}"
-            if az_id in supported_azs
-            else f" {YELLOW}[unsupported AZ]{NC}"
-        )
+        badge = f" {GREEN}[ok]{NC}" if az_id in supported_azs else f" {YELLOW}[unsupported AZ]{NC}"
     label = f"  {name}" if name else ""
-    return (
-        f"{s['SubnetId']:24s}  "
-        f"az={az_id:11s}  "
-        f"cidr={s.get('CidrBlock', '?'):20s}"
-        f"{label}{badge}"
-    )
+    return f"{s['SubnetId']:24s}  az={az_id:11s}  cidr={s.get('CidrBlock', '?'):20s}{label}{badge}"
 
 
 def _format_sg_row(g: dict) -> str:
     """Single-line summary used by the interactive security-group picker."""
     return (
-        f"{g['GroupId']:22s}  "
-        f"{(g.get('GroupName') or ''):28s}  "
-        f"{(g.get('Description') or '')[:60]}"
+        f"{g['GroupId']:22s}  {(g.get('GroupName') or ''):28s}  {(g.get('Description') or '')[:60]}"
     )
 
 
@@ -762,10 +737,7 @@ def resolve_network_config(
     """
     mode_default = (env.get("AGENTCORE_NETWORK_MODE") or "PUBLIC").strip().upper()
     if mode_default not in ("PUBLIC", "VPC"):
-        warn(
-            f"AGENTCORE_NETWORK_MODE={mode_default!r} is invalid. "
-            "Using PUBLIC."
-        )
+        warn(f"AGENTCORE_NETWORK_MODE={mode_default!r} is invalid. Using PUBLIC.")
         mode_default = "PUBLIC"
 
     # ── 1. Pick the mode ─────────────────────────────────────────────────
@@ -804,8 +776,7 @@ def resolve_network_config(
         )
         default_idx = "2" if mode_default == "VPC" else "1"
         raw = input(
-            f"  {BOLD}Choice{NC} {CYAN}[1-2]{NC} "
-            f"{DIM}(default {default_idx}){NC}: "
+            f"  {BOLD}Choice{NC} {CYAN}[1-2]{NC} {DIM}(default {default_idx}){NC}: "
         ).strip()
         mode = {"1": "PUBLIC", "2": "VPC"}.get(raw, mode_default)
         ok(f"Chose: {mode}")
@@ -845,14 +816,8 @@ def resolve_network_config(
     if have_env_selection:
         subnet_ids = [s.strip() for s in raw_subnets.split(",") if s.strip()]
         sg_ids = [s.strip() for s in raw_sgs.split(",") if s.strip()]
-        info(
-            f"VPC subnets: {','.join(subnet_ids)} "
-            f"(from AGENTCORE_VPC_SUBNETS)"
-        )
-        info(
-            f"VPC security groups: {','.join(sg_ids)} "
-            f"(from AGENTCORE_VPC_SECURITY_GROUPS)"
-        )
+        info(f"VPC subnets: {','.join(subnet_ids)} (from AGENTCORE_VPC_SUBNETS)")
+        info(f"VPC security groups: {','.join(sg_ids)} (from AGENTCORE_VPC_SECURITY_GROUPS)")
         # Cross-validate the env-supplied IDs ALL belong to the same VPC
         # (and, if AGENTCORE_VPC_ID is also set, that they match it). AWS
         # would catch a cross-VPC selection at CreateAgentRuntime time, but
@@ -880,18 +845,11 @@ def resolve_network_config(
         vpc_items: list[tuple[str, str]] = []
         for v in vpcs:
             name = next(
-                (
-                    t["Value"]
-                    for t in v.get("Tags", []) or []
-                    if t.get("Key") == "Name"
-                ),
+                (t["Value"] for t in v.get("Tags", []) or [] if t.get("Key") == "Name"),
                 "",
             )
             default_badge = f" {GREEN}[default]{NC}" if v.get("IsDefault") else ""
-            label = (
-                f"{v['VpcId']:22s}  cidr={v.get('CidrBlock', '?'):20s}"
-                f"  {name}{default_badge}"
-            )
+            label = f"{v['VpcId']:22s}  cidr={v.get('CidrBlock', '?'):20s}  {name}{default_badge}"
             vpc_items.append((v["VpcId"], label))
         if env_vpc_id and any(v["VpcId"] == env_vpc_id for v in vpcs):
             vpc_id = env_vpc_id
@@ -902,9 +860,7 @@ def resolve_network_config(
             for i, (_, lbl) in enumerate(vpc_items, 1):
                 print(f"  {CYAN}[{i}]{NC} {lbl}")
             while True:
-                raw = input(
-                    f"Pick {CYAN}1-{len(vpc_items)}{NC}: "
-                ).strip()
+                raw = input(f"Pick {CYAN}1-{len(vpc_items)}{NC}: ").strip()
                 try:
                     vpc_id = vpc_items[int(raw) - 1][0]
                     break
@@ -919,11 +875,7 @@ def resolve_network_config(
             err(f"Could not list subnets for {vpc_id}: {_short_aws_error(e)}")
             sys.exit(1)
         if supported_azs:
-            eligible = [
-                s
-                for s in all_subnets
-                if s.get("AvailabilityZoneId") in supported_azs
-            ]
+            eligible = [s for s in all_subnets if s.get("AvailabilityZoneId") in supported_azs]
             ineligible_count = len(all_subnets) - len(eligible)
         else:
             eligible = all_subnets
@@ -941,8 +893,7 @@ def resolve_network_config(
                 "(AgentCore would reject them at create time)."
             )
         subnet_items: list[tuple[str, str]] = [
-            (s["SubnetId"], _format_subnet_row(s, supported_azs))
-            for s in eligible
+            (s["SubnetId"], _format_subnet_row(s, supported_azs)) for s in eligible
         ]
         subnet_ids = prompt_multi_choice(
             "Select subnets (recommend >=2 in different AZs)",
@@ -950,11 +901,7 @@ def resolve_network_config(
             min_count=1,
         )
         # AZ-spread check (advisory).
-        chosen_azs = {
-            s["AvailabilityZoneId"]
-            for s in eligible
-            if s["SubnetId"] in subnet_ids
-        }
+        chosen_azs = {s["AvailabilityZoneId"] for s in eligible if s["SubnetId"] in subnet_ids}
         if len(chosen_azs) < 2:
             warn(
                 f"Only one Availability Zone selected ({next(iter(chosen_azs), '?')}). "
@@ -966,17 +913,12 @@ def resolve_network_config(
         try:
             sgs = list_security_groups_for_vpc(sess, vpc_id)
         except ClientError as e:
-            err(
-                f"Could not list security groups for {vpc_id}: "
-                f"{_short_aws_error(e)}"
-            )
+            err(f"Could not list security groups for {vpc_id}: {_short_aws_error(e)}")
             sys.exit(1)
         if not sgs:
             err(f"VPC {vpc_id} has no security groups. (This shouldn't happen.)")
             sys.exit(1)
-        sg_items: list[tuple[str, str]] = [
-            (g["GroupId"], _format_sg_row(g)) for g in sgs
-        ]
+        sg_items: list[tuple[str, str]] = [(g["GroupId"], _format_sg_row(g)) for g in sgs]
         sg_ids = prompt_multi_choice(
             "Select security group(s) (outbound must allow your Zscaler "
             "OneAPI tenant + any private resources the container will "
@@ -988,17 +930,11 @@ def resolve_network_config(
     # ── 4. Hard-validate AZ-IDs (catches stale env-driven subnet lists) ──
     ok_subnets, bad_subnets = validate_subnet_az_ids(sess, subnet_ids, region)
     if bad_subnets:
-        err(
-            "The following subnets are in AZ IDs AgentCore does NOT support "
-            f"in {region}:"
-        )
+        err(f"The following subnets are in AZ IDs AgentCore does NOT support in {region}:")
         for sid, az in bad_subnets:
             print(f"    {sid}  →  {az}")
         print()
-        info(
-            f"Supported AZ IDs for {region}: "
-            f"{sorted(supported_agentcore_az_ids(region))}"
-        )
+        info(f"Supported AZ IDs for {region}: {sorted(supported_agentcore_az_ids(region))}")
         info(
             "Either pick subnets in supported AZs, or remove the bad ones "
             "from AGENTCORE_VPC_SUBNETS and re-run."
@@ -1015,6 +951,7 @@ def resolve_network_config(
 # ──────────────────────────────────────────────────────────────────────────
 # AWS helpers
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def get_session(region: str) -> boto3.Session:
     try:
@@ -1067,9 +1004,7 @@ def ensure_asset_bucket(sess: boto3.Session, bucket_name: str) -> None:
     ok(f"Created bucket s3://{bucket_name}")
 
 
-def upload_nested_templates(
-    sess: boto3.Session, bucket: str, prefix: str
-) -> str:
+def upload_nested_templates(sess: boto3.Session, bucket: str, prefix: str) -> str:
     s3 = sess.client("s3")
     if not prefix.endswith("/"):
         prefix += "/"
@@ -1084,15 +1019,19 @@ def upload_nested_templates(
     return prefix
 
 
-def cleanup_orphaned_resources(
-    sess: boto3.Session, prefix: str, *, non_interactive: bool
-) -> None:
+def cleanup_orphaned_resources(sess: boto3.Session, prefix: str, *, non_interactive: bool) -> None:
     """Sweep up resources that get orphaned when CFN OnFailure=DELETE rolls back.
 
     The most common case: a prior failed deploy created the provisioner Lambda
     but the rollback couldn't clean it up before CFN gave up. The next deploy
     then fails at "Function already exists". Same can happen with the secret
     (Secrets Manager has a 7-day soft-delete window by default).
+
+    Only safe to call when the stack does NOT exist. Membership here is decided
+    by name alone, so against a live stack every match is a false positive —
+    these are CloudFormation's own resources, and deleting the provisioner
+    Lambda breaks the next update rather than unblocking it. The caller is
+    responsible for that check.
     """
     lam = sess.client("lambda")
     sm = sess.client("secretsmanager")
@@ -1105,7 +1044,9 @@ def cleanup_orphaned_resources(
     ):
         try:
             lam.get_function(FunctionName=fn_name)
-            orphans.append(("Lambda", fn_name, lambda n=fn_name: lam.delete_function(FunctionName=n)))
+            orphans.append(
+                ("Lambda", fn_name, lambda n=fn_name: lam.delete_function(FunctionName=n))
+            )
         except ClientError as e:
             if e.response["Error"]["Code"] != "ResourceNotFoundException":
                 warn(f"  could not check Lambda {fn_name}: {_short_aws_error(e)}")
@@ -1114,12 +1055,16 @@ def cleanup_orphaned_resources(
     secret_name = f"{prefix}/credentials"
     try:
         sm.describe_secret(SecretId=secret_name)
-        orphans.append((
-            "Secret", secret_name,
-            lambda n=secret_name: sm.delete_secret(
-                SecretId=n, ForceDeleteWithoutRecovery=True,
-            ),
-        ))
+        orphans.append(
+            (
+                "Secret",
+                secret_name,
+                lambda n=secret_name: sm.delete_secret(
+                    SecretId=n,
+                    ForceDeleteWithoutRecovery=True,
+                ),
+            )
+        )
     except ClientError as e:
         if e.response["Error"]["Code"] != "ResourceNotFoundException":
             warn(f"  could not check secret {secret_name}: {_short_aws_error(e)}")
@@ -1127,19 +1072,18 @@ def cleanup_orphaned_resources(
     if not orphans:
         return
 
-    warn(
-        "Found resources from a previous failed deploy that would block this one:"
-    )
+    warn("Found resources from a previous failed deploy that would block this one:")
     for kind, name, _ in orphans:
         print(f"    [{kind}] {name}")
 
     if non_interactive:
         info("Auto-cleaning (running --non-interactive).")
     else:
-        confirm = input(
-            f"  {BOLD}Delete these now so the deploy can proceed?{NC} "
-            f"{CYAN}[Y/n]{NC}: "
-        ).strip().lower()
+        confirm = (
+            input(f"  {BOLD}Delete these now so the deploy can proceed?{NC} {CYAN}[Y/n]{NC}: ")
+            .strip()
+            .lower()
+        )
         if confirm in ("n", "no"):
             err("Cannot proceed — clean these up manually and re-run.")
             sys.exit(1)
@@ -1162,11 +1106,15 @@ def _pip_install_into(target_dir: Path, requirements: list[str]) -> None:
     import subprocess
 
     cmd = [
-        sys.executable, "-m", "pip", "install",
-        "--target", str(target_dir),
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--target",
+        str(target_dir),
         "--upgrade",
         "--quiet",
-        "--no-compile",   # don't ship .pyc — Lambda will rebuild at cold start
+        "--no-compile",  # don't ship .pyc — Lambda will rebuild at cold start
         *requirements,
     ]
     try:
@@ -1287,9 +1235,7 @@ NON_UPDATABLE_STATES = {
 }
 
 
-def latest_failure_reasons(
-    sess: boto3.Session, stack_name: str, max_events: int = 10
-) -> list[str]:
+def latest_failure_reasons(sess: boto3.Session, stack_name: str, max_events: int = 10) -> list[str]:
     """Pull the most recent failure events from a stack so we can show *why* it failed."""
     cfn = sess.client("cloudformation")
     try:
@@ -1365,10 +1311,7 @@ def wait_for_stack(
                     _clear_spinner_line()
                     color = _color_for_stack_status(status)
                     elapsed = _fmt_elapsed(now - started)
-                    print(
-                        f"  {DIM}→{NC} status={color}{status}{NC} "
-                        f"{DIM}(at {elapsed}){NC}"
-                    )
+                    print(f"  {DIM}→{NC} status={color}{status}{NC} {DIM}(at {elapsed}){NC}")
                     last_status = status
                 # Snapshot failure reasons early — once the stack is deleted they're gone
                 if status in capture_failures_at and not captured_failures:
@@ -1382,8 +1325,7 @@ def wait_for_stack(
                 color = _color_for_stack_status(status)
                 elapsed = _fmt_elapsed(now - started)
                 sys.stdout.write(
-                    f"\r  {CYAN}{frame}{NC} waiting [{BOLD}{elapsed}{NC}] — "
-                    f"{color}{status}{NC}   "
+                    f"\r  {CYAN}{frame}{NC} waiting [{BOLD}{elapsed}{NC}] — {color}{status}{NC}   "
                 )
                 sys.stdout.flush()
                 spinner_idx += 1
@@ -1443,13 +1385,19 @@ def handle_unrecoverable_state(
         info("Re-run interactively (without --non-interactive) to delete and retry.")
         sys.exit(1)
 
-    confirm = input(
-        f"  {BOLD}Delete the stack {YELLOW}'{stack_name}'{NC}{BOLD} now and re-run deploy?{NC} "
-        f"{CYAN}[y/N]{NC}: "
-    ).strip().lower()
+    confirm = (
+        input(
+            f"  {BOLD}Delete the stack {YELLOW}'{stack_name}'{NC}{BOLD} now and re-run deploy?{NC} "
+            f"{CYAN}[y/N]{NC}: "
+        )
+        .strip()
+        .lower()
+    )
     if confirm not in ("y", "yes"):
-        info("Aborted. Run `aws cloudformation delete-stack --stack-name "
-             f"{stack_name}` (or this script's `destroy` command) to clean up.")
+        info(
+            "Aborted. Run `aws cloudformation delete-stack --stack-name "
+            f"{stack_name}` (or this script's `destroy` command) to clean up."
+        )
         sys.exit(1)
 
     info(f"Deleting stack '{stack_name}'…")
@@ -1460,7 +1408,9 @@ def handle_unrecoverable_state(
         err(f"Delete request failed: {_short_aws_error(e)}")
         sys.exit(1)
     final, captured = wait_for_stack(
-        sess, stack_name, ["DELETE_COMPLETE", "DELETE_FAILED"],
+        sess,
+        stack_name,
+        ["DELETE_COMPLETE", "DELETE_FAILED"],
     )
     if final in ("DELETE_COMPLETE", "STACK_DELETED"):
         ok(f"Stack '{stack_name}' deleted. Re-run `python aws_mcp_operations.py deploy`.")
@@ -1496,6 +1446,7 @@ def stack_outputs(sess: boto3.Session, stack_name: str) -> dict[str, str]:
 # ──────────────────────────────────────────────────────────────────────────
 # DEPLOY
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def cmd_deploy(args: argparse.Namespace) -> None:
     print_zscaler_logo()
@@ -1550,8 +1501,12 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     existing_secret = env.get("ZSCALER_SECRET_NAME")
     have_inline_creds = all(
         env.get(k)
-        for k in ("ZSCALER_CLIENT_ID", "ZSCALER_CLIENT_SECRET",
-                  "ZSCALER_VANITY_DOMAIN", "ZSCALER_CUSTOMER_ID")
+        for k in (
+            "ZSCALER_CLIENT_ID",
+            "ZSCALER_CLIENT_SECRET",
+            "ZSCALER_VANITY_DOMAIN",
+            "ZSCALER_CUSTOMER_ID",
+        )
     )
 
     cred_params: dict[str, str] = {}
@@ -1563,15 +1518,12 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     elif have_inline_creds:
         cred_source = "CreateNew"
         info("Will create a new Secrets Manager secret from credentials in .env")
-        info(
-            f"  Secret name will be: {resource_prefix}/credentials "
-            "(in the AWS_REGION above)"
-        )
-        cred_params["ZscalerClientId"]      = env["ZSCALER_CLIENT_ID"]
-        cred_params["ZscalerClientSecret"]  = env["ZSCALER_CLIENT_SECRET"]
-        cred_params["ZscalerVanityDomain"]  = env["ZSCALER_VANITY_DOMAIN"]
-        cred_params["ZscalerCustomerId"]    = env["ZSCALER_CUSTOMER_ID"]
-        cred_params["ZscalerCloud"]         = env.get("ZSCALER_CLOUD", "production")
+        info(f"  Secret name will be: {resource_prefix}/credentials (in the AWS_REGION above)")
+        cred_params["ZscalerClientId"] = env["ZSCALER_CLIENT_ID"]
+        cred_params["ZscalerClientSecret"] = env["ZSCALER_CLIENT_SECRET"]
+        cred_params["ZscalerVanityDomain"] = env["ZSCALER_VANITY_DOMAIN"]
+        cred_params["ZscalerCustomerId"] = env["ZSCALER_CUSTOMER_ID"]
+        cred_params["ZscalerCloud"] = env.get("ZSCALER_CLOUD", "production")
     else:
         warn(
             "Neither ZSCALER_SECRET_NAME nor a complete set of "
@@ -1646,9 +1598,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     print("        — AWS Gateway only supports CUSTOM_JWT inbound auth.")
     print("      - You'll provide the IdP's discovery URL + audience + client ID")
     print("        in Step 9. Make sure that IdP exists BEFORE proceeding.")
-    print(
-        f"      - {YELLOW}Known limitation:{NC} tools/list propagation through the Gateway"
-    )
+    print(f"      - {YELLOW}Known limitation:{NC} tools/list propagation through the Gateway")
     print("        target is currently inconsistent — downstream clients may")
     print("        see a subset of MCP tools or none at all.\n")
     print(
@@ -1658,14 +1608,16 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     print("      - You already operate a Gateway — we'll just add our target")
     print("      - The existing Gateway's IdP is reused (no IdP setup needed here)")
     print("      - You'll provide the existing Gateway's ID in Step 9")
-    print(
-        f"      - Same Gateway tool-discovery {YELLOW}limitation{NC} as option 2 applies.\n"
-    )
+    print(f"      - Same Gateway tool-discovery {YELLOW}limitation{NC} as option 2 applies.\n")
 
     architecture_options = {
-        "1": ("Direct runtime (no Gateway)",                                                   "false", "create"),
-        "2": ("Provision a new AgentCore Gateway in front of the runtime [experimental]",     "true",  "create"),
-        "3": ("Attach to an existing AgentCore Gateway [experimental]",                        "true",  "attach"),
+        "1": ("Direct runtime (no Gateway)", "false", "create"),
+        "2": (
+            "Provision a new AgentCore Gateway in front of the runtime [experimental]",
+            "true",
+            "create",
+        ),
+        "3": ("Attach to an existing AgentCore Gateway [experimental]", "true", "attach"),
     }
 
     # Compute the displayed default from .env. The .env value pre-fills
@@ -1677,8 +1629,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     if env_mode_default not in ("create", "attach"):
         env_mode_default = "create"
     env_gw_enabled = (
-        "ENABLE_AGENTCORE_GATEWAY" in env
-        and env["ENABLE_AGENTCORE_GATEWAY"].lower() == "true"
+        "ENABLE_AGENTCORE_GATEWAY" in env and env["ENABLE_AGENTCORE_GATEWAY"].lower() == "true"
     )
     if not env_gw_enabled:
         default_arch_key = "1"
@@ -1698,18 +1649,14 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         )
         if env_gw_enabled:
             env_origin += f", GATEWAY_MODE={env_mode_default}"
-        info(
-            f"Architecture: {architecture_options[arch_key][0]} "
-            f"(non-interactive — {env_origin})"
-        )
+        info(f"Architecture: {architecture_options[arch_key][0]} (non-interactive — {env_origin})")
     else:
         # Always prompt in interactive mode. Loop until we get a valid
         # number; an empty response accepts the displayed default.
         while True:
             try:
                 raw = input(
-                    f"  {BOLD}Choice{NC} {CYAN}[1-3]{NC} "
-                    f"{DIM}(default {default_arch_key}){NC}: "
+                    f"  {BOLD}Choice{NC} {CYAN}[1-3]{NC} {DIM}(default {default_arch_key}){NC}: "
                 ).strip()
             except (EOFError, KeyboardInterrupt):
                 err("\nAborted.")
@@ -1741,9 +1688,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     # those at create time anyway, but we'd rather block before the
     # 10-minute stack launch than after.
     step("Step 7.5: Network mode (PUBLIC vs VPC)")
-    network_params = resolve_network_config(
-        sess, region, env, non_interactive=args.non_interactive
-    )
+    network_params = resolve_network_config(sess, region, env, non_interactive=args.non_interactive)
 
     # ── Step 8: Runtime authentication ──────────────────────────────────
     # Auth enforced on the runtime's HTTP endpoint itself. Independent of
@@ -1808,22 +1753,15 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             gw_discovery = env.get("GATEWAY_INBOUND_DISCOVERY_URL", "").strip()
             if not gw_issuer and gw_discovery:
                 # Derive issuer from "<issuer>/.well-known/openid-configuration"
-                gw_issuer = gw_discovery.rsplit(
-                    "/.well-known/openid-configuration", 1
-                )[0] + "/"
-            auth_params["JwtIssuer"] = (
-                env.get("ZSCALER_MCP_AUTH_ISSUER") or gw_issuer
-            )
-            auth_params["JwtAudience"] = (
-                env.get("ZSCALER_MCP_AUTH_AUDIENCE")
-                or env.get("GATEWAY_INBOUND_ALLOWED_AUDIENCE", "")
+                gw_issuer = gw_discovery.rsplit("/.well-known/openid-configuration", 1)[0] + "/"
+            auth_params["JwtIssuer"] = env.get("ZSCALER_MCP_AUTH_ISSUER") or gw_issuer
+            auth_params["JwtAudience"] = env.get("ZSCALER_MCP_AUTH_AUDIENCE") or env.get(
+                "GATEWAY_INBOUND_ALLOWED_AUDIENCE", ""
             )
             auth_params["JwtDiscoveryUrl"] = (
                 env.get("ZSCALER_MCP_AUTH_JWT_DISCOVERY_URL") or gw_discovery
             )
-            auth_params["JwtAllowedClients"] = env.get(
-                "ZSCALER_MCP_AUTH_JWT_ALLOWED_CLIENTS", ""
-            )
+            auth_params["JwtAllowedClients"] = env.get("ZSCALER_MCP_AUTH_JWT_ALLOWED_CLIENTS", "")
         else:
             auth_params["JwtIssuer"] = env.get("ZSCALER_MCP_AUTH_ISSUER") or prompt(
                 "Runtime JWT issuer (e.g. https://my-tenant.us.auth0.com/)"
@@ -1831,12 +1769,8 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             auth_params["JwtAudience"] = (
                 env.get("ZSCALER_MCP_AUTH_AUDIENCE") or "zscaler-mcp-server"
             )
-            auth_params["JwtDiscoveryUrl"] = env.get(
-                "ZSCALER_MCP_AUTH_JWT_DISCOVERY_URL", ""
-            )
-            auth_params["JwtAllowedClients"] = env.get(
-                "ZSCALER_MCP_AUTH_JWT_ALLOWED_CLIENTS", ""
-            )
+            auth_params["JwtDiscoveryUrl"] = env.get("ZSCALER_MCP_AUTH_JWT_DISCOVERY_URL", "")
+            auth_params["JwtAllowedClients"] = env.get("ZSCALER_MCP_AUTH_JWT_ALLOWED_CLIENTS", "")
         # JWKS URI: take from .env if provided, otherwise derive from the
         # issuer's OIDC discovery doc. Every compliant OIDC IdP publishes
         # `jwks_uri` at <issuer>/.well-known/openid-configuration — this
@@ -1870,9 +1804,10 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         step("Step 9: Gateway IdP and target details")
         if mode == "attach":
             existing_id = env.get("EXISTING_GATEWAY_ID") or (
-                "" if args.non_interactive else prompt(
-                    "Existing Gateway ID to attach to "
-                    "(aws bedrock-agentcore-control list-gateways)"
+                ""
+                if args.non_interactive
+                else prompt(
+                    "Existing Gateway ID to attach to (aws bedrock-agentcore-control list-gateways)"
                 )
             )
             if not existing_id:
@@ -1899,10 +1834,11 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             gw_params["GatewayInboundDiscoveryUrl"] = env.get(
                 "GATEWAY_INBOUND_DISCOVERY_URL", ""
             ).strip()
-            gw_params["GatewayInboundIssuer"] = env.get(
-                "GATEWAY_INBOUND_ISSUER", ""
-            ).strip()
-            if not gw_params["GatewayInboundDiscoveryUrl"] and not gw_params["GatewayInboundIssuer"]:
+            gw_params["GatewayInboundIssuer"] = env.get("GATEWAY_INBOUND_ISSUER", "").strip()
+            if (
+                not gw_params["GatewayInboundDiscoveryUrl"]
+                and not gw_params["GatewayInboundIssuer"]
+            ):
                 if args.non_interactive:
                     err(
                         "Either GATEWAY_INBOUND_DISCOVERY_URL or GATEWAY_INBOUND_ISSUER "
@@ -1929,9 +1865,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             gw_params["GatewayInboundAllowedScopes"] = env.get(
                 "GATEWAY_INBOUND_ALLOWED_SCOPES", ""
             ).strip()
-            gw_params["GatewayOAuthClientId"] = env.get(
-                "GATEWAY_OAUTH_CLIENT_ID", ""
-            ).strip()
+            gw_params["GatewayOAuthClientId"] = env.get("GATEWAY_OAUTH_CLIENT_ID", "").strip()
             if not gw_params["GatewayOAuthClientId"]:
                 if args.non_interactive:
                     err(
@@ -1956,8 +1890,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             ).strip()
             if not gw_params["GatewayInboundClientClaimName"]:
                 gw_params["GatewayInboundClientClaimName"] = _infer_client_claim_name(
-                    gw_params["GatewayInboundDiscoveryUrl"]
-                    or gw_params["GatewayInboundIssuer"]
+                    gw_params["GatewayInboundDiscoveryUrl"] or gw_params["GatewayInboundIssuer"]
                 )
                 info(
                     f"Inbound JWT client-id claim auto-detected as "
@@ -1969,9 +1902,7 @@ def cmd_deploy(args: argparse.Namespace) -> None:
             # API), so we either reuse a customer-supplied provider via
             # GATEWAY_OAUTH_PROVIDER_ARN or auto-create one from the inbound
             # IdP details + a client secret.
-            gw_params["GatewayOAuthProviderArn"] = env.get(
-                "GATEWAY_OAUTH_PROVIDER_ARN", ""
-            ).strip()
+            gw_params["GatewayOAuthProviderArn"] = env.get("GATEWAY_OAUTH_PROVIDER_ARN", "").strip()
             if gw_params["GatewayOAuthProviderArn"]:
                 gw_params["GatewayOAuthProviderScopes"] = env.get(
                     "GATEWAY_OAUTH_PROVIDER_SCOPES", ""
@@ -2043,9 +1974,16 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     lambda_keys = upload_lambda_packages(sess, asset_bucket, asset_prefix)
 
     # ── Step 10b: Sweep up orphaned resources from prior failed deploys ─
-    cleanup_orphaned_resources(
-        sess, resource_prefix, non_interactive=args.non_interactive,
-    )
+    # Only when the stack is GONE. If it still exists these are not orphans,
+    # they are its live resources: the provisioner Lambda backs the
+    # AgentCoreRuntime custom resource, so deleting it makes the very next
+    # update fail with "Function not found" and roll back.
+    if stack_status(sess, stack_name) is None:
+        cleanup_orphaned_resources(
+            sess,
+            resource_prefix,
+            non_interactive=args.non_interactive,
+        )
 
     # ── Step 11: Launch root stack ──────────────────────────────────────
     step("Step 11: Launch CloudFormation stack")
@@ -2057,11 +1995,23 @@ def cmd_deploy(args: argparse.Namespace) -> None:
         {"ParameterKey": "ImageUri", "ParameterValue": image_uri},
         {"ParameterKey": "ResourceNamePrefix", "ParameterValue": resource_prefix},
         {"ParameterKey": "CredentialSource", "ParameterValue": cred_source},
-        {"ParameterKey": "WriteToolsEnabled", "ParameterValue": "true" if write_enabled else "false"},
+        {
+            "ParameterKey": "WriteToolsEnabled",
+            "ParameterValue": "true" if write_enabled else "false",
+        },
         {"ParameterKey": "WriteToolsAllowlist", "ParameterValue": write_allowlist},
-        {"ParameterKey": "DisabledTools", "ParameterValue": env.get("ZSCALER_MCP_DISABLED_TOOLS", "")},
-        {"ParameterKey": "DisabledServices", "ParameterValue": env.get("ZSCALER_MCP_DISABLED_SERVICES", "")},
-        {"ParameterKey": "EnableToolCallLogging", "ParameterValue": env.get("ZSCALER_MCP_LOG_TOOL_CALLS", "true")},
+        {
+            "ParameterKey": "DisabledTools",
+            "ParameterValue": env.get("ZSCALER_MCP_DISABLED_TOOLS", ""),
+        },
+        {
+            "ParameterKey": "DisabledServices",
+            "ParameterValue": env.get("ZSCALER_MCP_DISABLED_SERVICES", ""),
+        },
+        {
+            "ParameterKey": "EnableToolCallLogging",
+            "ParameterValue": env.get("ZSCALER_MCP_LOG_TOOL_CALLS", "true"),
+        },
         # Hash-suffixed Lambda S3 keys. When source changes, key changes,
         # which forces both the AWS::Lambda::Function resource AND the
         # Custom::AgentCoreGateway resource to update — see commentary on
@@ -2099,7 +2049,10 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     existing = stack_status(sess, stack_name)
     if existing in NON_UPDATABLE_STATES:
         handle_unrecoverable_state(
-            sess, stack_name, existing, non_interactive=args.non_interactive,
+            sess,
+            stack_name,
+            existing,
+            non_interactive=args.non_interactive,
         )
         return  # handle_unrecoverable_state always exits
 
@@ -2164,20 +2117,22 @@ def cmd_deploy(args: argparse.Namespace) -> None:
     ok(f"Stack '{stack_name}' is {final}")
 
     # ── Step 12: persist + outputs ──────────────────────────────────────
-    save_state({
-        "region": region,
-        "stack_name": stack_name,
-        "resource_prefix": resource_prefix,
-        "asset_bucket": asset_bucket,
-        "image_uri": image_uri,
-        "gateway_enabled": gateway_enabled,
-        "gateway_mode": gw_params.get("GatewayMode", "create") if gateway_enabled else "",
-        "auth_mode": auth_mode,
-        "api_key": auth_params.get("ApiKey", ""),
-        "network_mode": network_params["NetworkMode"],
-        "vpc_subnets": network_params["VpcSubnetIds"],
-        "vpc_security_groups": network_params["VpcSecurityGroupIds"],
-    })
+    save_state(
+        {
+            "region": region,
+            "stack_name": stack_name,
+            "resource_prefix": resource_prefix,
+            "asset_bucket": asset_bucket,
+            "image_uri": image_uri,
+            "gateway_enabled": gateway_enabled,
+            "gateway_mode": gw_params.get("GatewayMode", "create") if gateway_enabled else "",
+            "auth_mode": auth_mode,
+            "api_key": auth_params.get("ApiKey", ""),
+            "network_mode": network_params["NetworkMode"],
+            "vpc_subnets": network_params["VpcSubnetIds"],
+            "vpc_security_groups": network_params["VpcSecurityGroupIds"],
+        }
+    )
     _print_outputs(sess, stack_name, gateway_enabled)
 
 
@@ -2205,9 +2160,7 @@ def _print_outputs(sess: boto3.Session, stack_name: str, gateway_enabled: bool) 
     if gateway_enabled and "GatewayMcpUrl" in outs:
         mode = outs.get("GatewayLifecycleMode", "create")
         if mode == "attach":
-            info(
-                "Gateway MCP endpoint (target registered on your existing Gateway):"
-            )
+            info("Gateway MCP endpoint (target registered on your existing Gateway):")
         else:
             info(
                 "Gateway MCP endpoint (downstream agent platforms — Amazon Quick "
@@ -2225,6 +2178,7 @@ def _print_outputs(sess: boto3.Session, stack_name: str, gateway_enabled: bool) 
 # ──────────────────────────────────────────────────────────────────────────
 # STATUS / LOGS / DESTROY
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def cmd_status(args: argparse.Namespace) -> None:
     state = load_state()
@@ -2301,11 +2255,15 @@ def cmd_destroy(args: argparse.Namespace) -> None:
     sess = get_session(region)
 
     if not args.yes:
-        confirm = input(
-            f"{BOLD}Delete stack {YELLOW}'{stack_name}'{NC}{BOLD} in {region}?{NC} "
-            f"{DIM}This removes the AgentCore Runtime, Gateway (if enabled), "
-            f"Lambdas, and IAM roles.{NC} {CYAN}[y/N]{NC}: "
-        ).strip().lower()
+        confirm = (
+            input(
+                f"{BOLD}Delete stack {YELLOW}'{stack_name}'{NC}{BOLD} in {region}?{NC} "
+                f"{DIM}This removes the AgentCore Runtime, Gateway (if enabled), "
+                f"Lambdas, and IAM roles.{NC} {CYAN}[y/N]{NC}: "
+            )
+            .strip()
+            .lower()
+        )
         if confirm not in ("y", "yes"):
             info("Aborted.")
             return
@@ -2324,7 +2282,9 @@ def cmd_destroy(args: argparse.Namespace) -> None:
     info(f"Deleting stack '{stack_name}'")
     cfn.delete_stack(StackName=stack_name)
     final, captured = wait_for_stack(
-        sess, stack_name, ["DELETE_COMPLETE", "DELETE_FAILED"],
+        sess,
+        stack_name,
+        ["DELETE_COMPLETE", "DELETE_FAILED"],
     )
     if final in ("DELETE_COMPLETE", "STACK_DELETED"):
         ok(f"Stack '{stack_name}' deleted.")
@@ -2359,6 +2319,7 @@ def _remove_state_file() -> None:
 # ──────────────────────────────────────────────────────────────────────────
 # EXPORT-TOOL-SCHEMA
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def _decode_mcp_response(raw: str) -> dict:
     """Decode an MCP Streamable HTTP response body.
@@ -2408,9 +2369,7 @@ def cmd_export_tool_schema(args: argparse.Namespace) -> None:
         err("No RuntimeMcpUrl in stack outputs — deploy the runtime first.")
         sys.exit(1)
 
-    payload = json.dumps(
-        {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}
-    ).encode()
+    payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}).encode()
 
     headers = {
         "Content-Type": "application/json",
@@ -2448,6 +2407,7 @@ def cmd_export_tool_schema(args: argparse.Namespace) -> None:
 # ──────────────────────────────────────────────────────────────────────────
 # CLI
 # ──────────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -2513,8 +2473,10 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print()
-        info("Interrupted. Stack operations in flight will continue running on AWS — "
-             "use `python aws_mcp_operations.py status` to check.")
+        info(
+            "Interrupted. Stack operations in flight will continue running on AWS — "
+            "use `python aws_mcp_operations.py status` to check."
+        )
         sys.exit(130)
     except NoCredentialsError:
         err("No AWS credentials found. Run `aws configure` or export AWS_PROFILE.")

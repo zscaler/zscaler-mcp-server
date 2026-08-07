@@ -281,8 +281,7 @@ class TestDescriptionsAreInterpreterIndependent:
                     break
         assert not offenders, (
             "Descriptions carry raw docstring indentation — use inspect.cleandoc "
-            "(these render differently on Python 3.11 vs 3.13):\n  "
-            + "\n  ".join(offenders[:10])
+            "(these render differently on Python 3.11 vs 3.13):\n  " + "\n  ".join(offenders[:10])
         )
 
     def test_cleandoc_matches_what_the_decorator_stores(self):

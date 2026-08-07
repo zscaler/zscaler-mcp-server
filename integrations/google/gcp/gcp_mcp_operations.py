@@ -59,7 +59,9 @@ SYSTEM = platform.system()
 
 SERVER_NAME = "zscaler-mcp-server"
 DOCKER_HUB_IMAGE = "zscaler/zscaler-mcp-server:latest"
-GCP_MARKETPLACE_IMAGE = "us-docker.pkg.dev/business-development-sa-team/zscaler/zscaler-mcp-server:latest"
+GCP_MARKETPLACE_IMAGE = (
+    "us-docker.pkg.dev/business-development-sa-team/zscaler/zscaler-mcp-server:latest"
+)
 PYPI_PACKAGE = "zscaler-mcp"
 
 STATE_FILE = SCRIPT_DIR / ".gcp-deploy-state.json"
@@ -169,7 +171,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -600,8 +604,12 @@ def _build_mcp_env_vars(creds: dict, *, use_secret_manager: bool, project: str) 
     else:
         env_vars["ZSCALER_MCP_AUTH_ENABLED"] = "false"
 
-    for key in ("ZSCALER_MCP_WRITE_ENABLED", "ZSCALER_MCP_WRITE_TOOLS",
-                "ZSCALER_MCP_DISABLED_TOOLS", "ZSCALER_MCP_DISABLED_SERVICES"):
+    for key in (
+        "ZSCALER_MCP_WRITE_ENABLED",
+        "ZSCALER_MCP_WRITE_TOOLS",
+        "ZSCALER_MCP_DISABLED_TOOLS",
+        "ZSCALER_MCP_DISABLED_SERVICES",
+    ):
         cred_key = key.lower().replace("zscaler_mcp_", "")
         val = creds.get(cred_key, "")
         if val:
@@ -648,25 +656,45 @@ def _setup_secret_manager(project: str, creds: dict) -> None:
             continue
         r = run_gcloud(
             ["secrets", "describe", name, "--project", project],
-            check=False, capture=True,
+            check=False,
+            capture=True,
         )
         if r.returncode != 0:
             subprocess.run(
-                ["gcloud", "secrets", "create", name,
-                 "--replication-policy", "automatic", "--project", project],
-                capture_output=True, text=True,
+                [
+                    "gcloud",
+                    "secrets",
+                    "create",
+                    name,
+                    "--replication-policy",
+                    "automatic",
+                    "--project",
+                    project,
+                ],
+                capture_output=True,
+                text=True,
             )
         subprocess.run(
-            ["gcloud", "secrets", "versions", "add", name,
-             "--data-file=-", "--project", project],
-            input=value, capture_output=True, text=True,
+            ["gcloud", "secrets", "versions", "add", name, "--data-file=-", "--project", project],
+            input=value,
+            capture_output=True,
+            text=True,
         )
         run_gcloud(
-            ["secrets", "add-iam-policy-binding", name,
-             "--member", f"serviceAccount:{sa}",
-             "--role", "roles/secretmanager.secretAccessor",
-             "--project", project, "--quiet"],
-            check=False, capture=True,
+            [
+                "secrets",
+                "add-iam-policy-binding",
+                name,
+                "--member",
+                f"serviceAccount:{sa}",
+                "--role",
+                "roles/secretmanager.secretAccessor",
+                "--project",
+                project,
+                "--quiet",
+            ],
+            check=False,
+            capture=True,
         )
 
     ok(f"Credentials stored in Secret Manager ({len(secrets)} secrets)")
@@ -725,12 +753,14 @@ def _mint_bearer_token(creds: dict) -> str | None:
         if not audience:
             warn("  Token mint skipped: neither TOKEN_SCOPE nor ZSCALER_MCP_AUTH_AUDIENCE set")
             return None
-        payload = json.dumps({
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "audience": audience,
-            "grant_type": "client_credentials",
-        }).encode()
+        payload = json.dumps(
+            {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "audience": audience,
+                "grant_type": "client_credentials",
+            }
+        ).encode()
         req = urllib.request.Request(
             token_endpoint,
             data=payload,
@@ -858,9 +888,17 @@ def _ensure_public_and_ready(
     info("Ensuring public invoker access (allUsers)...")
     res = run_gcloud(
         [
-            "run", "services", "add-iam-policy-binding", service_name,
-            "--region", region, "--project", project,
-            "--member=allUsers", "--role=roles/run.invoker", "--quiet",
+            "run",
+            "services",
+            "add-iam-policy-binding",
+            service_name,
+            "--region",
+            region,
+            "--project",
+            project,
+            "--member=allUsers",
+            "--role=roles/run.invoker",
+            "--quiet",
         ],
         check=False,
         capture=True,
@@ -989,45 +1027,71 @@ def _deploy_cloud_run(creds: dict) -> None:
             encoding="utf-8",
         )
 
-        deploy_result = run_gcloud([
-            "run", "deploy", service_name,
-            "--image", image,
-            "--region", region,
-            "--platform", "managed",
-            "--port", MCP_PORT,
-            f"--args=--transport,streamable-http,--host,0.0.0.0,--port,{MCP_PORT}",
-            "--env-vars-file", str(env_file_path),
-            "--memory", "512Mi",
-            "--no-cpu-throttling",
-            "--allow-unauthenticated",
-            "--project", project,
-        ], check=False, capture=True)
+        deploy_result = run_gcloud(
+            [
+                "run",
+                "deploy",
+                service_name,
+                "--image",
+                image,
+                "--region",
+                region,
+                "--platform",
+                "managed",
+                "--port",
+                MCP_PORT,
+                f"--args=--transport,streamable-http,--host,0.0.0.0,--port,{MCP_PORT}",
+                "--env-vars-file",
+                str(env_file_path),
+                "--memory",
+                "512Mi",
+                "--no-cpu-throttling",
+                "--allow-unauthenticated",
+                "--project",
+                project,
+            ],
+            check=False,
+            capture=True,
+        )
     finally:
         env_file_path.unlink(missing_ok=True)
 
     if deploy_result.returncode != 0:
         die(f"Deployment failed:\n{deploy_result.stderr}")
 
-    r = run_gcloud([
-        "run", "services", "describe", service_name,
-        "--region", region, "--format", "value(status.url)", "--project", project,
-    ], capture=True)
+    r = run_gcloud(
+        [
+            "run",
+            "services",
+            "describe",
+            service_name,
+            "--region",
+            region,
+            "--format",
+            "value(status.url)",
+            "--project",
+            project,
+        ],
+        capture=True,
+    )
     service_url = r.stdout.strip()
     mcp_url = f"{service_url}/mcp"
 
     ok(f"Deployed: {service_url}")
     print()
 
-    _save_state({
-        "deployment_type": "cloud_run",
-        "project": project,
-        "region": region,
-        "service_name": service_name,
-        "service_url": service_url,
-        "mcp_url": mcp_url,
-        "auth_mode": creds["auth_mode"],
-        "use_secret_manager": use_sm,
-    })
+    _save_state(
+        {
+            "deployment_type": "cloud_run",
+            "project": project,
+            "region": region,
+            "service_name": service_name,
+            "service_url": service_url,
+            "mcp_url": mcp_url,
+            "auth_mode": creds["auth_mode"],
+            "use_secret_manager": use_sm,
+        }
+    )
 
     # Guarantee public access is in effect AND the app is actually answering
     # before we hand a config to the MCP client. This closes the rollout-window
@@ -1039,7 +1103,9 @@ def _deploy_cloud_run(creds: dict) -> None:
     _update_client_configs(mcp_url, creds)
 
     print("=" * 76)
-    print(f"  {GREEN}Cloud Run deployment complete — {_auth_labels.get(creds['auth_mode'], '')}{NC}")
+    print(
+        f"  {GREEN}Cloud Run deployment complete — {_auth_labels.get(creds['auth_mode'], '')}{NC}"
+    )
     print("=" * 76)
     print()
     print(f"  MCP URL:         {mcp_url}")
@@ -1050,7 +1116,7 @@ def _deploy_cloud_run(creds: dict) -> None:
     print()
     print("  Next steps:")
     print("    1. Restart Claude Desktop / Cursor")
-    print("    2. Ask: \"List all ZPA application segments\"")
+    print('    2. Ask: "List all ZPA application segments"')
     print()
     print("  Management:")
     print("    python gcp_mcp_operations.py status     — Check deployment")
@@ -1107,7 +1173,9 @@ def _deploy_gke(creds: dict) -> None:
     print()
     print(f"  {BOLD}Deployment summary:{NC}")
     print("    Target:          GKE (Kubernetes)")
-    print(f"    Cluster:         {cluster_name} ({'new Autopilot' if cluster_mode == 'new' else 'existing'})")
+    print(
+        f"    Cluster:         {cluster_name} ({'new Autopilot' if cluster_mode == 'new' else 'existing'})"
+    )
     print(f"    Image:           {image}")
     print(f"    Project:         {project}")
     print(f"    Region:          {region}")
@@ -1132,20 +1200,35 @@ def _deploy_gke(creds: dict) -> None:
     # Create cluster if requested
     if cluster_mode == "new":
         info(f"Creating GKE Autopilot cluster '{cluster_name}' (this may take 5-10 minutes)...")
-        run_gcloud([
-            "container", "clusters", "create-auto", cluster_name,
-            "--region", region,
-            "--project", project,
-        ])
+        run_gcloud(
+            [
+                "container",
+                "clusters",
+                "create-auto",
+                cluster_name,
+                "--region",
+                region,
+                "--project",
+                project,
+            ]
+        )
         ok(f"Cluster '{cluster_name}' created")
         print()
 
     # Get cluster credentials
     info("Fetching GKE cluster credentials...")
-    run_gcloud([
-        "container", "clusters", "get-credentials", cluster_name,
-        "--region", region, "--project", project,
-    ])
+    run_gcloud(
+        [
+            "container",
+            "clusters",
+            "get-credentials",
+            cluster_name,
+            "--region",
+            region,
+            "--project",
+            project,
+        ]
+    )
     ok("Cluster credentials fetched")
     print()
 
@@ -1156,7 +1239,7 @@ def _deploy_gke(creds: dict) -> None:
 
     # Build K8s manifest
     env_entries = "\n".join(
-        f"        - name: {k}\n          value: \"{v}\"" for k, v in mcp_env.items()
+        f'        - name: {k}\n          value: "{v}"' for k, v in mcp_env.items()
     )
 
     manifest = f"""apiVersion: apps/v1
@@ -1207,7 +1290,8 @@ spec:
     info(f"Ensuring K8s service account '{sa_name}'...")
     r = run_kubectl(
         ["get", "serviceaccount", sa_name, "-n", namespace],
-        check=False, capture=True,
+        check=False,
+        capture=True,
     )
     if r.returncode != 0:
         run_kubectl(["create", "serviceaccount", sa_name, "-n", namespace])
@@ -1226,19 +1310,35 @@ spec:
         gcp_sa = f"{project_number}-compute@developer.gserviceaccount.com"
         wi_member = f"serviceAccount:{project}.svc.id.goog[{namespace}/{sa_name}]"
 
-        run_gcloud([
-            "iam", "service-accounts", "add-iam-policy-binding", gcp_sa,
-            "--role", "roles/iam.workloadIdentityUser",
-            "--member", wi_member,
-            "--project", project, "--quiet",
-        ], check=False, capture=True)
+        run_gcloud(
+            [
+                "iam",
+                "service-accounts",
+                "add-iam-policy-binding",
+                gcp_sa,
+                "--role",
+                "roles/iam.workloadIdentityUser",
+                "--member",
+                wi_member,
+                "--project",
+                project,
+                "--quiet",
+            ],
+            check=False,
+            capture=True,
+        )
 
-        run_kubectl([
-            "annotate", "serviceaccount", sa_name,
-            "--namespace", namespace,
-            f"iam.gke.io/gcp-service-account={gcp_sa}",
-            "--overwrite",
-        ])
+        run_kubectl(
+            [
+                "annotate",
+                "serviceaccount",
+                sa_name,
+                "--namespace",
+                namespace,
+                f"iam.gke.io/gcp-service-account={gcp_sa}",
+                "--overwrite",
+            ]
+        )
         ok(f"Workload Identity: {sa_name} → {gcp_sa}")
         print()
 
@@ -1252,11 +1352,21 @@ spec:
     external_ip = ""
     for _ in range(30):
         import time
+
         time.sleep(10)
-        r = run_kubectl([
-            "get", "svc", SERVER_NAME, "-n", namespace,
-            "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}",
-        ], check=False, capture=True)
+        r = run_kubectl(
+            [
+                "get",
+                "svc",
+                SERVER_NAME,
+                "-n",
+                namespace,
+                "-o",
+                "jsonpath={.status.loadBalancer.ingress[0].ip}",
+            ],
+            check=False,
+            capture=True,
+        )
         if r.stdout.strip():
             external_ip = r.stdout.strip()
             break
@@ -1269,19 +1379,21 @@ spec:
         warn("External IP not yet assigned. Check with: kubectl get svc " + SERVER_NAME)
         mcp_url = "http://<PENDING>/mcp"
 
-    _save_state({
-        "deployment_type": "gke",
-        "project": project,
-        "region": region,
-        "cluster_name": cluster_name,
-        "cluster_created": cluster_mode == "new",
-        "namespace": namespace,
-        "service_name": SERVER_NAME,
-        "mcp_url": mcp_url,
-        "external_ip": external_ip,
-        "auth_mode": creds["auth_mode"],
-        "use_secret_manager": use_sm,
-    })
+    _save_state(
+        {
+            "deployment_type": "gke",
+            "project": project,
+            "region": region,
+            "cluster_name": cluster_name,
+            "cluster_created": cluster_mode == "new",
+            "namespace": namespace,
+            "service_name": SERVER_NAME,
+            "mcp_url": mcp_url,
+            "external_ip": external_ip,
+            "auth_mode": creds["auth_mode"],
+            "use_secret_manager": use_sm,
+        }
+    )
 
     if external_ip:
         _update_client_configs(mcp_url, creds)
@@ -1416,15 +1528,25 @@ def _deploy_vm(creds: dict) -> None:
     info(f"Creating firewall rule for port {mcp_port}...")
     r = run_gcloud(
         ["compute", "firewall-rules", "describe", f"allow-mcp-{mcp_port}", "--project", project],
-        check=False, capture=True,
+        check=False,
+        capture=True,
     )
     if r.returncode != 0:
-        run_gcloud([
-            "compute", "firewall-rules", "create", f"allow-mcp-{mcp_port}",
-            "--allow", f"tcp:{mcp_port}",
-            "--target-tags", "mcp-server",
-            "--project", project,
-        ], capture=True)
+        run_gcloud(
+            [
+                "compute",
+                "firewall-rules",
+                "create",
+                f"allow-mcp-{mcp_port}",
+                "--allow",
+                f"tcp:{mcp_port}",
+                "--target-tags",
+                "mcp-server",
+                "--project",
+                project,
+            ],
+            capture=True,
+        )
         ok(f"Firewall rule created for port {mcp_port}")
     else:
         ok("Firewall rule already exists")
@@ -1439,16 +1561,28 @@ def _deploy_vm(creds: dict) -> None:
     # Create VM
     info(f"Creating VM '{vm_name}'...")
     try:
-        run_gcloud([
-            "compute", "instances", "create", vm_name,
-            "--zone", zone,
-            "--machine-type", machine_type,
-            "--image-family", VM_IMAGE_FAMILY,
-            "--image-project", VM_IMAGE_PROJECT,
-            "--tags", "mcp-server",
-            "--metadata-from-file", f"startup-script={startup_file}",
-            "--project", project,
-        ])
+        run_gcloud(
+            [
+                "compute",
+                "instances",
+                "create",
+                vm_name,
+                "--zone",
+                zone,
+                "--machine-type",
+                machine_type,
+                "--image-family",
+                VM_IMAGE_FAMILY,
+                "--image-project",
+                VM_IMAGE_PROJECT,
+                "--tags",
+                "mcp-server",
+                "--metadata-from-file",
+                f"startup-script={startup_file}",
+                "--project",
+                project,
+            ]
+        )
     finally:
         startup_file.unlink(missing_ok=True)
 
@@ -1456,25 +1590,36 @@ def _deploy_vm(creds: dict) -> None:
     print()
 
     # Get external IP
-    r = run_gcloud([
-        "compute", "instances", "describe", vm_name,
-        "--zone", zone,
-        "--format", "value(networkInterfaces[0].accessConfigs[0].natIP)",
-        "--project", project,
-    ], capture=True)
+    r = run_gcloud(
+        [
+            "compute",
+            "instances",
+            "describe",
+            vm_name,
+            "--zone",
+            zone,
+            "--format",
+            "value(networkInterfaces[0].accessConfigs[0].natIP)",
+            "--project",
+            project,
+        ],
+        capture=True,
+    )
     public_ip = r.stdout.strip()
     mcp_url = f"http://{public_ip}:{mcp_port}/mcp"
 
-    _save_state({
-        "deployment_type": "vm",
-        "project": project,
-        "zone": zone,
-        "vm_name": vm_name,
-        "public_ip": public_ip,
-        "mcp_port": mcp_port,
-        "mcp_url": mcp_url,
-        "auth_mode": creds["auth_mode"],
-    })
+    _save_state(
+        {
+            "deployment_type": "vm",
+            "project": project,
+            "zone": zone,
+            "vm_name": vm_name,
+            "public_ip": public_ip,
+            "mcp_port": mcp_port,
+            "mcp_url": mcp_url,
+            "auth_mode": creds["auth_mode"],
+        }
+    )
 
     _update_client_configs(mcp_url, creds)
 
@@ -1519,9 +1664,7 @@ def op_deploy(args: argparse.Namespace) -> None:
     if not shutil.which("gcloud"):
         die("gcloud CLI not found. Install: https://cloud.google.com/sdk/docs/install")
 
-    r = run_gcloud(
-        ["config", "get-value", "project"], capture=True, check=False
-    )
+    r = run_gcloud(["config", "get-value", "project"], capture=True, check=False)
     current_project = r.stdout.strip()
     if current_project and current_project != "(unset)":
         ok(f"gcloud CLI: project '{current_project}'")
@@ -1587,10 +1730,20 @@ def op_destroy(args: argparse.Namespace) -> None:
                 die("Destruction cancelled.")
 
         info(f"Deleting Cloud Run service '{service_name}'...")
-        run_gcloud([
-            "run", "services", "delete", service_name,
-            "--region", region, "--project", project, "--quiet",
-        ], check=False)
+        run_gcloud(
+            [
+                "run",
+                "services",
+                "delete",
+                service_name,
+                "--region",
+                region,
+                "--project",
+                project,
+                "--quiet",
+            ],
+            check=False,
+        )
         ok("Cloud Run service deleted")
 
     elif deployment_type == "gke":
@@ -1601,7 +1754,9 @@ def op_destroy(args: argparse.Namespace) -> None:
 
         warn(f"This will delete K8s deployment '{SERVER_NAME}' in namespace '{namespace}'")
         if cluster_created:
-            warn(f"The cluster '{cluster_name}' was created by this script and will also be deleted.")
+            warn(
+                f"The cluster '{cluster_name}' was created by this script and will also be deleted."
+            )
         print()
 
         if not args.yes:
@@ -1610,10 +1765,20 @@ def op_destroy(args: argparse.Namespace) -> None:
                 die("Destruction cancelled.")
 
         # Fetch credentials so kubectl works
-        run_gcloud([
-            "container", "clusters", "get-credentials", cluster_name,
-            "--region", region, "--project", project,
-        ], check=False, capture=True)
+        run_gcloud(
+            [
+                "container",
+                "clusters",
+                "get-credentials",
+                cluster_name,
+                "--region",
+                region,
+                "--project",
+                project,
+            ],
+            check=False,
+            capture=True,
+        )
 
         info("Deleting K8s resources...")
         manifest_path = SCRIPT_DIR / ".gke-manifest.yaml"
@@ -1627,10 +1792,21 @@ def op_destroy(args: argparse.Namespace) -> None:
 
         if cluster_created:
             info(f"Deleting GKE cluster '{cluster_name}' (runs in background)...")
-            run_gcloud([
-                "container", "clusters", "delete", cluster_name,
-                "--region", region, "--project", project, "--quiet", "--async",
-            ], check=False)
+            run_gcloud(
+                [
+                    "container",
+                    "clusters",
+                    "delete",
+                    cluster_name,
+                    "--region",
+                    region,
+                    "--project",
+                    project,
+                    "--quiet",
+                    "--async",
+                ],
+                check=False,
+            )
             ok(f"Cluster '{cluster_name}' deletion initiated")
 
     elif deployment_type == "vm":
@@ -1645,10 +1821,20 @@ def op_destroy(args: argparse.Namespace) -> None:
                 die("Destruction cancelled.")
 
         info(f"Deleting VM '{vm_name}'...")
-        run_gcloud([
-            "compute", "instances", "delete", vm_name,
-            "--zone", zone, "--project", project, "--quiet",
-        ], check=False)
+        run_gcloud(
+            [
+                "compute",
+                "instances",
+                "delete",
+                vm_name,
+                "--zone",
+                zone,
+                "--project",
+                project,
+                "--quiet",
+            ],
+            check=False,
+        )
         ok("VM deleted")
 
     # Clean up local configs
@@ -1693,10 +1879,22 @@ def op_status(args: argparse.Namespace) -> None:
         info(f"Status of Cloud Run service '{service_name}'")
         print()
 
-        r = run_gcloud([
-            "run", "services", "describe", service_name,
-            "--region", region, "--project", project, "--format", "json",
-        ], capture=True, check=False)
+        r = run_gcloud(
+            [
+                "run",
+                "services",
+                "describe",
+                service_name,
+                "--region",
+                region,
+                "--project",
+                project,
+                "--format",
+                "json",
+            ],
+            capture=True,
+            check=False,
+        )
 
         if r.returncode != 0:
             error("Service not found.")
@@ -1732,10 +1930,22 @@ def op_status(args: argparse.Namespace) -> None:
         info(f"Status of VM '{vm_name}'")
         print()
 
-        r = run_gcloud([
-            "compute", "instances", "describe", vm_name,
-            "--zone", zone, "--project", project, "--format", "json",
-        ], capture=True, check=False)
+        r = run_gcloud(
+            [
+                "compute",
+                "instances",
+                "describe",
+                vm_name,
+                "--zone",
+                zone,
+                "--project",
+                project,
+                "--format",
+                "json",
+            ],
+            capture=True,
+            check=False,
+        )
 
         if r.returncode != 0:
             error("VM not found.")
@@ -1765,22 +1975,26 @@ def _print_cloud_run_logs(service_name: str, project: str) -> None:
     bottom of the terminal — closest to your prompt, like `tail`.
     """
     log_filter = (
-        f'resource.type="cloud_run_revision" '
-        f'AND resource.labels.service_name="{service_name}"'
+        f'resource.type="cloud_run_revision" AND resource.labels.service_name="{service_name}"'
     )
-    info(
-        f"  $ gcloud logging read '{log_filter[:60]}...' "
-        f"--project {project} --freshness 24h"
-    )
+    info(f"  $ gcloud logging read '{log_filter[:60]}...' --project {project} --freshness 24h")
     r = subprocess.run(
         [
-            "gcloud", "logging", "read", log_filter,
-            "--project", project,
-            "--freshness", "24h",
-            "--order", "desc",
-            "--format", "json",
+            "gcloud",
+            "logging",
+            "read",
+            log_filter,
+            "--project",
+            project,
+            "--freshness",
+            "24h",
+            "--order",
+            "desc",
+            "--format",
+            "json",
         ],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if r.returncode != 0:
         error(f"gcloud failed: {r.stderr.strip()}")
@@ -1799,13 +2013,13 @@ def _print_cloud_run_logs(service_name: str, project: str) -> None:
     entries.reverse()
 
     sev_colour = {
-        "DEBUG":    DIM,
-        "INFO":     "",
-        "NOTICE":   BLUE,
-        "WARNING":  YELLOW,
-        "ERROR":    RED,
+        "DEBUG": DIM,
+        "INFO": "",
+        "NOTICE": BLUE,
+        "WARNING": YELLOW,
+        "ERROR": RED,
         "CRITICAL": RED + BOLD,
-        "ALERT":    RED + BOLD,
+        "ALERT": RED + BOLD,
         "EMERGENCY": RED + BOLD,
     }
 
@@ -1868,9 +2082,18 @@ def op_logs(args: argparse.Namespace) -> None:
         info(f"Streaming logs for GKE deployment '{SERVER_NAME}'...")
         info("Press Ctrl+C to stop")
         print()
-        run_kubectl([
-            "logs", f"deployment/{SERVER_NAME}", "-n", namespace, "--tail", "100", "-f",
-        ], check=False)
+        run_kubectl(
+            [
+                "logs",
+                f"deployment/{SERVER_NAME}",
+                "-n",
+                namespace,
+                "--tail",
+                "100",
+                "-f",
+            ],
+            check=False,
+        )
 
     elif deployment_type == "vm":
         vm_name = state.get("vm_name", "")
@@ -1878,11 +2101,21 @@ def op_logs(args: argparse.Namespace) -> None:
         project = state.get("project", "")
         info(f"Fetching logs for VM '{vm_name}'...")
         print()
-        r = run_gcloud([
-            "compute", "ssh", vm_name,
-            "--zone", zone, "--project", project,
-            "--command", "sudo journalctl -u zscaler-mcp -n 100 --no-pager",
-        ], check=False, capture=True)
+        r = run_gcloud(
+            [
+                "compute",
+                "ssh",
+                vm_name,
+                "--zone",
+                zone,
+                "--project",
+                project,
+                "--command",
+                "sudo journalctl -u zscaler-mcp -n 100 --no-pager",
+            ],
+            check=False,
+            capture=True,
+        )
         if r.returncode == 0:
             print(r.stdout)
         else:
@@ -1907,10 +2140,19 @@ def op_ssh(args: argparse.Namespace) -> None:
     project = state.get("project", "")
 
     info(f"Connecting to VM '{vm_name}'...")
-    os.execvp("gcloud", [
-        "gcloud", "compute", "ssh", vm_name,
-        "--zone", zone, "--project", project,
-    ])
+    os.execvp(
+        "gcloud",
+        [
+            "gcloud",
+            "compute",
+            "ssh",
+            vm_name,
+            "--zone",
+            zone,
+            "--project",
+            project,
+        ],
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════

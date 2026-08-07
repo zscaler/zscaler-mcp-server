@@ -56,8 +56,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 @tool(
     action=READ,
     service="zia",
@@ -141,7 +139,11 @@ def zia_update_network_app_group(args: UpdateGroupInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_network_app_group(args: DeleteGroupInput) -> dict[str, Any]:
-    """Delete a ZIA network application group (destructive). Activate after."""
+    """Delete a ZIA network application group (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.cloud_firewall.delete_network_app_group(args.group_id)
     if err:

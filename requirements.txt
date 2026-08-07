@@ -2,138 +2,127 @@
 #    uv pip compile pyproject.toml --output-file requirements.txt
 aenum==3.1.17
     # via zscaler-sdk-python
-aiofile==3.11.1
-    # via py-key-value-aio
-annotated-doc==0.0.4
-    # via typer
-annotated-types==0.7.0
+annotated-doc==0.0.5
+    # via
+    #   fastapi
+    #   typer
+annotated-types==0.8.0
     # via pydantic
 anyio==4.14.2
     # via
     #   httpx
+    #   httpx2
+    #   langsmith
     #   mcp
-    #   py-key-value-aio
+    #   openai
     #   sse-starlette
     #   starlette
-    #   watchfiles
 arrow==1.4.0
     # via zscaler-sdk-python
 attrs==26.1.0
     # via
-    #   cyclopts
     #   jsonschema
-    #   jsonschema-path
     #   referencing
 authlib==1.7.2
-    # via fastmcp-slim
-beartype==0.22.9
-    # via py-key-value-aio
+    # via zscaler-mcp (pyproject.toml)
+backoff==2.2.1
+    # via posthog
 bleach==6.4.0
     # via zscaler-mcp (pyproject.toml)
-cachetools==7.1.5
-    # via py-key-value-aio
-caio==0.9.25
-    # via aiofile
 certifi==2026.7.22
     # via
     #   httpcore
     #   httpx
     #   requests
-cffi==2.1.0
+cffi==2.1.1
     # via cryptography
 charset-normalizer==3.4.9
     # via requests
 click==8.4.2
-    # via uvicorn
-cryptography==49.0.0
     # via
+    #   huggingface-hub
+    #   uvicorn
+cryptography==50.0.0
+    # via
+    #   zscaler-mcp (pyproject.toml)
     #   authlib
     #   joserfc
     #   jwcrypto
     #   pyjwt
     #   zscaler-sdk-python
-cyclopts==4.22.1
-    # via fastmcp-slim
-dnspython==2.8.0
-    # via email-validator
-docstring-parser==0.18.0
-    # via cyclopts
-email-validator==2.3.0
-    # via pydantic
-exceptiongroup==1.3.1
-    # via fastmcp-slim
-fastmcp==3.4.4
+distro==1.9.0
+    # via
+    #   langsmith
+    #   openai
+    #   posthog
+fastapi==0.141.1
     # via zscaler-mcp (pyproject.toml)
-fastmcp-slim==3.4.4
-    # via fastmcp
-griffelib==2.1.0
-    # via fastmcp-slim
+filelock==3.32.2
+    # via huggingface-hub
+fsspec==2026.7.0
+    # via huggingface-hub
 h11==0.16.0
     # via
     #   httpcore
+    #   httpcore2
     #   uvicorn
+hf-xet==1.6.0
+    # via huggingface-hub
 httpcore==1.0.9
     # via httpx
+httpcore2==2.9.1
+    # via httpx2
 httpx==0.28.1
     # via
-    #   fastmcp-slim
-    #   mcp
-httpx-sse==0.4.3
+    #   huggingface-hub
+    #   langsmith
+    #   openai
+httpx2==2.9.1
     # via mcp
+huggingface-hub==1.26.1
+    # via zscaler-mcp (pyproject.toml)
 idna==3.18
     # via
     #   anyio
-    #   email-validator
     #   httpx
+    #   httpx2
     #   requests
-jaraco-classes==3.4.0
-    # via keyring
-jaraco-context==6.1.2
-    # via keyring
-jaraco-functools==4.6.0
-    # via keyring
+jiter==0.16.0
+    # via
+    #   zscaler-mcp (pyproject.toml)
+    #   openai
 jmespath==1.1.0
     # via zscaler-sdk-python
 joserfc==1.7.4
-    # via
-    #   authlib
-    #   fastmcp-slim
-jsonref==1.1.0
-    # via fastmcp-slim
+    # via authlib
 jsonschema==4.26.0
     # via mcp
-jsonschema-path==0.5.0
-    # via fastmcp-slim
 jsonschema-specifications==2025.9.1
     # via jsonschema
 jwcrypto==1.5.8
     # via zscaler-sdk-python
-keyring==25.7.0
-    # via py-key-value-aio
+langsmith==0.10.16
+    # via zscaler-mcp (pyproject.toml)
 markdown-it-py==4.2.0
     # via rich
-mcp==1.28.1
-    # via
-    #   zscaler-mcp (pyproject.toml)
-    #   fastmcp-slim
+mcp==2.0.0
+    # via zscaler-mcp (pyproject.toml)
+mcp-types==2.0.0
+    # via mcp
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==11.1.0
-    # via
-    #   jaraco-classes
-    #   jaraco-functools
-openapi-pydantic==0.5.1
-    # via fastmcp-slim
+openai==2.53.0
+    # via zscaler-mcp (pyproject.toml)
 opentelemetry-api==1.44.0
-    # via fastmcp-slim
-packaging==26.2
-    # via fastmcp-slim
-pathable==0.6.0
-    # via jsonschema-path
-platformdirs==4.11.0
-    # via fastmcp-slim
-py-key-value-aio==0.4.5
-    # via fastmcp-slim
+    # via mcp
+orjson==3.11.9
+    # via langsmith
+packaging==26.3
+    # via
+    #   huggingface-hub
+    #   langsmith
+posthog==7.38.1
+    # via zscaler-mcp (pyproject.toml)
 pycountry==26.2.16
     # via zscaler-mcp (pyproject.toml)
 pycparser==3.0
@@ -141,29 +130,22 @@ pycparser==3.0
 pydantic==2.13.4
     # via
     #   zscaler-mcp (pyproject.toml)
-    #   fastmcp-slim
+    #   fastapi
+    #   langsmith
     #   mcp
-    #   openapi-pydantic
-    #   pydantic-settings
+    #   mcp-types
+    #   openai
 pydantic-core==2.46.4
     # via pydantic
-pydantic-settings==2.14.2
-    # via
-    #   fastmcp-slim
-    #   mcp
 pydash==8.0.6
     # via zscaler-sdk-python
 pygments==2.20.0
-    # via
-    #   rich
-    #   rich-rst
+    # via rich
 pyjwt==2.13.0
     # via
     #   zscaler-mcp (pyproject.toml)
     #   mcp
     #   zscaler-sdk-python
-pyperclip==1.11.0
-    # via fastmcp-slim
 python-box==7.4.1
     # via zscaler-sdk-python
 python-dateutil==2.9.0.post0
@@ -173,40 +155,33 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
     # via
     #   zscaler-mcp (pyproject.toml)
-    #   fastmcp-slim
     #   mcp
-    #   pydantic-settings
 python-multipart==0.0.32
-    # via
-    #   fastmcp-slim
-    #   mcp
-pytz==2026.2
+    # via mcp
+pytz==2026.3.post1
     # via zscaler-sdk-python
 pyyaml==6.0.3
     # via
-    #   fastmcp-slim
-    #   jsonschema-path
+    #   huggingface-hub
     #   zscaler-sdk-python
 referencing==0.37.0
     # via
     #   jsonschema
-    #   jsonschema-path
     #   jsonschema-specifications
 regex==2026.7.19
     # via tiktoken
 requests==2.34.2
     # via
     #   zscaler-mcp (pyproject.toml)
+    #   langsmith
+    #   posthog
+    #   requests-toolbelt
     #   tiktoken
     #   zscaler-sdk-python
+requests-toolbelt==1.0.0
+    # via langsmith
 rich==15.0.0
-    # via
-    #   cyclopts
-    #   fastmcp-slim
-    #   rich-rst
-    #   typer
-rich-rst==2.1.0
-    # via cyclopts
+    # via typer
 rpds-py==2026.6.3
     # via
     #   jsonschema
@@ -215,52 +190,71 @@ shellingham==1.5.4
     # via typer
 six==1.17.0
     # via python-dateutil
-sse-starlette==3.4.6
+sniffio==1.3.1
+    # via
+    #   langsmith
+    #   openai
+sse-starlette==3.4.8
     # via mcp
-starlette==1.3.1
+starlette==1.4.1
     # via
     #   zscaler-mcp (pyproject.toml)
-    #   fastmcp-slim
+    #   fastapi
     #   mcp
     #   sse-starlette
 tiktoken==0.13.0
     # via zscaler-mcp (pyproject.toml)
-typer==0.27.0
+tqdm==4.70.0
+    # via
+    #   huggingface-hub
+    #   openai
+truststore==0.10.4
+    # via
+    #   httpcore2
+    #   httpx2
+typer==0.27.1
     # via mcp
 typing-extensions==4.16.0
     # via
-    #   fastmcp-slim
+    #   fastapi
+    #   huggingface-hub
     #   jwcrypto
+    #   langsmith
     #   mcp
+    #   mcp-types
+    #   openai
     #   opentelemetry-api
-    #   py-key-value-aio
+    #   posthog
     #   pydantic
     #   pydantic-core
     #   pydash
     #   typing-inspection
 typing-inspection==0.4.2
     # via
+    #   fastapi
     #   mcp
     #   pydantic
-    #   pydantic-settings
 tzdata==2026.3
     # via arrow
-uncalled-for==0.3.2
-    # via fastmcp-slim
 urllib3==2.7.0
     # via
     #   requests
     #   zscaler-sdk-python
-uvicorn==0.51.0
+uuid-utils==0.17.0
+    # via langsmith
+uvicorn==0.52.1
     # via
     #   zscaler-mcp (pyproject.toml)
-    #   fastmcp-slim
     #   mcp
-watchfiles==1.2.0
-    # via fastmcp-slim
 webencodings==0.5.1
     # via bleach
-websockets==16.1.1
-    # via fastmcp-slim
-zscaler-sdk-python==1.9.39
+websockets==17.0.1
+    # via langsmith
+xxhash==3.8.1
+    # via langsmith
+zscaler-sdk-python==1.9.41
     # via zscaler-mcp (pyproject.toml)
+zstandard==0.25.0
+    # via
+    #   zscaler-mcp (pyproject.toml)
+    #   langsmith

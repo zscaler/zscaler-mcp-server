@@ -218,7 +218,7 @@ Registers an existing Agent Engine deployment with Google Agentspace via the Dis
 Authentication & MCP Server Security
 ------------------------------------
 
-Because the MCP server runs as an in-process subprocess (stdio transport), the standard MCP HTTP auth modes (JWT, API key, OIDCProxy) **do not apply** in local mode — there is no HTTP surface to authenticate against. Cloud Run and Agent Engine deployments expose the agent (not the MCP server) over HTTPS through GCP's infrastructure.
+Because the MCP server runs as an in-process subprocess (stdio transport), the standard MCP HTTP auth modes (JWT, API key, OIDC) **do not apply** in local mode — there is no HTTP surface to authenticate against. Cloud Run and Agent Engine deployments expose the agent (not the MCP server) over HTTPS through GCP's infrastructure.
 
 Recommended security configuration for **Cloud Run / Agent Engine**:
 
@@ -261,13 +261,7 @@ Delete tools are protected by the MCP server's cryptographic HMAC-SHA256 confirm
 
 This is transport-agnostic — it works the same in stdio (ADK), SSE, and streamable-http modes.
 
-To disable confirmations for automation / CI:
-
-.. code-block:: bash
-
-   ZSCALER_MCP_SKIP_CONFIRMATIONS=true
-
-Keep confirmations enabled for production deployments.
+There is no setting that disables this, in any environment — a delete against a live tenant is irreversible. If an unattended pipeline must not be able to delete, leave the delete tools out of the ``ZSCALER_MCP_WRITE_TOOLS`` allowlist (for example ``zpa_create_*,zia_update_*`` grants writes with no delete). ``ZSCALER_MCP_CONFIRMATION_TTL`` (default 300s) tunes how long a token stays valid.
 
 Example Prompts
 ---------------

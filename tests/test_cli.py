@@ -67,10 +67,12 @@ def test_disabled_toolsets_env_default(monkeypatch):
     assert args.disabled_toolsets == "zia_admin"
 
 
-def test_parser_enable_write_tools_flag():
+def test_parser_enable_write_tools_flag(monkeypatch):
     args = server.build_parser().parse_args(["--enable-write-tools"])
     assert args.enable_write_tools is True
-    # Default is off for safety (assuming the env var is not set in CI).
+    # Default is off for safety. Cleared explicitly: importing the package runs
+    # load_dotenv(), so a developer's .env would otherwise decide this result.
+    monkeypatch.delenv("ZSCALER_MCP_WRITE_ENABLED", raising=False)
     default = server.build_parser().parse_args([])
     assert default.enable_write_tools is False
 
@@ -79,6 +81,131 @@ def test_enable_write_tools_env_default(monkeypatch):
     monkeypatch.setenv("ZSCALER_MCP_WRITE_ENABLED", "true")
     args = server.build_parser().parse_args([])
     assert args.enable_write_tools is True
+
+
+class TestStatelessHttp:
+    """Streamable-http keeps sessions, with nothing to configure.
+
+    The session is what lets the server *push* a delete confirmation to a client
+    that still uses a handshake: such a client declares ``elicitation`` once during
+    ``initialize`` and the session is what remembers it. Sessionless, the server sees
+    no capabilities, cannot ask, and falls back to the HMAC token — which the agent
+    can redeem in the same turn, so no human necessarily approves the delete.
+
+    It costs 2026-07-28 clients nothing, because the SDK era-routes them past the
+    session branch entirely. So this is not a knob: one setting is correct for both
+    populations and the other silently drops the human out of the loop for one of
+    them. See ``test_protocol_2026_07_28.py::TestLegacyClientConfirmation`` for the
+    end-to-end proof over a real client.
+    """
+
+    def test_there_is_no_flag_to_set(self):
+        """The flag is gone, not merely defaulted differently.
+
+        Argparse would silently accept an unknown ``--stateless-http`` as a prefix
+        of nothing and error out, so assert the error rather than the absence.
+        """
+        with pytest.raises(SystemExit):
+            server.build_parser().parse_args(["--stateless-http"])
+        with pytest.raises(SystemExit):
+            server.build_parser().parse_args(["--no-stateless-http"])
+
+    def test_no_leftover_attribute_on_the_namespace(self):
+        assert not hasattr(server.build_parser().parse_args([]), "stateless_http")
+
+    @pytest.mark.parametrize("value", ["false", "0", "no", "true"])
+    def test_the_old_env_var_is_inert(self, monkeypatch, value):
+        """It shipped in a prerelease, so it may be set in someone's environment.
+
+        Whatever it says, sessions stay on — a stale ``true`` must not quietly take
+        the human out of the confirmation loop for handshake clients.
+        """
+        monkeypatch.setenv("ZSCALER_MCP_STATELESS_HTTP", value)
+        seen = _capture_transport(monkeypatch)
+
+        with pytest.raises(_Bound):
+            server._run_http(
+                _FakeServer(seen),
+                transport="streamable-http",
+                host="127.0.0.1",
+                port=8000,
+                debug=False,
+            )
+
+        assert seen["kwargs"]["stateless_http"] is False
+
+    def test_streamable_http_keeps_the_session_that_carries_a_prompt(self, monkeypatch):
+        """The regression guard: sessionless costs handshake clients their prompt."""
+        seen = _capture_transport(monkeypatch)
+
+        with pytest.raises(_Bound):
+            server._run_http(
+                _FakeServer(seen),
+                transport="streamable-http",
+                host="127.0.0.1",
+                port=8000,
+                debug=False,
+            )
+
+        assert seen["factory"] == "streamable_http_app"
+        assert seen["kwargs"]["stateless_http"] is False
+
+    def test_sse_is_never_asked_to_run_sessionless(self, monkeypatch):
+        """SSE is session-oriented by construction.
+
+        Passing ``stateless_http`` there would either be ignored or break the
+        transport, so the SSE branch must not forward it at all.
+        """
+        seen = _capture_transport(monkeypatch)
+
+        with pytest.raises(_Bound):
+            server._run_http(
+                _FakeServer(seen),
+                transport="sse",
+                host="127.0.0.1",
+                port=8000,
+                debug=False,
+            )
+
+        assert seen["factory"] == "sse_app"
+        assert "stateless_http" not in seen["kwargs"]
+
+
+class _Bound(Exception):
+    """Raised in place of blocking on ``uvicorn.run``."""
+
+
+class _FakeServer:
+    """Stands in for ``MCPServer``, which exposes one factory per transport.
+
+    Recording *which* factory ran matters as much as its arguments: session mode is
+    only meaningful on streamable-http, so a regression that routed SSE through the
+    wrong factory would otherwise pass unnoticed.
+    """
+
+    def __init__(self, seen):
+        self._seen = seen
+
+    def streamable_http_app(self, **kwargs):
+        self._seen["factory"] = "streamable_http_app"
+        self._seen["kwargs"] = kwargs
+        return object()
+
+    def sse_app(self, **kwargs):
+        self._seen["factory"] = "sse_app"
+        self._seen["kwargs"] = kwargs
+        return object()
+
+
+def _capture_transport(monkeypatch):
+    """Neutralise everything between the app factory and the socket bind."""
+    monkeypatch.setattr(server, "apply_auth_middleware", lambda app, _t: app)
+    monkeypatch.setattr(server, "apply_transport_hardening", lambda app, *a, **k: app)
+    monkeypatch.setattr(server, "validate_host_binding", lambda _h: None)
+    monkeypatch.setattr(server, "get_allowed_source_ips", lambda: None)
+    monkeypatch.setattr(server, "_tls_kwargs_from_env", dict)
+    monkeypatch.setattr("uvicorn.run", lambda *a, **k: (_ for _ in ()).throw(_Bound()))
+    return {}
 
 
 @pytest.mark.parametrize("value,expected", [([], "basic"), (["bearer"], "bearer")])
@@ -92,6 +219,26 @@ def test_version_flag_exits_zero_and_prints_version(capsys):
         server.build_parser().parse_args(["--version"])
     assert exc.value.code == 0
     assert __version__ in capsys.readouterr().out
+
+
+@pytest.mark.asyncio
+async def test_server_reports_our_version_to_connecting_clients():
+    """The version a client displays must be ours, not an empty string.
+
+    ``MCPServer`` does not derive ``version`` from the installed package: omitting
+    the argument is silent but wrong, because the server still starts and answers
+    the handshake while reporting ``version: ""``. Asserted on the wire rather than
+    on the instance attribute, since ``serverInfo`` is what a client renders — and
+    it is the same object behind both the legacy ``initialize`` result and the
+    ``2026-07-28`` ``_meta``.
+    """
+    from mcp import Client
+
+    built = server.build_server(
+        enabled_toolsets=["zpa_segment_groups"], disable_entitlement_filter=True
+    )
+    async with Client(built) as client:
+        assert client.server_info.version == __version__
 
 
 @pytest.mark.parametrize("cmd", ["reload", "restart", "status", "stop", "update"])

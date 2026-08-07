@@ -1,6 +1,6 @@
 # Zscaler MCP Server
 
-280+ tools for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation).
+254 read tools (plus write tools, off by default) for managing the Zscaler Zero Trust Exchange. Services: ZPA, ZIA, ZDX, ZCC, ZCell, EASM, Z-Insights, ZIdentity, ZTW (Zscaler Workload Segmentation), ZMS (Zscaler Microsegmentation).
 
 ## Tool Naming & Discovery
 
@@ -22,9 +22,9 @@ All tools follow `{service}_{verb}_{resource}` naming: `zia_list_locations`, `zp
 
 ## Write Operations — Safety Rules
 
-1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
+1. **Write tools are disabled by default, and enabling them takes BOTH knobs.** `--enable-write-tools` (env `ZSCALER_MCP_WRITE_ENABLED=true`) is the master switch and `--write-tools` (env `ZSCALER_MCP_WRITE_TOOLS`) names the permitted patterns; neither grants anything alone. Example: `--enable-write-tools --write-tools "zpa_create_*,zia_update_*"`. The switch with an empty allowlist registers **zero** write tools and logs why — it never means "all".
 2. **Always confirm before mutating.** Read operations are safe. Create/update/delete operations modify the live Zscaler environment. Ask the user before executing write operations.
-3. **Delete operations require HMAC-SHA256 confirmation.** Destructive actions return a confirmation token that must be passed back to confirm. Controlled by `ZSCALER_MCP_SKIP_CONFIRMATIONS` and `ZSCALER_MCP_CONFIRMATION_TTL`.
+3. **Delete operations require confirmation, and there is no bypass.** On clients that support MCP elicitation the server asks a **human** through the client (SEP-2322), so the agent never handles the approval. Otherwise it falls back to a single-use HMAC token the agent must pass back; that fallback is single-process, so run one replica if your clients lack elicitation support. For elicitation-capable clients the encrypted confirmation state is also per-process unless `ZSCALER_MCP_REQUEST_STATE_KEYS` is set to a shared key ring — required for multi-replica HTTP writes, since `2026-07-28` requests carry no session ID for affinity to pin on. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the window; nothing switches the gate off.
 4. **Always list/get first** to understand current state before creating or modifying resources.
 5. **Pagination:** List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.
 6. **ZPA policy rule ordering:** New rules are appended at the end by default. Policy rules are evaluated top-to-bottom — order matters for access control.
@@ -70,7 +70,7 @@ Server & security env vars:
 
 - `--transport` — Transport mode (`stdio`, `sse`, `streamable-http`)
 - `--services` — Comma-separated services to enable (e.g., `zia,zpa,zdx`)
-- `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
+- `--write-tools` — Allowlist of write tools to permit (wildcards: `"zpa_create_*,zia_update_*"`). Required alongside `--enable-write-tools`; on its own it enables nothing.
 - `--generate-auth-token` — Generate an API key for MCP client authentication
 - `--list-tools` — List all available tools and exit
 - `--user-agent-comment` — Custom User-Agent suffix for API calls

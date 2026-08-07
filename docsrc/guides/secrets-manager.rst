@@ -201,14 +201,14 @@ Advantages
 Considerations
 ~~~~~~~~~~~~~~
 
-- Requires container code changes (already implemented in ``zscaler_mcp/config.py``)
+- Requires no container code changes (the loader ships in ``zscaler_mcp/cloud/aws_secrets.py``)
 - AgentCore execution role needs Secrets Manager access
 - Slight startup delay (~100ms for secret retrieval)
 
 How It Works
 ~~~~~~~~~~~~
 
-The Zscaler MCP Server's container image already includes ``zscaler_mcp/config.py``, a side-effect module that runs at process boot via ``aws_entrypoint.py``:
+The Zscaler MCP Server's container image already includes ``zscaler_mcp/cloud/aws_secrets.py``, which ``main()`` calls at startup before anything reads a credential:
 
 1. The deploy script writes the credential JSON to a Secrets Manager entry (e.g. ``zscaler-mcp/credentials``).
 2. The AgentCore runtime task definition gets only ``ZSCALER_SECRET_NAME=<that-name>`` — never the actual credential values.

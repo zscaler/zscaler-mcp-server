@@ -78,8 +78,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 def _ports(ports: Optional[list[list[str]]]) -> Optional[list[tuple]]:
     parsed = parse_list(ports) if ports is not None else None
     if parsed is None:
@@ -177,7 +175,11 @@ def zia_update_network_service(args: UpdateServiceInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_network_service(args: DeleteServiceInput) -> dict[str, Any]:
-    """Delete a ZIA network service (destructive). Activate after."""
+    """Delete a ZIA network service (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.cloud_firewall.delete_network_service(args.service_id)
     if err:

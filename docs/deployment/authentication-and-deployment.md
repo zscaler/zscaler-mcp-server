@@ -13,7 +13,7 @@ This guide covers every deployment model for the Zscaler MCP Server, including t
   - [API Key Mode](#api-key-mode)
   - [JWT Mode (External IdP via JWKS)](#jwt-mode-external-idp-via-jwks)
   - [Zscaler Mode (OneAPI Credentials)](#zscaler-mode-oneapi-credentials)
-  - [OAuth Proxy Mode (OIDCProxy)](#oauth-proxy-mode-oidcproxy)
+  - [OIDC Mode (OAuth 2.1)](#oidc-mode-oauth-21)
 - [Deployment Options](#deployment-options)
   - [Option A: Docker with stdio (No Auth)](#option-a-docker-with-stdio-no-auth)
   - [Option B: Docker with HTTP (With Auth)](#option-b-docker-with-http-with-auth)
@@ -32,15 +32,14 @@ This guide covers every deployment model for the Zscaler MCP Server, including t
   - [How Token Validation Works](#how-token-validation-works)
   - [Token Expiry and Refresh](#token-expiry-and-refresh)
 - [Automated Setup Script (Auth0)](#automated-setup-script-auth0)
-- [OIDCProxy Setup (OAuth 2.1 + DCR)](#oidcproxy-setup-oauth-21--dcr)
+- [OIDC Setup (OAuth 2.1)](#oidc-setup-oauth-21)
   - [Prerequisites](#prerequisites-1)
   - [Step 1: Create an OIDC Application in Your IdP](#step-1-create-an-oidc-application-in-your-idp)
-  - [Step 2: Create an API / Resource Server in Your IdP](#step-2-create-an-api--resource-server-in-your-idp)
-  - [Step 3: Run the Server with OIDCProxy](#step-3-run-the-server-with-oidcproxy)
+  - [Step 2: Decide the Audience](#step-2-decide-the-audience)
+  - [Step 3: Run the Server](#step-3-run-the-server)
   - [Step 4: Configure Your MCP Client](#step-4-configure-your-mcp-client)
   - [How It Works](#how-it-works)
-  - [Automated Setup Script (Auth0)](#automated-setup-script-auth0-oidcproxy)
-  - [Troubleshooting OIDCProxy](#troubleshooting-oidcproxy)
+  - [Troubleshooting OIDC](#troubleshooting-oidc)
 - [HTTPS / TLS Configuration](#https--tls-configuration)
 - [Environment Variable Reference](#environment-variable-reference)
 - [Makefile Targets](#makefile-targets)
@@ -72,7 +71,7 @@ The Zscaler MCP Server has two independent authentication layers:
 
 **Layer 2 (separate):** The Zscaler API credentials (`ZSCALER_CLIENT_ID`, `ZSCALER_CLIENT_SECRET`, etc.) that the server uses to call Zscaler APIs. These are always required regardless of Layer 1 settings.
 
-> **Note:** Layer 1 can be configured either via environment variables (`ZSCALER_MCP_AUTH_*`) or programmatically via the `auth=` parameter. OIDCProxy mode uses the programmatic approach and provides full OAuth 2.1 compliance with Dynamic Client Registration.
+> **Note:** Every Layer 1 mode — including OAuth 2.1 (`oidc`) — is configured entirely through `ZSCALER_MCP_AUTH_*` and `OIDCPROXY_*` environment variables. No mode requires writing Python or passing a provider object to the constructor.
 
 ---
 
@@ -127,7 +126,7 @@ Independent of transport choice, the following controls determine **which tools 
 | **Disabled tools / services** | Hard-exclude individual tools (with wildcards) or whole services from the registry. Wins over every other filter. | `--disabled-tools`, `--disabled-services` / `ZSCALER_MCP_DISABLED_TOOLS`, `ZSCALER_MCP_DISABLED_SERVICES` |
 | **Toolsets** | Load only the slice of tools an agent actually needs (e.g. `zia_url_filtering` + `zpa_app_segments` instead of all 280+ tools). Reduces context cost and improves agent accuracy. See [docs/guides/toolsets.md](../guides/toolsets.md). | `--toolsets`, `ZSCALER_MCP_TOOLSETS` (special values: `default`, `all`) |
 | **OneAPI entitlement filter** | At startup, the server reads the product entitlements from the OneAPI bearer token and silently drops toolsets for products the credentials cannot call. Prevents the agent from discovering tools whose first call would only ever return 401. | On by default; opt out with `--no-entitlement-filter` / `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true`. |
-| **Cryptographic destructive-op confirmation** | Every delete tool returns an HMAC-SHA256 token instead of executing; the agent must re-call with that token within 5 minutes. Defeats prompt-injection attempts to bypass user confirmation. | On by default; bypass for CI with `ZSCALER_MCP_SKIP_CONFIRMATIONS=true`. |
+| **Destructive-op confirmation** | No delete executes on the first call. Clients that support MCP elicitation get an interactive prompt answered by a human; every other client gets a single-use HMAC-SHA256 token, bound to the exact tool and parameters, that it must pass back within 5 minutes. | Always on — there is no bypass. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the window only. |
 | **Tool-call audit logging** | Every tool invocation is logged with arguments (sensitive params redacted), duration, and result summary. | `--log-tool-calls` / `ZSCALER_MCP_LOG_TOOL_CALLS=true` |
 
 These controls compose. The order in which they're applied to each tool is documented in detail in [Filter precedence](../guides/toolsets.md#filter-precedence).
@@ -291,55 +290,62 @@ This alternative avoids Base64 encoding. Both methods are supported; the server 
 
 ---
 
-### OAuth Proxy Mode (OIDCProxy)
+### OIDC Mode (OAuth 2.1)
 
-Full MCP-spec-compliant OAuth 2.1 proxy with Dynamic Client Registration (DCR). The server exposes standard OAuth endpoints that MCP clients discover automatically:
+OAuth 2.1 with a browser login, for human operators. The server acts as an **OAuth 2.0 protected resource** ([RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html)): it does not issue tokens or run an authorization flow — it points clients at your Identity Provider and verifies the tokens they come back with.
 
-- `/.well-known/oauth-authorization-server` — OAuth metadata
-- `/.well-known/oauth-protected-resource` — Protected resource metadata
-- `/register` — Dynamic Client Registration (DCR)
-- `/authorize` — Authorization endpoint (proxied to your IdP)
-- `/token` — Token endpoint (proxied to your IdP)
+Two routes exist in this mode, and that is the whole surface:
 
-Unlike the env-var-based modes (`api-key`, `jwt`, `zscaler`), OIDCProxy is configured **programmatically** by passing a `fastmcp.server.auth.AuthProvider` instance to the `ZscalerMCPServer` constructor:
+| Route | Purpose |
+|-------|---------|
+| `/.well-known/oauth-protected-resource` | Names your IdP as the authorization server for this resource |
+| `/mcp` | The MCP endpoint, requiring `Authorization: Bearer <token>` |
 
-```python
-from fastmcp.server.auth.oidc_proxy import OIDCProxy
-from zscaler_mcp.server import ZscalerMCPServer
+There is deliberately **no** `/authorize`, `/token`, or `/register` — those live on your IdP, and requesting them here returns `404`. An unauthenticated request to `/mcp` returns `401` with a `WWW-Authenticate` header pointing at the metadata document, which is how a client discovers where to authenticate:
 
-auth = OIDCProxy(
-    config_url="https://your-idp.example.com/.well-known/openid-configuration",
-    client_id="YOUR_CLIENT_ID",
-    client_secret="YOUR_CLIENT_SECRET",
-    base_url="http://localhost:8000",
-    audience="zscaler-mcp-server",
-)
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer error="invalid_token",
+  resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"
+```
 
-server = ZscalerMCPServer(auth=auth)
-server.run("streamable-http", host="0.0.0.0", port=8000)
+Configured entirely through environment variables, like every other mode:
+
+```bash
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=oidc
+
+OIDCPROXY_CONFIG_URL=https://your-idp.example.com/.well-known/openid-configuration
+OIDCPROXY_CLIENT_ID=YOUR_CLIENT_ID
+OIDCPROXY_BASE_URL=https://mcp.example.com
+OIDCPROXY_AUDIENCE=YOUR_CLIENT_ID
 ```
 
 **Characteristics:**
 
-- Full OAuth 2.1 compliance — clients discover endpoints via standard metadata
-- Dynamic Client Registration — clients register automatically, no manual token management
-- Works with any OIDC-compliant Identity Provider (Auth0, Okta, Azure AD, Keycloak, Google, PingOne, AWS Cognito)
-- User-facing login — redirects users to your IdP's login page
-- No static tokens or shared secrets — tokens are issued per-session
-- Automatic token refresh handled by the MCP client
+- User-facing login — the client opens a browser against your IdP's login page
+- **No client secret.** Verifying a signature needs the IdP's public keys, not a credential of ours
+- No static tokens or shared secrets on the server side
+- Token refresh handled by the MCP client
+- The issuer and JWKS URI are read from the IdP's discovery document at startup, so they always match what it actually signs with
+- Works with any OIDC-compliant Identity Provider (Auth0, Okta, Microsoft Entra ID, Keycloak, Google, PingOne, AWS Cognito)
 - Best for: production deployments, enterprise SSO, multi-user environments
 
-**When to use OIDCProxy vs other modes:**
+**Trade-off vs. the old proxy:** clients can no longer self-register via Dynamic Client Registration. Each client needs a client ID issued by your IdP. In exchange, there is no proxy to misconfigure, no client secret to store, and the login is a normal OAuth flow your IdP already audits.
+
+**When to use `oidc` vs other modes:**
 
 | Scenario | Recommended Mode |
 |----------|-----------------|
 | Local development, quick testing | `api-key` |
 | CI/CD, automation, M2M workloads | `jwt` |
 | Existing Zscaler API credentials | `zscaler` |
-| Production with user login, enterprise SSO | **OIDCProxy** |
-| Multi-user with per-user audit trail | **OIDCProxy** |
+| Production with user login, enterprise SSO | **`oidc`** |
+| Multi-user with per-user audit trail | **`oidc`** |
 
-See [OIDCProxy Setup (OAuth 2.1 + DCR)](#oidcproxy-setup-oauth-21--dcr) for detailed configuration instructions.
+The mode name is `oidc`; `oidcproxy` and `oauth-proxy` still resolve, so existing `.env` files keep working.
+
+See [OIDC Setup (OAuth 2.1)](#oidc-setup-oauth-21) for detailed configuration instructions.
 
 ---
 
@@ -1639,7 +1645,7 @@ SKIP_SERVER_START=true \
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `ZSCALER_MCP_AUTH_ENABLED` | No | `false` | Enable MCP client authentication. Set to `true`, `1`, or `yes` to enable. |
-| `ZSCALER_MCP_AUTH_MODE` | When auth enabled | `jwt` | Auth mode: `jwt`, `zscaler`, `api-key`, or `oauth-proxy` |
+| `ZSCALER_MCP_AUTH_MODE` | When auth enabled | `jwt` | Auth mode: `jwt`, `zscaler`, `api-key`, or `oidc` (`oidcproxy` and `oauth-proxy` are accepted aliases) |
 
 **API Key mode variables:**
 
@@ -1663,17 +1669,18 @@ SKIP_SERVER_START=true \
 | `ZSCALER_VANITY_DOMAIN` | Yes | — | Your Zscaler vanity domain (reused from Layer 2) |
 | `ZSCALER_CLOUD` | No | `production` | Zscaler cloud environment (reused from Layer 2) |
 
-**OIDCProxy mode** (programmatic — not configured via env vars):
-
-OIDCProxy mode is configured programmatically via the `auth=` parameter, not through environment variables. However, when using Docker with a custom entrypoint, these environment variables are used by the entrypoint script:
+**OIDC mode variables** (`ZSCALER_MCP_AUTH_MODE=oidc`):
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `OIDCPROXY_CONFIG_URL` | Yes | — | OIDC discovery URL (e.g., `https://tenant.auth0.com/.well-known/openid-configuration`) |
-| `OIDCPROXY_CLIENT_ID` | Yes | — | OAuth client ID from your IdP |
-| `OIDCPROXY_CLIENT_SECRET` | Yes | — | OAuth client secret from your IdP |
-| `OIDCPROXY_BASE_URL` | Yes | — | Public base URL of the MCP server (e.g., `http://localhost:8000`) |
-| `OIDCPROXY_AUDIENCE` | No | `zscaler-mcp-server` | API audience / resource server identifier |
+| `OIDCPROXY_CONFIG_URL` | Yes | — | The **IdP's** OIDC discovery URL (e.g., `https://tenant.auth0.com/.well-known/openid-configuration`). Issuer and JWKS URI are read from it at startup. |
+| `OIDCPROXY_BASE_URL` | Yes | — | Public base URL of **this** server (e.g., `https://mcp.example.com`) — the OAuth resource identifier |
+| `OIDCPROXY_CLIENT_ID` | No | — | The app registration's client ID. Required in practice, since it supplies the default audience. |
+| `OIDCPROXY_AUDIENCE` | No | `OIDCPROXY_CLIENT_ID` | Required `aud` claim. Correct for Entra ID by default; set explicitly for Auth0's API identifier. The server refuses to start if neither this nor `OIDCPROXY_CLIENT_ID` is set. |
+| `OIDCPROXY_REQUIRED_SCOPES` | No | — | Comma-separated scopes a token must carry |
+| `OIDCPROXY_CLIENT_SECRET` | No | — | **Not used.** Nothing here initiates an OAuth exchange, so there is no client credential to present. Ignored if set. |
+
+The variable names keep the `OIDCPROXY_` prefix so existing deployments keep working.
 
 ### Zscaler API Credentials (Layer 2)
 
@@ -1713,7 +1720,8 @@ These are always required, regardless of Layer 1 auth settings.
 | `ZSCALER_MCP_TLS_CA_CERTS` | No | — | Path to CA certificate bundle for mTLS or custom CA chains. |
 | `ZSCALER_MCP_ALLOW_HTTP` | No | `false` | Allow plaintext HTTP on non-localhost. HTTPS is required by default for remote deployments. |
 | `ZSCALER_MCP_ALLOWED_SOURCE_IPS` | No | — | Comma-separated allowed client IPs/CIDRs (e.g. `10.0.0.0/8,172.16.0.5`). Unset = no filtering. |
-| `ZSCALER_MCP_SKIP_CONFIRMATIONS` | No | `false` | Skip cryptographic confirmation for destructive actions (testing/CI only). |
+| `ZSCALER_MCP_CONFIRMATION_TTL` | No | `300` | Lifetime in seconds of the HMAC **fallback** confirmation token. Does not govern the sealed `requestState` (SDK envelope TTL, default 600s). No variable skips the confirmation itself. |
+| `ZSCALER_MCP_REQUEST_STATE_KEYS` | Only for multi-replica HTTP + writes | *(unset)* | Shared key ring for the SEP-2322 `requestState`. JSON array or comma-separated; each key ≥32 bytes of randomness. Without it each replica uses its own key, so a confirmation retry that lands on a different replica fails. Sticky sessions do **not** help: `2026-07-28` requests carry no session id. First key seals, all unseal. |
 
 ---
 
@@ -1929,7 +1937,9 @@ GET /.well-known/openid-configuration HTTP/1.1" 404 Not Found
 POST /register HTTP/1.1" 404 Not Found
 ```
 
-**Cause:** When `mcp-remote` receives a `401 Unauthorized` response, some versions attempt automatic authentication via the MCP OAuth 2.1 protocol — Dynamic Client Registration (DCR) with `/.well-known/*` discovery. The Zscaler MCP Server uses direct JWT validation (bearer token in header), not the full OAuth 2.1 DCR flow, so these discovery endpoints return 404. The `--header` flag may be ignored or deprioritized in favor of the OAuth discovery attempt.
+**Cause:** When `mcp-remote` receives a `401 Unauthorized` response, some versions attempt automatic authentication via the MCP OAuth 2.1 protocol — Dynamic Client Registration (DCR) with `/.well-known/*` discovery. In `jwt` mode the server validates a bearer token directly and serves no OAuth metadata, so these discovery endpoints return 404. The `--header` flag may be ignored or deprioritized in favor of the OAuth discovery attempt.
+
+If you want the client to run OAuth rather than carry a pre-issued token, use [`oidc` mode](#oidc-mode-oauth-21) instead — it serves the `/.well-known/oauth-protected-resource` document `mcp-remote` is looking for.
 
 **Resolution (choose one):**
 
@@ -2151,7 +2161,8 @@ If these paths return 401, verify the auth middleware is properly initialized (c
 | Single user, local development | `stdio` | None | Docker command in client config |
 | Single user, wants auth | `streamable-http` | `api-key` | HTTP URL + Bearer header |
 | Team sharing one server | `streamable-http` | `jwt` or `api-key` | HTTP URL + auth headers |
-| Enterprise with IdP (Okta, Azure AD) | `streamable-http` | `jwt` | HTTP URL + Bearer JWT |
+| Enterprise with IdP, machine-to-machine | `streamable-http` | `jwt` | HTTP URL + Bearer JWT |
+| Enterprise SSO, per-user browser login | `streamable-http` | `oidc` | HTTP URL, no header — client runs OAuth |
 | Zscaler-native organization | `streamable-http` | `zscaler` | HTTP URL + Basic Auth / custom headers |
 | Claude Desktop + auth (macOS/Linux) | `streamable-http` | any | `mcp-remote` bridge (`npx` command) |
 | Claude Desktop + auth (Windows) | `streamable-http` | any | `mcp-remote` bridge (`cmd /c npx`) |
@@ -2161,148 +2172,137 @@ If these paths return 401, verify the auth middleware is properly initialized (c
 
 ---
 
-## OIDCProxy Setup (OAuth 2.1 + DCR)
+## OIDC Setup (OAuth 2.1)
 
-This section provides step-by-step instructions for configuring OIDCProxy mode, which implements full MCP-spec OAuth 2.1 with Dynamic Client Registration. The examples use Auth0, but the same process applies to any OIDC-compliant Identity Provider.
+Step-by-step instructions for `oidc` mode, in which the server is an OAuth 2.0 protected resource ([RFC 9728](https://www.rfc-editor.org/rfc/rfc9728.html)) and clients authenticate against your Identity Provider directly. The examples use Auth0; the same process applies to any OIDC-compliant IdP.
 
 ### Prerequisites
 
-1. An OIDC-compliant Identity Provider (Auth0, Okta, Azure AD, Keycloak, Google, etc.)
-2. Python 3.10+ with `zscaler-mcp-server` installed (or Docker)
-3. The `fastmcp` package (included as a dependency of `zscaler-mcp-server`)
+1. An OIDC-compliant Identity Provider (Auth0, Okta, Microsoft Entra ID, Keycloak, Google, etc.)
+2. `zscaler-mcp-server` installed (or the Docker image)
+3. Nothing else — no additional packages
 
 ### Step 1: Create an OIDC Application in Your IdP
 
-OIDCProxy acts as an OAuth proxy between MCP clients and your Identity Provider. It needs its own application registration in your IdP.
+Clients authenticate against your IdP, so they need an application registration there.
 
-> **Important:** You must create a **Regular Web Application** (or "Confidential Client"), NOT a Machine-to-Machine (M2M) application. M2M applications only support `client_credentials` grant, which does not support user-facing login flows.
+> **The redirect URI belongs to the client, not to this server.** In the old proxy design the server was itself the OAuth client, so the callback was `<server>/auth/callback`. It no longer is. The callback is now a loopback address the MCP client listens on. Register the URI **your client** actually uses.
+>
+> **With `mcp-remote`, pin the port or the URI you register will not match.** It has no fixed default port — its README claims 3334, but the code derives one from a hash of the server URL (`3335 + hash % 45816`). Pass `3334` as the **first argument after the URL**; that exact position is the only one it reads, and elsewhere the value is parsed as a port, silently becomes `NaN`, and the derived port is used with no warning. IdPs match `redirect_uri` byte-for-byte, so the mismatch fails every login. An explicitly-passed port is used verbatim, so it stays stable across runs.
+>
+> **Important:** Do not use a Machine-to-Machine (M2M) application. M2M apps only support the `client_credentials` grant, which has no user-facing login. (M2M is the right choice for [JWT mode](#jwt-mode-external-idp-via-jwks) instead.) Register the client as a **public client** using authorization code + PKCE — no client secret is involved anywhere in this mode.
 
 **Auth0 example:**
 
 1. Go to **Auth0 Dashboard > Applications > Applications > Create Application**
-2. Select **"Regular Web Applications"**
-3. Name it (e.g., `zscaler-mcp-server-OIDCProxy`)
-4. In **Settings**, note the **Client ID** and **Client Secret**
-5. Under **Application URIs > Allowed Callback URLs**, add:
+2. Select **"Native"** (public client with PKCE)
+3. Name it (e.g., `zscaler-mcp-client`)
+4. In **Settings**, note the **Client ID**
+5. Under **Application URIs > Allowed Callback URLs**, add your client's callback:
 
    ```text
-   http://localhost:8000/auth/callback
+   http://localhost:3334/oauth/callback
    ```
 
-   (Adjust the port if your server runs on a different port)
 6. Save changes
 
 **Okta example:**
 
 1. Go to **Okta Admin > Applications > Create App Integration**
-2. Select **OIDC - OpenID Connect**, then **Web Application**
-3. Set the **Sign-in redirect URI** to `http://localhost:8000/auth/callback`
-4. Note the **Client ID** and **Client Secret**
+2. Select **OIDC - OpenID Connect**, then **Native Application**
+3. Set the **Sign-in redirect URI** to `http://localhost:3334/oauth/callback`
+4. Note the **Client ID**
 
-**Azure AD / Microsoft Entra ID example:**
+**Microsoft Entra ID example:**
 
 1. Go to **Azure Portal > App registrations > New registration**
-2. Set the **Redirect URI** to `http://localhost:8000/auth/callback` (type: Web)
-3. Under **Certificates & secrets**, create a **Client secret**
-4. Under **Authentication > Settings**, enable **ID tokens**
-5. Under **API permissions**, add `openid`, `profile`, `email` and grant admin consent
-6. Note the **Application (client) ID** and secret value
+2. Set the **Redirect URI** to `http://localhost:3334/oauth/callback`, platform **Mobile and desktop applications** (public client)
+3. Under **Authentication > Advanced settings**, set **Allow public client flows** to **Yes**
+4. Under **API permissions**, add `openid`, `profile`, `email` and grant admin consent
+5. Under **Expose an API**, set the **Application ID URI** to your server's full MCP endpoint URL (e.g. `https://mcp.example.com/mcp`) and add a delegated scope named `mcp.access`
+6. In the **Manifest**, set `api.requestedAccessTokenVersion` to `2`
+7. Note the **Application (client) ID**
 
-> **Important:** For Entra ID, set the `audience` parameter to the **Application (client) ID** (not an API identifier). Entra ID uses the client ID as the `aud` claim in ID tokens.
+> **Important:** For Entra ID, set `OIDCPROXY_AUDIENCE` to the **Application (client) ID** (not an API identifier). Entra ID uses the client ID as the `aud` claim. Since `OIDCPROXY_AUDIENCE` defaults to `OIDCPROXY_CLIENT_ID`, you can simply omit it.
 >
-> **📖 Full step-by-step guide with screenshots:** [OIDCProxy Setup with Microsoft Entra ID](entra-id-oidcproxy.md)
+> **Entra ID needs three things the other IdPs don't**, and each one fails the login differently. Steps 5 and 6 above are two of them; the third is that `OIDCPROXY_BASE_URL` must be the **full MCP endpoint URL including the path** — a bare origin cannot work, because the client normalizes it to a trailing slash and Entra ID refuses to register an Application ID URI ending in `/`. The client must also be told the scope explicitly (`--static-oauth-client-metadata`), since Entra ID cannot discover it.
+>
+> **📖 Full step-by-step guide with screenshots:** [OIDC Setup with Microsoft Entra ID](entra-id-oidcproxy.md)
 
-### Step 2: Create an API / Resource Server in Your IdP
+### Step 2: Decide the Audience
 
-The OIDCProxy uses an `audience` parameter to identify which API the tokens are for. You need to register this API in your IdP.
+`OIDCPROXY_AUDIENCE` is the value the server requires in the token's `aud` claim. Without it, a token your IdP issued for a completely different application would be accepted here, so the server refuses to start if it cannot determine one.
 
-**Auth0 example:**
+- **Entra ID:** the client ID. Omit `OIDCPROXY_AUDIENCE` and it defaults to `OIDCPROXY_CLIENT_ID`.
+- **Auth0:** a separate API identifier. Go to **Auth0 Dashboard > Applications > APIs > Create API**, set the **Identifier** to e.g. `zscaler-mcp-server`, and use that as `OIDCPROXY_AUDIENCE`. Under **Application Access**, authorize your application for it.
+- **Okta:** the authorization server's audience (**Okta Admin > Security > API > Authorization Servers**).
 
-1. Go to **Auth0 Dashboard > Applications > APIs > Create API**
-2. Set the **Identifier** to `zscaler-mcp-server` (this becomes the `audience` value)
-3. Under **Application Access**, find your OIDCProxy application and set:
-   - **User Access**: Authorized
-   - **Client Access**: Authorized
-4. Save
+### Step 3: Run the Server
 
-**Okta example:**
-
-1. Go to **Okta Admin > Security > API > Authorization Servers**
-2. Use the `default` server or create a custom one
-3. Add a scope or use existing scopes
-4. The **Audience** is the authorization server's URI
-
-### Step 3: Run the Server with OIDCProxy
-
-There are two ways to run the server with OIDCProxy: programmatically (Python script) or via Docker with a custom entrypoint.
-
-#### Option A: Programmatic (Python script)
-
-Create a script (e.g., `run_server.py`):
-
-```python
-import os
-from fastmcp.server.auth.oidc_proxy import OIDCProxy
-from zscaler_mcp.server import ZscalerMCPServer
-
-auth = OIDCProxy(
-    config_url="https://YOUR_DOMAIN/.well-known/openid-configuration",
-    client_id=os.getenv("OIDCPROXY_CLIENT_ID"),
-    client_secret=os.getenv("OIDCPROXY_CLIENT_SECRET"),
-    base_url="http://localhost:8000",
-    audience="zscaler-mcp-server",
-)
-
-# Allow standard OIDC scopes for Dynamic Client Registration
-if auth.client_registration_options:
-    auth.client_registration_options.valid_scopes = [
-        "openid", "profile", "email",
-    ]
-
-server = ZscalerMCPServer(auth=auth)
-server.run("streamable-http", host="0.0.0.0", port=8000)
-```
-
-Set environment variables and run:
+`oidc` is configured with environment variables and uses the standard entrypoint — there is no wrapper script and no custom Docker command.
 
 ```bash
-export OIDCPROXY_CLIENT_ID="your-client-id"
-export OIDCPROXY_CLIENT_SECRET="your-client-secret"
-export ZSCALER_MCP_ALLOW_HTTP=true  # Only for local dev without TLS
+# .env
+ZSCALER_MCP_AUTH_ENABLED=true
+ZSCALER_MCP_AUTH_MODE=oidc
 
-python run_server.py
+OIDCPROXY_CONFIG_URL=https://YOUR_DOMAIN/.well-known/openid-configuration
+OIDCPROXY_CLIENT_ID=your-client-id
+OIDCPROXY_BASE_URL=https://mcp.example.com
+OIDCPROXY_AUDIENCE=zscaler-mcp-server        # optional; defaults to the client id
+# OIDCPROXY_REQUIRED_SCOPES=zscaler.read     # optional; scopes a token must carry
 ```
 
-#### Option B: Docker with setup script (recommended)
+| Variable | Notes |
+|----------|-------|
+| `OIDCPROXY_CONFIG_URL` | The **IdP's** discovery document. The issuer and JWKS URI are read from it at startup, so they always match what the IdP signs with. |
+| `OIDCPROXY_BASE_URL` | **This server's** public URL — the OAuth resource identifier clients use. Not the IdP's. |
+| `OIDCPROXY_AUDIENCE` | Required in the token's `aud`. Defaults to `OIDCPROXY_CLIENT_ID`. |
+| `OIDCPROXY_CLIENT_SECRET` | **Not used.** Ignored if set; safe to delete. |
 
-The easiest way is to use the all-in-one setup script, which builds the image, starts the container, verifies OAuth endpoints, and updates client configs:
+Locally:
 
 ```bash
-python local_dev/scripts/setup-oidcproxy-auth.py --server-mode docker
+export ZSCALER_MCP_ALLOW_HTTP=true   # local dev only, no TLS
+zscaler-mcp --transport streamable-http --host 0.0.0.0 --port 8000
 ```
 
-The script embeds the entrypoint code inline and passes it to the container via `python -c`, so no separate entrypoint file is needed. Auth0 credentials are loaded from `.env` automatically.
-
-For manual Docker usage, pass the entrypoint code directly:
+Docker — the normal image entrypoint, no override:
 
 ```bash
 docker run -d --name zscaler-mcp-server \
   -p 8000:8000 \
   --env-file .env \
+  -e ZSCALER_MCP_AUTH_ENABLED=true \
+  -e ZSCALER_MCP_AUTH_MODE=oidc \
   -e OIDCPROXY_CONFIG_URL="https://YOUR_DOMAIN/.well-known/openid-configuration" \
   -e OIDCPROXY_CLIENT_ID="your-client-id" \
-  -e OIDCPROXY_CLIENT_SECRET="your-client-secret" \
   -e OIDCPROXY_BASE_URL="http://localhost:8000" \
   -e OIDCPROXY_AUDIENCE="zscaler-mcp-server" \
   -e ZSCALER_MCP_ALLOW_HTTP=true \
-  --entrypoint python \
-  zscaler-mcp-server:latest \
-  -c "import os; from fastmcp.server.auth.oidc_proxy import OIDCProxy; from zscaler_mcp.server import ZscalerMCPServer; auth=OIDCProxy(config_url=os.environ['OIDCPROXY_CONFIG_URL'],client_id=os.environ['OIDCPROXY_CLIENT_ID'],client_secret=os.environ['OIDCPROXY_CLIENT_SECRET'],base_url=os.environ['OIDCPROXY_BASE_URL'],audience=os.environ.get('OIDCPROXY_AUDIENCE','zscaler-mcp-server')); ZscalerMCPServer(auth=auth).run('streamable-http',host='0.0.0.0',port=8000)"
+  zscaler/zscaler-mcp-server:latest \
+  --transport streamable-http --host 0.0.0.0 --port 8000
 ```
+
+Verify the metadata document names your IdP:
+
+```bash
+curl -s http://localhost:8000/.well-known/oauth-protected-resource | jq
+```
+
+```json
+{
+  "resource": "http://localhost:8000",
+  "authorization_servers": ["https://YOUR_DOMAIN"],
+  "bearer_methods_supported": ["header"]
+}
+```
+
+`/.well-known/oauth-authorization-server`, `/register`, `/authorize` and `/token` correctly return `404` — this server is not an authorization server.
 
 ### Step 4: Configure Your MCP Client
 
-OIDCProxy uses dynamic OAuth — no static Bearer token is needed. MCP clients discover the OAuth endpoints automatically and handle the authorization flow.
+No static Bearer token is needed. The client reads the metadata document, authenticates with your IdP, and attaches the resulting token itself.
 
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
@@ -2311,7 +2311,7 @@ OIDCProxy uses dynamic OAuth — no static Bearer token is needed. MCP clients d
   "mcpServers": {
     "zscaler-mcp-server": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "http://localhost:8000/mcp"]
+      "args": ["-y", "mcp-remote", "https://mcp.example.com/mcp"]
     }
   }
 }
@@ -2323,170 +2323,127 @@ OIDCProxy uses dynamic OAuth — no static Bearer token is needed. MCP clients d
 {
   "mcpServers": {
     "zscaler-mcp-server": {
-      "url": "http://localhost:8000/mcp"
+      "url": "https://mcp.example.com/mcp"
     }
   }
 }
 ```
 
-Notice there is **no** `Authorization` header — the client handles OAuth automatically:
+Notice there is **no** `Authorization` header. The flow is:
 
-1. `mcp-remote` discovers OAuth metadata at `/.well-known/oauth-authorization-server`
-2. It registers dynamically via `POST /register` (DCR)
-3. A browser window opens with the OIDCProxy consent page
-4. After clicking "Allow Access", you're redirected to your IdP's login page
-5. After login, the client receives tokens and connects to `/mcp` with a Bearer token
-6. Token refresh is handled automatically
+1. The client `POST`s to `/mcp` and gets `401` with a `WWW-Authenticate` header naming the metadata URL
+2. It fetches `/.well-known/oauth-protected-resource` and learns which IdP to use
+3. It fetches the IdP's own metadata and runs the OAuth flow **against the IdP** — a browser window opens on your IdP's login page
+4. After login, the client retries `/mcp` with `Authorization: Bearer <token>`
+5. The server verifies the signature, issuer, audience and expiry against the IdP's JWKS
+6. Token refresh is handled by the client
+
+Your client needs a client ID from the IdP unless Dynamic Client Registration is both supported *and* switched on there — Entra ID never supports it, and Auth0 supports it but leaves it **off** by default, in which case the registration attempt fails and `mcp-remote` reports only `ServerError`. `mcp-remote` takes pre-registered credentials via `--static-oauth-client-info`, which accepts inline JSON or `@/path/to/file.json`:
+
+```json
+{
+  "mcpServers": {
+    "zscaler-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote", "https://mcp.example.com/mcp", "3334",
+        "--static-oauth-client-info", "{\"client_id\":\"YOUR_CLIENT_ID\"}"
+      ]
+    }
+  }
+}
+```
+
+To confirm whether your tenant permits self-registration, call the `registration_endpoint` from its discovery document directly — Auth0 advertises the endpoint whether or not the feature is enabled, and answers `400 dynamic client registration is disabled` when it is not.
 
 ### How It Works
 
 ```text
 ┌──────────────┐     ┌───────────────────────────┐     ┌──────────────────┐
 │  MCP Client  │     │  Zscaler MCP Server       │     │  Identity        │
-│  (Claude,    │     │  with OIDCProxy           │     │  Provider        │
-│   Cursor)    │     │                           │     │  (Auth0, Okta)   │
+│  (Claude,    │     │  (protected resource)     │     │  Provider        │
+│   Cursor)    │     │                           │     │  (Auth0, Entra)  │
 │              │     │  ┌─────────────────────┐  │     │                  │
-│  1. Discover ├────>│  │ OAuth Metadata      │  │     │                  │
-│     OAuth    │<────│  │ /.well-known/*      │  │     │                  │
+│  1. POST /mcp├────>│  │ 401 + WWW-Auth ─────┼  │     │                  │
+│              │<────│  │ resource_metadata=… │  │     │                  │
 │              │     │  └─────────────────────┘  │     │                  │
-│  2. Register ├────>│  ┌─────────────────────┐  │     │                  │
-│     (DCR)    │<────│  │ /register           │  │     │                  │
+│  2. Discover ├────>│  ┌─────────────────────┐  │     │                  │
+│     resource │<────│  │ /.well-known/oauth- │  │     │                  │
+│              │     │  │ protected-resource  │  │     │                  │
+│              │     │  │  → names the IdP    │  │     │                  │
 │              │     │  └─────────────────────┘  │     │                  │
-│  3. Authorize├────>│  ┌─────────────────────┐  │     │                  │
-│              │     │  │ /authorize ─────────┼──┼────>│  User Login      │
-│              │     │  │ /auth/callback <────┼──┼─────│  + Consent       │
-│              │     │  └─────────────────────┘  │     │                  │
-│  4. Token    ├────>│  ┌─────────────────────┐  │     │                  │
-│     Exchange │<────│  │ /token              │  │     │                  │
-│              │     │  └─────────────────────┘  │     │                  │
-│  5. MCP      ├────>│  ┌─────────────────────┐  │     │                  │
-│     Request  │<────│  │ /mcp (authenticated)│  │     │                  │
-│              │     │  └─────────────────────┘  │     │                  │
+│              │     │                           │     │                  │
+│  3. OAuth flow ─── directly with the IdP ──────┼────>│  User Login      │
+│     /authorize, /token, callback to the client │<────│  + Consent       │
+│              │     │                           │     │                  │
+│  4. POST /mcp├────>│  ┌─────────────────────┐  │     │                  │
+│   + Bearer   │     │  │ verify signature /  │  │     │                  │
+│              │<────│  │ iss / aud / exp ────┼──┼────>│  JWKS (public    │
+│              │     │  └─────────────────────┘  │     │  keys)           │
 └──────────────┘     └───────────────────────────┘     └──────────────────┘
 ```
 
-### Automated Setup Script (Auth0) {#automated-setup-script-auth0-oidcproxy}
+The server never holds a client credential and never sees the user's password — it only checks signatures against public keys.
 
-For Auth0, an automated setup script handles Docker image building, container startup, endpoint verification, and client configuration:
+### Troubleshooting OIDC
 
-```bash
-# Interactive mode (prompts for credentials)
-python local_dev/scripts/setup-oidcproxy-auth.py --server-mode docker
+#### `oidc auth mode requires: OIDCPROXY_CONFIG_URL, OIDCPROXY_BASE_URL`
 
-# Non-interactive mode
-python local_dev/scripts/setup-oidcproxy-auth.py \
-  --server-mode docker \
-  --auth0-domain your-tenant.auth0.com \
-  --auth0-client-id YOUR_CLIENT_ID \
-  --auth0-client-secret YOUR_CLIENT_SECRET \
-  --auth0-audience zscaler-mcp-server \
-  --mcp-port 8000
+**Symptom:** The server exits at startup with this message.
 
-# Local mode (without Docker)
-python local_dev/scripts/setup-oidcproxy-auth.py --server-mode local
+**Cause:** Required configuration is missing. The server refuses to start half-configured rather than publish metadata clients cannot use.
+
+**Fix:** Set both. `OIDCPROXY_BASE_URL` is **this server's** public URL (the resource identifier), not the IdP's.
+
+#### `oidc auth mode requires OIDCPROXY_AUDIENCE (or OIDCPROXY_CLIENT_ID to default it)`
+
+**Cause:** Neither was set, so there is no expected `aud` value. Accepting any audience would mean a token your IdP issued for an unrelated application would be honoured here.
+
+**Fix:** Set `OIDCPROXY_CLIENT_ID` (the audience then defaults to it, which is correct for Entra ID) or set `OIDCPROXY_AUDIENCE` explicitly (correct for Auth0's API identifier).
+
+#### `Could not read the IdP's OpenID configuration from …`
+
+**Cause:** The server could not fetch the discovery document at startup — wrong URL, or no network path from the host to the IdP.
+
+**Fix:** Verify the URL in a browser or with `curl`. Note that Entra ID's URL is tenant-scoped and ends in `/v2.0/.well-known/openid-configuration`. If the server runs in a locked-down network, confirm egress to the IdP is allowed.
+
+#### `401 invalid_token` after a successful login
+
+**Symptom:** The browser reports success, but `/mcp` still returns `401`.
+
+**Cause:** Almost always an issuer or audience mismatch. Check the server's startup log line, which reports exactly what it will accept:
+
+```text
+OIDC auth configured as a protected resource (issuer=…, resource=…, audience=…)
 ```
 
-The script performs:
-
-1. Builds the Docker image (if `--server-mode docker`)
-2. Starts the server with OIDCProxy auth
-3. Verifies OAuth endpoints (`/.well-known/*`, `/register`, `/mcp`)
-4. Clears stale `mcp-remote` OAuth caches
-5. Updates Claude Desktop and Cursor configurations
-6. Prints connection instructions
-
-### Troubleshooting OIDCProxy
-
-#### "Client Not Registered" page
-
-**Symptom:** Browser shows "The client ID was not found in the server's client registry."
-
-**Cause:** The Docker container was restarted, wiping the in-memory client registry. `mcp-remote` cached an old `client_id` locally.
-
-**Fix:** Clear the `mcp-remote` OAuth cache and restart your MCP client:
-
-```bash
-rm -rf ~/.mcp-auth/mcp-remote-*/
-```
-
-Then restart Claude Desktop or Cursor.
+**Fix:** Decode the token your client received (e.g. at [jwt.io](https://jwt.io)) and compare its `iss` and `aud` with that line. For Entra ID, `aud` is the client ID; for Auth0, it is the API identifier, and the API must be authorized for the application. Note that the issuer is taken from the IdP's discovery document, not from `OIDCPROXY_CONFIG_URL`, so it does not need to be a prefix of that URL.
 
 #### "Callback URL mismatch" from your IdP
 
-**Symptom:** Auth0 (or your IdP) shows "The provided redirect_uri is not in the list of allowed callback URLs."
+**Cause:** The redirect URI your client used is not registered on the IdP application. The callback belongs to the **client**, not to this server.
 
-**Cause:** The OIDCProxy callback URL (`http://localhost:8000/auth/callback`) is not registered in your IdP application settings.
+**Fix:** The IdP's error page names the `redirect_uri` it received. If that port is not the one you registered, `mcp-remote` chose it: with no port argument it derives one from a hash of the server URL. Pin it by passing the port **immediately after the URL** — `mcp-remote https://mcp.example.com/mcp 3334` — and register `http://localhost:3334/oauth/callback`. The position matters: in any later slot the value is not read as a port and the derived one is used silently. Also register the exact host string the client sends; `127.0.0.1` and `localhost` are different URIs to an IdP even though they reach the same socket.
 
-**Fix:** Add `http://localhost:8000/auth/callback` to the Allowed Callback URLs in your IdP application settings.
-
-#### "Client is not authorized to access resource server"
-
-**Symptom:** After clicking "Allow Access", you see an error like "Client X is not authorized to access resource server Y."
-
-**Cause:** Your IdP application is not authorized to access the API/resource server.
-
-**Fix (Auth0):** Go to Applications > APIs > your API > Application Access tab. Set both "User Access" and "Client Access" to "Authorized" for your OIDCProxy application.
-
-#### Using an M2M application instead of a Regular Web Application
-
-**Symptom:** Auth0 shows "Oops! something went wrong" after clicking "Allow Access" on the consent page.
-
-**Cause:** You are using a Machine-to-Machine (M2M) application, which only supports `client_credentials` grant. OIDCProxy requires `authorization_code` grant with user login.
-
-**Fix:** Create a new **Regular Web Application** in your IdP. M2M apps are for JWT mode; OIDCProxy needs a web application.
+Note that `<server>/auth/callback` is **not** the callback in this mode — that was the old proxy's URI, when the server was the OAuth client.
 
 #### "ERR_CONNECTION_REFUSED" on the callback URL
 
-**Symptom:** Browser shows "localhost:16442 refused to connect" after logging in.
+**Cause:** `mcp-remote`'s local callback server timed out while you were completing the login (default 30 seconds).
 
-**Cause:** The `mcp-remote` callback server timed out while you were completing the login flow.
+**Fix:** Restart the client and complete the login promptly, or raise `--auth-timeout`.
 
-**Fix:** Restart Claude Desktop and complete the login flow quickly. The callback server has a timeout — if you take too long on the IdP login page, it shuts down.
+#### Using an M2M application instead of a Regular Web Application
 
-#### "Requested scopes are not valid: openid, profile, email"
+**Symptom:** The IdP errors out after consent, or no login page appears.
 
-**Symptom:** `mcp-remote` crashes with `InvalidClientMetadataError`.
+**Cause:** M2M applications only support the `client_credentials` grant, which has no user login.
 
-**Cause:** The OIDCProxy is not configured to accept standard OIDC scopes during Dynamic Client Registration.
+**Fix:** Create a Regular Web Application. M2M apps belong to [JWT mode](#jwt-mode-external-idp-via-jwks).
 
-**Fix:** Set `valid_scopes` after instantiating `OIDCProxy`:
+#### Requiring specific scopes
 
-```python
-auth = OIDCProxy(...)
-if auth.client_registration_options:
-    auth.client_registration_options.valid_scopes = [
-        "openid", "profile", "email",
-    ]
-```
-
-#### Persistent 401 `invalid_token` after successful OAuth flow (Windows + Docker)
-
-**Symptom:** The browser shows "Authorization successful!", `POST /token` returns `200 OK`, but the very next `POST /mcp` returns `401 Unauthorized` with `invalid_token`. This occurs consistently on Windows Docker Desktop but works on macOS.
-
-**Cause:** Some Auth0 configurations return **opaque access tokens** (not JWTs) depending on the API audience configuration or token dialect. OIDCProxy's default token verifier attempts to decode the access token as a JWT using Auth0's JWKS — if the token is opaque, this silently fails and returns `invalid_token`. On macOS the flow may succeed due to differences in Cloudflare tunneling, network path, or cached client state.
-
-**Fix:** Use `verify_id_token=True` when instantiating OIDCProxy. This verifies the OIDC `id_token` (which is always a standard JWT from any OIDC-compliant provider) instead of the access token:
-
-```python
-auth = OIDCProxy(
-    config_url=config_url,
-    client_id=client_id,
-    client_secret=client_secret,
-    base_url=base_url,
-    audience=audience,
-    verify_id_token=True,  # Verify id_token instead of access_token
-)
-```
-
-The `setup-oidcproxy-auth.py` script includes this by default.
-
-**Debugging:** Run the setup script with `--debug` to enable verbose logging that shows exactly which token validation step fails:
-
-```bash
-python setup-oidcproxy-auth.py --debug
-```
-
-Then check `docker logs zscaler-mcp-server` for detailed token verification output.
+Set `OIDCPROXY_REQUIRED_SCOPES` to a comma-separated list. A token missing any of them is rejected, and the requirement is also advertised in the resource metadata so clients know to request them. Leave it unset to accept any successfully-verified token.
 
 ---
 
@@ -2619,4 +2576,4 @@ Clients using Node.js (e.g., `mcp-remote`) will reject self-signed certificates 
 
 9. **For cloud deployments**, see the [Amazon Bedrock AgentCore deployment guide](./amazon_bedrock_agentcore.md) and the [Secrets Manager integration guide](./secrets_manager_integration.md) for credential management best practices.
 
-10. **Use OIDCProxy for multi-user production deployments.** It provides per-user authentication via your existing IdP, automatic token management, and a full audit trail. No shared secrets or manually rotated tokens.
+10. **Use `oidc` mode for multi-user production deployments.** It gives per-user authentication through your existing IdP, token refresh handled by the client, and an audit trail in the IdP. No shared secrets and no manually rotated tokens — the server holds no credential at all, only the IdP's public keys.

@@ -59,7 +59,7 @@ async def test_toolset_filter():
 async def test_input_schema_is_flat():
     server = build_server()
     tools = {t.name: t for t in await server.list_tools()}
-    props = tools["zpa_list_segment_groups"].parameters.get("properties", {})
+    props = tools["zpa_list_segment_groups"].input_schema.get("properties", {})
     # Flat fields, NOT a nested {"args": {...}} wrapper.
     assert "args" not in props
     assert "search" in props
@@ -112,7 +112,7 @@ async def test_delete_call_without_token_returns_confirmation_no_mutation(monkey
     monkeypatch.setattr(sg, "get_zscaler_client", explode)
 
     server = build_server(enable_write=True, write_allowlist=["zpa_delete_*"])
-    result = await server._call_tool_mcp("zpa_delete_segment_group", {"group_id": "123"})
+    result = await server.call_tool("zpa_delete_segment_group", {"group_id": "123"})
     # result is a (content, structured) tuple or CallToolResult-like; pull text.
     content = result[0] if isinstance(result, tuple) else getattr(result, "content", result)
     text = content[0].text
@@ -142,7 +142,7 @@ async def test_create_call_executes_without_confirmation(monkeypatch):
     monkeypatch.setattr(sg, "get_zscaler_client", lambda **k: _Client())
 
     server = build_server(enable_write=True, write_allowlist=["zpa_create_*"])
-    result = await server._call_tool_mcp(
+    result = await server.call_tool(
         "zpa_create_segment_group", {"name": "My Group", "enabled": True}
     )
     content = result[0] if isinstance(result, tuple) else getattr(result, "content", result)
@@ -213,3 +213,72 @@ async def test_no_entitlement_filter_flag_skips_resolution(monkeypatch):
     monkeypatch.setattr(server_mod, "apply_entitlement_filter", boom)
     server = build_server(disable_entitlement_filter=True)
     assert "zpa_list_segment_groups" in await _names(server)
+
+
+# --- Write tools need BOTH knobs (v1 parity) --------------------------------
+#
+# v1 gated registration on the master switch AND treated the allowlist as
+# mandatory (``register_write_tools``: ``if not enable_write_tools: return 0``
+# followed by ``if not write_tools: ... return 0``). Neither knob grants
+# anything alone. v2 briefly resolved them with an OR, which silently turned
+# "switch on, allowlist blank" into all 148 write tools including every delete.
+
+
+@pytest.mark.asyncio
+async def test_write_switch_alone_registers_no_write_tools(caplog):
+    # Master switch on, no allowlist -> zero write tools, and say why.
+    with caplog.at_level("WARNING"):
+        server = build_server(enable_write=True)
+    names = await _names(server)
+    assert not any(n.startswith(("zpa_create_", "zpa_delete_", "zia_update_")) for n in names)
+    assert "zpa_list_segment_groups" in names  # reads are unaffected
+    assert "no allowlist" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_write_allowlist_alone_registers_no_write_tools(caplog):
+    # An allowlist without the master switch must not enable anything: this is
+    # the shape of an env file carrying ZSCALER_MCP_WRITE_TOOLS with the switch
+    # off (or absent), which must stay read-only. Releases 0.13.0-0.14.0 enabled
+    # writes here, so on upgrade the tools vanish — say why rather than go quiet.
+    with caplog.at_level("WARNING"):
+        server = build_server(enable_write=False, write_allowlist=["zpa_create_*", "zpa_delete_*"])
+    names = await _names(server)
+    assert "zpa_create_segment_group" not in names
+    assert "zpa_list_segment_groups" in names
+    assert "write tools are disabled" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_write_requires_both_knobs_together():
+    server = build_server(enable_write=True, write_allowlist=["zpa_create_*"])
+    names = await _names(server)
+    assert "zpa_create_segment_group" in names
+    # The allowlist still scopes: a delete outside the patterns stays hidden.
+    assert "zpa_delete_segment_group" not in names
+
+
+@pytest.mark.asyncio
+async def test_empty_write_allowlist_registers_no_write_tools():
+    # ZSCALER_MCP_WRITE_TOOLS="" parses to an empty selection, which must be
+    # read as "permit nothing", never as "permit everything".
+    server = build_server(enable_write=True, write_allowlist=[])
+    assert "zpa_create_segment_group" not in await _names(server)
+
+
+@pytest.mark.asyncio
+async def test_entitlement_filter_outranks_write_allowlist(monkeypatch):
+    # A token scoped to ZIA must not yield ZPA write tools, however broad the
+    # operator's allowlist is. Entitlement is checked per-spec before the
+    # read/write gate, so it downscopes writes and reads alike.
+    import zscaler_mcp.server as server_mod
+
+    monkeypatch.setattr(
+        server_mod,
+        "apply_entitlement_filter",
+        lambda available, **kw: ({"zia"}, "entitlement filter applied: kept zia"),
+    )
+    server = build_server(enable_write=True, write_allowlist=["*"])
+    names = await _names(server)
+    assert not any(n.startswith("zpa_") for n in names)
+    assert any(n.startswith("zia_") for n in names)

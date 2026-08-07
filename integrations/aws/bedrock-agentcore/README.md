@@ -136,7 +136,33 @@ For Direct Runtime deployments only the MCP-client auth layer is relevant.
 
 AgentCore's `InvokeAgentRuntime` API only forwards HTTP headers that have been added to the runtime's [`requestHeaderAllowlist`](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-header-allowlist.html) (max 20 per runtime). The deployment configures the allowlist automatically per `McpAuthMode`:
 
-| Mode | Allowlist entries set by the provisioner | `customJwtAuthorizer` configured? | Container-side env-var fallback |
+Every mode also allowlists four protocol headers, which are routing metadata rather than credentials:
+
+| Header | Stripping it causes |
+|---|---|
+| `MCP-Protocol-Version` | Request silently falls back to the handshake path → `Bad Request: Missing session ID` |
+| `Mcp-Method` | `-32020 mcp-method header does not match...` |
+| `Mcp-Name` (`tools/call`) | `-32020 mcp-name header does not match...` |
+| `Mcp-Session-Id` | Handshake clients cannot reach the session `initialize` created → `Session not found` |
+
+> **Use MCP revision `2026-07-28` on AgentCore.** The older handshake revisions cannot complete a session here: AgentCore manages MCP sessions itself and replaces the container's `Mcp-Session-Id` with one of its own, so the id returned to the client is not one the container recognises. This is specific to AgentCore — the ECS Fargate, EC2 and EKS deployments sit behind protocol-agnostic load balancers and serve both revisions normally. `Mcp-Session-Id` stays allowlisted so the header is at least not *also* stripped, but allowlisting cannot undo the substitution.
+
+Test with `python3 invoke_mcp.py --list-tools`, in this directory. See [Testing your deployment](../../../docs/deployment/amazon_bedrock_agentcore.md#agentcore-serves-2026-07-28-only).
+
+### The auth mode decides whether ordinary MCP clients can connect
+
+AgentCore takes either SigV4 or OAuth inbound, and `McpAuthMode` picks which:
+
+| `McpAuthMode` | Inbound method | Who can connect |
+|---|---|---|
+| `none`, `api-key`, `zscaler` | SigV4 | AWS SDK callers only — `invoke_mcp.py`, boto3, Strands, Bedrock agents, Gateway, Quick Suite |
+| `jwt` | OAuth bearer token | **Any MCP client**, incl. Claude Desktop / Cursor via `mcp-remote` |
+
+SigV4 is request signing, not a header a client can be told to send, so no MCP client implements it — AgentCore answers `403 Authorization method mismatch ... (OAuth or SigV4)` before the container is reached. Deploy `jwt` (needs an IdP) to connect a client straight to the `RuntimeMcpUrl` output, or use the ALB-fronted ECS / EC2 / EKS deployments, which need no IdP and serve both MCP revisions. Full detail: [Which clients can reach the runtime](../../../docs/deployment/amazon_bedrock_agentcore.md#which-clients-can-reach-the-runtime--sigv4-vs-oauth).
+
+Note that AgentCore **Harness** is not a route to a SigV4 runtime — it hosts an agent and itself requires a non-SigV4 MCP endpoint.
+
+| Mode | Credential entries added by the provisioner | `customJwtAuthorizer` configured? | Container-side env-var fallback |
 |---|---|---|---|
 | `none` | *(none)* | no | n/a |
 | `api-key` | `X-Api-Key` | no | `ZSCALER_MCP_AUTH_API_KEY` |
@@ -451,14 +477,16 @@ These are documented for transparency only. The deploy script and the container 
 
 | Variable | Set to | Why it's internal |
 |---|---|---|
-| `FASTMCP_STATELESS_HTTP` | `true` (Dockerfile) | AgentCore Runtime replicas are ephemeral and may be replaced between requests; stateful sessions would pin to dead replicas. |
 | `ZSCALER_MCP_ALLOW_HTTP` | `true` (provisioner) | AgentCore terminates TLS upstream of the container, so the inner HTTP server runs plain HTTP. |
 | `ZSCALER_MCP_DISABLE_HOST_VALIDATION` | `true` (provisioner) | AgentCore is the sole ingress — it has already authenticated/authorized the request before forwarding. Inner host-allowlist adds no security and would block all traffic (AgentCore forwards an internal Host header that isn't predictable). |
 | `ZSCALER_MCP_AUTH_ENABLED` | `true`/`false` (provisioner) | Derived from `McpAuthMode`. The provisioner sets it to match the chosen auth mode. |
-| `ZSCALER_MCP_TRANSPORT` / `ZSCALER_MCP_HOST` / `ZSCALER_MCP_PORT` | `streamable-http` / `0.0.0.0` / `8000` (Dockerfile CMD) | Required for AgentCore Runtime to forward MCP traffic correctly. |
+| `ZSCALER_MCP_TRANSPORT` / `ZSCALER_MCP_HOST` / `ZSCALER_MCP_PORT` | `streamable-http` / `0.0.0.0` / `8000` (provisioner) | AgentCore's `ContainerConfiguration` accepts only `containerUri` — no command or args override — so the entrypoint is steered entirely by these. They are what let this path run the same published multi-arch image as Docker Hub rather than a separate build. |
+| `ZSCALER_MCP_TRUST_PLATFORM_AUTH` | `true` (provisioner, `api-key` / `zscaler` modes only) | Accepts a request that carries no credential, using the container's own. Correct here because AgentCore authenticates every caller (IAM or `customJwtAuthorizer`) before forwarding, and `InvokeAgentRuntime` forwards only allowlisted headers — the Console Sandbox can attach none at all. **Never set this on the ECS / EC2 / EKS paths**, where the container is reachable directly. |
 | `AWS_REGION` | injected by AgentCore | Used by the container's Secrets Manager loader. |
 
-> **Defense-in-depth toggles** (not in `env.properties` and not exposed by the deploy script): `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION`, `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER`, `ZSCALER_MCP_SKIP_CONFIRMATIONS`, `ZSCALER_MCP_CONFIRMATION_TTL`. These remove security layers and should only be set for short-lived debugging. See the root `CLAUDE.md` "Environment" section for details.
+Two notes on session ids. `FASTMCP_STATELESS_HTTP=true`, which an earlier revision documented here, is **inert** — it was a FastMCP setting and this server no longer uses FastMCP; delete it from any deployment still setting it. And `streamable-http` now runs *with* sessions for handshake-era clients, which is a deliberate reversal: a pre-`2026-07-28` client that supports elicitation can only be shown a delete-confirmation prompt over its session. A `2026-07-28` client is routed before any session logic and is unaffected either way.
+
+> **Defense-in-depth toggles** (not in `env.properties` and not exposed by the deploy script): `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` and `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` remove security layers and should only be set for short-lived debugging. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the destructive-op confirmation window; nothing switches that confirmation off. See the root `CLAUDE.md` "Environment" section for details.
 
 ---
 

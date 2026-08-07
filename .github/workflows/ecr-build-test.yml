@@ -1,0 +1,56 @@
+name: ECR Build Test
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Proves the image still builds for AWS Graviton before it reaches the
+# Marketplace pipeline. Kept separate from docker-build-test.yml because the
+# ECR/Marketplace channel has its own constraints (ARM64 only, no attestation
+# manifests) and its own failure mode: a break here blocks a Marketplace
+# submission, not a Docker Hub push.
+#
+# Path-filtered so it only runs when something that can actually change the
+# image changes. `requirements.txt` is not in the list — this repository builds
+# from pyproject.toml + uv.lock.
+# ──────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'src/zscaler_mcp/**'
+      - '.github/workflows/ecr-build-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ecr-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+
+      - name: Build ARM64 Docker image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Marketplace scanning rejects the OCI attestation manifests buildx
+          # attaches by default, so the test build mirrors the publish build.
+          provenance: false
+          tags: |
+            zscaler-mcp-server:test
+            zscaler-mcp-server:pr-${{ github.event.pull_request.number }}

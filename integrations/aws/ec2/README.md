@@ -92,7 +92,7 @@ The script walks you through:
 2. **Credentials** — reuse an existing Secrets Manager secret OR create a new one from your `.env`
 3. **VPC** — create a new one OR pick existing VPC + subnets (interactive picker)
 4. **TLS** — Route53-validated ACM cert OR existing cert ARN OR plaintext HTTP (demo)
-5. **MCP auth mode** — `zscaler`, `jwt`, `api-key`, `oidcproxy`, or `none`
+5. **MCP auth mode** — `zscaler`, `jwt`, `api-key`, `oidc`, or `none`
 6. **Instance type + SSH access** — t3 family by default; SSM-only access by default (no inbound 22)
 7. **Review** of every choice before launching the stack
 8. **Deploy** — uploads CFN templates, runs `create-stack`, waits with live status
@@ -220,7 +220,7 @@ Same five modes as the ECS-Fargate deployment:
 | `zscaler` (default) | `Authorization: Basic <base64(client_id:client_secret)>` | Zscaler OneAPI `/oauth2/v1/token` (cached) | Zero — uses your OneAPI creds. |
 | `jwt` | `Authorization: Bearer <jwt>` | JWKS lookup | Configure JWKS / issuer / audience in `.env`. |
 | `api-key` | `X-Api-Key` or `Authorization: Bearer <key>` | String comparison | Set the key in `.env` or let the script generate one. |
-| `oidcproxy` | Full OAuth 2.1 with DCR | An IdP you control | Configure `OIDCPROXY_*` env vars. |
+| `oidc` | `Authorization: Bearer <jwt>` from an OAuth 2.1 browser login | JWKS lookup against the IdP's discovery document | Set `OIDCPROXY_CONFIG_URL`, `OIDCPROXY_CLIENT_ID` and `OIDCPROXY_BASE_URL`. No client secret. |
 | `none` | nothing | nothing | Cluster-internal use only. |
 
 ---

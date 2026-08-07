@@ -20,7 +20,7 @@ zscaler_mcp/
 ├── common/
 │   ├── tool_helpers.py    # register_read_tools / register_write_tools with disabled_tools filtering
 │   ├── jmespath_utils.py  # apply_jmespath() — caller-opt-in `query` filtering, wired centrally in registry/fastmcp_bridge.py
-│   ├── elicitation.py     # HMAC-SHA256 confirmation tokens for destructive actions
+│   ├── elicitation.py     # SEP-2322 native confirmation + HMAC token fallback for destructive actions
 │   └── logging.py         # log_security_warning helper
 └── tools/                # 142 tool modules organized by service (zia/, zpa/, zdx/, zcc/, zcell/, ztw/, zid/, easm/, zins/, zms/)
 ```
@@ -54,10 +54,13 @@ Tool registration respects three layers of filtering:
 The server has two independent auth systems:
 
 1. **MCP Client Authentication** (`auth.py`) — controls WHO can connect to the server
-   - Modes: `jwt`, `api-key`, `zscaler`, or programmatic `auth=` parameter (OIDCProxy)
+   - Modes: `jwt`, `api-key`, `zscaler`, `oidc` (aliases `oidcproxy` / `oauth-proxy` still resolve)
    - Auto-detection: if `ZSCALER_MCP_AUTH_JWKS_URI` is set, uses JWT; if `ZSCALER_MCP_AUTH_API_KEY`, uses api-key; etc.
    - Enabled by default for HTTP transports; not applicable for stdio
-   - The `auth=` parameter on `ZscalerMCPServer` takes a `fastmcp.server.auth.AuthProvider` (e.g., `OIDCProxy`) and bypasses the env-var middleware entirely
+   - **`oidc` makes the server an OAuth 2.0 protected resource (RFC 9728), not an authorization server.** `resolve_oidc_auth()` / `build_oidc_auth_kwargs()` (`security/auth.py`) return `AuthSettings(issuer_url=<the IdP>, resource_server_url=<us>)` plus a `token_verifier`. `MCPServer` then mounts `/.well-known/oauth-protected-resource` naming the IdP, and the client runs the OAuth flow **against the IdP directly**. The ASGI `AuthMiddleware` is skipped in this mode — the SDK enforces bearer auth itself. `auth_server_provider` is deliberately never set: we serve no `/authorize`, `/token` or `/register`, and setting it would both mount those routes and displace our verifier
+   - The verifier is `_JWKSTokenVerifier`, a thin adapter over the same `JWTAuthProvider` the `jwt` mode uses, so the two modes cannot drift on what counts as a valid token. **No client secret is needed** — verifying a signature needs the IdP's public keys, not a credential of ours. `OIDCPROXY_CLIENT_SECRET` is ignored if still set
+   - The IdP's `issuer` and `jwks_uri` are read from its discovery document at startup, never derived from `OIDCPROXY_CONFIG_URL` by string surgery: Entra ID serves `.../v2.0/.well-known/openid-configuration` but issues `iss: .../v2.0`, and guessing wrong rejects every token with an issuer mismatch
+   - This replaced borrowing `fastmcp`'s `OIDCProxy`. A proxy existed so a client could run DCR against *us* and have it mapped onto one pre-registered upstream app — a workaround for IdPs without open DCR. RFC 9728 points the client at the real IdP instead, so nothing is proxied and `fastmcp` is not a dependency of any mode. **Trade-off:** a client can no longer self-register; it needs a client ID from the IdP (which the Entra flow already required)
    - Compatible with any OIDC provider: Auth0, Okta, Microsoft Entra ID, Keycloak, Google, AWS Cognito, PingOne
    - **Entra ID guide**: `docs/deployment/entra-id-oidcproxy.md` — step-by-step with screenshots. Key difference: `audience` must be the client ID (Entra sets `aud` to client_id in ID tokens, unlike Auth0 which uses an API identifier)
 
@@ -103,10 +106,10 @@ Tools are grouped into named **toolsets** (registered in `zscaler_mcp/common/too
 - **Tagging is centralized.** Don't add a `toolset` field to dicts in `services.py`. Map a new tool name in `_TOOL_TOOLSET_OVERRIDES` (exact match) or `_TOOLSET_PREFIX_RULES` (predicate, first-match-wins) inside `toolsets.py`. The test `tests/test_toolsets.py::TestToolsetForTool::test_every_registered_tool_resolves` enforces this mapping is exhaustive.
 - **Prefix-rule ordering is load-bearing.** `_TOOLSET_PREFIX_RULES` is evaluated first-match-wins, and several predicates across services share substrings (`_location` would hijack `zdx_list_locations` into `zia_locations` if evaluated first; `_device` would pull `zdx_list_devices` into ZIA's device toolset; `_app_connector_group` must be evaluated before `_app_connector`). The current file follows two conventions: (1) **ZDX block sits at the top** of the rules list, with every predicate explicitly scoped to `n.startswith("zdx_")`, so ZDX tools can never be poached by a downstream service's predicate; (2) within each service, more-specific prefixes precede general ones. When adding a new toolset that shares a substring with an existing one, add the rule *above* the broader rule and gate it with the service prefix.
 - **Selection layers** (resolved in `ZscalerMCPServer.__init__`): explicit `--toolsets` / `ZSCALER_MCP_TOOLSETS` (supports `default` and `all` keywords) → fall back to "every toolset whose service is in `enabled_services`" (preserves today's behaviour). Filter precedence: `disabled_tools` > toolset selection > `enabled_tools` allowlist > `write_tools` allowlist.
-- **Per-toolset instructions.** Each toolset can carry an `instructions` callable. At server startup `_compose_server_instructions()` calls each enabled toolset's snippet and concatenates them into the FastMCP `instructions` field — sent to the agent only when the matching tools are loaded. Snippets shared across multiple toolsets (e.g. the rule-family `order`/`rank` reminder bound to all 5 ZIA rule toolsets) are de-duplicated.
-- **Three discovery meta-tools** (always loaded): `zscaler_list_toolsets` (catalog with currently-enabled status + tool counts), `zscaler_get_toolset_tools` (member tools of a toolset), `zscaler_enable_toolset` (register a toolset's tools at runtime). The runtime-enable path uses the same `register_read_tools`/`register_write_tools` codepath as startup, so all filter precedence still applies.
+- **Per-toolset instructions.** Each toolset can carry an `instructions` callable. At server startup `_compose_server_instructions()` calls each enabled toolset's snippet and concatenates them into the `MCPServer` `instructions` field — sent to the agent only when the matching tools are loaded. Snippets shared across multiple toolsets (e.g. the rule-family `order`/`rank` reminder bound to all 5 ZIA rule toolsets) are de-duplicated.
+- **No runtime toolset enablement.** v1's `zscaler_enable_toolset` meta-tool is deliberately NOT carried over. Selection resolves once at startup, which is what makes the `tools/list` inventory immutable — and that immutability is the premise of the SEP-2549 cache hint. Reintroducing a runtime-registration tool would make that hint a lie and fails `tests/test_protocol_2026_07_28.py`.
 - **OneAPI entitlement filter** (always-on, opt-out via `--no-entitlement-filter` / `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER=true`). After the operator-driven `selected_toolsets` is resolved, `zscaler_mcp/common/entitlements.py::apply_entitlement_filter` exchanges the configured OneAPI credentials for a bearer token and intersects the selection with the products listed in the `service-info[].prd` claim. Cache-first: in `ZSCALER_MCP_AUTH_MODE=zscaler` the auth-middleware cache is reused (no extra `/oauth2/v1/token` call); otherwise it cold-fetches via `auth.fetch_oneapi_token`. Roles (`rnm`) are intentionally ignored — only product entitlement is reliable. Failure mode is non-fatal: missing creds, decode failure, network error, or empty `service-info` all log a single WARN line and the selection passes through unchanged. The `meta` toolset is always preserved.
-- **Deferred to a follow-up:** HTTP header overrides (`X-MCP-Toolsets`) and URL-path shortcuts (`/mcp/x/{toolsets}/readonly`) — both require per-request server architecture (FastMCP transport surgery).
+- **Deferred to a follow-up:** HTTP header overrides (`X-MCP-Toolsets`) and URL-path shortcuts (`/mcp/x/{toolsets}/readonly`) — both require per-request server construction (transport surgery).
 
 ## Critical Gotchas
 
@@ -118,6 +121,8 @@ Tools are grouped into named **toolsets** (registered in `zscaler_mcp/common/too
 - **ZPA dependency chain matters.** To onboard an application: create app connector group -> create server group (references connector group) -> create segment group -> create application segment (references server and segment groups) -> create access policy rule. Skipping dependencies causes cryptic 400 errors.
 - **ZIA dependency chain for locations.** To onboard a location: create static IP -> create VPN credential (references static IP) -> create location (references VPN credential and static IP). The location won't work without the traffic forwarding prerequisites.
 - **ZIA policy-rule updates are PUT, not PATCH.** Every ZIA `update_*_rule` tool ultimately maps to a PUT under the hood (full-replace). Tools silently backfill the required `name` and `order` from the existing rule when a partial payload is supplied, so partial updates "just work" — but any other field omitted from the payload may be reset by the API. When in doubt, fetch the rule first and merge changes into the existing payload. Tools using this pattern: `zia_update_ssl_inspection_rule`, `zia_update_cloud_firewall_dns_rule`, `zia_update_cloud_firewall_ips_rule`, `zia_update_file_type_control_rule`, `zia_update_sandbox_rule`. The same backfill pattern is applied to `zia_update_time_interval` for the `name`, `start_time`, `end_time`, and `days_of_week` fields.
+- **`/urlCategories` filters but cannot cap, and cannot trim a record.** `custom_only` and `type` are real query parameters and are pushed upstream by `zia_list_url_categories` — but the endpoint does not paginate, so everything matching the filter returns in one response. `custom_only=True` on a tenant with 5000 custom categories is 5000 rows, each carrying its URL, keyword and IP lists in full. **`includeOnlyUrlKeywordCounts` does NOT swap those lists for counts** — a tenant response captured with it on and off is equivalent, `dbCategorizedUrls` and `ipRanges` populated in both — so it is not advertised and not sent, same rule that removed `page` / `page_size`. The API therefore offers no size control at all beyond selectivity. What remains: the tool docstring instructs the agent to ask the admin for scope before an unfiltered call (advisory, pinned by `tests/test_url_categories_tools.py::TestDescriptionsSteerToolSelection`), and a JMESPath `query` projection, which is applied before encoding and is the only mechanism that shrinks a row. `/urlCategories/lite` is deliberately not used — it takes no parameters and omits `configuredName`, the only handle a custom category has.
+
 - **ZIA cloud-application catalogs are NOT interchangeable.** Two distinct catalogs exist:
   - **Shadow IT analytics catalog** (`zia_list_shadow_it_apps`, `zia_list_shadow_it_custom_tags`, `zia_bulk_update_shadow_it_apps`) — friendly names + numeric IDs, used for analytics/sanctioning.
   - **Policy-engine catalog** (`zia_list_cloud_app_policy`, `zia_list_cloud_app_ssl_policy`) — canonical `UPPER_SNAKE_CASE` enum strings used by SSL Inspection, Web DLP, Cloud App Control, File Type Control rules.
@@ -223,7 +228,9 @@ Every collection-returning tool (**164** of them) accepts an optional `query` pa
 
 ### Expression Syntax
 
-Field names are **exactly what the Zscaler API returns** — records are passed through verbatim, so expect the API's own spelling (often camelCase, e.g. `policyName`, `registrationState`), not a normalized form. When unsure, call once without `query` and read the keys off the response.
+Field names are **the keys of the record the tool returns, which are NOT reliably the API's own spelling.** The server adds no renaming of its own, but many tools hand back `SdkModel.as_dict()`, and those SDK models normalize to snake_case: `/urlCategories` sends `customCategory`, the record carries `custom_category`. Other tools pass the raw payload through and keep camelCase (`policyName`, `registrationState`). **So the spelling varies per tool and cannot be inferred from the Zscaler API docs.** Call once without `query` and read the keys off the response — always, unless you have already seen a record from that exact tool in this conversation.
+
+This is a sharp edge, because a JMESPath filter on a misspelled key returns `[]`, which is indistinguishable from a genuine no-match. That has already produced a wrong answer in the field (an agent filtering `[?customCategory]` reported no custom categories on a tenant that had twenty). Two mitigations exist and should be extended when the same shape appears elsewhere: tools expose a **typed parameter for the common narrowing** (`zia_list_url_categories(custom_only=...)`) so the agent never has to spell a field name, and every non-empty `query` is logged server-side as `[QUERY] <tool> | <expr> | N -> M rows` so an empty result is diagnosable from the log.
 
 | Service | Expression | What it does |
 |---------|-----------|--------------|
@@ -288,33 +295,86 @@ A `zscaler_search_tools` meta-tool existed in earlier versions; it was removed b
 
 ## Write Operations — Safety Rules
 
-1. **Write tools are disabled by default.** Enable with `--write-tools` flag and an explicit allowlist (wildcards supported). Example: `--write-tools "zpa_create_*,zia_update_*"`.
+1. **Write tools are disabled by default, and enabling them takes BOTH knobs.** `--enable-write-tools` (env `ZSCALER_MCP_WRITE_ENABLED=true`) is the master switch and `--write-tools` (env `ZSCALER_MCP_WRITE_TOOLS`) names the permitted patterns; neither grants anything alone. Example: `--enable-write-tools --write-tools "zpa_create_*,zia_update_*"`. The switch with an empty allowlist registers **zero** write tools and logs why — it never means "all".
 2. **Always confirm before mutating.** Read operations are safe. Create/update/delete operations modify the live Zscaler environment. Ask the user before executing write operations.
-3. **Delete operations require HMAC-SHA256 confirmation.** Destructive actions return a confirmation token that must be passed back to confirm. Controlled by `ZSCALER_MCP_SKIP_CONFIRMATIONS` and `ZSCALER_MCP_CONFIRMATION_TTL`.
+3. **Delete operations require confirmation, and there is no bypass.** On clients that support elicitation, the server asks a **human** through the client (SEP-2322) and the agent never sees a token. Otherwise it falls back to a single-use HMAC token the agent must pass back. `ZSCALER_MCP_CONFIRMATION_TTL` tunes the window; nothing switches the gate off. A `ZSCALER_MCP_SKIP_CONFIRMATIONS` escape hatch existed until 0.15.0 and was removed — a security product should not ship a documented way around its own guardrail on destructive actions. `tests/test_elicitation.py` and `tests/test_bridge_confirmation.py` assert the old variable is inert, since it is still set in deployed environments.
 4. **Always list/get first** to understand current state before creating or modifying resources.
 5. **Pagination:** List tools support `page` and `page_size` parameters. For large tenants, paginate rather than fetching everything.
 6. **ZPA policy rule ordering:** New rules are appended at the end by default. Policy rules are evaluated top-to-bottom — order matters for access control.
 
-### Confirmation Token Flow (Elicitation)
+### Destructive-Operation Confirmation (SEP-2322 elicitation + HMAC fallback)
 
-Destructive write operations (delete, bulk update) use cryptographic confirmation:
+Destructive write operations (`action == delete`) are gated by **two paths**, chosen per call by `gate_destructive_operation()`. Tools never choose; the bridge always calls the gate.
 
-1. Tool returns `{"confirmation_required": true, "token": "<HMAC-SHA256>", "expires_at": "..."}` instead of executing
-2. The token is bound to: tool name, resource ID, action, and timestamp
-3. Agent must present the token back to confirm execution within the TTL (default 5 minutes)
-4. Tokens are single-use and tamper-proof — prompt injection cannot forge or replay them
+**Primary — native elicitation (SEP-2322).** Used whenever the client advertises the `elicitation` capability. A DELETE tool declares a **resolved parameter** (`approval`) that the framework fills before the tool body runs:
 
-Implementation: `zscaler_mcp/common/elicitation.py` — `generate_confirmation_token()` and `verify_confirmation_token()`.
+1. The resolver names the resource and asks for `delete` / `cancel`
+2. On `2026-07-28` this returns an `InputRequiredResult` — the call ends, the client prompts a **human**, and the client **retries** with the answer plus an opaque sealed `requestState`. On older revisions the same question rides the mid-call `elicitation/create` request. Same question, different carrier; one code path
+3. `delete` → the tool body runs. Anything else → "NOT performed" and the SDK is never called
+4. A failed round trip fails **closed** — the resolver runs *before* the body, so a timed-out or unanswered confirmation cannot reach the SDK
+
+This is what actually contains prompt injection: the approval is a protocol field the client fills, not tool-call arguments the model authors. **`approval` is deliberately absent from the advertised `inputSchema`** — there is no slot for a hijacked model to fill. Injection can still trigger the *call*; it cannot produce the *approval*. Trust shifts to the client software (a real boundary, but a far better placed one) and social-engineering a human still works.
+
+**Elicitation is an OPTIONAL client capability** (since `2025-06-18`), which is the entire reason the fallback still exists — not legacy debt.
+
+**Fallback — HMAC confirmation token.** Used only when the caller cannot be prompted: a client that never advertised the `elicitation` capability, or no live MCP session at all (direct in-process calls, unit tests). The resolver returns a `TOKEN_FALLBACK` sentinel, which the gate reads as "use the token exchange".
+
+**Falling back is a real cost, not a neutral default.** The token can be redeemed by the agent in the same turn it was issued, so on that path nothing guarantees a human approved the delete. `elicitation_available()` should therefore be wrong towards *asking*, and every negative branch logs its reason so a defect there is distinguishable from a genuine client limitation. It reads exactly one thing — `ctx.client_capabilities` — and must not be extended with a reachability test; see [HTTP session mode](#http-session-mode) for the regression that caused.
+
+1. Tool returns a plain-text `DESTRUCTIVE OPERATION - CONFIRMATION REQUIRED` prompt naming the resource and carrying the token, instead of executing
+2. The token is bound to the tool name, **every call parameter**, the expiry, and a per-issue nonce
+3. Agent presents the token back via `kwargs='{"confirmation_token": "..."}'` within the TTL (default 5 minutes)
+4. Tokens are **single-use**: a redeemed signature is recorded until it expires
+
+**The nonce is load-bearing.** Without it a token is a pure function of (tool, params, expiry-second), so a re-issued token would be byte-identical to a spent one and therefore born already-used — breaking both re-approval after a failed execution and performing the same operation twice inside one TTL window.
+
+**Never describe the fallback as an anti-prompt-injection control.** It defends the window between approval and execution (tamper, replay, reuse, forgery). A hijacked agent that calls a delete also receives the token and can redeem it in the same turn — which is precisely why native elicitation is preferred. Full threat model: `docs/guides/mcp-protocol.md`.
+
+**The fallback is single-process.** Its signing key and single-use ledger both live in process memory, so a token minted by one replica is not valid on another, nor after a restart. There is deliberately **no** Zscaler-specific env var to share it: SEP-2322's `requestState` is the protocol's own answer, and `ZSCALER_MCP_REQUEST_STATE_KEYS` configures the SDK's key ring for it rather than duplicating a sign-only primitive. **Elicitation-capable clients are unaffected by this particular limit** — they hold no server-side state between prompt and answer — but note their `requestState` has its own key-regime requirement (above). So: a multi-replica deployment needs the shared key ring for elicitation-capable clients, and a single replica if any of its clients fall back to the token.
+
+**`requestState` is sealed, not signed.** It records which question the server asked, so it is caller-controlled input bearing on whether a destructive operation was authorized. `MCPServer(request_state_security=...)` gives it AES-256-GCM plus expiry, request binding and principal binding: an approval cannot be lifted onto a different call or spent by another principal, and expires.
+
+**Principal binding works in every HTTP auth mode**, but only because we populate it. `bind_principal` reads the SDK's `get_access_token()`, which is fed from `auth_context_var` by the SDK's `AuthContextMiddleware` — and that middleware is mounted **only on the OIDC path**, where `MCPServer` builds the auth stack itself. For `jwt` / `api-key` / `zscaler` our own `AuthMiddleware` *is* the auth stack, so it publishes the identity explicitly (`scope["user"]` plus the contextvar, reset per request). Identity per mode: verified token claims (`jwt`, `oidc` — `subject` is what makes two users of one OAuth client distinct principals), the OneAPI client id (`zscaler` — an identifier, not a credential), and a domain-separated SHA-256 fingerprint of the key (`api-key`). **A raw secret is never used as `client_id`** — it would end up inside the sealed state. The fingerprint is deterministic across processes so replicas sharing a key ring agree on the principal. Before this, three of four modes bound no principal at all while the docs claimed otherwise.
+
+**Key regime is an operator decision.** With `ZSCALER_MCP_REQUEST_STATE_KEYS` unset the SDK's `ephemeral()` key is used: fine for stdio and single-instance HTTP, but state minted by one process is unintelligible to another. Set it (JSON array or comma-separated, each key ≥32 bytes) for `RequestStateSecurity(keys=[...])` — first key seals, all keys unseal, so rotation is `[old, new]` → `[new, old]` → `[new]` after one TTL.
+
+**Sticky sessions do NOT substitute for the key ring on `2026-07-28`.** The server does still issue an `Mcp-Session-Id`, but only to *handshake-era* clients. The SDK routes a modern request to `handle_modern_request` **before** any session handling, and that handler never sets a session id — a `2026-07-28` request is a self-contained POST. There is no MCP session to pin on, so affinity would have to come from infrastructure-level cookie/source-IP stickiness, which is not a protocol guarantee. A shared key ring is the only mechanism that actually works for multi-replica HTTP writes, which is why this env var exists despite the general rule against configuration for native protocol features: one-replica-vs-many is a fact only the operator knows.
+
+**`requestState` is NOT single-use — the HMAC fallback is.** Don't describe the two paths as equivalent. The sealed blob is `{"v":3,"outcomes":{},"asked":{<resolver>:<question-digest>}}`: it pins the *question*, never the answer, which arrives in `inputResponses` on every round. So re-sending an identical approved `tools/call` inside the state's TTL (SDK default 600 s) executes again. Argument and principal binding cap the blast radius at repeating the same delete of the same resource as the same caller, which then 404s. A local ledger is not available: the only per-mint-unique value is the *sealed* outer string, and `RequestStateBoundary` unseals it before any of our code runs — user middleware is appended after the boundary in an outermost-first list, so ours is always inside it. `ctx.request_state` (the inner plaintext) is byte-identical across two independent asks for the same delete, so keying on it would reject a legitimate re-approval after a failed delete. Closing this belongs upstream in SEP-2322, not here. The key is random per-process — **no new env var**, by design (see "no additional env vars for native features"). A restart or a retry landing on another replica invalidates in-flight confirmations, which is the same boundary the HMAC fallback always had, now with an authenticated cipher.
+
+**Neither path can be switched off.** See safety rule 3 above.
+
+Implementation: `src/zscaler_mcp/security/elicitation.py` — `elicitation_available()`, `build_confirmation_request()`, `interpret_confirmation()`, `gate_destructive_operation()`, `check_confirmation()`, and the `TOKEN_FALLBACK` sentinel. Wired in `registry/fastmcp_bridge.py` via `_build_confirmation_resolver()`, which synthesizes a resolver whose signature carries the tool's own params so the prompt can **name the resource**. DELETE tool bodies are synchronous again — the framework owns the async round trip. Tests: `tests/test_elicitation.py` (units), `tests/test_bridge_confirmation.py` (wiring + real client round trips), `tests/test_protocol_2026_07_28.py` (that the ask travels over the stateless loop).
 
 ## MCP Protocol Posture, Tool Annotations & Conformance
 
-The server tracks the **published** MCP protocol baseline (`2025-11-25`, served by `mcp` 1.x / `fastmcp` 3.x) and validates against it in CI. The next spec, `2026-07-28` (stateless core, `InputRequiredResult` return types, native multi-round-trip elicitation), ships in `mcp` 2.x / `fastmcp` 4.x and is a **staged migration**, not an automatic upgrade. Full posture + migration roadmap: `docs/guides/mcp-protocol.md`.
+The server negotiates the **`2026-07-28`** revision (stateless core) on `mcp` 2.x, and the SDK negotiates down per connection for older clients. There is **no server-side feature flag** for the revision — a flag would mean two code paths and asking operators to reason about a detail their client already negotiates. Three features are adopted: SEP-2322 stateless input requests, SEP-2322 request-state protection, and SEP-2549 cacheable responses. Full posture + threat model: `docs/guides/mcp-protocol.md`.
 
-### SDK version caps (`mcp<2`, `fastmcp<4`)
+### Dependency contract (`mcp>=2,<3`; `fastmcp` NOT declared)
 
-`pyproject.toml` pins **deliberate** upper bounds: `mcp[cli]>=1.23.0,<2` and `fastmcp>=2.13.0,<4`. This is not lazy pinning — the majors carry the `2026-07-28` rewrite and cascade prerelease foundations (an alpha Pydantic, the `fastmcp` → `fastmcp-slim` split). A routine `uvx zscaler-mcp` / `uv sync` must not pull them in silently the day they GA. Lifting a cap is a reviewed act done in lockstep with the migration.
+`pyproject.toml` pins `mcp[cli]>=2.0.0,<3`. The **floor** is where the revision lands — all three features are constructor-level arguments to `MCPServer`, so 1.x does not degrade gracefully, it raises at startup. The **cap** below 3 keeps the next major out of a routine `uv sync`.
 
-- **Guarded by** `tests/test_dependency_caps.py` — behavioural assertions (the current GA line resolves, the breaking major does not) plus a check that the rationale comment survives. Dropping or weakening a cap fails CI.
+**`fastmcp` is declared nowhere, and nothing needs it.** `mcp` 2.x has its own high-level server (`MCPServer`), and every auth mode resolves from GA wheels — the `oidc` mode is an RFC 9728 resource server implemented by `mcp` 2.x and verified with `PyJWT`.
+
+The rejected alternative was borrowing `fastmcp`'s `OIDCProxy`. Besides needing a package we don't otherwise want, `fastmcp` 4.x is a prerelease that pins a prerelease *transitively* (`fastmcp-slim`), and uv's scoped prerelease policies only consider direct requirements, so it needs a blanket `prerelease = "allow"`. Since `uv lock` resolves every extra, that policy would govern the whole lockfile including the `sdk-auto-upgrade` job, which would then be free to pull prerelease `zscaler-sdk-python` / `pydantic`. **No auth mode may be gated behind a manual install** — that briefly shipped (an `ImportError` telling the operator to run `uv pip install --prerelease=allow …`) and was wrong: selecting a documented, shipped auth mode must not print a package-install command.
+
+- **Guarded by** `tests/test_dependency_caps.py` — the floor includes 2.0.0 and excludes 1.x, the cap holds against 3.x prereleases, `fastmcp` appears in neither `dependencies` nor any extra nor any `import` in `src/`, no module instructs a `--prerelease` install, and pyproject still records why (the `RFC 9728` rationale) so the next reader doesn't re-add it.
+
+### No additional env vars for native protocol features
+
+When the protocol provides something natively, adopt it in source — don't add a knob. `RequestStateSecurity` uses a per-process random key rather than a `ZSCALER_MCP_CONFIRMATION_SECRET`; `cache_hints` are a constant, not tunable; the HTTP session mode is unconditional. Every new env var is a support surface, a docs obligation and a misconfiguration risk, in exchange for a choice operators have no basis to make differently.
+
+This rule was violated during the `2026-07-28` work and the additions were reverted before release: a `ZSCALER_MCP_STATELESS_HTTP` / `--stateless-http` pair (session mode is a protocol detail with one defensible setting) and a documented `ZSCALER_MCP_SKIP_CONFIRMATIONS` bypass on destructive deletes. If a new setting seems necessary, the bar is a choice an operator has a real basis to make differently — not a way to make an implementation decision someone else's problem.
+
+### SEP-2549 cacheable tool inventory
+
+`cache_hints={"tools/list": CacheHint(ttl_ms=300_000, scope="public")}`. Both halves are claims about this server: the inventory is fixed once registration finishes (every filter — toolsets, write allowlist, entitlement downscope — resolves at startup, and there is **no runtime registration path**), and it depends on configuration rather than the caller, so a cached copy shared across authorization contexts leaks nothing. **A runtime "enable toolset" tool would make this hint a lie** — `tests/test_protocol_2026_07_28.py` asserts the listing is idempotent so that lands as a test failure. Nothing reflecting tenant state is ever hinted.
+
+### `logging/setLevel` (pre-2026-07-28 clients only)
+
+Implemented so an older client can turn on diagnostics against a server it didn't launch. `MCPServer` registers no handler, so `_install_logging_set_level()` adds one via `add_request_handler` — this is what keeps the `logging-set-level` conformance scenario green. It sets the **`zscaler_mcp` logger tree only**; raising the root logger would enable the Zscaler SDK's request logging, which at `debug` prints credential-bearing headers.
+
+**It is unreachable on `2026-07-28` and that is correct.** SEP-2577 deprecated the logging capability and the revision drops the method from its surface, so the SDK runner rejects it during request validation *before* handler lookup — registering a handler cannot change that. Don't "fix" it; clients on that revision use the OpenTelemetry the SDK emits natively.
 
 ### Tool annotations (advisory hints, NOT a security control)
 
@@ -327,19 +387,20 @@ Every tool advertises MCP `ToolAnnotations` so a client can decide how to presen
 | update | `false`        | `true` (PUT-replace)  | `true`           | `false`         |
 | delete | `false`        | `true`                | `true`           | `false`         |
 
-- **Source of truth:** `ToolSpec.read_only` / `.destructive` / `.idempotent` (`src/zscaler_mcp/registry/spec.py`) → `_tool_annotations()` renders the MCP wire type (`src/zscaler_mcp/registry/fastmcp_bridge.py`) → passed to `FunctionTool.from_function(annotations=...)`.
+- **Source of truth:** `ToolSpec.read_only` / `.destructive` / `.idempotent` (`src/zscaler_mcp/registry/spec.py`) → `_tool_annotations()` renders the MCP wire type (`src/zscaler_mcp/registry/fastmcp_bridge.py`) → passed to `Tool.from_function(annotations=...)`. Wire fields are camelCase (table above); the Python attributes on `ToolAnnotations` are **snake_case** (`read_only_hint`, …) — `populate_by_name` accepts camelCase on construction but reads require snake_case.
 - `openWorldHint` is `false` for every tool: they all operate against one closed system (the configured Zscaler tenant), never an open-ended external world.
 - Write-only hints (`destructiveHint` / `idempotentHint`) are left **unset** on read-only tools rather than sent as a misleading `false`.
-- **These are HINTS, not gates.** The authoritative controls stay server-side: read-only-by-default, the `--write-tools` allowlist, and HMAC confirmation for deletes — enforced regardless of any hint.
+- **These are HINTS, not gates.** The authoritative controls stay server-side: read-only-by-default, the `--write-tools` allowlist, and human confirmation for deletes — enforced regardless of any hint.
 - **Guarded by** `tests/test_tool_annotations.py` — per-action rendering plus a registry-wide invariant asserted across every real tool.
 
 ### Official conformance suite in CI
 
 `.github/workflows/mcp-conformance.yml` runs the **official** `@modelcontextprotocol/conformance` runner (pinned `@0.1.16`) in **server mode**: it boots the server over streamable-http (auth + entitlement filter disabled; no Zscaler creds needed because the SDK client is created lazily on first tool call) and connects as an MCP client to assert protocol behaviour against the **published `2025-11-25`** baseline — never `draft` / `latest`.
 
-- **Reality today:** every scenario applicable to a production server passes (initialize, ping, logging-set-level, tools-list, tools-call text/error, sse multi-stream, resources-list, prompts-list, dns-rebinding-protection). The 20 baselined scenarios in `.github/conformance-baseline.yml` are inapplicable — they need the reference "everything" server's synthetic test fixtures (a tool that returns an image, a prompt named `test_simple_prompt`) or capabilities we intentionally don't advertise (resources, completions, elicitation).
+- **Reality today:** every scenario applicable to a production server passes (initialize, ping, logging-set-level, tools-list, tools-call text/error, sse multi-stream, resources-list, prompts-list, dns-rebinding-protection). The baselined scenarios in `.github/conformance-baseline.yml` are inapplicable — they need the reference "everything" server's synthetic test fixtures (a tool that returns an image, a prompt named `test_simple_prompt`, a tool that elicits unconditionally) or capabilities we intentionally don't advertise (resources, completions). **The elicitation scenarios are a fixture gap, not a capability gap** — this server elicits on DELETE tools, which are off unless `--enable-write-tools` is passed, and the runner has no way to know that.
 - **The baseline can't silently rot:** a NEW failure fails CI (regression); a baselined scenario that starts PASSING also fails CI (stale entry to remove).
-- **Run locally:** `make conformance` (needs `node`/`npx`). Config guarded by `tests/test_conformance_config.py`.
+- **Two targets, one gate.** `make conformance` (published `2025-11-25`, pinned stable runner) **gates CI**. `make conformance-next` (`2026-07-28`, alpha runner `@0.2.0-alpha.10`, `.github/conformance-baseline-next.yml`) is the maintainer's check on the revision we actually negotiate and is deliberately **not** in CI — an alpha runner can rename or reinterpret scenarios between builds, turning upstream churn into red builds here. Fold it into the gate when 0.2.x GAs. `tests/test_conformance_config.py` asserts the alpha runner has not leaked into the workflow.
+- **Conformance can't cover the confirmation flow** (no fixture for it). `tests/test_protocol_2026_07_28.py` does, end-to-end over the in-memory transport — including that the ask rides the **stateless input-request loop**. That distinction is not academic: the mid-call form kept passing in isolation while being unreachable over the negotiated revision, because the stateless core removed its back-channel. Only a real round trip catches that.
 
 ## Response Shaping (API records, verbatim)
 
@@ -402,7 +463,7 @@ Server & security env vars:
 - `ZSCALER_MCP_TRANSPORT` — Transport mode: `stdio` (default), `sse`, `streamable-http`
 - `ZSCALER_MCP_HOST`, `ZSCALER_MCP_PORT` — Bind address for HTTP transports (default `127.0.0.1:8000`)
 - `ZSCALER_MCP_AUTH_ENABLED` — Enable MCP client authentication (`true`/`false`, HTTP only)
-- `ZSCALER_MCP_AUTH_MODE` — Auth mode: `api-key`, `jwt`, or `zscaler` (or use `auth=` param for OAuth 2.1 with DCR)
+- `ZSCALER_MCP_AUTH_MODE` — Auth mode: `api-key`, `jwt`, `zscaler`, or `oidc` (OAuth 2.1 against an external IdP; aliases `oidcproxy` / `oauth-proxy` still resolve)
 - `ZSCALER_MCP_TLS_CERTFILE`, `ZSCALER_MCP_TLS_KEYFILE` — TLS certificate and key paths
 - `ZSCALER_MCP_ALLOW_HTTP` — Allow plaintext HTTP on non-localhost (`true`/`false`)
 - `ZSCALER_MCP_ALLOWED_HOSTS` — Comma-separated allowed Host header values (supports wildcards)
@@ -414,8 +475,8 @@ Server & security env vars:
 - `ZSCALER_MCP_DISABLE_ENTITLEMENT_FILTER` — Skip the OneAPI entitlement filter (`true`/`false`). When `false` (default), the server intersects the selected toolsets with the products entitled by the OneAPI bearer token (`service-info[].prd`). Set `true` as an emergency override.
 - `ZSCALER_MCP_WRITE_ENABLED` — Enable write tools (`true`/`false`)
 - `ZSCALER_MCP_WRITE_TOOLS` — Comma-separated write tool patterns to allow (wildcards)
-- `ZSCALER_MCP_SKIP_CONFIRMATIONS` — Skip HMAC confirmation for destructive ops (`true`/`false`)
-- `ZSCALER_MCP_CONFIRMATION_TTL` — Confirmation token TTL in seconds (default 300)
+- `ZSCALER_MCP_CONFIRMATION_TTL` — HMAC **fallback** token TTL in seconds (default 300). Does not govern the sealed `requestState`, which uses the SDK's own envelope expiry (default 600s) — the two cover different client populations. There is deliberately no variable that skips confirmation; see Write Operations safety rule 3.
+- `ZSCALER_MCP_REQUEST_STATE_KEYS` — Shared key ring for SEP-2322 `requestState` (JSON array or comma-separated; each key ≥32 bytes of randomness, e.g. `python -c "import secrets; print(secrets.token_hex(32))"`). **Required for multi-replica HTTP deployments with write tools enabled** — sticky sessions cannot substitute, since modern requests carry no session id. Unset ⇒ a per-process ephemeral key (correct for stdio and single-instance). First key seals, all unseal; rotate `[old,new]` → `[new,old]` → `[new]`.
 - `ZSCALER_MCP_DISABLE_HOST_VALIDATION` — Disable host header checks (`true`/`false`)
 - `ZSCALER_MCP_LOG_TOOL_CALLS` — Enable tool-call audit logging (`true`/`false`)
 - `ZSCALER_MCP_DISABLE_OUTPUT_SANITIZATION` — Disable defense-in-depth output sanitization (BiDi / zero-width / HTML / code-fence stripping). On by default. Use only for diagnostics — disabling it removes a prompt-injection defense layer. (`true`/`false`)
@@ -429,7 +490,7 @@ Server & security env vars:
 - `--toolsets` — Comma-separated toolset ids to enable. Use `default` for the curated default-on subset, `all` for everything (e.g. `"zia_url_filtering,zpa_app_segments"` or `"default"`). See `docs/guides/toolsets.md`.
 - `--disabled-toolsets` — Comma-separated toolset ids to exclude (blocklist complement to `--toolsets`). Exact ids only (no wildcards). Load everything except these; wins over `--toolsets`. (e.g. `--toolsets all --disabled-toolsets "zia_ssl_inspection,zia_admin"`)
 - `--no-entitlement-filter` — Skip the OneAPI entitlement filter that trims `selected_toolsets` to the products the configured `ZSCALER_CLIENT_ID` is entitled to. Emergency override only; the filter is non-fatal by default and skips itself on any failure.
-- `--write-tools` — Enable and allowlist write tools (wildcards: `"zpa_create_*,zia_update_*"`)
+- `--write-tools` — Allowlist of write tools to permit (wildcards: `"zpa_create_*,zia_update_*"`). Required alongside `--enable-write-tools`; on its own it enables nothing.
 - `--generate-auth-token` — Generate an API key for MCP client authentication
 - `--list-tools` — List all available tools and exit
 - `--generate-docs` — Refresh the auto-generated regions of `docs/guides/supported-tools.md`, `README.md`, and `docs/guides/toolsets.md` from the live tool inventory, then exit. Run after adding/renaming/removing a tool. See "Auto-generated docs" under Development.
@@ -473,6 +534,16 @@ On error:
 [TOOL CALL] zms_list_resources | args: {page_num: 1}
 [TOOL ERR]  zms_list_resources | 1204ms | ConnectionError: timeout
 ```
+
+**`args` comes from the positional input model, not `kwargs`.** The bridge invokes every tool as `fn(model)` with no keyword arguments, so reading `kwargs` alone logged `args: {}` for every call in the running server — the audit line's whole purpose, absent. `_call_args()` in `security/audit.py` unpacks the Pydantic model with `exclude_unset=True`, so a tool with thirty optional parameters still logs only the ones the caller passed. Redaction runs after the unpacking, so a secret inside the model is redacted like a top-level one.
+
+**A non-empty `query` gets its own line**, because JMESPath is a bridge-owned channel that never reaches the tool function and therefore cannot appear in `[TOOL CALL]`:
+
+```text
+[QUERY]     zia_list_url_categories | '[?customCategory]' | 130 -> 0 rows
+```
+
+Both row counts are load-bearing: an expression that matches nothing looks exactly like an empty tenant, and without this line that ambiguity is unresolvable from the log.
 
 ### Security
 
@@ -544,7 +615,7 @@ The reload/restart messaging — and the `status` output — is gated by `_class
 | `None` | n/a | Yes | `fresh-discovery` | Same as above — fresh process discovers the `.env` placed since startup. |
 | `None` | n/a | No | `none` | Skips the re-read entirely. Common case: AgentCore deployments using Secrets Manager, or any deploy that uses container env-vars without a `.env` file. |
 
-The "missing" and "none" branches are explicitly NOT a bug — they reflect the underlying constraint that env vars in a running container's PID 1 are immutable from outside the container unless you bind-mount a file PID 1 can re-read (or you inject one with `docker cp`). The CLI surfaces this fact instead of silently claiming success. AgentCore deploys (`none` branch) still benefit from `restart`: re-importing `zscaler_mcp.config` triggers a fresh Secrets Manager fetch on the new process boot, picking up rotated secrets there.
+The "missing" and "none" branches are explicitly NOT a bug — they reflect the underlying constraint that env vars in a running container's PID 1 are immutable from outside the container unless you bind-mount a file PID 1 can re-read (or you inject one with `docker cp`). The CLI surfaces this fact instead of silently claiming success. AgentCore deploys (`none` branch) still benefit from `restart`: the fresh process re-runs `cloud.load_secrets()`, so a rotated Secrets Manager value is picked up on the new boot.
 
 ### Why Docker `--env-file` snapshots survive container `stop`/`start`
 
@@ -726,6 +797,36 @@ To keep the codebase organized, helper modules follow strict rules. **Read this 
 - **No runtime tool filtering**: `disabled_tools` and `disabled_services` are applied at registration time. Once the server is running, the tool list is fixed. This prevents race conditions and ensures consistent behavior.
 - **Agent-aware metadata**: The `zscaler_get_available_services` tool exists specifically to help AI agents understand what's available and what's not. Its description is written to surface in tool searches for any service name.
 - **Cross-service data overlap**: Zscaler's APIs have intentional overlap (e.g., ZIA and ZCC both expose device data). The server maps tools to API product boundaries, not conceptual categories. Users need `--disabled-tools` in addition to `--disabled-services` to block cross-service data access.
+- **HTTP sessions stay on**: `streamable-http` issues an `Mcp-Session-Id` to handshake clients, because that session is the only way to ask a human before a delete on those clients (see below).
+
+### HTTP session mode
+
+"Stateless" means two unrelated things in MCP, and conflating them causes real confusion:
+
+1. **The server holds no state between calls.** True since v1 — no tenant state survives a tool call, the SDK client is built per call (lazy initialization above), and the confirmation signing key is per-process. This is the property that matters for security review, and nothing below changes it.
+2. **The transport does not issue an `Mcp-Session-Id`.** A separate, purely transport-level setting — `MCPServer.streamable_http_app(stateless_http=...)`.
+
+We keep (2) **off** — sessions on — unconditionally. **There is no flag and no env var**, not because it's a preference we're withholding, but because one setting keeps a human in the delete loop and the other doesn't.
+
+**Sessions cost `2026-07-28` clients nothing.** It is tempting to argue this both ways; only one is true, and it is measured. `MCPServer`'s transport manager routes any request whose `mcp-protocol-version` is not in `HANDSHAKE_PROTOCOL_VERSIONS` to `handle_modern_request` *before* the `if self.stateless` branch (`mcp/server/streamable_http_manager.py::_handle_request`). A `2026-07-28` caller therefore never reaches session logic and connects identically either way.
+
+**What the session actually buys: the human.** Which confirmation path a delete takes is decided by `elicitation_available()`, and the input it reads — `client_capabilities` — is populated differently per era. A pre-`2026-07-28` client declares `elicitation` once during `initialize` and **the session holds it**; a `2026-07-28` client re-sends capabilities on every request in `_meta`.
+
+| Client | Sessions on (today) | Sessions off |
+| --- | --- | --- |
+| No `elicitation` capability | HMAC token | HMAC token |
+| Capability, `2026-07-28` | in-band `InputRequiredResult` | in-band `InputRequiredResult` |
+| Capability, older revision | **pushed prompt, human answers** | **HMAC token — no capabilities survive** |
+
+Row 3 is the whole argument. Sessionless, the server sees `client_capabilities: None` for every handshake client, cannot ask, and falls back to the token — which the **agent can redeem in the same turn it was issued**, so no human necessarily approves the delete. Verified end-to-end across all four cells; only that one loses the human. The accepted cost is session affinity for handshake clients on multi-replica deployments.
+
+**Row 1 is where Claude Desktop actually lands**, because `mcp-remote` does not advertise `elicitation` at all — sessions are irrelevant for it, and no server-side change moves it off the token path. Confirm any client by grepping the log for `Client did not advertise the 'elicitation' capability`. On this path the **prompt wording is the only thing asking a human**, so `generate_confirmation_message()` is written as an instruction to the agent (show the warning, wait for a reply, the original request is *not* consent, retry only on an explicit yes) rather than the v1 phrasing "To proceed, retry this tool call with: kwargs=…", which a real model satisfied on its own authority in the same turn. Ordering matters — the condition must precede the retry syntax — and it is pinned by `tests/test_elicitation.py::TestTokenPromptAsksForAHuman`. Treat it as advisory: the model can ignore it, and the non-advisory controls are write-tools-off-by-default plus a narrow `--write-tools` allowlist. Note also that a client's own "Allow / Deny" dialog authorizes the *tool*, not the deletion; don't cite it as evidence a human approved.
+
+**Never add a reachability check to `elicitation_available()`.** A version of it consulted `ctx.connection.has_standalone_channel` to confirm a pushed prompt could land. `Context` has no `.connection` in `mcp` 2.0.0, so every pre-`2026-07-28` caller raised `AttributeError` into the defensive `except` and was silently downgraded to the token — the code written to protect row 3 is what broke it, and the unit tests stayed green because they faked the attribute with a `SimpleNamespace`. Capabilities already encode reachability, for the reason above. Any predicate added here must be exercised against a real `Context`; see `tests/test_protocol_2026_07_28.py::TestLegacyClientConfirmation`.
+
+**`sse` is unaffected** — it is session-oriented by construction and goes through `sse_app()`, which takes no such argument. Guarded by `tests/test_cli.py::TestStatelessHttp`.
+
+**Multi-replica note.** Statelessness removes the need for session affinity, but the confirmation-token signing key is per-process (`secrets.token_bytes(32)` at import), so a token minted on one replica does not verify on another. Behind a round-robin load balancer that surfaces as a re-prompt, not an unconfirmed delete — the retry lands on a replica that never issued the token and is asked to confirm again. Prefer the `2026-07-28` in-band path (no token crosses the wire) or affinity for the confirm retry; **do not** reintroduce a shared-secret env var to paper over it.
 
 ## GCP Cloud Run Deployment
 
@@ -1002,14 +1103,46 @@ On any terminal state, the script automatically dumps the last 20 pod events so 
 - **Docs-site mirror:** `docs-site/docs/deployment/helm-chart.md` — auto-synced from the source README via `make sync-integration-docs` (registered in `_CROSS_REF_REDIRECTS` so sibling-repo links rewrite to GitHub master URLs).
 - **Top-level README:** `Additional Deployment Options` → `Kubernetes (Helm Chart)` subsection plus a row in the `Platform Integrations` table.
 
-## AWS Version
+## AWS (Bedrock AgentCore) — consolidated, no fork
 
-A parallel deployment exists at `/Users/wguilherme/go/src/github.com/zscaler/AWS/zscaler-mcp-server` for Amazon Bedrock AgentCore. Key differences:
+A separate `zscaler/AWS/zscaler-mcp-server` repository used to carry the Bedrock AgentCore build. It has been **folded into this one** — there is no AWS fork to keep in sync, and no AWS-specific Dockerfile or entrypoint. The same image and the same `src/` serve Docker Hub, Cloud Run, Container Apps and AgentCore; the platform is selected entirely by environment variables.
 
-- **No TLS handling** — AWS infrastructure (ALB, API Gateway) handles TLS termination
-- **`web_server.py`** — FastAPI wrapper that bypasses MCP session initialization for Bedrock's stateless HTTP
-- **`_log_security_posture_aws()`** — AWS-specific security banner (no TLS fields)
-- **Same tool/service/auth architecture** — disabled_tools, disabled_services, OIDCProxy, HMAC confirmations all work identically
+Only three things ever actually differed, and each is now a first-class feature here rather than a fork:
+
+- **Secrets Manager loading** → `src/zscaler_mcp/cloud/aws_secrets.py`, dispatched from `cloud.load_secrets()` in `main()`. Gated on `ZSCALER_SECRET_NAME`; `boto3` rides the optional `[aws]` extra (in the image already). Details below.
+- **Entrypoint / transport** → the fork's `CMD ["python","-m","zscaler_mcp.aws_entrypoint","--transport","streamable-http",...]` is replaced by `ZSCALER_MCP_TRANSPORT` / `_HOST` / `_PORT`, set by `runtime_provisioner.py`. `ContainerConfiguration` has exactly one field (`containerUri`) — no command override — so **everything the runtime needs must be an env var**.
+- **Auth deltas** → `X-Api-Key` acceptance and the container-side credential fallback, both in `security/auth.py` and gated by `ZSCALER_MCP_TRUST_PLATFORM_AUTH`. Details below.
+
+Three constraints remain genuinely AWS-shaped and are not going away:
+
+- **ECR-only.** `containerConfiguration.containerUri` validates against an ECR URI regex; Docker Hub is not a legal value. Publishing to Docker Hub does not make the image deployable on AgentCore — an ECR copy is still required, and it must be `linux/arm64` (AgentCore reads the ELF headers). The image is multi-arch, so this is a copy, not a rebuild.
+- **TLS terminates upstream.** AgentCore fronts the container, so `ZSCALER_MCP_ALLOW_HTTP=true` and `ZSCALER_MCP_DISABLE_HOST_VALIDATION=true` are correct *there* (the forwarded `Host` is internal and unpredictable) and wrong anywhere the container is directly reachable.
+- **AgentCore is a `2026-07-28`-only target.** The handshake revisions cannot complete a session through it. AgentCore manages MCP sessions itself — it routes to a microVM by `Mcp-Session-Id`, exposes that header as the `mcpSessionId` API parameter, and **replaces the id the container issued with one of its own**. `initialize` succeeds, but the client is handed an id the container has never seen, so the next call 404s (verified: container logged `5c8e958dfea4…`, client received `f7ebe538-ba3c-…`). No header allowlist entry can undo a substitution. AWS's answer is `stateless_http=True`; ours is not to give up session-backed human confirmation on every other platform for one platform's sake — see [HTTP session mode](#http-session-mode). **This is AgentCore-specific**: ECS Fargate / EC2 (ALB) and EKS (`type: LoadBalancer`) front the container with protocol-agnostic proxies that forward headers verbatim, and serve both revisions unchanged.
+
+**`McpAuthMode` decides whether ordinary MCP clients can connect at all** — not just how callers authenticate. AgentCore takes exactly two inbound methods, selected by whether `authorizerConfiguration` is set: `none` / `api-key` / `zscaler` leave it unset ⇒ **SigV4 only** ⇒ AWS SDK callers only (`invoke_mcp.py`, boto3, Strands, Bedrock agents, Gateway, Quick Suite); `jwt` sets `customJWTAuthorizer` ⇒ **OAuth bearer** ⇒ any MCP client, Claude Desktop / Cursor included, pointed at the `RuntimeMcpUrl` output via `mcp-remote`. SigV4 is request signing rather than a header a client can be configured to send, so no MCP client implements it and AgentCore rejects the attempt with `403 Authorization method mismatch … (OAuth or SigV4)` before the container is reached. **AgentCore Harness is not a workaround** — it hosts an *agent* and itself requires a non-SigV4 MCP endpoint, so it targets an ALB-fronted deployment, not a runtime. The genuinely IdP-free way to get a client-reachable endpoint is ECS / EC2 / EKS, which also serve both revisions.
+
+**Header allowlist.** `InvokeAgentRuntime` forwards only headers named in the runtime's `requestHeaderAllowlist`, so `runtime_provisioner.py` allowlists `MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name` and `Mcp-Session-Id` in **every** auth mode — omitting them does not make `2026-07-28` slower, it makes the revision unreachable and silently degrades every request to the handshake path. Note that `Accept`, `Content-Type`, `Mcp-Protocol-Version` and `Mcp-Session-Id` are *also* first-class `InvokeAgentRuntime` parameters (`accept`, `contentType`, `mcpProtocolVersion`, `mcpSessionId`) and should be passed that way by clients; only `Mcp-Method` / `Mcp-Name` genuinely require the raw-header path. `accept` must be `application/json, text/event-stream` or the endpoint returns `406` before reading the body. `integrations/aws/bedrock-agentcore/invoke_mcp.py` is the reference client; guarded by `tests/test_agentcore_provisioner.py`.
+
+### AWS Secrets Manager loader (`cloud/aws_secrets.py`)
+
+MCP has no native secret-store integration, so this is ours. Same shape as `gcp_secrets.py`:
+
+- **`ZSCALER_SECRET_NAME` is the gate** — its presence *is* the opt-in, with no second boolean. The CloudFormation in `integrations/aws/` has always set exactly this one variable to mean "fetch my credentials from Secrets Manager"; adding a flag would break every existing deployment silently.
+- **Region:** `AWS_REGION` → `AWS_DEFAULT_REGION` → boto3's own chain. Deliberately **no `us-east-1` default** — the fork had one, and it queried the wrong region for every deployment outside it.
+- **Allowlist, not passthrough.** Only `CREDENTIAL_KEYS` reach `os.environ`; everything else is named in a warning and dropped. The fork injected every key it found, turning a typo — or a hostile edit of the secret — into an arbitrary env var in the server process. The allowlist is a superset of GCP's: on AgentCore the container env *is* the deployment manifest, so `ZSCALER_MCP_AUTH_API_KEY` and `ZSCALER_MCP_REQUEST_STATE_KEYS` have nowhere else to live.
+- **The secret overrides the environment.** Rotation has to beat a stale value baked into a task definition.
+- **Fails closed.** Missing `boto3`, denied `GetSecretValue`, KMS failure, malformed JSON, `SecretBinary`, or absent required credentials all `SystemExit` with the cause named. Starting without credentials would defer the error to the first tool call, where it reaches the agent as an opaque Zscaler API error rather than the deployment problem it is. `ZSCALER_PRIVATE_KEY` satisfies the `ZSCALER_CLIENT_SECRET` requirement (JWT-based OneAPI tenants have no client secret).
+- **Guarded by** `tests/test_aws_secrets.py` — none of it needs `boto3` installed; the one test that exercises the import asserts the *absence* path, which is what a default install actually hits.
+
+### `ZSCALER_MCP_TRUST_PLATFORM_AUTH`
+
+Off by default. When on, `api-key` and `zscaler` auth modes accept a request that carries **no credential at all**, falling back to the container's own `ZSCALER_MCP_AUTH_API_KEY` / `ZSCALER_CLIENT_ID`+`_SECRET`. That is only safe when something in front has already authenticated the caller — AgentCore with an inbound authorizer, or an ALB/API Gateway that does. It exists because AgentCore's `customJwtAuthorizer` consumes the `Authorization` header for its own token, leaving no envelope for ours; `X-Api-Key` covers the case where the client *can* still send one (add it to `requestHeaderAllowlist`), and this covers the case where it cannot.
+
+**Never set it on a directly-reachable deployment** — it makes the server accept unauthenticated requests by design. Each admission logs at INFO, not DEBUG, so an operator reading the log can see requests being admitted on the platform's word rather than their own.
+
+### Other AWS integration surfaces
+
+`integrations/aws/` holds CloudFormation + orchestrators for `bedrock-agentcore`, `harness`, `ecs-fargate`, `ec2`, and `eks`. Note the EC2 template installs `boto3` explicitly (PyPI installs don't get the `[aws]` extra by default), so `ZSCALER_SECRET_NAME` works there too.
 
 ## Skills
 

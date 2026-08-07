@@ -204,7 +204,7 @@ Lifecycle commands
 Authentication design
 ---------------------
 
-The Zscaler MCP Server has five auth modes (``OIDCProxy``, ``JWT``, ``API Key``, ``Zscaler``, ``None``). Harness's ``remote_mcp`` tool pairs with them as follows:
+The Zscaler MCP Server has five auth modes (``OIDC``, ``JWT``, ``API Key``, ``Zscaler``, ``None``). Harness's ``remote_mcp`` tool pairs with them as follows:
 
 .. list-table::
    :header-rows: 1
@@ -222,7 +222,7 @@ The Zscaler MCP Server has five auth modes (``OIDCProxy``, ``JWT``, ``API Key``,
    * - **JWT**
      - ``Authorization: Bearer <long-lived JWT>`` plaintext, or Token-Vault resolved if rotation is needed
      - Less common. JWT is usually short-lived.
-   * - **OIDCProxy**
+   * - **OIDC**
      - Use ``agentcore_gateway`` tool type instead, with ``outboundAuth.oauth`` configured on the Gateway
      - Topology C. The OIDC flow can't run from inside ``remote_mcp``.
    * - **None**
@@ -271,7 +271,7 @@ Troubleshooting (highlights)
    * - ``ValidationException: harnessName … must satisfy regular expression pattern: [a-zA-Z][a-zA-Z0-9_]{0,39}``
      - Invalid characters in ``--harness-name`` — most commonly hyphens. Use letters, digits, and **underscores only**.
    * - First ``POST /mcp`` in CloudWatch returns ``421 Misdirected Request`` with ``Invalid Host header``
-     - FastMCP's DNS-rebinding guard rejects every request whose ``Host`` header isn't in ``ZSCALER_MCP_ALLOWED_HOSTS``. The script **merges** the discovered FQDN into the container's allowlist on every deploy.
+     - The server's DNS-rebinding guard rejects every request whose ``Host`` header isn't in ``ZSCALER_MCP_ALLOWED_HOSTS``. The script **merges** the discovered FQDN into the container's allowlist on every deploy.
    * - ``exec /usr/local/bin/python: exec format error`` in ECS task logs
      - The image at ``ZSCALER_MCP_IMAGE_URI`` is single-arch ARM64 (what ``docker build`` defaults to on Apple Silicon), while ECS Fargate Express runs AMD64. Rebuild with ``make docker-build-multiarch IMAGE=<your-ecr-uri>:<tag> PLATFORMS=linux/amd64``.
 

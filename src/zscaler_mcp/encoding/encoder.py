@@ -85,7 +85,21 @@ def encode(data: Any, *, fmt: WireFormat | str = WireFormat.AUTO) -> str:
 
 
 def _is_flat_scalar(value: Any) -> bool:
-    """True for values CSV can represent in a single cell."""
+    """True for values CSV can represent in a single cell.
+
+    An **empty** list or dict counts. It carries no structure to lose, and
+    excluding it was expensive: Zscaler records routinely include always-empty
+    collections, and the SDK's ``as_dict()`` adds more of them by materializing
+    every unset list field. A single one forced the whole response to JSON, where
+    all field names repeat per row. Measured on a URL-category listing: 120
+    tokens/row as JSON versus 29 as CSV, a 4x penalty paid for fields that
+    contain nothing.
+
+    A NON-empty collection still disqualifies the row. That is the rule that
+    matters: real structure is never flattened away.
+    """
+    if isinstance(value, (list, dict, tuple, set)):
+        return len(value) == 0
     return value is None or isinstance(value, (str, int, float, bool))
 
 
@@ -116,11 +130,21 @@ def _ordered_header(rows: list[dict[str, Any]]) -> list[str]:
 
 
 def _csv_cell(value: Any) -> Any:
-    """Render a single cell deterministically; csv handles quoting of strings."""
+    """Render a single cell deterministically; csv handles quoting of strings.
+
+    Empty collections render as ``[]`` / ``{}`` rather than an empty cell. An
+    empty cell already means ``None``, and "the field is absent" is not the same
+    claim as "the field is present and empty" — two characters keeps them
+    distinguishable.
+    """
     if value is None:
         return ""
     if isinstance(value, bool):
         return "true" if value else "false"
+    if isinstance(value, (list, tuple, set)):
+        return "[]"  # only reachable when empty; see _is_flat_scalar
+    if isinstance(value, dict):
+        return "{}"
     return value
 
 

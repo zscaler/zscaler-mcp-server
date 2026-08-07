@@ -3,7 +3,7 @@
 Azure
 =====
 
-Deploy the Zscaler MCP Server to Azure Container Apps, an Azure Virtual Machine, or Azure Kubernetes Service (Preview); optionally create an Azure AI Foundry agent backed by the deployed MCP server; and configure Microsoft Entra ID as the OIDCProxy identity provider.
+Deploy the Zscaler MCP Server to Azure Container Apps, an Azure Virtual Machine, or Azure Kubernetes Service (Preview); optionally create an Azure AI Foundry agent backed by the deployed MCP server; and configure Microsoft Entra ID as the OIDC identity provider.
 
 Video walkthrough
 -----------------
@@ -51,5 +51,5 @@ At a glance
      - The unified ``azure_mcp_operations.py`` script — interactive deploy of the MCP server to any of the three Azure compute surfaces.
    * - :doc:`Azure AI Foundry Agent <azure-ai-foundry>`
      - Create a GPT-4o agent in Foundry that uses the deployed MCP server as a tool. Includes the full portal walkthrough with screenshots.
-   * - :doc:`Entra ID OIDCProxy <entra-id-oidcproxy>`
-     - End-to-end walkthrough for wiring Microsoft Entra ID as the OIDCProxy IdP, including the Entra-specific ``aud``-claim behaviour.
+   * - :doc:`Entra ID OIDC <entra-id-oidcproxy>`
+     - End-to-end walkthrough for wiring Microsoft Entra ID as the OIDC IdP, including the Entra-specific ``aud``-claim behaviour.

@@ -73,8 +73,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -169,7 +167,11 @@ def zia_update_ip_destination_group(args: UpdateInput) -> dict[str, Any]:
     is_list=False,
 )
 def zia_delete_ip_destination_group(args: DeleteInput) -> dict[str, Any]:
-    """Delete a ZIA IP destination group (destructive). Activate after."""
+    """Delete a ZIA IP destination group (destructive). Activate after.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     client = get_zscaler_client(service="zia")
     _, _, err = client.zia.cloud_firewall.delete_ip_destination_group(args.group_id)
     if err:

@@ -93,7 +93,7 @@ def zpa_get_isolation_policy_rule(args: GetRuleInput) -> dict[str, Any]:
     is_list=False,
 )
 def zpa_create_isolation_policy_rule(args: CreateIsolationRuleInput) -> dict[str, Any]:
-    """Create a ZPA isolation policy rule (write). Gated by HMAC + `--write-tools`.
+    """Create a ZPA isolation policy rule (write). Requires `--write-tools`.
 
     `zpn_isolation_profile_id` is required when action_type is 'isolate'.
     """
@@ -125,7 +125,7 @@ def zpa_create_isolation_policy_rule(args: CreateIsolationRuleInput) -> dict[str
     is_list=False,
 )
 def zpa_update_isolation_policy_rule(args: UpdateIsolationRuleInput) -> dict[str, Any]:
-    """Update a ZPA isolation policy rule (write). Gated by HMAC + `--write-tools`."""
+    """Update a ZPA isolation policy rule (write). Requires `--write-tools`."""
     if not args.rule_id:
         raise ValueError("rule_id is required")
     client = get_zscaler_client(service="zpa")
@@ -153,5 +153,9 @@ def zpa_update_isolation_policy_rule(args: UpdateIsolationRuleInput) -> dict[str
     is_list=False,
 )
 def zpa_delete_isolation_policy_rule(args: DeleteRuleInput) -> dict[str, Any]:
-    """Delete a ZPA isolation policy rule (destructive write)."""
+    """Delete a ZPA isolation policy rule (destructive write).
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
+    """
     return delete_rule("isolation", args, "isolation")

@@ -66,7 +66,7 @@ CHART_DIR = SCRIPT_DIR / "charts" / "zscaler-mcp-server"
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 SYSTEM = platform.system()
 
-SERVER_NAME = "zscaler-mcp-server"          # used in MCP client configs
+SERVER_NAME = "zscaler-mcp-server"  # used in MCP client configs
 CHART_RELEASE_DEFAULT = "zscaler-mcp"
 NAMESPACE_DEFAULT = "zscaler-mcp"
 DOCKER_HUB_IMAGE_REPO = "zscaler/zscaler-mcp-server"
@@ -175,7 +175,9 @@ def print_zscaler_logo() -> None:
     for line in _ZSCALER_ART:
         print(f"  {border}│{_RESET}{' ' * pad}{gradient_line(line)}{' ' * pad}{border}│{_RESET}")
     shadow = "░" * width
-    print(f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}")
+    print(
+        f"  {border}│{_RESET}{' ' * pad}{shadow_color}{shadow}{_RESET}{' ' * pad}{border}│{_RESET}"
+    )
     print(f"  {border}│{_RESET}{' ' * pad}{blank}{' ' * pad}{border}│{_RESET}")
     print(f"  {border}╰{'─' * inner}╯{_RESET}")
     print(f"  {_TAGLINE}")
@@ -395,9 +397,7 @@ def _prompt_yes_no(question: str, *, default: bool = True) -> bool:
 
 
 def _kubectl_context() -> str:
-    r = run_kubectl(
-        ["config", "current-context"], check=False, capture=True
-    )
+    r = run_kubectl(["config", "current-context"], check=False, capture=True)
     return r.stdout.strip() if r.returncode == 0 else "(unknown)"
 
 
@@ -409,7 +409,7 @@ def _cluster_server_url(context: str) -> str:
             "view",
             "--minify",
             "-o",
-            f"jsonpath={{.clusters[?(@.name==\"{context}\")].cluster.server}}",
+            f'jsonpath={{.clusters[?(@.name=="{context}")].cluster.server}}',
         ],
         check=False,
         capture=True,
@@ -458,9 +458,7 @@ def _assert_cluster_reachable(context: str) -> None:
 
 
 def _namespace_exists(namespace: str) -> bool:
-    r = run_kubectl(
-        ["get", "namespace", namespace], check=False, capture=True
-    )
+    r = run_kubectl(["get", "namespace", namespace], check=False, capture=True)
     return r.returncode == 0
 
 
@@ -520,7 +518,9 @@ def _pod_phase_snapshot(namespace: str, release: str) -> list[dict]:
                     messages.append(f"{cs.get('name')}: {waiting['message']}")
             terminated = (cs.get("state") or {}).get("terminated") or {}
             if terminated.get("reason"):
-                reasons.append(f"{cs.get('name')}: {terminated['reason']} (exit {terminated.get('exitCode')})")
+                reasons.append(
+                    f"{cs.get('name')}: {terminated['reason']} (exit {terminated.get('exitCode')})"
+                )
                 if terminated.get("message"):
                     messages.append(f"{cs.get('name')}: {terminated['message']}")
         pods.append(
@@ -569,7 +569,7 @@ def _is_kind_context(context: str) -> bool:
 
 def _kind_cluster_name(context: str) -> str:
     """kind contexts are always 'kind-<cluster-name>'."""
-    return context[len("kind-"):] if context.startswith("kind-") else ""
+    return context[len("kind-") :] if context.startswith("kind-") else ""
 
 
 def _dump_pod_events(namespace: str, release: str, *, tail: int = 20) -> None:
@@ -598,10 +598,9 @@ def _dump_pod_events(namespace: str, release: str, *, tail: int = 20) -> None:
     # Filter to events involving pods that carry our release label.
     pods = _pod_phase_snapshot(namespace, release)
     pod_names = {p["name"] for p in pods}
-    relevant = [
-        e for e in events
-        if e.get("involvedObject", {}).get("name", "") in pod_names
-    ][-tail:]
+    relevant = [e for e in events if e.get("involvedObject", {}).get("name", "") in pod_names][
+        -tail:
+    ]
     if not relevant:
         return
     print()
@@ -719,7 +718,7 @@ def _wait_for_rollout(
         if pods:
             summary = ", ".join(
                 f"{p['name'].rsplit('-', 1)[-1]}={p['phase']}"
-                + (f" [{';'.join(p['reasons'])}]" if p['reasons'] else "")
+                + (f" [{';'.join(p['reasons'])}]" if p["reasons"] else "")
                 for p in pods
             )
             if summary != last_summary:
@@ -851,9 +850,7 @@ def _collect_credentials() -> dict:
     if auth_mode == "api-key":
         api_key = resolve(env, "ZSCALER_MCP_AUTH_API_KEY")
         if not api_key:
-            api_key = _prompt(
-                "Server-side API key (also goes into the Secret)", secret=True
-            )
+            api_key = _prompt("Server-side API key (also goes into the Secret)", secret=True)
 
     return {
         "env": env,
@@ -1063,7 +1060,9 @@ def op_deploy(args: argparse.Namespace) -> None:
     if expose == "ingress":
         print(f"    Exposure:         Ingress ({ingress_class}) at {ingress_host}")
     elif expose == "portforward":
-        print(f"    Exposure:         kubectl port-forward localhost:{local_port} → svc/{fullname}:{service_port}")
+        print(
+            f"    Exposure:         kubectl port-forward localhost:{local_port} → svc/{fullname}:{service_port}"
+        )
     else:
         print("    Exposure:         (none — install only)")
     print()
@@ -1096,9 +1095,13 @@ def op_deploy(args: argparse.Namespace) -> None:
         "yaml",
     ]
     apply_cmd = ["kubectl", "-n", namespace, "apply", "-f", "-"]
-    info(f"  $ kubectl create secret generic {secret_name} --from-env-file=... | kubectl apply -f -")
+    info(
+        f"  $ kubectl create secret generic {secret_name} --from-env-file=... | kubectl apply -f -"
+    )
     p1 = subprocess.Popen(create_cmd, stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(apply_cmd, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p2 = subprocess.Popen(
+        apply_cmd, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
     p1.stdout.close() if p1.stdout else None  # type: ignore[func-returns-value]
     stdout, stderr = p2.communicate()
     if p2.returncode != 0:
@@ -1213,7 +1216,7 @@ def op_deploy(args: argparse.Namespace) -> None:
     print()
     print("  Next steps:")
     print("    1. Restart Claude Desktop / Cursor — the zscaler entry is wired up.")
-    print("    2. Try: \"List all ZPA segment groups\"")
+    print('    2. Try: "List all ZPA segment groups"')
     print()
     print("  Management:")
     print("    python helm_mcp_operations.py status     — Show release health")
@@ -1310,7 +1313,18 @@ def op_status(args: argparse.Namespace) -> None:
     print()
 
     info("Pod status")
-    run_kubectl(["-n", namespace, "get", "pods", "-l", f"app.kubernetes.io/instance={release}", "-o", "wide"])
+    run_kubectl(
+        [
+            "-n",
+            namespace,
+            "get",
+            "pods",
+            "-l",
+            f"app.kubernetes.io/instance={release}",
+            "-o",
+            "wide",
+        ]
+    )
     print()
 
     info("Service status")

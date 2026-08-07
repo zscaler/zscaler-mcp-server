@@ -82,10 +82,6 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
-
-
-
-
 # =============================================================================
 # TOOLS
 # =============================================================================
@@ -150,7 +146,7 @@ def ztw_create_ip_destination_group(args: CreateDestinationGroupInput) -> dict[s
     """Create a ZTW IP destination group (write).
 
     Country names/codes are converted to COUNTRY_XX and are only valid for
-    DSTN_OTHER groups. Gated by HMAC write-confirmation and `--write-tools`.
+    DSTN_OTHER groups. Requires `--write-tools`.
     """
     addresses = parse_list(args.addresses) if args.addresses is not None else None
 
@@ -186,7 +182,10 @@ def ztw_create_ip_destination_group(args: CreateDestinationGroupInput) -> dict[s
 def ztw_delete_ip_destination_group(args: DeleteDestinationGroupInput) -> dict[str, Any]:
     """Delete a ZTW IP destination group (destructive write).
 
-    Cannot be undone. Gated by HMAC write-confirmation and `--write-tools`.
+    Cannot be undone.
+
+    Confirmation required — the first call returns a prompt, not a deletion.
+    Gated by `--write-tools`.
     """
     if not args.group_id:
         raise ValueError("group_id is required for delete")
