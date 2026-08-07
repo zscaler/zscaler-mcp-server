@@ -73,6 +73,13 @@ COPY --from=uv --chown=app:app /app/.venv /app/.venv
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Declares the HTTP transports' default port. Bedrock AgentCore requires the
+# container to listen on 8000; stdio ignores it.
+EXPOSE 8000
+
 LABEL io.modelcontextprotocol.server.name="io.github.zscaler/zscaler-mcp-server"
 
+# No HEALTHCHECK on purpose: AgentCore manages container health at the runtime
+# layer, and a Docker-level probe against the streamable-http transport would
+# fail (there is no unauthenticated GET on /mcp).
 ENTRYPOINT ["zscaler-mcp"]

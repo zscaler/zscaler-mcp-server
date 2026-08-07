@@ -1,0 +1,226 @@
+name: ECR Build & Push (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 0.15.0) — image will be tagged {version}-bedrock'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Manual fallback for retrying ECR builds or Marketplace submissions.
+# Normal flow is fully automated via the ecr-publish job in release.yml.
+#
+# GitHub Environment: aws-marketplace
+# Secrets:
+#   AWS_ROLE_ARN               - OIDC IAM role ARN (its trust policy must name
+#                                THIS repository, not the retired AWS fork)
+#   AWS_REGION                 - us-east-1
+#   ECR_REPOSITORY             - zscaler/zscaler-mcp-server
+#   AWS_MARKETPLACE_PRODUCT_ID - Marketplace product entity ID
+# ──────────────────────────────────────────────────────────────────────────────
+
+jobs:
+  ecr-build-push:
+    runs-on: ubuntu-latest
+    environment: aws-marketplace
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076
+        with:
+          registries: "709825985650"
+
+      - name: Compute image tag
+        id: image-tag
+        env:
+          RAW_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${RAW_VERSION#v}"
+          echo "tag=${VERSION}-bedrock" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f
+        with:
+          images: 709825985650.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
+          tags: |
+            type=raw,value=${{ steps.image-tag.outputs.tag }}
+          flavor: |
+            latest=false
+          labels: |
+            org.opencontainers.image.title=Zscaler Integrations MCP Server
+            org.opencontainers.image.description=Model Context Protocol server for the Zscaler Zero Trust Exchange
+            org.opencontainers.image.vendor=Zscaler
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.source=https://github.com/zscaler/zscaler-mcp-server
+
+      - name: Build and push to ECR
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: Submit version to AWS Marketplace
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          PRODUCT_ID: ${{ secrets.AWS_MARKETPLACE_PRODUCT_ID }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+          VERSION: ${{ steps.image-tag.outputs.version }}
+          # Read through the environment, never interpolated into the script
+          # body: notes come from commit messages and may contain shell
+          # metacharacters.
+          INPUT_RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          ECR_REGISTRY="709825985650.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          VERSION_TITLE="${IMAGE_TAG}"
+
+          RELEASE_NOTES="${INPUT_RELEASE_NOTES}"
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="Zscaler MCP Server ${VERSION} for Amazon Bedrock AgentCore."
+          fi
+
+          RELEASE_NOTES_JSON=$(printf '%s' "$RELEASE_NOTES" | head -c 4000 | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().strip()))")
+
+          cat > /tmp/changeset.json <<EOF
+          {
+            "Catalog": "AWSMarketplace",
+            "ChangeSet": [
+              {
+                "ChangeType": "AddDeliveryOptions",
+                "Entity": {
+                  "Identifier": "${PRODUCT_ID}",
+                  "Type": "ContainerProduct@1.0"
+                },
+                "DetailsDocument": {
+                  "Version": {
+                    "VersionTitle": "${VERSION_TITLE}",
+                    "ReleaseNotes": ${RELEASE_NOTES_JSON}
+                  },
+                  "DeliveryOptions": [
+                    {
+                      "DeliveryOptionTitle": "Amazon Bedrock AgentCore",
+                      "Details": {
+                        "EcrDeliveryOptionDetails": {
+                          "ContainerImages": ["${IMAGE_URI}"],
+                          "CompatibleServices": ["Bedrock-AgentCore"],
+                          "AgenticType": ["MCP_SERVER"],
+                          "Description": "Deploy the Zscaler Integrations MCP Server as an MCP tool inside Amazon Bedrock AgentCore. Provides 254 read-only tools across ten Zscaler services (ZIA, ZPA, ZDX, ZCC, ZTW, ZIdentity, EASM, Z-Insights, ZMS, ZCell), plus 148 write tools that are available only behind an explicit allowlist. Includes MCP client authentication (OIDC, JWT, API key, Zscaler OneAPI), source IP ACL, human confirmation on every destructive operation, output sanitization and audit logging.",
+                          "UsageInstructions": "# Amazon Bedrock AgentCore Deployment\n\n## Prerequisites\n\n1. Zscaler OneAPI credentials from the ZIdentity console\n2. An AgentCore execution role with ECR pull and CloudWatch Logs permissions\n\n## Required credentials\n\n- ZSCALER_CLIENT_ID: OneAPI client ID\n- ZSCALER_CLIENT_SECRET: OneAPI client secret\n- ZSCALER_VANITY_DOMAIN: ZIdentity vanity domain (e.g. mycompany.zsapi.net)\n- ZSCALER_CUSTOMER_ID: customer ID, required for ZPA tools\n\nAlternatively hold them in AWS Secrets Manager: set ZSCALER_SECRET_NAME to the\nsecret name and grant the execution role secretsmanager:GetSecretValue. The\nserver loads them at startup.\n\n## Transport (required)\n\nThe image defaults to the stdio transport on 127.0.0.1, which AgentCore cannot\nreach. You MUST set:\n\n- ZSCALER_MCP_TRANSPORT=streamable-http\n- ZSCALER_MCP_HOST=0.0.0.0\n\nZSCALER_MCP_PORT already defaults to 8000 and can be left unset.\n\n## Protocol revision\n\nAgentCore replaces the session identifier the server issues, so clients that\nperform the older initialize handshake cannot complete it. Use a client that\nnegotiates MCP revision 2026-07-28, which is self-contained per request. The\ndeployment guide below includes a boto3 example.\n\n## Authentication\n\nAgentCore authenticates every caller itself, by IAM SigV4 or a JWT authorizer,\nand those requests carry no credentials of their own. Set\nZSCALER_MCP_TRUST_PLATFORM_AUTH=true so the server accepts them on the\nplatform's authentication. It applies only to the api-key and zscaler modes,\nand should only ever be enabled behind a platform that authenticates callers.\n\nZSCALER_MCP_AUTH_MODE accepts jwt, api-key, zscaler or oidc. Left unset, the\nmode is auto-detected from whichever settings are present.\n\n## Write operations\n\nWrite tools are off by default. Enabling them requires BOTH\nZSCALER_MCP_WRITE_ENABLED=true AND ZSCALER_MCP_WRITE_TOOLS naming the permitted\npatterns. Neither setting enables anything on its own, and an empty allowlist\npermits nothing. Deletes always require a confirmation that cannot be switched\noff.\n\n## Full guide\n\nhttps://github.com/zscaler/zscaler-mcp-server/blob/master/docs/deployment/amazon_bedrock_agentcore.md",
+                          "EnvironmentVariables": [
+                            {"Name": "ZSCALER_CLIENT_ID", "Description": "Zscaler OneAPI client ID from the ZIdentity console."},
+                            {"Name": "ZSCALER_CLIENT_SECRET", "Description": "Zscaler OneAPI client secret from the ZIdentity console."},
+                            {"Name": "ZSCALER_VANITY_DOMAIN", "Description": "ZIdentity vanity domain (e.g. mycompany.zsapi.net)."},
+                            {"Name": "ZSCALER_CUSTOMER_ID", "Description": "Zscaler customer ID; required when calling ZPA tools."},
+                            {"Name": "ZSCALER_SECRET_NAME", "Description": "AWS Secrets Manager secret holding the credentials above. Set this instead of passing them directly."},
+                            {"Name": "ZSCALER_MCP_TRANSPORT", "Description": "Transport mode. AgentCore requires streamable-http; the image otherwise defaults to stdio.", "DefaultValue": "streamable-http"},
+                            {"Name": "ZSCALER_MCP_HOST", "Description": "Bind address. AgentCore requires 0.0.0.0; the image otherwise defaults to 127.0.0.1.", "DefaultValue": "0.0.0.0"},
+                            {"Name": "ZSCALER_MCP_PORT", "Description": "Listen port for the HTTP transport.", "DefaultValue": "8000"},
+                            {"Name": "ZSCALER_MCP_AUTH_ENABLED", "Description": "Enable MCP client authentication. Enabled unless explicitly set to false.", "DefaultValue": "true"},
+                            {"Name": "ZSCALER_MCP_AUTH_MODE", "Description": "Authentication mode: jwt, api-key, zscaler or oidc. Auto-detected when unset."},
+                            {"Name": "ZSCALER_MCP_TRUST_PLATFORM_AUTH", "Description": "Accept requests carrying no credentials of their own, on AgentCore's authentication. Applies to the api-key and zscaler modes. Only safe behind a platform that authenticates every caller.", "DefaultValue": "false"},
+                            {"Name": "ZSCALER_MCP_WRITE_ENABLED", "Description": "Master switch for write tools. Has no effect unless ZSCALER_MCP_WRITE_TOOLS is also set.", "DefaultValue": "false"},
+                            {"Name": "ZSCALER_MCP_WRITE_TOOLS", "Description": "Allowlist of write tools to permit (e.g. zpa_create_*,zia_update_*). Required alongside ZSCALER_MCP_WRITE_ENABLED; an empty value permits nothing."},
+                            {"Name": "ZSCALER_MCP_REQUEST_STATE_KEYS", "Description": "Shared key ring for pending delete confirmations. Required when running more than one replica with write tools enabled."},
+                            {"Name": "ZSCALER_MCP_TOOLSETS", "Description": "Comma-separated toolsets to load (e.g. zia_url_filtering,zpa_app_segments). Accepts 'default' or 'all'."},
+                            {"Name": "ZSCALER_MCP_DISABLED_TOOLSETS", "Description": "Comma-separated toolsets to exclude. Wins over ZSCALER_MCP_TOOLSETS."},
+                            {"Name": "ZSCALER_MCP_DISABLED_SERVICES", "Description": "Comma-separated services to disable (e.g. zcc,zdx)."},
+                            {"Name": "ZSCALER_MCP_DISABLED_TOOLS", "Description": "Comma-separated tool patterns to exclude (e.g. zcc_*)."},
+                            {"Name": "ZSCALER_MCP_ALLOWED_SOURCE_IPS", "Description": "Comma-separated client IPs/CIDRs allowed to connect."},
+                            {"Name": "ZSCALER_MCP_LOG_TOOL_CALLS", "Description": "Log every tool invocation for audit.", "DefaultValue": "false"}
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+          EOF
+
+          python3 -c "import json; json.load(open('/tmp/changeset.json'))" || {
+            echo "::error::Generated changeset JSON is invalid"
+            exit 1
+          }
+
+          echo "Submitting version ${VERSION_TITLE} to AWS Marketplace..."
+          RESULT=$(aws marketplace-catalog start-change-set \
+            --region us-east-1 \
+            --cli-input-json file:///tmp/changeset.json 2>&1) || true
+
+          if echo "$RESULT" | grep -q "ChangeSetId"; then
+            CHANGESET_ID=$(echo "$RESULT" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['ChangeSetId'])")
+            echo "AWS Marketplace version submitted. ChangeSet ID: ${CHANGESET_ID}"
+            echo "MARKETPLACE_CHANGESET_ID=${CHANGESET_ID}" >> $GITHUB_ENV
+          else
+            echo "::warning::AWS Marketplace submission failed: ${RESULT}"
+            echo "Manual submission may be required via the AWS Marketplace Management Portal."
+          fi
+
+      - name: Generate summary
+        if: always()
+        run: |
+          TAGS="${{ steps.meta.outputs.tags }}"
+          FULL_TAG=$(echo "$TAGS" | head -n1)
+          TAG_ONLY=$(echo "$FULL_TAG" | sed 's/.*://')
+
+          echo "## ECR Image Published (Manual)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.image-tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** 709825985650.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "$TAGS" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platform:** linux/arm64 (AWS Graviton)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull Command:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull 709825985650.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${TAG_ONLY}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          if [ -n "${MARKETPLACE_CHANGESET_ID:-}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## AWS Marketplace" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${{ steps.image-tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "**ChangeSet ID:** ${MARKETPLACE_CHANGESET_ID}" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** Submitted (check [Marketplace Portal](https://aws.amazon.com/marketplace/management/requests))" >> $GITHUB_STEP_SUMMARY
+          fi
