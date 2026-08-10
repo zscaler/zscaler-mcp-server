@@ -216,7 +216,9 @@ typer==0.27.1
     # via mcp
 typing-extensions==4.16.0
     # via
+    #   anyio
     #   fastapi
+    #   httpx2
     #   huggingface-hub
     #   jwcrypto
     #   langsmith
@@ -228,6 +230,8 @@ typing-extensions==4.16.0
     #   pydantic
     #   pydantic-core
     #   pydash
+    #   referencing
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
