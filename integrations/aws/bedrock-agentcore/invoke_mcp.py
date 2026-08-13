@@ -155,10 +155,14 @@ class Client:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--arn", help="Agent runtime ARN (default: from .aws-deploy-state.json)")
     ap.add_argument("--region", default=None)
-    ap.add_argument("--legacy", action="store_true", help=f"Use the {LEGACY_VERSION} handshake revision")
+    ap.add_argument(
+        "--legacy", action="store_true", help=f"Use the {LEGACY_VERSION} handshake revision"
+    )
     ap.add_argument("--list-tools", action="store_true")
     ap.add_argument("--call", metavar="TOOL", help="Tool name to invoke")
     ap.add_argument("--args", default="{}", help="Tool arguments as a JSON object")
@@ -178,7 +182,9 @@ def main() -> None:
     client = Client(arn, region, legacy=args.legacy)
     if args.legacy:
         info = client.handshake().get("result", {}).get("serverInfo", {})
-        print(f"handshake: {info.get('name')} {info.get('version')}  (session {client.session_id})\n")
+        print(
+            f"handshake: {info.get('name')} {info.get('version')}  (session {client.session_id})\n"
+        )
 
     if args.list_tools:
         response = client.call("tools/list", {})
@@ -194,7 +200,9 @@ def main() -> None:
         return
 
     if args.call:
-        response = client.call("tools/call", {"name": args.call, "arguments": json.loads(args.args)})
+        response = client.call(
+            "tools/call", {"name": args.call, "arguments": json.loads(args.args)}
+        )
         if args.raw:
             print(json.dumps(response, indent=2))
             return

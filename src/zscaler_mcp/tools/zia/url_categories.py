@@ -95,6 +95,24 @@ class ListInput(BaseModel):
             description="API filter by category type: URL_CATEGORY, TLD_CATEGORY or ALL.",
         ),
     ] = None
+    contains_url: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description=(
+                "Return ONLY the categories whose configured URL entries match this "
+                "URL or domain — the direct answer to 'which custom category contains "
+                "app.box.com?'. Combine with custom_only=True for exactly that "
+                "question. Matching is applied by the server, is domain-aware "
+                "(an entry `.box.com` matches `app.box.com`; schemes, paths and case "
+                "are ignored), and covers the `urls` and `db_categorized_urls` "
+                "entries an admin configured. It does NOT consult Zscaler's own "
+                "curated classification — that question is `zia_url_lookup`. Each "
+                "returned category carries a `_url_match` field naming the entries "
+                "that matched."
+            ),
+        ),
+    ] = None
 
 
 class LookupInput(BaseModel):
@@ -201,6 +219,62 @@ class OperationResult(AgentView):
     message: str = Field(description="Human-readable result summary.")
 
 
+def _url_host(value: str) -> str:
+    """Reduce a URL or domain to its bare host for matching.
+
+    Accepts whatever an admin is likely to paste — `app.box.com`,
+    `https://app.box.com/folder/x?y=1`, `APP.BOX.COM:443` — and returns
+    `app.box.com`. Matching is by domain; schemes, paths, query strings, ports
+    and case carry no meaning in a category's URL entries.
+    """
+    host = value.strip().lower()
+    if "://" in host:
+        host = host.split("://", 1)[1]
+    host = host.split("/", 1)[0].split("?", 1)[0].split(":", 1)[0]
+    return host.strip(".")
+
+
+def _entry_matches_host(entry: str, host: str) -> bool:
+    """True when a category URL entry covers ``host``, per ZIA semantics.
+
+    A leading dot on an entry (`.box.com`) explicitly includes subdomains, and a
+    bare entry (`box.com`) covers the domain itself and its subdomains too — so
+    both reduce to the same rule: exact match, or ``host`` ends with
+    ``"." + entry``. The suffix check is anchored at a label boundary, so
+    `box.com` never matches `notbox.com`.
+    """
+    entry_host = _url_host(entry)
+    if not entry_host:
+        return False
+    return host == entry_host or host.endswith("." + entry_host)
+
+
+def _match_categories_containing(rows: list[dict[str, Any]], url: str) -> list[dict[str, Any]]:
+    """Keep only the categories whose configured entries cover ``url``.
+
+    Searches the admin-configured entry lists (`urls`, `db_categorized_urls`) —
+    the fields the customer's own screenshots showed the answer living in
+    (`.app.box.com` inside CUSTOM_44). Zscaler's curated classification is NOT
+    consulted here; that is `zia_url_lookup`'s job.
+
+    Matching categories are returned as the verbatim record plus one additive
+    `_url_match` field naming the entries that matched — same audit-trail
+    pattern as `_cloud_applications_resolution`, so the agent can explain WHY a
+    category matched instead of guessing.
+    """
+    host = _url_host(url)
+    matched_rows: list[dict[str, Any]] = []
+    for row in rows:
+        matches: list[dict[str, Any]] = []
+        for field in ("urls", "db_categorized_urls", "dbCategorizedUrls"):
+            for entry in row.get(field) or []:
+                if isinstance(entry, str) and _entry_matches_host(entry, host):
+                    matches.append({"field": field, "entry": entry})
+        if matches:
+            matched_rows.append({**row, "_url_match": {"url": url, "matched": matches}})
+    return matched_rows
+
+
 def _advanced_payload(advanced: Optional[dict[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key in (
@@ -244,11 +318,20 @@ def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
     For "list the custom URL categories", pass `custom_only=True` — that is a
     real API filter, so only those categories are fetched.
 
+    For "WHICH custom category contains app.box.com?", pass
+    `custom_only=True, contains_url="app.box.com"` — ONE call, and only the
+    matching categories come back, each annotated with `_url_match` naming the
+    entries that matched. Do NOT list all custom categories and scan their URL
+    lists yourself: the server's matching understands ZIA's domain semantics
+    (`.app.box.com` covers `app.box.com`), and a manual scan of full records is
+    exactly the response that exhausts token budgets on large tenants.
+
     Every category comes back with its URL, keyword and IP lists in full. The API
     has no parameter to return counts instead, so on a tenant whose categories
     hold large URL lists this response is big and nothing about the call itself
-    makes it smaller. Two things do: filter before calling, and pass a `query`
-    projection when the answer needs only part of each record — for example
+    makes it smaller. Three things do: `contains_url` when the question is about
+    one URL, filtering before calling, and a `query` projection when the answer
+    needs only part of each record — for example
     `[*].{id: id, name: configured_name, urls: custom_urls_count}` for an
     inventory rather than the URLs themselves. The projection is applied before
     the response is encoded, so it is a real saving, not cosmetic.
@@ -257,8 +340,10 @@ def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
     tenant with 5000 custom categories returns 5000 rows for `custom_only=True`.
 
     Use `zia_get_url_category` for one category's full definition once you know
-    its id. To find which category a specific URL belongs to, use
-    `zia_url_lookup` — a different question, and this tool does not answer it.
+    its id. For Zscaler's own (predefined) classification of a URL, use
+    `zia_url_lookup` — that is a different question, and this tool's
+    `contains_url` only searches admin-configured entries, never Zscaler's
+    curated database.
     """
     client = get_zscaler_client(service="zia")
     # `custom_only` and `type` are real query parameters on `/urlCategories`; the
@@ -274,7 +359,13 @@ def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
     results, _, err = client.zia.url_categories.list_categories(query_params=query_params)
     if err:
         raise RuntimeError(f"Failed to list URL categories: {err}")
-    return shape_many([r.as_dict() for r in (results or [])])
+    rows = [r.as_dict() for r in (results or [])]
+    if args.contains_url:
+        # Server-side, because the API has no such filter and the alternative is
+        # shipping every full record for the agent to scan — the 100k-token
+        # response this parameter exists to prevent.
+        rows = _match_categories_containing(rows, args.contains_url)
+    return shape_many(rows)
 
 
 @tool(
@@ -285,7 +376,7 @@ def zia_list_url_categories(args: ListInput) -> list[dict[str, Any]]:
     is_list=True,
 )
 def zia_url_lookup(args: LookupInput) -> list[dict[str, Any]]:
-    """Which category does a URL belong to? Use THIS for that question.
+    """Which category does a URL belong to? Use THIS for that question — default.
 
     Answers "what category is twilio.com?" directly: pass the URLs and get back
     Zscaler's classification for each, e.g.
@@ -293,14 +384,19 @@ def zia_url_lookup(args: LookupInput) -> list[dict[str, Any]]:
     The response is small and scales with the number of URLs you ask about, not
     with the size of the tenant's category inventory.
 
-    Do NOT try to answer it by listing categories. `zia_list_url_categories`
-    returns the category inventory without any URLs in it, so it cannot tell you
-    where a URL landed no matter how much of it you read.
+    This returns Zscaler's PREDEFINED classification ONLY. It does not report
+    the tenant's custom categories: a URL an admin placed in a custom category
+    still shows its predefined category here. When the user explicitly asks
+    about CUSTOM categories ("which custom category contains app.box.com?"),
+    make ONE call to
+    `zia_list_url_categories(custom_only=True, contains_url="app.box.com")` —
+    the server does the matching and returns only the categories that contain
+    the URL. Do not answer the custom question from this tool's output, and do
+    not list all categories and scan them yourself.
 
-    Two limits worth knowing. Only Zscaler's PREDEFINED classification is
-    returned, so a URL matched by a custom category still reports its predefined
-    category here. And up to 100 URLs may be looked up per request; a URL in no
-    predefined category comes back as `MISCELLANEOUS_OR_UNKNOWN`.
+    Unless the user says "custom", this tool alone answers the question — stop
+    after it. Up to 100 URLs per request; a URL in no predefined category comes
+    back as `MISCELLANEOUS_OR_UNKNOWN`.
     """
     urls = parse_list(args.urls)
     if not urls:

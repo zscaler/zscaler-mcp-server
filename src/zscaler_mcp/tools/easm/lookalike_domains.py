@@ -100,6 +100,9 @@ def zeasm_list_lookalike_domains(args: ListLookalikeDomainsInput) -> list[dict[s
     toolset="zeasm_lookalike_domains",
     input_model=GetLookalikeDomainInput,
     is_list=False,
+    # WHOIS registrant fields are authored by whoever registered the lookalike
+    # domain — by definition an external threat actor.
+    untrusted_content=True,
 )
 def zeasm_get_lookalike_domain(args: GetLookalikeDomainInput) -> dict[str, Any]:
     """Get full detail for one EASM lookalike domain.

@@ -41,6 +41,7 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     wire_format: WireFormat = WireFormat.AUTO,
+    untrusted_content: bool = False,
     registry: Registry = REGISTRY,
 ) -> Callable[[Callable[[Any], Any]], Callable[[Any], Any]]:
     """Register the decorated function as a tool.
@@ -61,6 +62,11 @@ def tool(
         name: Tool name; defaults to the function's ``__name__``.
         description: Agent-facing description; defaults to the function docstring.
         wire_format: Default serialization policy.
+        untrusted_content: True if the tool returns content from OUTSIDE the
+            customer's trust boundary (WHOIS registrant data, external scan output) —
+            NOT ordinary tenant data authored by admins or authenticated employees.
+            The bridge prepends a provenance banner to the text block so the model
+            treats the values as data, not instructions. See :class:`ToolSpec`.
         registry: Target registry (defaults to the process-wide one; injectable
             for test isolation).
     """
@@ -90,6 +96,7 @@ def tool(
             toolset=toolset,
             is_list=is_list,
             wire_format=wire_format,
+            untrusted_content=untrusted_content,
         )
         registry.add(spec)
         return fn

@@ -129,6 +129,9 @@ def zeasm_get_finding_details(args: GetFindingInput) -> dict[str, Any]:
     input_model=GetFindingInput,
     is_list=False,
     wire_format=WireFormat.JSON,
+    # `content` is scanner-captured text from an external internet-facing asset —
+    # authored by whoever controls that asset, i.e. a potential external attacker.
+    untrusted_content=True,
 )
 def zeasm_get_finding_evidence(args: GetFindingInput) -> dict[str, Any]:
     """Get the scan evidence attributed to one EASM finding.
@@ -160,6 +163,9 @@ def zeasm_get_finding_evidence(args: GetFindingInput) -> dict[str, Any]:
     input_model=GetFindingInput,
     is_list=False,
     wire_format=WireFormat.JSON,
+    # Full scan output captured from an external internet-facing asset — same
+    # externally-authored content as the evidence tool above.
+    untrusted_content=True,
 )
 def zeasm_get_finding_scan_output(args: GetFindingInput) -> dict[str, Any]:
     """Get the complete scan output for one EASM finding.
