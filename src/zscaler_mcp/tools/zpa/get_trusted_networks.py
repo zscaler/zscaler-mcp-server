@@ -25,6 +25,11 @@ class TrustedNetworkInput(BaseModel):
     name: Annotated[
         Optional[str], Field(default=None, description="Exact trusted network name to match.")
     ] = None
+    page: Annotated[Optional[int], Field(default=None, ge=1, description="Page number.")] = None
+    page_size: Annotated[
+        Optional[int],
+        Field(default=None, ge=1, le=500, description="Items per page (API default 20, max 500)."),
+    ] = None
 
 
 @tool(
@@ -47,6 +52,10 @@ def get_zpa_trusted_network(args: TrustedNetworkInput) -> list[dict[str, Any]]:
         return shape_many([network.as_dict()])
 
     qp = {"search": args.name} if args.name else {}
+    if args.page is not None:
+        qp["page"] = str(args.page)
+    if args.page_size is not None:
+        qp["page_size"] = str(args.page_size)
     networks, _, err = api.list_trusted_networks(query_params=qp)
     if err:
         raise RuntimeError(f"Failed to list trusted networks: {err}")

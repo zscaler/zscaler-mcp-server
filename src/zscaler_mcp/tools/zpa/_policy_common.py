@@ -39,6 +39,23 @@ __all__ = [
 class ListRulesInput(BaseModel):
     """Inputs for listing a ZPA policy-rule family."""
 
+    search: Annotated[
+        Optional[str],
+        Field(default=None, description="Search string matched server-side against rule fields."),
+    ] = None
+    page: Annotated[Optional[int], Field(default=None, ge=1, description="Page number.")] = None
+    page_size: Annotated[
+        Optional[int],
+        Field(
+            default=None,
+            ge=1,
+            le=500,
+            description=(
+                "Items per page (API default 20, max 500). The API paginates: without "
+                "`page`/`page_size` only the first 20 rules are returned."
+            ),
+        ),
+    ] = None
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -85,7 +102,17 @@ def _opt_str(value: Any) -> Optional[str]:
 
 def list_rules(policy_type: str, args: ListRulesInput) -> list[dict[str, Any]]:
     client = get_zscaler_client(service="zpa")
+    # The endpoint paginates (default 20 rows, max 500) and the SDK does not
+    # auto-page, so these must reach the API or callers silently see only the
+    # first 20 rules (issue #96). Same passthrough shape as segment_groups; the
+    # SDK's request executor owns the page_size -> pagesize wire spelling.
     qp: dict[str, Any] = {}
+    if args.search:
+        qp["search"] = args.search
+    if args.page is not None:
+        qp["page"] = str(args.page)
+    if args.page_size is not None:
+        qp["page_size"] = str(args.page_size)
     if args.microtenant_id:
         qp["microtenant_id"] = args.microtenant_id
     rules, _, err = client.zpa.policies.list_rules(policy_type, query_params=qp)

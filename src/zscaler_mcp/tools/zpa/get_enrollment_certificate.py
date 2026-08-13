@@ -36,6 +36,11 @@ class EnrollmentCertInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
+    page: Annotated[Optional[int], Field(default=None, ge=1, description="Page number.")] = None
+    page_size: Annotated[
+        Optional[int],
+        Field(default=None, ge=1, le=500, description="Items per page (API default 20, max 500)."),
+    ] = None
 
 
 @tool(
@@ -67,6 +72,10 @@ def get_zpa_enrollment_certificate(args: EnrollmentCertInput) -> list[dict[str, 
         return shape_many([cert.as_dict()])
 
     qp: dict[str, Any] = {"search": args.search} if args.search else {}
+    if args.page is not None:
+        qp["page"] = str(args.page)
+    if args.page_size is not None:
+        qp["page_size"] = str(args.page_size)
     certs, _, err = api.list_enrolment(query_params=qp or None)
     if err:
         raise RuntimeError(f"Failed to list enrollment certificates: {err}")

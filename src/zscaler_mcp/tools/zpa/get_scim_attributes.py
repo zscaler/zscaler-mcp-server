@@ -29,6 +29,11 @@ class ScimAttributeInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match.")
     ] = None
+    page: Annotated[Optional[int], Field(default=None, ge=1, description="Page number.")] = None
+    page_size: Annotated[
+        Optional[int],
+        Field(default=None, ge=1, le=500, description="Items per page (API default 20, max 500)."),
+    ] = None
 
 
 @tool(
@@ -48,6 +53,10 @@ def get_zpa_scim_attribute(args: ScimAttributeInput) -> list[dict[str, Any]]:
     qp: dict[str, Any] = {}
     if args.search:
         qp["search"] = args.search
+    if args.page is not None:
+        qp["page"] = str(args.page)
+    if args.page_size is not None:
+        qp["page_size"] = str(args.page_size)
     if args.attribute_id:
         attr, _, err = client.zpa.scim_attributes.get_scim_attribute(
             idp_id=idp_id, attribute_id=args.attribute_id, query_params=qp
