@@ -6,6 +6,18 @@ Release Notes
 Zscaler Integrations MCP Server Changelog
 ------------------------------------------
 
+## 0.15.1 (August 12, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Enhancements
+
+**``zia_list_url_categories`` can now answer "which category contains this URL?" in one small call.** A new ``contains_url`` parameter filters the response server-side to only the categories whose admin-configured URL entries cover the given URL, each annotated with a ``_url_match`` field naming the entries that matched. Matching follows ZIA's own domain semantics (``.app.box.com`` covers ``app.box.com``; a bare ``box.com`` covers its subdomains). Previously the only option was returning every category in full — on tenants with large custom URL lists a single question could cost over 100,000 response tokens and overflow gateway context limits; the same question now returns only the matching category records.
+
+**Tools that return content captured from outside the tenant now label it as untrusted.** The three EASM tools that surface externally-authored text (``zeasm_get_finding_evidence``, ``zeasm_get_finding_scan_output``, ``zeasm_get_lookalike_domain`` WHOIS data) prepend a notice instructing the model to treat the values as data, never as instructions — a defense-in-depth measure against indirect prompt injection. The records themselves are unchanged.
+
 ## 0.15.0 (July 30, 2026)
 
 ### Notes
