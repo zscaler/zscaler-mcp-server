@@ -28,6 +28,11 @@ class SamlAttributeInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match.")
     ] = None
+    page: Annotated[Optional[int], Field(default=None, ge=1, description="Page number.")] = None
+    page_size: Annotated[
+        Optional[int],
+        Field(default=None, ge=1, le=500, description="Items per page (API default 20, max 500)."),
+    ] = None
 
 
 @tool(
@@ -44,6 +49,10 @@ def get_zpa_saml_attribute(args: SamlAttributeInput) -> list[dict[str, Any]]:
     qp: dict[str, Any] = {}
     if args.search:
         qp["search"] = args.search
+    if args.page is not None:
+        qp["page"] = str(args.page)
+    if args.page_size is not None:
+        qp["page_size"] = str(args.page_size)
     if args.idp_name:
         idp_id = resolve_idp_id(client, args.idp_name)
         attrs, _, err = client.zpa.saml_attributes.list_saml_attributes_by_idp(
