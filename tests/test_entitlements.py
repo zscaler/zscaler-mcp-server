@@ -75,6 +75,55 @@ def test_extract_handles_aliases():
     assert extract_entitled_services(payload) == {"zid", "zeasm"}
 
 
+def test_extract_maps_prd_values_a_real_token_emits():
+    """The canonical values pinned against a live ZIdentity token (issue #95).
+
+    ZIdentity emits ``CLOUD_CONNECTOR`` for Cloud & Branch Connector, ``ZIAM``
+    for ZIdentity, and ``ZINSIGHTS`` for Z-Insights — none of which matched the
+    guessed aliases, so the entitlement filter stripped working ztw/zid/zins
+    tools. The payload below mirrors the real token's ``service-info`` shape.
+    """
+    payload = {
+        "service-info": [
+            {"prd": "ZIA"},
+            {"prd": "ZPA"},
+            {"prd": "CLOUD_CONNECTOR"},
+            {"prd": "ZCC"},
+            {"prd": "ZDX"},
+            {"prd": "ZIAM"},
+            {"prd": "ZINSIGHTS"},
+        ]
+    }
+    assert extract_entitled_services(payload) == {
+        "zia",
+        "zpa",
+        "ztw",
+        "zcc",
+        "zdx",
+        "zid",
+        "zins",
+    }
+
+
+def test_extract_warns_naming_unmapped_prd_values(caplog):
+    """A mapping miss must be visible in the log, or it is indistinguishable
+    from a genuine entitlement gap (the diagnosis problem in issue #95)."""
+    payload = {"service-info": [{"prd": "ZIA"}, {"prd": "RISK360"}, {"prd": "ZGUARD"}]}
+    with caplog.at_level("WARNING", logger="zscaler_mcp.security.entitlements"):
+        assert extract_entitled_services(payload) == {"zia"}
+    warning = " ".join(r.getMessage() for r in caplog.records)
+    assert "RISK360" in warning and "ZGUARD" in warning
+    # The mapped product must not be named as unmapped.
+    assert "'ZIA'" not in warning
+
+
+def test_extract_no_warning_when_everything_maps(caplog):
+    payload = {"service-info": [{"prd": "ZIA"}, {"prd": "ZPA"}]}
+    with caplog.at_level("WARNING", logger="zscaler_mcp.security.entitlements"):
+        extract_entitled_services(payload)
+    assert not caplog.records
+
+
 @pytest.mark.parametrize("payload", [{}, {"service-info": "nope"}, {"service-info": [123, "x"]}])
 def test_extract_returns_empty_on_garbage(payload):
     assert extract_entitled_services(payload) == set()

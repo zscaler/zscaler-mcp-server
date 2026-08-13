@@ -59,17 +59,35 @@ def get_zscaler_client(*, service: str | None = None):
     cloud = os.getenv("ZSCALER_CLOUD")
     user_agent_comment = os.getenv("ZSCALER_MCP_USER_AGENT_COMMENT")
 
-    required = {"ZSCALER_CLIENT_ID": client_id, "ZSCALER_VANITY_DOMAIN": vanity_domain}
+    # Credentials and tenant-scope identifiers are checked separately because
+    # they fail differently (issue #98): a missing credential breaks OneAPI auth
+    # for everything, while a missing customer ID only scopes out one product
+    # family — and on a tenant not entitled to that product the value may not
+    # exist at all. Reporting a scope ID as a "missing credential" sends the
+    # operator to re-check a client ID / secret that is working fine.
+    credentials = {"ZSCALER_CLIENT_ID": client_id, "ZSCALER_VANITY_DOMAIN": vanity_domain}
+    scope_ids: dict[str, str | None] = {}
     if service == "zpa":
-        required["ZSCALER_CUSTOMER_ID"] = customer_id
+        scope_ids["ZSCALER_CUSTOMER_ID"] = customer_id
     if service == "zcell":
-        required["ZCELL_CUSTOMER_ID"] = zcell_customer_id
+        scope_ids["ZCELL_CUSTOMER_ID"] = zcell_customer_id
 
-    missing = [name for name, value in required.items() if not (value and value.strip())]
-    if missing:
+    def _absent(values: dict[str, str | None]) -> list[str]:
+        return [name for name, value in values.items() if not (value and value.strip())]
+
+    missing_credentials = _absent(credentials)
+    if missing_credentials:
         raise RuntimeError(
             "Zscaler SDK failed to initialize due to missing OneAPI credentials: "
-            f"{missing}. Set them in the environment or .env file."
+            f"{missing_credentials}. Set them in the environment or .env file."
+        )
+    missing_scope = _absent(scope_ids)
+    if missing_scope:
+        raise RuntimeError(
+            f"{missing_scope[0]} is required for {service} tools. Set it in the "
+            "environment or .env file (the tenant/customer ID, not an OneAPI "
+            f"credential — authentication itself is unaffected). If your tenant "
+            f"is not entitled to {service}, this value may not exist."
         )
     if not client_secret and not private_key:
         raise ValueError(
