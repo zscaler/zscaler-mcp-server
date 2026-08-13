@@ -78,6 +78,7 @@ class TestParametersMatchTheAPI:
             "search",
             "custom_only",
             "type",
+            "contains_url",
         }
 
 
@@ -118,6 +119,30 @@ class TestDescriptionsSteerToolSelection:
         assert "100 URLs" in text
         assert "MISCELLANEOUS_OR_UNKNOWN" in text
         assert "PREDEFINED" in text or "predefined" in text
+
+    def test_lookup_routes_the_custom_question_to_contains_url(self):
+        """Field tests 1 and 4: the model stopped at lookup and answered the
+        CUSTOM question from PREDEFINED data. The lookup description must state
+        it is predefined-only and hand the custom question to the one-call
+        recipe, so the chain is named rather than left for the model to invent.
+        """
+        text = " ".join(_spec("zia_url_lookup").description.split())
+        assert "PREDEFINED classification ONLY" in text
+        assert "contains_url" in text
+        assert "custom_only=True" in text
+
+    def test_lookup_no_longer_claims_the_listing_has_no_urls(self):
+        """Stale claim from the /lite design — the listing DOES return the URL
+        lists now (that is the whole token problem). An agent believing this
+        would never scan a listing, but it would also mis-explain results.
+        """
+        text = " ".join(_spec("zia_url_lookup").description.split())
+        assert "without any URLs" not in text
+
+    def test_listing_documents_contains_url_as_the_one_call_answer(self):
+        text = " ".join(_spec("zia_list_url_categories").description.split())
+        assert "contains_url" in text
+        assert "_url_match" in text
 
 
 class TestListingTool:
@@ -203,3 +228,152 @@ class TestListingTool:
 
         with pytest.raises(RuntimeError, match="Failed to list URL categories"):
             self._call(_Client)
+
+
+class TestContainsUrl:
+    """`contains_url` — 'which custom category contains app.box.com?' in one call.
+
+    Modeled directly on the customer's field tests against a real tenant, where
+    app.box.com lives in CUSTOM_44 "Box Domains" as the entry `.app.box.com`:
+
+    * Tests 1 & 4: the model answered the custom question from predefined data,
+      or listed everything and matched wrongly. The matching now happens here.
+    * Test 2: `custom_only=True` returned 5 categories at ~21,600 tokens each
+      because non-matching categories shipped their full URL lists. Only the
+      matching categories may come back.
+    """
+
+    BOX = {
+        "id": "CUSTOM_44",
+        "configured_name": "Box Domains",
+        "custom_category": True,
+        "urls": [".app.box.com"],
+        "db_categorized_urls": [".box.com"],
+    }
+    # The fat bystander: must never ship when it does not match (field test 2).
+    FAT = {
+        "id": "CUSTOM_45",
+        "configured_name": "Huge Allow List",
+        "custom_category": True,
+        "urls": [f"host{i}.example.com" for i in range(500)],
+        "db_categorized_urls": [],
+    }
+
+    def _client(self, rows):
+        class _Row:
+            def __init__(self, d):
+                self._d = d
+
+            def as_dict(self):
+                return dict(self._d)
+
+        class _API:
+            @staticmethod
+            def list_categories(query_params=None):
+                return ([_Row(r) for r in rows], None, None)
+
+        class _Client:
+            class zia:
+                url_categories = _API()
+
+        return _Client
+
+    def _call(self, rows, **kwargs):
+        spec = _spec("zia_list_url_categories")
+        with patch(
+            "zscaler_mcp.tools.zia.url_categories.get_zscaler_client",
+            return_value=self._client(rows),
+        ):
+            return spec.fn(spec.input_model(**kwargs))
+
+    def test_only_matching_categories_are_returned(self):
+        """Field test 2: the non-matching fat category must not ship at all."""
+        out = self._call([self.BOX, self.FAT], contains_url="app.box.com")
+        assert [r["id"] for r in out] == ["CUSTOM_44"]
+
+    def test_leading_dot_entry_matches_the_bare_host(self):
+        """The customer's tenant holds `.app.box.com`; the user asks about
+        `app.box.com`. A literal string comparison misses — this was field
+        test 4's wrong 'not found'."""
+        out = self._call([self.BOX], contains_url="app.box.com")
+        assert out and out[0]["id"] == "CUSTOM_44"
+
+    def test_a_parent_domain_entry_covers_subdomains(self):
+        """ZIA semantics: `.box.com` (and bare `box.com`) cover app.box.com."""
+        rows = [{"id": "C1", "urls": [".box.com"]}, {"id": "C2", "urls": ["box.com"]}]
+        out = self._call(rows, contains_url="app.box.com")
+        assert [r["id"] for r in out] == ["C1", "C2"]
+
+    def test_suffix_matching_is_anchored_at_a_label_boundary(self):
+        """`box.com` must not match `notbox.com` — endswith alone would."""
+        rows = [{"id": "C1", "urls": ["box.com"]}]
+        assert self._call(rows, contains_url="notbox.com") == []
+
+    def test_the_input_may_be_a_full_url(self):
+        """Users paste URLs, not hosts: scheme, path, query, port, case."""
+        out = self._call([self.BOX], contains_url="HTTPS://APP.BOX.COM:443/folder/x?y=1")
+        assert out and out[0]["id"] == "CUSTOM_44"
+
+    def test_db_categorized_urls_are_searched_too(self):
+        """The retaining-parent-category list is a real place the answer lives —
+        the customer's own screenshot showed `.box.com` there."""
+        rows = [{"id": "C1", "urls": [], "db_categorized_urls": [".box.com"]}]
+        out = self._call(rows, contains_url="app.box.com")
+        assert out and out[0]["id"] == "C1"
+
+    def test_no_match_returns_an_empty_list(self):
+        """Authoritative 'no custom category contains it' — not an error."""
+        assert self._call([self.BOX, self.FAT], contains_url="twilio.com") == []
+
+    def test_the_match_annotation_names_the_matching_entries(self):
+        """The agent must be able to say WHY a category matched (the customer's
+        good run reported 'Match reason: the category contains .app.box.com').
+        The annotation is additive — the verbatim record stays intact (#88)."""
+        out = self._call([self.BOX], contains_url="app.box.com")
+        record = out[0]
+        assert record["_url_match"]["url"] == "app.box.com"
+        assert {m["entry"] for m in record["_url_match"]["matched"]} == {
+            ".app.box.com",
+            ".box.com",
+        }
+        # every original key survives untouched
+        for key, value in self.BOX.items():
+            assert record[key] == value
+
+    def test_contains_url_combines_with_custom_only(self):
+        """The recipe is one call: custom_only goes upstream, matching is local."""
+        captured: list = []
+
+        class _Row:
+            def __init__(self, d):
+                self._d = d
+
+            def as_dict(self):
+                return dict(self._d)
+
+        class _API:
+            @staticmethod
+            def list_categories(query_params=None):
+                captured.append(query_params)
+                return ([_Row(TestContainsUrl.BOX)], None, None)
+
+        class _Client:
+            class zia:
+                url_categories = _API()
+
+        spec = _spec("zia_list_url_categories")
+        with patch(
+            "zscaler_mcp.tools.zia.url_categories.get_zscaler_client",
+            return_value=_Client,
+        ):
+            out = spec.fn(spec.input_model(custom_only=True, contains_url="app.box.com"))
+        assert captured == [{"custom_only": True}]
+        assert [r["id"] for r in out] == ["CUSTOM_44"]
+
+    def test_camelcase_records_match_too(self):
+        """A raw passthrough record carries `dbCategorizedUrls`; both spellings
+        must be searched — same both-spellings rule as `custom_only` before the
+        endpoint switch."""
+        rows = [{"id": "C1", "dbCategorizedUrls": [".box.com"]}]
+        out = self._call(rows, contains_url="app.box.com")
+        assert out and out[0]["id"] == "C1"

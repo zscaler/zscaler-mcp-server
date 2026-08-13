@@ -60,6 +60,20 @@ class ToolSpec:
         is_list: True if the tool returns a list of records/rows.
         wire_format: Default serialization policy. ``AUTO`` = flat list -> CSV,
             object -> JSON.
+        untrusted_content: True if the tool returns content sourced from OUTSIDE
+            the customer's trust boundary. The line is the trust boundary, not the
+            privilege level: data authored inside the authenticated, customer-managed
+            tenant — by an admin OR an IdP-authenticated employee — is ordinary
+            tenant data and is NOT flagged (that is the accepted-risk class shared by
+            every admin/user-editable free-text field). Only data crossing in from
+            outside qualifies: WHOIS registrant fields on an attacker-registered
+            domain, or text scraped from an external internet-facing asset. When set,
+            the bridge prepends a provenance banner to the text block telling the
+            model to treat the values as data, not instructions (defense-in-depth
+            against indirect prompt injection, MCP06). Additive and text-only: the
+            verbatim record in ``structuredContent`` is never restructured (issue
+            #88). Efficacy depends on the client honouring the banner — a hint, not a
+            gate.
     """
 
     name: str
@@ -72,6 +86,7 @@ class ToolSpec:
     toolset: str
     is_list: bool = False
     wire_format: WireFormat = WireFormat.AUTO
+    untrusted_content: bool = False
 
     def __post_init__(self) -> None:
         if self.action not in _VALID_ACTIONS:

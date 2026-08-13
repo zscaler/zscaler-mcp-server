@@ -707,7 +707,7 @@
     },
     {
       "name": "zia_url_lookup",
-      "description": "Which category does a URL belong to? Use THIS for that question.\n\nAnswers \"what category is twilio.com?\" directly: pass the URLs and get back\nZscaler's classification for each, e.g.\n`{\"url\": \"notpurple.com\", \"urlClassifications\": [\"SPECIALIZED_SHOPPING\"]}`.\nThe response is sma..."
+      "description": "Which category does a URL belong to? Use THIS for that question — default.\n\nAnswers \"what category is twilio.com?\" directly: pass the URLs and get back\nZscaler's classification for each, e.g.\n`{\"url\": \"notpurple.com\", \"urlClassifications\": [\"SPECIALIZED_SHOPPING\"]}`.\nThe respo..."
     },
     {
       "name": "get_zpa_app_protection_profile",
