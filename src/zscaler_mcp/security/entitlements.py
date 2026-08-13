@@ -61,13 +61,22 @@ PRD_TO_SERVICE: dict[str, str] = {
     "ZDX": "zdx",
     "ZCC": "zcc",
     "ZTW": "ztw",
+    # Canonical `prd` value ZIdentity emits for Cloud & Branch Connector,
+    # pinned against a live OneAPI token (issue #95).
+    "CLOUD_CONNECTOR": "ztw",
     "ZIDENTITY": "zid",
     "ZID": "zid",
     "IDENTITY": "zid",
+    # Canonical `prd` value ZIdentity emits for ZIdentity itself (Identity &
+    # Access Management), pinned against a live OneAPI token (issue #95).
+    "ZIAM": "zid",
     "ZEASM": "zeasm",
     "EASM": "zeasm",
     "ZINS": "zins",
     "INSIGHTS": "zins",
+    # Canonical `prd` value ZIdentity emits for Z-Insights, pinned against a
+    # live OneAPI token (issue #95).
+    "ZINSIGHTS": "zins",
     "ZMS": "zms",
     # ZCell (Zscaler Cellular). The exact `prd` claim value ZIdentity emits for
     # Cellular is not yet confirmed against a live token; map the likely variants
@@ -109,9 +118,14 @@ def extract_entitled_services(payload: dict) -> Set[str]:
 
     Reads ``service-info`` from the payload, lifts each ``prd`` value, and maps
     known product codes to internal service identifiers (``zia`` / ``zpa`` /
-    ...). Unknown product codes are silently skipped.
+    ...). Product codes with no MCP service (RISK360, ZGUARD, BI, ...) are
+    skipped, but every skipped value is named in a WARN line: an unmapped value
+    for a product this server DOES serve means the filter is about to remove
+    working tools (the class of bug in issue #95), and without the log that is
+    indistinguishable from a genuine entitlement gap.
     """
     services: Set[str] = set()
+    unmapped: list[str] = []
 
     service_info = payload.get("service-info") or payload.get("serviceInfo")
     if not isinstance(service_info, list):
@@ -126,6 +140,17 @@ def extract_entitled_services(payload: dict) -> Set[str]:
         mapped = PRD_TO_SERVICE.get(prd.strip().upper())
         if mapped:
             services.add(mapped)
+        else:
+            unmapped.append(prd.strip())
+
+    if unmapped:
+        logger.warning(
+            "entitlement filter: token carries prd values with no known service "
+            "mapping, ignored: %s. If one of these corresponds to a product this "
+            "server provides tools for, its tools are being removed by a mapping "
+            "gap, not a missing entitlement — please report it.",
+            sorted(set(unmapped)),
+        )
 
     return services
 

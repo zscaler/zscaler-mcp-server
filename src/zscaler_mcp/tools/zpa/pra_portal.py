@@ -29,6 +29,11 @@ class ListPortalsInput(BaseModel):
     search: Annotated[
         Optional[str], Field(default=None, description="Server-side substring match on `name`.")
     ] = None
+    page: Annotated[Optional[int], Field(default=None, ge=1, description="Page number.")] = None
+    page_size: Annotated[
+        Optional[int],
+        Field(default=None, ge=1, le=500, description="Items per page (API default 20, max 500)."),
+    ] = None
     microtenant_id: Annotated[
         Optional[str], Field(default=None, description="Microtenant ID for scoping.")
     ] = None
@@ -138,6 +143,10 @@ def zpa_list_pra_portals(args: ListPortalsInput) -> list[dict[str, Any]]:
     qp: dict[str, Any] = {}
     if args.search:
         qp["search"] = args.search
+    if args.page is not None:
+        qp["page"] = str(args.page)
+    if args.page_size is not None:
+        qp["page_size"] = str(args.page_size)
     if args.microtenant_id:
         qp["microtenant_id"] = args.microtenant_id
     portals, _, err = client.zpa.pra_portal.list_portals(query_params=qp)
