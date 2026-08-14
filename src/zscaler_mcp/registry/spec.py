@@ -74,6 +74,13 @@ class ToolSpec:
             verbatim record in ``structuredContent`` is never restructured (issue
             #88). Efficacy depends on the client honouring the banner — a hint, not a
             gate.
+        untrusted_content_note: Optional tool-specific sentence appended to the
+            provenance banner (only meaningful with ``untrusted_content=True``).
+            Use it to NAME where the externally-authored content sits in this
+            tool's response (e.g. which sections carry sample-derived strings and
+            which field carries the vendor's own verdict) — wording only, never a
+            schema: the response is still passed through verbatim, so the note
+            must not become a field whitelist (issue #88).
     """
 
     name: str
@@ -87,6 +94,7 @@ class ToolSpec:
     is_list: bool = False
     wire_format: WireFormat = WireFormat.AUTO
     untrusted_content: bool = False
+    untrusted_content_note: str | None = None
 
     def __post_init__(self) -> None:
         if self.action not in _VALID_ACTIONS:

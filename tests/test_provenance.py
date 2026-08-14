@@ -18,15 +18,18 @@ from zscaler_mcp.registry.fastmcp_bridge import _UNTRUSTED_CONTENT_NOTICE, _to_t
 from zscaler_mcp.registry.spec import READ, ToolSpec
 
 # The exact set of tools that surface content from OUTSIDE the customer's trust
-# boundary — WHOIS on attacker-registered domains and text scraped from external
-# internet-facing assets. Deliberately EXCLUDES ordinary tenant data authored inside
-# the authenticated boundary (admin-set fields, IdP-authenticated device data like
+# boundary — WHOIS on attacker-registered domains, text scraped from external
+# internet-facing assets, and sandbox detonation reports (whose whole purpose is to
+# capture what a hostile file author put in the sample — crafting the input IS the
+# attack). Deliberately EXCLUDES ordinary tenant data authored inside the
+# authenticated boundary (admin-set fields, IdP-authenticated device data like
 # zcc_list_devices) — that is the accepted-risk internal-authored class, not this one.
 # Kept explicit so adding the flag elsewhere is a conscious, reviewed change.
 _EXPECTED_UNTRUSTED = {
     "zeasm_get_finding_evidence",
     "zeasm_get_finding_scan_output",
     "zeasm_get_lookalike_domain",
+    "zia_get_sandbox_report",
 }
 
 
@@ -34,7 +37,7 @@ class _In(BaseModel):
     pass
 
 
-def _spec(*, untrusted: bool, is_list: bool = True) -> ToolSpec:
+def _spec(*, untrusted: bool, is_list: bool = True, note: str | None = None) -> ToolSpec:
     def fn(_args: Any) -> Any:
         return [{"name": "x"}] if is_list else {"name": "x"}
 
@@ -49,6 +52,7 @@ def _spec(*, untrusted: bool, is_list: bool = True) -> ToolSpec:
         toolset="ts",
         is_list=is_list,
         untrusted_content=untrusted,
+        untrusted_content_note=note,
     )
 
 
@@ -87,7 +91,38 @@ def test_structured_content_is_verbatim_for_single_object():
     assert res.structured_content == record
 
 
+def test_tool_specific_note_is_appended_to_the_banner():
+    # The note rides INSIDE the banner line, before the records — same
+    # spotlighting position — and only when provided.
+    note = "Sample-authored content sits in `SignatureSources`."
+    res = _to_tool_result(_spec(untrusted=True, is_list=False, note=note), {"k": "v"})
+    text = res.content[0].text
+    assert note in text
+    assert text.index(_UNTRUSTED_CONTENT_NOTICE) < text.index(note) < text.index('"k"')
+    # No note -> banner unchanged.
+    bare = _to_tool_result(_spec(untrusted=True, is_list=False), {"k": "v"})
+    assert note not in bare.content[0].text
+
+
+def test_note_does_not_leak_into_structured_content():
+    note = "note text"
+    record = {"k": "v"}
+    res = _to_tool_result(_spec(untrusted=True, is_list=False, note=note), record)
+    assert res.structured_content == record
+
+
 def test_exactly_the_expected_tools_are_flagged():
     discover_tools()
     flagged = {name for name in REGISTRY.names() if REGISTRY.get(name).untrusted_content}
     assert flagged == _EXPECTED_UNTRUSTED
+
+
+def test_sandbox_report_names_the_verdict_block_in_its_note():
+    # The note must steer verdicts to Zscaler's Classification block, not
+    # sample-derived strings — the exact channel the investigate-sandbox
+    # command drives.
+    discover_tools()
+    spec = REGISTRY.get("zia_get_sandbox_report")
+    assert spec.untrusted_content is True
+    assert spec.untrusted_content_note and "Classification" in spec.untrusted_content_note
+    assert "SignatureSources" in spec.untrusted_content_note
