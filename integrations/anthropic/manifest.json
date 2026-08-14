@@ -387,7 +387,7 @@
     },
     {
       "name": "zia_get_sandbox_report",
-      "description": "Get the ZIA Sandbox detonation report for a file MD5 hash."
+      "description": "Get the ZIA Sandbox detonation report for a file MD5 hash.\n\nThe report contains content derived from the DETONATED SAMPLE — a file\nauthored by a potentially hostile party — alongside Zscaler's analysis."
     },
     {
       "name": "zia_get_sandbox_rule",

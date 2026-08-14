@@ -1,5 +1,15 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.15.3 (August 14, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- **Sandbox detonation reports are now labeled as untrusted content.** `zia_get_sandbox_report` returns content derived from the detonated file — authored by a potentially hostile party — and now carries the same provenance banner as the EASM tools, extended with a report-specific note: sample-authored strings sit chiefly in the behavior sections' `SignatureSources` arrays and certificate-related `FileProperties`, and any malicious/benign conclusion should come from Zscaler's `Classification` block, not from sample-derived strings. The record itself is unchanged. The `investigate-sandbox` plugin command now pins its verdict to `Classification.Type` explicitly, and the provenance banner can carry a tool-specific note (`untrusted_content_note`) naming where hostile content sits in a response.
+
 ## 0.15.2 (August 13, 2026)
 
 ### Notes
