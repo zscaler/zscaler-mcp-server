@@ -28,9 +28,9 @@ author = "Zscaler Technology Alliances"
 html_title = ""
 
 # The short X.Y version
-version = "0.15.3"
+version = "0.15.4"
 # The full version, including alpha/beta/rc tags
-release = "0.15.3"
+release = "0.15.4"
 
 # -- General configuration ---------------------------------------------------
 
