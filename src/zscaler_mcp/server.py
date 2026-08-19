@@ -1091,7 +1091,11 @@ def main() -> None:
     if args.generate_docs:
         from zscaler_mcp.common import docgen
 
-        written = docgen.generate_docs()
+        try:
+            written = docgen.generate_docs()
+        except docgen.SourceCheckoutRequired as exc:
+            print(f"--generate-docs: {exc}", file=sys.stderr)
+            raise SystemExit(2)
         if written:
             print(f"Regenerated {len(written)} file(s):")
             for path in written:
@@ -1107,7 +1111,11 @@ def main() -> None:
     if args.check_docs:
         from zscaler_mcp.common import docgen
 
-        stale = docgen.check_docs()
+        try:
+            stale = docgen.check_docs()
+        except docgen.SourceCheckoutRequired as exc:
+            print(f"--check-docs: {exc}", file=sys.stderr)
+            raise SystemExit(2)
         if stale:
             print("Stale auto-generated files (run `zscaler-mcp --generate-docs`):")
             for path in stale:

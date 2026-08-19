@@ -70,6 +70,10 @@ class GetLookalikeDomainInput(BaseModel):
     toolset="zeasm_lookalike_domains",
     input_model=ListLookalikeDomainsInput,
     is_list=True,
+    # Same records as the GET counterpart below: the lookalike hostname and
+    # registrant/registrar fields are authored by whoever registered the
+    # lookalike domain — by definition an external threat actor.
+    untrusted_content=True,
 )
 def zeasm_list_lookalike_domains(args: ListLookalikeDomainsInput) -> list[dict[str, Any]]:
     """List EASM lookalike domains for an organization.

@@ -55,6 +55,7 @@ __all__ = [
     "MARKER_START",
     "MARKER_END",
     "REPO_ROOT",
+    "SourceCheckoutRequired",
 ]
 
 
@@ -73,6 +74,48 @@ MARKER_END = "<!-- generated:end {region} -->"
 # src/zscaler_mcp/common/docgen.py → repo root is four parents up
 # (common → zscaler_mcp → src → <repo root>).
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+class SourceCheckoutRequired(RuntimeError):
+    """Raised when the doc generator runs outside a source checkout.
+
+    ``REPO_ROOT`` counts four levels up from this module, which lands on the
+    repo root only when the ``src/`` layer is present — a source tree, or an
+    editable install pointing at one. A regular (non-editable) install has no
+    ``src/`` level, so the same four hops land inside the interpreter's library
+    directory and every target path below is wrong.
+
+    Without this guard the first target raised ``FileNotFoundError`` on a path
+    the caller never named, which reads like a packaging bug rather than what it
+    is: a maintainer command invoked somewhere it cannot work.
+    """
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        super().__init__(
+            f"the doc generator must run from a source checkout, but resolved "
+            f"{root}, which contains no pyproject.toml. These commands rewrite "
+            f"files in the repository working tree, so they cannot run from an "
+            f"installed copy (pip, uvx, or the container image). Clone the repo "
+            f"and install it editable: uv pip install -e ."
+        )
+
+
+def _resolve_root(repo_root: Optional[Path]) -> Path:
+    """Resolve the tree the generator reads and writes.
+
+    An explicit ``repo_root`` is trusted and returned as-is: callers that pass
+    one (tests generating into a scratch tree) have named the destination
+    deliberately. Only the derived default is validated, because that is the
+    value that silently points into site-packages on a non-editable install.
+    """
+    if repo_root is not None:
+        return repo_root.resolve()
+
+    root = REPO_ROOT.resolve()
+    if not (root / "pyproject.toml").is_file():
+        raise SourceCheckoutRequired(root)
+    return root
 
 
 # ---------------------------------------------------------------------------
@@ -487,8 +530,10 @@ def generate_docs(
     Returns the list of files that were modified. Files already up to date are
     skipped silently (idempotent: a second run with no source changes writes
     nothing).
+
+    Raises :class:`SourceCheckoutRequired` when invoked outside a source tree.
     """
-    root = (repo_root or REPO_ROOT).resolve()
+    root = _resolve_root(repo_root)
     inv = inv or build_inventory()
     written: List[Path] = []
 
@@ -511,8 +556,10 @@ def check_docs(
 
     Empty list → docs are in sync with the live inventory. Non-empty → stale;
     CI should treat that as a build failure.
+
+    Raises :class:`SourceCheckoutRequired` when invoked outside a source tree.
     """
-    root = (repo_root or REPO_ROOT).resolve()
+    root = _resolve_root(repo_root)
     inv = inv or build_inventory()
     stale: List[Path] = []
 

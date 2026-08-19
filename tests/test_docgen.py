@@ -15,6 +15,7 @@ from __future__ import annotations
 import shutil
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 from textwrap import dedent
 
@@ -234,6 +235,47 @@ class TestEndToEndOnTempCopy(unittest.TestCase):
 
             written_again = docgen.generate_docs(repo_root=tmproot, inv=inv)
             self.assertEqual(written_again, [])
+
+
+class TestOutsideSourceCheckout(unittest.TestCase):
+    """The doc commands must explain themselves off a source tree.
+
+    ``REPO_ROOT`` counts four levels up from ``docgen.py``, which only lands on
+    the repo root while the ``src/`` layer exists. A non-editable install (pip,
+    uvx, the container image) has no such layer, so the same walk resolves into
+    the interpreter's library directory and every target path is wrong. That
+    surfaced as a ``FileNotFoundError`` naming a path the caller never asked
+    for; it should be a stated precondition instead.
+    """
+
+    def test_derived_root_without_pyproject_raises(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fake_root = Path(tmpdir) / "lib" / "python3.14"
+            fake_root.mkdir(parents=True)
+            with unittest.mock.patch.object(docgen, "REPO_ROOT", fake_root):
+                for fn in (docgen.check_docs, docgen.generate_docs):
+                    with self.assertRaises(docgen.SourceCheckoutRequired) as ctx:
+                        fn()
+                    self.assertIn("source checkout", str(ctx.exception))
+                    self.assertIn("pyproject.toml", str(ctx.exception))
+
+    def test_explicit_root_is_trusted(self):
+        """An explicitly passed root bypasses the check — callers name it."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmproot = Path(tmpdir)
+            for relpath, region, _ in docgen.TARGETS:
+                dst = tmproot / relpath
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if region is None:
+                    dst.write_text("stale\n", encoding="utf-8")
+                else:
+                    shutil.copy2(docgen.REPO_ROOT / relpath, dst)
+
+            self.assertFalse((tmproot / "pyproject.toml").exists())
+            docgen.check_docs(repo_root=tmproot, inv=build_inventory())
+
+    def test_real_repo_root_passes_the_check(self):
+        self.assertTrue((docgen.REPO_ROOT / "pyproject.toml").is_file())
 
 
 class TestRepoIsInSync(unittest.TestCase):
