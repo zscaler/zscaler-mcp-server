@@ -17,19 +17,55 @@ from zscaler_mcp.registry import REGISTRY, discover_tools
 from zscaler_mcp.registry.fastmcp_bridge import _UNTRUSTED_CONTENT_NOTICE, _to_tool_result
 from zscaler_mcp.registry.spec import READ, ToolSpec
 
-# The exact set of tools that surface content from OUTSIDE the customer's trust
-# boundary — WHOIS on attacker-registered domains, text scraped from external
-# internet-facing assets, and sandbox detonation reports (whose whole purpose is to
-# capture what a hostile file author put in the sample — crafting the input IS the
-# attack). Deliberately EXCLUDES ordinary tenant data authored inside the
-# authenticated boundary (admin-set fields, IdP-authenticated device data like
-# zcc_list_devices) — that is the accepted-risk internal-authored class, not this one.
-# Kept explicit so adding the flag elsewhere is a conscious, reviewed change.
+# ═══════════════════════════════════════════════════════════════════════════
+# THE EXTERNAL-CONTENT AUDIT (2026-08-18) — one pass over every read tool,
+# so this class stops surfacing one security scan at a time.
+#
+# The test that decides membership: can a party WITHOUT tenant credentials
+# author arbitrary strings that this tool returns? The dividing line is
+# AUTHORSHIP, not the delivery channel — telemetry reported by an
+# authenticated, enrolled device is a trustworthy channel, but strings
+# *inside* it may still be authored externally (a software publisher's
+# package name), while strings authored BY the authenticated enrollee
+# (a device hostname) are internal-tier tenant data.
+#
+# FLAGGED (external author):
+#   - EASM evidence / scan output  — text captured from external assets
+#   - EASM lookalike domains (list + get) — hostname/registrant/registrar
+#     authored by whoever registered the lookalike domain
+#   - Sandbox detonation report   — captures what a hostile file author wrote;
+#     crafting the input IS the attack
+#   - ZDX software inventory (list + details) — name/vendor/version strings
+#     authored by each software's PUBLISHER; any package landing on one
+#     enrolled endpoint injects its strings into the org-wide inventory
+#   - ZDX deep-trace top processes — process names authored by whoever wrote
+#     the software running on the endpoint
+#
+# AUDITED AND DELIBERATELY NOT FLAGGED (internal or constrained author):
+#   - zcc_list_devices / zdx device tools / zia device tools — hostnames and
+#     device identity are authored by the IdP-authenticated enrollee
+#     (internal tier; SPLX re-tiered zcc_list_devices agreeing with this)
+#   - Hardware manufacturer/model fields — constrained vendor vocabulary an
+#     adversary cannot practically author
+#   - Shadow-IT / cloud-app catalogs (zia/zins) and the ZMS app catalog —
+#     Zscaler-curated names, not arbitrary third-party strings
+#   - zeasm_list_findings / zeasm_get_finding_details — Zscaler-authored
+#     classification plus the customer's own asset identifiers; the external
+#     *content* lives in the evidence/scan-output tools, which are flagged
+#   - zia_get_sandbox_behavioral_analysis / quota / file-hash count —
+#     admin-authored blocklist config and quota counters
+#
+# Kept explicit so changing the flag set is a conscious, reviewed change.
+# ═══════════════════════════════════════════════════════════════════════════
 _EXPECTED_UNTRUSTED = {
     "zeasm_get_finding_evidence",
     "zeasm_get_finding_scan_output",
     "zeasm_get_lookalike_domain",
+    "zeasm_list_lookalike_domains",
     "zia_get_sandbox_report",
+    "zdx_list_software",
+    "zdx_get_software_details",
+    "zdx_list_deeptrace_top_processes",
 }
 
 
