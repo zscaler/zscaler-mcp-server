@@ -81,6 +81,18 @@ def _opt_str(value: Any) -> Optional[str]:
     toolset="zdx_software_inventory",
     input_model=ListSoftwareInput,
     is_list=True,
+    # The inventory is trustworthy telemetry from authenticated, enrolled
+    # devices — but the `name`/`vendor`/`version` STRINGS inside it are authored
+    # by each software's PUBLISHER, a party outside the tenant. Any package that
+    # lands on one enrolled endpoint injects its publisher-chosen strings into
+    # the org-wide inventory. (Contrast device hostnames, which are authored by
+    # the authenticated enrollee and therefore stay in the internal tier.)
+    untrusted_content=True,
+    untrusted_content_note=(
+        "This inventory is reliable telemetry from enrolled devices — report it "
+        "faithfully — but the software `name`/`vendor`/`version` strings inside it are "
+        "authored by each software's publisher, not by this tenant's users or admins."
+    ),
 )
 def zdx_list_software(args: ListSoftwareInput) -> list[dict[str, Any]]:
     """List the ZDX software inventory.
@@ -109,6 +121,15 @@ def zdx_list_software(args: ListSoftwareInput) -> list[dict[str, Any]]:
     toolset="zdx_software_inventory",
     input_model=GetSoftwareDetailsInput,
     is_list=True,
+    # Same publisher-authored software strings as zdx_list_software, expanded
+    # per install row — flagged together so drilling into details cannot become
+    # the unbannered path to the same content.
+    untrusted_content=True,
+    untrusted_content_note=(
+        "These install rows are reliable telemetry from enrolled devices — report them "
+        "faithfully — but the software `name`/`vendor`/`version` strings inside them are "
+        "authored by the software's publisher, not by this tenant's users or admins."
+    ),
 )
 def zdx_get_software_details(args: GetSoftwareDetailsInput) -> list[dict[str, Any]]:
     """Expand one ZDX software key into its per-user/device install rows.

@@ -1,5 +1,15 @@
 # Zscaler Integrations MCP Server Changelog
 
+## 0.15.4 (August 18, 2026)
+
+### Notes
+
+- Python Versions: **v3.11, v3.12, v3.13, v3.14**
+
+### Bug Fixes
+
+- **Completed a one-time audit of tools returning externally-authored content, closing the class instead of one finding per release.** Four more read tools now carry the untrusted-content provenance banner: `zeasm_list_lookalike_domains` (same registrant-authored records as its GET counterpart), `zdx_list_software` and `zdx_get_software_details` (software `name`/`vendor`/`version` strings are authored by each software's publisher — a party outside the tenant — even though the inventory itself is reliable telemetry from authenticated, enrolled devices), and `zdx_list_deeptrace_top_processes` (process names are authored by whoever wrote the software running on the traced endpoint). The banner is additional context only: **every record is still returned verbatim and nothing is suppressed** — the ZDX notes explicitly tell the agent the telemetry is reliable and must be reported faithfully. The audit's dividing line (external *authorship*, not the delivery channel) and every deliberate exclusion (device hostnames are authored by the authenticated enrollee; hardware vendor fields; Zscaler-curated app catalogs) are now documented and pinned in the test suite, so future changes to the flagged set are conscious, reviewed acts.
+
 ## 0.15.3 (August 14, 2026)
 
 ### Notes
