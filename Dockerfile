@@ -43,8 +43,12 @@ FROM python:3.14-alpine@sha256:6f873e340e6786787a632c919ecfb1d2301eb33ccfbe9f0d0
 
 # Security: Upgrade Alpine packages to patched versions.
 # Pins exact versions to satisfy security assessment requirements:
-# - libcrypto3/libssl3 ≥3.5.6-r0 fixes CVE-2026-28390 (openssl NULL ptr deref)
+# - libcrypto3/libssl3 ≥3.5.7-r0 fixes CVE-2026-28390 (openssl NULL ptr deref)
+#   and CVE-2026-34182 (CMS AuthEnvelopedData accepts forged messages). Do not
+#   relax this floor to 3.5.6 — that release predates the CMS fix.
 # - zlib ≥1.3.2-r0 fixes CVE-2026-22184 (buffer overflow in untgz)
+# - xz-libs ≥5.8.3-r0 fixes CVE-2026-34743 (heap overflow in lzma_index_append
+#   after decoding an Index with no Records)
 # - musl ≥1.2.5-r23, libuuid ≥2.41.4-r0 (upstream security patches)
 RUN apk update && \
     apk upgrade --no-cache \
@@ -53,15 +57,36 @@ RUN apk update && \
         musl \
         musl-utils \
         libuuid \
+        xz-libs \
+        zlib \
         apk-tools \
         alpine-baselayout \
         alpine-baselayout-data && \
     rm -rf /var/cache/apk/*
 
-# Security: Upgrade pip and setuptools to fix:
-# - CVE-2025-8869 (pip)
-# - CVE-2024-6345, CVE-2025-47273 (setuptools)
-RUN pip install --no-cache-dir --upgrade pip>=25.3 setuptools>=82.0.0 wheel>=0.46.2
+# Security: remove the Python installer tooling from the runtime image.
+# The application runs entirely out of /app/.venv, which uv builds without pip,
+# setuptools or wheel, so nothing here needs an installer at runtime (this is
+# the same assumption lifecycle.py already encodes when `update --apply`
+# refuses on the container channel).
+#
+# Upgrading pip in place does NOT clear scanner findings: ensurepip keeps its
+# own private copy of the pip wheel under ensurepip/_bundled/ that
+# `pip install --upgrade pip` never rewrites, and that stale copy is what gets
+# reported (CVE-2026-3219, CVE-2026-6357, CVE-2026-8643 were all raised against
+# it while the installed pip was already patched). Deleting the tooling retires
+# the whole class instead of chasing each release.
+RUN PY_LIB="$(/usr/local/bin/python -c 'import sysconfig; print(sysconfig.get_path("stdlib"))')" && \
+    /usr/local/bin/python -m pip uninstall -y setuptools wheel && \
+    /usr/local/bin/python -m pip uninstall -y pip && \
+    rm -rf "${PY_LIB}/ensurepip" \
+           "${PY_LIB}/site-packages/pip" "${PY_LIB}/site-packages/pip-"* \
+           "${PY_LIB}/site-packages/setuptools" "${PY_LIB}/site-packages/setuptools-"* \
+           "${PY_LIB}/site-packages/wheel" "${PY_LIB}/site-packages/wheel-"* \
+           "${PY_LIB}/site-packages/pkg_resources" && \
+    if find /usr/local -name 'pip-*' -o -name 'ensurepip' | grep -q .; then \
+        echo "ERROR: pip artifacts survived removal" >&2; exit 1; \
+    fi
 
 # Create a non-root user 'app'
 RUN adduser -D -h /home/app -s /bin/sh app
