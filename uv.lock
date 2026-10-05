@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -2442,7 +2442,7 @@ wheels = [
 
 [[package]]
 name = "zscaler-mcp"
-version = "0.15.3"
+version = "0.15.4"
 source = { editable = "." }
 dependencies = [
     { name = "authlib" },
@@ -2512,7 +2512,7 @@ provides-extras = ["dev", "gcp", "aws"]
 
 [[package]]
 name = "zscaler-sdk-python"
-version = "1.9.43"
+version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
@@ -2529,9 +2529,9 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/df/593b004f31cd65b295d1ed0c43dbd412e0fcc8b84d0687c199710a474fbd/zscaler_sdk_python-1.9.43.tar.gz", hash = "sha256:f192d19c1cec6cb16a62b17db08048a73b03ee319a04e891d5389c7844ee3d9e", size = 785320, upload-time = "2026-08-19T14:51:27.689Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/71/0ab3eee3693a72267dca4065c782f5495f415aadddc9721f55649c3f0718/zscaler_sdk_python-1.11.0.tar.gz", hash = "sha256:7186bd239da15030e19c4f5aa5be69f346982b8937d033ae02b08810795281eb", size = 785548, upload-time = "2026-09-30T00:44:35.867Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/ef/d688a224c9c97b7c8b56efbc55cd5f483cc8468fd3385eb567537fbeafb9/zscaler_sdk_python-1.9.43-py3-none-any.whl", hash = "sha256:754749a370acaeddc0d1eba6d9f54734f6854e3e813ef12be6dc063bf178569c", size = 1517666, upload-time = "2026-08-19T14:51:25.935Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/59/fdd6df023b0c6a11b059284adb086c7433ed86731998c842d2dd7b549fc0/zscaler_sdk_python-1.11.0-py3-none-any.whl", hash = "sha256:d5d6ba15aada241e709d0a3443f7fcd011e65519a18865ce1a142fa0831d05c6", size = 1518062, upload-time = "2026-09-30T00:44:34.217Z" },
 ]
 
 [[package]]
