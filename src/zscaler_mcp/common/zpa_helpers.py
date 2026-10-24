@@ -225,33 +225,47 @@ def convert_v1_to_v2_response(conditions: list[dict]) -> list[dict]:
         operands = condition.get("operands") or []
         values_by_type: dict[str, list[str]] = defaultdict(list)
         entries_by_type: dict[str, list[dict[str, str]]] = defaultdict(list)
+        v2_passthroughs: list[dict] = []
 
         for operand in operands:
             obj_type = (operand.get("objectType") or operand.get("object_type") or "").upper()
             if not obj_type:
                 continue
-            if obj_type in _V1_TO_V2_VALUE_TYPES:
-                rhs = operand.get("rhs")
-                if rhs is not None and str(rhs) != "":
-                    values_by_type[obj_type].append(str(rhs))
-            elif obj_type in _V1_TO_V2_ENTRY_TYPES:
-                lhs = operand.get("lhs")
-                rhs = operand.get("rhs")
-                if lhs is not None and rhs is not None:
-                    entries_by_type[obj_type].append({"lhs": str(lhs), "rhs": str(rhs)})
+            if "values" in operand or "entry_values" in operand or "entryValues" in operand:
+                v2_op = {"object_type": obj_type}
+                if "values" in operand:
+                    v2_op["values"] = operand["values"]
+                if "entry_values" in operand:
+                    v2_op["entry_values"] = operand["entry_values"]
+                elif "entryValues" in operand:
+                    v2_op["entry_values"] = operand["entryValues"]
+                v2_passthroughs.append(v2_op)
+                continue
+            
+            lhs = operand.get("lhs")
+            rhs = operand.get("rhs")
 
+            if lhs is not None and rhs is not None:
+                entries_by_type[obj_type].append({"lhs": str(lhs), "rhs": str(rhs)})
+            elif rhs is not None and str(rhs) != "":
+                values_by_type[obj_type].append(str(rhs))
+        
         new_operands: list[dict] = []
+        new_operands.extend(v2_passthroughs)
+
         for obj_type in sorted(values_by_type.keys()):
             unique_sorted = sorted(set(values_by_type[obj_type]))
             new_operands.append({"object_type": obj_type, "values": unique_sorted})
+            
         for obj_type in sorted(entries_by_type.keys()):
             entries = sorted(entries_by_type[obj_type], key=lambda e: (e["lhs"], e["rhs"]))
             new_operands.append({"object_type": obj_type, "entry_values": entries})
 
         if not new_operands:
             continue
+            
         v2_conditions.append({"operator": cond_op, "operands": new_operands})
-
+        
     return v2_conditions
 
 
