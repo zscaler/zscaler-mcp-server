@@ -1,10 +1,10 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version < '3.12' and sys_platform == 'emscripten')",
+    "python_full_version < '3.12' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 
 [[package]]
@@ -2442,7 +2442,7 @@ wheels = [
 
 [[package]]
 name = "zscaler-mcp"
-version = "0.15.3"
+version = "0.15.4"
 source = { editable = "." }
 dependencies = [
     { name = "authlib" },
@@ -2512,7 +2512,7 @@ provides-extras = ["dev", "gcp", "aws"]
 
 [[package]]
 name = "zscaler-sdk-python"
-version = "1.9.43"
+version = "1.11.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aenum" },
@@ -2529,9 +2529,9 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/df/593b004f31cd65b295d1ed0c43dbd412e0fcc8b84d0687c199710a474fbd/zscaler_sdk_python-1.9.43.tar.gz", hash = "sha256:f192d19c1cec6cb16a62b17db08048a73b03ee319a04e891d5389c7844ee3d9e", size = 785320, upload-time = "2026-08-19T14:51:27.689Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/d2/4c0029a12a8c1304f2aba9fb610bd5ee26967ba938fc06a6ae62fc09aea1/zscaler_sdk_python-1.11.5.tar.gz", hash = "sha256:64e020a52a33c84386fa5d25cf32a86398e68912433cb04614a93f99732fb621", size = 787479, upload-time = "2026-11-11T04:29:01.635Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/ef/d688a224c9c97b7c8b56efbc55cd5f483cc8468fd3385eb567537fbeafb9/zscaler_sdk_python-1.9.43-py3-none-any.whl", hash = "sha256:754749a370acaeddc0d1eba6d9f54734f6854e3e813ef12be6dc063bf178569c", size = 1517666, upload-time = "2026-08-19T14:51:25.935Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/d8/501fcbb21ff721219c51ce2eeaf0935c3603020ca20fe0267ad3df191f0a/zscaler_sdk_python-1.11.5-py3-none-any.whl", hash = "sha256:b16a6564651a3b2e5df27bffdf703a596d0d6333e6d54149fb0fe403f85d02d9", size = 1519892, upload-time = "2026-11-11T04:29:00.332Z" },
 ]
 
 [[package]]
